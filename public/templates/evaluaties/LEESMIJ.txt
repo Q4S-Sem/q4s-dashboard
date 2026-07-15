@@ -1,0 +1,12 @@
+Map: public/templates/evaluaties/
+
+Plaats hier je BLANCO evaluatie-templates (de bestanden die je beschikbaar hebt),
+bijvoorbeeld:
+
+  - VG-evaluatieformulier-VCU.xlsx   (of .pdf / .docx)
+
+Elk bestand dat je in deze map zet, verschijnt automatisch in de app onder
+Evaluaties > Templates en is daar te downloaden om in te vullen of naar de
+klant/inlener te sturen.
+
+(Dit LEESMIJ-bestand wordt zelf niet als template getoond.)

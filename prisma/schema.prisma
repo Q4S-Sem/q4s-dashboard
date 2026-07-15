@@ -1,0 +1,1627 @@
+// Q4S Dashboard — datamodel (staffing back-office)
+// Provider: PostgreSQL (Neon). Deployt op Vercel serverless; SQLite kan daar niet
+// (efemeer/alleen-lezen bestandssysteem). Lokaal draai je tegen een Neon dev-branch
+// (of een lokale Postgres). `DATABASE_URL` = gepoolde connectie (voor de app op
+// Vercel), `DIRECT_URL` = directe connectie (voor `prisma db push`/seed/migraties).
+//
+// NOTE: het schema is bewust string-based (status/discipline i.p.v. enums) — een
+// erfenis van SQLite, maar volledig geldig op Postgres. Toegestane waarden worden
+// in de app-laag met Zod gevalideerd (zie src/lib/domain.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// The placed specialists ("werknemers-hub"): QA, QC, welders, fitters, NDT.
+/// Holds the full personnel file (personeelsdossier).
+model Consultant {
+  id             String  @id @default(cuid())
+  firstName      String
+  lastName       String
+  email          String? @unique
+  phone          String?
+  /// One of: QA | QC | LASSEN | FITTER | NDO  (see DISCIPLINES in domain.ts)
+  discipline     String
+  /// One of: ZZP | LOONDIENST | UITZEND
+  employmentType String  @default("ZZP")
+  /// Default hourly purchase rate — what Q4S pays this person (ex BTW).
+  defaultCostRate Float  @default(0)
+  active         Boolean @default(true)
+
+  // Personal
+  dateOfBirth    DateTime?
+  /// BSN / sofinummer
+  bsn            String?
+  nationality    String?
+
+  // Contact / address
+  address        String?
+  postalCode     String?
+  city           String?
+  country        String?  @default("Nederland")
+
+  // Employment & contract
+  startDate      DateTime?
+  /// e.g. Onbepaalde tijd | Bepaalde tijd | Overeenkomst van opdracht (ZZP) | Uitzendovereenkomst
+  contractType   String?
+  contractStart  DateTime?
+  contractEnd    DateTime?
+
+  // ZZP / company details
+  companyName    String?
+  kvkNumber      String?
+  vatNumber      String?
+
+  // Bank & emergency
+  iban           String?
+  emergencyName  String?
+  emergencyPhone String?
+
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  placements       Placement[]
+  certificates     Certificate[]
+  documents        Document[]
+  purchaseInvoices PurchaseInvoice[]
+  receivedInvoices ReceivedInvoice[]
+  inboxItems       TimesheetInbox[]
+  evaluations      Evaluation[]
+  expenses         Expense[]
+  timesheetReminders TimesheetReminder[]
+
+  @@index([discipline])
+  @@index([active])
+}
+
+/// Een verstuurde herinnering dat de timesheet van een medewerker voor een
+/// bepaalde week nog niet binnen is. Voorkomt dat we dezelfde persoon voor
+/// dezelfde week blijven aanschrijven, en voedt de timesheet-statuspagina.
+model TimesheetReminder {
+  id           String   @id @default(cuid())
+  consultantId String
+  placementId  String?
+  /// Maandag van de week waarvoor de timesheet nog ontbreekt.
+  weekStart    DateTime
+  sentAt       DateTime @default(now())
+  sentTo       String?
+  /// True wanneer er geen SMTP is: mail is opgesteld maar niet echt verstuurd.
+  simulated    Boolean  @default(false)
+
+  consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId])
+  @@index([weekStart])
+}
+
+/// A qualification/certificate (VCA, NDT level, welding cert, …) with optional expiry.
+model Certificate {
+  id           String    @id @default(cuid())
+  consultantId String
+  name         String
+  number       String?
+  /// Uitgevende instantie / opleidingsinstituut.
+  issuer       String?
+  issuedDate   DateTime?
+  expiryDate   DateTime?
+  notes        String?
+  /// When we last e-mailed the medewerker a renewal reminder.
+  reminderSentAt DateTime?
+  /// Optional uploaded certificate file (scan/PDF) under uploads/<consultantId>/.
+  fileName     String?
+  originalName String?
+  mimeType     String?
+  fileSize     Int?
+  createdAt    DateTime  @default(now())
+
+  consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId])
+}
+
+/// An uploaded file in a consultant's dossier (contract, ID, CV, certificate scan, …).
+/// The binary lives on disk under uploads/<consultantId>/<fileName>; this row is metadata.
+model Document {
+  id           String   @id @default(cuid())
+  consultantId String
+  /// CONTRACT | ID | CERTIFICAAT | CV | OVERIG
+  category     String   @default("OVERIG")
+  title        String
+  /// Stored filename on disk (random).
+  fileName     String
+  /// Original upload filename (for download).
+  originalName String
+  mimeType     String
+  size         Int
+  createdAt    DateTime @default(now())
+
+  consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId])
+}
+
+/// Clients Q4S invoices.
+model Client {
+  id               String  @id @default(cuid())
+  companyName      String
+  contactName      String?
+  email            String?
+  phone            String?
+  address          String?
+  postalCode       String?
+  city             String?
+  country          String  @default("Nederland")
+  /// BTW-nummer
+  vatNumber        String?
+  /// KvK-nummer
+  kvkNumber        String?
+  invoiceEmail     String?
+  paymentTermDays  Int     @default(30)
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  placements       Placement[]
+  invoices         Invoice[]
+  vacancies        Vacancy[]
+  events           CalendarEvent[]
+  tasks            Task[]
+  evaluations      Evaluation[]
+  deals            Deal[]
+  crmContacts      CrmContact[]
+
+  @@index([companyName])
+}
+
+/// A consultant placed at a client. Holds the margin: chargeRate - costRate.
+model Placement {
+  id           String   @id @default(cuid())
+  consultantId String
+  clientId     String
+  /// Function/role at the client, e.g. "NDT Inspector Level 2".
+  title        String
+  startDate    DateTime @default(now())
+  endDate      DateTime?
+  /// What Q4S pays the consultant per hour (ex BTW).
+  costRate     Float
+  /// What Q4S charges the client per hour (ex BTW).
+  chargeRate   Float
+  /// Toeslagen (%) + kilometervergoeding (€/km), PER PLACEMENT (persoon bij klant).
+  /// Buy = inkoop (paid to the consultant), Sell = verkoop (charged to the client).
+  /// All default 0 → identical to the plain hours×rate behaviour.
+  weekendSurchargeBuy   Float @default(0)
+  weekendSurchargeSell  Float @default(0)
+  overtimeSurchargeBuy  Float @default(0)
+  overtimeSurchargeSell Float @default(0)
+  kmRateBuy             Float @default(0)
+  kmRateSell            Float @default(0)
+  /// ACTIVE | ENDED
+  status       String   @default("ACTIVE")
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Restrict)
+  client       Client     @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  timesheets   Timesheet[]
+  invoiceLines InvoiceLine[]
+  purchaseLines PurchaseInvoiceLine[]
+  inboxItems   TimesheetInbox[]
+
+  @@index([consultantId])
+  @@index([clientId])
+  @@index([status])
+}
+
+/// Weekly timesheet per placement; entries are per-day hours.
+model Timesheet {
+  id          String   @id @default(cuid())
+  placementId String
+  /// Monday of the ISO week this timesheet covers.
+  weekStart   DateTime
+  /// DRAFT | SUBMITTED | APPROVED | INVOICED
+  status      String   @default("DRAFT")
+  note        String?
+  /// Kilometers driven that week (reiskosten), if reported. Optional.
+  kilometers  Float?
+  /// Overtime hours (overuren) explicitly stated on the source timesheet, if
+  /// reported separately. Saturday/Sunday hours are derived from the entry dates.
+  overtimeHours Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  placement   Placement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+  entries     TimesheetEntry[]
+  invoiceLine InvoiceLine?
+  purchaseLine PurchaseInvoiceLine?
+  inbox       TimesheetInbox?
+
+  @@unique([placementId, weekStart])
+  @@index([status])
+}
+
+/// A single day's hours within a timesheet.
+model TimesheetEntry {
+  id          String   @id @default(cuid())
+  timesheetId String
+  date        DateTime
+  hours       Float
+  /// Kilometers driven that day (reiskosten). Week total = sum of the days.
+  kilometers  Float?
+  description String?
+
+  timesheet   Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+
+  @@index([timesheetId])
+}
+
+/// A client invoice (Dutch BTW + sequential number).
+model Invoice {
+  id         String   @id @default(cuid())
+  /// Sequential, human-readable, e.g. "2026-0001".
+  number     String   @unique
+  clientId   String
+  issueDate  DateTime @default(now())
+  dueDate    DateTime
+  /// DRAFT | SENT | PAID | OVERDUE | CANCELLED
+  status     String   @default("DRAFT")
+  vatRate    Float    @default(21)
+  subtotal   Float    @default(0)
+  vatAmount  Float    @default(0)
+  total      Float    @default(0)
+  notes      String?
+  paidDate   DateTime?
+  /// When this invoice was sent (or queued in the verzendmap) and to whom.
+  sentAt     DateTime?
+  sentTo     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  client     Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  lines      InvoiceLine[]
+
+  @@index([clientId])
+  @@index([status])
+}
+
+/// One line on an invoice. Optionally linked to its source timesheet/placement.
+model InvoiceLine {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  placementId String?
+  timesheetId String? @unique
+  description String
+  /// Hours (or units).
+  quantity    Float
+  /// Charge rate per hour (ex BTW).
+  unitPrice   Float
+  /// quantity * unitPrice.
+  amount      Float
+
+  invoice     Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  placement   Placement? @relation(fields: [placementId], references: [id], onDelete: SetNull)
+  timesheet   Timesheet? @relation(fields: [timesheetId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+}
+
+/// Atomic counters for sequential numbering (e.g. invoice numbers per year).
+model NumberSequence {
+  key   String @id
+  value Int    @default(0)
+}
+
+/// Single-row company profile for Q4S (used on invoices). id is always "default".
+model CompanySettings {
+  id                   String @id @default("default")
+  companyName          String @default("Q4S")
+  address              String @default("")
+  postalCode           String @default("")
+  city                 String @default("")
+  country              String @default("Nederland")
+  vatNumber            String @default("")
+  kvkNumber            String @default("")
+  iban                 String @default("")
+  email                String @default("")
+  phone                String @default("")
+  website              String @default("")
+  /// Optional prefix before the year-number, e.g. "Q4S-".
+  invoicePrefix        String @default("")
+  defaultVatRate       Float  @default(21)
+  defaultPaymentTermDays Int  @default(30)
+  invoiceFooter        String @default("")
+  /// Master-switch for AI auto-reading of certificates (uses ANTHROPIC_API_KEY).
+  /// Off by default — the user opts in per choice.
+  aiAutoExtract        Boolean @default(false)
+
+  // ---- Cloudopslag-koppeling (Microsoft 365: OneDrive of SharePoint) ----
+  // Elke upload in het dashboard wordt (best-effort) naar deze drive gespiegeld,
+  // gesorteerd in mappen. Env (MS_*) blijft als fallback werken; deze DB-config
+  // heeft voorrang zodra 'cloudEnabled' aanstaat. Leeg/uit = klaarzet-modus.
+  cloudEnabled         Boolean  @default(false)
+  /// ONEDRIVE | SHAREPOINT
+  cloudProvider        String   @default("ONEDRIVE")
+  cloudTenantId        String   @default("")
+  cloudClientId        String   @default("")
+  cloudClientSecret    String   @default("")
+  /// OneDrive: UPN/e-mail of object-id van het account (/users/{user}/drive).
+  cloudDriveUser       String   @default("")
+  /// SharePoint: site-id ("host,siteCollectionId,webId" of "host:/sites/naam:").
+  cloudSiteId          String   @default("")
+  /// Optioneel expliciete drive-id (documentbibliotheek) i.p.v. de standaarddrive.
+  cloudDriveId         String   @default("")
+  cloudRootFolder      String   @default("Q4S Dashboard")
+  cloudLastSyncAt      DateTime?
+
+  updatedAt            DateTime @updatedAt
+}
+
+/// Logregel per bestand dat naar de cloud (OneDrive/SharePoint) is gespiegeld —
+/// óók in klaarzet-modus (SIMULATED), zodat je in de Data-hub ziet dat alle data
+/// netjes in mappen wordt gesorteerd. Bron blijft de lokale schijf.
+model CloudSyncLog {
+  id           String   @id @default(cuid())
+  /// ONEDRIVE | SHAREPOINT
+  provider     String   @default("ONEDRIVE")
+  /// De "mapje"-categorie (bijv. Personeelsdossiers, Facturatie, Declaraties).
+  category     String
+  /// Het volledige doelpad in de cloud (root/<…>/bestand).
+  folder       String
+  fileName     String
+  originalName String
+  /// SYNCED | SIMULATED | ERROR
+  status       String   @default("SIMULATED")
+  webUrl       String?
+  error        String?
+  size         Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([status])
+}
+
+// ===================== RECRUITMENT HUB =====================
+
+/// An incoming job vacancy that AI rewrites/improves and we publish.
+model Vacancy {
+  id           String  @id @default(cuid())
+  title        String
+  /// One of the Q4S disciplines (DISCIPLINES) or free text.
+  discipline   String?
+  location     String?
+  /// e.g. "Fulltime", "Parttime", "ZZP".
+  employmentType String?
+  salary       String?
+  clientId     String?
+  /// Free-text company name when no client is linked.
+  companyName  String?
+  /// The raw vacancy text as it came in.
+  rawText      String
+  /// AI-improved full vacancy text (Markdown).
+  improvedText String?
+  /// Short AI summary / intro — "Over de functie".
+  summary      String?
+  /// Website sections — one item per line (newline-separated).
+  responsibilities String?  // Werkzaamheden
+  requirements     String?  // Functie-eisen
+  niceToHave       String?  // Pré
+  /// AI-generated LinkedIn post text.
+  linkedinPost String?
+  /// CONCEPT | IMPROVED | PUBLISHED
+  status       String  @default("CONCEPT")
+  /// URL slug for the public vacancy page.
+  slug         String  @unique
+  publishedAt  DateTime?
+  /// Number of times the public vacancy page was opened (website clicks).
+  views        Int     @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  /// MANUAL | VMS | CSV | EMAIL — how this vacancy came in (see VACANCY_SOURCES).
+  source          String  @default("MANUAL")
+  vmsConnectorId  String?
+  /// Extern ID bij het VMS/MSP — dedupliceert leveringen van hetzelfde platform.
+  externalId      String?
+  /// Originele URL van de vacature bij de bron.
+  sourceUrl       String?
+  /// RELEVANT | IRRELEVANT | UNKNOWN — AI relevance verdict for the Q4S niche.
+  relevance       String  @default("UNKNOWN")
+  relevanceReason String?
+
+  /// Actieve zoekopdracht: staat deze vacature op de CV-matches-pagina als
+  /// "ik zoek kandidaten"? Gezet via de "Ik zoek kandidaten"-knop.
+  sourcing        Boolean @default(false)
+  /// Wanneer er voor het laatst op deze vacature is gematcht ("Zoek match").
+  lastMatchedAt   DateTime?
+
+  client       Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  outreach     OutreachMessage[]
+  socialPosts  SocialPost[]
+  vmsConnector VmsConnector? @relation(fields: [vmsConnectorId], references: [id], onDelete: SetNull)
+  applications Application[]
+  matches      VacancyMatch[]
+  events       CalendarEvent[]
+  deals        Deal[]
+  alerts       RecruiterAlert[]
+
+  @@index([status])
+  @@index([clientId])
+  @@index([externalId])
+  @@index([sourcing])
+  // Dedupliceert leveringen hard (race-vrij); meerdere NULL-externalIds mogen.
+  @@unique([vmsConnectorId, externalId])
+}
+
+/// A semi-automatic outreach message (AI drafts, human approves & sends).
+model OutreachMessage {
+  id               String  @id @default(cuid())
+  recipientName    String
+  /// Role / LinkedIn headline of the recipient.
+  recipientHeadline String?
+  company          String?
+  /// LINKEDIN | EMAIL
+  channel          String  @default("LINKEDIN")
+  /// Subject line (for e-mail).
+  subject          String?
+  /// Context / aanleiding the user provides for personalisation.
+  context          String?
+  /// AI-drafted message.
+  draft            String?
+  /// DRAFT | APPROVED | SENT
+  status           String  @default("DRAFT")
+  vacancyId        String?
+  sentAt           DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  vacancy          Vacancy? @relation(fields: [vacancyId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([channel])
+}
+
+// ===================== SOCIALS HUB =====================
+
+/// A planned social-media post (LinkedIn/Instagram/…). AI can draft the copy;
+/// a human approves, schedules and publishes. Optionally tied to a vacancy.
+model SocialPost {
+  id           String  @id @default(cuid())
+  /// Short internal title to recognise the post.
+  title        String
+  /// LINKEDIN | INSTAGRAM | FACEBOOK | X  (see SOCIAL_PLATFORMS in domain.ts)
+  platform     String  @default("LINKEDIN")
+  /// The post body text (Markdown/plain).
+  content      String?
+  /// Topic / aanleiding the user provides for AI personalisation.
+  topic        String?
+  /// Space/comma-separated hashtags, e.g. "#lassen #vacature".
+  hashtags     String?
+  /// DRAFT | SCHEDULED | PUBLISHED
+  status       String  @default("DRAFT")
+  /// When the post is planned to go out.
+  scheduledFor DateTime?
+  publishedAt  DateTime?
+  vacancyId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  vacancy      Vacancy? @relation(fields: [vacancyId], references: [id], onDelete: SetNull)
+  postLinks    PostLink[]
+
+  @@index([status])
+  @@index([platform])
+}
+
+/// A trackable short link (/v/<token>) that a social post points at. Counts
+/// clicks and sets a first-party cookie so a later Talentpool signup can be
+/// attributed back to the campaign that drove it.
+model PostLink {
+  id           String    @id @default(cuid())
+  /// Short public token used in the /v/<token> URL.
+  token        String    @unique
+  /// Human label, e.g. "LinkedIn — lasser-campagne".
+  label        String
+  /// LINKEDIN | FACEBOOK | INSTAGRAM | WHATSAPP | TIKTOK | X | OVERIG (RECRUITMENT_CHANNELS).
+  channel      String?
+  /// Internal destination path the link redirects to (default the talentpool).
+  destination  String    @default("/talentpool")
+  socialPostId String?
+  clicks       Int       @default(0)
+  lastClickAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  socialPost   SocialPost? @relation(fields: [socialPostId], references: [id], onDelete: SetNull)
+
+  @@index([socialPostId])
+}
+
+// ===================== ANALYSES HUB =====================
+
+/// A market/sector expansion opportunity (AI-generated or manual), tracked as pipeline.
+model Opportunity {
+  id              String  @id @default(cuid())
+  title           String
+  sector          String?
+  region          String? @default("Nederland")
+  description     String
+  /// Why this is promising for Q4S.
+  rationale       String?
+  /// LAAG | MIDDEL | HOOG
+  potential       String  @default("MIDDEL")
+  /// Example target companies (free text).
+  targetCompanies String?
+  /// NEW | EXPLORING | PURSUING | WON | LOST
+  status          String  @default("NEW")
+  /// AI | MANUAL
+  source          String  @default("MANUAL")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([potential])
+}
+
+// ===================== INVOICE INTAKE (admin@q4s.nl) =====================
+
+/// An incoming weekly timesheet (PDF) — uploaded or received by e-mail at
+/// admin@q4s.nl. AI extracts name/week/hours from the (varying) layout; a human
+/// reviews, matches it to a placement and confirms it into a real Timesheet.
+model TimesheetInbox {
+  id            String   @id @default(cuid())
+  /// UPLOAD | EMAIL  (see INBOX_SOURCES in domain.ts)
+  source        String   @default("UPLOAD")
+  /// NEW | EXTRACTED | CONFIRMED | REJECTED  (see INBOX_STATUSES)
+  status        String   @default("NEW")
+
+  // Stored original file (under uploads/_inbox/).
+  fileName      String
+  originalName  String
+  mimeType      String
+  size          Int
+
+  // E-mail metadata (when source = EMAIL).
+  senderEmail   String?
+  emailSubject  String?
+  receivedAt    DateTime?
+
+  // AI-extracted fields (raw, before confirmation).
+  extractedName       String?
+  extractedWeekStart  DateTime?
+  extractedTotalHours Float?
+  /// Kilometers driven that week, as read from the document (0/null if none).
+  extractedKilometers Float?
+  /// Overtime hours read from the document, if stated separately.
+  extractedOvertimeHours Float?
+  /// Full per-day breakdown + anything else the AI found, as a JSON string.
+  extractedJson       String?
+  aiNotes             String?
+
+  // Matching + result.
+  consultantId  String?
+  placementId   String?
+  timesheetId   String?  @unique
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  consultant    Consultant? @relation(fields: [consultantId], references: [id], onDelete: SetNull)
+  placement     Placement?  @relation(fields: [placementId], references: [id], onDelete: SetNull)
+  timesheet     Timesheet?  @relation(fields: [timesheetId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([extractedWeekStart])
+}
+
+/// A self-billing PURCHASE invoice: what Q4S pays a consultant (cost side),
+/// generated from approved timesheets at the consultant's cost rate.
+model PurchaseInvoice {
+  id           String   @id @default(cuid())
+  /// Sequential, e.g. "INK-2026-0001".
+  number       String   @unique
+  consultantId String
+  issueDate    DateTime @default(now())
+  dueDate      DateTime
+  /// DRAFT | APPROVED | PAID | CANCELLED  (see PURCHASE_INVOICE_STATUSES)
+  status       String   @default("DRAFT")
+  vatRate      Float    @default(21)
+  subtotal     Float    @default(0)
+  vatAmount    Float    @default(0)
+  total        Float    @default(0)
+  notes        String?
+  paidDate     DateTime?
+  /// When this purchase invoice was sent (or queued in the verzendmap) and to whom.
+  sentAt       DateTime?
+  sentTo       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  consultant   Consultant            @relation(fields: [consultantId], references: [id], onDelete: Restrict)
+  lines        PurchaseInvoiceLine[]
+
+  @@index([consultantId])
+  @@index([status])
+}
+
+/// One line on a purchase invoice; links back to its source timesheet/placement.
+model PurchaseInvoiceLine {
+  id                String  @id @default(cuid())
+  purchaseInvoiceId String
+  placementId       String?
+  timesheetId       String? @unique
+  description       String
+  /// Hours.
+  quantity          Float
+  /// Cost rate per hour (ex BTW).
+  unitPrice         Float
+  /// quantity * unitPrice.
+  amount            Float
+
+  purchaseInvoice   PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
+  placement         Placement?      @relation(fields: [placementId], references: [id], onDelete: SetNull)
+  timesheet         Timesheet?      @relation(fields: [timesheetId], references: [id], onDelete: SetNull)
+
+  @@index([purchaseInvoiceId])
+}
+
+// ===================== AI RECRUITMENT HUB =====================
+
+/// A VMS / inhuurplatform Q4S sources vacancies from (Magnit, SAP Fieldglass,
+/// Beeline, Inhuurdesk Rijk, Mercell, TenderNed, FlexOord, …). A real API hookup
+/// is per-platform and credential-gated; until then intake is manual/CSV/email.
+model VmsConnector {
+  id        String  @id @default(cuid())
+  name      String
+  /// Stable slug, e.g. "magnit".
+  key       String  @unique
+  /// NOT_CONNECTED | MANUAL | CONNECTED  (see VMS_STATUSES in domain.ts)
+  status    String  @default("MANUAL")
+  /// 1..5 sourcing priority.
+  priority  Int     @default(3)
+  website   String?
+  notes     String?
+
+  // API-koppeling (MSP). De echte key komt later; tot die tijd draait de intake
+  // via de webhook (/api/msp/webhook) en de testlevering.
+  apiBaseUrl String?
+  apiKey     String?
+  lastSyncAt DateTime?
+
+  // Automatische intake-pijplijn per connector — wat er gebeurt met een
+  // binnenkomende vacature (see runIntakePipeline in src/lib/msp.ts).
+  autoFilter      Boolean @default(true)
+  autoImprove     Boolean @default(true)
+  autoPublishSite Boolean @default(true)
+  autoDraftPost   Boolean @default(true)
+  autoMatch       Boolean @default(true)
+  notifyRecruiter Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vacancies Vacancy[]
+  targets   TargetClient[]
+  alerts    RecruiterAlert[]
+
+  @@index([status])
+}
+
+/// Een melding voor de recruiters uit de MSP/vacature-intake: relevante
+/// vacature binnen, kandidaat-matches gevonden, live op de site, post klaar,
+/// levering of fout. Gevoed door de pijplijn; zichtbaar op /msp + het belletje.
+model RecruiterAlert {
+  id             String   @id @default(cuid())
+  /// VACANCY_RELEVANT | MATCHES_FOUND | PUBLISHED | POST_READY | VACANCY_IRRELEVANT | SYNC | ERROR (ALERT_TYPES)
+  type           String   @default("VACANCY_RELEVANT")
+  title          String
+  body           String?
+  /// Interne link naar het onderwerp (vacature, post, …).
+  href           String?
+  read           Boolean  @default(false)
+  vacancyId      String?
+  vmsConnectorId String?
+  createdAt      DateTime @default(now())
+
+  vacancy      Vacancy?      @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  vmsConnector VmsConnector? @relation(fields: [vmsConnectorId], references: [id], onDelete: SetNull)
+
+  @@index([read])
+  @@index([createdAt])
+}
+
+/// A target opdrachtgever on the acquisition roadmap (TenneT, Rijkswaterstaat,
+/// …). Distinct from an invoiced Client; a target may convert into one later.
+model TargetClient {
+  id             String  @id @default(cuid())
+  name           String
+  /// 1..5 stars.
+  priority       Int     @default(3)
+  vmsConnectorId String?
+  sector         String?
+  /// PROSPECT | CONTACT | ACTIVE | WON | LOST  (see TARGET_STATUSES)
+  status         String  @default("PROSPECT")
+  contactName    String?
+  contactEmail   String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  vmsConnector   VmsConnector? @relation(fields: [vmsConnectorId], references: [id], onDelete: SetNull)
+  applications   Application[]
+  events         CalendarEvent[]
+  tasks          Task[]
+  deals          Deal[]
+  crmContacts    CrmContact[]
+
+  @@index([status])
+  @@index([priority])
+}
+
+/// A candidate who applied via the public Q4S vacancy page, or was added by hand.
+model Candidate {
+  id             String  @id @default(cuid())
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  /// One of the Q4S disciplines (DISCIPLINES) or free text.
+  discipline     String?
+  headline       String?
+  location       String?
+  linkedinUrl    String?
+  /// WEBSITE | MANUAL | TALENTPOOL  (see CANDIDATE_SOURCES)
+  source         String  @default("MANUAL")
+  /// Recruiter-rangschikking: ONBEKEND | GOED | REDELIJK | NIET_MEER (see CANDIDATE_RATINGS).
+  rating         String  @default("ONBEKEND")
+  /// Beschikbaarheid: BESCHIKBAAR | BINNENKORT | NIET_BESCHIKBAAR | ONBEKEND (see CANDIDATE_AVAILABILITY).
+  availability   String  @default("ONBEKEND")
+  /// Datum vanaf wanneer de kandidaat beschikbaar is (vooral bij BINNENKORT).
+  availableFrom  DateTime?
+  /// Interview-met-Q4S status: NONE | PLANNED | DONE (see CANDIDATE_INTERVIEW_STATUSES).
+  interviewStatus String @default("NONE")
+  /// Datum van het (geplande/gehouden) interview met Q4S.
+  interviewDate  DateTime?
+  /// Vrije notities bij het interview met Q4S (indruk, afspraken, aandachtspunten).
+  interviewNotes String?
+  /// Attribution: the tracked-link token / campaign source (bron) a Talentpool
+  /// signup came in through. Used for per-campaign analytics.
+  sourceDetail   String?
+  // Optional CV file on disk (uploads/_cv/).
+  cvFileName     String?
+  cvOriginalName String?
+  cvMimeType     String?
+  cvSize         Int?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  applications   Application[]
+  matches        VacancyMatch[]
+  events         CalendarEvent[]
+  tasks          Task[]
+  challengeAttempts ChallengeAttempt[]
+  candidatePlacements CandidatePlacement[]
+  crmNotes       CrmNote[]
+
+  @@index([discipline])
+  @@index([rating])
+  @@index([availability])
+  @@index([interviewStatus])
+}
+
+/// Plaatsingshistorie van een kandidaat: bij welk bedrijf Q4S deze persoon eerder
+/// heeft geplaatst (functie + periode). Los van het Consultant/Placement-model
+/// (dat over gedetacheerde werknemers gaat) — dit is de talentpool-historie.
+model CandidatePlacement {
+  id          String    @id @default(cuid())
+  candidateId String
+  /// Bedrijfsnaam waar geplaatst.
+  company     String
+  /// Functie/rol tijdens de plaatsing.
+  role        String?
+  startDate   DateTime?
+  endDate     DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+}
+
+/// A candidate's application to a vacancy, tracked as a pipeline and optionally
+/// submitted on to an opdrachtgever / VMS.
+model Application {
+  id            String  @id @default(cuid())
+  candidateId   String
+  vacancyId     String?
+  /// NEW | SCREENING | PROPOSED | PLACED | REJECTED  (see APPLICATION_STATUSES)
+  status        String  @default("NEW")
+  motivation    String?
+  /// "Doorzetten" target — recorded now; real VMS submit via API later.
+  submittedToId String?
+  submittedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  candidate     Candidate     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  vacancy       Vacancy?      @relation(fields: [vacancyId], references: [id], onDelete: SetNull)
+  submittedTo   TargetClient? @relation(fields: [submittedToId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([candidateId])
+}
+
+/// An AI/rule match between a candidate and a vacancy, generated by the daily
+/// sourcing job — "koppel onze CV's aan matchende vacatures".
+model VacancyMatch {
+  id          String   @id @default(cuid())
+  vacancyId   String
+  candidateId String
+  /// 0..1 match score.
+  score       Float    @default(0)
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  vacancy     Vacancy   @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([vacancyId, candidateId])
+  @@index([candidateId])
+  @@index([vacancyId])
+}
+
+/// One run of the daily sourcing/filter/match job (audit + dashboard).
+model SyncRun {
+  id         String    @id @default(cuid())
+  /// MANUAL | CRON
+  trigger    String    @default("MANUAL")
+  /// RUNNING | DONE | ERROR
+  status     String    @default("DONE")
+  sourced    Int       @default(0)
+  filtered   Int       @default(0)
+  relevant   Int       @default(0)
+  matched    Int       @default(0)
+  note       String?
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([startedAt])
+}
+
+// ===================== AGENDA HUB =====================
+
+/// A calendar item: afspraak, (bel)gesprek met een bedrijf, bedrijfsbezoek,
+/// herinnering of deadline. Can be linked to a company/candidate/vacancy and
+/// carry meeting notes. Comes in manually or via an e-mailed .ics invite.
+model CalendarEvent {
+  id        String   @id @default(cuid())
+  title     String
+  /// MEETING | CALL | VISIT | INTERVIEW | DEADLINE | REMINDER | OTHER (see EVENT_TYPES)
+  type      String   @default("MEETING")
+  start     DateTime
+  end       DateTime?
+  allDay    Boolean  @default(false)
+  location  String?
+  /// Meeting notes / gespreksverslag (Markdown/plain).
+  notes     String?
+  /// PLANNED | DONE | CANCELLED  (see EVENT_STATUSES)
+  status    String   @default("PLANNED")
+  /// MANUAL | EMAIL | ICS  (see EVENT_SOURCES)
+  source    String   @default("MANUAL")
+  /// iCalendar UID, to de-duplicate e-mailed invites.
+  uid       String?  @unique
+
+  // Optional context links.
+  targetClientId String?
+  clientId       String?
+  candidateId    String?
+  vacancyId      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  targetClient TargetClient? @relation(fields: [targetClientId], references: [id], onDelete: SetNull)
+  client       Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  candidate    Candidate?    @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  vacancy      Vacancy?      @relation(fields: [vacancyId], references: [id], onDelete: SetNull)
+
+  @@index([start])
+  @@index([status])
+  @@index([type])
+}
+
+/// A to-do item, optionally with a due date, priority and a link to a
+/// company/candidate. Drives the agenda's takenlijst.
+model Task {
+  id        String   @id @default(cuid())
+  title     String
+  notes     String?
+  dueDate   DateTime?
+  done      Boolean  @default(false)
+  doneAt    DateTime?
+  /// LOW | MEDIUM | HIGH  (see TASK_PRIORITIES)
+  priority  String   @default("MEDIUM")
+
+  targetClientId String?
+  clientId       String?
+  candidateId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  targetClient TargetClient? @relation(fields: [targetClientId], references: [id], onDelete: SetNull)
+  client       Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  candidate    Candidate?    @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+
+  @@index([done])
+  @@index([dueDate])
+}
+
+// ===================== VAKPROEF (skills challenge) =====================
+
+/// A skills-challenge (quiz/casus) used as a self-selecting recruitment channel:
+/// only real vakmensen answer correctly, and answering turns a visitor into a
+/// discipline-tagged Talentpool candidate. Highly shareable on socials.
+model Challenge {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  title        String
+  /// One of the Q4S disciplines (DISCIPLINES) or null.
+  discipline   String?
+  /// The question / casus shown to the visitor.
+  question     String
+  /// JSON array of answer-option strings.
+  optionsJson  String
+  /// 0-based index of the correct option.
+  correctIndex Int      @default(0)
+  /// Shown after answering (why the answer is right).
+  explanation  String?
+  /// DRAFT | ACTIVE | CLOSED  (see CHALLENGE_STATUSES)
+  status       String   @default("DRAFT")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  attempts     ChallengeAttempt[]
+
+  @@index([status])
+}
+
+/// One public answer to a challenge; a correct answer self-selects a qualified
+/// lead, who is captured as a Talentpool candidate.
+model ChallengeAttempt {
+  id          String   @id @default(cuid())
+  challengeId String
+  candidateId String?
+  chosenIndex Int
+  correct     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  challenge   Challenge  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  candidate   Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+
+  @@index([challengeId])
+}
+
+// ===================== EVALUATIES HUB =====================
+
+/// A periodic evaluation of a placed worker — e.g. the VG-evaluatieformulier
+/// (VCU) where the inlener/klant rates the uitzendkracht. Filled in per persoon
+/// and bucketed per kwartaal (Q1-Q4) for sorting. The `type` is free-ish so
+/// other evaluation forms can be added later (see EVALUATION_TYPES in domain.ts).
+model Evaluation {
+  id             String   @id @default(cuid())
+  consultantId   String
+  /// VCU | INTERN | KLANT | OVERIG  (see EVALUATION_TYPES)
+  type           String   @default("VCU")
+  /// CONCEPT | DEFINITIEF  (see EVALUATION_STATUSES)
+  status         String   @default("CONCEPT")
+
+  // Periode — used for Q1-Q4 sorting/filtering.
+  year           Int
+  /// 1..4
+  quarter        Int
+  evaluationDate DateTime?
+
+  // Inlener / klant context (the VCU header block).
+  clientId       String?
+  /// Free-text company name when no Client is linked ("Naam inlenend bedrijf").
+  clientName     String?
+  clientAddress  String?
+  department     String?
+  reference      String?
+  functionTitle  String?
+  workLocation   String?
+  periodText     String?
+  /// "Naam inlener" — the person who filled in the evaluation.
+  evaluatorName  String?
+
+  /// Scores per criterion-key (1..4), JSON e.g. {"vakmanschap":4}. The criteria
+  /// come from the form template (see src/lib/evaluation-forms.ts), so different
+  /// evaluation types can have different sections/criteria.
+  scoresJson     String?
+  /// Non-score answers per key, JSON: ja/nee questions, free-text fields and the
+  /// per-section toelichtingen.
+  answersJson    String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  consultant     Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  client         Client?    @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([consultantId])
+  @@index([year, quarter])
+  @@index([type])
+  @@index([status])
+}
+
+// ===================== APP-GEBRUIKERS (toegang) =====================
+
+/// A person who logs in to this dashboard — the medewerkers that work with the
+/// app. Passwords are stored HASHED (scrypt "salt:hash"), never in plain text.
+/// Real session/login enforcement follows in the auth phase.
+model AppUser {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  /// scrypt hash as "salt:hash" (hex). Null until a password is set.
+  passwordHash String?
+  /// ADMIN | GEBRUIKER  (see APP_USER_ROLES)
+  role         String   @default("GEBRUIKER")
+  /// Optional job title / function for context.
+  jobTitle     String?
+  active       Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  crmSettings   CrmSettings?
+  ownedDeals    Deal[]
+  ownedContacts CrmContact[]
+  crmNotes      CrmNote[]
+
+  @@index([role])
+}
+
+// ===================== DECLARATIES (bonnetjes / expenses) =====================
+
+/// A submitted expense receipt (declaratie/bonnetje) — scanned or uploaded,
+/// optionally AI-read for date/vendor/amount/category, reviewed and paid out.
+model Expense {
+  id           String   @id @default(cuid())
+  consultantId String?
+  /// Date on the receipt.
+  date         DateTime?
+  /// REIS | MATERIAAL | VERBLIJF | ETEN | PARKEREN | OVERIG (see EXPENSE_CATEGORIES)
+  category     String   @default("OVERIG")
+  /// Merchant / leverancier.
+  vendor       String?
+  description  String?
+  /// Total amount incl. BTW.
+  amount       Float    @default(0)
+  /// BTW amount if detected.
+  vatAmount    Float?
+  /// NEW | APPROVED | REJECTED | PAID (see EXPENSE_STATUSES)
+  status       String   @default("NEW")
+  /// UPLOAD | EMAIL (see INBOX_SOURCES reuse / EXPENSE_SOURCES)
+  source       String   @default("UPLOAD")
+  /// Stored receipt file (image/pdf) under uploads/_declaraties/.
+  fileName     String
+  originalName String
+  mimeType     String
+  size         Int      @default(0)
+  aiNotes      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  consultant   Consultant? @relation(fields: [consultantId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([consultantId])
+  @@index([date])
+}
+
+// ===================== ARCHIEF / PRULLENBAK =====================
+
+/// A snapshot of a deleted record (+ copies of its files) so anything removed
+/// from the dashboard stays findable and recoverable. Written by archiveRecord()
+/// in src/lib/archive.ts just before a hard delete.
+model ArchivedItem {
+  id         String   @id @default(cuid())
+  /// Source model, e.g. "vacancy" | "expense" | "candidate" | "client" | …
+  entityType String
+  /// The original record id (the record itself is gone).
+  entityId   String
+  /// Human-readable title shown in the archive list.
+  label      String
+  /// Extra searchable text (names, numbers, amounts…).
+  summary    String?
+  /// Full JSON snapshot of the deleted record.
+  dataJson   String
+  /// JSON array of archived file copies [{name, mimeType, file}] under uploads/_archive/<id>/.
+  filesJson  String?
+  deletedAt  DateTime @default(now())
+
+  @@index([entityType])
+  @@index([deletedAt])
+}
+
+// ===================== MEDEWERKERS (Q4S-personeel / HR) =====================
+
+/// Q4S's OWN staff (kantoorteam: recruitment, sales, backoffice, HR, management) —
+/// los van de gedetacheerde Consultants. Houdt het HR-dossier bij: contract,
+/// salaris, vakantierecht, verlof, bonussen en de eindejaarsbeoordeling.
+model Employee {
+  id                  String    @id @default(cuid())
+  firstName           String
+  lastName            String
+  email               String?   @unique
+  phone               String?
+  jobTitle            String?
+  /// MANAGEMENT | RECRUITMENT | SALES | BACKOFFICE | HR | OVERIG
+  department          String    @default("OVERIG")
+  /// LOONDIENST | UITZEND | ZZP | STAGE
+  employmentType      String    @default("LOONDIENST")
+  contractType        String?
+  startDate           DateTime?
+  endDate             DateTime?
+  hoursPerWeek        Float     @default(40)
+  monthlySalary       Float     @default(0)
+  /// Vakantiedagen-recht per jaar (op fulltime-basis).
+  vacationDaysPerYear Float     @default(25)
+
+  // Persoonlijk dossier
+  dateOfBirth         DateTime?
+  bsn                 String?
+  address             String?
+  postalCode          String?
+  city                String?
+  iban                String?
+  emergencyName       String?
+  emergencyPhone      String?
+
+  active              Boolean   @default(true)
+  notes               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  leaves              EmployeeLeave[]
+  bonuses             EmployeeBonus[]
+  reviews             EmployeeReview[]
+  payslips            EmployeePayslip[]
+  documents           EmployeeDocument[]
+  worklogs            EmployeeWorklog[]
+
+  @@index([department])
+  @@index([active])
+}
+
+/// Eigen wekelijkse urenregistratie van een Q4S-medewerker (los van de
+/// detachering-timesheets). Eén regel per week → som = totaal gewerkte uren.
+model EmployeeWorklog {
+  id         String   @id @default(cuid())
+  employeeId String
+  /// Maandag van de week.
+  weekStart  DateTime
+  hours      Float    @default(0)
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, weekStart])
+  @@index([employeeId])
+}
+
+/// Een loonstrook met bruto- en nettobedrag per periode (+ optioneel PDF).
+model EmployeePayslip {
+  id           String   @id @default(cuid())
+  employeeId   String
+  year         Int
+  /// 1..12
+  month        Int
+  /// Brutoloon van de periode.
+  grossAmount  Float    @default(0)
+  /// Nettoloon (uitbetaald).
+  netAmount    Float    @default(0)
+  notes        String?
+  // Optioneel bestand (PDF van de loonstrook), onder uploads/<employeeId>/.
+  fileName     String?
+  originalName String?
+  mimeType     String?
+  fileSize     Int?
+  createdAt    DateTime @default(now())
+
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+}
+
+/// Een document in het personeelsdossier (contract, ID, diploma, …).
+model EmployeeDocument {
+  id           String   @id @default(cuid())
+  employeeId   String
+  /// CONTRACT | LOONSTROOK | ID | DIPLOMA | OVERIG
+  category     String   @default("CONTRACT")
+  title        String
+  fileName     String
+  originalName String
+  mimeType     String
+  fileSize     Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+}
+
+/// Eén verlof-/ziekteregel — voedt "hoeveel vrije dagen opgenomen".
+model EmployeeLeave {
+  id         String   @id @default(cuid())
+  employeeId String
+  /// VAKANTIE | ZIEK | BIJZONDER | ONBETAALD
+  type       String   @default("VAKANTIE")
+  startDate  DateTime
+  endDate    DateTime
+  /// Aantal (werk)dagen — halve dagen toegestaan.
+  days       Float    @default(1)
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([type])
+}
+
+/// Een bonus / provisie uitbetaald aan een medewerker.
+model EmployeeBonus {
+  id          String   @id @default(cuid())
+  employeeId  String
+  date        DateTime @default(now())
+  /// PRESTATIE | EINDEJAAR | PROVISIE | OVERIG
+  type        String   @default("PRESTATIE")
+  amount      Float    @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+}
+
+/// Een eindejaarsbeoordeling met een doelbereik-/prestatiepercentage per jaar.
+model EmployeeReview {
+  id         String   @id @default(cuid())
+  employeeId String
+  year       Int
+  /// Eindejaarspercentage (bijv. doelbereik / beoordeling), 0..200.
+  scorePct   Float    @default(0)
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, year])
+  @@index([employeeId])
+}
+
+// ===================== CRM (recruitment sales + relaties) =====================
+// A recruiter-centric CRM on top of the recruitment hub. The core object is a
+// Deal: an opportunity to fill an open vacancy at a company. Everything a
+// recruiter does is logged as a CrmNote (the "notitieblok" — bewaar alles), which
+// also feeds the weak-points analytics. Pipeline stages and per-recruiter
+// preferences are configurable (CrmStage + CrmSettings).
+
+/// A configurable pipeline stage for the deal-board. Seeded with a default set;
+/// admins can rename/reorder/recolour. isWon/isLost mark the closing columns.
+model CrmStage {
+  id          String   @id @default(cuid())
+  /// Stable key for analytics grouping (e.g. "lead", "qualified", "won").
+  key         String   @unique
+  name        String
+  /// BadgeColor token (see domain.ts).
+  color       String   @default("slate")
+  /// Left-to-right order on the board.
+  order       Int      @default(0)
+  /// Default win-probability (%) for deals sitting in this stage.
+  probability Int      @default(0)
+  /// Closing semantics — a deal in a won/lost stage counts as closed.
+  isWon       Boolean  @default(false)
+  isLost      Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deals       Deal[]
+
+  @@index([order])
+}
+
+/// A person we deal with at a company (contactpersoon) — Contact Management.
+/// Can be linked to an existing Client/TargetClient, and is owned by a recruiter.
+model CrmContact {
+  id             String   @id @default(cuid())
+  firstName      String
+  lastName       String?
+  email          String?
+  phone          String?
+  jobTitle       String?
+  /// Denormalised company name for quick display/search.
+  company        String?
+  linkedinUrl    String?
+  notes          String?
+
+  clientId       String?
+  targetClientId String?
+  ownerId        String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  targetClient   TargetClient? @relation(fields: [targetClientId], references: [id], onDelete: SetNull)
+  owner          AppUser?      @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  deals          Deal[]
+  crmNotes       CrmNote[]
+
+  @@index([company])
+  @@index([ownerId])
+}
+
+/// A sales opportunity: fill an open vacancy at a company. Monitoring Sales
+/// Pipeline. Drives the Kanban board and every CRM analytic.
+model Deal {
+  id               String   @id @default(cuid())
+  title            String
+  /// Denormalised company name (works even without a linked Client/TargetClient).
+  company          String
+  /// One of the Q4S disciplines (DISCIPLINES) or free text.
+  discipline       String?
+
+  clientId         String?
+  targetClientId   String?
+  vacancyId        String?
+  /// Als deze lead uit een binnengekomen CV/kandidaat komt (website-instroom).
+  candidateId      String?
+  primaryContactId String?
+  /// Recruiter that owns this deal (an AppUser).
+  ownerId          String?
+
+  stageId          String
+  /// OPEN | WON | LOST — stored for fast filtering (mirrors the stage's semantics).
+  status           String   @default("OPEN")
+  /// Expected fee / deal value (€), e.g. margin over the placement.
+  value            Float    @default(0)
+  /// Number of positions to fill for this opportunity.
+  positions        Int      @default(1)
+  /// Win-probability (%) — defaults from the stage, overridable.
+  probability      Int      @default(0)
+  /// Ideal-customer fit / warmte 1..5 (0 = onbeoordeeld).
+  fitScore         Int      @default(0)
+  /// MANUAL | VMS | WEBSITE | REFERRAL | OUTREACH | EVENT (see DEAL_SOURCES).
+  source           String   @default("MANUAL")
+
+  expectedCloseDate DateTime?
+  /// Plan Follow-up: when the next action on this deal is due.
+  nextFollowUpAt    DateTime?
+  lostReason        String?
+  closedAt          DateTime?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  stage            CrmStage      @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  client           Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  targetClient     TargetClient? @relation(fields: [targetClientId], references: [id], onDelete: SetNull)
+  vacancy          Vacancy?      @relation(fields: [vacancyId], references: [id], onDelete: SetNull)
+  primaryContact   CrmContact?   @relation(fields: [primaryContactId], references: [id], onDelete: SetNull)
+  owner            AppUser?      @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  crmNotes         CrmNote[]
+
+  @@index([stageId])
+  @@index([status])
+  @@index([ownerId])
+  @@index([nextFollowUpAt])
+  @@index([candidateId])
+}
+
+/// The everything-log: one chat/notitieblok entry. Saves every interaction and
+/// idea, and feeds the CRM weak-points analytics. Attaches to a deal, a contact
+/// and/or a candidate. A note can carry its own follow-up (Plan Follow-up).
+model CrmNote {
+  id           String   @id @default(cuid())
+  /// NOTE | CALL | EMAIL | MEETING | LINKEDIN | WHATSAPP | TASK | STAGE_CHANGE | SYSTEM
+  type         String   @default("NOTE")
+  body         String
+  /// Optional relatiegevoel: POSITIVE | NEUTRAL | NEGATIVE (see CRM_SENTIMENTS).
+  sentiment    String?
+  pinned       Boolean  @default(false)
+  /// Plan Follow-up on this specific action/note.
+  followUpAt   DateTime?
+  followUpDone Boolean  @default(false)
+
+  dealId       String?
+  contactId    String?
+  candidateId  String?
+  /// Author (recruiter / AppUser). Null for system-generated entries.
+  authorId     String?
+
+  createdAt    DateTime @default(now())
+
+  deal         Deal?       @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  contact      CrmContact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  candidate    Candidate?  @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  author       AppUser?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([dealId])
+  @@index([contactId])
+  @@index([candidateId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([followUpAt])
+}
+
+/// Generieke "chatter" (Odoo-stijl): notities + geplande activiteiten op ELK
+/// record — plaatsing, kandidaat, klant, … — gekoppeld via entityType + entityId.
+/// authorId verwijst naar een AppUser; de naam wordt in code opgezocht (geen
+/// Prisma-relatie, zodat AppUser geen backref hoeft te krijgen).
+model Activity {
+  id         String   @id @default(cuid())
+  /// "placement" | "candidate" | "client" | …
+  entityType String
+  entityId   String
+  /// LOG (genoteerd/gebeurd) of TODO (geplande activiteit).
+  kind       String   @default("LOG")
+  /// NOTE | CALL | EMAIL | MEETING | LINKEDIN | WHATSAPP | TASK (zie CRM_NOTE_TYPES).
+  type       String   @default("NOTE")
+  body       String
+  dueAt      DateTime?
+  done       Boolean  @default(false)
+  doneAt     DateTime?
+  authorId   String?
+  /// Als deze activiteit door een automatische regel is gemaakt: welke regel +
+  /// welk bronrecord (voor idempotentie — niet elke run opnieuw aanmaken).
+  ruleId     String?
+  sourceKey  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([kind, done])
+  @@index([dueAt])
+  @@index([ruleId, sourceKey])
+}
+
+/// Automatische actie-regel (Odoo `base_automation`-stijl): "als een trigger-
+/// voorwaarde geldt → maak een taak/herinnering aan". Tijd-gebaseerd; wordt
+/// uitgevoerd via "Regels nu uitvoeren" of de dagelijkse sync. Idempotent via
+/// Activity.ruleId + sourceKey.
+model AutomationRule {
+  id            String   @id @default(cuid())
+  name          String
+  /// CERT_EXPIRING | PLACEMENT_ENDING | INVOICE_OVERDUE (zie AUTOMATION_TRIGGERS)
+  trigger       String
+  /// Drempel in dagen (bijv. verloopt/loopt af binnen X dagen).
+  thresholdDays Int      @default(30)
+  /// Type van de aangemaakte activiteit (NOTE | CALL | TASK …).
+  taskType      String   @default("TASK")
+  /// Sjabloon voor de taak-tekst; {name}, {date}, {number} worden ingevuld.
+  template      String
+  /// Vervaldatum van de taak = vandaag + dueOffsetDays.
+  dueOffsetDays Int      @default(0)
+  active        Boolean  @default(true)
+  lastRunAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([active])
+}
+
+/// Per-recruiter CRM configuration — "voor elke recruiter anders en instelbaar".
+/// One row per AppUser; created on demand with sensible defaults.
+model CrmSettings {
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
+  /// Default board scope: "mine" (alleen eigen deals) | "all".
+  defaultScope             String   @default("mine")
+  /// JSON array of stage keys the recruiter wants visible on the board (null = all).
+  visibleStagesJson        String?
+  /// JSON toggles for which fields show on a deal card.
+  cardFieldsJson           String?
+  /// Persoonlijke KPI-doelen (per maand).
+  targetDealsPerMonth      Int      @default(0)
+  targetPlacementsPerMonth Int      @default(0)
+  targetRevenuePerMonth    Float    @default(0)
+  /// Na hoeveel dagen zonder activiteit een deal als "vastgelopen" telt.
+  staleAfterDays           Int      @default(14)
+  /// Persoonlijke accentkleur voor de CRM (BadgeColor/StatCard accent).
+  accent                   String   @default("brand")
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  user                     AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ===================== AI-INSTELLINGEN (sleutels + tokenverbruik) =====================
+
+/// API-sleutel per AI-provider, beheerd vanuit de Instellingen-hub. Bij het
+/// opstarten worden deze in process.env geladen (src/instrumentation.ts) zodat de
+/// bestaande env-gebaseerde checks (isAIConfigured) blijven werken. Een sleutel in
+/// .env heeft voorrang; anders wint deze DB-waarde.
+model AiKey {
+  id        String   @id @default(cuid())
+  /// deepseek | gemini | anthropic
+  provider  String   @unique
+  apiKey    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Eén regel per AI-aanroep: hoeveel tokens + geschatte kosten, per provider/model.
+/// Gevuld door recordAiUsage() in src/lib/ai.ts; de Tokenverbruik-pagina aggregeert.
+model AiUsage {
+  id               String   @id @default(cuid())
+  /// deepseek | gemini | anthropic | ollama
+  provider         String
+  model            String
+  /// text | vision | web
+  kind             String   @default("text")
+  /// Optioneel label van de aanroepende feature (bv. "cv-import", "vacature-verbeteren").
+  feature          String?
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  totalTokens      Int      @default(0)
+  /// Geschatte kosten in USD op basis van de prijstabel in lib/ai-pricing.
+  estCostUsd       Float    @default(0)
+  createdAt        DateTime @default(now())
+
+  @@index([provider])
+  @@index([createdAt])
+}
+
+// ===================== ONTVANGEN FACTUREN (van geplaatste ZZP'ers) =====================
+
+/// Een INKOMENDE factuur die een geplaatste medewerker (ZZP) zelf naar Q4S stuurt
+/// voor gewerkte uren — die Q4S moet betalen. Los van PurchaseInvoice (dat is de
+/// self-billing die Q4S zélf opstelt). Wordt gecontroleerd tegen de timesheets van
+/// die persoon in dezelfde periode zodat het bedrag klopt vóór uitbetaling.
+model ReceivedInvoice {
+  id           String    @id @default(cuid())
+  consultantId String
+  /// Het factuurnummer zoals op hún factuur staat.
+  number       String?
+  /// Factuurdatum op hun factuur.
+  issueDate    DateTime?
+  /// Periode die de factuur beslaat (voor de match met timesheets).
+  periodStart  DateTime?
+  periodEnd    DateTime?
+  /// Gefactureerd totaalbedrag incl. BTW (zoals zij het stuurden).
+  amount       Float     @default(0)
+  /// BTW-bedrag als apart vermeld op hun factuur (optioneel).
+  vatAmount    Float?
+  /// NEW | APPROVED | PAID | DISPUTED  (see RECEIVED_INVOICE_STATUSES)
+  status       String    @default("NEW")
+  /// Wanneer we de medewerker mailden over de afwijking (dan verdwijnt de mail-actie).
+  discrepancyMailedAt DateTime?
+  notes        String?
+  // Optioneel geüploade PDF van hun factuur.
+  fileName     String?
+  originalName String?
+  mimeType     String?
+  size         Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Restrict)
+
+  @@index([consultantId])
+  @@index([status])
+}

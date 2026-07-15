@@ -1,0 +1,14 @@
+Map: public/logo/
+
+Zet hier het logo van Q4S Project Partners neer (PNG, SVG, JPG of WebP).
+
+Het EERSTE afbeeldingsbestand in deze map verschijnt automatisch linksboven in
+de zwarte balk — op een wit badge zodat het altijd goed zichtbaar is — en is
+klikbaar: je komt dan op de hub-startpagina (de app-launcher).
+
+Tips:
+  - Een logo met transparante of witte achtergrond werkt het mooist.
+  - De hoogte wordt automatisch geschaald (breedte volgt vanzelf).
+  - Heb je meerdere bestanden, dan wordt het eerste (alfabetisch) gebruikt.
+
+(Dit LEESMIJ-bestand wordt genegeerd; het is geen afbeelding.)

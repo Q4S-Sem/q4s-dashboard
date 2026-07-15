@@ -1,0 +1,9 @@
+Map: public/templates/certificeringen/
+
+Plaats hier je BLANCO certificaat-/diploma-templates, bijvoorbeeld een
+certificaatsjabloon of een opleidings-/diplomaformulier (.xlsx / .pdf / .docx).
+
+Elk bestand dat je in deze map zet, verschijnt automatisch in de app onder
+Evaluaties > Templates en is daar te downloaden.
+
+(Dit LEESMIJ-bestand wordt zelf niet als template getoond.)

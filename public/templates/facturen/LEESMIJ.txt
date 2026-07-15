@@ -1,0 +1,25 @@
+Q4S — factuur-template (briefpapier)
+=====================================
+
+Zet hier je vaste Q4S-factuur-template neer, dan wordt die AUTOMATISCH als
+achtergrond meegenomen op ELKE gegenereerde factuur (zowel de verkoopfacturen
+naar de klant als de inkoopfacturen naar de medewerker).
+
+Hoe werkt het
+-------------
+- Leg één PDF-bestand in deze map, bijvoorbeeld:  briefpapier.pdf
+- Dat is je "briefpapier": je logo bovenaan, je footer/betaalgegevens onderaan,
+  eventueel een watermerk. Laat het MIDDEN van de pagina leeg — daar drukt het
+  systeem automatisch de factuurgegevens (nummer, regels, totalen) overheen.
+- Gebruik A4-formaat (staand). Een ander formaat wordt naar A4 geschaald.
+- Staan er meerdere PDF's in deze map, dan wordt de eerste (alfabetisch)
+  gebruikt. Houd het dus bij één bestand.
+
+Wat het NIET doet
+-----------------
+- Het vervangt de opmaak van de regels/totalen niet; het is puur de achtergrond.
+- Verwijder je het bestand weer, dan vallen de facturen terug op de standaard
+  Q4S-opmaak (met de bedrijfsgegevens uit Instellingen).
+
+Tip: exporteer je Word/Illustrator-briefpapier als PDF met alleen de vaste
+elementen (logo + footer) en zonder tekst in het factuurblok.

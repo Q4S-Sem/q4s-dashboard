@@ -1,0 +1,263 @@
+import Link from "next/link";
+import type { Prisma } from "@prisma/client";
+import {
+  Inbox as InboxIcon,
+  Upload,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCheck,
+  FileText,
+} from "lucide-react";
+import { db } from "@/lib/db";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { StatusBadge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { formatHours, formatDate, formatWeekLabel } from "@/lib/utils";
+import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
+import { INBOX_SOURCES, INBOX_STATUSES } from "@/lib/domain";
+import { parseWeekParam, weekParam, currentWeekMonday } from "@/lib/timesheets";
+import { WeekPicker } from "@/components/week-picker";
+import { uploadInboxTimesheet } from "./actions";
+
+export const metadata = { title: "Timesheet-inbox" };
+export const dynamic = "force-dynamic";
+
+type InboxItem = Prisma.TimesheetInboxGetPayload<{ include: { consultant: true } }>;
+
+function personName(it: InboxItem): string {
+  return it.consultant
+    ? `${it.consultant.firstName} ${it.consultant.lastName}`
+    : it.extractedName ?? it.originalName;
+}
+
+function shiftWeek(monday: Date, deltaWeeks: number): string {
+  const d = new Date(monday);
+  d.setDate(d.getDate() + deltaWeeks * 7);
+  return weekParam(d);
+}
+
+export default async function InboxPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; week?: string }>;
+}) {
+  const { error, week } = await searchParams;
+  const monday = parseWeekParam(week);
+  const wp = weekParam(monday);
+  const nextMonday = new Date(monday.getTime() + 7 * 86_400_000);
+  const isCurrentWeek = weekParam(currentWeekMonday()) === wp;
+
+  const [backlog, weekItems, openCount, aiOk] = await Promise.all([
+    // Nog uit te lezen: nog geen week gedetecteerd.
+    db.timesheetInbox.findMany({
+      where: { extractedWeekStart: null },
+      orderBy: { createdAt: "desc" },
+      include: { consultant: true },
+    }),
+    // Uitgelezen/bevestigd voor de gekozen week.
+    db.timesheetInbox.findMany({
+      where: { extractedWeekStart: { gte: monday, lt: nextMonday } },
+      orderBy: [{ status: "asc" }],
+      include: { consultant: true },
+    }),
+    db.timesheetInbox.count({ where: { status: { in: ["NEW", "EXTRACTED"] } } }),
+    Promise.resolve(isAIConfigured() || isVisionConfigured()),
+  ]);
+
+  weekItems.sort((a, b) => personName(a).localeCompare(personName(b), "nl"));
+  const weekHours = weekItems.reduce((s, it) => s + (it.extractedTotalHours ?? 0), 0);
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Timesheet-inbox"
+        description="Binnengekomen urenstaten (via admin@q4s.nl, los bestand of een ZIP). AI leest naam, week en uren uit; bekijk ze per week."
+        actions={
+          <Link href="/inbox/status" className={buttonVariants({ variant: "outline" })}>
+            <ClipboardCheck className="h-4 w-4" /> Timesheet-status
+          </Link>
+        }
+      />
+
+      {error === "upload" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Kies één of meer bestanden (PDF, afbeelding, Excel of een ZIP).
+        </p>
+      )}
+      {error === "size" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          De bestanden zijn te groot (max 15 MB per bestand).
+        </p>
+      )}
+      {!aiOk && (
+        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <strong>Tip:</strong> stel <code>DEEPSEEK_API_KEY</code> (Excel) en/of{" "}
+          <code>GEMINI_API_KEY</code> (PDF/scan) in je <code>.env</code> in om timesheets automatisch te laten uitlezen.
+        </p>
+      )}
+
+      {/* Upload */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Timesheets toevoegen</CardTitle>
+          <span className="text-sm text-slate-500">{openCount} te verwerken</span>
+        </CardHeader>
+        <CardContent>
+          <form action={uploadInboxTimesheet} className="flex flex-wrap items-end gap-3">
+            <div className="flex-1">
+              <label htmlFor="inbox-file" className="mb-1.5 block text-sm font-medium text-slate-700">
+                Bestand(en) — PDF, afbeelding, Excel of ZIP
+              </label>
+              <input
+                id="inbox-file"
+                name="file"
+                type="file"
+                multiple
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.xlsx,.xls,.csv,.zip,application/pdf,image/*,application/zip,application/x-zip-compressed"
+                required
+                aria-label="Timesheets kiezen"
+                className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-black file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-neutral-800"
+              />
+            </div>
+            <SubmitButton pendingLabel="Uploaden…">
+              <Upload className="h-4 w-4" /> Upload &amp; uitlezen
+            </SubmitButton>
+          </form>
+          <p className="mt-2 text-xs text-slate-500">
+            Meerdere bestanden of een <strong>ZIP</strong> tegelijk mag — alles wordt automatisch uitgelezen en per
+            week gesorteerd. Of laat admin@q4s.nl doorsturen naar <code>/api/inbox/email</code>.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Nog uit te lezen (backlog, geen week) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileText className="h-4 w-4 text-amber-600" /> Nog uit te lezen
+          </CardTitle>
+          <span className="text-sm text-slate-500">
+            {backlog.length} {backlog.length === 1 ? "urenstaat" : "urenstaten"}
+          </span>
+        </CardHeader>
+        {backlog.length === 0 ? (
+          <CardContent>
+            <p className="py-3 text-center text-sm text-slate-400">
+              Alles is uitgelezen — geen openstaande urenstaten.
+            </p>
+          </CardContent>
+        ) : (
+          <Table>
+            <THead>
+              <TR className="hover:bg-transparent">
+                <TH>Bestand</TH>
+                <TH>Binnengekomen</TH>
+                <TH>Bron</TH>
+                <TH>Status</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {backlog.map((it) => (
+                <TR key={it.id}>
+                  <TD>
+                    <Link href={`/inbox/${it.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                      {personName(it)}
+                    </Link>
+                  </TD>
+                  <TD className="text-sm text-slate-500">{formatDate(it.createdAt)}</TD>
+                  <TD>
+                    <StatusBadge options={INBOX_SOURCES} value={it.source} />
+                  </TD>
+                  <TD>
+                    <StatusBadge options={INBOX_STATUSES} value={it.status} />
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        )}
+      </Card>
+
+      {/* Week-navigator */}
+      <div className="flex items-center justify-between gap-2">
+        <Link
+          href={`/inbox?week=${shiftWeek(monday, -1)}`}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          <ChevronLeft className="h-4 w-4" /> Vorige week
+        </Link>
+        <div className="flex flex-col items-center">
+          <WeekPicker value={wp} basePath="/inbox" className="w-72" />
+          <p className="mt-1 text-xs text-slate-400">
+            week van {formatDate(monday)}
+            {isCurrentWeek ? " · huidige week" : ""}
+          </p>
+        </div>
+        <Link
+          href={`/inbox?week=${shiftWeek(monday, 1)}`}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          Volgende week <ChevronRight className="h-4 w-4" />
+        </Link>
+      </div>
+
+      {/* Uitgelezen urenstaten van de gekozen week */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarDays className="h-4 w-4 text-brand-600" /> Uitgelezen — {formatWeekLabel(monday)}
+          </CardTitle>
+          <span className="text-sm text-slate-500">
+            {weekItems.length} {weekItems.length === 1 ? "urenstaat" : "urenstaten"}
+            {weekHours > 0 ? ` · ${formatHours(weekHours)} u` : ""}
+          </span>
+        </CardHeader>
+        {weekItems.length === 0 ? (
+          <CardContent>
+            <EmptyState
+              icon={<InboxIcon className="h-6 w-6" />}
+              title="Geen uitgelezen urenstaten in deze week"
+              description="Blader met ‘Vorige week’ / ‘Volgende week’, of upload en lees urenstaten uit."
+            />
+          </CardContent>
+        ) : (
+          <Table>
+            <THead>
+              <TR className="hover:bg-transparent">
+                <TH>Naam</TH>
+                <TH className="text-right">Uren</TH>
+                <TH>Bron</TH>
+                <TH>Status</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {weekItems.map((it) => (
+                <TR key={it.id}>
+                  <TD>
+                    <Link href={`/inbox/${it.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                      {personName(it)}
+                    </Link>
+                  </TD>
+                  <TD className="text-right tabular-nums">
+                    {it.extractedTotalHours != null ? `${formatHours(it.extractedTotalHours)} u` : "—"}
+                  </TD>
+                  <TD>
+                    <StatusBadge options={INBOX_SOURCES} value={it.source} />
+                  </TD>
+                  <TD>
+                    <StatusBadge options={INBOX_STATUSES} value={it.status} />
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        )}
+      </Card>
+    </div>
+  );
+}
