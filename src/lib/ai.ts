@@ -80,6 +80,23 @@ export function isAIConfigured(): boolean {
   return providerReady(AI_PROVIDER) || providerReady(AI_PROVIDER_FAST);
 }
 
+/**
+ * Een tekst-provider die NU kan draaien, of null.
+ *
+ * Eerst de ingestelde tiers; als die geen sleutel hebben, elke andere provider die
+ * er wél een heeft. Nodig omdat AI_PROVIDER standaard op "deepseek" staat: wie
+ * alleen een ANTHROPIC_API_KEY heeft, zou anders "niet geconfigureerd" krijgen
+ * terwijl er een bruikbare sleutel ligt. Zo blijft de goedkope provider de eerste
+ * keus zodra die is ingesteld.
+ */
+export function readyTextProvider(): AiProvider | null {
+  if (providerReady(AI_PROVIDER)) return AI_PROVIDER;
+  if (providerReady(AI_PROVIDER_FAST)) return AI_PROVIDER_FAST;
+  if (process.env.DEEPSEEK_API_KEY) return "deepseek";
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  return null;
+}
+
 /** True wanneer PDF's/afbeeldingen uitgelezen kunnen worden (Gemini of Anthropic).
  *  Los van de tekst-AI: gebruik dit om document-extractie-features te gaten. */
 export function isVisionConfigured(): boolean {
@@ -153,6 +170,8 @@ type ChatOpts = {
   schemaName?: string;
   maxTokens?: number;
   effort?: "low" | "medium" | "high";
+  /** Negeer de tier-instelling en gebruik deze provider. */
+  provider?: AiProvider;
 };
 
 async function anthropicChat(o: ChatOpts): Promise<string> {
@@ -289,9 +308,10 @@ async function deepseekChat(o: ChatOpts): Promise<string> {
   return (data.choices?.[0]?.message?.content ?? "").trim();
 }
 
-/** Dispatch a chat completion to the configured provider for the given tier. */
+/** Dispatch a chat completion to the configured provider for the given tier.
+ *  `o.provider` overschrijft die keuze (zie {@link readyTextProvider}). */
 async function chat(o: ChatOpts): Promise<string> {
-  const p = o.tier === "fast" ? AI_PROVIDER_FAST : AI_PROVIDER;
+  const p = o.provider ?? (o.tier === "fast" ? AI_PROVIDER_FAST : AI_PROVIDER);
   if (p === "ollama") return ollamaChat(o);
   if (p === "deepseek") return deepseekChat(o);
   return anthropicChat(o);
@@ -330,9 +350,12 @@ export async function aiJSON<T>(opts: {
   effort?: "low" | "medium" | "high";
   /** Use the fast tier — for high-volume, simple classification. */
   fast?: boolean;
+  /** Dwing een provider af i.p.v. de tier-instelling (zie readyTextProvider). */
+  provider?: AiProvider;
 }): Promise<T> {
   const text = await chat({
     tier: opts.fast ? "fast" : "main",
+    provider: opts.provider,
     system: opts.system,
     prompt: opts.prompt,
     json: true,

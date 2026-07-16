@@ -5,6 +5,9 @@ import {
   Pencil,
   Upload,
   FileText,
+  FileUser,
+  FileDown,
+  EyeOff,
   ExternalLink,
   Sparkles,
   Building2,
@@ -37,6 +40,7 @@ import {
   deleteCandidatePlacement,
   saveCandidateInterviewDetails,
 } from "../actions";
+import { profileFromCandidateCv } from "../../socials/cv-generator/actions";
 import { NotesEditor } from "../NotesEditor";
 import { InterviewSelect } from "../InterviewSelect";
 import { CrmNotesTimeline, type TimelineNote } from "@/components/crm-notes-timeline";
@@ -97,6 +101,7 @@ export default async function KandidaatDetailPage({
         include: { author: { select: { name: true } } },
         orderBy: { createdAt: "desc" },
       },
+      cvProfile: { select: { id: true, updatedAt: true, anonymize: true } },
     },
   });
 
@@ -187,6 +192,25 @@ export default async function KandidaatDetailPage({
       {error === "plaatsing" && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           Vul een bedrijfsnaam in om een plaatsing toe te voegen.
+        </p>
+      )}
+      {error === "geen-cv" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Er staat nog geen CV bij deze kandidaat — upload er eerst een.
+        </p>
+      )}
+      {error === "cv-bestand" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Het CV-bestand kon niet geopend worden. Upload het CV opnieuw.
+        </p>
+      )}
+      {error === "uitlezen" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Dit CV kon niet uitgelezen worden. Probeer het via de{" "}
+          <Link href="/socials/cv-generator" className="font-medium underline">
+            CV-generator
+          </Link>{" "}
+          — daar zie je precies wat er misging.
         </p>
       )}
 
@@ -462,6 +486,74 @@ export default async function KandidaatDetailPage({
             </form>
           </CardContent>
         )}
+      </Card>
+
+      {/* Q4S-CV — het opgemaakte CV dat naar opdrachtgevers gaat */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileUser className="h-4 w-4 text-slate-400" /> Q4S-CV
+          </CardTitle>
+          <span className="text-sm text-slate-400">
+            Het CV in Q4S-opmaak met ons logo — klaar om naar een opdrachtgever te sturen.
+          </span>
+        </CardHeader>
+        <CardContent>
+          {candidate.cvProfile ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm text-slate-500">
+                Gemaakt · bijgewerkt {formatDate(candidate.cvProfile.updatedAt)}
+                {candidate.cvProfile.anonymize ? (
+                  <span className="ml-2 inline-flex items-center gap-1 text-slate-600">
+                    <EyeOff className="h-3.5 w-3.5 text-slate-400" /> geanonimiseerd
+                  </span>
+                ) : (
+                  <span className="ml-2 text-amber-700">volledige gegevens</span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={`/socials/cv-generator/${candidate.cvProfile.id}`}
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  <Pencil className="h-4 w-4" /> Nakijken
+                </Link>
+                <a
+                  href={`/socials/cv-generator/${candidate.cvProfile.id}/pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonVariants()}
+                >
+                  <FileDown className="h-4 w-4" /> PDF
+                </a>
+                <a
+                  href={`/socials/cv-generator/${candidate.cvProfile.id}/docx`}
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  <FileDown className="h-4 w-4" /> Word
+                </a>
+              </div>
+            </div>
+          ) : candidate.cvFileName ? (
+            <form
+              action={profileFromCandidateCv}
+              className="flex flex-wrap items-center justify-between gap-3"
+            >
+              <input type="hidden" name="candidateId" value={candidate.id} />
+              <p className="text-sm text-slate-500">
+                Laat de AI het CV hierboven uitlezen; daarna kun je het nakijken en als Q4S-CV
+                downloaden.
+              </p>
+              <SubmitButton pendingLabel="AI leest CV…">
+                <Sparkles className="h-4 w-4" /> Q4S-CV maken
+              </SubmitButton>
+            </form>
+          ) : (
+            <p className="text-sm text-slate-500">
+              Upload eerst een CV hierboven — daarna kan de generator er een Q4S-CV van maken.
+            </p>
+          )}
+        </CardContent>
       </Card>
 
       {/* Sollicitaties */}

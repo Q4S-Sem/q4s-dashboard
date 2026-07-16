@@ -16,8 +16,38 @@ import {
   buildLinkedinPost,
   disciplineLabelOf,
   parseVacancyText,
+  postLength,
+  LINKEDIN_MAX,
   type PostInput,
 } from "@/lib/linkedin-template";
+
+/**
+ * Tekenteller. Toont wat LINKEDIN telt, niet wat je ziet: vet/cursief/emoji liggen
+ * buiten de BMP en tellen daar voor TWEE. Zonder deze teller merk je pas ná het
+ * plakken dat je 482 tekens over de limiet zit — en dan zie je niet waardoor.
+ */
+function CharCounter({ text }: { text: string }) {
+  const used = postLength(text);
+  const left = LINKEDIN_MAX - used;
+  const over = left < 0;
+  const tight = !over && left < 200;
+  const fmt = (n: number) => n.toLocaleString("nl-NL");
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+      <span className={over ? "font-medium text-red-600" : tight ? "text-amber-700" : "text-slate-400"}>
+        {fmt(used)} / {fmt(LINKEDIN_MAX)} tekens
+        {over && ` — ${fmt(-left)} te veel`}
+      </span>
+      {over && (
+        <span className="text-red-600">
+          LinkedIn weigert dit. Kort een paar bullets in — vette tekst telt dubbel.
+        </span>
+      )}
+      {tight && <span className="text-amber-700">Nog {fmt(left)} tekens over.</span>}
+    </div>
+  );
+}
 
 export type VacancyOption = {
   id: string;
@@ -106,6 +136,10 @@ export function LinkedInGenerator({
   const [summary, setSummary] = useState("");
   const [responsibilitiesText, setResponsibilitiesText] = useState("");
   const [requirementsText, setRequirementsText] = useState("");
+  // "Wie ben jij?" en "Wat bieden wij?" komen alleen uit geplakte tekst: het
+  // Vacancy-model in de database kent die velden niet.
+  const [profileText, setProfileText] = useState("");
+  const [offerText, setOfferText] = useState("");
   const [rawText, setRawText] = useState("");
   const [parsed, setParsed] = useState(false);
   const [vacQuery, setVacQuery] = useState("");
@@ -138,6 +172,10 @@ export function LinkedInGenerator({
     setSummary(v.summary);
     setResponsibilitiesText(v.responsibilities);
     setRequirementsText(v.requirements);
+    // Een vacature uit de database heeft geen profiel/aanbod-tekst; leegmaken zodat
+    // er niets van een vorige geplakte vacature blijft hangen.
+    setProfileText("");
+    setOfferText("");
   }
 
   /** Kies een vacature uit de titel-suggesties → vul alles + genereer. */
@@ -171,6 +209,8 @@ export function LinkedInGenerator({
     if (p.summary) setSummary(p.summary);
     if (p.responsibilities.length) setResponsibilitiesText(p.responsibilities.join("\n"));
     if (p.requirements.length) setRequirementsText(p.requirements.join("\n"));
+    if (p.profile) setProfileText(p.profile);
+    if (p.offer.length) setOfferText(p.offer.join("\n"));
     setSelectedId("");
     setParsed(true);
   }
@@ -195,6 +235,8 @@ export function LinkedInGenerator({
       salary,
       responsibilities: responsibilitiesText.split("\n"),
       requirements: requirementsText.split("\n"),
+      profile: profileText,
+      offer: offerText.split("\n"),
       summary,
       applyUrl,
       companyName: defaults.companyName,
@@ -202,7 +244,7 @@ export function LinkedInGenerator({
       contactEmail: defaults.contactEmail,
       contactPhone: defaults.contactPhone,
     }),
-    [title, discipline, location, employmentType, salary, responsibilitiesText, requirementsText, summary, applyUrl, defaults],
+    [title, discipline, location, employmentType, salary, responsibilitiesText, requirementsText, profileText, offerText, summary, applyUrl, defaults],
   );
 
   const post = useMemo(() => buildLinkedinPost(input), [input]);
@@ -346,6 +388,8 @@ export function LinkedInGenerator({
               aria-label="LinkedIn-post — bewerkbaar"
               spellCheck={false}
             />
+
+            <CharCounter text={draft} />
 
             <p className="text-xs text-slate-400">
               Je kunt de tekst hierboven zelf nog bijschaven. Vet is écht vet op LinkedIn (Unicode-tekens), en{" "}

@@ -10,6 +10,7 @@ import {
   Send,
   Globe,
   FileText,
+  FileUser,
   Database,
   FolderOpen,
   Cloud,
@@ -178,6 +179,7 @@ export const HUBS: NavHub[] = [
     icon: Megaphone,
     items: [
       { href: "/socials", label: "LinkedIn-generator", icon: Sparkles, exact: true },
+      { href: "/socials/cv-generator", label: "CV-generator", icon: FileUser },
     ],
   },
   {

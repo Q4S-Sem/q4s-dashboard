@@ -12,10 +12,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// LOKAAL: tijdelijk op sqlite gezet (geen Neon/Postgres opgezet). Voor de Vercel-
+// build moet dit terug naar `postgresql` + `directUrl = env("DIRECT_URL")`.
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 /// The placed specialists ("werknemers-hub"): QA, QC, welders, fitters, NDT.
@@ -808,11 +809,57 @@ model Candidate {
   challengeAttempts ChallengeAttempt[]
   candidatePlacements CandidatePlacement[]
   crmNotes       CrmNote[]
+  cvProfile      CvProfile?
 
   @@index([discipline])
   @@index([rating])
   @@index([availability])
   @@index([interviewStatus])
+}
+
+/// Een uitgelezen CV-profiel: de bron voor het Q4S-opmaak-CV (PDF + Word) dat naar
+/// opdrachtgevers gaat. De AI vult dit vanuit een geüpload CV (PDF/Word) en de
+/// recruiter corrigeert het daarna in het review-scherm — de AI-uitvoer gaat dus
+/// nooit ongezien naar een klant.
+///
+/// De herhalende secties staan als JSON-TEKST in de *Json-velden, niet als Prisma
+/// `Json`: zo blijft dit schema provider-agnostisch (zie de kop van dit bestand —
+/// het draait zowel op Postgres als op SQLite). Vorm + validatie van die JSON:
+/// `src/lib/cv-profile.ts` (Zod). Nooit rauw vertrouwen: altijd via parseSection().
+model CvProfile {
+  id           String     @id @default(cuid())
+  /// Leeg = ad-hoc: een los CV door de generator gehaald zonder talentpool-record.
+  candidateId  String?    @unique
+  candidate    Candidate? @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  // ---- Kop van het CV ----
+  fullName        String
+  headline        String?
+  location        String?
+  /// Vrije tekst ("per direct", "vanaf 1 september") — CV's zijn hier te grillig
+  /// voor een datumveld.
+  availability    String?
+  summary         String?
+  yearsExperience Int?
+
+  // ---- Secties (JSON-tekst; zie src/lib/cv-profile.ts) ----
+  skillsJson       String @default("[]")
+  languagesJson    String @default("[]")
+  experienceJson   String @default("[]")
+  educationJson    String @default("[]")
+  certificatesJson String @default("[]")
+
+  /// Achternaam → initiaal en contactgegevens van de kandidaat weglaten (Q4S als
+  /// enige contact). Standaard AAN: de opdrachtgever mag de kandidaat niet buiten
+  /// Q4S om benaderen.
+  anonymize Boolean @default(true)
+
+  /// Bronbestand waaruit de AI las (uploads/_cv/), puur ter herleiding.
+  sourceFileName     String?
+  sourceOriginalName String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /// Plaatsingshistorie van een kandidaat: bij welk bedrijf Q4S deze persoon eerder
