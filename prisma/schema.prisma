@@ -1,8 +1,9 @@
 // Q4S Dashboard — datamodel (staffing back-office)
-// Provider: PostgreSQL (Neon). Deployt op Vercel serverless; SQLite kan daar niet
-// (efemeer/alleen-lezen bestandssysteem). Lokaal draai je tegen een Neon dev-branch
-// (of een lokale Postgres). `DATABASE_URL` = gepoolde connectie (voor de app op
-// Vercel), `DIRECT_URL` = directe connectie (voor `prisma db push`/seed/migraties).
+// Provider: PostgreSQL (Supabase). Deployt op Vercel serverless; SQLite kan daar
+// niet (efemeer/alleen-lezen bestandssysteem). `DATABASE_URL` = de gepoolde
+// connectie (poort 6543, pgbouncer — voor de app), `DIRECT_URL` = de directe
+// connectie (poort 5432 — voor `prisma db push`/seed/migraties; pgbouncer kan geen
+// prepared statements/DDL).
 //
 // NOTE: het schema is bewust string-based (status/discipline i.p.v. enums) — een
 // erfenis van SQLite, maar volledig geldig op Postgres. Toegestane waarden worden
@@ -12,11 +13,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// LOKAAL: tijdelijk op sqlite gezet (geen Neon/Postgres opgezet). Voor de Vercel-
-// build moet dit terug naar `postgresql` + `directUrl = env("DIRECT_URL")`.
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 /// The placed specialists ("werknemers-hub"): QA, QC, welders, fitters, NDT.
