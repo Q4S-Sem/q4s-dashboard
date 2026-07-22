@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { readUpload, uploadKey, fileResponseHeaders } from "@/lib/uploads";
+import { requireApiSession } from "@/lib/api-auth";
 
 // Streams a dossier document. NOTE: no auth yet — add an auth check here once
 // authentication is in place (these are private files: contracts, IDs).
@@ -7,6 +8,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const gate = await requireApiSession();
+  if (gate) return gate;
+
   const { id } = await params;
   const doc = await db.document.findUnique({ where: { id } });
   if (!doc) return new Response("Document niet gevonden", { status: 404 });

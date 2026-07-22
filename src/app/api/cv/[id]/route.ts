@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { readUpload, cvKey, fileResponseHeaders } from "@/lib/uploads";
+import { requireApiSession } from "@/lib/api-auth";
 
 // Streams a candidate's stored CV for preview/download.
 // NOTE: no auth yet — add an auth check here once authentication is in place.
@@ -7,6 +8,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const gate = await requireApiSession();
+  if (gate) return gate;
+
   const { id } = await params;
   const candidate = await db.candidate.findUnique({ where: { id } });
   if (!candidate || !candidate.cvFileName) {

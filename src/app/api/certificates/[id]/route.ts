@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { readUpload, uploadKey, fileResponseHeaders } from "@/lib/uploads";
+import { requireApiSession } from "@/lib/api-auth";
 
 // Streams an uploaded certificate file (scan/PDF). NOTE: no auth yet — add an
 // auth check here once authentication is in place (private dossier files).
@@ -7,6 +8,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const gate = await requireApiSession();
+  if (gate) return gate;
+
   const { id } = await params;
   const cert = await db.certificate.findUnique({ where: { id } });
   if (!cert || !cert.fileName) {

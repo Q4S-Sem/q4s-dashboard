@@ -1,5 +1,6 @@
 import { isAIConfigured } from "@/lib/ai";
 import { aiImproveVacancyFields } from "@/lib/recruitment";
+import { requireApiSession } from "@/lib/api-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,9 @@ export const dynamic = "force-dynamic";
  * review BEFORE saving. No DB write happens here.
  */
 export async function POST(req: Request) {
+  const gate = await requireApiSession();
+  if (gate) return gate;
+
   if (!isAIConfigured()) {
     return Response.json({ error: "AI is niet ingesteld." }, { status: 503 });
   }

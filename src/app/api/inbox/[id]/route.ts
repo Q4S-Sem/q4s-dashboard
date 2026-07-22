@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { readUpload, inboxKey, fileResponseHeaders } from "@/lib/uploads";
+import { requireApiSession } from "@/lib/api-auth";
 
 // Streams the original incoming timesheet file (PDF) for preview/download.
 // NOTE: no auth yet — add an auth check here once authentication is in place.
@@ -7,6 +8,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const gate = await requireApiSession();
+  if (gate) return gate;
+
   const { id } = await params;
   const item = await db.timesheetInbox.findUnique({ where: { id } });
   if (!item) return new Response("Niet gevonden", { status: 404 });

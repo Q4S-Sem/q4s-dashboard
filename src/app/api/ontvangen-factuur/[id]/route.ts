@@ -1,9 +1,13 @@
 import { db } from "@/lib/db";
 import { readUpload, receivedKey, fileResponseHeaders } from "@/lib/uploads";
+import { requireApiSession } from "@/lib/api-auth";
 
 // Streamt de geüploade factuur van een ontvangen-factuur (van een ZZP'er).
 // NOTE: nog geen auth — toevoegen zodra authenticatie live is (privé financiële stukken).
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const gate = await requireApiSession();
+  if (gate) return gate;
+
   const { id } = await params;
   const inv = await db.receivedInvoice.findUnique({ where: { id } });
   if (!inv || !inv.fileName) return new Response("Bestand niet gevonden", { status: 404 });

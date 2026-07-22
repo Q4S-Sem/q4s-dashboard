@@ -1,12 +1,16 @@
 import { db } from "@/lib/db";
 import { archiveKey } from "@/lib/archive";
 import { readUpload, fileResponseHeaders } from "@/lib/uploads";
+import { requireApiSession } from "@/lib/api-auth";
 
 // Serves a file that was copied into the archive when a record was deleted.
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string; idx: string }> },
 ) {
+  const gate = await requireApiSession();
+  if (gate) return gate;
+
   const { id, idx } = await params;
   const item = await db.archivedItem.findUnique({ where: { id } });
   if (!item || !item.filesJson) {
