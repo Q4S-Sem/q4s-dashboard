@@ -10,6 +10,8 @@ export async function GET(
   const { id } = await params;
   const exp = await db.expense.findUnique({ where: { id } });
   if (!exp) return new Response("Bestand niet gevonden", { status: 404 });
+  // Handmatig ingevoerde bon heeft geen bestand.
+  if (!exp.fileName) return new Response("Deze declaratie heeft geen bon-bestand", { status: 404 });
 
   let data: Buffer;
   try {

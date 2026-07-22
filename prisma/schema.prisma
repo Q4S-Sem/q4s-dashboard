@@ -1153,16 +1153,24 @@ model Expense {
   description  String?
   /// Total amount incl. BTW.
   amount       Float    @default(0)
-  /// BTW amount if detected.
+  /// BTW-bedrag (voorbelasting). Null = onbekend (≠ €0): zo blijft "nog invullen"
+  /// onderscheiden van "geen BTW". De boekhoud-som markeert null-bonnen apart.
   vatAmount    Float?
+  /// BTW-tarief van de bon (21 | 9 | 0). Hulpmiddel om vatAmount uit `amount` te
+  /// berekenen; null = handmatig/onbekend.
+  vatRate      Float?
+  /// Mag de BTW van deze bon teruggevorderd worden? Horeca/eten = nee. Staat de
+  /// voorbelasting-som toe alleen aftrekbare bonnen mee te tellen.
+  vatDeductible Boolean @default(true)
   /// NEW | APPROVED | REJECTED | PAID (see EXPENSE_STATUSES)
   status       String   @default("NEW")
   /// UPLOAD | EMAIL (see INBOX_SOURCES reuse / EXPENSE_SOURCES)
   source       String   @default("UPLOAD")
-  /// Stored receipt file (image/pdf) under uploads/_declaraties/.
-  fileName     String
-  originalName String
-  mimeType     String
+  /// Geüploade bon (image/pdf) onder uploads/_declaraties/. Optioneel: een bon mag
+  /// handmatig ingevoerd worden zonder foto (upload werkt op Vercel pas met R2).
+  fileName     String?
+  originalName String?
+  mimeType     String?
   size         Int      @default(0)
   aiNotes      String?
   createdAt    DateTime @default(now())
@@ -1654,6 +1662,13 @@ model ReceivedInvoice {
   amount       Float     @default(0)
   /// BTW-bedrag als apart vermeld op hun factuur (optioneel).
   vatAmount    Float?
+  /// BTW-tarief (21 | 9 | 0), hulpmiddel om vatAmount uit `amount` te berekenen.
+  vatRate      Float?
+  /// Meetellen als voorbelasting in de BTW-aangifte? Standaard NEE, omdat Q4's
+  /// self-billing `PurchaseInvoice` doorgaans dezelfde ZZP-betaling al dekt — twee
+  /// keer tellen zou de voorbelasting verdubbelen. Zet dit AAN voor een ZZP'er die
+  /// zelf factureert en waarvoor Q4S géén inkoopfactuur maakt (de dedup-keuze).
+  countForVat  Boolean   @default(false)
   /// NEW | APPROVED | PAID | DISPUTED  (see RECEIVED_INVOICE_STATUSES)
   status       String    @default("NEW")
   /// Wanneer we de medewerker mailden over de afwijking (dan verdwijnt de mail-actie).

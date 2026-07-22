@@ -20,7 +20,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
 import { RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
 import { getReceivedDetail } from "@/lib/received-invoices";
-import { setReceivedStatus, deleteReceivedInvoice } from "../actions";
+import { setReceivedStatus, deleteReceivedInvoice, setReceivedVatFlag } from "../actions";
 import { DiscrepancyMailButton } from "../DiscrepancyMailButton";
 
 export const metadata = { title: "Ontvangen factuur" };
@@ -61,6 +61,34 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
         description={`Van ${inv.consultantName} · binnengekomen ${inv.issueDate ? formatDate(inv.issueDate) : "—"}`}
         actions={<StatusBadge options={RECEIVED_INVOICE_STATUSES} value={inv.status} />}
       />
+
+      {/* BTW-voorbelasting: meetellen in de aangifte? Standaard uit — de self-billing
+          inkoopfactuur dekt deze ZZP-betaling meestal al. Aanzetten voor ZZP'ers die
+          zelf factureren zonder dat Q4S een inkoopfactuur maakt. */}
+      <form
+        action={setReceivedVatFlag}
+        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3"
+      >
+        <input type="hidden" name="id" value={inv.id} />
+        <label className="flex cursor-pointer items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            name="countForVat"
+            defaultChecked={inv.countForVat}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30"
+          />
+          <span>
+            <span className="font-medium text-slate-900">BTW meetellen als voorbelasting</span>
+            <span className="mt-0.5 block text-slate-500">
+              Zet aan als deze ZZP'er zélf factureert en Q4S géén inkoopfactuur maakt — zo voorkom je dubbeltelling.
+              {inv.vatAmount == null && (
+                <span className="text-amber-700"> Let op: er is nog geen BTW-bedrag bekend op deze factuur.</span>
+              )}
+            </span>
+          </span>
+        </label>
+        <SubmitButton size="sm" variant="outline" pendingLabel="Opslaan…">Opslaan</SubmitButton>
+      </form>
 
       {/* Verschil-balk: hun factuur vs onze urenregistratie */}
       {inv.expected ? (

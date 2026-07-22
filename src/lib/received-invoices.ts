@@ -233,6 +233,7 @@ export async function receivedInvoicesSummary(): Promise<ReceivedSummary> {
 
 export type ReceivedDetail = ReceivedRow & {
   vatAmount: number | null;
+  countForVat: boolean;
   notes: string | null;
   originalName: string | null;
   mimeType: string | null;
@@ -280,6 +281,7 @@ export async function getReceivedDetail(id: string): Promise<ReceivedDetail | nu
     diff,
     matched,
     vatAmount: inv.vatAmount,
+    countForVat: inv.countForVat,
     notes: inv.notes,
     originalName: inv.originalName,
     mimeType: inv.mimeType,

@@ -101,6 +101,20 @@ export async function setReceivedStatus(formData: FormData) {
   redirect("/ontvangen-facturen");
 }
 
+/**
+ * Zet de "meetellen voor BTW-voorbelasting"-vlag. Bepaalt of de BTW van deze
+ * ontvangen factuur meetelt in de aangifte (zie boekhouding.ts). Standaard uit,
+ * omdat een self-billing inkoopfactuur dezelfde ZZP-betaling meestal al dekt.
+ */
+export async function setReceivedVatFlag(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const countForVat = formData.get("countForVat") === "on";
+  await db.receivedInvoice.update({ where: { id }, data: { countForVat } });
+  revalidatePath(`/ontvangen-facturen/${id}`);
+  revalidatePath("/boekhouding");
+}
+
 /** Mail de medewerker professioneel over de afwijking. Geeft het resultaat terug
  *  (geen redirect) zodat de client-knop een pop-up kan tonen + zichzelf verbergen. */
 export async function sendDiscrepancyMail(

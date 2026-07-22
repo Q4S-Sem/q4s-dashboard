@@ -42,7 +42,8 @@ export default async function DeclaratieBewerkenPage({
   if (!expense) notFound();
 
   const aiReady = isAIConfigured();
-  const isImage = /^image\//.test(expense.mimeType);
+  const hasFile = Boolean(expense.fileName);
+  const isImage = /^image\//.test(expense.mimeType ?? "");
 
   return (
     <div className="space-y-6">
@@ -55,10 +56,10 @@ export default async function DeclaratieBewerkenPage({
 
       <PageHeader
         title="Declaratie controleren"
-        description={expense.originalName}
+        description={expense.originalName ?? "Handmatig ingevoerde bon"}
         actions={
           <>
-            {aiReady && (
+            {aiReady && hasFile && (
               <form action={extractExpense}>
                 <input type="hidden" name="id" value={expense.id} />
                 <SubmitButton variant="outline" pendingLabel="AI leest…">
@@ -126,7 +127,7 @@ export default async function DeclaratieBewerkenPage({
                 </Field>
               </div>
 
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-5 sm:grid-cols-3">
                 <Field label="Bedrag (incl. BTW)" htmlFor="amount">
                   <Input
                     id="amount"
@@ -137,7 +138,15 @@ export default async function DeclaratieBewerkenPage({
                     placeholder="0,00"
                   />
                 </Field>
-                <Field label="Waarvan BTW" htmlFor="vatAmount">
+                <Field label="BTW-tarief" htmlFor="vatRate" hint="Vult het BTW-bedrag hiernaast automatisch.">
+                  <Select id="vatRate" name="vatRate" defaultValue={expense.vatRate != null ? String(expense.vatRate) : ""}>
+                    <option value="">— onbekend —</option>
+                    <option value="21">21%</option>
+                    <option value="9">9%</option>
+                    <option value="0">0% / geen</option>
+                  </Select>
+                </Field>
+                <Field label="Waarvan BTW" htmlFor="vatAmount" hint="Laat leeg om uit het tarief te berekenen.">
                   <Input
                     id="vatAmount"
                     name="vatAmount"
@@ -148,6 +157,21 @@ export default async function DeclaratieBewerkenPage({
                   />
                 </Field>
               </div>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+                <input
+                  type="checkbox"
+                  name="vatDeductible"
+                  defaultChecked={expense.vatDeductible}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30"
+                />
+                <span className="min-w-0 text-sm">
+                  <span className="font-medium text-slate-900">BTW aftrekbaar (terugvorderbaar)</span>
+                  <span className="mt-0.5 block text-slate-500">
+                    Zet uit bij eten/horeca en andere niet-aftrekbare kosten — dan telt de BTW niet mee in je terugvordering.
+                  </span>
+                </span>
+              </label>
 
               <Field label="Omschrijving" htmlFor="description">
                 <Textarea id="description" name="description" defaultValue={expense.description ?? ""} />
@@ -172,21 +196,29 @@ export default async function DeclaratieBewerkenPage({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Bonnetje</CardTitle>
-            <a
-              href={`/api/declaraties/${expense.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:underline"
-            >
-              Openen <ExternalLink className="h-3.5 w-3.5" />
-            </a>
+            {hasFile && (
+              <a
+                href={`/api/declaraties/${expense.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:underline"
+              >
+                Openen <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
           </CardHeader>
           <CardContent>
-            {isImage ? (
+            {!hasFile ? (
+              <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                Handmatig ingevoerd — geen bon toegevoegd.
+                <br />
+                <span className="text-xs">Een foto/scan toevoegen kan zodra Cloudflare R2 gekoppeld is.</span>
+              </p>
+            ) : isImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={`/api/declaraties/${expense.id}`}
-                alt={expense.originalName}
+                alt={expense.originalName ?? "Bon"}
                 className="w-full rounded-lg border border-slate-200"
               />
             ) : (
@@ -196,7 +228,7 @@ export default async function DeclaratieBewerkenPage({
                 rel="noopener noreferrer"
                 className="flex items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-sm font-medium text-brand-700 hover:bg-slate-100"
               >
-                Bon openen ({expense.mimeType.includes("pdf") ? "PDF" : "bestand"})
+                Bon openen ({(expense.mimeType ?? "").includes("pdf") ? "PDF" : "bestand"})
               </a>
             )}
           </CardContent>

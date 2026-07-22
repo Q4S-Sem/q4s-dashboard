@@ -49,6 +49,11 @@ async function runExpenseExtraction(id: string): Promise<void> {
   const exp = await db.expense.findUnique({ where: { id } });
   if (!exp) throw new Error("Declaratie niet gevonden.");
 
+  // Een bon mag nu ook handmatig zonder foto bestaan → dan valt er niets uit te lezen.
+  if (!exp.fileName || !exp.mimeType || !exp.originalName) {
+    throw new Error("Geen bestand om uit te lezen.");
+  }
+
   const lower = exp.originalName.toLowerCase();
   let mediaType = "";
   if (exp.mimeType.includes("pdf") || lower.endsWith(".pdf")) {
@@ -159,9 +164,11 @@ export async function updateExpense(formData: FormData) {
   const categoryRaw = String(formData.get("category") ?? "OVERIG");
   const category = EXPENSE_CATEGORY_VALUES.includes(categoryRaw) ? categoryRaw : "OVERIG";
   const amount = round2(Number(String(formData.get("amount") ?? "0").replace(",", ".")) || 0);
-  const vatRaw = String(formData.get("vatAmount") ?? "").trim().replace(",", ".");
-  const vatAmount = vatRaw ? round2(Number(vatRaw) || 0) : null;
   const consultantId = String(formData.get("consultantId") ?? "") || null;
+  const { vatRate, vatAmount } = readVat(formData, amount);
+  // Checkbox: lees direct (conventie). Aanwezig in het bewerk-formulier, dus
+  // ongevinkt = niet in de FormData = niet aftrekbaar.
+  const vatDeductible = formData.get("vatDeductible") === "on";
 
   await db.expense.update({
     where: { id },
@@ -171,13 +178,76 @@ export async function updateExpense(formData: FormData) {
       vendor: String(formData.get("vendor") ?? "").trim() || null,
       description: String(formData.get("description") ?? "").trim() || null,
       amount,
+      vatRate,
       vatAmount,
+      vatDeductible,
       consultantId,
     },
   });
 
   revalidatePath("/declaraties");
+  revalidatePath("/boekhouding");
   revalidatePath(`/declaraties/${id}`);
+  redirect("/declaraties");
+}
+
+/**
+ * BTW uit het formulier lezen. Twee wegen: een gekozen tarief (21/9/0) → BTW
+ * berekenen uit het (incl.) bedrag, óf een handmatig BTW-bedrag. Een leeg tarief
+ * én leeg bedrag = null (onbekend, telt niet stil als €0 mee — zie boekhouding.ts).
+ */
+function readVat(formData: FormData, amountIncl: number): { vatRate: number | null; vatAmount: number | null } {
+  const rateRaw = String(formData.get("vatRate") ?? "").trim();
+  const manualRaw = String(formData.get("vatAmount") ?? "").trim().replace(",", ".");
+
+  if (manualRaw) {
+    const v = round2(Number(manualRaw) || 0);
+    const rate = rateRaw && /^\d+(\.\d+)?$/.test(rateRaw) ? Number(rateRaw) : null;
+    return { vatRate: rate, vatAmount: v };
+  }
+  if (rateRaw && /^\d+(\.\d+)?$/.test(rateRaw)) {
+    const rate = Number(rateRaw);
+    // BTW uit een incl.-bedrag: bedrag − bedrag/(1+tarief). Bij 0% → €0.
+    const vat = rate > 0 ? round2(amountIncl - amountIncl / (1 + rate / 100)) : 0;
+    return { vatRate: rate, vatAmount: vat };
+  }
+  return { vatRate: null, vatAmount: null };
+}
+
+/**
+ * Handmatige bon zonder foto. Precies waar de gebruiker om vroeg: een bonnetje
+ * meteen invoeren (bedrag + BTW + aftrekbaarheid) zonder te wachten op R2/upload.
+ */
+export async function createManualExpense(formData: FormData) {
+  const amount = round2(Number(String(formData.get("amount") ?? "0").replace(",", ".")) || 0);
+  if (amount <= 0) redirect("/declaraties?error=bedrag");
+
+  const dateRaw = String(formData.get("date") ?? "").trim();
+  const categoryRaw = String(formData.get("category") ?? "OVERIG");
+  const category = EXPENSE_CATEGORY_VALUES.includes(categoryRaw) ? categoryRaw : "OVERIG";
+  const { vatRate, vatAmount } = readVat(formData, amount);
+  const vatDeductible = formData.get("vatDeductible") === "on";
+  const consultantId = String(formData.get("consultantId") ?? "") || null;
+
+  await db.expense.create({
+    data: {
+      source: "UPLOAD",
+      status: "NEW",
+      date: dateRaw ? new Date(`${dateRaw}T00:00:00`) : null,
+      category,
+      vendor: String(formData.get("vendor") ?? "").trim() || null,
+      description: String(formData.get("description") ?? "").trim() || null,
+      amount,
+      vatRate,
+      vatAmount,
+      vatDeductible,
+      consultantId,
+      // geen fileName/originalName/mimeType — handmatige bon zonder foto
+    },
+  });
+
+  revalidatePath("/declaraties");
+  revalidatePath("/boekhouding");
   redirect("/declaraties");
 }
 
@@ -188,7 +258,8 @@ export async function deleteExpense(formData: FormData) {
   if (!exp) return;
   // Delete first so the archive hook can copy the receipt, then remove the original.
   await db.expense.delete({ where: { id } });
-  await deleteExpenseUpload(exp.fileName);
+  if (exp.fileName) await deleteExpenseUpload(exp.fileName); // handmatige bon heeft geen bestand
   revalidatePath("/declaraties");
+  revalidatePath("/boekhouding");
   redirect("/declaraties");
 }
