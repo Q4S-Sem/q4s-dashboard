@@ -11,12 +11,41 @@ function lowerFirst(s: string): string {
   return s.charAt(0).toLowerCase() + s.slice(1);
 }
 
+/**
+ * Bouw de verbindings-URL met robuuste pool-instellingen.
+ *
+ * De dashboard-startpagina vuurt ~32 query's tegelijk af (nav-badges + analytics).
+ * Met `connection_limit=1` staan die allemaal achter één verbinding in de rij; op
+ * Vercel (functie ver van de DB) liep die wachtrij over `pool_timeout` (standaard
+ * 10s) → P2024 "Timed out fetching a new connection" op elke pagina. We forceren
+ * daarom een paar parallelle verbindingen + ruimere timeout, ongeacht wat er in de
+ * env-string staat. Voor een intern dashboard (enkele gebruikers) put dit de
+ * Supabase-pooler niet uit.
+ *
+ * Alleen voor Postgres; laat een andere/lege URL ongemoeid (dan gebruikt Prisma de
+ * env uit het schema).
+ */
+function pooledDatabaseUrl(): string | undefined {
+  const raw = process.env.DATABASE_URL?.trim();
+  if (!raw || !/^postgres(ql)?:\/\//.test(raw)) return undefined;
+  try {
+    const u = new URL(raw);
+    u.searchParams.set("pgbouncer", "true"); // transactie-pooler: prepared statements uit
+    u.searchParams.set("connection_limit", "5");
+    u.searchParams.set("pool_timeout", "20");
+    return u.toString();
+  } catch {
+    return undefined;
+  }
+}
+
 // A single client, extended with a delete-hook that snapshots every deleted
 // record (+ copies its files) into ArchivedItem first — so nothing removed from
 // the dashboard is ever truly lost (browse/restore at /archief).
 function createClient() {
   const base = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    datasourceUrl: pooledDatabaseUrl(),
   });
 
   return base.$extends({
