@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { buttonVariants } from "@/components/ui/button";
-import { isVisionConfigured, readyTextProvider } from "@/lib/ai";
+import { isVisionConfigured, readyPersonalDataTextProvider } from "@/lib/ai";
 import { formatDate } from "@/lib/utils";
 import { UploadCvForm } from "./UploadCvForm";
 import { startCvProfile } from "./actions";
@@ -20,7 +20,9 @@ export default async function CvGeneratorPage() {
   });
 
   const visionOk = isVisionConfigured();
-  const textOk = readyTextProvider() !== null;
+  // Word-CV's mogen alleen naar een AVG-veilige provider (Anthropic/Ollama), nooit
+  // DeepSeek — dus die check bepaalt of tekst-CV's uitgelezen kunnen worden.
+  const textOk = readyPersonalDataTextProvider() !== null;
 
   return (
     <div className="space-y-6">

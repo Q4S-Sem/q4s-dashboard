@@ -1,5 +1,6 @@
 import mammoth from "mammoth";
-import { aiJSON, aiJSONFromFile, isVisionConfigured, readyTextProvider } from "./ai";
+import { aiJSON, aiJSONFromFile, isVisionConfigured, readyPersonalDataTextProvider } from "./ai";
+import { redactBsn } from "./pii";
 import {
   CV_EXTRACT_PROMPT,
   CV_EXTRACT_SYSTEM,
@@ -15,7 +16,10 @@ import {
  *  - PDF/afbeelding → rechtstreeks naar de vision-provider (Gemini/Anthropic),
  *    die de opmaak ziet (kolommen, tabellen) en dus beter leest dan platte tekst.
  *  - Word (.docx)   → eerst lokaal naar tekst via mammoth, dan naar de tekst-AI.
- *    Hierdoor werkt Word óók met DeepSeek/Ollama, zonder vision-sleutel.
+ *
+ * AVG: een CV is een persoonsgegeven. De tekst-route gaat daarom NOOIT naar DeepSeek
+ * (China) — alleen naar Anthropic of een lokale Ollama (zie readyPersonalDataTextProvider),
+ * en een eventueel BSN wordt eruit gestript vóór verzending. Zie [[q4s-compliance-nen-avg]].
  *
  * Let op het verschil met de bestaande CV-import (website/actions.ts), die alleen
  * 6 contactvelden pakt en Word overslaat. Dit haalt de hele inhoud op.
@@ -67,12 +71,14 @@ export async function extractCvProfile(
   let raw: unknown;
 
   if (kind === "docx") {
-    // Niet isAIConfigured(): die kijkt alleen naar de ingestelde tier (standaard
-    // DeepSeek). Wie enkel een Anthropic-sleutel heeft, kan hier prima mee lezen.
-    const provider = readyTextProvider();
+    // Een CV bevat persoonsgegevens → alleen een AVG-veilige tekst-provider
+    // (Anthropic of lokale Ollama), NOOIT DeepSeek (China).
+    const provider = readyPersonalDataTextProvider();
     if (!provider) {
       throw new CvExtractError(
-        "De AI is niet geconfigureerd. Zet een sleutel in de Instellingen-hub (of in je .env).",
+        "Om Word-CV's uit te lezen is een Anthropic-sleutel (of een lokale Ollama) nodig. " +
+          "DeepSeek wordt hiervoor bewust niet gebruikt, omdat een CV persoonsgegevens bevat " +
+          "en buiten de EU zou belanden. Zet een Anthropic-sleutel in de Instellingen-hub, of upload het CV als PDF.",
       );
     }
     let plain: string;
@@ -88,12 +94,15 @@ export async function extractCvProfile(
         "Dit Word-bestand bevat nauwelijks tekst — staat het CV er als afbeelding in? Sla het dan op als PDF.",
       );
     }
+    // Dataminimalisatie: een eventueel BSN mag niet mee naar de AI-provider.
+    const safe = redactBsn(plain.slice(0, 60_000));
     raw = await aiJSON<unknown>({
       system: CV_EXTRACT_SYSTEM,
-      prompt: `${CV_EXTRACT_PROMPT}\n\n--- CV-TEKST ---\n${plain.slice(0, 60_000)}`,
+      prompt: `${CV_EXTRACT_PROMPT}\n\n--- CV-TEKST ---\n${safe}`,
       schema: CV_PROFILE_AI_SCHEMA,
       schemaName: "cv_profile",
       provider,
+      personalData: true,
       maxTokens: 8000,
       effort: "low",
     });

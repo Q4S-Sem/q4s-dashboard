@@ -97,6 +97,29 @@ export function readyTextProvider(): AiProvider | null {
   return null;
 }
 
+/**
+ * Providers die PERSOONSGEGEVENS mogen verwerken. **DeepSeek (China) valt hier
+ * bewust buiten**: geen EU-adequaatheidsbesluit, geen verwerkersovereenkomst, en
+ * mogelijke training op je data. Anthropic (VS, met DPF + Commercial DPA) en Ollama
+ * (lokaal, verlaat je machine niet) zijn wél toegestaan. Zie [[q4s-compliance-nen-avg]].
+ */
+const PERSONAL_DATA_PROVIDERS: AiProvider[] = ["anthropic", "ollama"];
+
+export function isPersonalDataProvider(p: AiProvider): boolean {
+  return PERSONAL_DATA_PROVIDERS.includes(p);
+}
+
+/**
+ * Een tekst-provider die persoonsgegevens MAG verwerken (bijv. CV's), of null.
+ * Kiest Anthropic; alleen als Ollama expliciet is ingesteld (lokaal draaiend) mag
+ * dat ook. Nooit DeepSeek — CV's/NAW gaan zo nooit naar China.
+ */
+export function readyPersonalDataTextProvider(): AiProvider | null {
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  if (AI_PROVIDER === "ollama" || AI_PROVIDER_FAST === "ollama") return "ollama";
+  return null;
+}
+
 /** True wanneer PDF's/afbeeldingen uitgelezen kunnen worden (Gemini of Anthropic).
  *  Los van de tekst-AI: gebruik dit om document-extractie-features te gaten. */
 export function isVisionConfigured(): boolean {
@@ -352,7 +375,16 @@ export async function aiJSON<T>(opts: {
   fast?: boolean;
   /** Dwing een provider af i.p.v. de tier-instelling (zie readyTextProvider). */
   provider?: AiProvider;
+  /** Bevat deze prompt persoonsgegevens? Zo ja: harde blokkade op providers buiten
+   *  {@link PERSONAL_DATA_PROVIDERS} (nooit DeepSeek/China). */
+  personalData?: boolean;
 }): Promise<T> {
+  const chosen = opts.provider ?? (opts.fast ? AI_PROVIDER_FAST : AI_PROVIDER);
+  if (opts.personalData && !isPersonalDataProvider(chosen)) {
+    throw new Error(
+      `Persoonsgegevens mogen niet naar '${chosen}' verstuurd worden (buiten de EU/zonder verwerkersovereenkomst). Gebruik Anthropic of een lokale Ollama.`,
+    );
+  }
   const text = await chat({
     tier: opts.fast ? "fast" : "main",
     provider: opts.provider,
