@@ -1133,8 +1133,27 @@ model AppUser {
   ownedDeals    Deal[]
   ownedContacts CrmContact[]
   crmNotes      CrmNote[]
+  resetTokens   PasswordResetToken[]
 
   @@index([role])
+}
+
+/// Wachtwoord-herstel-token. In de URL staat een geheim; in de database staat
+/// alleen de SHA-256 HASH ervan, zodat een database-lek geen bruikbare tokens
+/// prijsgeeft. Eenmalig te gebruiken (usedAt) en met een korte houdbaarheid
+/// (expiresAt). Zie src/lib/password-reset.ts.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  /// SHA-256 van het token (hex). Nooit het token zelf opslaan.
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // ===================== DECLARATIES (bonnetjes / expenses) =====================

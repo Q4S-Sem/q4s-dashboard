@@ -82,11 +82,13 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
 // ---------------------------------------------------------------------------
 
 export type EmailContent = {
-  /** Small label in the orange header bar, e.g. "Factuur". */
+  /** Small label in de header-balk, bijv. "Factuur". */
   kicker: string;
   heading: string;
   greeting: string;
   paragraphs: string[];
+  /** Optionele actieknop (bijv. "Wachtwoord instellen"). */
+  cta?: { label: string; url: string };
   /** A small key/value summary box (factuurnummer, datum, totaal…). */
   summary: { label: string; value: string }[];
   /** Footer lines (company contact details). */
@@ -104,7 +106,10 @@ function esc(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-const BRAND = "#e8430a";
+// Merkkleur: zwart/neutraal (i.p.v. het oude oranje), afgestemd op de rest van de
+// Q4S-huisstijl (zie globals.css / het CV / de login).
+const BRAND = "#171717";
+const KICKER = "#a3a3a3";
 const INK = "#0f172a";
 
 /** Render the Q4S HTML e-mail (the "layout" + begeleidend bericht). */
@@ -144,7 +149,7 @@ export function renderQ4sEmail(c: EmailContent): string {
         <tr>
           <td style="background:${BRAND};padding:18px 28px;">
             <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:.5px;">Q4S</span>
-            <span style="color:#ffe5d8;font-size:12px;text-transform:uppercase;letter-spacing:1px;float:right;padding-top:6px;">${esc(
+            <span style="color:${KICKER};font-size:12px;text-transform:uppercase;letter-spacing:1px;float:right;padding-top:6px;">${esc(
               c.kicker,
             )}</span>
           </td>
@@ -158,9 +163,21 @@ export function renderQ4sEmail(c: EmailContent): string {
               c.greeting,
             )}</p>
             ${paras}
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 18px;background:#f8fafc;border:1px solid #eef2f6;border-radius:10px;padding:6px 16px;">
+            ${
+              c.cta
+                ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:4px 0 20px;"><tr><td style="border-radius:8px;background:${BRAND};">
+                    <a href="${esc(c.cta.url)}" style="display:inline-block;padding:12px 24px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">${esc(
+                      c.cta.label,
+                    )}</a></td></tr></table>`
+                : ""
+            }
+            ${
+              c.summary.length
+                ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 18px;background:#f8fafc;border:1px solid #eef2f6;border-radius:10px;padding:6px 16px;">
               ${summaryRows}
-            </table>
+            </table>`
+                : ""
+            }
             <p style="margin:0 0 6px;color:#334155;font-size:14px;line-height:1.6;">Met vriendelijke groet,</p>
             <p style="margin:0 0 18px;color:${INK};font-size:14px;font-weight:700;">Team Q4S</p>
             ${
@@ -190,8 +207,9 @@ export function renderQ4sEmailText(c: EmailContent): string {
     "",
     ...c.paragraphs,
     "",
+    ...(c.cta ? [c.cta.label + ": " + c.cta.url, ""] : []),
     ...c.summary.map((s) => `${s.label}: ${s.value}`),
-    "",
+    ...(c.summary.length ? [""] : []),
     ...(c.attachmentNote ? [c.attachmentNote, ""] : []),
     "Met vriendelijke groet,",
     "Team Q4S",
