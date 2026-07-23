@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { Building2, Plus, Briefcase, Activity, Handshake } from "lucide-react";
 import { db } from "@/lib/db";
-import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
-import { Table, THead, TBody, TR, TH } from "@/components/ui/table";
-import { KlantRow } from "./KlantRow";
+import { KlantenTable } from "./KlantenTable";
 
 export const metadata = { title: "Klanten" };
 
@@ -69,34 +67,16 @@ export default async function KlantenPage({
           }
         />
       ) : (
-        <Card>
-          <Table>
-            <THead>
-              <TR className="hover:bg-transparent">
-                <TH>Bedrijf</TH>
-                <TH>Plaats</TH>
-                <TH>Contact</TH>
-                <TH className="text-right">Plaatsingen</TH>
-                <TH className="text-right">Facturen</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {clients.map((c) => (
-                <KlantRow
-                  key={c.id}
-                  c={{
-                    id: c.id,
-                    companyName: c.companyName,
-                    city: c.city,
-                    contactName: c.contactName,
-                    placements: c._count.placements,
-                    invoices: c._count.invoices,
-                  }}
-                />
-              ))}
-            </TBody>
-          </Table>
-        </Card>
+        <KlantenTable
+          clients={clients.map((c) => ({
+            id: c.id,
+            companyName: c.companyName,
+            city: c.city,
+            contactName: c.contactName,
+            placements: c._count.placements,
+            invoices: c._count.invoices,
+          }))}
+        />
       )}
 
       {clients.length > 0 && (

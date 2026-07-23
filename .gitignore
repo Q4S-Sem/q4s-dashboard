@@ -50,3 +50,9 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# Lokale klant-brondata (AVG/gevoelig) — nooit committen
+klant-gegevens/
+Klant gegevens/
+klant gegevens/
+Klant Gegevens/
