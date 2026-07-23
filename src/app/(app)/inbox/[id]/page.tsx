@@ -260,6 +260,19 @@ export default async function InboxDetailPage({
                       </option>
                     ))}
                   </Select>
+                  {placements.length === 0 && (
+                    <p className="mt-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      Nog geen actieve plaatsingen — daarom is deze lijst leeg. Maak eerst een{" "}
+                      <Link href="/werknemers/nieuw" className="font-medium underline">
+                        werknemer
+                      </Link>{" "}
+                      aan en daarna een{" "}
+                      <Link href="/plaatsingen/nieuw" className="font-medium underline">
+                        plaatsing
+                      </Link>{" "}
+                      (werknemer → klant). Dan verschijnt die hier en kun je de urenstaat koppelen.
+                    </p>
+                  )}
                 </Field>
 
                 <Field label="Week (maandag)" htmlFor="weekStart" required>
