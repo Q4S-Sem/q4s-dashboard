@@ -64,7 +64,11 @@ export function visionProvider(): VisionProvider {
 const GEMINI_BASE_URL = (
   process.env.GEMINI_BASE_URL ?? "https://generativelanguage.googleapis.com"
 ).replace(/\/+$/, "");
-export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+// Standaard de zelf-bijwerkende "flash-latest"-alias i.p.v. een gepinde versie:
+// Google trekt gepinde flash-versies (2.0, 2.5, …) periodiek in → een pin geeft
+// dan plots 404. De alias wijst altijd naar de actuele flash. Overschrijf met
+// GEMINI_MODEL als je bewust een vaste versie wilt vastzetten.
+export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
 
 type Tier = "main" | "fast";
 

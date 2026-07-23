@@ -45,7 +45,7 @@ async function testGemini(): Promise<ConnTest> {
   const key = process.env.GEMINI_API_KEY?.trim();
   if (!key) return { ok: false, provider: "gemini", message: "Geen Gemini-sleutel ingesteld." };
   const base = stripSlash(process.env.GEMINI_BASE_URL ?? "https://generativelanguage.googleapis.com");
-  const model = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+  const model = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
   const t0 = Date.now();
   const res = await fetch(`${base}/v1beta/models/${model}:generateContent`, {
     method: "POST",
