@@ -31,6 +31,7 @@ import {
   CalendarDays,
   ListTodo,
   CalendarPlus,
+  Plane,
   ListChecks,
   PieChart,
   ClipboardCheck,
@@ -79,7 +80,7 @@ export const DASHBOARD_APP = {
   icon: LayoutDashboard,
 };
 
-export const HUBS: NavHub[] = [
+const HUB_LIST: NavHub[] = [
   {
     label: "Dashboard",
     href: "/dashboard",
@@ -145,6 +146,7 @@ export const HUBS: NavHub[] = [
     items: [
       { href: "/agenda", label: "Kalender", icon: CalendarDays, exact: true },
       { href: "/agenda/taken", label: "Takenlijst", icon: ListTodo },
+      { href: "/agenda/afwezigheid", label: "Afwezigheid", icon: Plane },
       { href: "/agenda/importeren", label: "Importeren", icon: CalendarPlus },
     ],
   },
@@ -224,6 +226,32 @@ export const HUBS: NavHub[] = [
     ],
   },
 ];
+
+// Vaste volgorde van de hubs op het startscherm / de app-launcher. Onbekende
+// hrefs komen achteraan (indexOf → -1). Eén bron van waarheid, dus zowel de
+// tegels als de app-switcher volgen deze volgorde.
+const HUB_ORDER = [
+  "/klanten", // Personeelsgegevens
+  "/verwerken", // Facturatie
+  "/recruitment",
+  "/agenda",
+  "/msp",
+  "/website",
+  "/socials",
+  "/dashboard",
+  "/data",
+  "/evaluaties",
+  "/gebruikers", // Instellingen
+];
+
+const orderIndex = (href: string) => {
+  const i = HUB_ORDER.indexOf(href);
+  return i === -1 ? HUB_ORDER.length : i;
+};
+
+export const HUBS: NavHub[] = [...HUB_LIST].sort(
+  (a, b) => orderIndex(a.href) - orderIndex(b.href),
+);
 
 /** Match a route to its item, with path-boundary awareness (so /vacaturehub ≠ /vacatures). */
 export function itemIsActive(pathname: string, item: NavItem): boolean {

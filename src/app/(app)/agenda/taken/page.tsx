@@ -1,9 +1,11 @@
+import Link from "next/link";
 import {
   ListTodo,
   Circle,
   CheckCircle2,
   RotateCcw,
   Trash2,
+  Users,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
@@ -17,16 +19,32 @@ import { cn, formatDate } from "@/lib/utils";
 import { startOfDay } from "@/lib/agenda";
 import { TASK_PRIORITIES } from "@/lib/domain";
 import { createTask, toggleTask, deleteTask } from "./actions";
-import type { Task } from "@prisma/client";
+import { AssigneeSelect, type Person } from "./AssigneeSelect";
+import type { Task, Employee } from "@prisma/client";
 
 export const metadata = { title: "Takenlijst" };
+export const dynamic = "force-dynamic";
 
-function TaskRow({ task, done }: { task: Task; done: boolean }) {
+type TaskWithAssignee = Task & { assignee: Employee | null };
+
+function fullName(p: { firstName: string; lastName: string }): string {
+  return `${p.firstName} ${p.lastName}`;
+}
+
+function TaskRow({
+  task,
+  done,
+  people,
+}: {
+  task: TaskWithAssignee;
+  done: boolean;
+  people: Person[];
+}) {
   const today = startOfDay(new Date());
   const overdue = !done && task.dueDate && new Date(task.dueDate) < today;
 
   return (
-    <li className="flex items-center gap-3 px-4 py-2.5">
+    <li className="flex flex-wrap items-center gap-3 px-4 py-2.5">
       <form action={toggleTask} className="flex">
         <input type="hidden" name="id" value={task.id} />
         <button
@@ -39,11 +57,7 @@ function TaskRow({ task, done }: { task: Task; done: boolean }) {
               : "text-slate-300 hover:text-emerald-600",
           )}
         >
-          {done ? (
-            <CheckCircle2 className="h-5 w-5" />
-          ) : (
-            <Circle className="h-5 w-5" />
-          )}
+          {done ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
         </button>
       </form>
 
@@ -56,10 +70,16 @@ function TaskRow({ task, done }: { task: Task; done: boolean }) {
         >
           {task.title}
         </p>
-        {task.notes && (
-          <p className="truncate text-xs text-slate-500">{task.notes}</p>
-        )}
+        {task.notes && <p className="truncate text-xs text-slate-500">{task.notes}</p>}
       </div>
+
+      {done ? (
+        task.assignee && (
+          <span className="shrink-0 text-xs text-slate-400">{fullName(task.assignee)}</span>
+        )
+      ) : (
+        <AssigneeSelect taskId={task.id} value={task.assigneeId} people={people} />
+      )}
 
       {!done && <StatusBadge options={TASK_PRIORITIES} value={task.priority} />}
 
@@ -87,51 +107,99 @@ function TaskRow({ task, done }: { task: Task; done: boolean }) {
   );
 }
 
-export default async function TakenPage() {
+export default async function TakenPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ wie?: string }>;
+}) {
+  const { wie } = await searchParams;
+
+  const employees = await db.employee.findMany({
+    where: { active: true },
+    orderBy: [{ firstName: "asc" }],
+    select: { id: true, firstName: true, lastName: true },
+  });
+  const people: Person[] = employees.map((e) => ({ id: e.id, name: fullName(e) }));
+
+  // Filter op toegewezen persoon: leeg = iedereen, "none" = niet toegewezen.
+  const assigneeWhere =
+    wie === "none" ? { assigneeId: null } : wie ? { assigneeId: wie } : {};
+
   const [open, completed] = await Promise.all([
     db.task.findMany({
-      where: { done: false },
+      where: { done: false, ...assigneeWhere },
       orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
+      include: { assignee: true },
     }),
     db.task.findMany({
-      where: { done: true },
+      where: { done: true, ...assigneeWhere },
       orderBy: { doneAt: "desc" },
       take: 30,
+      include: { assignee: true },
     }),
   ]);
+
+  const chip = (active: boolean) =>
+    cn(
+      "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+      active
+        ? "border-brand-300 bg-brand-50 text-brand-700"
+        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+    );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Takenlijst"
-        description="Snelle to-do's voor jou en het team. Afgevinkte taken verdwijnen onderaan."
+        description="Wijs to-do's toe aan collega's — wie doet wat. Taken met een deadline verschijnen ook in de agenda."
       />
 
       {/* Quick add */}
       <Card>
-        <form action={createTask} className="flex flex-col gap-3 p-4 sm:flex-row">
+        <form action={createTask} className="flex flex-col gap-3 p-4 sm:flex-row sm:flex-wrap">
           <Input
             name="title"
             placeholder="Nieuwe taak — bijv. Offerte Tata Steel opvolgen"
             required
-            className="flex-1"
+            className="min-w-[12rem] flex-1"
           />
-          <Select name="priority" defaultValue="MEDIUM" className="sm:w-44" aria-label="Prioriteit">
+          <Select name="assigneeId" defaultValue="" className="sm:w-48" aria-label="Toewijzen aan">
+            <option value="">Niemand toegewezen</option>
+            {people.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </Select>
+          <Select name="priority" defaultValue="MEDIUM" className="sm:w-36" aria-label="Prioriteit">
             {TASK_PRIORITIES.map((o) => (
               <option key={o.value} value={o.value} data-color={o.color}>
                 {o.label}
               </option>
             ))}
           </Select>
-          <Input
-            name="dueDate"
-            type="date"
-            className="sm:w-44"
-            aria-label="Deadline"
-          />
+          <Input name="dueDate" type="date" className="sm:w-40" aria-label="Deadline" />
           <SubmitButton>Toevoegen</SubmitButton>
         </form>
       </Card>
+
+      {/* Filter op collega */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
+          <Users className="h-3.5 w-3.5" /> Filter:
+        </span>
+        <Link href="/agenda/taken" className={chip(!wie)}>
+          Iedereen
+        </Link>
+        {people.map((p) => (
+          <Link key={p.id} href={`/agenda/taken?wie=${p.id}`} className={chip(wie === p.id)}>
+            {p.name}
+          </Link>
+        ))}
+        <Link href="/agenda/taken?wie=none" className={chip(wie === "none")}>
+          Niet toegewezen
+        </Link>
+      </div>
 
       {/* Open tasks */}
       <Card>
@@ -144,13 +212,13 @@ export default async function TakenPage() {
           <EmptyState
             icon={<ListTodo className="h-6 w-6" />}
             title="Alles afgerond 🎉"
-            description="Geen open taken. Voeg er hierboven een toe."
+            description="Geen open taken voor deze selectie. Voeg er hierboven een toe."
             className="border-0"
           />
         ) : (
           <ul className="divide-y divide-slate-100">
             {open.map((t) => (
-              <TaskRow key={t.id} task={t} done={false} />
+              <TaskRow key={t.id} task={t} done={false} people={people} />
             ))}
           </ul>
         )}
@@ -166,7 +234,7 @@ export default async function TakenPage() {
           </div>
           <ul className="divide-y divide-slate-100">
             {completed.map((t) => (
-              <TaskRow key={t.id} task={t} done />
+              <TaskRow key={t.id} task={t} done people={people} />
             ))}
           </ul>
         </Card>

@@ -998,9 +998,14 @@ model CalendarEvent {
   candidate    Candidate?    @relation(fields: [candidateId], references: [id], onDelete: SetNull)
   vacancy      Vacancy?      @relation(fields: [vacancyId], references: [id], onDelete: SetNull)
 
+  /// Toegewezen aan een eigen Q4S-medewerker (wie is verantwoordelijk).
+  assigneeId String?
+  assignee   Employee? @relation("EmployeeEvents", fields: [assigneeId], references: [id], onDelete: SetNull)
+
   @@index([start])
   @@index([status])
   @@index([type])
+  @@index([assigneeId])
 }
 
 /// A to-do item, optionally with a due date, priority and a link to a
@@ -1026,8 +1031,13 @@ model Task {
   client       Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   candidate    Candidate?    @relation(fields: [candidateId], references: [id], onDelete: SetNull)
 
+  /// Toegewezen aan een eigen Q4S-medewerker (de "wie doet dit"-persoon).
+  assigneeId String?
+  assignee   Employee? @relation("EmployeeTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
+
   @@index([done])
   @@index([dueDate])
+  @@index([assigneeId])
 }
 
 // ===================== VAKPROEF (skills challenge) =====================
@@ -1291,6 +1301,8 @@ model Employee {
   payslips            EmployeePayslip[]
   documents           EmployeeDocument[]
   worklogs            EmployeeWorklog[]
+  assignedTasks       Task[]             @relation("EmployeeTasks")
+  assignedEvents      CalendarEvent[]    @relation("EmployeeEvents")
 
   @@index([department])
   @@index([active])

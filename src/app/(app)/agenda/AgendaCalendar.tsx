@@ -16,13 +16,23 @@ import {
   ExternalLink,
   CalendarDays,
   ListTree,
+  ListTodo,
+  Plane,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Input, Select } from "@/components/ui/field";
-import { EVENT_TYPES, EVENT_STATUSES, colorFor, type BadgeColor } from "@/lib/domain";
+import {
+  EVENT_TYPES,
+  EVENT_STATUSES,
+  LEAVE_TYPES,
+  TASK_PRIORITIES,
+  colorFor,
+  type BadgeColor,
+} from "@/lib/domain";
 import { quickCreateEvent, setEventStatus, deleteEventStay } from "./actions";
 
 export type CalEvent = {
@@ -38,6 +48,7 @@ export type CalEvent = {
   location: string | null;
   linked: string | null;
   notes: string | null;
+  assignee: string | null; // toegewezen medewerker (volledige naam)
 };
 
 export type CalDeadline = {
@@ -48,6 +59,32 @@ export type CalDeadline = {
   href: string;
   overdue: boolean;
 };
+
+/** Een taak met deadline, getoond op de kalender op z'n vervaldag. */
+export type CalTask = {
+  id: string;
+  dateKey: string;
+  sortKey: number;
+  title: string;
+  priority: string;
+  assignee: string | null;
+  overdue: boolean;
+};
+
+/** Eén afwezigheidsdag van een medewerker (uit EmployeeLeave), per kalenderdag. */
+export type CalAbsence = {
+  dateKey: string;
+  name: string;
+  type: string; // VAKANTIE | ZIEK | BIJZONDER | ONBETAALD
+  color: BadgeColor;
+};
+
+/** Voornaam + achternaam → initialen ("Sem de Snoo" → "SS"). */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter((p) => !/^(de|den|van|der|het|te|ten|ter)$/i.test(p));
+  const pick = parts.length ? parts : name.trim().split(/\s+/);
+  return `${pick[0]?.[0] ?? ""}${pick.length > 1 ? pick[pick.length - 1][0] : ""}`.toUpperCase();
+}
 
 const CHIP: Record<BadgeColor, string> = {
   slate: "bg-slate-100 text-slate-700 hover:bg-slate-200",
@@ -66,6 +103,15 @@ const DOT: Record<BadgeColor, string> = {
   red: "bg-red-500",
   violet: "bg-violet-500",
   cyan: "bg-cyan-500",
+};
+const ICON_TEXT: Record<BadgeColor, string> = {
+  slate: "text-slate-500",
+  blue: "text-blue-600",
+  green: "text-emerald-600",
+  amber: "text-amber-600",
+  red: "text-red-600",
+  violet: "text-violet-600",
+  cyan: "text-cyan-600",
 };
 
 const WEEKDAYS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
@@ -124,6 +170,8 @@ export function AgendaCalendar({
   todayKey,
   events,
   deadlines,
+  tasks = [],
+  absences = [],
 }: {
   monthLabel: string;
   prevHref: string;
@@ -134,6 +182,8 @@ export function AgendaCalendar({
   todayKey: string;
   events: CalEvent[];
   deadlines: CalDeadline[];
+  tasks?: CalTask[];
+  absences?: CalAbsence[];
 }) {
   const [view, setView] = React.useState<"maand" | "lijst">("maand");
   const [pop, setPop] = React.useState<Pop>(null);
@@ -155,6 +205,16 @@ export function AgendaCalendar({
     for (const dl of deadlines) (m.get(dl.dateKey) ?? m.set(dl.dateKey, []).get(dl.dateKey)!).push(dl);
     return m;
   }, [deadlines]);
+  const tasksByDay = React.useMemo(() => {
+    const m = new Map<string, CalTask[]>();
+    for (const t of tasks) (m.get(t.dateKey) ?? m.set(t.dateKey, []).get(t.dateKey)!).push(t);
+    return m;
+  }, [tasks]);
+  const absencesByDay = React.useMemo(() => {
+    const m = new Map<string, CalAbsence[]>();
+    for (const a of absences) (m.get(a.dateKey) ?? m.set(a.dateKey, []).get(a.dateKey)!).push(a);
+    return m;
+  }, [absences]);
 
   const openEvent = (ev: CalEvent, el: HTMLElement) =>
     setPop({ kind: "event", ev, rect: el.getBoundingClientRect() });
@@ -216,6 +276,12 @@ export function AgendaCalendar({
         <span className="inline-flex items-center gap-1.5">
           <AlertTriangle className="h-3 w-3 text-amber-600" /> Deadline / factuur
         </span>
+        <span className="inline-flex items-center gap-1.5">
+          <ListTodo className="h-3 w-3 text-brand-600" /> Taak
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Plane className="h-3 w-3 text-emerald-600" /> Afwezig / vakantie
+        </span>
       </div>
 
       {view === "maand" ? (
@@ -225,11 +291,19 @@ export function AgendaCalendar({
           todayKey={todayKey}
           eventsByDay={eventsByDay}
           deadlinesByDay={deadlinesByDay}
+          tasksByDay={tasksByDay}
+          absencesByDay={absencesByDay}
           onOpenEvent={openEvent}
           onOpenAdd={openAdd}
         />
       ) : (
-        <AgendaList events={events} deadlines={deadlines} onOpenEvent={openEvent} />
+        <AgendaList
+          events={events}
+          deadlines={deadlines}
+          tasks={tasks}
+          absences={absences}
+          onOpenEvent={openEvent}
+        />
       )}
 
       {/* Popover-laag */}
@@ -261,6 +335,8 @@ function MonthGrid({
   todayKey,
   eventsByDay,
   deadlinesByDay,
+  tasksByDay,
+  absencesByDay,
   onOpenEvent,
   onOpenAdd,
 }: {
@@ -269,6 +345,8 @@ function MonthGrid({
   todayKey: string;
   eventsByDay: Map<string, CalEvent[]>;
   deadlinesByDay: Map<string, CalDeadline[]>;
+  tasksByDay: Map<string, CalTask[]>;
+  absencesByDay: Map<string, CalAbsence[]>;
   onOpenEvent: (ev: CalEvent, el: HTMLElement) => void;
   onOpenAdd: (dateKey: string, el: HTMLElement) => void;
 }) {
@@ -288,12 +366,25 @@ function MonthGrid({
               const [, mm, dd] = day.split("-").map(Number);
               const inMonth = mm - 1 === monthNum;
               const isToday = day === todayKey;
+              const dayAbsences = absencesByDay.get(day) ?? [];
               const dayEvents = eventsByDay.get(day) ?? [];
               const dayDeadlines = deadlinesByDay.get(day) ?? [];
-              const total = dayEvents.length + dayDeadlines.length;
-              const shownEvents = dayEvents.slice(0, 3);
-              const shownDeadlines = dayDeadlines.slice(0, Math.max(0, 4 - shownEvents.length));
-              const hidden = total - shownEvents.length - shownDeadlines.length;
+              const dayTasks = tasksByDay.get(day) ?? [];
+              const shownAbs = dayAbsences.slice(0, 2);
+              const hiddenAbs = dayAbsences.length - shownAbs.length;
+              const MAX = 3;
+              const shownEvents = dayEvents.slice(0, MAX);
+              let budget = MAX - shownEvents.length;
+              const shownDeadlines = dayDeadlines.slice(0, Math.max(0, budget));
+              budget -= shownDeadlines.length;
+              const shownTasks = dayTasks.slice(0, Math.max(0, budget));
+              const hidden =
+                dayEvents.length +
+                dayDeadlines.length +
+                dayTasks.length -
+                shownEvents.length -
+                shownDeadlines.length -
+                shownTasks.length;
 
               return (
                 <div key={day} className={cn("group relative min-h-[116px]", inMonth ? "bg-white" : "bg-slate-50/60")}>
@@ -324,13 +415,26 @@ function MonthGrid({
                     </div>
 
                     <div className="mt-1 space-y-1">
+                      {shownAbs.map((a, i) => (
+                        <div
+                          key={`abs-${i}`}
+                          title={`${a.name} — afwezig`}
+                          className={cn(
+                            "flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[11px] font-medium",
+                            CHIP[a.color],
+                          )}
+                        >
+                          <Plane className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{a.name}</span>
+                        </div>
+                      ))}
                       {shownEvents.map((ev) => {
                         const color = colorFor(EVENT_TYPES, ev.type);
                         return (
                           <button
                             key={ev.id}
                             type="button"
-                            title={ev.title}
+                            title={ev.assignee ? `${ev.title} · ${ev.assignee}` : ev.title}
                             onClick={(e) => onOpenEvent(ev, e.currentTarget)}
                             className={cn(
                               "pointer-events-auto block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium transition-colors",
@@ -340,6 +444,7 @@ function MonthGrid({
                           >
                             {ev.timeShort && <span className="tabular-nums opacity-70">{ev.timeShort} </span>}
                             {ev.title}
+                            {ev.assignee && <span className="opacity-60"> · {initialsOf(ev.assignee)}</span>}
                           </button>
                         );
                       })}
@@ -357,12 +462,27 @@ function MonthGrid({
                           <span className="truncate">{dl.title}</span>
                         </Link>
                       ))}
-                      {hidden > 0 && (
+                      {shownTasks.map((t) => (
+                        <Link
+                          key={`t-${t.id}`}
+                          href="/agenda/taken"
+                          title={t.assignee ? `Taak: ${t.title} · ${t.assignee}` : `Taak: ${t.title}`}
+                          className={cn(
+                            "pointer-events-auto flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[11px] font-medium transition-colors",
+                            t.overdue ? CHIP.red : "bg-brand-50 text-brand-700 hover:bg-brand-100",
+                          )}
+                        >
+                          <ListTodo className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{t.title}</span>
+                          {t.assignee && <span className="shrink-0 opacity-70">· {initialsOf(t.assignee)}</span>}
+                        </Link>
+                      ))}
+                      {hidden + hiddenAbs > 0 && (
                         <Link
                           href={`/agenda/dag/${day}`}
                           className="pointer-events-auto block px-1.5 text-[11px] font-medium text-slate-400 hover:text-brand-700"
                         >
-                          +{hidden} meer
+                          +{hidden + hiddenAbs} meer
                         </Link>
                       )}
                     </div>
@@ -380,24 +500,33 @@ function MonthGrid({
 function AgendaList({
   events,
   deadlines,
+  tasks,
+  absences,
   onOpenEvent,
 }: {
   events: CalEvent[];
   deadlines: CalDeadline[];
+  tasks: CalTask[];
+  absences: CalAbsence[];
   onOpenEvent: (ev: CalEvent, el: HTMLElement) => void;
 }) {
   const groups = React.useMemo(() => {
     type Item =
+      | { t: "absence"; sortKey: number; dateKey: string; abs: CalAbsence }
       | { t: "event"; sortKey: number; dateKey: string; ev: CalEvent }
-      | { t: "deadline"; sortKey: number; dateKey: string; dl: CalDeadline };
+      | { t: "deadline"; sortKey: number; dateKey: string; dl: CalDeadline }
+      | { t: "task"; sortKey: number; dateKey: string; task: CalTask };
     const items: Item[] = [
+      // Afwezigheid en all-day items eerst (sortKey -1), dan op tijd.
+      ...absences.map((abs) => ({ t: "absence" as const, sortKey: -1, dateKey: abs.dateKey, abs })),
       ...events.map((ev) => ({ t: "event" as const, sortKey: ev.sortKey, dateKey: ev.dateKey, ev })),
       ...deadlines.map((dl) => ({ t: "deadline" as const, sortKey: dl.sortKey, dateKey: dl.dateKey, dl })),
+      ...tasks.map((task) => ({ t: "task" as const, sortKey: task.sortKey, dateKey: task.dateKey, task })),
     ].sort((a, b) => a.sortKey - b.sortKey);
     const m = new Map<string, Item[]>();
     for (const it of items) (m.get(it.dateKey) ?? m.set(it.dateKey, []).get(it.dateKey)!).push(it);
-    return [...m.entries()];
-  }, [events, deadlines]);
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [events, deadlines, tasks, absences]);
 
   if (groups.length === 0) {
     return <p className="px-4 py-16 text-center text-sm text-slate-400">Niets gepland deze maand.</p>;
@@ -409,37 +538,75 @@ function AgendaList({
         <div key={dateKey} className="px-2 py-2 sm:px-3">
           <div className="px-2 py-1.5 text-xs font-semibold capitalize text-slate-500">{dayHeaderLabel(dateKey)}</div>
           <ul>
-            {items.map((it, i) =>
-              it.t === "event" ? (
-                <li key={`e-${it.ev.id}`}>
-                  <button
-                    type="button"
-                    onClick={(e) => onOpenEvent(it.ev, e.currentTarget)}
-                    className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50"
+            {items.map((it, i) => {
+              if (it.t === "absence") {
+                return (
+                  <li
+                    key={`a-${dateKey}-${i}`}
+                    className="flex items-center gap-3 rounded-lg px-2 py-2"
                   >
-                    <span className="w-14 shrink-0 text-xs tabular-nums text-slate-500">
-                      {it.ev.allDay ? "hele dag" : it.ev.timeShort}
-                    </span>
-                    <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT[colorFor(EVENT_TYPES, it.ev.type)])} />
-                    <span className="min-w-0 flex-1">
-                      <span
-                        className={cn(
-                          "block truncate text-sm font-medium text-slate-800",
-                          it.ev.status === "CANCELLED" && "text-slate-400 line-through",
-                        )}
-                      >
-                        {it.ev.title}
+                    <span className="w-14 shrink-0 text-xs text-slate-400">afwezig</span>
+                    <Plane className={cn("h-4 w-4 shrink-0", ICON_TEXT[it.abs.color])} />
+                    <span className="min-w-0 flex-1 truncate text-sm text-slate-700">{it.abs.name}</span>
+                    <StatusBadge options={LEAVE_TYPES} value={it.abs.type} />
+                  </li>
+                );
+              }
+              if (it.t === "task") {
+                return (
+                  <li key={`t-${it.task.id}`}>
+                    <Link
+                      href="/agenda/taken"
+                      className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50"
+                    >
+                      <span className="w-14 shrink-0 text-xs tabular-nums text-slate-400">
+                        {it.task.overdue ? "te laat" : "taak"}
                       </span>
-                      {(it.ev.linked || it.ev.location) && (
-                        <span className="block truncate text-xs text-slate-500">
-                          {[it.ev.linked, it.ev.location].filter(Boolean).join(" · ")}
+                      <ListTodo className={cn("h-4 w-4 shrink-0", it.task.overdue ? "text-red-600" : "text-brand-600")} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-slate-800">{it.task.title}</span>
+                        {it.task.assignee && (
+                          <span className="block truncate text-xs text-slate-500">{it.task.assignee}</span>
+                        )}
+                      </span>
+                      <StatusBadge options={TASK_PRIORITIES} value={it.task.priority} />
+                    </Link>
+                  </li>
+                );
+              }
+              if (it.t === "event") {
+                return (
+                  <li key={`e-${it.ev.id}`}>
+                    <button
+                      type="button"
+                      onClick={(e) => onOpenEvent(it.ev, e.currentTarget)}
+                      className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50"
+                    >
+                      <span className="w-14 shrink-0 text-xs tabular-nums text-slate-500">
+                        {it.ev.allDay ? "hele dag" : it.ev.timeShort}
+                      </span>
+                      <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT[colorFor(EVENT_TYPES, it.ev.type)])} />
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={cn(
+                            "block truncate text-sm font-medium text-slate-800",
+                            it.ev.status === "CANCELLED" && "text-slate-400 line-through",
+                          )}
+                        >
+                          {it.ev.title}
                         </span>
-                      )}
-                    </span>
-                    <StatusBadge options={EVENT_TYPES} value={it.ev.type} />
-                  </button>
-                </li>
-              ) : (
+                        {(it.ev.linked || it.ev.location || it.ev.assignee) && (
+                          <span className="block truncate text-xs text-slate-500">
+                            {[it.ev.linked, it.ev.location, it.ev.assignee].filter(Boolean).join(" · ")}
+                          </span>
+                        )}
+                      </span>
+                      <StatusBadge options={EVENT_TYPES} value={it.ev.type} />
+                    </button>
+                  </li>
+                );
+              }
+              return (
                 <li key={`d-${dateKey}-${i}`}>
                   <Link href={it.dl.href} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50">
                     <span className="w-14 shrink-0 text-xs tabular-nums text-slate-400">
@@ -450,8 +617,8 @@ function AgendaList({
                     <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-300" />
                   </Link>
                 </li>
-              ),
-            )}
+              );
+            })}
           </ul>
         </div>
       ))}
@@ -479,6 +646,11 @@ function EventPopover({ ev, onClose }: { ev: CalEvent; onClose: () => void }) {
         {ev.location && (
           <p className="flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5 shrink-0" /> {ev.location}
+          </p>
+        )}
+        {ev.assignee && (
+          <p className="flex items-center gap-1.5">
+            <User className="h-3.5 w-3.5 shrink-0" /> {ev.assignee}
           </p>
         )}
         {ev.linked && <p className="truncate">{ev.linked}</p>}

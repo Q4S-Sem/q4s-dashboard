@@ -20,6 +20,7 @@ const EventSchema = z
     clientId: z.string().optional(),
     candidateId: z.string().optional(),
     vacancyId: z.string().optional(),
+    assigneeId: z.string().optional(),
     notes: z.string().optional(),
   })
   .refine((d) => !d.end || d.end >= d.start, {
@@ -40,6 +41,7 @@ function toData(data: z.infer<typeof EventSchema>, allDay: boolean) {
     clientId: data.clientId ?? null,
     candidateId: data.candidateId ?? null,
     vacancyId: data.vacancyId ?? null,
+    assigneeId: data.assigneeId || null,
     notes: data.notes ?? null,
   };
 }

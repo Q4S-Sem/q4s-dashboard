@@ -17,7 +17,7 @@ export default async function AfspraakBewerkenPage({
   const event = await db.calendarEvent.findUnique({ where: { id } });
   if (!event) notFound();
 
-  const [clients, targets, candidates, vacancies] = await Promise.all([
+  const [clients, targets, candidates, vacancies, employees] = await Promise.all([
     db.client.findMany({ orderBy: { companyName: "asc" }, select: { id: true, companyName: true } }),
     db.targetClient.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.candidate.findMany({
@@ -25,6 +25,11 @@ export default async function AfspraakBewerkenPage({
       select: { id: true, firstName: true, lastName: true },
     }),
     db.vacancy.findMany({ orderBy: { createdAt: "desc" }, select: { id: true, title: true }, take: 100 }),
+    db.employee.findMany({
+      where: { active: true },
+      orderBy: [{ firstName: "asc" }],
+      select: { id: true, firstName: true, lastName: true },
+    }),
   ]);
 
   return (
@@ -43,6 +48,7 @@ export default async function AfspraakBewerkenPage({
         targets={targets.map((t) => ({ id: t.id, label: t.name }))}
         candidates={candidates.map((c) => ({ id: c.id, label: `${c.firstName} ${c.lastName}` }))}
         vacancies={vacancies.map((v) => ({ id: v.id, label: v.title }))}
+        people={employees.map((e) => ({ id: e.id, label: `${e.firstName} ${e.lastName}` }))}
         submitLabel="Wijzigingen opslaan"
         cancelHref={`/agenda/${event.id}`}
       />

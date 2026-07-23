@@ -24,6 +24,14 @@ function safeInternalPath(raw: string, fallback = "/agenda/taken"): string {
   }
 }
 
+/** Alleen een bestaande medewerker-id doorlaten (voorkomt een FK-fout bij insert). */
+async function validEmployeeId(id: string | null): Promise<string | null> {
+  const trimmed = id?.trim() || null;
+  if (!trimmed) return null;
+  const e = await db.employee.findUnique({ where: { id: trimmed }, select: { id: true } });
+  return e?.id ?? null;
+}
+
 export async function createTask(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   if (!title) redirect("/agenda/taken");
@@ -31,6 +39,7 @@ export async function createTask(formData: FormData) {
   const dueRaw = String(formData.get("dueDate") ?? "").trim();
   const priority = String(formData.get("priority") ?? "MEDIUM");
   const notes = String(formData.get("notes") ?? "").trim();
+  const assigneeId = await validEmployeeId(String(formData.get("assigneeId") ?? ""));
 
   await db.task.create({
     data: {
@@ -38,11 +47,21 @@ export async function createTask(formData: FormData) {
       dueDate: dueRaw ? new Date(dueRaw) : null,
       priority: TASK_PRIORITY_VALUES.includes(priority) ? priority : "MEDIUM",
       notes: notes || null,
+      assigneeId,
     },
   });
 
   revalidate();
   redirect("/agenda/taken");
+}
+
+/** Wijs een taak (opnieuw) toe aan een collega, of haal de toewijzing weg
+ *  (assigneeId leeg). Aangeroepen vanuit de inline AssigneeSelect (client). */
+export async function reassignTask(taskId: string, assigneeId: string | null) {
+  if (!taskId) return;
+  const valid = await validEmployeeId(assigneeId);
+  await db.task.update({ where: { id: taskId }, data: { assigneeId: valid } });
+  revalidate();
 }
 
 /** Flip a task done/undone. `redirectTo` lets the agenda side-panel toggle in place. */

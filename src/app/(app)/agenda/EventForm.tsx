@@ -30,6 +30,7 @@ export function EventForm({
   targets,
   candidates,
   vacancies,
+  people,
   submitLabel,
   cancelHref,
   defaultStart,
@@ -40,6 +41,7 @@ export function EventForm({
   targets: Opt[];
   candidates: Opt[];
   vacancies: Opt[];
+  people: Opt[];
   submitLabel: string;
   cancelHref: string;
   /** Prefill for the "nieuw" form, e.g. from a clicked day (datetime-local string). */
@@ -90,6 +92,17 @@ export function EventForm({
               </Select>
             </Field>
           </div>
+
+          <Field label="Toegewezen aan (collega)" htmlFor="assigneeId" error={e.assigneeId}>
+            <Select id="assigneeId" name="assigneeId" defaultValue={event?.assigneeId ?? ""}>
+              <option value="">— niemand —</option>
+              {people.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
 
           <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
             <input
