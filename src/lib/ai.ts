@@ -423,8 +423,15 @@ type FileExtractOpts = {
  */
 export async function aiJSONFromFile<T>(opts: FileExtractOpts): Promise<T> {
   await ensureAiKeysLoaded(); // serverless: hydrateer sleutels vóór de vision-keuze
-  if (visionProvider() === "gemini") return geminiExtractFile<T>(opts);
-  return anthropicExtractFile<T>(opts);
+  // Nederlandse UI: dwing af dat alle vrije tekst (opmerkingen/notities/samen-
+  // vattingen) in het Nederlands terugkomt, ook bij een anderstalig brondocument.
+  // Feitelijke waarden (namen/nummers/codes) blijven letterlijk.
+  const dutch: FileExtractOpts = {
+    ...opts,
+    system: `${opts.system}\n\nTAAL: geef alle vrije tekst (opmerkingen, notities, samenvattingen, toelichtingen) ALTIJD in het NEDERLANDS terug, ook als het brondocument in een andere taal is. Feitelijke waarden (namen, nummers, codes) neem je letterlijk over.`,
+  };
+  if (visionProvider() === "gemini") return geminiExtractFile<T>(dutch);
+  return anthropicExtractFile<T>(dutch);
 }
 
 /** Gemini (Google) — leest PDF's + afbeeldingen native, zeer goedkoop. */

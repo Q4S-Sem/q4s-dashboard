@@ -104,7 +104,7 @@ const EXTRACT_SCHEMA = {
     reportedTotalKm: { type: "number", description: "Het kilometer-totaal zoals de staat het ZELF vermeldt (bv. 'Total Kilometers: 220'). 0 als niet vermeld." },
     overtimeHours: { type: "number", description: "Weektotaal aan OVERUREN/meeruren uit de aparte overuren-sectie (bv. 'Overtime Hrs. Total'). 0 als er geen overuren zijn." },
     project: { type: "string", description: "Project, opdrachtgever, locatie of uurcode indien vermeld (bv. 'HSM Stormpolder', 'Mistras'); anders lege string." },
-    notes: { type: "string", description: "Onzekerheden of opvallende zaken; anders lege string." },
+    notes: { type: "string", description: "Onzekerheden of opvallende zaken, ALTIJD in het Nederlands (ook bij een Engelstalige staat); anders lege string." },
   },
   required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes"],
 };
@@ -112,6 +112,8 @@ const EXTRACT_SCHEMA = {
 const SYSTEM_EXTRACT = `Je bent een uiterst nauwkeurige administratieve assistent bij Q4S, een Nederlands detacheringsbureau. Je leest binnengekomen WEEKstaten (timesheets) uit die door gedetacheerde vakmensen worden aangeleverd. Elke aanleverder gebruikt een eigen opmaak; herken ook het Q4S-formulier (FO-Q4S-18).
 
 Haal de gegevens er EXACT uit zoals ze er staan. Verzin niets: laat een tekstveld leeg of zet een getal op 0 als je het niet zeker uit het document kunt halen. Antwoord volgens het JSON-schema.
+
+TAAL: schrijf alle vrije tekst — met name het veld "notes"/opmerkingen — ALTIJD in het NEDERLANDS, ook als de urenstaat in het Engels is. Feitelijke waarden (namen, projectcodes, nummers) neem je letterlijk over.
 
 Zo lees je de onderdelen:
 
