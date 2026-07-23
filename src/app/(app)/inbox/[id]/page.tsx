@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Field, Input, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
-import { formatHours, cn } from "@/lib/utils";
+import { formatHours, cn, distributeDayHours, type DayHours } from "@/lib/utils";
 import { isAIConfigured } from "@/lib/ai";
 import { INBOX_SOURCES, INBOX_STATUSES } from "@/lib/domain";
 import { extractInbox, confirmInbox, rejectInbox, deleteInbox } from "../actions";
@@ -26,8 +26,6 @@ function toInput(d: Date | null): string {
   return `${x.getFullYear()}-${m}-${day}`;
 }
 
-type ExtractedDay = { date: string; hours: number };
-
 /** De door de staat ZELF vermelde totalen (voor de controle-weergave). */
 function parseReported(extractedJson: string | null): { hours: number | null; km: number | null } {
   if (!extractedJson) return { hours: null, km: null };
@@ -42,47 +40,19 @@ function parseReported(extractedJson: string | null): { hours: number | null; km
   }
 }
 
-/** Best-effort map of the extracted days onto Mon..Sun (index 0..6). */
+/** Best-effort map of the extracted days onto Mon..Sun (index 0..6).
+ *  Verdeling + robuustheid zit in {@link distributeDayHours}. */
 function prefillDays(
   extractedJson: string | null,
   monday: Date | null,
 ): (number | "")[] {
-  const out: (number | "")[] = ["", "", "", "", "", "", ""];
-  if (!extractedJson) return out;
-  let days: ExtractedDay[] = [];
+  if (!extractedJson) return ["", "", "", "", "", "", ""];
   try {
-    const parsed = JSON.parse(extractedJson) as { days?: ExtractedDay[] };
-    days = parsed.days ?? [];
+    const days = (JSON.parse(extractedJson) as { days?: DayHours[] }).days ?? [];
+    return distributeDayHours(days, monday);
   } catch {
-    return out;
+    return ["", "", "", "", "", "", ""];
   }
-  if (monday) {
-    // Map op MAAND+DAG i.p.v. absolute datum: het AI-jaar in de dag-datums kan
-    // afwijken van de (gecorrigeerde) weekstart. Zolang dag+maand kloppen, landt
-    // elke dag op de juiste kolom Ma..Zo.
-    const idxByMonthDay = new Map<string, number>();
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monday);
-      d.setDate(d.getDate() + i);
-      idxByMonthDay.set(`${d.getMonth() + 1}-${d.getDate()}`, i);
-    }
-    for (const d of days) {
-      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d.date);
-      if (!m) continue;
-      const idx = idxByMonthDay.get(`${Number(m[2])}-${Number(m[3])}`);
-      if (idx !== undefined && typeof d.hours === "number") out[idx] = d.hours;
-    }
-  }
-  let placedByDate = false;
-  for (const h of out) {
-    if (h !== "") placedByDate = true;
-  }
-  if (!placedByDate) {
-    days.slice(0, 7).forEach((d, i) => {
-      if (typeof d.hours === "number") out[i] = d.hours;
-    });
-  }
-  return out;
 }
 
 export default async function InboxDetailPage({

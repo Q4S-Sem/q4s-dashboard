@@ -95,14 +95,32 @@ export function resolveWeekStart(
   const { month, day } = monthDay;
   if (!(month >= 1 && month <= 12) || !(day >= 1 && day <= 31)) return null;
 
-  const y = today.getFullYear();
-  const years = explicitYear ? [explicitYear] : [y - 1, y, y + 1, y + 2];
-  const cands: { monday: Date; isMonday: boolean; dist: number }[] = [];
-  for (const year of years) {
+  const makeDate = (year: number): Date | null => {
     const d = new Date(year, month - 1, day);
     d.setHours(0, 0, 0, 0);
-    // Ongeldige datum (bijv. 29-feb in een niet-schrikkeljaar) → overslaan.
-    if (Number.isNaN(d.getTime()) || d.getMonth() !== month - 1 || d.getDate() !== day) continue;
+    // Ongeldige datum (bijv. 29-feb in een niet-schrikkeljaar) → null.
+    if (Number.isNaN(d.getTime()) || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+    return d;
+  };
+
+  // 1) Een expliciet jaartal telt ALLEEN als het intern klopt: de maandag-kolom is
+  //    in dat jaar óók echt een maandag. Zo kan een door de AI FOUT GEGOKT jaar (dat
+  //    veld is "afgeleid", niet noodzakelijk van de staat) de correctie niet uitzetten.
+  if (explicitYear != null) {
+    const d = makeDate(explicitYear);
+    if (d && d.getDay() === 1) return startOfISOWeek(d);
+  }
+
+  // 2) Kies anders de week het DICHTST bij vandaag (primair) — zo landen we in het
+  //    juiste jaar, ook als het model het jaar óf de weekdag verkeerd gaf. Klopt de
+  //    kolomdatum toevallig als maandag, dan telt dat alleen als tiebreak. NB: niet
+  //    de maandag-match forceren, want dan zou een zondag-/dinsdag-anker naar een ver
+  //    jaar springen waarin die datum wél een maandag is.
+  const y = today.getFullYear();
+  const cands: { monday: Date; isMonday: boolean; dist: number }[] = [];
+  for (const year of [y - 1, y, y + 1, y + 2]) {
+    const d = makeDate(year);
+    if (!d) continue;
     const monday = startOfISOWeek(d);
     cands.push({
       monday,
@@ -111,9 +129,58 @@ export function resolveWeekStart(
     });
   }
   if (cands.length === 0) return null;
-  // Voorkeur: jaar waarin de maandag-kolom echt een maandag is; dan het dichtst bij vandaag.
-  cands.sort((a, b) => Number(b.isMonday) - Number(a.isMonday) || a.dist - b.dist);
+  cands.sort((a, b) => a.dist - b.dist || Number(b.isMonday) - Number(a.isMonday));
   return cands[0].monday;
+}
+
+export type DayHours = { date: string; hours: number };
+
+/**
+ * Verdeel uitgelezen dag-uren over Ma..Zo (index 0..6) t.o.v. de maandag. Robuust
+ * tegen AI-fouten:
+ *  - matcht op MAAND+DAG (jaar-ongevoelig: het AI-jaar kan van de weekstart afwijken);
+ *  - telt meerdere regels op dezelfde dag OP (i.p.v. de laatste te laten winnen);
+ *  - vertrouwt de datum-mapping alleen als ÉLKE gedateerde dag in de week viel — anders
+ *    positionele fallback (eerste 7 dagen als Ma..Zo), zodat een gedeeltelijke/scheve
+ *    match niet stilletjes werkdagen dropt.
+ */
+export function distributeDayHours(days: DayHours[], monday: Date | null): (number | "")[] {
+  const out: (number | "")[] = ["", "", "", "", "", "", ""];
+  if (!Array.isArray(days) || days.length === 0) return out;
+
+  if (monday) {
+    const idxByMonthDay = new Map<string, number>();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + i);
+      idxByMonthDay.set(`${d.getMonth() + 1}-${d.getDate()}`, i);
+    }
+    const sum = [0, 0, 0, 0, 0, 0, 0];
+    const filled = [false, false, false, false, false, false, false];
+    let isoDated = 0;
+    let matched = 0;
+    for (const d of days) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d?.date ?? "");
+      if (!m) continue;
+      isoDated++;
+      const idx = idxByMonthDay.get(`${Number(m[2])}-${Number(m[3])}`);
+      if (idx !== undefined && typeof d.hours === "number") {
+        sum[idx] += d.hours;
+        filled[idx] = true;
+        matched++;
+      }
+    }
+    if (isoDated > 0 && matched === isoDated) {
+      for (let i = 0; i < 7; i++) out[i] = filled[i] ? sum[i] : "";
+      return out;
+    }
+  }
+
+  // Positionele fallback: eerste 7 dagen in volgorde als Ma..Zo.
+  days.slice(0, 7).forEach((d, i) => {
+    if (typeof d?.hours === "number") out[i] = d.hours;
+  });
+  return out;
 }
 
 /** ISO week number (1–53) for a date. */
