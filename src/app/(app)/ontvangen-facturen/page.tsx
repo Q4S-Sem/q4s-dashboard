@@ -102,16 +102,27 @@ export default async function OntvangenFacturenPage({
         </p>
       )}
 
-      {/* Melding: wacht op correctie (zodat we nooit te vroeg/fout betalen) */}
+      {/* Compacte melding: wacht op correctie. Klik "Zie facturen" → naar de lijst hieronder. */}
       {awaiting.length > 0 && (
-        <p className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            <strong>{awaiting.length} factu{awaiting.length === 1 ? "ur wacht" : "ren wachten"}</strong> op een
-            aangepaste factuur — betaal deze <strong>pas na de correctie</strong>. Ze staan hieronder apart zodat
-            je ze nooit vergeet.
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs text-amber-900">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              <strong>{awaiting.length} factu{awaiting.length === 1 ? "ur wacht" : "ren wachten"}</strong> op een
+              aangepaste factuur — betaal deze <strong>pas na de correctie</strong>. Ze staan hieronder apart zodat
+              je ze nooit vergeet.
+            </span>
           </span>
-        </p>
+          <Link
+            href="#wacht"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "shrink-0 border-amber-300 bg-white/70 text-amber-900 hover:bg-white",
+            )}
+          >
+            Zie facturen
+          </Link>
+        </div>
       )}
 
       {/* Zachtere melding: facturen zonder periode kunnen we (nog) niet controleren */}
@@ -229,7 +240,7 @@ export default async function OntvangenFacturenPage({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {!r.mailed && <DiscrepancyMailButton id={r.id} alreadyMailed={false} variant="button" />}
+                    <DiscrepancyMailButton id={r.id} alreadyMailed={false} variant="button" />
                     {r.email && (
                       <a
                         href={`mailto:${r.email}?subject=${encodeURIComponent(
