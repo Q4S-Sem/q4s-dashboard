@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { setAiKey, type AiProviderKey } from "@/lib/ai-keys";
+import { setAiKey, loadAiKeysIntoEnv, type AiProviderKey } from "@/lib/ai-keys";
 import { testProviderConnection, type ConnTest } from "@/lib/ai-test";
 
 function revalidate() {
@@ -39,5 +39,8 @@ export async function testAiConnection(provider: string): Promise<ConnTest> {
   if (!(PROVIDERS as string[]).includes(provider)) {
     return { ok: false, provider: "gemini", message: "Onbekende provider." };
   }
+  // Vers uit de DB laden zodat een zojuist opgeslagen sleutel (die op deze
+  // serverless-instance nog niet in env stond) meteen meetelt in de test.
+  await loadAiKeysIntoEnv();
   return testProviderConnection(provider as AiProviderKey);
 }

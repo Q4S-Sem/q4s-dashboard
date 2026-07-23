@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { recordAiUsage } from "./ai-keys";
+import { recordAiUsage, ensureAiKeysLoaded } from "./ai-keys";
 
 // ---------------------------------------------------------------------------
 // Provider switch: each AI tier can run on DeepSeek (cloud, OpenAI-compatible,
@@ -334,6 +334,7 @@ async function deepseekChat(o: ChatOpts): Promise<string> {
 /** Dispatch a chat completion to the configured provider for the given tier.
  *  `o.provider` overschrijft die keuze (zie {@link readyTextProvider}). */
 async function chat(o: ChatOpts): Promise<string> {
+  await ensureAiKeysLoaded(); // serverless: pak een via het dashboard toegevoegde sleutel op
   const p = o.provider ?? (o.tier === "fast" ? AI_PROVIDER_FAST : AI_PROVIDER);
   if (p === "ollama") return ollamaChat(o);
   if (p === "deepseek") return deepseekChat(o);
@@ -417,6 +418,7 @@ type FileExtractOpts = {
  * Gebruikt door: timesheet-inbox, declaraties, certificaten en CV-import.
  */
 export async function aiJSONFromFile<T>(opts: FileExtractOpts): Promise<T> {
+  await ensureAiKeysLoaded(); // serverless: hydrateer sleutels vóór de vision-keuze
   if (visionProvider() === "gemini") return geminiExtractFile<T>(opts);
   return anthropicExtractFile<T>(opts);
 }
@@ -539,6 +541,7 @@ export async function aiSourceVacancies(opts: {
   fields: string[];
   max?: number;
 }): Promise<SourcedVacancy[]> {
+  await ensureAiKeysLoaded();
   if (!process.env.ANTHROPIC_API_KEY) return [];
   const c = getClient();
   const max = opts.max ?? 8;

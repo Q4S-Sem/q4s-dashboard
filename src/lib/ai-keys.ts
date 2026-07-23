@@ -65,6 +65,23 @@ export async function loadAiKeysIntoEnv(): Promise<void> {
   }
 }
 
+// Serverless-vangnet: loadAiKeysIntoEnv() draait bij cold start (instrumentation),
+// maar een sleutel die LATER via het dashboard wordt toegevoegd zit nog niet in de
+// env van een reeds-warme instance. Deze helper herlaadt de DB-sleutels lui (met
+// een korte cache), zodat AI-aanroepen een net-toegevoegde sleutel oppikken zonder
+// serverherstart. Wordt vooraan de AI-entrypoints (ai.ts) aangeroepen.
+let lastKeyLoad = 0;
+export async function ensureAiKeysLoaded(): Promise<void> {
+  const now = Date.now();
+  if (now - lastKeyLoad < 60_000) return;
+  lastKeyLoad = now;
+  try {
+    await loadAiKeysIntoEnv();
+  } catch {
+    // DB even niet bereikbaar → laat de bestaande env-waarden staan.
+  }
+}
+
 export type KeyStatus = {
   provider: AiProviderKey;
   label: string;
@@ -88,15 +105,19 @@ export async function getKeyStatuses(): Promise<KeyStatus[]> {
 
   return AI_KEY_META.map(({ provider, label, hint, help }) => {
     const envVar = AI_KEY_ENV[provider];
-    const effective = process.env[envVar]?.trim() || null;
+    const envVal = process.env[envVar]?.trim() || null;
     const dbKey = dbKeyByProvider.get(provider) ?? null;
+    // Effectieve sleutel = env, of anders de dashboard-sleutel uit de DB. Zo toont de
+    // status consistent "Ingesteld" — ook op een serverless-instance waar de sleutel
+    // nog niet in env geladen is (anders zei de kaart "Ingesteld" maar de test niet).
+    const effective = envVal || dbKey;
     // .env heeft altijd voorrang: is er een pristine .env-waarde, dan is de bron
     // "env" (nooit "dashboard"), zodat er geen destructieve wis-knop verschijnt.
     const source: KeyStatus["source"] = BOOT_ENV[provider]
       ? "env"
       : dbKey
         ? "dashboard"
-        : effective
+        : envVal
           ? "env"
           : null;
     return {
