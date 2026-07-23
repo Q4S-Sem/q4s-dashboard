@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { setAiKey } from "@/lib/ai-keys";
+import { setAiKey, type AiProviderKey } from "@/lib/ai-keys";
+import { testProviderConnection, type ConnTest } from "@/lib/ai-test";
 
 function revalidate() {
   revalidatePath("/gebruikers/api-sleutels");
@@ -28,4 +29,15 @@ export async function clearAiKey(formData: FormData) {
   await setAiKey(provider, null);
   revalidate();
   redirect("/gebruikers/api-sleutels?cleared=1");
+}
+
+const PROVIDERS: AiProviderKey[] = ["deepseek", "gemini", "anthropic"];
+
+/** Live verbindingstest voor de "Test verbinding"-knop (client-component). Doet één
+ *  minimale echte API-aanroep met de ingestelde sleutel en meldt succes/fout. */
+export async function testAiConnection(provider: string): Promise<ConnTest> {
+  if (!(PROVIDERS as string[]).includes(provider)) {
+    return { ok: false, provider: "gemini", message: "Onbekende provider." };
+  }
+  return testProviderConnection(provider as AiProviderKey);
 }

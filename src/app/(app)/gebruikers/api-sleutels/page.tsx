@@ -7,6 +7,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { getKeyStatuses } from "@/lib/ai-keys";
 import { saveAiKey, clearAiKey } from "./actions";
+import { TestConnectionButton } from "./TestConnectionButton";
 
 export const metadata = { title: "API-sleutels" };
 export const dynamic = "force-dynamic";
@@ -122,6 +123,8 @@ export default async function ApiSleutelsPage({
                   )}
                 </div>
               )}
+
+              <TestConnectionButton provider={s.provider} configured={s.configured} />
             </CardContent>
           </Card>
         ))}
