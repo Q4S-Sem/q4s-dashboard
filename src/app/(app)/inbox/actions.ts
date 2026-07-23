@@ -13,7 +13,7 @@ import {
   MAX_UPLOAD_BYTES,
 } from "@/lib/uploads";
 import { excelToText, isSpreadsheet } from "@/lib/excel";
-import { startOfISOWeek, parseHours, round2, formatHours } from "@/lib/utils";
+import { startOfISOWeek, resolveWeekStart, parseHours, round2, formatHours } from "@/lib/utils";
 
 // ---------- Upload (single, multiple, or a ZIP of timesheets) ----------
 
@@ -82,7 +82,7 @@ const EXTRACT_SCHEMA = {
   additionalProperties: false,
   properties: {
     name: { type: "string", description: "Volledige naam van de medewerker op de urenstaat (veld 'Name'/'Naam' of de handtekeningnaam). Leeg laten als onbekend." },
-    weekStartDate: { type: "string", description: "De MAANDAG van de week als YYYY-MM-DD. Leid af uit het 'From'/'Van'-veld of de eerste dagkolom. Een 2-cijferig jaar ('25') betekent 2025 (20xx)." },
+    weekStartDate: { type: "string", description: "De MAANDAG van de week als YYYY-MM-DD (het 'From'/'Van'-veld of de eerste dagkolom). Kies het jaar zó dat deze datum ÉCHT een maandag is en het dichtst bij vandaag ligt (zie CONTEXT) — gok geen eerder jaar. Een expliciet 2-cijferig jaar ('25') betekent 2025 (20xx)." },
     weekNumber: { type: "string", description: "Weeknummer als vermeld (bv. 'Week nr. 27'); anders lege string." },
     year: { type: "string", description: "Jaartal (4 cijfers) indien afleidbaar; anders lege string." },
     days: {
@@ -141,6 +141,27 @@ NAAM: name = de naam van de medewerker.
 
 Zaterdag- en zonduren leiden wij zelf af uit de datums; vul de uren gewoon bij de juiste dag/datum in.`;
 
+const WEEKDAY_NL = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
+
+/** Datum-/jaar-context, aangehangen aan de systeemprompt zodat het model het jaar
+ *  niet fout gokt bij staten die alleen dag+maand vermelden. */
+function dateContext(today: Date): string {
+  const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+    today.getDate(),
+  ).padStart(2, "0")}`;
+  return `\n\nCONTEXT — datum & jaar:
+- Vandaag is ${iso} (${WEEKDAY_NL[today.getDay()]}).
+- Vermeldt de staat GEEN jaartal (vaak alleen dag+maand zoals "13-jul"), kies dan het jaar zó dat de weekdag-labels kloppen met de datums: de Ma/Mo-kolom moet een ÉCHTE maandag zijn. Voorbeeld: "Ma 13-jul" valt alleen in een jaar waarin 13 juli daadwerkelijk een maandag is.
+- Kies bij twijfel het jaar het dichtst bij vandaag (bijna altijd het huidige jaar) — NOOIT zomaar een eerder jaar. weekStartDate = de maandag met dat correcte jaar.`;
+}
+
+/** Parse "YYYY-MM-DD" → {month, day} (jaar genegeerd). Null bij ongeldig formaat. */
+function parseMonthDay(s?: string | null): { month: number; day: number } | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((s ?? "").trim());
+  if (!m) return null;
+  return { month: Number(m[2]), day: Number(m[3]) };
+}
+
 /**
  * Core AI extraction for ONE inbox item (name/week/hours/km/overtime + best-effort
  * consultant match). Throws on any failure (no redirect) so it's reusable by both
@@ -169,30 +190,39 @@ async function runInboxExtraction(id: string): Promise<void> {
     if (!sheetText.trim()) throw new Error("Leeg of onleesbaar werkblad.");
   }
 
+  const now = new Date();
+  const system = SYSTEM_EXTRACT + dateContext(now);
+
   const data = spreadsheet
     ? await aiJSON<Extracted>({
-        system: SYSTEM_EXTRACT,
+        system,
         prompt: `Hieronder de inhoud van een binnengekomen Excel-urenstaat, elk werkblad als CSV (kolommen gescheiden door ';'). Door samengevoegde cellen en soms een twee-koloms layout (uren links, kilometers rechts) kan het rommelig ogen — lees zorgvuldig, TEL meerdere uren-regels per dag op tot één dagtotaal (excl. overuren), haal de overuren uit de aparte overuren-sectie en de kilometers uit het reisblok of het 'Total Kilometers'-totaal. Geef het resultaat volgens het schema.\n\n${sheetText}`,
         schema: EXTRACT_SCHEMA,
         maxTokens: 2500,
         effort: "medium",
       })
     : await aiJSONFromFile<Extracted>({
-        system: SYSTEM_EXTRACT,
+        system,
         prompt:
-          "Lees deze weekstaat (timesheet) uit. Let op: tel per dag ALLE reguliere uren-regels op tot één dagtotaal (excl. overuren), haal de overuren uit de aparte overuren-sectie, en de kilometers uit het reisblok (From/To/Km) of het 'Total Kilometers'-veld. Een 2-cijferig jaar zoals '25' betekent 2025. Geef naam, week (maandag), de uren per dag, het weektotaal, de kilometers en de overuren terug volgens het schema.",
+          "Lees deze weekstaat (timesheet) uit. Let op: tel per dag ALLE reguliere uren-regels op tot één dagtotaal (excl. overuren), haal de overuren uit de aparte overuren-sectie, en de kilometers uit het reisblok (From/To/Km) of het 'Total Kilometers'-veld. Geef naam, week (maandag), de uren per dag, het weektotaal, de kilometers en de overuren terug volgens het schema.",
         schema: EXTRACT_SCHEMA,
         file: { base64: await readInboxBase64(item.fileName), mediaType },
         maxTokens: 2500,
         effort: "medium",
       });
 
-  // Derive a Monday from the extracted week-start date when possible.
-  let weekStart: Date | null = null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(data.weekStartDate)) {
-    const d = new Date(`${data.weekStartDate}T00:00:00`);
-    if (!Number.isNaN(d.getTime())) weekStart = startOfISOWeek(d);
-  }
+  // Bepaal de maandag robuust: het AI-model kan het JAAR verkeerd gokken (een staat
+  // vermeldt vaak alleen dag+maand). resolveWeekStart kiest het jaar waarin de
+  // maandag-kolom écht een maandag is, het dichtst bij vandaag — tenzij de staat een
+  // eigen jaartal noemt. Zonder dit sprong bv. "Ma 13-jul" (maandag pas in 2026) via
+  // het gegokte 2025 naar de verkeerde week, waardoor de dag-uren fout gemapt werden.
+  const explicitYear = /^\d{4}$/.test((data.year ?? "").trim())
+    ? Number((data.year ?? "").trim())
+    : null;
+  const monthDay =
+    parseMonthDay(data.weekStartDate) ??
+    parseMonthDay((data.days ?? []).find((d) => /^\d{4}-\d{2}-\d{2}$/.test(d?.date ?? ""))?.date);
+  const weekStart = resolveWeekStart(monthDay, explicitYear, now);
 
   // Reconciliatie: de dag-optelling is wat straks de urenstaat wordt. Vergelijk
   // met het door de staat vermelde totaal en meld een afwijking. Kies voor km het

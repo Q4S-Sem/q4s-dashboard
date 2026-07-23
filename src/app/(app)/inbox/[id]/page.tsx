@@ -57,13 +57,20 @@ function prefillDays(
     return out;
   }
   if (monday) {
+    // Map op MAAND+DAG i.p.v. absolute datum: het AI-jaar in de dag-datums kan
+    // afwijken van de (gecorrigeerde) weekstart. Zolang dag+maand kloppen, landt
+    // elke dag op de juiste kolom Ma..Zo.
+    const idxByMonthDay = new Map<string, number>();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + i);
+      idxByMonthDay.set(`${d.getMonth() + 1}-${d.getDate()}`, i);
+    }
     for (const d of days) {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(d.date)) {
-        const idx = Math.round(
-          (new Date(`${d.date}T00:00:00`).getTime() - monday.getTime()) / 86400000,
-        );
-        if (idx >= 0 && idx < 7 && typeof d.hours === "number") out[idx] = d.hours;
-      }
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d.date);
+      if (!m) continue;
+      const idx = idxByMonthDay.get(`${Number(m[2])}-${Number(m[3])}`);
+      if (idx !== undefined && typeof d.hours === "number") out[idx] = d.hours;
     }
   }
   let placedByDate = false;
