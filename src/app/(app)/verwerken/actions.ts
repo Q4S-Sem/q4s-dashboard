@@ -3,10 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { processAllPending, processConsultant } from "@/lib/facturatie";
+import { notifyPendingApprovals } from "@/lib/approval-notify";
 
 /** Batch: genereer inkoop- én verkoopfacturen voor iedereen met openstaand werk. */
 export async function processAll() {
   const res = await processAllPending();
+  // Concept-verkoopfacturen aangemaakt → seintje naar Outlook ter goedkeuring.
+  if (res.verkoop > 0) {
+    try {
+      await notifyPendingApprovals();
+    } catch {
+      // best-effort — een mailfout mag de verwerking nooit blokkeren
+    }
+  }
   revalidatePath("/verwerken");
   revalidatePath("/verwerken/archief");
   revalidatePath("/facturen");
@@ -40,6 +49,13 @@ async function runProcess(
   if (!consultantId) redirect("/verwerken");
 
   const res = await processConsultant(consultantId, opts);
+  if (res && res.verkoop > 0) {
+    try {
+      await notifyPendingApprovals();
+    } catch {
+      // best-effort — mailfout mag de verwerking niet blokkeren
+    }
+  }
   revalidateVerwerken(consultantId);
 
   if (!res) redirect("/verwerken");

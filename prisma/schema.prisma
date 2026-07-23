@@ -205,6 +205,8 @@ model Placement {
   kmRateSell            Float @default(0)
   /// ACTIVE | ENDED
   status       String   @default("ACTIVE")
+  /// Werklocatie / project bij de klant (bijv. "Sif Group HKW8") — op de factuur (kolom LOCATION).
+  workLocation String?
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -278,10 +280,18 @@ model Invoice {
   vatAmount  Float    @default(0)
   total      Float    @default(0)
   notes      String?
+  /// Kop-velden voor het Q4S-factuurformat (doorgaans één medewerker per factuur).
+  subject       String?  // "Subject" — bijv. de medewerker (R. van Son)
+  services      String?  // "Services" — functie/rol (QC Inspector)
+  ourReference  String?  // "Our ref"
+  purchaseOrder String?  // "Inkooporder" / PO-nummer van de klant
   paidDate   DateTime?
   /// When this invoice was sent (or queued in the verzendmap) and to whom.
   sentAt     DateTime?
   sentTo     String?
+  /// Betalingsherinneringen (dunning): wanneer voor het laatst herinnerd + hoe vaak.
+  reminderSentAt DateTime?
+  reminderCount  Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -305,6 +315,11 @@ model InvoiceLine {
   unitPrice   Float
   /// quantity * unitPrice.
   amount      Float
+  /// Extra kolommen voor het Q4S-factuurformat.
+  weekNumber  Int?     // ISO-weeknummer (kolom WEEK)
+  location    String?  // werklocatie (kolom LOCATION)
+  /// HOURS | KM | SURCHARGE | OTHER — bepaalt weergave (uren-aantal vs km/eenheden).
+  lineKind    String?
 
   invoice     Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   placement   Placement? @relation(fields: [placementId], references: [id], onDelete: SetNull)
@@ -330,6 +345,10 @@ model CompanySettings {
   vatNumber            String @default("")
   kvkNumber            String @default("")
   iban                 String @default("")
+  /// BIC / SWIFT van de IBAN (bijv. INGBNL2A).
+  bic                  String @default("")
+  /// G-rekening (geblokkeerde rekening) — verplicht/gebruikelijk bij detachering.
+  gAccount             String @default("")
   email                String @default("")
   phone                String @default("")
   website              String @default("")

@@ -2,15 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
-import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Field, Select } from "@/components/ui/field";
+import { buttonVariants } from "@/components/ui/button";
 import { formatWeekLabel } from "@/lib/utils";
 import { computeTimesheetMoney } from "@/lib/toeslag";
 import { getCompanySettings } from "@/lib/settings";
 import { InvoiceForm, type InvoiceLineOption } from "../InvoiceForm";
+import { ClientChooser } from "../ClientChooser";
 import { generateInvoice } from "../actions";
 
 export const metadata = { title: "Nieuwe factuur" };
@@ -46,39 +45,11 @@ export default async function NieuweFactuurPage({
         {back}
         <PageHeader
           title="Nieuwe factuur"
-          description="Kies de klant waarvoor je wilt factureren."
+          description="Kies de klant waarvoor je wilt factureren — of voeg er meteen één toe."
         />
-        {clients.length === 0 ? (
-          <EmptyState
-            title="Nog geen klanten"
-            description="Voeg eerst een klant toe."
-            action={
-              <Link href="/klanten/nieuw" className={buttonVariants()}>
-                Nieuwe klant
-              </Link>
-            }
-          />
-        ) : (
-          <Card>
-            <CardContent>
-              <form method="get" className="flex items-end gap-3">
-                <Field label="Klant" htmlFor="client" className="flex-1">
-                  <Select id="client" name="client" defaultValue="" required>
-                    <option value="" disabled>
-                      Kies een klant…
-                    </option>
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.companyName}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Button type="submit">Volgende</Button>
-              </form>
-            </CardContent>
-          </Card>
-        )}
+        <ClientChooser
+          clients={clients.map((c) => ({ id: c.id, companyName: c.companyName }))}
+        />
       </div>
     );
   }

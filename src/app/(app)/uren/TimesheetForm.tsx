@@ -7,13 +7,15 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Field, Select, Label } from "@/components/ui/field";
+import { Plus, Trash2 } from "lucide-react";
+import { Field, Select, Label, Input } from "@/components/ui/field";
 import { NumberInput } from "@/components/ui/number-input";
 import { DateInput } from "@/components/ui/date-input";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
+import { EXPENSE_CATEGORIES } from "@/lib/domain";
 import { emptyFormState, type FormState } from "@/lib/form";
-import { cn, parseHours, formatHours, startOfISOWeek } from "@/lib/utils";
+import { cn, parseHours, formatHours, formatCurrency, startOfISOWeek } from "@/lib/utils";
 
 const DAY_NAMES = [
   "Maandag",
@@ -141,6 +143,27 @@ export function TimesheetForm({
       return next;
     });
   const totalKm = km.reduce((sum, k) => sum + parseHours(k), 0);
+
+  // Declaraties (optioneel, alleen bij een NIEUWE urenstaat): bonnetjes/onkosten die
+  // je meteen bij de week vastlegt. Ze worden als losse declaraties aangemaakt voor
+  // de medewerker van deze plaatsing (de bonfoto koppel je later in Declaraties).
+  type ExpenseRow = { key: number; category: string; description: string; amount: string };
+  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
+  const [expKey, setExpKey] = useState(1);
+  const addExpense = () => {
+    setExpenses((prev) => [...prev, { key: expKey, category: "MATERIAAL", description: "", amount: "" }]);
+    setExpKey((k) => k + 1);
+  };
+  const removeExpense = (key: number) =>
+    setExpenses((prev) => prev.filter((r) => r.key !== key));
+  const setExpense = (key: number, patch: Partial<ExpenseRow>) =>
+    setExpenses((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  const expensesPayload = JSON.stringify(
+    expenses
+      .map((r) => ({ category: r.category, description: r.description.trim(), amount: parseHours(r.amount) }))
+      .filter((r) => r.amount > 0),
+  );
+  const expensesTotal = expenses.reduce((s, r) => s + parseHours(r.amount), 0);
 
   return (
     <form action={formAction}>
@@ -294,6 +317,86 @@ export function TimesheetForm({
               (inkoop/verkoop) volgt uit het km-tarief op de plaatsing.
             </p>
           </div>
+
+          {/* Declaraties — alleen bij een nieuwe urenstaat (create mode). */}
+          {placements && (
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <Label className="mb-0">
+                  Declaraties{" "}
+                  <span className="font-normal text-slate-400">(optioneel)</span>
+                </Label>
+                <button
+                  type="button"
+                  onClick={addExpense}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Declaratie
+                </button>
+              </div>
+              {expenses.length === 0 ? (
+                <p className="text-xs text-slate-400">
+                  Bonnetjes/onkosten voor deze week (materiaal, parkeren, verblijf…). Voeg ze
+                  hier direct toe — de foto van de bon koppel je later in Declaraties.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {expenses.map((row) => (
+                    <div key={row.key} className="flex flex-wrap items-center gap-2">
+                      <Select
+                        aria-label="Categorie"
+                        defaultValue={row.category}
+                        onValueChange={(v) => setExpense(row.key, { category: v })}
+                        className="w-44"
+                      >
+                        {EXPENSE_CATEGORIES.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </Select>
+                      <Input
+                        aria-label="Omschrijving"
+                        value={row.description}
+                        onChange={(ev) => setExpense(row.key, { description: ev.target.value })}
+                        placeholder="Omschrijving / leverancier"
+                        className="min-w-[160px] flex-1"
+                      />
+                      <div className="relative w-32">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                          €
+                        </span>
+                        <NumberInput
+                          aria-label="Bedrag (incl. BTW)"
+                          value={row.amount}
+                          onChange={(ev) => setExpense(row.key, { amount: ev.target.value })}
+                          min={0}
+                          step={0.01}
+                          placeholder="0,00"
+                          className="pl-7 text-right"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeExpense(row.key)}
+                        aria-label="Declaratie verwijderen"
+                        className="rounded-md p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <p className="pt-1 text-right text-xs text-slate-500">
+                    Totaal declaraties:{" "}
+                    <span className="font-semibold text-slate-800">
+                      {formatCurrency(expensesTotal)}
+                    </span>
+                  </p>
+                </div>
+              )}
+              <input type="hidden" name="expenses" value={expensesPayload} />
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
           <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>

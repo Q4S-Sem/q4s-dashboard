@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { parseForm, type FormState } from "@/lib/form";
 import { parseHours, startOfISOWeek, round2 } from "@/lib/utils";
 import { createSalesInvoice, createPurchaseInvoice } from "@/lib/invoicing";
+import { EXPENSE_CATEGORY_VALUES } from "@/lib/domain";
 
 const BaseSchema = z.object({
   placementId: z.string().min(1, "Kies een plaatsing"),
@@ -60,6 +61,48 @@ function readOvertime(formData: FormData): number | null {
   return parseHours(String(formData.get("overtimeHours") ?? "")) || null;
 }
 
+/** Parse de (optionele) declaraties uit het urenformulier → losse Expense-rijen
+ *  voor de medewerker van deze plaatsing, gedateerd op de week. Ongeldige/lege
+ *  rijen (bedrag ≤ 0) worden overgeslagen; onbekende categorie → OVERIG. */
+function buildExpenses(
+  formData: FormData,
+  consultantId: string,
+  date: Date,
+): {
+  consultantId: string;
+  date: Date;
+  category: string;
+  description: string | null;
+  amount: number;
+  status: string;
+  source: string;
+}[] {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(String(formData.get("expenses") ?? "[]"));
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(raw)) return [];
+  const rows = [];
+  for (const r of raw as Array<{ category?: unknown; description?: unknown; amount?: unknown }>) {
+    const amount = Number(r.amount);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    const cat = String(r.category ?? "");
+    const category = (EXPENSE_CATEGORY_VALUES as readonly string[]).includes(cat) ? cat : "OVERIG";
+    rows.push({
+      consultantId,
+      date,
+      category,
+      description: String(r.description ?? "").trim() || null,
+      amount: round2(amount),
+      status: "NEW",
+      source: "UPLOAD",
+    });
+  }
+  return rows;
+}
+
 export async function createTimesheet(
   _prev: FormState,
   formData: FormData,
@@ -97,6 +140,20 @@ export async function createTimesheet(
       entries: { create: entries },
     },
   });
+
+  // Optionele declaraties uit hetzelfde formulier → losse declaraties voor de
+  // medewerker van deze plaatsing (verschijnen daarna in de Declaraties-hub).
+  const placement = await db.placement.findUnique({
+    where: { id: parsed.data.placementId },
+    select: { consultantId: true },
+  });
+  if (placement) {
+    const expenses = buildExpenses(formData, placement.consultantId, monday);
+    if (expenses.length > 0) {
+      await db.expense.createMany({ data: expenses });
+      revalidatePath("/declaraties");
+    }
+  }
 
   revalidatePath("/uren");
   revalidatePath("/", "layout");
