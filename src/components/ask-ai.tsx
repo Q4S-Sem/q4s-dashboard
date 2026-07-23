@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BotMessageSquare, X, Send, ArrowRight } from "lucide-react";
 import { askAssistant, type AssistantReply, type AssistantCandidate } from "@/lib/assistant";
 import { DISCIPLINES, labelFor } from "@/lib/domain";
@@ -38,10 +39,17 @@ export function AskAi() {
   const [pending, setPending] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, pending]);
+
+  // Verberg de zwevende knop op formulier-/bewerk-pagina's (nieuw, bewerken,
+  // importeren, instellingen) — daar botst hij met de "Opslaan"-knop rechtsonder.
+  const isFormPage =
+    /\/(nieuw|bewerken|importeren)(\/|$)/.test(pathname) || pathname.endsWith("/instellingen");
+  if (isFormPage) return null;
 
   async function ask(question: string) {
     const q = question.trim();
