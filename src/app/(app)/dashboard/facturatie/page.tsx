@@ -245,7 +245,7 @@ export default async function FacturatieDashboardPage() {
         <SectionCard
           icon={<Building2 className="h-4 w-4" />}
           title="Top klanten"
-          action={<ActionLink href="/facturatie-overzicht">Volledig overzicht →</ActionLink>}
+          action={<ActionLink href="/totaaloverzicht">Volledig overzicht →</ActionLink>}
         >
           {topClients.length === 0 ? (
             <Empty>Nog geen facturen.</Empty>

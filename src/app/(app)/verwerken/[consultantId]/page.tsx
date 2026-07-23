@@ -216,8 +216,8 @@ export default async function VerwerkenPage({
               <Link href="/verwerken" className={buttonVariants({ variant: "outline" })}>
                 Volgende medewerker
               </Link>
-              <Link href="/facturatie-overzicht" className={buttonVariants({ variant: "outline" })}>
-                Naar facturatie-overzicht
+              <Link href="/totaaloverzicht" className={buttonVariants({ variant: "outline" })}>
+                Naar totaaloverzicht
               </Link>
             </div>
           </CardContent>

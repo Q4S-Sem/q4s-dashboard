@@ -4,7 +4,7 @@ import { computeTimesheetMoney } from "./toeslag";
 import { createSalesInvoice, createPurchaseInvoice } from "./invoicing";
 
 // Shared money math + aggregations for the Facturatie hub: the guided per-person
-// flow (/verwerken), the overview (/facturatie-overzicht) and the dashboard.
+// flow (/verwerken), the overview (/totaaloverzicht) and the dashboard.
 // Single source of truth so every screen shows the same numbers. Per-timesheet
 // money (incl. weekend/overuren toeslagen + km) lives in src/lib/toeslag.ts, so
 // the wizard preview always equals the generated invoice.
@@ -495,7 +495,7 @@ export async function archivedBillingByWeek(): Promise<ArchivedWeek[]> {
 }
 
 // ---------------------------------------------------------------------------
-// 2) Invoicing overview — dashboard + /facturatie-overzicht
+// 2) Invoicing overview — dashboard + /totaaloverzicht
 // ---------------------------------------------------------------------------
 
 const monthFmt = new Intl.DateTimeFormat("nl-NL", { month: "short" });
@@ -534,7 +534,7 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
   const twelveAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
   // Optionele periode-scope: komt er een 'range' mee (bijv. vanaf het dashboard-
   // filter), dan scopen we de bedragen op die datums; zonder range = dit
-  // kalenderjaar (default — zoals /facturatie-overzicht 'm gebruikt, ongewijzigd).
+  // kalenderjaar (default — zoals /totaaloverzicht 'm gebruikt, ongewijzigd).
   const scoped = Boolean(range);
   const start = range?.start ?? yearStart;
   const end = range?.end ?? new Date(now.getFullYear() + 1, 0, 1);

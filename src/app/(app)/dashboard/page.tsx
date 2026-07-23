@@ -401,7 +401,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Omzet, inkoop & marge ${periodLabel}`}
           color="blue"
-          action={<Link href="/facturatie-overzicht" className="text-sm font-medium text-blue-700 hover:text-blue-800">Facturatie-overzicht →</Link>}
+          action={<Link href="/totaaloverzicht" className="text-sm font-medium text-blue-700 hover:text-blue-800">Totaaloverzicht →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
@@ -463,7 +463,7 @@ export default async function DashboardPage({
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-blue-600" /> Top klanten (omzet {periodLabel})
             </CardTitle>
-            <Link href="/facturatie-overzicht" className="text-sm font-medium text-blue-700 hover:text-blue-800">Overzicht</Link>
+            <Link href="/totaaloverzicht" className="text-sm font-medium text-blue-700 hover:text-blue-800">Overzicht</Link>
           </CardHeader>
           <CardContent className="space-y-2.5">
             {topClients.length === 0 ? (
@@ -489,7 +489,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Facturatie ${periodLabel}`}
           color="emerald"
-          action={<Link href="/facturatie-overzicht" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Volledig overzicht →</Link>}
+          action={<Link href="/totaaloverzicht" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Volledig overzicht →</Link>}
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <KpiTile color="blue" label="Omzet" value={formatCurrency(overview.omzet)} icon={<TrendingUp className="h-5 w-5" />} />
@@ -505,7 +505,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Wat Q4S overhoudt (${periodLabel})`}
           color="emerald"
-          action={<Link href="/facturatie-overzicht" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Facturatie-overzicht →</Link>}
+          action={<Link href="/totaaloverzicht" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Totaaloverzicht →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Twee losse cijfers */}

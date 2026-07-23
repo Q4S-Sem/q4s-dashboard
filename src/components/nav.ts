@@ -111,7 +111,6 @@ export const HUBS: NavHub[] = [
       { href: "/verzenden", label: "Verzendmap", icon: Send, badge: "verzenden", section: "Facturen" },
       { href: "/betalingen", label: "Betalingen (SEPA)", icon: Banknote, section: "Facturen" },
       { href: "/betaalmonitor", label: "Betaalmonitor", icon: BellRing, section: "Facturen" },
-      { href: "/facturatie-overzicht", label: "Overzicht", icon: PieChart, section: "Overzicht & beheer" },
       { href: "/totaaloverzicht", label: "Totaaloverzicht", icon: TrendingUp, section: "Overzicht & beheer" },
       { href: "/boekhouding", label: "Boekhouding & BTW", icon: Scale, section: "Overzicht & beheer" },
       { href: "/verwerken/archief", label: "Archief (verwerkt)", icon: Archive, section: "Overzicht & beheer" },
