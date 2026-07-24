@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import {
   Inbox as InboxIcon,
-  Upload,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
@@ -13,7 +12,6 @@ import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -22,7 +20,7 @@ import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { INBOX_SOURCES, INBOX_STATUSES } from "@/lib/domain";
 import { parseWeekParam, weekParam, currentWeekMonday } from "@/lib/timesheets";
 import { WeekPicker } from "@/components/week-picker";
-import { uploadInboxTimesheet } from "./actions";
+import { TimesheetDropzone } from "./TimesheetDropzone";
 
 export const metadata = { title: "Timesheet-inbox" };
 export const dynamic = "force-dynamic";
@@ -108,30 +106,7 @@ export default async function InboxPage({
           <span className="text-sm text-slate-500">{openCount} te verwerken</span>
         </CardHeader>
         <CardContent>
-          <form action={uploadInboxTimesheet} className="flex flex-wrap items-end gap-3">
-            <div className="flex-1">
-              <label htmlFor="inbox-file" className="mb-1.5 block text-sm font-medium text-slate-700">
-                Bestand(en) — PDF, afbeelding, Excel of ZIP
-              </label>
-              <input
-                id="inbox-file"
-                name="file"
-                type="file"
-                multiple
-                accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.xlsx,.xls,.csv,.zip,application/pdf,image/*,application/zip,application/x-zip-compressed"
-                required
-                aria-label="Timesheets kiezen"
-                className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-black file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-neutral-800"
-              />
-            </div>
-            <SubmitButton pendingLabel="Uploaden…">
-              <Upload className="h-4 w-4" /> Upload &amp; uitlezen
-            </SubmitButton>
-          </form>
-          <p className="mt-2 text-xs text-slate-500">
-            Meerdere bestanden of een <strong>ZIP</strong> tegelijk mag — alles wordt automatisch uitgelezen en per
-            week gesorteerd. Of laat admin@q4s.nl doorsturen naar <code>/api/inbox/email</code>.
-          </p>
+          <TimesheetDropzone />
         </CardContent>
       </Card>
 
