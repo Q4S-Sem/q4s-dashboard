@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Field, Input } from "@/components/ui/field";
+import { SearchSelect } from "@/components/ui/search-select";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatHours, cn, distributeDayHours, type DayHours } from "@/lib/utils";
@@ -250,16 +251,18 @@ export default async function InboxDetailPage({
                 <input type="hidden" name="id" value={item.id} />
 
                 <Field label="Plaatsing (werknemer · klant)" htmlFor="placementId" required>
-                  <Select id="placementId" name="placementId" defaultValue={item.placementId ?? ""} required>
-                    <option value="" disabled>
-                      Kies een plaatsing…
-                    </option>
-                    {placements.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.consultant.firstName} {p.consultant.lastName} — {p.title} — {p.client.companyName}
-                      </option>
-                    ))}
-                  </Select>
+                  <SearchSelect
+                    id="placementId"
+                    name="placementId"
+                    defaultValue={item.placementId ?? ""}
+                    options={placements.map((p) => ({
+                      value: p.id,
+                      label: `${p.consultant.firstName} ${p.consultant.lastName} — ${p.client.companyName}`,
+                      sub: p.title,
+                    }))}
+                    placeholder="Typ een naam of klant…"
+                    emptyText="Geen actieve plaatsing gevonden."
+                  />
                   {placements.length === 0 && (
                     <p className="mt-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
                       Nog geen actieve plaatsingen — daarom is deze lijst leeg. Maak eerst een{" "}
