@@ -5,9 +5,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { DateInput } from "@/components/ui/date-input";
-import { FileInput } from "@/components/ui/file-input";
+import { Dropzone } from "@/components/ui/dropzone";
 import { PersonCombobox } from "@/components/ui/person-combobox";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { InvoicePreview } from "@/components/invoice-preview";
 import { createReceivedInvoice } from "../actions";
 
 export const metadata = { title: "Factuur importeren" };
@@ -35,7 +36,7 @@ export default async function ImporterenPage({
           : null;
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <Link
         href="/ontvangen-facturen"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
@@ -53,8 +54,13 @@ export default async function ImporterenPage({
       <Card>
         <CardContent>
           <form action={createReceivedInvoice} className="space-y-5">
-            <Field label="Factuur (PDF)" htmlFor="file" hint="Optioneel — sleep of kies het bestand">
-              <FileInput id="file" name="file" accept="application/pdf,image/*" hint="PDF of afbeelding" />
+            <Field label="Factuur (PDF)" hint="Optioneel — sleep of kies het bestand">
+              <Dropzone
+                name="file"
+                accept="application/pdf,image/*"
+                label="Sleep de factuur hierheen of klik om te selecteren"
+                hint="PDF of afbeelding"
+              />
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -107,6 +113,8 @@ export default async function ImporterenPage({
           automatisch uit je mailbox en vult deze velden zelf in — net als de CV-inbox.
         </span>
       </p>
+
+      <InvoicePreview caption="Ter referentie: zo ziet een Q4S-factuur eruit met jullie bedrijfsgegevens. Pas de gegevens aan bij Instellingen." />
     </div>
   );
 }

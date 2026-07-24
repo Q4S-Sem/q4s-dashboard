@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { formatCurrency, formatDate } from "./utils";
+import { formatCurrency, formatDate, round2 } from "./utils";
 import type { InvoiceDoc } from "./invoice-pdf";
 import { renderQ4sEmail, renderQ4sEmailText, type EmailContent } from "./email";
 import type { CompanySettings } from "./settings";
@@ -119,6 +119,52 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
     footerText: s.iban
       ? `Gelieve het totaalbedrag binnen ${c.paymentTermDays} dagen te voldoen op ${s.iban} o.v.v. factuurnummer ${inv.number}.`
       : null,
+    footerNote: s.invoiceFooter || null,
+  };
+}
+
+/**
+ * Een VOORBEELD-verkoopfactuur met de echte Q4S-opmaak (companyBlock uit de
+ * bedrijfsgegevens) + fictieve regels. Voor de live preview op Instellingen en
+ * Factuur importeren — geen echte klantdata, puur om te tonen hoe de factuur
+ * eruitziet. Verandert er iets bij de bedrijfsgegevens, dan verandert dit mee.
+ */
+export function sampleInvoiceDoc(s: CompanySettings): InvoiceDoc {
+  const issueDate = new Date();
+  const dueDate = new Date(issueDate.getTime() + (s.defaultPaymentTermDays || 14) * 86_400_000);
+  const lines: Line[] = [
+    { description: "Detachering — NDO Inspecteur (week 29, 2026)", quantity: 40, unitPrice: 75, amount: 3000 },
+    { description: "Overurentoeslag 125% (week 29) — 8 u", quantity: 8, unitPrice: 18.75, amount: 150 },
+    { description: "Kilometervergoeding (week 29) — 220 km", quantity: 220, unitPrice: 0.23, amount: 50.6 },
+  ];
+  const subtotal = round2(lines.reduce((n, l) => n + l.amount, 0));
+  const vatRate = s.defaultVatRate ?? 21;
+  const vatAmount = round2((subtotal * vatRate) / 100);
+  const total = round2(subtotal + vatAmount);
+  const number = `${s.invoicePrefix || ""}VB-2026-0001`;
+  return {
+    title: "Factuur",
+    number,
+    issueDate,
+    dueDate,
+    vatRate,
+    subtotal,
+    vatAmount,
+    total,
+    notes: null,
+    lines,
+    company: companyBlock(s),
+    recipientLabel: "Factuur aan",
+    recipientName: "Voorbeeld Opdrachtgever B.V.",
+    recipientLines: compact([
+      "T.a.v. de administratie",
+      "Voorbeeldstraat 1",
+      "1000 AA Amsterdam",
+      "Nederland",
+    ]),
+    footerText: s.iban
+      ? `Gelieve het totaalbedrag binnen ${s.defaultPaymentTermDays || 14} dagen te voldoen op ${s.iban} o.v.v. factuurnummer ${number}.`
+      : "Voorbeeldfactuur — vul een IBAN in bij de bedrijfsgegevens en die verschijnt hier automatisch.",
     footerNote: s.invoiceFooter || null,
   };
 }

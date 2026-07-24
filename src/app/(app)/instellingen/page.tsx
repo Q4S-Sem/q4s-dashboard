@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/ui/page-header";
+import { InvoicePreview } from "@/components/invoice-preview";
 import { getCompanySettings } from "@/lib/settings";
 import { SettingsForm } from "./SettingsForm";
 import { updateSettings } from "./actions";
@@ -14,10 +15,10 @@ export default async function InstellingenPage({
   const settings = await getCompanySettings();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Instellingen"
-        description="Bedrijfsgegevens van Q4S — gebruikt op facturen."
+        description="Bedrijfsgegevens van Q4S — gebruikt op facturen. Rechts zie je meteen hoe ze op de factuur landen."
       />
 
       {saved === "1" && (
@@ -26,7 +27,10 @@ export default async function InstellingenPage({
         </p>
       )}
 
-      <SettingsForm settings={settings} action={updateSettings} />
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        <SettingsForm settings={settings} action={updateSettings} />
+        <InvoicePreview className="lg:sticky lg:top-24" />
+      </div>
     </div>
   );
 }

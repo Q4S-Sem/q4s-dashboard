@@ -19,6 +19,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { Dropzone } from "@/components/ui/dropzone";
 import { Input, Select } from "@/components/ui/field";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatCurrency, formatDate, round2 } from "@/lib/utils";
@@ -129,30 +130,24 @@ export default async function DeclaratiesPage({
           <CardTitle>Bonnetjes toevoegen</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={uploadExpenses} className="flex flex-wrap items-end gap-3">
-            <div className="flex-1">
-              <label htmlFor="expense-file" className="mb-1.5 block text-sm font-medium text-slate-700">
-                Bonnetje(s) — foto, scan, PDF of ZIP
-              </label>
-              <input
-                id="expense-file"
-                name="file"
-                type="file"
-                multiple
-                accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.heic,.zip,application/pdf,image/*,application/zip,application/x-zip-compressed"
-                required
-                aria-label="Bonnetjes kiezen"
-                className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-black file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-neutral-800"
-              />
+          <form action={uploadExpenses} className="space-y-3">
+            <Dropzone
+              name="file"
+              accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.heic,.zip,application/pdf,image/*,application/zip,application/x-zip-compressed"
+              multiple
+              label="Sleep je bonnetjes hierheen of klik om te selecteren"
+              hint="Foto, scan, PDF of ZIP · meerdere tegelijk mag"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-slate-500">
+                Je kunt meerdere bonnetjes tegelijk of een <strong>ZIP</strong> uploaden —
+                elk bonnetje wordt automatisch uitgelezen.
+              </p>
+              <SubmitButton pendingLabel="Uploaden…">
+                <Upload className="h-4 w-4" /> Upload &amp; uitlezen
+              </SubmitButton>
             </div>
-            <SubmitButton pendingLabel="Uploaden…">
-              <Upload className="h-4 w-4" /> Upload &amp; uitlezen
-            </SubmitButton>
           </form>
-          <p className="mt-2 text-xs text-slate-500">
-            Je kunt meerdere bonnetjes tegelijk of een <strong>ZIP</strong> uploaden —
-            elk bonnetje wordt automatisch uitgelezen.
-          </p>
 
           {/* Handmatige bon zonder foto — werkt ook live zolang R2 nog niet gekoppeld is. */}
           <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50/60">
