@@ -17,6 +17,12 @@ export default async function KlantBewerkenPage({
   const client = await db.client.findUnique({ where: { id } });
   if (!client) notFound();
 
+  const clients = await db.client.findMany({
+    orderBy: { companyName: "asc" },
+    select: { id: true, companyName: true },
+  });
+  const existingClients = clients.map((c) => ({ id: c.id, name: c.companyName }));
+
   return (
     <div className="space-y-6">
       <Link
