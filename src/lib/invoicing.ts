@@ -108,6 +108,14 @@ export async function createPurchaseInvoice(opts: {
 
   const consultant = await db.consultant.findUnique({ where: { id: consultantId } });
   if (!consultant) return { ok: false, error: "Onbekende werknemer." };
+  // Eigen loondienst-personeel krijgt GÉÉN inkoopfactuur — dat is salaris. Alleen
+  // de verkoopfactuur naar de klant. (De verwerken-flow slaat dit al over; dit is
+  // de vangnet-guard voor handmatige aanroepen.)
+  if (consultant.employmentType === "LOONDIENST")
+    return {
+      ok: false,
+      error: "Loondienst-personeel krijgt geen inkoopfactuur (salaris) — alleen de verkoopfactuur naar de klant.",
+    };
 
   const timesheets = await db.timesheet.findMany({
     where: {

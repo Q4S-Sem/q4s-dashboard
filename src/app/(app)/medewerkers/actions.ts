@@ -13,6 +13,7 @@ import {
   LEAVE_TYPE_VALUES,
   BONUS_TYPE_VALUES,
   EMPLOYEE_DOC_CATEGORY_VALUES,
+  DISCIPLINE_VALUES,
 } from "@/lib/domain";
 
 const EmployeeSchema = z.object({
@@ -106,6 +107,88 @@ export async function deleteEmployee(formData: FormData) {
   }
   revalidatePath("/medewerkers");
   redirect("/medewerkers");
+}
+
+// ---- Detacheren (eigen medewerker → plaatsing bij klant) ----
+
+/**
+ * Detacheer deze eigen medewerker naar een klant. Koppelt (of maakt) één keer een
+ * Consultant-record (employmentType LOONDIENST, `employeeId` naar de medewerker) —
+ * dat is de "detachering-identiteit" die de facturatie-motor gebruikt — en maakt
+ * daaronder de plaatsing. Omdat het dienstverband LOONDIENST is, slaat de motor de
+ * inkoopfactuur over (salaris i.p.v. factuur) en stuurt alleen de klantfactuur.
+ */
+export async function detachEmployee(formData: FormData) {
+  const employeeId = String(formData.get("employeeId") ?? "");
+  if (!employeeId) redirect("/medewerkers");
+  const emp = await db.employee.findUnique({
+    where: { id: employeeId },
+    include: { detachering: { select: { id: true } } },
+  });
+  if (!emp) redirect("/medewerkers");
+
+  const clientId = String(formData.get("clientId") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  if (!clientId || !title) redirect(`/medewerkers/${employeeId}?error=detach`);
+  const client = await db.client.findUnique({ where: { id: clientId }, select: { id: true } });
+  if (!client) redirect(`/medewerkers/${employeeId}?error=detach`);
+
+  const num = (k: string) => {
+    const n = Number(String(formData.get(k) ?? "").replace(",", "."));
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  };
+  const disciplineRaw = String(formData.get("discipline") ?? "OVERIG");
+  const discipline = (DISCIPLINE_VALUES as string[]).includes(disciplineRaw) ? disciplineRaw : "OVERIG";
+  const chargeRate = num("chargeRate");
+  const costRate = num("costRate");
+  const startRaw = String(formData.get("startDate") ?? "").trim();
+  const startDate = startRaw ? new Date(startRaw) : new Date();
+  const workLocation = String(formData.get("workLocation") ?? "").trim() || null;
+
+  // Koppel/creëer de consultant-identiteit. Geen e-mail/IBAN kopiëren: die zijn
+  // uniek + loondienst factureert niet (geen inkoopfactuur), dus niet nodig — en zo
+  // botst het nooit met een bestaande consultant.
+  let consultantId = emp.detachering?.id ?? null;
+  if (!consultantId) {
+    const c = await db.consultant.create({
+      data: {
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        discipline,
+        employmentType: "LOONDIENST",
+        defaultCostRate: costRate,
+        employeeId: emp.id,
+        dateOfBirth: emp.dateOfBirth,
+        bsn: emp.bsn,
+      },
+    });
+    consultantId = c.id;
+  } else {
+    await db.consultant
+      .update({ where: { id: consultantId }, data: { discipline, active: true } })
+      .catch(() => {});
+  }
+
+  const placement = await db.placement.create({
+    data: {
+      consultantId,
+      clientId,
+      title,
+      startDate: isNaN(startDate.getTime()) ? new Date() : startDate,
+      status: "ACTIVE",
+      costRate,
+      chargeRate,
+      weekendSurchargeSell: num("weekendSurchargeSell"),
+      overtimeSurchargeSell: num("overtimeSurchargeSell"),
+      kmRateSell: num("kmRateSell"),
+      workLocation,
+    },
+  });
+
+  revalidatePath(`/medewerkers/${employeeId}`);
+  revalidatePath("/plaatsingen");
+  revalidatePath("/werknemers");
+  redirect(`/plaatsingen/${placement.id}?new=1`);
 }
 
 // ---- Verlof ----

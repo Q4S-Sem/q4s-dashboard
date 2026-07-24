@@ -251,7 +251,9 @@ export default async function VerwerkenPage({
 
   // De knop keurt eerst goed en factureert dan; de preview toont dus ALLES wat nog
   // niet op een inkoop-/verkoopfactuur staat (ongeacht of het al goedgekeurd is).
-  const inkoopPreview = flow.weeks.filter((w) => !w.hasPurchase);
+  // Eigen loondienst-personeel (ownStaff) krijgt GÉÉN inkoopfactuur (salaris) →
+  // nooit een inkoop-preview, ook al staat er nog geen inkooplijn.
+  const inkoopPreview = flow.ownStaff ? [] : flow.weeks.filter((w) => !w.hasPurchase);
   const inkoopSubtotal = round2(inkoopPreview.reduce((s, w) => s + w.cost, 0));
 
   const salesWeeks = flow.weeks.filter((w) => !w.hasSales);
@@ -315,12 +317,21 @@ export default async function VerwerkenPage({
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 text-sm text-slate-500">
-            <Coins className="h-4 w-4 text-brand-600" /> Wij betalen {name}
+            <Coins className="h-4 w-4 text-brand-600" /> {flow.ownStaff ? "Kost — loon" : `Wij betalen ${name}`}
           </div>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
-            {formatCurrency(inkoopSubtotal)}
-          </p>
-          <p className="text-xs text-slate-400">inkoop, excl. btw</p>
+          {flow.ownStaff ? (
+            <>
+              <p className="mt-1 text-2xl font-bold text-slate-900">Salaris</p>
+              <p className="text-xs text-slate-400">eigen personeel — geen inkoopfactuur</p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                {formatCurrency(inkoopSubtotal)}
+              </p>
+              <p className="text-xs text-slate-400">inkoop, excl. btw</p>
+            </>
+          )}
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -430,14 +441,23 @@ export default async function VerwerkenPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Coins className="h-5 w-5 text-brand-600" /> Inkoopfactuur — wij betalen {name}
+              <Coins className="h-5 w-5 text-brand-600" />{" "}
+              {flow.ownStaff ? "Kost — salaris (geen inkoopfactuur)" : `Inkoopfactuur — wij betalen ${name}`}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {inkoopPreview.length === 0 ? (
-              <p className="py-4 text-center text-sm text-slate-400">
-                Inkoop is al aangemaakt voor deze weken.
-              </p>
+              flow.ownStaff ? (
+                <p className="rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                  <strong>Eigen loondienst-medewerker.</strong> Betaling loopt via het salaris — er komt
+                  <span className="font-medium"> géén inkoopfactuur</span>. De marge hiernaast is berekend
+                  met de interne loonkost/uur; overuren worden als loon uitbetaald.
+                </p>
+              ) : (
+                <p className="py-4 text-center text-sm text-slate-400">
+                  Inkoop is al aangemaakt voor deze weken.
+                </p>
+              )
             ) : (
               <>
                 <div className="overflow-x-auto">
@@ -578,9 +598,13 @@ export default async function VerwerkenPage({
         <div className="flex flex-col gap-4 rounded-2xl border border-emerald-300 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
-              <span className="text-slate-600">
-                Inkoop <span className="font-semibold tabular-nums text-slate-900">{formatCurrency(inkoopSubtotal)}</span>
-              </span>
+              {flow.ownStaff ? (
+                <span className="text-slate-500">Kost via salaris</span>
+              ) : (
+                <span className="text-slate-600">
+                  Inkoop <span className="font-semibold tabular-nums text-slate-900">{formatCurrency(inkoopSubtotal)}</span>
+                </span>
+              )}
               <span className="text-slate-600">
                 Verkoop <span className="font-semibold tabular-nums text-slate-900">{formatCurrency(verkoopSubtotal)}</span>
               </span>

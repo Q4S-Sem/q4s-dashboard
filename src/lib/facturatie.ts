@@ -30,6 +30,7 @@ export type FlowWeek = {
   margin: number; // charge - cost
   hasPurchase: boolean; // already on a purchase (inkoop) invoice
   hasSales: boolean; // already on a sales (verkoop) invoice
+  noInkoop: boolean; // loondienst/eigen personeel → salaris i.p.v. inkoopfactuur
   source: string | null; // UPLOAD | EMAIL | null (manual)
 };
 
@@ -40,7 +41,14 @@ function pendingWhere() {
     OR: [
       { status: "SUBMITTED" as const },
       { status: "APPROVED" as const },
-      { status: "INVOICED" as const, purchaseLine: { is: null } },
+      {
+        status: "INVOICED" as const,
+        purchaseLine: { is: null },
+        // Loondienst-personeel (eigen medewerkers) krijgt GÉÉN inkoopfactuur — dat
+        // is salaris. Een al-gefactureerde loondienst-week is dus klaar, niet
+        // "wacht nog op inkoop". Anders bleef die eeuwig openstaan.
+        placement: { consultant: { employmentType: { not: "LOONDIENST" } } },
+      },
     ],
   };
 }
@@ -65,6 +73,7 @@ function toFlowWeek(t: {
     kmRateBuy: number;
     kmRateSell: number;
     client: { companyName: string };
+    consultant: { employmentType: string };
   };
   invoiceLine: { id: string } | null;
   purchaseLine: { id: string } | null;
@@ -92,13 +101,19 @@ function toFlowWeek(t: {
     margin: money.margin,
     hasPurchase: !!t.purchaseLine,
     hasSales: !!t.invoiceLine,
+    noInkoop: t.placement.consultant.employmentType === "LOONDIENST",
     source: t.inbox?.source ?? null,
   };
 }
 
 const flowInclude = {
   entries: true,
-  placement: { include: { client: { select: { companyName: true } } } },
+  placement: {
+    include: {
+      client: { select: { companyName: true } },
+      consultant: { select: { employmentType: true } },
+    },
+  },
   invoiceLine: { select: { id: true } },
   purchaseLine: { select: { id: true } },
   inbox: { select: { source: true } },
@@ -124,7 +139,7 @@ export async function pendingWorkByConsultant(): Promise<ConsultantPending[]> {
       placement: {
         include: {
           client: { select: { companyName: true } },
-          consultant: { select: { id: true, firstName: true, lastName: true, discipline: true } },
+          consultant: { select: { id: true, firstName: true, lastName: true, discipline: true, employmentType: true } },
         },
       },
     },
@@ -155,8 +170,9 @@ export async function pendingWorkByConsultant(): Promise<ConsultantPending[]> {
     if (w.status === "SUBMITTED") row.needApproval += 1;
     // Sales pending = APPROVED and not yet on a sales invoice.
     if (w.status === "APPROVED" && !w.hasSales) row.teFactureren = round2(row.teFactureren + w.charge);
-    // Purchase pending = approved/invoiced and not yet on a purchase invoice.
-    if ((w.status === "APPROVED" || w.status === "INVOICED") && !w.hasPurchase)
+    // Purchase pending = approved/invoiced and not yet on a purchase invoice —
+    // maar NIET voor loondienst (die krijgen salaris, geen inkoopfactuur).
+    if (!w.noInkoop && (w.status === "APPROVED" || w.status === "INVOICED") && !w.hasPurchase)
       row.teBetalen = round2(row.teBetalen + w.cost);
   }
 
@@ -217,6 +233,7 @@ export type ConsultantFlow = {
   inkoopPendingIds: string[]; // purchase not yet generated
   inkoopTotals: { hours: number; cost: number };
   verkoopByClient: SalesGroup[]; // sales not yet generated, grouped per client
+  ownStaff: boolean; // loondienst/eigen personeel → geen inkoopfactuur (loon)
   done: boolean; // nothing left to invoice
 };
 
@@ -224,9 +241,10 @@ export type ConsultantFlow = {
 export async function consultantFlow(consultantId: string): Promise<ConsultantFlow | null> {
   const consultant = await db.consultant.findUnique({
     where: { id: consultantId },
-    select: { id: true, firstName: true, lastName: true, discipline: true },
+    select: { id: true, firstName: true, lastName: true, discipline: true, employmentType: true },
   });
   if (!consultant) return null;
+  const ownStaff = consultant.employmentType === "LOONDIENST";
 
   const timesheets = await db.timesheet.findMany({
     where: { ...pendingWhere(), placement: { consultantId } },
@@ -237,9 +255,10 @@ export async function consultantFlow(consultantId: string): Promise<ConsultantFl
 
   const needApprovalIds = weeks.filter((w) => w.status === "SUBMITTED").map((w) => w.timesheetId);
 
-  const inkoopPending = weeks.filter(
-    (w) => (w.status === "APPROVED" || w.status === "INVOICED") && !w.hasPurchase,
-  );
+  // Loondienst → geen inkoopfactuur (salaris): dan is er niets "in te kopen".
+  const inkoopPending = ownStaff
+    ? []
+    : weeks.filter((w) => (w.status === "APPROVED" || w.status === "INVOICED") && !w.hasPurchase);
   const inkoopTotals = {
     hours: round2(inkoopPending.reduce((s, w) => s + w.hours, 0)),
     cost: round2(inkoopPending.reduce((s, w) => s + w.cost, 0)),
@@ -267,6 +286,7 @@ export async function consultantFlow(consultantId: string): Promise<ConsultantFl
     inkoopPendingIds: inkoopPending.map((w) => w.timesheetId),
     inkoopTotals,
     verkoopByClient: [...groups.values()],
+    ownStaff,
     done: weeks.length === 0,
   };
 }
@@ -448,7 +468,12 @@ export async function archivedBillingByWeek(): Promise<ArchivedWeek[]> {
     where: {
       status: "INVOICED",
       invoiceLine: { isNot: null },
-      purchaseLine: { isNot: null },
+      // Volledig verwerkt = verkoop gefactureerd én (inkoop gefactureerd OF
+      // loondienst, want dan hoort er geen inkoopfactuur bij — dat is salaris).
+      OR: [
+        { purchaseLine: { isNot: null } },
+        { placement: { consultant: { employmentType: "LOONDIENST" } } },
+      ],
     },
     include: {
       entries: { select: { hours: true } },
