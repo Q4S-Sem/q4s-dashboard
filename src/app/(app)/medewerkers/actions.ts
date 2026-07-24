@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { parseForm, type FormState } from "@/lib/form";
 import { saveUpload, deleteUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
+import { readCertificateFile } from "@/lib/cert-extract";
 import { workdaysExcludingHolidays } from "@/lib/holidays";
 import {
   EMPLOYEE_DEPARTMENT_VALUES,
@@ -356,6 +357,44 @@ export async function deletePayslip(formData: FormData) {
 
 // ---- Documenten / contract ----
 
+/**
+ * "YYYY-MM-DD" → geldige lokale-middernacht-datum, of null. Weigert fout formaat
+ * én kalender-ongeldige datums (2026-13-01, 30 feb, …), zodat er nooit een
+ * Invalid Date of stil doorgerolde datum in de DB belandt.
+ */
+function safeDate(v: FormDataEntryValue | string | null | undefined): Date | null {
+  const s = String(v ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const [y, mo, d] = s.split("-").map(Number);
+  const dt = new Date(`${s}T00:00:00`);
+  if (
+    Number.isNaN(dt.getTime()) ||
+    dt.getFullYear() !== y ||
+    dt.getMonth() + 1 !== mo ||
+    dt.getDate() !== d
+  ) {
+    return null;
+  }
+  return dt;
+}
+
+/** Los een belofte op met een fallback als 'ms' verstrijkt — een trage AI-call
+ *  mag de upload nooit laten hangen (het document is dan al opgeslagen). */
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (v: T) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        resolve(v);
+      }
+    };
+    const timer = setTimeout(() => finish(fallback), ms);
+    p.then(finish, () => finish(fallback));
+  });
+}
+
 export async function uploadDocument(formData: FormData) {
   const employeeId = String(formData.get("employeeId") ?? "");
   if (!employeeId) return;
@@ -365,22 +404,81 @@ export async function uploadDocument(formData: FormData) {
   }
   if (file.size > MAX_UPLOAD_BYTES) redirect(`/medewerkers/${employeeId}?error=size`);
 
-  const category = String(formData.get("category") ?? "CONTRACT");
+  const rawCategory = String(formData.get("category") ?? "CONTRACT");
+  const category = (EMPLOYEE_DOC_CATEGORY_VALUES as string[]).includes(rawCategory)
+    ? rawCategory
+    : "OVERIG";
   const title = String(formData.get("title") ?? "").trim() || file.name;
+  const isCert = category === "DIPLOMA";
   const stored = await saveUpload(employeeId, file);
 
-  await db.employeeDocument.create({
+  // Handmatige certificaatvelden (alleen bij DIPLOMA) — hebben altijd voorrang op de AI.
+  const issuedDate = isCert ? safeDate(formData.get("issuedDate")) : null;
+  const expiryDate = isCert ? safeDate(formData.get("expiryDate")) : null;
+  const certNumber = isCert ? String(formData.get("certNumber") ?? "").trim() || null : null;
+  const issuer = isCert ? String(formData.get("issuer") ?? "").trim() || null : null;
+
+  // Het document meteen wegschrijven, vóór de (trage) AI-stap. Zo raakt een
+  // geüpload bestand nooit "los" als het uitlezen traag is of faalt — dan blijft
+  // de vervaldatum simpelweg leeg (handmatig aan te vullen).
+  const doc = await db.employeeDocument.create({
     data: {
       employeeId,
-      category: (EMPLOYEE_DOC_CATEGORY_VALUES as string[]).includes(category) ? category : "OVERIG",
+      category,
       title,
       fileName: stored,
       originalName: file.name,
       mimeType: file.type || "application/octet-stream",
       fileSize: file.size,
+      issuedDate,
+      expiryDate,
+      certNumber,
+      issuer,
+      aiExtracted: false,
     },
   });
+
+  // Certificaat met ontbrekende velden → best-effort door de AI laten uitlezen
+  // (met timeout, zodat de upload nooit blijft hangen). Alleen ontbrekende velden
+  // worden gevuld; handmatige invoer blijft staan.
+  if (isCert && (!expiryDate || !issuedDate || !certNumber || !issuer)) {
+    const empty = {} as Awaited<ReturnType<typeof readCertificateFile>>;
+    const res = await withTimeout(readCertificateFile(file), 20_000, empty);
+    if (res.data) {
+      const patch: {
+        issuedDate?: Date;
+        expiryDate?: Date;
+        certNumber?: string;
+        issuer?: string;
+      } = {};
+      if (!expiryDate) {
+        const d = safeDate(res.data.expiryDate);
+        if (d) patch.expiryDate = d;
+      }
+      if (!issuedDate) {
+        const d = safeDate(res.data.issuedDate);
+        if (d) patch.issuedDate = d;
+      }
+      if (!certNumber && res.data.number) patch.certNumber = res.data.number;
+      if (!issuer && res.data.issuer) patch.issuer = res.data.issuer;
+
+      // Alleen bijwerken (+ "automatisch uitgelezen" tonen) als de AI echt een
+      // ontbrekend veld invulde — anders blijft het label weg bij handmatige invoer.
+      if (Object.keys(patch).length > 0) {
+        await db.employeeDocument.update({
+          where: { id: doc.id },
+          data: { ...patch, aiExtracted: true },
+        });
+      }
+    }
+  }
+
   revalidatePath(`/medewerkers/${employeeId}`);
+  // Certificaten tellen mee in de certificeringen-hub → die + de sidebar-tellers bijwerken.
+  if (isCert) {
+    revalidatePath("/certificeringen");
+    revalidatePath("/", "layout");
+  }
   redirect(`/medewerkers/${employeeId}`);
 }
 

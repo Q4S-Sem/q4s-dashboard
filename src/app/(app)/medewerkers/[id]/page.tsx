@@ -12,10 +12,10 @@ import {
   Phone,
   Wallet,
   FileText,
-  Upload,
   ExternalLink,
   Clock,
   Briefcase,
+  Sparkles,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { round2, formatCurrency, formatDate, formatHours, formatWeekLabel } from "@/lib/utils";
@@ -23,12 +23,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
-import { StatusBadge } from "@/components/ui/badge";
+import { StatusBadge, Badge } from "@/components/ui/badge";
+import { certStatus, CERT_STATUS_META } from "@/lib/evaluaties";
+import { isVisionConfigured } from "@/lib/ai";
+import { DocUploadForm } from "./DocUploadForm";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { SearchSelect } from "@/components/ui/search-select";
-import { FileInput } from "@/components/ui/file-input";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import {
   LEAVE_TYPES,
@@ -51,7 +53,6 @@ import {
   saveReview,
   addPayslip,
   deletePayslip,
-  uploadDocument,
   deleteDocument,
   addWorklog,
   deleteWorklog,
@@ -85,7 +86,9 @@ export default async function MedewerkerDetailPage({
   const { id } = await params;
   const { error } = await searchParams;
 
-  const year = new Date().getFullYear();
+  const now = new Date();
+  const year = now.getFullYear();
+  const aiReady = isVisionConfigured();
   const yearStart = new Date(year, 0, 1);
   const yearEnd = new Date(year + 1, 0, 1);
 
@@ -695,29 +698,7 @@ export default async function MedewerkerDetailPage({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          <form action={uploadDocument} className="space-y-4">
-            <input type="hidden" name="employeeId" value={m.id} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Soort" htmlFor="doc-cat">
-                <Select id="doc-cat" name="category" defaultValue="CONTRACT">
-                  {EMPLOYEE_DOC_CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Titel" htmlFor="doc-title">
-                <Input id="doc-title" name="title" placeholder="Bijv. Arbeidsovereenkomst 2024" />
-              </Field>
-            </div>
-            <Field label="Bestand" htmlFor="doc-file">
-              <FileInput id="doc-file" name="file" required />
-            </Field>
-            <div className="flex justify-end">
-              <SubmitButton pendingLabel="Uploaden…">
-                <Upload className="h-4 w-4" /> Uploaden
-              </SubmitButton>
-            </div>
-          </form>
+          <DocUploadForm employeeId={m.id} aiReady={aiReady} />
 
           {m.documents.length === 0 ? (
             <p className="py-2 text-sm text-slate-400">
@@ -725,33 +706,63 @@ export default async function MedewerkerDetailPage({
             </p>
           ) : (
             <div className="divide-y divide-slate-100">
-              {m.documents.map((d) => (
-                <div key={d.id} className="flex items-center gap-3 py-2.5">
-                  <FileText className="h-5 w-5 shrink-0 text-slate-400" />
-                  <div className="min-w-0 flex-1">
-                    <a
-                      href={`/api/medewerkers/document/${d.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-slate-900 hover:text-emerald-700"
+              {m.documents.map((d) => {
+                const st = d.category === "DIPLOMA" ? certStatus(d.expiryDate, now) : null;
+                const days =
+                  d.expiryDate != null
+                    ? Math.ceil((d.expiryDate.getTime() - now.getTime()) / 86_400_000)
+                    : null;
+                return (
+                  <div key={d.id} className="flex items-center gap-3 py-2.5">
+                    <FileText className="h-5 w-5 shrink-0 text-slate-400" />
+                    <div className="min-w-0 flex-1">
+                      <a
+                        href={`/api/medewerkers/document/${d.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-slate-900 hover:text-emerald-700"
+                      >
+                        {d.title}
+                      </a>
+                      <div className="truncate text-xs text-slate-400">{d.originalName}</div>
+                      {st && (
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                          <Badge color={CERT_STATUS_META[st].color}>{CERT_STATUS_META[st].label}</Badge>
+                          {d.expiryDate ? (
+                            <span className="text-slate-500">
+                              geldig tot {formatDate(d.expiryDate)}
+                              {st !== "expired" && days != null && days > 0 &&
+                                ` · nog ${days} ${days === 1 ? "dag" : "dagen"}`}
+                              {st === "expired" && days != null &&
+                                (days === 0
+                                  ? " · vandaag verlopen"
+                                  : ` · ${-days} ${-days === 1 ? "dag" : "dagen"} verlopen`)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">geen vervaldatum bekend</span>
+                          )}
+                          {d.aiExtracted && (
+                            <span className="inline-flex items-center gap-1 text-cyan-600">
+                              <Sparkles className="h-3 w-3" /> automatisch uitgelezen
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <StatusBadge options={EMPLOYEE_DOC_CATEGORIES} value={d.category} />
+                    <ConfirmSubmit
+                      action={deleteDocument}
+                      id={d.id}
+                      hidden={{ employeeId: m.id }}
+                      message="Document verwijderen?"
+                      variant="ghost"
+                      size="sm"
                     >
-                      {d.title}
-                    </a>
-                    <div className="truncate text-xs text-slate-400">{d.originalName}</div>
+                      <Trash2 className="h-4 w-4" />
+                    </ConfirmSubmit>
                   </div>
-                  <StatusBadge options={EMPLOYEE_DOC_CATEGORIES} value={d.category} />
-                  <ConfirmSubmit
-                    action={deleteDocument}
-                    id={d.id}
-                    hidden={{ employeeId: m.id }}
-                    message="Document verwijderen?"
-                    variant="ghost"
-                    size="sm"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </ConfirmSubmit>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

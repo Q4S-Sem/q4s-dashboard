@@ -1400,6 +1400,21 @@ model EmployeeDocument {
   fileSize     Int      @default(0)
   createdAt    DateTime @default(now())
 
+  // Certificaat-/diplomagegevens (alleen relevant bij category DIPLOMA). Zo telt
+  // een geüpload certificaat mee in de certificeringslijst en bewaken we de
+  // geldigheid. Datums worden — indien mogelijk — door de AI uit het bestand
+  // gelezen; handmatige invoer heeft altijd voorrang.
+  /// Afgifte-/behaaldatum.
+  issuedDate   DateTime?
+  /// Vervaldatum / geldig tot (null = geen einddatum).
+  expiryDate   DateTime?
+  /// Certificaat-/registratie-/pasnummer.
+  certNumber   String?
+  /// Uitgevende instantie / opleidingsinstituut.
+  issuer       String?
+  /// Zijn deze velden automatisch door de AI uit het bestand gelezen?
+  aiExtracted  Boolean  @default(false)
+
   employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])

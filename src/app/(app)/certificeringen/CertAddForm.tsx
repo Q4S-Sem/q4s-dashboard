@@ -14,7 +14,8 @@ import {
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Button } from "@/components/ui/button";
-import { extractCertificateFile, type CertExtractResult } from "./actions";
+import { extractCertificateFile } from "./actions";
+import { type CertExtractResult } from "@/lib/cert-extract";
 
 export function CertAddForm({
   consultantId,

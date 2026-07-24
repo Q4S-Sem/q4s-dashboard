@@ -11,6 +11,10 @@ export type CertPerson = {
   count: number;
   soonestLabel: string | null;
   badge: { color: "green" | "amber" | "red" | "slate"; label: string } | null;
+  /** Waar de map naartoe linkt: consultant-map of medewerker-dossier. */
+  href: string;
+  /** Optioneel label, bv. "Eigen medewerker" voor loondienst-personeel. */
+  tag?: string | null;
 };
 
 export function CertPeopleList({ people }: { people: CertPerson[] }) {
@@ -44,8 +48,8 @@ export function CertPeopleList({ people }: { people: CertPerson[] }) {
         <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
           {filtered.map((p) => (
             <Link
-              key={p.id}
-              href={`/certificeringen/${p.id}`}
+              key={p.href}
+              href={p.href}
               className="group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-slate-50"
             >
               <div className="flex min-w-0 items-center gap-3">
@@ -53,7 +57,14 @@ export function CertPeopleList({ people }: { people: CertPerson[] }) {
                   <FolderOpen className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <div className="truncate font-semibold text-slate-900">{p.name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-semibold text-slate-900">{p.name}</span>
+                    {p.tag && (
+                      <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                        {p.tag}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-slate-500">
                     {p.count} certifica{p.count === 1 ? "at" : "ten"}
                     {p.soonestLabel && ` · eerst ${p.soonestLabel}`}

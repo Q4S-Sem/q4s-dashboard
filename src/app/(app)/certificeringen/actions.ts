@@ -7,7 +7,7 @@ import { getCompanySettings } from "@/lib/settings";
 import { formatDate } from "@/lib/utils";
 import { certStatus } from "@/lib/evaluaties";
 import { saveUpload, deleteUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
-import { aiJSONFromFile, isVisionConfigured } from "@/lib/ai";
+import { readCertificateFile, type CertExtractResult } from "@/lib/cert-extract";
 import {
   sendMail,
   renderQ4sEmail,
@@ -35,106 +35,20 @@ export async function toggleAiExtract(formData: FormData) {
 
 // ---------------------------------------------------------------------------
 // AI: read an uploaded certificate (PDF/image) and extract its fields.
+// De kern-uitlezer + het CertExtractResult-type staan in @/lib/cert-extract
+// (gedeeld met de medewerker-documentupload). Hier zit alleen de extra
+// schakelaar-check (aiAutoExtract), zodat de hub-knop de instelling respecteert.
+// NB: een "use server"-bestand mag alleen async functies exporteren — daarom
+// importeert de client het type rechtstreeks uit de lib, niet via dit bestand.
 // ---------------------------------------------------------------------------
-
-const CERT_EXTRACT_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["name"],
-  properties: {
-    name: {
-      type: "string",
-      description:
-        "De naam/soort van het certificaat, bv. 'VCA Basis', 'NDT UT Level 2 (EN ISO 9712)' of 'Radiografie (RT) certificaat'.",
-    },
-    number: {
-      type: ["string", "null"],
-      description: "Het certificaat-, registratie- of pasnummer (exact zoals op het document).",
-    },
-    issuer: {
-      type: ["string", "null"],
-      description: "De uitgevende instantie / het opleidingsinstituut (bv. Hobéon SKO).",
-    },
-    issuedDate: {
-      type: ["string", "null"],
-      description: "Afgifte-/uitgiftedatum in formaat YYYY-MM-DD, of null.",
-    },
-    expiryDate: {
-      type: ["string", "null"],
-      description: "Vervaldatum / geldig-tot in formaat YYYY-MM-DD, of null.",
-    },
-  },
-};
-
-type CertExtract = {
-  name?: string | null;
-  number?: string | null;
-  issuer?: string | null;
-  issuedDate?: string | null;
-  expiryDate?: string | null;
-};
-
-export type CertExtractResult = {
-  data?: {
-    name: string;
-    number: string;
-    issuer: string;
-    issuedDate: string;
-    expiryDate: string;
-  };
-  error?: string;
-};
-
-const isoDate = (s: string | null | undefined) =>
-  s && /^\d{4}-\d{2}-\d{2}$/.test(s.trim()) ? s.trim() : "";
 
 /** Read a just-selected certificate file with AI and return its fields (no DB write). */
 export async function extractCertificateFile(formData: FormData): Promise<CertExtractResult> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { error: "Kies eerst een bestand." };
-  if (file.size > MAX_UPLOAD_BYTES) return { error: "Het bestand is te groot." };
-  if (!isVisionConfigured()) {
-    return { error: "Uitlezen is niet ingesteld (zet GEMINI_API_KEY of ANTHROPIC_API_KEY) — vul handmatig in." };
-  }
   const settings = await getCompanySettings();
   if (!settings.aiAutoExtract) {
     return { error: "Automatisch uitlezen staat uit — zet de schakelaar aan." };
   }
-
-  const type = file.type;
-  let mediaType = "";
-  if (type.includes("pdf") || file.name.toLowerCase().endsWith(".pdf")) {
-    mediaType = "application/pdf";
-  } else if (/^image\/(png|jpe?g|gif|webp)$/.test(type)) {
-    mediaType = type;
-  } else {
-    return { error: "Automatisch uitlezen kan alleen voor PDF of een afbeelding." };
-  }
-
-  try {
-    const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-    const res = await aiJSONFromFile<CertExtract>({
-      system:
-        "Je leest certificaten, diploma's en vakbekwaamheidspassen uit (zoals VCA, NDO/NDT-niveaus, lascertificaten). Geef alleen wat je echt op het document ziet; verzin niets. Datums altijd als YYYY-MM-DD.",
-      prompt:
-        "Lees dit certificaat uit en geef de naam/soort, het nummer, de uitgevende instantie, de afgiftedatum en de vervaldatum terug. Onbekende velden = null.",
-      schema: CERT_EXTRACT_SCHEMA,
-      file: { base64, mediaType },
-      maxTokens: 800,
-      effort: "medium",
-    });
-    return {
-      data: {
-        name: (res.name ?? "").trim(),
-        number: (res.number ?? "").trim(),
-        issuer: (res.issuer ?? "").trim(),
-        issuedDate: isoDate(res.issuedDate),
-        expiryDate: isoDate(res.expiryDate),
-      },
-    };
-  } catch {
-    return { error: "Kon het certificaat niet automatisch uitlezen — vul de velden handmatig in." };
-  }
+  return readCertificateFile(formData.get("file"));
 }
 
 /** File metadata for a Certificate, saved best-effort to disk. */
