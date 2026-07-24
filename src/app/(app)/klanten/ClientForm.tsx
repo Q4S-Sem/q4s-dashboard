@@ -1,15 +1,17 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Building2, Loader2, Search } from "lucide-react";
 import type { Client } from "@prisma/client";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { emptyFormState, type FormState } from "@/lib/form";
-import { lookupDutchAddress } from "./address-actions";
+import type { KvkHit } from "@/lib/kvk";
+import { lookupDutchAddress, kvkSuggest, kvkGetProfile } from "./address-actions";
 
 export type ClientLite = { id: string; name: string };
 
@@ -119,6 +121,56 @@ export function ClientForm({
     setAddr("done");
   }
 
+  // --- KvK-suggesties (alleen als er een KvK-sleutel is ingesteld) ---
+  const [kvkResults, setKvkResults] = useState<KvkHit[]>([]);
+  const [kvkOpen, setKvkOpen] = useState(false);
+  const [kvkBusy, setKvkBusy] = useState(false);
+  const kvkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function setField(id: string, val: string) {
+    const el = document.getElementById(id) as HTMLInputElement | null;
+    if (el) {
+      el.value = val;
+      el.dispatchEvent(new Event("input", { bubbles: true })); // concept-opslag + sync
+    }
+  }
+
+  function onCompanyChange(v: string) {
+    setName(v);
+    if (kvkTimer.current) clearTimeout(kvkTimer.current);
+    const q = v.trim();
+    if (q.length < 2) {
+      setKvkResults([]);
+      setKvkOpen(false);
+      return;
+    }
+    kvkTimer.current = setTimeout(async () => {
+      setKvkBusy(true);
+      const { enabled, results } = await kvkSuggest(q);
+      setKvkBusy(false);
+      if (!enabled) return; // geen KvK-sleutel → stil, veld werkt gewoon normaal
+      setKvkResults(results);
+      setKvkOpen(results.length > 0);
+    }, 350);
+  }
+
+  async function pickKvk(hit: KvkHit) {
+    setKvkOpen(false);
+    setField("companyName", hit.name);
+    setName(hit.name);
+    setField("kvkNumber", hit.kvkNumber);
+    // Volledig adres ophalen bij het gekozen bedrijf.
+    const prof = await kvkGetProfile(hit.kvkNumber);
+    if (prof) {
+      const line = [prof.street, prof.houseNumber].filter(Boolean).join(" ");
+      if (line) setField("address", line);
+      if (prof.postcode) setField("postalCode", prof.postcode);
+      if (prof.city || hit.city) setField("city", prof.city || hit.city);
+    } else if (hit.city) {
+      setField("city", hit.city);
+    }
+  }
+
   return (
     <form action={formAction}>
       {client && <input type="hidden" name="id" value={client.id} />}
@@ -131,7 +183,13 @@ export function ClientForm({
           )}
 
           <div>
-            <Field label="Bedrijfsnaam" htmlFor="companyName" required error={e.companyName}>
+            <Field
+              label="Bedrijfsnaam"
+              htmlFor="companyName"
+              hint="Typ de naam — kies zo nodig het juiste bedrijf uit het KvK-register (indien gekoppeld)."
+              required
+              error={e.companyName}
+            >
               <Input
                 id="companyName"
                 name="companyName"
@@ -139,9 +197,43 @@ export function ClientForm({
                 placeholder="Bijv. Tata Steel B.V."
                 required
                 autoComplete="off"
-                onChange={(ev) => setName(ev.target.value)}
+                onChange={(ev) => onCompanyChange(ev.target.value)}
+                onFocus={() => kvkResults.length > 0 && setKvkOpen(true)}
+                onBlur={() => setTimeout(() => setKvkOpen(false), 150)}
               />
             </Field>
+
+            {kvkOpen && (
+              <div className="mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center gap-1.5 border-b border-slate-100 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                  <Search className="h-3 w-3" /> KvK-register
+                  {kvkBusy && <Loader2 className="h-3 w-3 animate-spin" />}
+                </div>
+                <ul className={cn("overflow-auto py-1", kvkResults.length > 5 ? "max-h-64" : "")}>
+                  {kvkResults.map((r) => (
+                    <li key={r.kvkNumber}>
+                      <button
+                        type="button"
+                        onMouseDown={(ev) => {
+                          ev.preventDefault();
+                          void pickKvk(r);
+                        }}
+                        className="flex w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-slate-50"
+                      >
+                        <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-slate-800">{r.name}</span>
+                          <span className="block truncate text-xs text-slate-400">
+                            {[r.city, `KvK ${r.kvkNumber}`].filter(Boolean).join(" · ")}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {duplicate && (
               <div className="mt-1.5 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />

@@ -1,5 +1,7 @@
 "use server";
 
+import { isKvkConfigured, kvkSearch, kvkProfile, type KvkHit, type KvkProfile } from "@/lib/kvk";
+
 // Nederlandse adres-opzoek via PDOK Locatieserver (gratis, geen API-sleutel).
 // Zowel een volledig adres ("Hofweg 15, 3208 LE Spijkenisse") als postcode +
 // huisnummer ("3208LE 15") levert straat/postcode/plaats op. Via de server
@@ -50,4 +52,18 @@ export async function lookupDutchAddress(query: string): Promise<AddressLookup |
   } catch {
     return null;
   }
+}
+
+// --- KvK-suggesties (gated op KVK_API_KEY) ---
+
+/** Zoek bedrijven in het KvK-register op (deel van) de naam. `enabled=false`
+ *  wanneer er geen KvK-sleutel is → de UI toont dan gewoon geen suggesties. */
+export async function kvkSuggest(query: string): Promise<{ enabled: boolean; results: KvkHit[] }> {
+  if (!isKvkConfigured()) return { enabled: false, results: [] };
+  return { enabled: true, results: await kvkSearch(query) };
+}
+
+/** Volledig profiel (naam + adres) bij een gekozen KvK-nummer. */
+export async function kvkGetProfile(kvkNumber: string): Promise<KvkProfile | null> {
+  return kvkProfile(kvkNumber);
 }
