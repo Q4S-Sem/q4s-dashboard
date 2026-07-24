@@ -183,8 +183,27 @@ model Client {
   evaluations      Evaluation[]
   deals            Deal[]
   crmContacts      CrmContact[]
+  contacts         ClientContact[]
 
   @@index([companyName])
+}
+
+/// Extra contactpersonen bij een klant — zodat je altijd iemand anders kunt
+/// bereiken als de hoofdcontactpersoon niet opneemt.
+model ClientContact {
+  id        String   @id @default(cuid())
+  clientId  String
+  name      String
+  /// Functie / rol bij het bedrijf (bijv. "Inkoper", "Planner").
+  role      String?
+  email     String?
+  phone     String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
 }
 
 /// A consultant placed at a client. Holds the margin: chargeRate - costRate.

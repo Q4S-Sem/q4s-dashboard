@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input, Select, Textarea, Label } from "@/components/ui/field";
+import { SearchSelect } from "@/components/ui/search-select";
 import { NumberInput } from "@/components/ui/number-input";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
@@ -467,16 +468,20 @@ export function PlacementForm({
 
               {personMode === "existing" ? (
                 <Field label="Kies werknemer" htmlFor="consultantId" required error={e.consultantId}>
-                  <Select id="consultantId" name="consultantId" defaultValue="" required>
-                    <option value="" disabled>
-                      Kies een werknemer…
-                    </option>
-                    {consultants.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.firstName} {c.lastName}
-                      </option>
-                    ))}
-                  </Select>
+                  <SearchSelect
+                    id="consultantId"
+                    name="consultantId"
+                    options={consultants.map((c) => ({
+                      value: c.id,
+                      label: `${c.firstName} ${c.lastName}`,
+                    }))}
+                    placeholder="Typ een naam om te zoeken…"
+                    emptyText={
+                      consultants.length === 0
+                        ? "Nog geen werknemers — gebruik ‘Nieuwe werknemer’ of detacheer een medewerker."
+                        : "Geen werknemer gevonden."
+                    }
+                  />
                 </Field>
               ) : (
                 <div className="space-y-4 rounded-lg border border-slate-200 p-4">

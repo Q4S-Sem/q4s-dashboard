@@ -130,3 +130,33 @@ export async function deleteClient(formData: FormData) {
   revalidatePath("/klanten");
   redirect("/klanten");
 }
+
+// ---- Extra contactpersonen (zodat je altijd iemand kunt bereiken) ----
+
+export async function addClientContact(formData: FormData) {
+  const clientId = String(formData.get("clientId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!clientId) return;
+  if (!name) redirect(`/klanten/${clientId}?error=contact`);
+
+  await db.clientContact.create({
+    data: {
+      clientId,
+      name,
+      role: String(formData.get("role") ?? "").trim() || null,
+      email: String(formData.get("email") ?? "").trim() || null,
+      phone: String(formData.get("phone") ?? "").trim() || null,
+      notes: String(formData.get("notes") ?? "").trim() || null,
+    },
+  });
+  revalidatePath(`/klanten/${clientId}`);
+  redirect(`/klanten/${clientId}`);
+}
+
+export async function deleteClientContact(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const clientId = String(formData.get("clientId") ?? "");
+  if (id) await db.clientContact.delete({ where: { id } }).catch(() => {});
+  revalidatePath(`/klanten/${clientId}`);
+  redirect(`/klanten/${clientId}`);
+}
