@@ -64,6 +64,11 @@ export default async function PlaatsingDetailPage({
 
   const activities = await getActivities("placement", placement.id);
 
+  // Eigen loondienst-personeel krijgt géén inkoopfactuur (salaris) → factuurgegevens
+  // (KvK/BTW/IBAN) zijn niet nodig.
+  const ownStaff = placement.consultant.employmentType === "LOONDIENST";
+  const personName = `${placement.consultant.firstName} ${placement.consultant.lastName}`;
+
   const marginPerHour = placement.chargeRate - placement.costRate;
   const marginPct =
     placement.chargeRate > 0
@@ -191,24 +196,39 @@ export default async function PlaatsingDetailPage({
         </CardContent>
       </Card>
 
-      {/* Invoice/payment data of the placed person (edits the Consultant) */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Factuur- &amp; betaalgegevens werknemer</CardTitle>
-          <span className="text-sm text-slate-500">
-            Voor de inkoopfactuur (zelffacturatie). Hoort bij{" "}
-            {placement.consultant.firstName} {placement.consultant.lastName} en
-            geldt voor al hun plaatsingen.
-          </span>
-        </CardHeader>
-        <CardContent>
-          <BillingForm
-            action={updatePlacementBilling}
-            placementId={placement.id}
-            consultant={placement.consultant}
-          />
-        </CardContent>
-      </Card>
+      {/* Factuur-/betaalgegevens van de geplaatste persoon — NIET voor eigen
+          loondienst-personeel (die krijgt salaris, geen inkoopfactuur). */}
+      {ownStaff ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Factuur- &amp; betaalgegevens werknemer</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <strong>Eigen loondienst-medewerker.</strong> {personName} krijgt salaris — er wordt
+              géén inkoopfactuur (zelffacturatie) gemaakt, dus factuurgegevens zoals KvK, BTW en IBAN
+              zijn hier niet nodig. Naar de klant gaat wél gewoon de verkoopfactuur.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Factuur- &amp; betaalgegevens werknemer</CardTitle>
+            <span className="text-sm text-slate-500">
+              Voor de inkoopfactuur (zelffacturatie). Hoort bij {personName} en geldt voor al hun
+              plaatsingen.
+            </span>
+          </CardHeader>
+          <CardContent>
+            <BillingForm
+              action={updatePlacementBilling}
+              placementId={placement.id}
+              consultant={placement.consultant}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Contract + documents, accessible right from the placement */}
       <Card>
@@ -319,9 +339,9 @@ export default async function PlaatsingDetailPage({
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
-          label="Inkoop"
+          label={ownStaff ? "Loonkost" : "Inkoop"}
           value={`${formatCurrency(placement.costRate)}/u`}
-          sub="Wat we de werknemer betalen"
+          sub={ownStaff ? "Interne loonkost (voor de marge)" : "Wat we de werknemer betalen"}
           accent="slate"
         />
         <StatCard
