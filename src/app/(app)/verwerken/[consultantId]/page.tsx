@@ -232,21 +232,29 @@ export default async function VerwerkenPage({
     where: { id: { in: flow.weeks.map((w) => w.timesheetId) } },
     select: {
       id: true,
+      weekStart: true,
       overtimeHours: true,
       entries: { select: { date: true, hours: true }, orderBy: { date: "asc" } },
     },
   });
+  // Dag-sleutel (jaar-maand-dag) zodat we entries op de juiste kalenderdag leggen.
+  const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
   const peekByTs = new Map(
-    tsDetails.map((t) => [
-      t.id,
-      {
-        overtime: t.overtimeHours ?? 0,
-        days: t.entries.map((e) => {
-          const g = e.date.getDay();
-          return { label: peekDayFmt.format(e.date), hours: e.hours, weekend: g === 0 || g === 6 };
-        }),
-      },
-    ]),
+    tsDetails.map((t) => {
+      const byDay = new Map(t.entries.map((e) => [dayKey(e.date), e.hours]));
+      // Altijd de volledige week ma→zo tonen; dagen zonder registratie = 0 uur.
+      const days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(t.weekStart);
+        d.setDate(d.getDate() + i);
+        const g = d.getDay();
+        return {
+          label: peekDayFmt.format(d),
+          hours: byDay.get(dayKey(d)) ?? 0,
+          weekend: g === 0 || g === 6,
+        };
+      });
+      return [t.id, { overtime: t.overtimeHours ?? 0, days }];
+    }),
   );
 
   // De knop keurt eerst goed en factureert dan; de preview toont dus ALLES wat nog

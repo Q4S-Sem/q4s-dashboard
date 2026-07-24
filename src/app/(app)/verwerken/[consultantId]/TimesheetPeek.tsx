@@ -119,7 +119,12 @@ export function TimesheetPeek({
                         </span>
                       )}
                     </span>
-                    <span className="font-medium tabular-nums text-slate-800">
+                    <span
+                      className={cn(
+                        "font-medium tabular-nums",
+                        d.hours > 0 ? "text-slate-800" : "text-slate-300",
+                      )}
+                    >
                       {formatHours(d.hours)} u
                     </span>
                   </div>
