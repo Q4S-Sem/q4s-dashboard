@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { FormAutosave } from "@/components/form-autosave";
 import { getNavBadges } from "@/lib/facturatie";
 import { getNotifications } from "@/lib/notifications";
 import { getLogoSrc } from "@/lib/branding";
@@ -27,8 +28,11 @@ export default async function AppLayout({
   ]);
   const logoSrc = getLogoSrc();
   return (
-    <AppShell badges={badges} notifications={notifications} logoSrc={logoSrc} user={user}>
-      {children}
-    </AppShell>
+    <>
+      <FormAutosave />
+      <AppShell badges={badges} notifications={notifications} logoSrc={logoSrc} user={user}>
+        {children}
+      </AppShell>
+    </>
   );
 }
