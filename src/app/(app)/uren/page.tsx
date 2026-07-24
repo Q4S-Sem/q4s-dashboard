@@ -77,12 +77,16 @@ export default async function UrenPage({
         const idx = (new Date(e.date).getDay() + 6) % 7;
         days[idx] = round2(days[idx] + e.hours);
       }
+      const regular = round2(t.entries.reduce((s, e) => s + e.hours, 0));
+      const overtime = round2(t.overtimeHours ?? 0);
       return {
         id: t.id,
         consultant: `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`,
         client: t.placement.client.companyName,
         days,
-        hours: round2(t.entries.reduce((s, e) => s + e.hours, 0)),
+        overtime,
+        // Totaal gewerkt = reguliere dag-uren + overuren.
+        hours: round2(regular + overtime),
         status: t.status,
       };
     })
@@ -102,6 +106,7 @@ export default async function UrenPage({
   const received = expected.length - missing.length;
 
   const totalHours = rows.reduce((s, r) => s + r.hours, 0);
+  const overtimeTotal = round2(rows.reduce((s, r) => s + r.overtime, 0));
   const dayTotals = [0, 0, 0, 0, 0, 0, 0];
   for (const r of rows) r.days.forEach((h, di) => (dayTotals[di] += h));
 
@@ -187,6 +192,7 @@ export default async function UrenPage({
                       {d}
                     </th>
                   ))}
+                  <th className="px-2 py-2 text-center font-medium text-violet-500" title="Overuren">OU</th>
                   <th className="px-3 py-2 text-right font-medium">Totaal</th>
                   <th className="px-4 py-2 font-medium">Status</th>
                   <th className="px-2 py-2">
@@ -215,6 +221,9 @@ export default async function UrenPage({
                         {h > 0 ? formatHours(h) : "·"}
                       </td>
                     ))}
+                    <td className={cn("px-2 py-2.5 text-center tabular-nums", r.overtime > 0 ? "font-medium text-violet-600" : "text-slate-300")}>
+                      {r.overtime > 0 ? formatHours(r.overtime) : "·"}
+                    </td>
                     <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-slate-900">
                       {formatHours(r.hours)}
                     </td>
@@ -244,6 +253,9 @@ export default async function UrenPage({
                       {h > 0 ? formatHours(h) : "·"}
                     </td>
                   ))}
+                  <td className={cn("px-2 py-2 text-center tabular-nums", overtimeTotal > 0 ? "text-violet-600" : "text-slate-300")}>
+                    {overtimeTotal > 0 ? formatHours(overtimeTotal) : "·"}
+                  </td>
                   <td className="px-3 py-2 text-right tabular-nums text-slate-900">{formatHours(totalHours)}</td>
                   <td colSpan={2}></td>
                 </tr>

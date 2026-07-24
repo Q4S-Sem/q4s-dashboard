@@ -81,7 +81,8 @@ function computeSide(
 }
 
 export type TimesheetMoney = {
-  hours: number;
+  hours: number; // reguliere (dag)uren — de basis voor het uurbedrag
+  workedHours: number; // TOTAAL gewerkt = reguliere uren + overuren (voor de weergave)
   weekendHours: number;
   overtimeHours: number;
   kilometers: number;
@@ -109,6 +110,7 @@ export function computeTimesheetMoney(
   );
   return {
     hours,
+    workedHours: round2(hours + overtimeHours),
     weekendHours,
     overtimeHours,
     kilometers,

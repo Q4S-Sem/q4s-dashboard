@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { round2, formatWeekLabel } from "./utils";
-import { computeTimesheetMoney } from "./toeslag";
+import { computeTimesheetMoney, type SideBreakdown } from "./toeslag";
 import { createSalesInvoice, createPurchaseInvoice } from "./invoicing";
 
 // Shared money math + aggregations for the Facturatie hub: the guided per-person
@@ -21,12 +21,16 @@ export type FlowWeek = {
   placementTitle: string;
   clientId: string;
   clientName: string;
-  hours: number;
+  hours: number; // reguliere (dag)uren — basis voor het uurbedrag
+  workedHours: number; // totaal gewerkt = reguliere uren + overuren (weergave)
+  overtimeHours: number;
   kilometers: number; // km driven that week (reiskosten)
   costRate: number;
   chargeRate: number;
-  cost: number; // hours * costRate (ex BTW)
-  charge: number; // hours * chargeRate (ex BTW)
+  cost: number; // inkoop-totaal incl. toeslagen + km (ex BTW)
+  charge: number; // verkoop-totaal incl. toeslagen + km (ex BTW)
+  sell: SideBreakdown; // verkoop opgesplitst: base / weekend / overtime / km
+  buy: SideBreakdown; // inkoop opgesplitst
   margin: number; // charge - cost
   hasPurchase: boolean; // already on a purchase (inkoop) invoice
   hasSales: boolean; // already on a sales (verkoop) invoice
@@ -93,11 +97,15 @@ function toFlowWeek(t: {
     clientId: t.placement.clientId,
     clientName: t.placement.client.companyName,
     hours: money.hours,
+    workedHours: money.workedHours,
+    overtimeHours: money.overtimeHours,
     kilometers: money.kilometers,
     costRate: t.placement.costRate,
     chargeRate: t.placement.chargeRate,
     cost: money.buy.total,
     charge: money.sell.total,
+    sell: money.sell,
+    buy: money.buy,
     margin: money.margin,
     hasPurchase: !!t.purchaseLine,
     hasSales: !!t.invoiceLine,
@@ -166,7 +174,7 @@ export async function pendingWorkByConsultant(): Promise<ConsultantPending[]> {
       byConsultant.set(c.id, row);
     }
     row.weeks += 1;
-    row.hours = round2(row.hours + w.hours);
+    row.hours = round2(row.hours + w.workedHours); // incl. overuren, voor de weergave
     if (w.status === "SUBMITTED") row.needApproval += 1;
     // Sales pending = APPROVED and not yet on a sales invoice.
     if (w.status === "APPROVED" && !w.hasSales) row.teFactureren = round2(row.teFactureren + w.charge);

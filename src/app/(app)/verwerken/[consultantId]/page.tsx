@@ -408,7 +408,14 @@ export default async function VerwerkenPage({
                     <TD>
                       <SourceTag source={w.source} />
                     </TD>
-                    <TD className="text-right tabular-nums">{formatHours(w.hours)}</TD>
+                    <TD className="text-right tabular-nums">
+                      {formatHours(w.workedHours)}
+                      {w.overtimeHours > 0 && (
+                        <span className="ml-1 text-xs font-normal text-violet-500">
+                          ({formatHours(w.hours)} + {formatHours(w.overtimeHours)} ov)
+                        </span>
+                      )}
+                    </TD>
                     <TD className="text-right tabular-nums text-slate-600">
                       {w.kilometers > 0 ? `${formatHours(w.kilometers)} km` : "—"}
                     </TD>
@@ -471,25 +478,38 @@ export default async function VerwerkenPage({
                       </TR>
                     </THead>
                     <TBody>
-                      {inkoopPreview.map((w) => {
-                        const base = round2(w.hours * w.costRate);
-                        const toeslag = round2(w.cost - base);
-                        return (
-                          <TR key={w.timesheetId}>
-                            <TD>{formatWeekLabel(w.weekStart)}</TD>
-                            <TD className="text-right tabular-nums">{formatHours(w.hours)}</TD>
-                            <TD className="text-right tabular-nums">{formatCurrency(w.costRate)}</TD>
-                            <TD className="text-right tabular-nums">
-                              {formatCurrency(base)}
-                              {toeslag > 0 && (
-                                <div className="text-xs font-normal text-slate-400">
-                                  + {formatCurrency(toeslag)} toeslag/km
-                                </div>
-                              )}
-                            </TD>
-                          </TR>
-                        );
-                      })}
+                      {inkoopPreview.map((w) => (
+                        <TR key={w.timesheetId}>
+                          <TD>{formatWeekLabel(w.weekStart)}</TD>
+                          <TD className="text-right tabular-nums">
+                            {formatHours(w.workedHours)}
+                            {w.overtimeHours > 0 && (
+                              <span className="ml-1 text-xs font-normal text-violet-500">
+                                ({formatHours(w.hours)}+{formatHours(w.overtimeHours)}ov)
+                              </span>
+                            )}
+                          </TD>
+                          <TD className="text-right tabular-nums">{formatCurrency(w.costRate)}</TD>
+                          <TD className="text-right tabular-nums">
+                            {formatCurrency(w.buy.base)}
+                            {w.buy.overtime > 0 && (
+                              <div className="text-xs font-normal text-slate-400">
+                                + {formatCurrency(w.buy.overtime)} overuren ({formatHours(w.overtimeHours)} u)
+                              </div>
+                            )}
+                            {w.buy.weekend > 0 && (
+                              <div className="text-xs font-normal text-slate-400">
+                                + {formatCurrency(w.buy.weekend)} weekend
+                              </div>
+                            )}
+                            {w.buy.km > 0 && (
+                              <div className="text-xs font-normal text-slate-400">
+                                + {formatCurrency(w.buy.km)} km ({formatHours(w.kilometers)} km)
+                              </div>
+                            )}
+                          </TD>
+                        </TR>
+                      ))}
                     </TBody>
                   </Table>
                 </div>
@@ -531,25 +551,38 @@ export default async function VerwerkenPage({
                           </TR>
                         </THead>
                         <TBody>
-                          {g.weeks.map((w) => {
-                            const base = round2(w.hours * w.chargeRate);
-                            const toeslag = round2(w.charge - base);
-                            return (
-                              <TR key={w.timesheetId}>
-                                <TD>{formatWeekLabel(w.weekStart)}</TD>
-                                <TD className="text-right tabular-nums">{formatHours(w.hours)}</TD>
-                                <TD className="text-right tabular-nums">{formatCurrency(w.chargeRate)}</TD>
-                                <TD className="text-right tabular-nums">
-                                  {formatCurrency(base)}
-                                  {toeslag > 0 && (
-                                    <div className="text-xs font-normal text-slate-400">
-                                      + {formatCurrency(toeslag)} toeslag/km
-                                    </div>
-                                  )}
-                                </TD>
-                              </TR>
-                            );
-                          })}
+                          {g.weeks.map((w) => (
+                            <TR key={w.timesheetId}>
+                              <TD>{formatWeekLabel(w.weekStart)}</TD>
+                              <TD className="text-right tabular-nums">
+                                {formatHours(w.workedHours)}
+                                {w.overtimeHours > 0 && (
+                                  <span className="ml-1 text-xs font-normal text-violet-500">
+                                    ({formatHours(w.hours)}+{formatHours(w.overtimeHours)}ov)
+                                  </span>
+                                )}
+                              </TD>
+                              <TD className="text-right tabular-nums">{formatCurrency(w.chargeRate)}</TD>
+                              <TD className="text-right tabular-nums">
+                                {formatCurrency(w.sell.base)}
+                                {w.sell.overtime > 0 && (
+                                  <div className="text-xs font-normal text-slate-400">
+                                    + {formatCurrency(w.sell.overtime)} overuren ({formatHours(w.overtimeHours)} u)
+                                  </div>
+                                )}
+                                {w.sell.weekend > 0 && (
+                                  <div className="text-xs font-normal text-slate-400">
+                                    + {formatCurrency(w.sell.weekend)} weekend
+                                  </div>
+                                )}
+                                {w.sell.km > 0 && (
+                                  <div className="text-xs font-normal text-slate-400">
+                                    + {formatCurrency(w.sell.km)} km ({formatHours(w.kilometers)} km)
+                                  </div>
+                                )}
+                              </TD>
+                            </TR>
+                          ))}
                         </TBody>
                       </Table>
                     </div>

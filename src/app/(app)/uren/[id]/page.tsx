@@ -79,7 +79,9 @@ export default async function UrenstaatDetailPage({
     { entries: ts.entries, overtimeHours: ts.overtimeHours, kilometers: ts.kilometers },
     placement,
   );
-  const totalHours = money.hours;
+  const totalHours = money.hours; // reguliere (dag)uren — basis voor het uurbedrag
+  const overtimeHours = money.overtimeHours;
+  const workedHours = money.workedHours; // reguliere uren + overuren = totaal gewerkt
   const weekendHours = money.weekendHours;
   const weekdayHours = round2(totalHours - weekendHours);
   const revenue = money.sell.total;
@@ -203,7 +205,12 @@ export default async function UrenstaatDetailPage({
 
       {/* Financial summary */}
       <div className="grid gap-4 sm:grid-cols-4">
-        <StatCard label="Totaal uren" value={`${formatHours(totalHours)} u`} accent="slate" />
+        <StatCard
+          label="Totaal gewerkt"
+          value={`${formatHours(workedHours)} u`}
+          sub={overtimeHours > 0 ? `${formatHours(totalHours)} regulier + ${formatHours(overtimeHours)} overuren` : undefined}
+          accent="slate"
+        />
         <StatCard label="Omzet (verkoop)" value={formatCurrency(revenue)} accent="brand" />
         <StatCard label={ownStaff ? "Loonkost (intern)" : "Kostprijs (inkoop)"} value={formatCurrency(cost)} accent="violet" />
         <StatCard label="Marge" value={formatCurrency(margin)} accent="green" />
@@ -444,15 +451,26 @@ export default async function UrenstaatDetailPage({
                   </TR>
                 );
               })}
+              {overtimeHours > 0 && (
+                <TR className="hover:bg-transparent">
+                  <TD className="font-medium text-violet-600" colSpan={3}>
+                    Overuren (los ingevoerd)
+                  </TD>
+                  <TD className="text-right tabular-nums text-slate-300">—</TD>
+                  <TD className="text-right font-medium tabular-nums text-violet-600">
+                    + {formatHours(overtimeHours)}
+                  </TD>
+                </TR>
+              )}
               <TR className="hover:bg-transparent">
                 <TD className="font-semibold" colSpan={3}>
-                  Totaal
+                  Totaal gewerkt
                 </TD>
                 <TD className="text-right font-bold tabular-nums text-slate-600">
                   {ts.kilometers ? formatHours(ts.kilometers) : "—"}
                 </TD>
                 <TD className="text-right font-bold tabular-nums">
-                  {formatHours(totalHours)}
+                  {formatHours(workedHours)}
                 </TD>
               </TR>
             </TBody>
