@@ -192,9 +192,19 @@ export default async function TotaaloverzichtPage({
             <SectionTitle icon={<ArrowUpCircle className="h-5 w-5 text-amber-600" />}>Per medewerker</SectionTitle>
             <MiniTable
               head={["Medewerker", "Omzet", "Marge"]}
-              rows={inv.perConsultant.slice(0, 10).map((c) => [c.name, formatCurrency(c.omzet), formatCurrency(c.marge)])}
+              rows={inv.perConsultant.slice(0, 10).map((c) => [
+                c.loondienst ? `${c.name} · loondienst` : c.name,
+                formatCurrency(c.omzet),
+                formatCurrency(c.marge),
+              ])}
               empty="Geen gegevens in deze periode."
             />
+            {inv.perConsultant.some((c) => c.loondienst) && (
+              <p className="mt-2 text-xs text-slate-400">
+                Loondienst: marge = brutomarge — de loonkost loopt via de eigen loonkosten (nettowinst),
+                niet per persoon.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

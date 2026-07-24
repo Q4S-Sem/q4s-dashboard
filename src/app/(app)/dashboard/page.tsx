@@ -169,7 +169,7 @@ export default async function DashboardPage({
   ] = await Promise.all([
     db.timesheet.findMany({
       where: { status: { in: ["APPROVED", "INVOICED"] }, weekStart: { gte: periodStart, lt: periodEnd } },
-      include: { entries: true, placement: true },
+      include: { entries: true, placement: { include: { consultant: { select: { employmentType: true } } } } },
     }),
     // Plaatsingen die de periode overlappen (start vóór einde periode én nog niet
     // geëindigd vóór het begin ervan) — de periode-versie van "actieve plaatsingen".
@@ -276,7 +276,11 @@ export default async function DashboardPage({
     const d = new Date(t.weekStart);
     const hours = t.entries.reduce((s, e) => s + e.hours, 0);
     const omzet = hours * t.placement.chargeRate;
-    const inkoop = hours * t.placement.costRate;
+    // Eigen loondienst-personeel heeft géén inkoopfactuur (salaris) → geen inkoop
+    // hier, consistent met invoicingOverview/brutomarge. Anders zou de dashboard-
+    // marge de loonkost als fantoom-inkoop aftrekken en botsen met de facturatie-
+    // sectie op dezelfde pagina.
+    const inkoop = t.placement.consultant.employmentType === "LOONDIENST" ? 0 : hours * t.placement.costRate;
     const marge = omzet - inkoop;
     const mo = months.find((x) => x.y === d.getFullYear() && x.m === d.getMonth());
     if (mo) {

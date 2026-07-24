@@ -150,19 +150,30 @@ export async function detachEmployee(formData: FormData) {
   // botst het nooit met een bestaande consultant.
   let consultantId = emp.detachering?.id ?? null;
   if (!consultantId) {
-    const c = await db.consultant.create({
-      data: {
-        firstName: emp.firstName,
-        lastName: emp.lastName,
-        discipline,
-        employmentType: "LOONDIENST",
-        defaultCostRate: costRate,
-        employeeId: emp.id,
-        dateOfBirth: emp.dateOfBirth,
-        bsn: emp.bsn,
-      },
-    });
-    consultantId = c.id;
+    try {
+      const c = await db.consultant.create({
+        data: {
+          firstName: emp.firstName,
+          lastName: emp.lastName,
+          discipline,
+          employmentType: "LOONDIENST",
+          defaultCostRate: costRate,
+          employeeId: emp.id,
+          dateOfBirth: emp.dateOfBirth,
+          bsn: emp.bsn,
+        },
+      });
+      consultantId = c.id;
+    } catch {
+      // Race/dubbelklik: employeeId is uniek, dus een tweede gelijktijdige submit
+      // faalt op de create → hergebruik de zojuist aangemaakte consultant.
+      const existing = await db.consultant.findUnique({
+        where: { employeeId: emp.id },
+        select: { id: true },
+      });
+      if (!existing) redirect(`/medewerkers/${employeeId}?error=detach`);
+      consultantId = existing.id;
+    }
   } else {
     await db.consultant
       .update({ where: { id: consultantId }, data: { discipline, active: true } })

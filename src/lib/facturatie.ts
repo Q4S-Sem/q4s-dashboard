@@ -534,6 +534,9 @@ export type OverviewConsultant = {
   kosten: number;
   marge: number;
   teBetalen: number;
+  /** Eigen loondienst-personeel: geen inkoopfactuur → kosten 0 hier, de loonkost
+   *  loopt via de eigen loonkosten (nettowinst). Marge = brutomarge (schijnbaar 100%). */
+  loondienst: boolean;
 };
 
 export type InvoicingOverview = {
@@ -645,7 +648,7 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
   const ensureCons = (id: string): OverviewConsultant => {
     let c = consMap.get(id);
     if (!c) {
-      c = { consultantId: id, name: id, omzet: 0, kosten: 0, marge: 0, teBetalen: 0 };
+      c = { consultantId: id, name: id, omzet: 0, kosten: 0, marge: 0, teBetalen: 0, loondienst: false };
       consMap.set(id, c);
     }
     return c;
@@ -660,24 +663,32 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
     c.kosten += l.amount;
   }
   for (const p of toPay) ensureCons(p.consultantId).teBetalen = round2(ensureCons(p.consultantId).teBetalen + p.total);
-  // Resolve names.
-  const consName = new Map(purchases.map((p) => [p.consultantId, `${p.consultant.firstName} ${p.consultant.lastName}`]));
-  const missingNames = [...consMap.keys()].filter((id) => !consName.has(id));
-  if (missingNames.length) {
-    const extra = await db.consultant.findMany({
-      where: { id: { in: missingNames } },
-      select: { id: true, firstName: true, lastName: true },
+  // Resolve names + dienstverband in één query (voor het loondienst-label).
+  const consInfo = new Map<string, { name: string; loondienst: boolean }>();
+  const consIds = [...consMap.keys()];
+  if (consIds.length) {
+    const rows = await db.consultant.findMany({
+      where: { id: { in: consIds } },
+      select: { id: true, firstName: true, lastName: true, employmentType: true },
     });
-    for (const c of extra) consName.set(c.id, `${c.firstName} ${c.lastName}`);
+    for (const c of rows)
+      consInfo.set(c.id, {
+        name: `${c.firstName} ${c.lastName}`,
+        loondienst: c.employmentType === "LOONDIENST",
+      });
   }
   const perConsultant = [...consMap.values()]
-    .map((c) => ({
-      ...c,
-      name: consName.get(c.consultantId) ?? "—",
-      omzet: round2(c.omzet),
-      kosten: round2(c.kosten),
-      marge: round2(c.omzet - c.kosten),
-    }))
+    .map((c) => {
+      const info = consInfo.get(c.consultantId);
+      return {
+        ...c,
+        name: info?.name ?? "—",
+        loondienst: info?.loondienst ?? false,
+        omzet: round2(c.omzet),
+        kosten: round2(c.kosten),
+        marge: round2(c.omzet - c.kosten),
+      };
+    })
     .sort((a, b) => b.omzet - a.omzet);
 
   // Status distribution.

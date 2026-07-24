@@ -315,7 +315,11 @@ export async function generateBothForTimesheet(formData: FormData) {
   if (!timesheetId) return;
   const ts = await db.timesheet.findUnique({
     where: { id: timesheetId },
-    include: { placement: true, invoiceLine: true, purchaseLine: true },
+    include: {
+      placement: { include: { consultant: { select: { employmentType: true } } } },
+      invoiceLine: true,
+      purchaseLine: true,
+    },
   });
   if (!ts) redirect("/uren");
 
@@ -331,8 +335,9 @@ export async function generateBothForTimesheet(formData: FormData) {
     });
     if (!r.ok) failed = "sales";
   }
-  // Purchase side (independent of the sales status).
-  if (!ts.purchaseLine) {
+  // Purchase side (independent of the sales status) — NIET voor eigen loondienst-
+  // personeel: die krijgt salaris, geen inkoopfactuur.
+  if (!ts.purchaseLine && ts.placement.consultant.employmentType !== "LOONDIENST") {
     const r = await createPurchaseInvoice({
       consultantId: ts.placement.consultantId,
       timesheetIds: [timesheetId],

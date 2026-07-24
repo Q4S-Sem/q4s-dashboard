@@ -71,6 +71,8 @@ export default async function UrenstaatDetailPage({
   if (!ts) notFound();
 
   const { placement } = ts;
+  // Eigen loondienst-personeel: geen inkoopfactuur (salaris) — alleen verkoop.
+  const ownStaff = placement.consultant.employmentType === "LOONDIENST";
   // Single source of truth: same calc as the invoice + the /verwerken wizard.
   // Includes weekend/overuren toeslagen + km when configured on the placement.
   const money = computeTimesheetMoney(
@@ -203,7 +205,7 @@ export default async function UrenstaatDetailPage({
       <div className="grid gap-4 sm:grid-cols-4">
         <StatCard label="Totaal uren" value={`${formatHours(totalHours)} u`} accent="slate" />
         <StatCard label="Omzet (verkoop)" value={formatCurrency(revenue)} accent="brand" />
-        <StatCard label="Kostprijs (inkoop)" value={formatCurrency(cost)} accent="violet" />
+        <StatCard label={ownStaff ? "Loonkost (intern)" : "Kostprijs (inkoop)"} value={formatCurrency(cost)} accent="violet" />
         <StatCard label="Marge" value={formatCurrency(margin)} accent="green" />
       </div>
 
@@ -286,7 +288,7 @@ export default async function UrenstaatDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>Facturen</CardTitle>
-          {canInvoice && !salesInvoiceId && !purchaseInvoiceId && (
+          {canInvoice && !ownStaff && !salesInvoiceId && !purchaseInvoiceId && (
             <form action={generateBothForTimesheet}>
               <input type="hidden" name="timesheetId" value={ts.id} />
               <SubmitButton size="sm" pendingLabel="Aanmaken…">
@@ -339,42 +341,55 @@ export default async function UrenstaatDetailPage({
             )}
           </div>
 
-          {/* Purchase (consultant) */}
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-4 py-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+          {/* Purchase (consultant) — of, bij loondienst, salaris i.p.v. inkoopfactuur */}
+          {ownStaff ? (
+            <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/60 px-4 py-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
                 <Coins className="h-[18px] w-[18px]" />
               </div>
-              <div>
-                <div className="text-sm font-medium text-slate-900">
-                  Inkoopfactuur — {placement.consultant.firstName}{" "}
-                  {placement.consultant.lastName}
-                </div>
-                <div className="text-xs text-slate-500">
-                  {formatHours(totalHours)} u × {formatCurrency(placement.costRate)} ={" "}
-                  {formatCurrency(money.buy.base)}
-                  {hasToeslag && <> + toeslagen = {formatCurrency(cost)}</>} (excl. BTW)
-                </div>
+              <div className="text-sm text-slate-600">
+                <span className="font-medium text-slate-900">Salaris — geen inkoopfactuur.</span>{" "}
+                {placement.consultant.firstName} is eigen loondienst-personeel; betaling loopt via het
+                salaris (overuren als loon). De loonkost/uur telt alleen mee voor de marge.
               </div>
             </div>
-            {purchaseInvoiceId ? (
-              <Link
-                href={`/inkoopfacturen/${purchaseInvoiceId}`}
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-              >
-                Bekijk
-              </Link>
-            ) : canInvoice ? (
-              <form action={generatePurchaseForTimesheet}>
-                <input type="hidden" name="timesheetId" value={ts.id} />
-                <SubmitButton variant="outline" size="sm">
-                  Genereer
-                </SubmitButton>
-              </form>
-            ) : (
-              <span className="text-xs text-slate-400">—</span>
-            )}
-          </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                  <Coins className="h-[18px] w-[18px]" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-slate-900">
+                    Inkoopfactuur — {placement.consultant.firstName}{" "}
+                    {placement.consultant.lastName}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {formatHours(totalHours)} u × {formatCurrency(placement.costRate)} ={" "}
+                    {formatCurrency(money.buy.base)}
+                    {hasToeslag && <> + toeslagen = {formatCurrency(cost)}</>} (excl. BTW)
+                  </div>
+                </div>
+              </div>
+              {purchaseInvoiceId ? (
+                <Link
+                  href={`/inkoopfacturen/${purchaseInvoiceId}`}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  Bekijk
+                </Link>
+              ) : canInvoice ? (
+                <form action={generatePurchaseForTimesheet}>
+                  <input type="hidden" name="timesheetId" value={ts.id} />
+                  <SubmitButton variant="outline" size="sm">
+                    Genereer
+                  </SubmitButton>
+                </form>
+              ) : (
+                <span className="text-xs text-slate-400">—</span>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
