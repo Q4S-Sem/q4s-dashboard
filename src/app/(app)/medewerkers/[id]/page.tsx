@@ -27,6 +27,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { SearchSelect } from "@/components/ui/search-select";
 import { FileInput } from "@/components/ui/file-input";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import {
@@ -297,12 +298,13 @@ export default async function MedewerkerDetailPage({
             <form action={detachEmployee} className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <input type="hidden" name="employeeId" value={m.id} />
               <Field label="Klant" htmlFor="det-client">
-                <Select id="det-client" name="clientId" required defaultValue="">
-                  <option value="" disabled>Kies klant…</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>{c.companyName}</option>
-                  ))}
-                </Select>
+                <SearchSelect
+                  id="det-client"
+                  name="clientId"
+                  options={clients.map((c) => ({ value: c.id, label: c.companyName }))}
+                  placeholder="Typ een bedrijf…"
+                  emptyText="Geen bedrijf gevonden."
+                />
               </Field>
               <Field label="Functie / rol" htmlFor="det-title">
                 <Input id="det-title" name="title" required placeholder="Bijv. QC-inspecteur L2" />
