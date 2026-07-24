@@ -4,6 +4,7 @@ import { getNavBadges } from "@/lib/facturatie";
 import { getNotifications } from "@/lib/notifications";
 import { getLogoSrc } from "@/lib/branding";
 import { currentUser, authRequired } from "@/lib/session";
+import { ensureAiKeysLoaded } from "@/lib/ai-keys";
 
 export default async function AppLayout({
   children,
@@ -14,7 +15,16 @@ export default async function AppLayout({
   // Inloggen is (voorlopig) optioneel: alleen afdwingen als AUTH_REQUIRED aan staat.
   if (!user && authRequired()) redirect("/login");
 
-  const [badges, notifications] = await Promise.all([getNavBadges(), getNotifications()]);
+  // Hydrateer de in het dashboard opgeslagen AI-sleutels uit de DB in process.env
+  // vóór de pagina rendert. Serverless-instances die bij een cold start de sleutels
+  // nog niet hadden (of warm zijn van vóór het invoeren), zouden anders bij elke
+  // render "AI niet geconfigureerd" tonen — de tip "stel API-sleutels in" bleef zo
+  // hangen terwijl ze al ingevoerd waren. 60s-cache, dus goedkoop.
+  const [badges, notifications] = await Promise.all([
+    getNavBadges(),
+    getNotifications(),
+    ensureAiKeysLoaded(),
+  ]);
   const logoSrc = getLogoSrc();
   return (
     <AppShell badges={badges} notifications={notifications} logoSrc={logoSrc} user={user}>

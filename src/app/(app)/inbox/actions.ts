@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { collectIncomingFiles } from "@/lib/file-intake";
 import { aiJSON, aiJSONFromFile, isAIConfigured, isVisionConfigured } from "@/lib/ai";
+import { ensureAiKeysLoaded } from "@/lib/ai-keys";
 import {
   saveInboxBytes,
   readInboxBase64,
@@ -21,6 +22,9 @@ export async function uploadInboxTimesheet(formData: FormData) {
   const incoming = await collectIncomingFiles(formData);
   if (incoming.length === 0) redirect("/inbox?error=upload");
 
+  // Dashboard-sleutels uit de DB in env laden (serverless: deze instance kan ze nog
+  // niet hebben) — anders zou het automatisch uitlezen onterecht worden overgeslagen.
+  await ensureAiKeysLoaded();
   // Excel-urenstaten gaan via tekst-AI (aiJSON), PDF/afbeelding via vision
   // (aiJSONFromFile) — dus AI is bruikbaar zodra één van beide klaarstaat.
   const aiReady = isAIConfigured() || isVisionConfigured();
