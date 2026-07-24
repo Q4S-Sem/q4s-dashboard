@@ -107,6 +107,54 @@ export function MedewerkerForm({
         </CardContent>
       </Card>
 
+      {/* Pensioenregeling */}
+      <Card>
+        <CardContent className="space-y-5">
+          <h2 className="text-sm font-semibold text-slate-900">Pensioenregeling</h2>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <Field
+              label="Regeling / uitvoerder"
+              htmlFor="pensionScheme"
+              hint="Bijv. StiPP, PMT, PME — of 'geen'"
+              error={e.pensionScheme}
+            >
+              <Input
+                id="pensionScheme"
+                name="pensionScheme"
+                placeholder="Bijv. StiPP Plusregeling"
+                defaultValue={employee?.pensionScheme ?? ""}
+              />
+            </Field>
+            <Field label="Deelnemersnummer" htmlFor="pensionNumber" error={e.pensionNumber}>
+              <Input id="pensionNumber" name="pensionNumber" defaultValue={employee?.pensionNumber ?? ""} />
+            </Field>
+            <Field label="Deelname sinds" htmlFor="pensionStart" error={e.pensionStart}>
+              <Input id="pensionStart" name="pensionStart" type="date" defaultValue={di(employee?.pensionStart)} />
+            </Field>
+            <Field label="Werknemersbijdrage (%)" htmlFor="pensionEmployeePct" error={e.pensionEmployeePct}>
+              <Input
+                id="pensionEmployeePct"
+                name="pensionEmployeePct"
+                type="number"
+                min={0}
+                step="0.1"
+                defaultValue={employee?.pensionEmployeePct ?? ""}
+              />
+            </Field>
+            <Field label="Werkgeversbijdrage (%)" htmlFor="pensionEmployerPct" error={e.pensionEmployerPct}>
+              <Input
+                id="pensionEmployerPct"
+                name="pensionEmployerPct"
+                type="number"
+                min={0}
+                step="0.1"
+                defaultValue={employee?.pensionEmployerPct ?? ""}
+              />
+            </Field>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Persoonlijk dossier */}
       <Card>
         <CardContent className="space-y-5">

@@ -846,6 +846,17 @@ export default async function MedewerkerDetailPage({
             <Detail label="Uren per week" value={`${round2(m.hoursPerWeek)} u`} />
             <Detail label="Maandsalaris" value={m.monthlySalary > 0 ? formatCurrency(round2(m.monthlySalary)) : null} />
             <Detail label="Vakantierecht" value={`${round2(m.vacationDaysPerYear)} dagen/jaar`} />
+            <Detail label="Pensioenregeling" value={m.pensionScheme} />
+            <Detail label="Deelnemersnr. pensioen" value={m.pensionNumber} />
+            <Detail label="Pensioen sinds" value={m.pensionStart ? formatDate(m.pensionStart) : null} />
+            <Detail
+              label="Pensioenbijdrage (wn / wg)"
+              value={
+                m.pensionEmployeePct != null || m.pensionEmployerPct != null
+                  ? `${m.pensionEmployeePct ?? "—"}% / ${m.pensionEmployerPct ?? "—"}%`
+                  : null
+              }
+            />
             <Detail label="Geboortedatum" value={m.dateOfBirth ? formatDate(m.dateOfBirth) : null} />
             <Detail label="BSN" value={m.bsn} />
             <Detail label="IBAN" value={m.iban} />

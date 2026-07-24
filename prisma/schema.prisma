@@ -1305,6 +1305,18 @@ model Employee {
   /// Vakantiedagen-recht per jaar (op fulltime-basis).
   vacationDaysPerYear Float     @default(25)
 
+  // Pensioenregeling
+  /// Pensioenregeling / -uitvoerder (bijv. StiPP, PMT, PME, of "geen").
+  pensionScheme       String?
+  /// Deelnemers-/aansluitnummer bij de pensioenuitvoerder.
+  pensionNumber       String?
+  /// Deelname aan de regeling sinds.
+  pensionStart        DateTime?
+  /// Werknemersbijdrage (% van de pensioengrondslag).
+  pensionEmployeePct  Float?
+  /// Werkgeversbijdrage (%).
+  pensionEmployerPct  Float?
+
   // Persoonlijk dossier
   dateOfBirth         DateTime?
   bsn                 String?
