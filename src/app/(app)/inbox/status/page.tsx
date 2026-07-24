@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowRight,
   ChevronLeft,
   ChevronRight,
   Users,
@@ -10,6 +11,7 @@ import {
   BellRing,
   Upload,
   Send,
+  FileText,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -20,14 +22,14 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
-import { DISCIPLINES, TIMESHEET_PRESENCE, labelFor } from "@/lib/domain";
+import { DISCIPLINES, TIMESHEET_PRESENCE, INBOX_SOURCES, INBOX_STATUSES, labelFor } from "@/lib/domain";
 import { isEmailConfigured } from "@/lib/email";
 import {
   parseWeekParam,
   timesheetWeekStatus,
   weekParam,
   currentWeekMonday,
-  unlinkedInboxCount,
+  unlinkedInboxItems,
 } from "@/lib/timesheets";
 import { WeekPicker } from "@/components/week-picker";
 import { remindOne, remindAllMissing } from "./actions";
@@ -56,7 +58,10 @@ export default async function TimesheetStatusPage({
   const sp = await searchParams;
   const monday = parseWeekParam(sp.week);
   const wp = weekParam(monday);
-  const [status, unlinked] = await Promise.all([timesheetWeekStatus(monday), unlinkedInboxCount()]);
+  const [status, unlinkedItems] = await Promise.all([
+    timesheetWeekStatus(monday),
+    unlinkedInboxItems(),
+  ]);
   const emailReady = isEmailConfigured();
 
   const missingCount = status.summary.missing;
@@ -127,15 +132,46 @@ export default async function TimesheetStatusPage({
           {Number(sp.capped) > 0 ? ` · ${sp.capped} boven de limiet — klik nogmaals voor de rest` : ""}.
         </p>
       )}
-      {unlinked > 0 && (
-        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <strong>Let op:</strong> er {unlinked === 1 ? "staat" : "staan"} {unlinked} onbevestigd(e) inbox-item(s) nog
-          niet aan een medewerker gekoppeld. Iemand kan hieronder "ontbreken" terwijl zijn staat ongekoppeld in de{" "}
-          <Link href="/inbox" className="font-medium underline">
-            inbox
-          </Link>{" "}
-          ligt — controleer dat eerst voordat je herinnert.
-        </p>
+      {unlinkedItems.length > 0 && (
+        <Card className="border-amber-300 ring-1 ring-amber-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-900">
+              <AlertTriangle className="h-5 w-5 text-amber-600" /> Dit moet je oppakken —{" "}
+              {unlinkedItems.length} onbevestigd(e) item(s)
+            </CardTitle>
+            <span className="text-sm text-slate-500">
+              Deze urenstaten liggen in de inbox maar zijn nog niet aan een medewerker gekoppeld.
+              Bevestig ze eerst — anders lijkt iemand hieronder onterecht te "ontbreken".
+            </span>
+          </CardHeader>
+          <ul className="divide-y divide-slate-100">
+            {unlinkedItems.map((it) => (
+              <li key={it.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                <FileText className="h-4 w-4 shrink-0 text-slate-400" />
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={`/inbox/${it.id}`}
+                    className="block truncate text-sm font-medium text-slate-900 hover:text-brand-700"
+                  >
+                    {it.name}
+                  </Link>
+                  <span className="block truncate text-xs text-slate-400">
+                    {it.originalName}
+                    {it.weekStart ? ` · week van ${formatDate(it.weekStart)}` : ""}
+                  </span>
+                </div>
+                <StatusBadge options={INBOX_SOURCES} value={it.source} />
+                <StatusBadge options={INBOX_STATUSES} value={it.status} />
+                <Link
+                  href={`/inbox/${it.id}`}
+                  className={buttonVariants({ variant: "primary", size: "sm" })}
+                >
+                  Bevestig <ArrowRight className="h-4 w-4" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
       {!emailReady && (
         <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">

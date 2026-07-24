@@ -173,6 +173,40 @@ export async function unlinkedInboxCount(): Promise<number> {
   });
 }
 
+export type UnlinkedInboxItem = {
+  id: string;
+  name: string; // uitgelezen naam, of anders de bestandsnaam
+  originalName: string;
+  source: string;
+  status: string;
+  weekStart: Date | null;
+};
+
+/** De concrete inbox-items die nog niet aan een medewerker gekoppeld zijn — dit
+ *  is "wat je moet oppakken": elk item opent zijn bevestig-pagina (/inbox/[id]). */
+export async function unlinkedInboxItems(): Promise<UnlinkedInboxItem[]> {
+  const items = await db.timesheetInbox.findMany({
+    where: { status: { in: ["NEW", "EXTRACTED"] }, consultantId: null },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      extractedName: true,
+      originalName: true,
+      source: true,
+      status: true,
+      extractedWeekStart: true,
+    },
+  });
+  return items.map((it) => ({
+    id: it.id,
+    name: it.extractedName?.trim() || it.originalName,
+    originalName: it.originalName,
+    source: it.source,
+    status: it.status,
+    weekStart: it.extractedWeekStart,
+  }));
+}
+
 // ---------------------------------------------------------------------------
 // Herinnering-mail (standaard Q4S-opmaak)
 // ---------------------------------------------------------------------------
