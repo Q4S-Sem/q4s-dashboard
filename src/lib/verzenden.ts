@@ -6,7 +6,15 @@ import type { CompanySettings } from "./settings";
 
 // Structural input shapes (decoupled from Prisma's generated types — any query
 // that includes these fields is assignable).
-type Line = { description: string; quantity: number; unitPrice: number; amount: number };
+type Line = {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  weekNumber?: number | null;
+  location?: string | null;
+  lineKind?: string | null;
+};
 
 type SalesInvoiceFull = {
   number: string;
@@ -17,6 +25,10 @@ type SalesInvoiceFull = {
   vatAmount: number;
   total: number;
   notes: string | null;
+  subject: string | null;
+  services: string | null;
+  ourReference: string | null;
+  purchaseOrder: string | null;
   lines: Line[];
   client: {
     companyName: string;
@@ -68,13 +80,26 @@ function companyBlock(s: CompanySettings) {
       [s.postalCode, s.city].filter(Boolean).join(" "),
       s.country,
     ]),
-    contactLines: compact([s.email, s.phone, s.website]),
-    taxLines: compact([
-      s.vatNumber ? `BTW: ${s.vatNumber}` : "",
-      s.kvkNumber ? `KvK: ${s.kvkNumber}` : "",
-      s.iban ? `IBAN: ${s.iban}` : "",
-    ]),
+    contactLines: compact([s.phone ? `Tel: ${s.phone}` : "", s.website, s.email]),
+    iban: s.iban || "",
+    bic: s.bic || "",
+    vatNumber: s.vatNumber || "",
+    kvkNumber: s.kvkNumber || "",
+    gAccount: s.gAccount || "",
   };
+}
+
+/** Bouw de tabelregels in het Q4S-format (REF/AMOUNT/…/TOTAL) uit factuurregels. */
+function toInvoiceRows(lines: Line[]) {
+  return lines.map((l, i) => ({
+    ref: String(i + 1).padStart(2, "0"),
+    amount: l.quantity,
+    description: l.description,
+    week: l.weekNumber ?? null,
+    location: l.location ?? null,
+    unitPrice: l.unitPrice,
+    total: l.amount,
+  }));
 }
 
 function companyFooterLines(s: CompanySettings): string[] {
@@ -95,31 +120,42 @@ const fileSafe = (s: string) => s.replace(/[^\w.-]+/g, "-");
 
 export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): InvoiceDoc {
   const c = inv.client;
+  const hasHours = inv.lines.some(
+    (l) => l.lineKind === "HOURS" || /\b(uur|uren|hour|hours)\b/i.test(l.description),
+  );
   return {
-    title: "Factuur",
+    docTitle: "Invoice",
+    language: "en",
     number: inv.number,
     issueDate: inv.issueDate,
     dueDate: inv.dueDate,
+    subject: inv.subject,
+    services: inv.services,
+    ourReference: inv.ourReference,
+    purchaseOrder: inv.purchaseOrder,
+    company: companyBlock(s),
+    recipientLabel: "To:",
+    recipientName: c.companyName,
+    recipientLines: compact([
+      c.address,
+      [c.postalCode, c.city].filter(Boolean).join(" "),
+      c.country,
+      c.contactName ? `Contact: ${c.contactName}` : "",
+      c.invoiceEmail?.trim() || c.email?.trim() || "",
+      c.vatNumber ? `VAT: ${c.vatNumber}` : "",
+    ]),
+    lines: toInvoiceRows(inv.lines),
     vatRate: inv.vatRate,
     subtotal: inv.subtotal,
     vatAmount: inv.vatAmount,
     total: inv.total,
+    attachmentNote: hasHours ? "Signed Timesheets attached" : null,
+    footerLines: [
+      `We would like to receive your payment within ${c.paymentTermDays} days.`,
+      "Please send payment with the invoice number as reference.",
+      s.invoiceFooter || "",
+    ].filter(Boolean),
     notes: inv.notes,
-    lines: inv.lines,
-    company: companyBlock(s),
-    recipientLabel: "Factuur aan",
-    recipientName: c.companyName,
-    recipientLines: compact([
-      c.contactName,
-      c.address,
-      [c.postalCode, c.city].filter(Boolean).join(" "),
-      c.country,
-      c.vatNumber ? `BTW: ${c.vatNumber}` : "",
-    ]),
-    footerText: s.iban
-      ? `Gelieve het totaalbedrag binnen ${c.paymentTermDays} dagen te voldoen op ${s.iban} o.v.v. factuurnummer ${inv.number}.`
-      : null,
-    footerNote: s.invoiceFooter || null,
   };
 }
 
@@ -131,41 +167,49 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
  */
 export function sampleInvoiceDoc(s: CompanySettings): InvoiceDoc {
   const issueDate = new Date();
-  const dueDate = new Date(issueDate.getTime() + (s.defaultPaymentTermDays || 14) * 86_400_000);
+  const dueDate = new Date(issueDate.getTime() + (s.defaultPaymentTermDays || 30) * 86_400_000);
   const lines: Line[] = [
-    { description: "Detachering — NDO Inspecteur (week 29, 2026)", quantity: 40, unitPrice: 75, amount: 3000 },
-    { description: "Overurentoeslag 125% (week 29) — 8 u", quantity: 8, unitPrice: 18.75, amount: 150 },
-    { description: "Kilometervergoeding (week 29) — 220 km", quantity: 220, unitPrice: 0.23, amount: 50.6 },
+    { description: "Total Hours R. van Son", quantity: 51, unitPrice: 90, amount: 4590, weekNumber: 27, location: "Sif Group HKW8", lineKind: "HOURS" },
+    { description: "KM", quantity: 516, unitPrice: 0.4, amount: 206.4, weekNumber: 27, location: "Sif Group HKW8", lineKind: "KM" },
+    { description: "Total Hours R. van Son", quantity: 45, unitPrice: 90, amount: 4050, weekNumber: 28, location: "Sif Group HKW8", lineKind: "HOURS" },
+    { description: "KM", quantity: 430, unitPrice: 0.4, amount: 172, weekNumber: 28, location: "Sif Group HKW8", lineKind: "KM" },
   ];
   const subtotal = round2(lines.reduce((n, l) => n + l.amount, 0));
   const vatRate = s.defaultVatRate ?? 21;
   const vatAmount = round2((subtotal * vatRate) / 100);
   const total = round2(subtotal + vatAmount);
-  const number = `${s.invoicePrefix || ""}VB-2026-0001`;
   return {
-    title: "Factuur",
-    number,
+    docTitle: "Invoice",
+    language: "en",
+    number: `${s.invoicePrefix || ""}2026112`,
     issueDate,
     dueDate,
+    subject: "R. van Son",
+    services: "QC Inspector",
+    ourReference: null,
+    purchaseOrder: null,
+    company: companyBlock(s),
+    recipientLabel: "To:",
+    recipientName: "Sif Netherlands B.V.",
+    recipientLines: [
+      "P.O Box 522",
+      "6040 AM Roermond",
+      "The Netherlands",
+      "Contact: Mrs. J. van den Borne",
+      "invoiceonly@sif-group.com",
+    ],
+    lines: toInvoiceRows(lines),
     vatRate,
     subtotal,
     vatAmount,
     total,
+    attachmentNote: "Signed Timesheets attached",
+    footerLines: [
+      "We would like to receive your payment within 30 days.",
+      "Please send payment with the invoice number as reference.",
+      s.invoiceFooter || "",
+    ].filter(Boolean),
     notes: null,
-    lines,
-    company: companyBlock(s),
-    recipientLabel: "Factuur aan",
-    recipientName: "Voorbeeld Opdrachtgever B.V.",
-    recipientLines: compact([
-      "T.a.v. de administratie",
-      "Voorbeeldstraat 1",
-      "1000 AA Amsterdam",
-      "Nederland",
-    ]),
-    footerText: s.iban
-      ? `Gelieve het totaalbedrag binnen ${s.defaultPaymentTermDays || 14} dagen te voldoen op ${s.iban} o.v.v. factuurnummer ${number}.`
-      : "Voorbeeldfactuur — vul een IBAN in bij de bedrijfsgegevens en die verschijnt hier automatisch.",
-    footerNote: s.invoiceFooter || null,
   };
 }
 
@@ -202,18 +246,17 @@ export function purchaseInvoiceDoc(inv: PurchaseInvoiceFull, s: CompanySettings)
   const p = inv.consultant;
   const name = `${p.firstName} ${p.lastName}`;
   return {
-    title: "Inkoopfactuur",
+    docTitle: "Inkoopfactuur",
+    language: "nl",
     number: inv.number,
     issueDate: inv.issueDate,
     dueDate: inv.dueDate,
-    vatRate: inv.vatRate,
-    subtotal: inv.subtotal,
-    vatAmount: inv.vatAmount,
-    total: inv.total,
-    notes: inv.notes,
-    lines: inv.lines,
+    subject: name,
+    services: null,
+    ourReference: null,
+    purchaseOrder: null,
     company: companyBlock(s),
-    recipientLabel: "Aan",
+    recipientLabel: "Aan:",
     recipientName: p.companyName || name,
     recipientLines: compact([
       p.companyName ? name : "",
@@ -221,11 +264,21 @@ export function purchaseInvoiceDoc(inv: PurchaseInvoiceFull, s: CompanySettings)
       [p.postalCode, p.city].filter(Boolean).join(" "),
       p.country,
       p.vatNumber ? `BTW: ${p.vatNumber}` : "",
+      p.iban ? `IBAN: ${p.iban}` : "",
     ]),
-    footerText: p.iban
-      ? `Het totaalbedrag wordt door Q4S overgemaakt op ${p.iban} o.v.v. ${inv.number}.`
-      : `Self-billing inkoopfactuur, opgesteld door Q4S namens ${name}.`,
-    footerNote: s.invoiceFooter || null,
+    lines: toInvoiceRows(inv.lines),
+    vatRate: inv.vatRate,
+    subtotal: inv.subtotal,
+    vatAmount: inv.vatAmount,
+    total: inv.total,
+    attachmentNote: null,
+    footerLines: compact([
+      p.iban
+        ? `Het totaalbedrag wordt door Q4S overgemaakt op ${p.iban} o.v.v. ${inv.number}.`
+        : `Self-billing inkoopfactuur, opgesteld door Q4S namens ${name}.`,
+      s.invoiceFooter || "",
+    ]),
+    notes: inv.notes,
   };
 }
 

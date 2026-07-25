@@ -292,7 +292,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
   const metaValX = 478;
   let my = bankTop + 6;
   const metaLine = (label: string, value: string | null, valueColor = INK, valueFont: PDFFont = font) => {
-    if (value == null || value === "") { my -= 14; return; }
+    if (value == null || value === "") return; // lege regel volledig overslaan
     textR(label + ":", metaLabelR, my, 9, font, MUTED);
     text(value, metaValX, my, 9, valueFont, valueColor);
     my -= 14;
@@ -359,7 +359,12 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     breakPage(150, true);
     text(l.ref, COL.ref, y, 9, font, MUTED);
     textR(formatHours(l.amount), COL.amount, y, 9, font, INK);
-    text(truncate(l.description, 9, COL.descMaxW), COL.desc, y, 9, font, INK);
+    // Zonder WEEK én LOCATION mag de omschrijving de volle breedte gebruiken
+    // (voorkomt lelijk afkappen bij oudere/lange regels); mét die kolommen de
+    // smalle Q4S-kolom.
+    const wideDesc = l.week == null && !l.location;
+    const descMaxW = wideDesc ? COL.price - 15 - COL.desc : COL.descMaxW;
+    text(truncate(l.description, 9, descMaxW), COL.desc, y, 9, font, INK);
     if (l.week != null) textC(String(l.week), COL.week, y, 9, font, INK);
     if (l.location) text(truncate(l.location, 9, COL.locMaxW), COL.loc, y, 9, font, MUTED);
     textR(money(l.unitPrice), COL.price, y, 9, font, INK);
