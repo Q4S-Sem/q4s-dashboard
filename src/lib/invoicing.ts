@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { round2, formatWeekLabel } from "./utils";
+import { round2, getISOWeek } from "./utils";
 import { nextInvoiceNumber, nextPurchaseInvoiceNumber } from "./numbering";
 import { getCompanySettings } from "./settings";
 import { buildTimesheetLines } from "./toeslag";
@@ -42,14 +42,13 @@ export async function createSalesInvoice(opts: {
   const vatRate = settings.defaultVatRate ?? 21;
 
   const lines = timesheets.flatMap((t) => {
-    const hours = round2(t.entries.reduce((s, e) => s + e.hours, 0));
-    const weekLabel = formatWeekLabel(t.weekStart);
-    const baseDescription = `${t.placement.consultant.firstName} ${t.placement.consultant.lastName} — ${t.placement.title} — ${weekLabel} (${hours} u)`;
+    const consultantName = `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`;
     return buildTimesheetLines({
       timesheetId: t.id,
       placementId: t.placementId,
-      weekLabel,
-      baseDescription,
+      weekNumber: getISOWeek(t.weekStart),
+      location: t.placement.workLocation ?? null,
+      baseDescription: `Totaal uren ${consultantName}`,
       entries: t.entries,
       overtimeHours: t.overtimeHours,
       kilometers: t.kilometers,
@@ -59,6 +58,15 @@ export async function createSalesInvoice(opts: {
       kmRate: t.placement.kmRateSell,
     });
   });
+
+  // Kop-velden (Subject/Services): één medewerker/functie per factuur → tonen; bij
+  // een gebundelde factuur met meerdere personen/functies laten we ze leeg.
+  const consultantNames = new Set(
+    timesheets.map((t) => `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`),
+  );
+  const titles = new Set(timesheets.map((t) => t.placement.title));
+  const subject = consultantNames.size === 1 ? [...consultantNames][0] : null;
+  const services = titles.size === 1 ? [...titles][0] : null;
 
   const subtotal = round2(lines.reduce((s, l) => s + l.amount, 0));
   const vatAmount = round2((subtotal * vatRate) / 100);
@@ -72,10 +80,12 @@ export async function createSalesInvoice(opts: {
     const inv = await tx.invoice.create({
       data: {
         number, clientId, issueDate, dueDate, status: "DRAFT", vatRate, subtotal, vatAmount, total, notes,
+        subject, services,
         lines: {
           create: lines.map((l) => ({
             description: l.description, quantity: l.quantity, unitPrice: l.unitPrice,
             amount: l.amount, placementId: l.placementId, timesheetId: l.timesheetId,
+            weekNumber: l.weekNumber, location: l.location, lineKind: l.lineKind,
           })),
         },
       },
@@ -135,15 +145,14 @@ export async function createPurchaseInvoice(opts: {
   const settings = await getCompanySettings();
   const vatRate = settings.defaultVatRate ?? 21;
 
-  const lines = timesheets.flatMap((t) => {
-    const hours = round2(t.entries.reduce((s, e) => s + e.hours, 0));
-    const weekLabel = formatWeekLabel(t.weekStart);
-    const baseDescription = `${t.placement.title} — ${weekLabel} (${hours} u)`;
-    return buildTimesheetLines({
+  const consultantName = `${consultant.firstName} ${consultant.lastName}`;
+  const lines = timesheets.flatMap((t) =>
+    buildTimesheetLines({
       timesheetId: t.id,
       placementId: t.placementId,
-      weekLabel,
-      baseDescription,
+      weekNumber: getISOWeek(t.weekStart),
+      location: t.placement.workLocation ?? null,
+      baseDescription: `Totaal uren ${consultantName}`,
       entries: t.entries,
       overtimeHours: t.overtimeHours,
       kilometers: t.kilometers,
@@ -151,8 +160,8 @@ export async function createPurchaseInvoice(opts: {
       weekendPct: t.placement.weekendSurchargeBuy,
       overtimePct: t.placement.overtimeSurchargeBuy,
       kmRate: t.placement.kmRateBuy,
-    });
-  });
+    }),
+  );
 
   const subtotal = round2(lines.reduce((s, l) => s + l.amount, 0));
   const vatAmount = round2((subtotal * vatRate) / 100);

@@ -124,8 +124,8 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
     (l) => l.lineKind === "HOURS" || /\b(uur|uren|hour|hours)\b/i.test(l.description),
   );
   return {
-    docTitle: "Invoice",
-    language: "en",
+    docTitle: "Factuur",
+    language: "nl",
     number: inv.number,
     issueDate: inv.issueDate,
     dueDate: inv.dueDate,
@@ -134,25 +134,25 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
     ourReference: inv.ourReference,
     purchaseOrder: inv.purchaseOrder,
     company: companyBlock(s),
-    recipientLabel: "To:",
+    recipientLabel: "Aan:",
     recipientName: c.companyName,
     recipientLines: compact([
       c.address,
       [c.postalCode, c.city].filter(Boolean).join(" "),
       c.country,
-      c.contactName ? `Contact: ${c.contactName}` : "",
+      c.contactName ? `T.a.v. ${c.contactName}` : "",
       c.invoiceEmail?.trim() || c.email?.trim() || "",
-      c.vatNumber ? `VAT: ${c.vatNumber}` : "",
+      c.vatNumber ? `BTW: ${c.vatNumber}` : "",
     ]),
     lines: toInvoiceRows(inv.lines),
     vatRate: inv.vatRate,
     subtotal: inv.subtotal,
     vatAmount: inv.vatAmount,
     total: inv.total,
-    attachmentNote: hasHours ? "Signed Timesheets attached" : null,
+    attachmentNote: hasHours ? "Ondertekende urenstaten bijgevoegd" : null,
     footerLines: [
-      `We would like to receive your payment within ${c.paymentTermDays} days.`,
-      "Please send payment with the invoice number as reference.",
+      `Gelieve het totaalbedrag binnen ${c.paymentTermDays} dagen te voldoen.`,
+      "Vermeld het factuurnummer bij de betaling.",
       s.invoiceFooter || "",
     ].filter(Boolean),
     notes: inv.notes,
@@ -169,18 +169,18 @@ export function sampleInvoiceDoc(s: CompanySettings): InvoiceDoc {
   const issueDate = new Date();
   const dueDate = new Date(issueDate.getTime() + (s.defaultPaymentTermDays || 30) * 86_400_000);
   const lines: Line[] = [
-    { description: "Total Hours R. van Son", quantity: 51, unitPrice: 90, amount: 4590, weekNumber: 27, location: "Sif Group HKW8", lineKind: "HOURS" },
-    { description: "KM", quantity: 516, unitPrice: 0.4, amount: 206.4, weekNumber: 27, location: "Sif Group HKW8", lineKind: "KM" },
-    { description: "Total Hours R. van Son", quantity: 45, unitPrice: 90, amount: 4050, weekNumber: 28, location: "Sif Group HKW8", lineKind: "HOURS" },
-    { description: "KM", quantity: 430, unitPrice: 0.4, amount: 172, weekNumber: 28, location: "Sif Group HKW8", lineKind: "KM" },
+    { description: "Totaal uren R. van Son", quantity: 51, unitPrice: 90, amount: 4590, weekNumber: 27, location: "Sif Group HKW8", lineKind: "HOURS" },
+    { description: "Kilometers", quantity: 516, unitPrice: 0.4, amount: 206.4, weekNumber: 27, location: "Sif Group HKW8", lineKind: "KM" },
+    { description: "Totaal uren R. van Son", quantity: 45, unitPrice: 90, amount: 4050, weekNumber: 28, location: "Sif Group HKW8", lineKind: "HOURS" },
+    { description: "Kilometers", quantity: 430, unitPrice: 0.4, amount: 172, weekNumber: 28, location: "Sif Group HKW8", lineKind: "KM" },
   ];
   const subtotal = round2(lines.reduce((n, l) => n + l.amount, 0));
   const vatRate = s.defaultVatRate ?? 21;
   const vatAmount = round2((subtotal * vatRate) / 100);
   const total = round2(subtotal + vatAmount);
   return {
-    docTitle: "Invoice",
-    language: "en",
+    docTitle: "Factuur",
+    language: "nl",
     number: `${s.invoicePrefix || ""}2026112`,
     issueDate,
     dueDate,
@@ -189,13 +189,13 @@ export function sampleInvoiceDoc(s: CompanySettings): InvoiceDoc {
     ourReference: null,
     purchaseOrder: null,
     company: companyBlock(s),
-    recipientLabel: "To:",
+    recipientLabel: "Aan:",
     recipientName: "Sif Netherlands B.V.",
     recipientLines: [
       "P.O Box 522",
       "6040 AM Roermond",
-      "The Netherlands",
-      "Contact: Mrs. J. van den Borne",
+      "Nederland",
+      "T.a.v. Mevr. J. van den Borne",
       "invoiceonly@sif-group.com",
     ],
     lines: toInvoiceRows(lines),
@@ -203,10 +203,10 @@ export function sampleInvoiceDoc(s: CompanySettings): InvoiceDoc {
     subtotal,
     vatAmount,
     total,
-    attachmentNote: "Signed Timesheets attached",
+    attachmentNote: "Ondertekende urenstaten bijgevoegd",
     footerLines: [
-      "We would like to receive your payment within 30 days.",
-      "Please send payment with the invoice number as reference.",
+      "Gelieve het totaalbedrag binnen 30 dagen te voldoen.",
+      "Vermeld het factuurnummer bij de betaling.",
       s.invoiceFooter || "",
     ].filter(Boolean),
     notes: null,

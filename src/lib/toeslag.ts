@@ -120,7 +120,9 @@ export function computeTimesheetMoney(
   };
 }
 
-/** An invoice/purchase line, shaped for both InvoiceLine and PurchaseInvoiceLine. */
+/** An invoice/purchase line, shaped for both InvoiceLine and PurchaseInvoiceLine.
+ *  weekNumber/location/lineKind vullen de Q4S-factuurkolommen WEEK/LOCATION (alleen
+ *  de sales-InvoiceLine slaat ze op; PurchaseInvoiceLine negeert ze). */
 export type BuiltLine = {
   timesheetId: string | null;
   placementId: string;
@@ -128,6 +130,10 @@ export type BuiltLine = {
   quantity: number;
   unitPrice: number;
   amount: number;
+  weekNumber: number | null;
+  location: string | null;
+  /** HOURS | KM | SURCHARGE */
+  lineKind: string;
 };
 
 /**
@@ -139,7 +145,8 @@ export type BuiltLine = {
 export function buildTimesheetLines(opts: {
   timesheetId: string;
   placementId: string;
-  weekLabel: string;
+  weekNumber: number | null;
+  location: string | null;
   baseDescription: string;
   entries: { date: Date; hours: number }[];
   overtimeHours: number | null;
@@ -153,6 +160,9 @@ export function buildTimesheetLines(opts: {
   const weekendHours = weekendHoursOf(opts.entries);
   const ot = opts.overtimeHours ?? 0;
   const km = opts.kilometers ?? 0;
+  // Week/locatie komen op elke regel; de WEEK/AMOUNT-kolommen tonen het weeknr en
+  // aantal, dus de omschrijving blijft kort (geen weeklabel/aantal in de tekst).
+  const meta = { weekNumber: opts.weekNumber, location: opts.location };
 
   const lines: BuiltLine[] = [
     {
@@ -162,6 +172,8 @@ export function buildTimesheetLines(opts: {
       quantity: hours,
       unitPrice: opts.rate,
       amount: round2(hours * opts.rate),
+      lineKind: "HOURS",
+      ...meta,
     },
   ];
 
@@ -170,10 +182,12 @@ export function buildTimesheetLines(opts: {
     lines.push({
       timesheetId: null,
       placementId: opts.placementId,
-      description: `Weekendtoeslag ${opts.weekendPct}% — ${opts.weekLabel} (${weekendHours} u)`,
+      description: `Weekendtoeslag ${opts.weekendPct}%`,
       quantity: weekendHours,
       unitPrice: unit,
       amount: round2(weekendHours * unit),
+      lineKind: "SURCHARGE",
+      ...meta,
     });
   }
 
@@ -182,10 +196,12 @@ export function buildTimesheetLines(opts: {
     lines.push({
       timesheetId: null,
       placementId: opts.placementId,
-      description: `Overurentoeslag ${opts.overtimePct}% — ${opts.weekLabel} (${ot} u)`,
+      description: `Overurentoeslag ${opts.overtimePct}%`,
       quantity: ot,
       unitPrice: unit,
       amount: round2(ot * unit),
+      lineKind: "SURCHARGE",
+      ...meta,
     });
   }
 
@@ -193,10 +209,12 @@ export function buildTimesheetLines(opts: {
     lines.push({
       timesheetId: null,
       placementId: opts.placementId,
-      description: `Kilometervergoeding — ${opts.weekLabel} (${km} km)`,
+      description: "Kilometers",
       quantity: km,
       unitPrice: opts.kmRate,
       amount: round2(km * opts.kmRate),
+      lineKind: "KM",
+      ...meta,
     });
   }
 
