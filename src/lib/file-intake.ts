@@ -40,17 +40,13 @@ export function guessMime(name: string): string {
   return "application/octet-stream";
 }
 
-/** Collect all uploaded files under `field`, expanding ZIPs into their entries. */
-export async function collectIncomingFiles(
-  formData: FormData,
-  field = "file",
-): Promise<IncomingFile[]> {
+/** Expand a list of Files into raw files, unzipping any ZIP archive into its
+ *  entries. Reused by the field-based collectIncomingFiles and by the e-mail
+ *  webhook (where attachments have arbitrary field names). */
+export async function expandFiles(files: File[]): Promise<IncomingFile[]> {
   const out: IncomingFile[] = [];
-  const files = formData
-    .getAll(field)
-    .filter((f): f is File => f instanceof File && f.size > 0);
-
   for (const f of files) {
+    if (f.size === 0) continue;
     const buf = new Uint8Array(await f.arrayBuffer());
     if (isZipFile(f)) {
       let entries: Record<string, Uint8Array>;
@@ -69,4 +65,15 @@ export async function collectIncomingFiles(
     }
   }
   return out;
+}
+
+/** Collect all uploaded files under `field`, expanding ZIPs into their entries. */
+export async function collectIncomingFiles(
+  formData: FormData,
+  field = "file",
+): Promise<IncomingFile[]> {
+  const files = formData
+    .getAll(field)
+    .filter((f): f is File => f instanceof File && f.size > 0);
+  return expandFiles(files);
 }
