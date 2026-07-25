@@ -12,6 +12,7 @@ import {
   Upload,
   Send,
   FileText,
+  Mail,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -237,7 +238,12 @@ export default async function TimesheetStatusPage({
                       </p>
                     )}
                     {!row.email && row.presence !== "RECEIVED" && (
-                      <p className="text-[11px] text-red-500">geen e-mailadres</p>
+                      <Link
+                        href={`/werknemers/${row.consultantId}/bewerken`}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-red-500 hover:text-red-700 hover:underline"
+                      >
+                        geen e-mailadres — toevoegen
+                      </Link>
                     )}
                   </TD>
                   <TD className="text-slate-500">
@@ -267,22 +273,36 @@ export default async function TimesheetStatusPage({
                       )}
                       {(row.presence === "MISSING" || row.presence === "REMINDED") && (
                         <>
-                          <Link href="/inbox" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                          <Link
+                            href={`/inbox?voor=${row.consultantId}&week=${wp}`}
+                            className={buttonVariants({ variant: "ghost", size: "sm" })}
+                          >
                             <Upload className="h-4 w-4" /> Importeren
                           </Link>
-                          <form action={remindOne}>
-                            <input type="hidden" name="consultantId" value={row.consultantId} />
-                            <input type="hidden" name="placementId" value={row.placementId} />
-                            <input type="hidden" name="week" value={wp} />
-                            <SubmitButton
-                              variant={row.presence === "REMINDED" ? "outline" : "primary"}
-                              size="sm"
-                              pendingLabel="…"
-                              disabled={!row.email}
+                          {row.email ? (
+                            <form action={remindOne}>
+                              <input type="hidden" name="consultantId" value={row.consultantId} />
+                              <input type="hidden" name="placementId" value={row.placementId} />
+                              <input type="hidden" name="week" value={wp} />
+                              <SubmitButton
+                                variant={row.presence === "REMINDED" ? "outline" : "primary"}
+                                size="sm"
+                                pendingLabel="…"
+                              >
+                                <Send className="h-4 w-4" /> {row.presence === "REMINDED" ? "Opnieuw" : "Herinner"}
+                              </SubmitButton>
+                            </form>
+                          ) : (
+                            // Zonder e-mailadres kan er geen herinnering — stuur naar het bewerken-
+                            // scherm om het toe te voegen, zodat je daarna wél kunt herinneren.
+                            <Link
+                              href={`/werknemers/${row.consultantId}/bewerken`}
+                              className={buttonVariants({ variant: "primary", size: "sm" })}
+                              title="Zonder e-mailadres kun je geen herinnering sturen — voeg het toe"
                             >
-                              <Send className="h-4 w-4" /> {row.presence === "REMINDED" ? "Opnieuw" : "Herinner"}
-                            </SubmitButton>
-                          </form>
+                              <Mail className="h-4 w-4" /> E-mailadres toevoegen
+                            </Link>
+                          )}
                         </>
                       )}
                     </div>

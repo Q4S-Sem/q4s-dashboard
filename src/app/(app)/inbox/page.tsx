@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   FileText,
+  Upload,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,13 +43,22 @@ function shiftWeek(monday: Date, deltaWeeks: number): string {
 export default async function InboxPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; week?: string }>;
+  searchParams: Promise<{ error?: string; week?: string; voor?: string }>;
 }) {
-  const { error, week } = await searchParams;
+  const { error, week, voor } = await searchParams;
   const monday = parseWeekParam(week);
   const wp = weekParam(monday);
   const nextMonday = new Date(monday.getTime() + 7 * 86_400_000);
   const isCurrentWeek = weekParam(currentWeekMonday()) === wp;
+
+  // Kwam je hier via "Importeren" bij een ontbrekende urenstaat? Toon voor wie/
+  // welke week, zodat je meteen het juiste bestand erbij sleept.
+  const targetConsultant = voor
+    ? await db.consultant.findUnique({
+        where: { id: voor },
+        select: { firstName: true, lastName: true },
+      })
+    : null;
 
   const [backlog, weekItems, openCount, aiOk] = await Promise.all([
     // Nog uit te lezen: nog geen week gedetecteerd.
@@ -96,6 +106,20 @@ export default async function InboxPage({
         <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <strong>Tip:</strong> stel <code>DEEPSEEK_API_KEY</code> (Excel) en/of{" "}
           <code>GEMINI_API_KEY</code> (PDF/scan) in je <code>.env</code> in om timesheets automatisch te laten uitlezen.
+        </p>
+      )}
+
+      {targetConsultant && (
+        <p className="flex items-start gap-2 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+          <Upload className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Je importeert de urenstaat van{" "}
+            <strong>
+              {targetConsultant.firstName} {targetConsultant.lastName}
+            </strong>{" "}
+            voor <strong>{formatWeekLabel(monday)}</strong>. Sleep het bestand hieronder — de AI leest 'm
+            uit en koppelt 'm automatisch; daarna kun je 'm meteen bevestigen.
+          </span>
         </p>
       )}
 
