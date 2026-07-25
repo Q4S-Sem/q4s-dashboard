@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import type { Employee } from "@prisma/client";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -29,6 +29,23 @@ export function MedewerkerForm({
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
+
+  // Kom je binnen via .../bewerken#email (bv. vanaf de Timesheet-status), spring
+  // dan naar het e-mailveld, focus het en markeer het even, zodat je meteen ziet
+  // waar je moet invullen.
+  useEffect(() => {
+    if (typeof window === "undefined" || window.location.hash !== "#email") return;
+    const el = document.getElementById("email");
+    if (!(el instanceof HTMLInputElement)) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.focus({ preventScroll: true });
+    el.classList.add("ring-2", "ring-brand-500", "ring-offset-2");
+    const t = setTimeout(
+      () => el.classList.remove("ring-2", "ring-brand-500", "ring-offset-2"),
+      2500,
+    );
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <form action={formAction} className="space-y-6">

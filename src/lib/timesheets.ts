@@ -46,6 +46,9 @@ export type TimesheetStatusRow = {
   consultantName: string;
   discipline: string | null;
   email: string | null;
+  /** Gekoppelde eigen-medewerker (Employee) bij loondienst — dan beheer je alles
+   *  in de Personeelsgegevens i.p.v. bij de werknemer/detachering. */
+  employeeId: string | null;
   placementTitle: string;
   clientName: string;
   presence: Presence;
@@ -82,7 +85,19 @@ export async function timesheetWeekStatus(weekStart: Date): Promise<TimesheetWee
       consultant: { active: true },
     },
     include: {
-      consultant: { select: { id: true, firstName: true, lastName: true, discipline: true, email: true } },
+      consultant: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          discipline: true,
+          email: true,
+          // Loondienst: het e-mailadres beheer je bij de medewerker (Personeels-
+          // gegevens), niet bij de consultant. Neem dat over als het er is.
+          employeeId: true,
+          employee: { select: { email: true } },
+        },
+      },
       client: { select: { companyName: true } },
       timesheets: { where: { weekStart: monday }, select: { id: true, status: true } },
     },
@@ -139,7 +154,10 @@ export async function timesheetWeekStatus(weekStart: Date): Promise<TimesheetWee
       consultantId: p.consultantId,
       consultantName: `${p.consultant.firstName} ${p.consultant.lastName}`,
       discipline: p.consultant.discipline,
-      email: p.consultant.email,
+      // Effectief adres: bij loondienst het medewerker-adres (Personeelsgegevens),
+      // anders dat van de consultant (externe ZZP).
+      email: p.consultant.employee?.email?.trim() || p.consultant.email?.trim() || null,
+      employeeId: p.consultant.employeeId,
       placementTitle: p.title,
       clientName: p.client.companyName,
       presence,
@@ -263,11 +281,13 @@ export async function sendTimesheetReminder(
 ): Promise<ReminderResult> {
   const consultant = await db.consultant.findUnique({
     where: { id: consultantId },
-    select: { firstName: true, lastName: true, email: true },
+    select: { firstName: true, lastName: true, email: true, employee: { select: { email: true } } },
   });
   if (!consultant) return { ok: false, simulated: false, error: "Onbekende medewerker." };
 
-  const to = consultant.email?.trim() || null;
+  // Loondienst: gebruik het e-mailadres uit de Personeelsgegevens; anders dat van
+  // de consultant (externe ZZP).
+  const to = consultant.employee?.email?.trim() || consultant.email?.trim() || null;
   if (!to) return { ok: false, simulated: false, noEmail: true, error: "Geen e-mailadres bekend." };
 
   const monday = startOfISOWeek(weekStart);

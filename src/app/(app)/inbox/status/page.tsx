@@ -225,10 +225,20 @@ export default async function TimesheetStatusPage({
               </TR>
             </THead>
             <TBody>
-              {status.rows.map((row) => (
+              {status.rows.map((row) => {
+                // Contactgegevens beheer je bij de medewerker (Personeelsgegevens)
+                // als het eigen loondienst-personeel is; externe ZZP → bij de
+                // werknemer/consultant. #email → springt naar + focust het veld.
+                const emailHref = row.employeeId
+                  ? `/medewerkers/${row.employeeId}/bewerken#email`
+                  : `/werknemers/${row.consultantId}/bewerken`;
+                const nameHref = row.employeeId
+                  ? `/medewerkers/${row.employeeId}`
+                  : `/werknemers/${row.consultantId}`;
+                return (
                 <TR key={row.placementId}>
                   <TD>
-                    <Link href={`/werknemers/${row.consultantId}`} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={nameHref} className="font-medium text-slate-900 hover:text-brand-700">
                       {row.consultantName}
                     </Link>
                     {row.presence === "REMINDED" && row.reminderSentAt && (
@@ -239,7 +249,7 @@ export default async function TimesheetStatusPage({
                     )}
                     {!row.email && row.presence !== "RECEIVED" && (
                       <Link
-                        href={`/werknemers/${row.consultantId}/bewerken`}
+                        href={emailHref}
                         className="inline-flex items-center gap-1 text-[11px] font-medium text-red-500 hover:text-red-700 hover:underline"
                       >
                         geen e-mailadres — toevoegen
@@ -296,7 +306,7 @@ export default async function TimesheetStatusPage({
                             // Zonder e-mailadres kan er geen herinnering — stuur naar het bewerken-
                             // scherm om het toe te voegen, zodat je daarna wél kunt herinneren.
                             <Link
-                              href={`/werknemers/${row.consultantId}/bewerken`}
+                              href={emailHref}
                               className={buttonVariants({ variant: "primary", size: "sm" })}
                               title="Zonder e-mailadres kun je geen herinnering sturen — voeg het toe"
                             >
@@ -308,7 +318,8 @@ export default async function TimesheetStatusPage({
                     </div>
                   </TD>
                 </TR>
-              ))}
+                );
+              })}
             </TBody>
           </Table>
         </Card>
