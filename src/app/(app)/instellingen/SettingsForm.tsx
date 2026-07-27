@@ -135,6 +135,44 @@ export function SettingsForm({
             <Textarea id="invoiceFooter" name="invoiceFooter" defaultValue={settings.invoiceFooter ?? ""} />
           </Field>
         </CardContent>
+      </Card>
+
+      {/* Testmodus — mail omleiden zodat er geen echte klant-/medewerker-mail uitgaat */}
+      <Card className="border-amber-300 ring-1 ring-amber-200">
+        <CardHeader>
+          <CardTitle className="text-amber-900">Testmodus — e-mail omleiden</CardTitle>
+          <span className="text-sm text-slate-500">
+            Vul een adres in om <strong>alle</strong> uitgaande mail (facturen, herinneringen, …) daarheen te
+            sturen i.p.v. naar klanten en medewerkers. Leeg = normaal versturen naar de echte ontvanger.
+          </span>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {settings.mailRedirectTo?.trim() ? (
+            <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
+              ⚠️ <strong>Testmodus staat AAN</strong> — alle mail gaat nu naar{" "}
+              <strong>{settings.mailRedirectTo}</strong>. Klanten en medewerkers ontvangen niets. Maak dit veld
+              leeg (en sla op) om écht te gaan versturen.
+            </p>
+          ) : (
+            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              Testmodus staat <strong>uit</strong> — mail gaat naar de echte ontvangers.
+            </p>
+          )}
+          <Field
+            label="Alle uitgaande mail omleiden naar"
+            htmlFor="mailRedirectTo"
+            hint="Leeg laten = normaal versturen. Handig om te testen zonder klanten te mailen."
+            error={e.mailRedirectTo}
+          >
+            <Input
+              id="mailRedirectTo"
+              name="mailRedirectTo"
+              type="email"
+              placeholder="bijv. jij@voorbeeld.nl"
+              defaultValue={settings.mailRedirectTo ?? ""}
+            />
+          </Field>
+        </CardContent>
         <CardFooter className="flex justify-end gap-2">
           <SubmitButton>Instellingen opslaan</SubmitButton>
         </CardFooter>

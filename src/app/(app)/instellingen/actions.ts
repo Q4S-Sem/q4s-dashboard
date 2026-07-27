@@ -22,6 +22,12 @@ const SettingsSchema = z.object({
   defaultVatRate: z.coerce.number().min(0).max(100).default(21),
   defaultPaymentTermDays: z.coerce.number().int().min(0).max(365).default(30),
   invoiceFooter: z.string().optional(),
+  mailRedirectTo: z
+    .string()
+    .optional()
+    .refine((v) => !v || !v.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), {
+      message: "Vul een geldig e-mailadres in (of laat leeg om normaal te versturen).",
+    }),
 });
 
 // Build the DB payload. These columns are non-null with defaults, so undefined
@@ -43,6 +49,7 @@ function toData(data: z.infer<typeof SettingsSchema>) {
     defaultVatRate: data.defaultVatRate,
     defaultPaymentTermDays: data.defaultPaymentTermDays,
     invoiceFooter: data.invoiceFooter ?? "",
+    mailRedirectTo: data.mailRedirectTo?.trim() ?? "",
   };
 }
 

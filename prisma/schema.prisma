@@ -382,6 +382,11 @@ model CompanySettings {
   defaultVatRate       Float  @default(21)
   defaultPaymentTermDays Int  @default(30)
   invoiceFooter        String @default("")
+  /// TESTMODUS: staat hier een e-mailadres, dan gaat ALLE uitgaande mail (facturen,
+  /// herinneringen, …) naar dit adres i.p.v. de echte ontvanger — zo test je veilig
+  /// zonder klanten/medewerkers te mailen. Leeg = normaal versturen. Env
+  /// MAIL_REDIRECT_TO overrulet dit nog.
+  mailRedirectTo       String @default("")
   /// Master-switch for AI auto-reading of certificates (uses ANTHROPIC_API_KEY).
   /// Off by default — the user opts in per choice.
   aiAutoExtract        Boolean @default(false)

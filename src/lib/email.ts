@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { getCompanySettings } from "./settings";
 
 export type MailAttachment = {
   filename: string;
@@ -41,9 +42,40 @@ export function emailFrom(name = "Q4S"): string {
   return user ? `${name} <${user}>` : `${name} <no-reply@q4s.nl>`;
 }
 
-/** Send a mail via SMTP — or, when SMTP isn't configured, report a simulated send. */
+/**
+ * TESTMODUS — mail-omleiding. Staat er een omleidingsadres (env MAIL_REDIRECT_TO,
+ * anders de bedrijfsinstelling mailRedirectTo), dan gaat ELKE uitgaande mail naar
+ * dat adres i.p.v. de echte ontvanger. Zo test je facturen/herinneringen zonder
+ * dat klanten of medewerkers per ongeluk mail krijgen. Leeg = normaal versturen.
+ */
+export async function getMailRedirect(): Promise<string | null> {
+  const env = process.env.MAIL_REDIRECT_TO?.trim();
+  if (env) return env;
+  try {
+    const s = await getCompanySettings();
+    return s.mailRedirectTo?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Send a mail via SMTP — or, when SMTP isn't configured, report a simulated send.
+ *  Bij een actieve omleiding (testmodus) gaat de mail naar het omleidingsadres. */
 export async function sendMail(input: MailInput): Promise<MailResult> {
   if (!isEmailConfigured()) return { ok: true, simulated: true };
+
+  // Veiligheidsnet: leid alle mail om zolang testmodus aanstaat.
+  const redirect = await getMailRedirect();
+  const to = redirect || input.to;
+  const subject = redirect ? `[TEST → ${input.to}] ${input.subject}` : input.subject;
+  const html = redirect
+    ? `<div style="background:#fef3c7;color:#92400e;padding:10px 14px;font:13px Arial,sans-serif;border-bottom:1px solid #fde68a;">⚠️ <b>TESTMODUS</b> — deze e-mail zou normaal naar <b>${esc(
+        input.to,
+      )}</b> gaan. Nu omgeleid naar jou; de echte ontvanger krijgt niets.</div>${input.html}`
+    : input.html;
+  const text = redirect
+    ? `[TESTMODUS — zou normaal naar ${input.to} gaan; echte ontvanger krijgt niets]\n\n${input.text}`
+    : input.text;
 
   try {
     const port = Number(process.env.SMTP_PORT) || 587;
@@ -57,10 +89,10 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
     });
     const info = await transport.sendMail({
       from: emailFrom(),
-      to: input.to,
-      subject: input.subject,
-      text: input.text,
-      html: input.html,
+      to,
+      subject,
+      text,
+      html,
       attachments: input.attachments?.map((a) => ({
         filename: a.filename,
         content: a.content,

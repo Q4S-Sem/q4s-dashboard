@@ -12,7 +12,7 @@ import {
   Info,
 } from "lucide-react";
 import { getOutbox, matchOutbox, type OutboxRow } from "@/lib/verzenden";
-import { isEmailConfigured } from "@/lib/email";
+import { isEmailConfigured, getMailRedirect } from "@/lib/email";
 import { formatCurrency, formatWeekLabel, getISOWeek, startOfISOWeek } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -124,6 +124,7 @@ export default async function VerzendmapPage({
   const sp = await searchParams;
   const { sales, purchase } = await getOutbox();
   const live = isEmailConfigured();
+  const mailRedirect = await getMailRedirect();
 
   const tab: "verkoop" | "inkoop" = sp.tab === "inkoop" ? "inkoop" : "verkoop";
   const week = sp.week && /^\d{4}-\d{2}-\d{2}$/.test(sp.week) ? sp.week : "";
@@ -240,13 +241,28 @@ export default async function VerzendmapPage({
       {/* Mode notice */}
       <p
         className={
-          live
-            ? "flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-            : "flex items-start gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"
+          mailRedirect
+            ? "flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            : live
+              ? "flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+              : "flex items-start gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"
         }
       >
-        <Info className="mt-0.5 h-4 w-4 shrink-0" />
-        {live ? (
+        {mailRedirect ? (
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+        ) : (
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+        )}
+        {mailRedirect ? (
+          <span>
+            <strong>Testmodus:</strong> alle mail wordt omgeleid naar <strong>{mailRedirect}</strong> — klanten en
+            medewerkers ontvangen niets. Zet dit uit bij{" "}
+            <Link href="/instellingen" className="font-medium underline">
+              Instellingen
+            </Link>{" "}
+            als je écht wilt versturen.
+          </span>
+        ) : live ? (
           <span>
             <strong>Live-modus:</strong> SMTP is ingesteld — facturen worden écht per e-mail verstuurd.
           </span>

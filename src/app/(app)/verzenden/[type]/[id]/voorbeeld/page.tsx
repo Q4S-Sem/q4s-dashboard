@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
-import { isEmailConfigured } from "@/lib/email";
+import { isEmailConfigured, getMailRedirect } from "@/lib/email";
 import { salesSendData, purchaseSendData, type SendData } from "@/lib/verzenden";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,6 +67,7 @@ export default async function VoorbeeldPage({
   }
 
   const live = isEmailConfigured();
+  const mailRedirect = await getMailRedirect();
   const pdfHref = `/verzenden/${type}/${id}/pdf`;
 
   return (
@@ -121,9 +122,11 @@ export default async function VoorbeeldPage({
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
             <p className="inline-flex items-center gap-1.5 text-xs text-slate-500">
               <Info className="h-3.5 w-3.5" />
-              {live
-                ? "Live-modus — bij versturen gaat de e-mail écht de deur uit."
-                : "Klaarzet-modus — bij versturen wordt de factuur op 'verzonden' gezet (nog geen echte mail)."}
+              {mailRedirect
+                ? `Testmodus — bij versturen gaat de mail naar ${mailRedirect}, niet naar de klant.`
+                : live
+                  ? "Live-modus — bij versturen gaat de e-mail écht de deur uit."
+                  : "Klaarzet-modus — bij versturen wordt de factuur op 'verzonden' gezet (nog geen echte mail)."}
             </p>
             {data.to ? (
               <form action={action}>
