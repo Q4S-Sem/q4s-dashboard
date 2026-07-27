@@ -11,7 +11,12 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
-import { isEmailConfigured, getMailRedirect } from "@/lib/email";
+import {
+  isEmailConfigured,
+  getMailRedirect,
+  renderQ4sEmail,
+  emailLogoDataUri,
+} from "@/lib/email";
 import { salesSendData, purchaseSendData, type SendData } from "@/lib/verzenden";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,7 +157,7 @@ export default async function VoorbeeldPage({
         <CardContent className="p-0">
           <iframe
             title="E-mailvoorbeeld"
-            srcDoc={data.html}
+            srcDoc={renderQ4sEmail(data.content, { logoSrc: emailLogoDataUri() ?? undefined })}
             sandbox=""
             className="h-[640px] w-full rounded-b-xl border-0"
           />

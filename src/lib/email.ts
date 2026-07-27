@@ -1,5 +1,25 @@
+import fs from "node:fs";
+import path from "node:path";
 import nodemailer from "nodemailer";
 import { getCompanySettings } from "./settings";
+
+/** Het licht e-maillogo (klein PNG) als bytes — voor de CID-inbedding in mails. */
+function emailLogoBytes(): Buffer | null {
+  try {
+    return fs.readFileSync(path.join(process.cwd(), "public", "email", "q4s-logo.png"));
+  } catch {
+    return null;
+  }
+}
+
+/** Het e-maillogo als data-URI — voor het e-mailvoorbeeld (waar cid: niet werkt). */
+export function emailLogoDataUri(): string | null {
+  const b = emailLogoBytes();
+  return b ? `data:image/png;base64,${b.toString("base64")}` : null;
+}
+
+/** De Content-ID waarnaar de mailtemplate verwijst voor het ingebedde logo. */
+export const LOGO_CID = "q4slogo";
 
 export type MailAttachment = {
   filename: string;
@@ -87,17 +107,32 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
         ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
         : undefined,
     });
+    const logoBytes = emailLogoBytes();
     const info = await transport.sendMail({
       from: emailFrom(),
       to,
       subject,
       text,
       html,
-      attachments: input.attachments?.map((a) => ({
-        filename: a.filename,
-        content: a.content,
-        contentType: a.contentType ?? "application/pdf",
-      })),
+      attachments: [
+        // Logo ingebed als inline-afbeelding (cid) — betrouwbaar in Outlook/Gmail,
+        // i.t.t. externe URL's of data-URI's die vaak geblokkeerd worden.
+        ...(logoBytes
+          ? [
+              {
+                filename: "q4s-logo.png",
+                content: logoBytes,
+                contentType: "image/png",
+                cid: LOGO_CID,
+              },
+            ]
+          : []),
+        ...(input.attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content,
+          contentType: a.contentType ?? "application/pdf",
+        })) ?? []),
+      ],
     });
     return { ok: true, simulated: false, messageId: info.messageId };
   } catch (err) {
@@ -144,86 +179,82 @@ const BRAND = "#171717";
 const KICKER = "#a3a3a3";
 const INK = "#0f172a";
 
-/** Render the Q4S HTML e-mail (the "layout" + begeleidend bericht). */
-export function renderQ4sEmail(c: EmailContent): string {
-  const summaryRows = c.summary
-    .map(
-      (s) => `
-      <tr>
-        <td style="padding:4px 0;color:#64748b;font-size:13px;">${esc(s.label)}</td>
-        <td style="padding:4px 0;color:${INK};font-size:13px;font-weight:600;text-align:right;">${esc(
-          s.value,
-        )}</td>
-      </tr>`,
-    )
-    .join("");
+/** Render the Q4S HTML e-mail — professionele briefhoofd-opmaak met ingebed logo.
+ *  logoSrc = "cid:q4slogo" bij versturen (inline-bijlage); geef een data-URI mee
+ *  voor het voorbeeld, waar cid: niet werkt. */
+export function renderQ4sEmail(c: EmailContent, opts?: { logoSrc?: string }): string {
+  const logoSrc = opts?.logoSrc ?? `cid:${LOGO_CID}`;
 
   const paras = c.paragraphs
     .map(
-      (p) =>
-        `<p style="margin:0 0 14px;color:#334155;font-size:14px;line-height:1.6;">${esc(
-          p,
-        )}</p>`,
+      (p) => `<p style="margin:0 0 14px;color:#374151;font-size:14px;line-height:1.65;">${esc(p)}</p>`,
     )
     .join("");
 
-  const footer = c.footerLines
-    .filter(Boolean)
-    .map((l) => esc(l))
-    .join(" &nbsp;·&nbsp; ");
+  const summaryTable = c.summary.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:10px 0 6px;border:1px solid #e8e8e8;border-collapse:collapse;">${c.summary
+        .map(
+          (s, i) =>
+            `<tr><td style="padding:10px 16px;color:#6b7280;font-size:13px;${
+              i > 0 ? "border-top:1px solid #f1f1f1;" : ""
+            }">${esc(s.label)}</td><td style="padding:10px 16px;color:${INK};font-size:13px;font-weight:700;text-align:right;${
+              i > 0 ? "border-top:1px solid #f1f1f1;" : ""
+            }">${esc(s.value)}</td></tr>`,
+        )
+        .join("")}</table>`
+    : "";
+
+  const cta = c.cta
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 20px;"><tr><td style="background:${BRAND};"><a href="${esc(
+        c.cta.url,
+      )}" style="display:inline-block;padding:13px 28px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.2px;">${esc(
+        c.cta.label,
+      )}</a></td></tr></table>`
+    : "";
+
+  const footerAll = c.footerLines.filter(Boolean);
+  const footerHead = footerAll[0] ? esc(footerAll[0]) : "Q4S Project Partners";
+  const footerRest = footerAll.slice(1).map(esc).join("&nbsp; · &nbsp;");
 
   return `<!doctype html>
-<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;background:#f5f5f4;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f4;padding:24px 12px;">
-    <tr><td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e8e8e6;border-radius:14px;overflow:hidden;font-family:Inter,Arial,Helvetica,sans-serif;">
-        <tr>
-          <td style="background:${BRAND};padding:18px 28px;">
-            <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:.5px;">Q4S</span>
-            <span style="color:${KICKER};font-size:12px;text-transform:uppercase;letter-spacing:1px;float:right;padding-top:6px;">${esc(
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;">
+    <tr><td align="center" style="padding:32px 12px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e6e6e6;font-family:Arial,Helvetica,sans-serif;">
+        <tr><td style="height:4px;background:${BRAND};font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td style="padding:26px 34px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td align="left" valign="middle"><img src="${logoSrc}" alt="Q4S Project Partners" width="132" style="display:block;border:0;width:132px;height:auto;"></td>
+            <td align="right" valign="middle" style="color:${KICKER};font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;">${esc(
               c.kicker,
-            )}</span>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:28px 28px 8px;">
-            <h1 style="margin:0 0 16px;color:${INK};font-size:20px;font-weight:800;">${esc(
-              c.heading,
-            )}</h1>
-            <p style="margin:0 0 14px;color:#334155;font-size:14px;line-height:1.6;">${esc(
-              c.greeting,
-            )}</p>
-            ${paras}
-            ${
-              c.cta
-                ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:4px 0 20px;"><tr><td style="border-radius:8px;background:${BRAND};">
-                    <a href="${esc(c.cta.url)}" style="display:inline-block;padding:12px 24px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">${esc(
-                      c.cta.label,
-                    )}</a></td></tr></table>`
-                : ""
-            }
-            ${
-              c.summary.length
-                ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 18px;background:#f8fafc;border:1px solid #eef2f6;border-radius:10px;padding:6px 16px;">
-              ${summaryRows}
-            </table>`
-                : ""
-            }
-            <p style="margin:0 0 6px;color:#334155;font-size:14px;line-height:1.6;">Met vriendelijke groet,</p>
-            <p style="margin:0 0 18px;color:${INK};font-size:14px;font-weight:700;">Team Q4S</p>
-            ${
-              c.attachmentNote
-                ? `<p style="margin:0;color:#94a3b8;font-size:12px;">📎 ${esc(c.attachmentNote)}</p>`
-                : ""
-            }
-          </td>
-        </tr>
-        <tr>
-          <td style="background:${INK};padding:16px 28px;color:#94a3b8;font-size:12px;line-height:1.6;">
-            ${footer || "Q4S"}
-          </td>
-        </tr>
+            )}</td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:0 34px;"><div style="border-top:1px solid #ededed;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+        <tr><td style="padding:24px 34px 6px;">
+          <h1 style="margin:0 0 16px;color:${INK};font-size:19px;font-weight:700;line-height:1.35;">${esc(
+            c.heading,
+          )}</h1>
+          <p style="margin:0 0 14px;color:#374151;font-size:14px;line-height:1.65;">${esc(c.greeting)}</p>
+          ${paras}
+          ${cta}
+          ${summaryTable}
+          <p style="margin:22px 0 2px;color:#374151;font-size:14px;line-height:1.6;">Met vriendelijke groet,</p>
+          <p style="margin:0;color:${INK};font-size:14px;font-weight:700;">Team Q4S</p>
+          ${
+            c.attachmentNote
+              ? `<p style="margin:20px 0 0;padding-top:14px;border-top:1px solid #f1f1f1;color:#9ca3af;font-size:12px;line-height:1.5;">${esc(
+                  c.attachmentNote,
+                )}</p>`
+              : ""
+          }
+        </td></tr>
+        <tr><td style="height:10px;font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td style="background:#fafafa;border-top:1px solid #eeeeee;padding:18px 34px;">
+          <p style="margin:0 0 3px;color:${INK};font-size:12px;font-weight:700;">${footerHead}</p>
+          ${footerRest ? `<p style="margin:0;color:#9ca3af;font-size:11px;line-height:1.7;">${footerRest}</p>` : ""}
+        </td></tr>
       </table>
     </td></tr>
   </table>
