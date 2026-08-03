@@ -8,7 +8,7 @@
     },
     {
       "path": "/api/jobs/mail-intake",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 7 * * *"
     }
   ]
 }
