@@ -98,6 +98,9 @@ export async function createPlacement(
   formData: FormData,
 ): Promise<FormState> {
   const personMode = String(formData.get("personMode") ?? "existing");
+  // Wordt deze plaatsing vanuit een concept afgemaakt? Dan wissen we dat concept
+  // na een geslaagde aanmaak.
+  const draftId = String(formData.get("draftId") ?? "").trim() || null;
 
   // Validate the placement fields first — never create an orphan person on a
   // bad form.
@@ -111,6 +114,7 @@ export async function createPlacement(
     const created = await db.placement.create({
       data: { consultantId, ...coreToData(core.data) },
     });
+    if (draftId) await db.placementDraft.delete({ where: { id: draftId } }).catch(() => {});
     revalidatePath("/plaatsingen");
     redirect(`/plaatsingen/${created.id}`);
   }
@@ -190,10 +194,70 @@ export async function createPlacement(
     }
   }
 
+  if (draftId) await db.placementDraft.delete({ where: { id: draftId } }).catch(() => {});
   revalidatePath("/plaatsingen");
   revalidatePath("/werknemers");
   revalidatePath("/certificeringen");
   redirect(`/plaatsingen/${result.placementId}?new=1`);
+}
+
+// ---------------------------------------------------------------------------
+// Concept-plaatsingen (drafts): bewaar een half ingevuld formulier om later af
+// te maken; verschijnt bovenaan op /plaatsingen.
+// ---------------------------------------------------------------------------
+
+export async function savePlacementDraft(formData: FormData) {
+  // Alle ingevulde tekstvelden verzamelen (bestanden overslaan).
+  const data: Record<string, string> = {};
+  for (const [k, v] of formData.entries()) {
+    if (typeof v !== "string" || k === "draftId") continue;
+    if (v.trim() !== "") data[k] = v;
+  }
+
+  // Herkenbaar label: werknemer + klant (+ functie).
+  let personLabel = [String(formData.get("firstName") ?? ""), String(formData.get("lastName") ?? "")]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const consultantId = String(formData.get("consultantId") ?? "").trim();
+  if (!personLabel && consultantId) {
+    const c = await db.consultant.findUnique({
+      where: { id: consultantId },
+      select: { firstName: true, lastName: true },
+    });
+    if (c) personLabel = `${c.firstName} ${c.lastName}`;
+  }
+  let clientLabel = "";
+  const clientId = String(formData.get("clientId") ?? "").trim();
+  if (clientId) {
+    const cl = await db.client.findUnique({ where: { id: clientId }, select: { companyName: true } });
+    clientLabel = cl?.companyName ?? "";
+  }
+  const title = String(formData.get("title") ?? "").trim();
+  const label =
+    [personLabel || "Nieuwe werknemer", clientLabel].filter(Boolean).join(" · ") +
+    (title ? ` — ${title}` : "");
+
+  const json = JSON.stringify(data);
+  const existingId = String(formData.get("draftId") ?? "").trim() || null;
+  if (existingId) {
+    const ok = await db.placementDraft
+      .update({ where: { id: existingId }, data: { data: json, label } })
+      .then(() => true)
+      .catch(() => false);
+    if (!ok) await db.placementDraft.create({ data: { data: json, label } });
+  } else {
+    await db.placementDraft.create({ data: { data: json, label } });
+  }
+  revalidatePath("/plaatsingen");
+  redirect("/plaatsingen?concept=1");
+}
+
+export async function deletePlacementDraft(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (id) await db.placementDraft.delete({ where: { id } }).catch(() => {});
+  revalidatePath("/plaatsingen");
+  redirect("/plaatsingen");
 }
 
 export async function updatePlacement(

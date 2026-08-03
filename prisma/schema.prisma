@@ -692,6 +692,20 @@ model SenderProfile {
   updatedAt   DateTime @default(now()) @updatedAt
 }
 
+/// Concept-plaatsing: een half ingevuld plaatsing-formulier dat je bewaart om
+/// later af te maken (bv. terwijl je nog een nieuw bedrijf toevoegt). Alle
+/// veldwaarden staan als JSON in `data`; het is nog GEEN echte Placement (geen
+/// verplichte relaties). Verschijnt bovenaan op /plaatsingen tot je 'm afmaakt.
+model PlacementDraft {
+  id        String   @id @default(cuid())
+  /// Herkenbare titel (werknemer + klant) voor de conceptenlijst.
+  label     String?
+  /// Alle ingevulde formuliervelden als JSON-string.
+  data      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 /// A self-billing PURCHASE invoice: what Q4S pays a consultant (cost side),
 /// generated from approved timesheets at the consultant's cost rate.
 model PurchaseInvoice {

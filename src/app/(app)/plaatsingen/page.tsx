@@ -1,21 +1,24 @@
 import Link from "next/link";
-import { Briefcase, Plus, Users, CheckCircle2, Coins } from "lucide-react";
+import { Briefcase, Plus, Users, CheckCircle2, Coins, FileText, Trash2 } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-import { formatCurrency, round2 } from "@/lib/utils";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { PlaatsingenList } from "./PlaatsingenList";
+import { deletePlacementDraft } from "./actions";
 
 export const metadata = { title: "Plaatsingen" };
 
 export default async function PlaatsingenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; client?: string }>;
+  searchParams: Promise<{ error?: string; client?: string; concept?: string }>;
 }) {
-  const { error, client: clientId } = await searchParams;
+  const { error, client: clientId, concept } = await searchParams;
   const filterClient = clientId
     ? await db.client.findUnique({
         where: { id: clientId },
@@ -27,6 +30,10 @@ export default async function PlaatsingenPage({
     orderBy: { startDate: "desc" },
     include: { consultant: true, client: true },
   });
+  // Concepten (half ingevulde plaatsingen) — bovenaan, om af te maken.
+  const drafts = filterClient
+    ? []
+    : await db.placementDraft.findMany({ orderBy: { updatedAt: "desc" } });
 
   const mensen = new Set(placements.map((p) => p.consultantId)).size;
   const actief = placements.filter((p) => p.status === "ACTIVE").length;
@@ -49,6 +56,51 @@ export default async function PlaatsingenPage({
           </Link>
         }
       />
+
+      {concept && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Concept opgeslagen — je vindt 'm hieronder terug om later af te maken.
+        </p>
+      )}
+
+      {drafts.length > 0 && (
+        <Card className="border-amber-200 ring-1 ring-amber-100">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base text-amber-900">
+              <FileText className="h-4 w-4 text-amber-600" /> Concepten — nog af te maken
+            </CardTitle>
+            <span className="text-sm text-slate-500">{drafts.length}</span>
+          </CardHeader>
+          <ul className="divide-y divide-slate-100">
+            {drafts.map((d) => (
+              <li key={d.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                <FileText className="h-4 w-4 shrink-0 text-amber-500" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-900">
+                    {d.label || "Concept-plaatsing"}
+                  </p>
+                  <p className="text-xs text-slate-400">Laatst bewerkt {formatDate(d.updatedAt)}</p>
+                </div>
+                <Link
+                  href={`/plaatsingen/nieuw?draft=${d.id}`}
+                  className={buttonVariants({ variant: "primary", size: "sm" })}
+                >
+                  Verder gaan
+                </Link>
+                <ConfirmSubmit
+                  action={deletePlacementDraft}
+                  id={d.id}
+                  message="Dit concept verwijderen?"
+                  variant="ghost"
+                  size="icon"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </ConfirmSubmit>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {filterClient && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-brand-100 bg-brand-50 px-4 py-2.5 text-sm">

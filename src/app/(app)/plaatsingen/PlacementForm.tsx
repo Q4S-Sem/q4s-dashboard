@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, type ReactNode, type KeyboardEvent } from "react";
+import { useActionState, useEffect, useState, type ReactNode, type KeyboardEvent } from "react";
 import type { Placement } from "@prisma/client";
 import {
   FileText,
@@ -19,12 +19,14 @@ import { DateInput } from "@/components/ui/date-input";
 import { SearchSelect } from "@/components/ui/search-select";
 import { NumberInput } from "@/components/ui/number-input";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { buttonVariants } from "@/components/ui/button";
 import { ConfirmCancel } from "@/components/confirm-cancel";
 import { PLACEMENT_STATUSES, DISCIPLINES, EMPLOYMENT_TYPES } from "@/lib/domain";
 import { cn, formatCurrency } from "@/lib/utils";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { quickCreateClient } from "../klanten/actions";
 import { lookupDutchAddress } from "../klanten/address-actions";
+import { savePlacementDraft } from "./actions";
 
 // Snelle duur-knoppen: vullen de einddatum vanaf de startdatum. Handig voor korte
 // klussen (een week / paar weken) zodat je de einddatum niet los hoeft te kiezen.
@@ -452,6 +454,8 @@ export function PlacementForm({
   clients,
   submitLabel,
   cancelHref,
+  draft,
+  draftId,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   placement?: Placement;
@@ -459,26 +463,69 @@ export function PlacementForm({
   clients: { id: string; companyName: string }[];
   submitLabel: string;
   cancelHref: string;
+  /** Bewaard concept om verder in te vullen (veld → waarde). */
+  draft?: Record<string, string>;
+  draftId?: string;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
+  const dv = (name: string, fallback = "") => draft?.[name] ?? fallback;
 
   // Create mode only: fill in a new person inline (default) or pick an existing one.
-  const [personMode, setPersonMode] = useState<"existing" | "new">("new");
+  const [personMode, setPersonMode] = useState<"existing" | "new">(
+    draft?.personMode === "existing" ? "existing" : "new",
+  );
 
   // Mirror the rate inputs into state purely to render a live margin panel.
-  const [costRate, setCostRate] = useState<number>(placement?.costRate ?? 0);
-  const [chargeRate, setChargeRate] = useState<number>(placement?.chargeRate ?? 0);
+  const [costRate, setCostRate] = useState<number>(
+    draft?.costRate ? Number(draft.costRate) || 0 : placement?.costRate ?? 0,
+  );
+  const [chargeRate, setChargeRate] = useState<number>(
+    draft?.chargeRate ? Number(draft.chargeRate) || 0 : placement?.chargeRate ?? 0,
+  );
 
   // Start/eind gecontroleerd, zodat de snelle duur-knoppen de einddatum kunnen zetten.
   const [startDate, setStartDate] = useState<string>(
-    placement?.startDate
-      ? new Date(placement.startDate).toISOString().slice(0, 10)
-      : new Date().toISOString().slice(0, 10),
+    draft?.startDate ??
+      (placement?.startDate
+        ? new Date(placement.startDate).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10)),
   );
   const [endDate, setEndDate] = useState<string>(
-    placement?.endDate ? new Date(placement.endDate).toISOString().slice(0, 10) : "",
+    draft?.endDate ??
+      (placement?.endDate ? new Date(placement.endDate).toISOString().slice(0, 10) : ""),
   );
+
+  // Concept terugzetten: vul de gewone tekstvelden uit het opgeslagen concept.
+  // De custom velden (datums, klant, werknemer, dienstverband, status) komen via
+  // hun eigen state/defaults hierboven. data-no-persist op het formulier voorkomt
+  // dat de sessionStorage-autosave dit overschrijft.
+  useEffect(() => {
+    if (!draft) return;
+    const CUSTOM = new Set([
+      "personMode",
+      "draftId",
+      "clientId",
+      "consultantId",
+      "startDate",
+      "endDate",
+      "employmentType",
+      "status",
+    ]);
+    for (const [name, value] of Object.entries(draft)) {
+      if (CUSTOM.has(name)) continue;
+      document.getElementsByName(name).forEach((el) => {
+        const isField =
+          (el instanceof HTMLInputElement && el.type !== "hidden" && el.type !== "file") ||
+          el instanceof HTMLTextAreaElement;
+        if (isField && (el as HTMLInputElement | HTMLTextAreaElement).value !== value) {
+          (el as HTMLInputElement | HTMLTextAreaElement).value = value;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ZZP-adres → postcode + plaats automatisch aanvullen via PDOK (gratis, geen
   // sleutel). Schrijft rechtstreeks naar de (uncontrolled) inputs op hun id.
@@ -526,12 +573,24 @@ export function PlacementForm({
   const marginPct = chargeRate > 0 ? ((chargeRate - costRate) / chargeRate) * 100 : 0;
 
   return (
-    <form action={formAction}>
+    <form action={formAction} data-no-persist={draft ? "" : undefined}>
       {placement && <input type="hidden" name="id" value={placement.id} />}
+      {draftId && <input type="hidden" name="draftId" value={draftId} />}
 
       {/* Snel opslaan — blijft bovenaan in beeld tijdens het scrollen. */}
-      <div className="sticky top-16 z-20 mb-4 flex items-center justify-end gap-2 rounded-lg border border-slate-200 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur">
+      <div className="sticky top-16 z-20 mb-4 flex flex-wrap items-center justify-end gap-2 rounded-lg border border-slate-200 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur">
         <ConfirmCancel href={cancelHref} size="sm" />
+        {!placement && (
+          <button
+            type="submit"
+            formAction={savePlacementDraft}
+            formNoValidate
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+            title="Bewaar wat je nu hebt als concept — verschijnt bovenaan bij Plaatsingen"
+          >
+            Bewaar als concept
+          </button>
+        )}
         <SubmitButton>{submitLabel}</SubmitButton>
       </div>
 
@@ -601,6 +660,7 @@ export function PlacementForm({
                   <SearchSelect
                     id="consultantId"
                     name="consultantId"
+                    defaultValue={dv("consultantId")}
                     options={consultants.map((c) => ({
                       value: c.id,
                       label: `${c.firstName} ${c.lastName}`,
@@ -649,7 +709,7 @@ export function PlacementForm({
                       </datalist>
                     </Field>
                     <Field label="Dienstverband" htmlFor="employmentType" error={e.employmentType}>
-                      <Select id="employmentType" name="employmentType" defaultValue="ZZP">
+                      <Select id="employmentType" name="employmentType" defaultValue={dv("employmentType", "ZZP")}>
                         {EMPLOYMENT_TYPES.map((o) => (
                           <option key={o.value} value={o.value}>
                             {o.label}
@@ -763,7 +823,7 @@ export function PlacementForm({
                 </div>
               )}
 
-              <ClientPicker initialClients={clients} initialClientId="" error={e.clientId} />
+              <ClientPicker initialClients={clients} initialClientId={dv("clientId")} error={e.clientId} />
             </>
           )}
 
@@ -911,7 +971,7 @@ export function PlacementForm({
               <Select
                 id="status"
                 name="status"
-                defaultValue={placement?.status ?? "ACTIVE"}
+                defaultValue={dv("status", placement?.status ?? "ACTIVE")}
               >
                 {PLACEMENT_STATUSES.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -926,8 +986,19 @@ export function PlacementForm({
             <Textarea id="notes" name="notes" defaultValue={placement?.notes ?? ""} />
           </Field>
         </CardContent>
-        <CardFooter className="flex justify-end gap-2">
+        <CardFooter className="flex flex-wrap justify-end gap-2">
           <ConfirmCancel href={cancelHref} />
+          {!placement && (
+            <button
+              type="submit"
+              formAction={savePlacementDraft}
+              formNoValidate
+              className={buttonVariants({ variant: "outline" })}
+              title="Bewaar wat je nu hebt als concept — verschijnt bovenaan bij Plaatsingen"
+            >
+              Bewaar als concept
+            </button>
+          )}
           <SubmitButton>{submitLabel}</SubmitButton>
         </CardFooter>
       </Card>
