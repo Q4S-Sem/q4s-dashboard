@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Inbox, ArrowRight, Receipt, Coins, Users, Sparkles, Send, Archive, ClipboardList } from "lucide-react";
+import { Inbox, ArrowRight, Receipt, Coins, Users, Sparkles, Send, Archive, ClipboardList, Banknote, BellRing } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -11,6 +11,8 @@ import { formatCurrency, formatHours, round2 } from "@/lib/utils";
 import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { pendingWorkByConsultant } from "@/lib/facturatie";
 import { getOutbox } from "@/lib/verzenden";
+import { payablePurchaseInvoices } from "@/lib/betalingen";
+import { paymentMonitor } from "@/lib/betaalmonitor";
 import { processAll } from "./actions";
 
 export const metadata = { title: "Verwerken" };
@@ -28,7 +30,17 @@ export default async function VerwerkenPage({
   }>;
 }) {
   const sp = await searchParams;
-  const [rows, outbox] = await Promise.all([pendingWorkByConsultant(), getOutbox()]);
+  const [rows, outbox, payable, monitor] = await Promise.all([
+    pendingWorkByConsultant(),
+    getOutbox(),
+    payablePurchaseInvoices(),
+    paymentMonitor(),
+  ]);
+  // Geldstroom-cijfers voor de hub-tegels.
+  const sepaEligible = payable.filter((r) => r.hasIban && r.total > 0);
+  const sepaTotal = round2(sepaEligible.reduce((s, r) => s + r.total, 0));
+  const overdueCount = monitor.incoming.overdueCount;
+  const overdueTotal = monitor.incoming.overdueTotal;
 
   const totals = rows.reduce(
     (acc, r) => ({
@@ -113,6 +125,38 @@ export default async function VerwerkenPage({
         <StatCard label="Te factureren" value={formatCurrency(totals.teFactureren)} icon={<Receipt className="h-5 w-5" />} accent="brand" />
         <StatCard label="Te betalen (inkoop)" value={formatCurrency(totals.teBetalen)} icon={<Coins className="h-5 w-5" />} accent="violet" />
         <StatCard label="Medewerkers met werk" value={rows.length} sub={totals.needApproval > 0 ? `${totals.needApproval} ter goedkeuring` : undefined} icon={<Users className="h-5 w-5" />} accent="amber" />
+      </div>
+
+      {/* Betalen & bewaken — geldstroom in één oogopslag, klik door naar de detailpagina. */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link href="/betalingen" className="transition-transform hover:-translate-y-0.5">
+          <StatCard
+            label="Klaar om te betalen (SEPA)"
+            value={formatCurrency(sepaTotal)}
+            sub={
+              sepaEligible.length > 0
+                ? `${sepaEligible.length} inkoopfactu${sepaEligible.length === 1 ? "ur" : "ren"} — bestand voor ING`
+                : "niets openstaand"
+            }
+            icon={<Banknote className="h-5 w-5" />}
+            accent="green"
+            className="h-full transition-shadow hover:shadow-md"
+          />
+        </Link>
+        <Link href="/betaalmonitor" className="transition-transform hover:-translate-y-0.5">
+          <StatCard
+            label="Klantfacturen te laat"
+            value={overdueCount}
+            sub={
+              overdueCount > 0
+                ? `${formatCurrency(overdueTotal)} openstaand — stuur een herinnering`
+                : "alles op tijd betaald"
+            }
+            icon={<BellRing className="h-5 w-5" />}
+            accent={overdueCount > 0 ? "red" : "green"}
+            className="h-full transition-shadow hover:shadow-md"
+          />
+        </Link>
       </div>
 
       {/* Batch: alles automatisch genereren — alleen als er echt te factureren valt */}
