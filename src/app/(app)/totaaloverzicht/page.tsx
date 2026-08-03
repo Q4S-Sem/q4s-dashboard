@@ -5,6 +5,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils";
 import { invoicingOverview, companyCostsThisYear } from "@/lib/facturatie";
 import { btwOverview, periodToRange } from "@/lib/boekhouding";
 import { PrintButton } from "../facturen/PrintButton";
+import { Select } from "@/components/ui/field";
 
 export const metadata = { title: "Totaaloverzicht" };
 
@@ -76,34 +77,31 @@ export default async function TotaaloverzichtPage({
         <Card className="mt-4">
           <CardContent>
             <form method="get" className="flex flex-wrap items-end gap-3">
-              <label className="text-sm">
+              <div className="text-sm">
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">Jaar</span>
-                <select
-                  name="jaar"
-                  defaultValue={String(year)}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
-                >
+                <Select name="jaar" defaultValue={String(year)} aria-label="Jaar" className="w-32">
                   {years.map((y) => (
-                    <option key={y} value={y}>
+                    <option key={y} value={String(y)}>
                       {y}
                     </option>
                   ))}
-                </select>
-              </label>
-              <label className="text-sm">
+                </Select>
+              </div>
+              <div className="text-sm">
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">Periode</span>
-                <select
+                <Select
                   name="kwartaal"
                   defaultValue={quarter ? String(quarter) : ""}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                  aria-label="Periode"
+                  className="w-44"
                 >
                   <option value="">Heel jaar</option>
                   <option value="1">Q1 (jan–mrt)</option>
                   <option value="2">Q2 (apr–jun)</option>
                   <option value="3">Q3 (jul–sep)</option>
                   <option value="4">Q4 (okt–dec)</option>
-                </select>
-              </label>
+                </Select>
+              </div>
               <button
                 type="submit"
                 className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700"

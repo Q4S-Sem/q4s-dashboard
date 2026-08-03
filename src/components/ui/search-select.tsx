@@ -42,9 +42,22 @@ export function SearchSelect({
     const q = query.trim().toLowerCase();
     const showAll = q === "" || (selected && query === selected.label);
     if (showAll) return options;
-    return options.filter(
-      (o) => o.label.toLowerCase().includes(q) || (o.sub ?? "").toLowerCase().includes(q),
-    );
+    // Rangschik op relevantie: exact > begint-met > woord-begin > bevat > sub bevat.
+    // De beste match komt zo bovenaan (en kleurt groen).
+    const scored: { o: SearchOption; i: number; score: number }[] = [];
+    options.forEach((o, i) => {
+      const label = o.label.toLowerCase();
+      const sub = (o.sub ?? "").toLowerCase();
+      let score = -1;
+      if (label === q) score = 0;
+      else if (label.startsWith(q)) score = 1;
+      else if (label.split(/[^a-z0-9]+/i).some((w) => w.startsWith(q))) score = 2;
+      else if (label.includes(q)) score = 3;
+      else if (sub.includes(q)) score = 4;
+      if (score >= 0) scored.push({ o, i, score });
+    });
+    scored.sort((a, b) => a.score - b.score || a.i - b.i);
+    return scored.map((s) => s.o);
   }, [query, options, selected]);
 
   useEffect(() => {
@@ -123,7 +136,11 @@ export function SearchSelect({
                   onMouseEnter={() => setActive(i)}
                   className={cn(
                     "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors",
-                    i === active ? "bg-brand-50 text-brand-800" : "text-slate-700 hover:bg-slate-50",
+                    i === active
+                      ? query.trim()
+                        ? "bg-emerald-50 font-medium text-emerald-700"
+                        : "bg-brand-50 text-brand-800"
+                      : "text-slate-700 hover:bg-slate-50",
                   )}
                 >
                   <span className="min-w-0">

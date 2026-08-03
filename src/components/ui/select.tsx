@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronsUpDown, Check } from "lucide-react";
+import { ChevronsUpDown, Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Opt = { value: string; label: string; disabled?: boolean; color?: string };
@@ -15,6 +15,7 @@ const DOT_CLASS: Record<string, string> = {
   red: "bg-red-500",
   violet: "bg-violet-500",
   cyan: "bg-cyan-500",
+  orange: "bg-orange-500",
 };
 
 /** Flatten an option's children (e.g. `{firstName} {lastName}`) into one label. */
@@ -43,6 +44,29 @@ function readOptions(children: React.ReactNode): Opt[] {
   return out;
 }
 
+/**
+ * Rangschik opties op relevantie voor `query`: exact > begint-met > woord-begin >
+ * bevat. Niet-matchende opties vallen weg; de beste match komt bovenaan. Lege
+ * query → oorspronkelijke volgorde (ongewijzigd).
+ */
+function rankOptions(items: Opt[], query: string): Opt[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return items;
+  const scored: { o: Opt; i: number; score: number }[] = [];
+  items.forEach((o, i) => {
+    const label = o.label.toLowerCase();
+    let score = -1;
+    if (label === q) score = 0;
+    else if (label.startsWith(q)) score = 1;
+    else if (label.split(/[^a-z0-9]+/i).some((w) => w.startsWith(q))) score = 2;
+    else if (label.includes(q)) score = 3;
+    if (score >= 0) scored.push({ o, i, score });
+  });
+  // Gelijke score → oorspronkelijke volgorde behouden (stabiel).
+  scored.sort((a, b) => a.score - b.score || a.i - b.i);
+  return scored.map((s) => s.o);
+}
+
 const triggerBase =
   "flex w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm text-slate-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-slate-50";
 
@@ -50,6 +74,9 @@ const triggerBase =
  * Themed, rounded select that replaces the native one (whose popup the browser
  * renders un-stylable). Keeps the same <option>-children API + a hidden input,
  * so every existing form keeps working and submits identically.
+ *
+ * Bij lange lijsten (>6 opties) verschijnt automatisch een zoekveld: typ om te
+ * filteren, de beste match springt naar boven en kleurt groen (minder scrollen).
  */
 export function Select({
   id,
@@ -77,11 +104,17 @@ export function Select({
   );
   const [open, setOpen] = React.useState(false);
   const [active, setActive] = React.useState(0);
+  const [query, setQuery] = React.useState("");
   const rootRef = React.useRef<HTMLDivElement>(null);
+  const searchRef = React.useRef<HTMLInputElement>(null);
 
   // Selectable (non-placeholder) options for the popup + keyboard nav.
   const items = React.useMemo(() => options.filter((o) => !o.disabled), [options]);
   const current = options.find((o) => o.value === value);
+  // Zoekveld alleen bij langere lijsten — korte status/type-selects blijven clean.
+  const searchable = items.length > 6;
+  const visible = React.useMemo(() => rankOptions(items, query), [items, query]);
+  const searching = searchable && query.trim() !== "";
 
   React.useEffect(() => {
     if (!open) return;
@@ -92,22 +125,48 @@ export function Select({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
+  // Bij openen: reset de zoekterm, markeer de huidige waarde en focus het zoekveld.
   React.useEffect(() => {
-    if (open) {
-      const idx = items.findIndex((o) => o.value === value);
-      // Sync the active row to the selected value each time the popup opens.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActive(idx >= 0 ? idx : 0);
+    if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQuery("");
+    const idx = items.findIndex((o) => o.value === value);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActive(idx >= 0 ? idx : 0);
+    if (searchable) {
+      const t = requestAnimationFrame(() => searchRef.current?.focus());
+      return () => cancelAnimationFrame(t);
     }
-  }, [open, items, value]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   function choose(v: string) {
     setValue(v);
     setOpen(false);
+    setQuery("");
     onValueChange?.(v);
   }
 
-  function onKeyDown(e: React.KeyboardEvent) {
+  function onListKeys(e: React.KeyboardEvent) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      // Sluit alleen de dropdown; laat een omliggende popover/dialog open.
+      e.stopPropagation();
+      setOpen(false);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((a) => Math.min(visible.length - 1, a + 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((a) => Math.max(0, a - 1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const o = visible[active];
+      if (o) choose(o.value);
+    }
+  }
+
+  function onTriggerKeys(e: React.KeyboardEvent) {
     if (disabled) return;
     if (!open) {
       if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
@@ -116,22 +175,8 @@ export function Select({
       }
       return;
     }
-    if (e.key === "Escape") {
-      e.preventDefault();
-      // Sluit alleen de dropdown; laat een omliggende popover/dialog open.
-      e.stopPropagation();
-      setOpen(false);
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActive((a) => Math.min(items.length - 1, a + 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActive((a) => Math.max(0, a - 1));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      const o = items[active];
-      if (o) choose(o.value);
-    }
+    // Zonder zoekveld navigeer je met de knop zelf; mét zoekveld ligt de focus daar.
+    if (!searchable) onListKeys(e);
   }
 
   return (
@@ -142,9 +187,10 @@ export function Select({
         id={id}
         disabled={disabled}
         aria-haspopup="listbox"
+        aria-expanded={open}
         aria-label={rest["aria-label"]}
         onClick={() => !disabled && setOpen((o) => !o)}
-        onKeyDown={onKeyDown}
+        onKeyDown={onTriggerKeys}
         className={cn(triggerBase, open && "border-brand-500 ring-2 ring-brand-500/30")}
       >
         <span className={cn("flex items-center gap-2 truncate", !current?.value && "text-slate-400")}>
@@ -157,32 +203,68 @@ export function Select({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
-          {items.map((o, i) => {
-            const selected = o.value === value;
-            return (
-              <button
-                key={`${o.value}-${i}`}
-                type="button"
-                onClick={() => choose(o.value)}
-                onMouseEnter={() => setActive(i)}
-                className={cn(
-                  "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
-                  selected ? "bg-brand-50 font-medium text-brand-700" : "text-slate-700",
-                  active === i && !selected && "bg-slate-100",
-                  active === i && selected && "bg-brand-100",
-                )}
-              >
-                <span className="flex items-center gap-2 truncate">
-                  {o.color && DOT_CLASS[o.color] && (
-                    <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT_CLASS[o.color])} />
-                  )}
-                  <span className="truncate">{o.label}</span>
-                </span>
-                {selected && <Check className="h-4 w-4 shrink-0 text-brand-600" />}
-              </button>
-            );
-          })}
+        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+          {searchable && (
+            <div className="flex items-center gap-2 border-b border-slate-100 px-2.5 py-2">
+              <Search className="h-4 w-4 shrink-0 text-slate-400" />
+              <input
+                ref={searchRef}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActive(0);
+                }}
+                onKeyDown={onListKeys}
+                placeholder="Typ om te zoeken…"
+                autoComplete="off"
+                className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+              />
+            </div>
+          )}
+          <div className="max-h-60 overflow-auto p-1">
+            {visible.length === 0 ? (
+              <p className="px-2.5 py-3 text-center text-sm text-slate-400">Geen resultaten.</p>
+            ) : (
+              visible.map((o, i) => {
+                const selected = o.value === value;
+                const isActive = active === i;
+                // Tijdens het zoeken kleurt de actieve rij (standaard de beste match
+                // bovenaan) GROEN — zo zie je meteen wat Enter/klik selecteert.
+                const green = searching && isActive;
+                return (
+                  <button
+                    key={`${o.value}-${i}`}
+                    type="button"
+                    onClick={() => choose(o.value)}
+                    onMouseEnter={() => setActive(i)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
+                      green
+                        ? "bg-emerald-50 font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200"
+                        : selected
+                          ? "bg-brand-50 font-medium text-brand-700"
+                          : "text-slate-700",
+                      !green && isActive && !selected && "bg-slate-100",
+                      !green && isActive && selected && "bg-brand-100",
+                    )}
+                  >
+                    <span className="flex items-center gap-2 truncate">
+                      {o.color && DOT_CLASS[o.color] && (
+                        <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT_CLASS[o.color])} />
+                      )}
+                      <span className="truncate">{o.label}</span>
+                    </span>
+                    {selected && (
+                      <Check
+                        className={cn("h-4 w-4 shrink-0", green ? "text-emerald-600" : "text-brand-600")}
+                      />
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
     </div>
