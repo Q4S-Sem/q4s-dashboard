@@ -63,7 +63,11 @@ const QuickClientSchema = z.object({
   contactName: z.string().trim().optional(),
   email: z.string().trim().optional(),
   phone: z.string().trim().optional(),
+  address: z.string().trim().optional(),
+  postalCode: z.string().trim().optional(),
   city: z.string().trim().optional(),
+  kvkNumber: z.string().trim().optional(),
+  vatNumber: z.string().trim().optional(),
 });
 
 export type QuickClientResult =
@@ -75,7 +79,11 @@ export async function quickCreateClient(input: {
   contactName?: string;
   email?: string;
   phone?: string;
+  address?: string;
+  postalCode?: string;
   city?: string;
+  kvkNumber?: string;
+  vatNumber?: string;
 }): Promise<QuickClientResult> {
   const parsed = QuickClientSchema.safeParse(input);
   if (!parsed.success) {
@@ -89,7 +97,11 @@ export async function quickCreateClient(input: {
         contactName: d.contactName || null,
         email: d.email || null,
         phone: d.phone || null,
+        address: d.address || null,
+        postalCode: d.postalCode || null,
         city: d.city || null,
+        kvkNumber: d.kvkNumber || null,
+        vatNumber: d.vatNumber || null,
         country: "Nederland",
         paymentTermDays: 30,
       },

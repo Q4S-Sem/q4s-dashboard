@@ -180,7 +180,11 @@ function ClientPicker({
   const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
+  const [kvkNumber, setKvkNumber] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -197,7 +201,11 @@ function ClientPicker({
       contactName: contactName.trim() || undefined,
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
+      address: address.trim() || undefined,
+      postalCode: postalCode.trim() || undefined,
       city: city.trim() || undefined,
+      kvkNumber: kvkNumber.trim() || undefined,
+      vatNumber: vatNumber.trim() || undefined,
     });
     setBusy(false);
     if (!res.ok) {
@@ -215,7 +223,11 @@ function ClientPicker({
     setContactName("");
     setEmail("");
     setPhone("");
+    setAddress("");
+    setPostalCode("");
     setCity("");
+    setKvkNumber("");
+    setVatNumber("");
     setOpen(false);
   }
 
@@ -247,23 +259,15 @@ function ClientPicker({
         </button>
       </div>
 
-      <Select
+      <SearchSelect
         key={seed}
         id="clientId"
         name="clientId"
         defaultValue={clientId}
-        required
-        onValueChange={setClientId}
-      >
-        <option value="" disabled>
-          Kies een klant…
-        </option>
-        {clients.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.companyName}
-          </option>
-        ))}
-      </Select>
+        options={clients.map((c) => ({ value: c.id, label: c.companyName }))}
+        placeholder="Typ een klant om te zoeken…"
+        emptyText="Geen klant gevonden."
+      />
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
 
       {open && (
@@ -275,7 +279,7 @@ function ClientPicker({
             <div className="min-w-0">
               <p className="text-sm font-semibold text-slate-800">Nieuw bedrijf toevoegen</p>
               <p className="text-xs text-slate-500">
-                Alleen de basis — de rest vul je later op de klantpagina aan.
+                Vul in wat je hebt — later aanvullen of wijzigen kan altijd op de klantpagina.
               </p>
             </div>
           </div>
@@ -304,15 +308,6 @@ function ClientPicker({
               />
             </div>
             <div>
-              <Label htmlFor="qc-city">Plaats</Label>
-              <Input
-                id="qc-city"
-                value={city}
-                onChange={(ev) => setCity(ev.target.value)}
-                onKeyDown={onEnter}
-              />
-            </div>
-            <div>
               <Label htmlFor="qc-email">E-mail</Label>
               <Input
                 id="qc-email"
@@ -329,6 +324,55 @@ function ClientPicker({
                 value={phone}
                 onChange={(ev) => setPhone(ev.target.value)}
                 onKeyDown={onEnter}
+              />
+            </div>
+            <div>
+              <Label htmlFor="qc-kvk">KvK-nummer</Label>
+              <Input
+                id="qc-kvk"
+                value={kvkNumber}
+                onChange={(ev) => setKvkNumber(ev.target.value)}
+                onKeyDown={onEnter}
+                placeholder="8 cijfers"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="qc-address">Adres</Label>
+              <Input
+                id="qc-address"
+                value={address}
+                onChange={(ev) => setAddress(ev.target.value)}
+                onKeyDown={onEnter}
+                placeholder="Straat en huisnummer"
+              />
+            </div>
+            <div>
+              <Label htmlFor="qc-postalCode">Postcode</Label>
+              <Input
+                id="qc-postalCode"
+                value={postalCode}
+                onChange={(ev) => setPostalCode(ev.target.value)}
+                onKeyDown={onEnter}
+                placeholder="1234 AB"
+              />
+            </div>
+            <div>
+              <Label htmlFor="qc-city">Plaats</Label>
+              <Input
+                id="qc-city"
+                value={city}
+                onChange={(ev) => setCity(ev.target.value)}
+                onKeyDown={onEnter}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="qc-vat">BTW-nummer</Label>
+              <Input
+                id="qc-vat"
+                value={vatNumber}
+                onChange={(ev) => setVatNumber(ev.target.value)}
+                onKeyDown={onEnter}
+                placeholder="NL000000000B00"
               />
             </div>
           </div>
@@ -405,6 +449,15 @@ export function PlacementForm({
   return (
     <form action={formAction}>
       {placement && <input type="hidden" name="id" value={placement.id} />}
+
+      {/* Snel opslaan — blijft bovenaan in beeld tijdens het scrollen. */}
+      <div className="sticky top-16 z-20 mb-4 flex items-center justify-end gap-2 rounded-lg border border-slate-200 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur">
+        <Link href={cancelHref} className={buttonVariants({ variant: "outline", size: "sm" })}>
+          Annuleren
+        </Link>
+        <SubmitButton>{submitLabel}</SubmitButton>
+      </div>
+
       <Card>
         <CardContent className="space-y-5">
           {state.error && (
