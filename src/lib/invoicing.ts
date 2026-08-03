@@ -48,7 +48,7 @@ export async function createSalesInvoice(opts: {
       placementId: t.placementId,
       weekNumber: getISOWeek(t.weekStart),
       location: t.placement.workLocation ?? null,
-      baseDescription: `Totaal uren ${consultantName}`,
+      baseDescription: `Total hours ${consultantName}`,
       entries: t.entries,
       overtimeHours: t.overtimeHours,
       kilometers: t.kilometers,
@@ -56,6 +56,12 @@ export async function createSalesInvoice(opts: {
       weekendPct: t.placement.weekendSurchargeSell,
       overtimePct: t.placement.overtimeSurchargeSell,
       kmRate: t.placement.kmRateSell,
+      // Verkoopfactuur is Engels → Engelse regelomschrijvingen.
+      labels: {
+        weekend: (p) => `Weekend surcharge ${p}%`,
+        overtime: (p) => `Overtime surcharge ${p}%`,
+        km: "Kilometres",
+      },
     });
   });
 

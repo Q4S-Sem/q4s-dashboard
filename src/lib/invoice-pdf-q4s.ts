@@ -44,6 +44,8 @@ const FAINT = rgb(0.62, 0.64, 0.68); // slate-400
 const LINE = rgb(0.83, 0.85, 0.88); // slate-200
 const GHOST = rgb(0.9, 0.91, 0.93); // licht grijs voor het "INVOICE"-watermerk-achtige woord
 const ACCENT = rgb(0.1, 0.13, 0.5); // diepblauw voor de nummers (zoals in het voorbeeld)
+const ZEBRA = rgb(0.972, 0.976, 0.983); // heel lichte rijmarkering voor de tabel
+const BOXBG = rgb(0.968, 0.973, 0.98); // vulling van het betaalkader
 
 /** Eén tabelregel op de factuur. */
 export type InvoiceLineRow = {
@@ -101,8 +103,12 @@ export type InvoiceDoc = {
 
   /** "Signed Timesheets attached" e.d. — vetgedrukte notitie boven de totalen. */
   attachmentNote: string | null;
-  /** Betaalvoorwaarden-regels onderaan. */
+  /** Betaalvoorwaarden-regels onderaan (los, zonder kader). */
   footerLines: string[];
+  /** Betaalvoorwaarden in een opvallend kader (optioneel, i.p.v. losse regels). */
+  paymentBox?: string[] | null;
+  /** Professionele afsluiting onder het kader: bedrijfsnaam (vet) + één nette regel. */
+  closing?: { company: string; line?: string | null } | null;
   notes: string | null;
 };
 
@@ -355,8 +361,12 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     }
   };
 
-  for (const l of doc.lines) {
+  doc.lines.forEach((l, i) => {
     breakPage(150, true);
+    // Subtiele zebra-rij zodat tekst en cijfers netjes "recht onder elkaar" lezen.
+    if (i % 2 === 1) {
+      page.drawRectangle({ x: M, y: y - 4, width: right - M, height: 15, color: ZEBRA });
+    }
     text(l.ref, COL.ref, y, 9, font, MUTED);
     textR(formatHours(l.amount), COL.amount, y, 9, font, INK);
     // Zonder WEEK én LOCATION mag de omschrijving de volle breedte gebruiken
@@ -370,7 +380,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     textR(money(l.unitPrice), COL.price, y, 9, font, INK);
     textR(money(l.total), COL.total, y, 9, font, INK);
     y -= 15;
-  }
+  });
 
   // ---- Attachment-notitie + totalen ----
   y -= 10;
@@ -424,7 +434,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     }
   };
 
-  breakPage(120);
+  breakPage(150);
   rule(M, right, y + 10, LINE, 1);
   if (doc.vatReverseCharge && doc.vatNote) {
     paragraph(doc.vatNote, INK, 9, bold);
@@ -434,6 +444,49 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     paragraph(doc.notes, INK);
     y -= 4;
   }
+
+  // ---- Betaalkader (mooi omkaderd) ----
+  const boxLines = (doc.paymentBox ?? []).filter(Boolean);
+  if (boxLines.length > 0) {
+    const padX = 14;
+    const padY = 12;
+    const lineH = 14;
+    const headingH = 16;
+    const boxH = padY * 2 + headingH + boxLines.length * lineH;
+    breakPage(boxH + 70);
+    const boxTop = y;
+    const boxBottom = boxTop - boxH;
+    page.drawRectangle({
+      x: M,
+      y: boxBottom,
+      width: right - M,
+      height: boxH,
+      color: BOXBG,
+      borderColor: LINE,
+      borderWidth: 1,
+    });
+    let byy = boxTop - padY - 9;
+    text(doc.language === "en" ? "PAYMENT" : "BETALING", M + padX, byy, 8, bold, MUTED);
+    byy -= headingH;
+    for (const l of boxLines) {
+      text(l, M + padX, byy, 9.5, font, INK);
+      byy -= lineH;
+    }
+    y = boxBottom - 20;
+  }
+
+  // ---- Professionele afsluiting: bedrijfsnaam (vet) + één nette regel ----
+  if (doc.closing) {
+    breakPage(60);
+    text(doc.closing.company, M, y, 10.5, bold, INK);
+    y -= 14;
+    if (doc.closing.line) {
+      text(doc.closing.line, M, y, 9, font, MUTED);
+      y -= 14;
+    }
+  }
+
+  // Overige losse footer-regels (bijv. inkoopfactuur-bankgegevens).
   for (const l of doc.footerLines) {
     if (l) paragraph(l);
   }

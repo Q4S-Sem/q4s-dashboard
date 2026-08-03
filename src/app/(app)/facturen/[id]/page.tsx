@@ -272,9 +272,9 @@ export default async function FactuurDetailPage({
             </p>
           )}
           {invoice.notes && <p className="mt-3">{invoice.notes}</p>}
-          {settings.invoiceFooter && (
-            <p className="mt-3 text-slate-500">{settings.invoiceFooter}</p>
-          )}
+          <p className="mt-3 font-medium text-slate-900">
+            {settings.companyName || "Q4S B.V."}
+          </p>
         </div>
       </div>
     </div>

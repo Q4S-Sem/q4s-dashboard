@@ -155,7 +155,16 @@ export function buildTimesheetLines(opts: {
   weekendPct: number;
   overtimePct: number;
   kmRate: number;
+  /** Optionele label-overrides (bijv. Engels voor de verkoopfactuur). Default NL. */
+  labels?: {
+    weekend?: (pct: number) => string;
+    overtime?: (pct: number) => string;
+    km?: string;
+  };
 }): BuiltLine[] {
+  const wkLabel = opts.labels?.weekend ?? ((p: number) => `Weekendtoeslag ${p}%`);
+  const otLabel = opts.labels?.overtime ?? ((p: number) => `Overurentoeslag ${p}%`);
+  const kmLabel = opts.labels?.km ?? "Kilometers";
   const hours = round2(opts.entries.reduce((s, e) => s + e.hours, 0));
   const weekendHours = weekendHoursOf(opts.entries);
   const ot = opts.overtimeHours ?? 0;
@@ -182,7 +191,7 @@ export function buildTimesheetLines(opts: {
     lines.push({
       timesheetId: null,
       placementId: opts.placementId,
-      description: `Weekendtoeslag ${opts.weekendPct}%`,
+      description: wkLabel(opts.weekendPct),
       quantity: weekendHours,
       unitPrice: unit,
       amount: round2(weekendHours * unit),
@@ -196,7 +205,7 @@ export function buildTimesheetLines(opts: {
     lines.push({
       timesheetId: null,
       placementId: opts.placementId,
-      description: `Overurentoeslag ${opts.overtimePct}%`,
+      description: otLabel(opts.overtimePct),
       quantity: ot,
       unitPrice: unit,
       amount: round2(ot * unit),
@@ -209,7 +218,7 @@ export function buildTimesheetLines(opts: {
     lines.push({
       timesheetId: null,
       placementId: opts.placementId,
-      description: "Kilometers",
+      description: kmLabel,
       quantity: km,
       unitPrice: opts.kmRate,
       amount: round2(km * opts.kmRate),
