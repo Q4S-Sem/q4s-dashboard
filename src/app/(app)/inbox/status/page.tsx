@@ -13,6 +13,7 @@ import {
   Send,
   FileText,
   Mail,
+  MailWarning,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -238,11 +239,11 @@ export default async function TimesheetStatusPage({
                 return (
                 <TR key={row.placementId}>
                   <TD>
-                    <Link href={nameHref} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={nameHref} className="block w-fit font-medium text-slate-900 hover:text-brand-700">
                       {row.consultantName}
                     </Link>
                     {row.presence === "REMINDED" && row.reminderSentAt && (
-                      <p className="text-[11px] text-amber-600">
+                      <p className="mt-0.5 text-[11px] text-amber-600">
                         herinnerd op {formatDate(row.reminderSentAt)}
                         {row.reminderSimulated ? " (klaarzet)" : ""}
                       </p>
@@ -250,9 +251,14 @@ export default async function TimesheetStatusPage({
                     {!row.email && row.presence !== "RECEIVED" && (
                       <Link
                         href={emailHref}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-red-500 hover:text-red-700 hover:underline"
+                        title="Voeg een e-mailadres toe zodat je herinneringen kunt sturen"
+                        className="group mt-1 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 py-0.5 pl-2 pr-1 text-[11px] font-medium text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-100"
                       >
-                        geen e-mailadres — toevoegen
+                        <MailWarning className="h-3 w-3 shrink-0 text-amber-500" />
+                        Geen e-mailadres
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-200/70 px-1.5 py-px text-[10px] text-amber-800 transition-colors group-hover:bg-amber-300/80">
+                          toevoegen
+                        </span>
                       </Link>
                     )}
                   </TD>
