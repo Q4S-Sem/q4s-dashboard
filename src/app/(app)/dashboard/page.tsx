@@ -188,7 +188,9 @@ export default async function DashboardPage({
   ]);
 
   const periodConsultants = new Set(periodPlacements.map((p) => p.consultantId)).size;
-  const periodClients = new Set(periodPlacements.map((p) => p.clientId)).size;
+  const periodClients = new Set(
+    periodPlacements.map((p) => p.clientId).filter((id): id is string => id !== null),
+  ).size;
 
   // ---- Nettowinst: brutomarge (omzet − inkoop) minus onze EIGEN kosten ----
   const brutomarge = overview.marge;

@@ -148,7 +148,7 @@ export default async function PlaatsingenPage({
           placements={placements.map((p) => ({
             id: p.id,
             person: `${p.consultant.firstName} ${p.consultant.lastName}`,
-            clientName: p.client.companyName,
+            clientName: p.client?.companyName ?? "— geen bedrijf",
             title: p.title,
             costRate: p.costRate,
             chargeRate: p.chargeRate,

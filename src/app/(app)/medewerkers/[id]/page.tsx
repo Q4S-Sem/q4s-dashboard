@@ -271,7 +271,7 @@ export default async function MedewerkerDetailPage({
               <TBody>
                 {detacheringen.map((p) => (
                   <TR key={p.id}>
-                    <TD className="font-medium text-slate-900">{p.client.companyName}</TD>
+                    <TD className="font-medium text-slate-900">{p.client?.companyName ?? "— geen bedrijf"}</TD>
                     <TD className="text-slate-600">
                       {p.title}
                       {p.workLocation ? ` · ${p.workLocation}` : ""}

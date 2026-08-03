@@ -267,6 +267,8 @@ export async function generateSalesForTimesheet(formData: FormData) {
     include: { placement: true },
   });
   if (!ts) redirect("/uren");
+  // Geen verkoopfactuur mogelijk zonder gekoppeld bedrijf.
+  if (!ts.placement.clientId) redirect(`/uren/${timesheetId}?error=no-client`);
 
   const res = await createSalesInvoice({
     clientId: ts.placement.clientId,
@@ -326,7 +328,8 @@ export async function generateBothForTimesheet(formData: FormData) {
   const issueDate = new Date();
   let failed: string | null = null;
   // Sales side first (requires APPROVED; this flips the timesheet to INVOICED).
-  if (!ts.invoiceLine && ts.status === "APPROVED") {
+  // Alleen als er een klant gekoppeld is — zonder bedrijf geen verkoopfactuur.
+  if (!ts.invoiceLine && ts.status === "APPROVED" && ts.placement.clientId) {
     const r = await createSalesInvoice({
       clientId: ts.placement.clientId,
       timesheetIds: [timesheetId],

@@ -61,6 +61,8 @@ export default async function PlaatsingenMargesPage() {
     { id: string; name: string; sum: number; count: number }
   >();
   for (const p of placements) {
+    // Plaatsingen zonder gekoppeld bedrijf tellen niet mee in de marge-per-klant.
+    if (!p.clientId || !p.client) continue;
     const cur = perClientMap.get(p.clientId) ?? {
       id: p.clientId,
       name: p.client.companyName,
@@ -161,7 +163,7 @@ export default async function PlaatsingenMargesPage() {
                         {p.consultant.firstName} {p.consultant.lastName}
                       </Link>
                     </TD>
-                    <TD className="text-slate-600">{p.client.companyName}</TD>
+                    <TD className="text-slate-600">{p.client?.companyName ?? "— geen bedrijf"}</TD>
                     <TD className="text-slate-600">{p.title}</TD>
                     <TD className="text-right tabular-nums">
                       {formatCurrency(p.costRate)}/u

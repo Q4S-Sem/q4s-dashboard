@@ -323,7 +323,7 @@ export default async function InboxDetailPage({
                     defaultValue={item.placementId ?? ""}
                     options={placements.map((p) => ({
                       value: p.id,
-                      label: `${p.consultant.firstName} ${p.consultant.lastName} — ${p.client.companyName}`,
+                      label: `${p.consultant.firstName} ${p.consultant.lastName} — ${p.client?.companyName ?? "— geen bedrijf"}`,
                       sub: p.title,
                     }))}
                     placeholder="Typ een naam of klant…"

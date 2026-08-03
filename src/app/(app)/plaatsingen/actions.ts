@@ -15,7 +15,12 @@ import { saveUpload, deleteUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
 // Placement fields WITHOUT the consultant link (resolved separately so a new
 // placement can either pick an existing person or create one inline).
 const PlacementCoreSchema = z.object({
-  clientId: z.string().min(1, "Klant is verplicht"),
+  // Bedrijf is OPTIONEEL: een plaatsing mag (tijdelijk) zonder klant bestaan.
+  // Leeg → null. De plaatsing is dan niet te factureren tot er een klant is.
+  clientId: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? v.trim() : null)),
   title: z.string().min(1, "Functie is verplicht"),
   startDate: z.coerce.date({ message: "Startdatum is verplicht" }),
   endDate: z.coerce.date().optional(),

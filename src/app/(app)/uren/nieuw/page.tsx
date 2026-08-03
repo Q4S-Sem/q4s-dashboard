@@ -32,7 +32,7 @@ export default async function NieuweUrenstaatPage({
 
   const options = placements.map((p) => ({
     id: p.id,
-    label: `${p.consultant.firstName} ${p.consultant.lastName} — ${p.client.companyName} · ${p.title}`,
+    label: `${p.consultant.firstName} ${p.consultant.lastName} — ${p.client?.companyName ?? "— geen bedrijf"} · ${p.title}`,
   }));
 
   return (

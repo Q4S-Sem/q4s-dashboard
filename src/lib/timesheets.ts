@@ -159,7 +159,7 @@ export async function timesheetWeekStatus(weekStart: Date): Promise<TimesheetWee
       email: p.consultant.employee?.email?.trim() || p.consultant.email?.trim() || null,
       employeeId: p.consultant.employeeId,
       placementTitle: p.title,
-      clientName: p.client.companyName,
+      clientName: p.client?.companyName ?? "— geen bedrijf",
       presence,
       timesheetId: ts?.id ?? null,
       timesheetStatus: ts?.status ?? null,

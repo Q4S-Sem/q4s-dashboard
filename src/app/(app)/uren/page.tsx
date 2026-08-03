@@ -82,7 +82,7 @@ export default async function UrenPage({
       return {
         id: t.id,
         consultant: `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`,
-        client: t.placement.client.companyName,
+        client: t.placement.client?.companyName ?? "— geen bedrijf",
         days,
         overtime,
         // Totaal gewerkt = reguliere dag-uren + overuren.
@@ -101,7 +101,7 @@ export default async function UrenPage({
     .filter((p) => !submitted.has(p.id))
     .map((p) => ({
       name: `${p.consultant.firstName} ${p.consultant.lastName}`,
-      client: p.client.companyName,
+      client: p.client?.companyName ?? "— geen bedrijf",
     }));
   const received = expected.length - missing.length;
 

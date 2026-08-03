@@ -18,6 +18,7 @@ export function SearchSelect({
   defaultValue = "",
   placeholder = "Typ om te zoeken…",
   emptyText = "Geen resultaten.",
+  onValueChange,
 }: {
   id?: string;
   name: string;
@@ -25,6 +26,7 @@ export function SearchSelect({
   defaultValue?: string;
   placeholder?: string;
   emptyText?: string;
+  onValueChange?: (value: string) => void;
 }) {
   const [value, setValue] = useState(defaultValue);
   const [query, setQuery] = useState(
@@ -57,6 +59,7 @@ export function SearchSelect({
     setValue(o.value);
     setQuery(o.label);
     setOpen(false);
+    onValueChange?.(o.value);
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -95,6 +98,7 @@ export function SearchSelect({
             setValue("");
             setOpen(true);
             setActive(0);
+            onValueChange?.("");
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}

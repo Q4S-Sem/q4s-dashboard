@@ -108,7 +108,7 @@ export default async function NieuweInkoopfactuurPage({
     );
     return {
       timesheetId: t.id,
-      label: `${t.placement.title} — ${t.placement.client.companyName} — ${formatWeekLabel(t.weekStart)}`,
+      label: `${t.placement.title} — ${t.placement.client?.companyName ?? "— geen bedrijf"} — ${formatWeekLabel(t.weekStart)}`,
       hours: money.hours,
       amount: money.buy.total,
     };

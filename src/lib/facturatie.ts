@@ -19,7 +19,7 @@ export type FlowWeek = {
   status: string;
   placementId: string;
   placementTitle: string;
-  clientId: string;
+  clientId: string | null; // null = plaatsing zonder gekoppeld bedrijf (niet te factureren)
   clientName: string;
   hours: number; // reguliere (dag)uren — basis voor het uurbedrag
   workedHours: number; // totaal gewerkt = reguliere uren + overuren (weergave)
@@ -67,7 +67,7 @@ function toFlowWeek(t: {
   entries: { date: Date; hours: number }[];
   placement: {
     title: string;
-    clientId: string;
+    clientId: string | null;
     costRate: number;
     chargeRate: number;
     weekendSurchargeBuy: number;
@@ -76,7 +76,7 @@ function toFlowWeek(t: {
     overtimeSurchargeSell: number;
     kmRateBuy: number;
     kmRateSell: number;
-    client: { companyName: string };
+    client: { companyName: string } | null;
     consultant: { employmentType: string };
   };
   invoiceLine: { id: string } | null;
@@ -95,7 +95,7 @@ function toFlowWeek(t: {
     placementId: t.placementId,
     placementTitle: t.placement.title,
     clientId: t.placement.clientId,
-    clientName: t.placement.client.companyName,
+    clientName: t.placement.client?.companyName ?? "— geen bedrijf",
     hours: money.hours,
     workedHours: money.workedHours,
     overtimeHours: money.overtimeHours,
@@ -272,9 +272,12 @@ export async function consultantFlow(consultantId: string): Promise<ConsultantFl
     cost: round2(inkoopPending.reduce((s, w) => s + w.cost, 0)),
   };
 
-  const verkoopPending = weeks.filter((w) => w.status === "APPROVED" && !w.hasSales);
+  // Alleen weken MET een klant kunnen op een verkoopfactuur — een plaatsing zonder
+  // gekoppeld bedrijf slaan we hier over (blijft wel zichtbaar in de wekenlijst).
+  const verkoopPending = weeks.filter((w) => w.status === "APPROVED" && !w.hasSales && w.clientId);
   const groups = new Map<string, SalesGroup>();
   for (const w of verkoopPending) {
+    if (!w.clientId) continue;
     let g = groups.get(w.clientId);
     if (!g) {
       g = { clientId: w.clientId, clientName: w.clientName, timesheetIds: [], hours: 0, charge: 0, cost: 0, margin: 0 };
@@ -513,7 +516,7 @@ export async function archivedBillingByWeek(): Promise<ArchivedWeek[]> {
       consultantId: t.placement.consultant.id,
       consultantName: `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`,
       placementTitle: t.placement.title,
-      clientName: t.placement.client.companyName,
+      clientName: t.placement.client?.companyName ?? "— geen bedrijf",
       hours,
       sales: inv ? { id: inv.id, number: inv.number, status: inv.status } : null,
       purchase: pinv ? { id: pinv.id, number: pinv.number, status: pinv.status } : null,

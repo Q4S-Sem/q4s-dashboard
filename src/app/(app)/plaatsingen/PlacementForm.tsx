@@ -12,6 +12,7 @@ import {
   X,
   Building2,
   Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input, Select, Textarea, Label } from "@/components/ui/field";
@@ -203,11 +204,11 @@ function ClientPicker({
   error,
 }: {
   initialClients: { id: string; companyName: string }[];
-  initialClientId: string;
+  initialClientId?: string | null;
   error?: string;
 }) {
   const [clients, setClients] = useState(initialClients);
-  const [clientId, setClientId] = useState(initialClientId);
+  const [clientId, setClientId] = useState(initialClientId ?? "");
   // Bumped only when we programmatically pick a just-created klant, to remount
   // the (uncontrolled) Select with the new defaultValue.
   const [seed, setSeed] = useState(0);
@@ -281,7 +282,7 @@ function ClientPicker({
     <div className="space-y-0">
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <Label htmlFor="clientId" className="mb-0">
-          Klant<span className="ml-0.5 text-red-500">*</span>
+          Klant <span className="font-normal text-slate-400">(optioneel)</span>
         </Label>
         <button
           type="button"
@@ -301,11 +302,23 @@ function ClientPicker({
         id="clientId"
         name="clientId"
         defaultValue={clientId}
+        onValueChange={setClientId}
         options={clients.map((c) => ({ value: c.id, label: c.companyName }))}
         placeholder="Typ een klant om te zoeken…"
         emptyText="Geen klant gevonden."
       />
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+
+      {!clientId && !open && (
+        <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+          <span>
+            <strong>Geen bedrijf gekoppeld.</strong> Je kunt deze plaatsing gewoon opslaan, maar
+            er kan pas een verkoopfactuur gemaakt worden zodra je een klant koppelt. Voeg het bedrijf
+            later toe door de plaatsing te bewerken.
+          </span>
+        </div>
+      )}
 
       {open && (
         <div className="mt-3 space-y-3 rounded-xl border border-brand-200 bg-brand-50/50 p-4">

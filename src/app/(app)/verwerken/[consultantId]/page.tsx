@@ -264,9 +264,12 @@ export default async function VerwerkenPage({
   const inkoopPreview = flow.ownStaff ? [] : flow.weeks.filter((w) => !w.hasPurchase);
   const inkoopSubtotal = round2(inkoopPreview.reduce((s, w) => s + w.cost, 0));
 
-  const salesWeeks = flow.weeks.filter((w) => !w.hasSales);
+  // Alleen weken MET een klant kunnen verkoopgefactureerd worden — plaatsingen
+  // zonder gekoppeld bedrijf slaan we over (blijven wel in de wekenlijst zichtbaar).
+  const salesWeeks = flow.weeks.filter((w) => !w.hasSales && w.clientId);
   const vg = new Map<string, VerkoopGroup>();
   for (const w of salesWeeks) {
+    if (!w.clientId) continue;
     let g = vg.get(w.clientId);
     if (!g) {
       g = { clientId: w.clientId, clientName: w.clientName, weeks: [], charge: 0, margin: 0 };

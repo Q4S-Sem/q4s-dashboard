@@ -82,7 +82,7 @@ export async function timesheetWeeksForPeriod(
     return {
       timesheetId: t.id,
       weekLabel: formatWeekLabel(t.weekStart),
-      clientName: t.placement.client.companyName,
+      clientName: t.placement.client?.companyName ?? "— geen bedrijf",
       hours: m.hours,
       buyTotal: m.buy.total,
     };
@@ -296,7 +296,7 @@ export async function getReceivedDetail(id: string): Promise<ReceivedDetail | nu
   ).map((p) => ({
     id: p.id,
     title: p.title,
-    clientName: p.client.companyName,
+    clientName: p.client?.companyName ?? "— geen bedrijf",
     costRate: p.costRate,
     chargeRate: p.chargeRate,
   }));

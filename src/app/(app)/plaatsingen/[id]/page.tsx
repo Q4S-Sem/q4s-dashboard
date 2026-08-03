@@ -86,7 +86,7 @@ export default async function PlaatsingDetailPage({
 
       <PageHeader
         title={placement.title}
-        description={`${placement.consultant.firstName} ${placement.consultant.lastName} bij ${placement.client.companyName}`}
+        description={`${placement.consultant.firstName} ${placement.consultant.lastName} bij ${placement.client?.companyName ?? "— geen bedrijf"}`}
         actions={
           <>
             <Link
@@ -165,12 +165,16 @@ export default async function PlaatsingDetailPage({
             <Detail
               label="Klant"
               value={
-                <Link
-                  href={`/klanten/${placement.clientId}`}
-                  className="text-brand-700 hover:underline"
-                >
-                  {placement.client.companyName}
-                </Link>
+                placement.client ? (
+                  <Link
+                    href={`/klanten/${placement.clientId}`}
+                    className="text-brand-700 hover:underline"
+                  >
+                    {placement.client.companyName}
+                  </Link>
+                ) : (
+                  <span className="text-slate-400">— geen bedrijf gekoppeld</span>
+                )
               }
             />
             <Detail

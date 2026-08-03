@@ -210,7 +210,9 @@ model ClientContact {
 model Placement {
   id           String   @id @default(cuid())
   consultantId String
-  clientId     String
+  /// Optioneel: een plaatsing mag (tijdelijk) zonder gekoppeld bedrijf bestaan.
+  /// De app waarschuwt hierbij en slaat facturatie over tot er een klant is.
+  clientId     String?
   /// Function/role at the client, e.g. "NDT Inspector Level 2".
   title        String
   startDate    DateTime @default(now())
@@ -237,7 +239,7 @@ model Placement {
   updatedAt    DateTime @updatedAt
 
   consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Restrict)
-  client       Client     @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client       Client?    @relation(fields: [clientId], references: [id], onDelete: Restrict)
   timesheets   Timesheet[]
   invoiceLines InvoiceLine[]
   purchaseLines PurchaseInvoiceLine[]

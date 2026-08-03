@@ -73,7 +73,7 @@ export async function getOpenTasks(): Promise<OpenTask[]> {
       ? db.targetClient.findMany({ where: { id: { in: ids("target") } }, select: { id: true, name: true } })
       : [],
   ]);
-  const plMap = new Map(placements.map((p) => [p.id, `${p.title} · ${p.client.companyName}`]));
+  const plMap = new Map(placements.map((p) => [p.id, `${p.title} · ${p.client?.companyName ?? "— geen bedrijf"}`]));
   const clMap = new Map(clients.map((c) => [c.id, c.companyName]));
   const coMap = new Map(consultants.map((c) => [c.id, `${c.firstName} ${c.lastName}`]));
   const emMap = new Map(employees.map((e) => [e.id, `${e.firstName} ${e.lastName}`]));

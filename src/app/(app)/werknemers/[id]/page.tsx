@@ -477,9 +477,13 @@ export default async function WerknemerDetailPage({
                     </Link>
                   </TD>
                   <TD>
-                    <Link href={`/klanten/${p.clientId}`} className="text-slate-700 hover:text-brand-700">
-                      {p.client.companyName}
-                    </Link>
+                    {p.client ? (
+                      <Link href={`/klanten/${p.clientId}`} className="text-slate-700 hover:text-brand-700">
+                        {p.client.companyName}
+                      </Link>
+                    ) : (
+                      <span className="text-slate-400">— geen bedrijf</span>
+                    )}
                   </TD>
                   <TD className="text-right tabular-nums text-slate-600">{formatCurrency(p.costRate)}/u</TD>
                   <TD className="text-right tabular-nums text-slate-600">{formatCurrency(p.chargeRate)}/u</TD>

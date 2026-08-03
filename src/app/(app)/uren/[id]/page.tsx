@@ -113,7 +113,7 @@ export default async function UrenstaatDetailPage({
 
       <PageHeader
         title={formatWeekLabel(ts.weekStart)}
-        description={`${placement.consultant.firstName} ${placement.consultant.lastName} bij ${placement.client.companyName} · ${placement.title}`}
+        description={`${placement.consultant.firstName} ${placement.consultant.lastName} bij ${placement.client?.companyName ?? "— geen bedrijf"} · ${placement.title}`}
         actions={<StatusBadge options={TIMESHEET_STATUSES} value={ts.status} />}
       />
 
@@ -133,6 +133,12 @@ export default async function UrenstaatDetailPage({
       {error === "locked" && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           Deze urenstaat is al gefactureerd en kan niet meer gewijzigd worden.
+        </p>
+      )}
+      {error === "no-client" && (
+        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Deze plaatsing heeft geen gekoppeld bedrijf — koppel eerst een klant aan
+          de plaatsing voordat je een verkoopfactuur maakt.
         </p>
       )}
       {(error === "sales" || error === "purchase") && (
@@ -175,12 +181,14 @@ export default async function UrenstaatDetailPage({
         )}
         {ts.status === "APPROVED" && (
           <>
-            <Link
-              href={`/facturen/nieuw?client=${placement.clientId}`}
-              className={buttonVariants({ variant: "primary" })}
-            >
-              <Receipt className="h-4 w-4" /> Factureren
-            </Link>
+            {placement.clientId && (
+              <Link
+                href={`/facturen/nieuw?client=${placement.clientId}`}
+                className={buttonVariants({ variant: "primary" })}
+              >
+                <Receipt className="h-4 w-4" /> Factureren
+              </Link>
+            )}
             {!committed && (
               <>
                 <StatusButton id={ts.id} status="DRAFT" variant="outline">
@@ -295,7 +303,7 @@ export default async function UrenstaatDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>Facturen</CardTitle>
-          {canInvoice && !ownStaff && !salesInvoiceId && !purchaseInvoiceId && (
+          {canInvoice && !ownStaff && !salesInvoiceId && !purchaseInvoiceId && placement.clientId && (
             <form action={generateBothForTimesheet}>
               <input type="hidden" name="timesheetId" value={ts.id} />
               <SubmitButton size="sm" pendingLabel="Aanmaken…">
@@ -320,7 +328,7 @@ export default async function UrenstaatDetailPage({
               </div>
               <div>
                 <div className="text-sm font-medium text-slate-900">
-                  Verkoopfactuur — {placement.client.companyName}
+                  Verkoopfactuur — {placement.client?.companyName ?? "— geen bedrijf"}
                 </div>
                 <div className="text-xs text-slate-500">
                   {formatHours(totalHours)} u × {formatCurrency(placement.chargeRate)} ={" "}
@@ -329,7 +337,9 @@ export default async function UrenstaatDetailPage({
                 </div>
               </div>
             </div>
-            {salesInvoiceId ? (
+            {!placement.clientId ? (
+              <span className="text-xs text-amber-600">Koppel eerst een bedrijf</span>
+            ) : salesInvoiceId ? (
               <Link
                 href={`/facturen/${salesInvoiceId}`}
                 className={buttonVariants({ variant: "outline", size: "sm" })}

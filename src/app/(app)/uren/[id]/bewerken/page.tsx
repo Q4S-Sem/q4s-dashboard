@@ -36,7 +36,7 @@ export default async function UrenstaatBewerkenPage({
   // Uren mogen ALTIJD handmatig aangepast worden — ook na goedkeuren/factureren.
   const locked = ts.status === "APPROVED" || ts.status === "INVOICED";
   const { placement } = ts;
-  const placementLabel = `${placement.consultant.firstName} ${placement.consultant.lastName} — ${placement.client.companyName} · ${placement.title}`;
+  const placementLabel = `${placement.consultant.firstName} ${placement.consultant.lastName} — ${placement.client?.companyName ?? "— geen bedrijf"} · ${placement.title}`;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
