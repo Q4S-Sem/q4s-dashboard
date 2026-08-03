@@ -231,6 +231,42 @@ export async function receivedInvoicesSummary(): Promise<ReceivedSummary> {
   };
 }
 
+/**
+ * Lichte telling van ontvangen facturen die NIET kloppen met de urenstaat/het
+ * plaatsingstarief (afwijking). Alleen onbetaalde facturen mét periode worden
+ * gereconcilieerd — goedkoop genoeg om in de meldingen (elke pagina) te draaien.
+ * Dit is het "melding-mechanisme": zodra een factuur afwijkt, telt hij hier mee.
+ */
+export async function countReceivedDiscrepancies(): Promise<number> {
+  const settings = await getCompanySettings();
+  const vatRate = settings.defaultVatRate ?? 21;
+  const invoices = await db.receivedInvoice.findMany({
+    where: { status: { not: "PAID" }, periodStart: { not: null }, periodEnd: { not: null } },
+    select: { consultantId: true, periodStart: true, periodEnd: true, amount: true, vatAmount: true },
+  });
+  let n = 0;
+  for (const inv of invoices) {
+    const expected = await expectedForConsultantPeriod(
+      inv.consultantId,
+      inv.periodStart!,
+      inv.periodEnd!,
+      vatRate,
+    );
+    if (!bestMatch(inv.amount, inv.vatAmount, expected).matched) n++;
+  }
+  return n;
+}
+
+/** De actieve plaatsing(en) van een medewerker — voor de "tarief bijwerken"-link
+ *  bij een afwijking (het plaatsingstarief is dan waarschijnlijk verouderd). */
+export type ActivePlacementRef = {
+  id: string;
+  title: string;
+  clientName: string;
+  costRate: number;
+  chargeRate: number;
+};
+
 export type ReceivedDetail = ReceivedRow & {
   vatAmount: number | null;
   countForVat: boolean;
@@ -238,6 +274,7 @@ export type ReceivedDetail = ReceivedRow & {
   originalName: string | null;
   mimeType: string | null;
   weeks: TimesheetWeekRow[]; // de urenstaat achter "verwacht", voor de vergelijking
+  activePlacements: ActivePlacementRef[]; // voor de "tarief bijwerken"-link
 };
 
 /** Eén ontvangen factuur + reconciliatie, voor de detailpagina. */
@@ -249,6 +286,20 @@ export async function getReceivedDetail(id: string): Promise<ReceivedDetail | nu
     include: { consultant: { select: { firstName: true, lastName: true, email: true } } },
   });
   if (!inv) return null;
+
+  const activePlacements: ActivePlacementRef[] = (
+    await db.placement.findMany({
+      where: { consultantId: inv.consultantId, status: "ACTIVE" },
+      include: { client: { select: { companyName: true } } },
+      orderBy: { startDate: "desc" },
+    })
+  ).map((p) => ({
+    id: p.id,
+    title: p.title,
+    clientName: p.client.companyName,
+    costRate: p.costRate,
+    chargeRate: p.chargeRate,
+  }));
 
   let expected: ExpectedForPeriod | null = null;
   let diff: number | null = null;
@@ -286,6 +337,7 @@ export async function getReceivedDetail(id: string): Promise<ReceivedDetail | nu
     originalName: inv.originalName,
     mimeType: inv.mimeType,
     weeks,
+    activePlacements,
   };
 }
 

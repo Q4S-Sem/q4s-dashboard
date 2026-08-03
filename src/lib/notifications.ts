@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { countReceivedDiscrepancies } from "@/lib/received-invoices";
 
 // ---------------------------------------------------------------------------
 // Meldingencentrum. Aggregeert openstaande acties uit de hele back-office in
@@ -67,6 +68,8 @@ export async function getNotifications(): Promise<Notifications> {
     inboxCount,
     // MSP-intake (ongelezen recruiter-meldingen)
     mspUnread,
+    // Ontvangen facturen die niet kloppen met het plaatsingstarief (afwijking)
+    invoiceMismatches,
   ] = await Promise.all([
     db.calendarEvent.count({ where: { status: "PLANNED", start: { lt: startToday } } }),
     db.calendarEvent.count({ where: { status: "PLANNED", start: { gte: startToday, lt: endToday } } }),
@@ -102,6 +105,8 @@ export async function getNotifications(): Promise<Notifications> {
     db.timesheetInbox.count({ where: { status: { in: ["NEW", "EXTRACTED"] } } }),
 
     db.recruiterAlert.count({ where: { read: false } }),
+
+    countReceivedDiscrepancies(),
   ]);
 
   const all: NotifGroup[] = [
@@ -112,6 +117,14 @@ export async function getNotifications(): Promise<Notifications> {
     { key: "facturen", label: "Facturen", href: "/facturen", late: facLate, today: facToday, future: facFuture },
     { key: "inbox", label: "Timesheet-inbox", href: "/inbox", late: 0, today: inboxCount, future: 0 },
     { key: "msp", label: "MSP-intake", href: "/msp", late: 0, today: mspUnread, future: 0 },
+    {
+      key: "factuur-afwijking",
+      label: "Factuur wijkt af van tarief",
+      href: "/ontvangen-facturen#wacht",
+      late: invoiceMismatches,
+      today: 0,
+      future: 0,
+    },
   ];
 
   // Alleen rijen tonen waar iets speelt.

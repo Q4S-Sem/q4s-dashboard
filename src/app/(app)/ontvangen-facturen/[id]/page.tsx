@@ -177,6 +177,46 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
         </p>
       )}
 
+      {/* Tarief-controle: een afwijking komt vaak door een gewijzigd ZZP-tarief. */}
+      {inv.expected && !inv.matched && inv.status !== "PAID" && inv.activePlacements.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-amber-900">Klopt het uurtarief nog?</p>
+              <p className="mt-1 text-sm text-amber-800">
+                Een afwijking komt vaak doordat de ZZP&apos;er zijn tarief heeft gewijzigd, terwijl het tarief
+                in de plaatsing nog het oude is. Controleer het en werk het zo nodig bij — dan klopt de
+                volgende factuur weer vanzelf.
+              </p>
+              <div className="mt-3 space-y-2">
+                {inv.activePlacements.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2"
+                  >
+                    <div className="min-w-0 text-sm">
+                      <span className="font-medium text-slate-900">{p.title}</span>
+                      <span className="text-slate-400"> · {p.clientName}</span>
+                      <span className="block text-xs text-slate-500">
+                        Plaatsingstarief: inkoop {formatCurrency(p.costRate)}/u · verkoop{" "}
+                        {formatCurrency(p.chargeRate)}/u
+                      </span>
+                    </div>
+                    <Link
+                      href={`/plaatsingen/${p.id}/bewerken`}
+                      className={buttonVariants({ variant: "outline", size: "sm" })}
+                    >
+                      Tarief bijwerken
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Zij-aan-zij vergelijking: urenstaat links, factuur rechts */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Onze urenregistratie */}

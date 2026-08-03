@@ -200,7 +200,9 @@ export default async function OntvangenFacturenPage({
                 Wacht op een aangepaste factuur ({awaiting.length})
               </h2>
               <p className="text-sm text-amber-700">
-                Deze wijken af van onze urenstaat. Betaal ze pas als de medewerker een correcte factuur stuurt.
+                Deze kloppen niet met ons plaatsingstarief × de uren — vaak omdat de ZZP&apos;er zijn tarief
+                heeft gewijzigd. Open de factuur om het tarief te controleren en de plaatsing bij te werken.
+                Betaal pas na de correctie.
               </p>
             </div>
           </div>

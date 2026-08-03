@@ -12,6 +12,7 @@ import {
   Receipt,
   Inbox,
   Zap,
+  AlertTriangle,
   ChevronRight,
   CheckCircle2,
   LayoutDashboard,
@@ -29,6 +30,11 @@ const META: Record<string, { icon: LucideIcon; color: string; desc: string }> = 
   facturen: { icon: Receipt, color: "emerald", desc: "Verzonden facturen, nog niet betaald" },
   inbox: { icon: Inbox, color: "indigo", desc: "Timesheets om te verwerken" },
   msp: { icon: Zap, color: "orange", desc: "Ongelezen MSP-intakemeldingen" },
+  "factuur-afwijking": {
+    icon: AlertTriangle,
+    color: "red",
+    desc: "Ontvangen factuur klopt niet met het plaatsingstarief",
+  },
 };
 
 const CHIP: Record<string, string> = {
@@ -39,6 +45,7 @@ const CHIP: Record<string, string> = {
   emerald: "bg-emerald-100 text-emerald-700",
   indigo: "bg-indigo-100 text-indigo-700",
   orange: "bg-orange-100 text-orange-700",
+  red: "bg-red-100 text-red-700",
   slate: "bg-slate-100 text-slate-500",
 };
 
