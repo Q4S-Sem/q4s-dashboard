@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input, Select, Textarea, Label } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { SearchSelect } from "@/components/ui/search-select";
 import { NumberInput } from "@/components/ui/number-input";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -23,6 +24,40 @@ import { PLACEMENT_STATUSES, DISCIPLINES, EMPLOYMENT_TYPES } from "@/lib/domain"
 import { cn, formatCurrency } from "@/lib/utils";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { quickCreateClient } from "../klanten/actions";
+
+// Snelle duur-knoppen: vullen de einddatum vanaf de startdatum. Handig voor korte
+// klussen (een week / paar weken) zodat je de einddatum niet los hoeft te kiezen.
+const DURATIONS = [
+  { kind: "1w", label: "1 week" },
+  { kind: "2w", label: "2 weken" },
+  { kind: "1m", label: "1 maand" },
+  { kind: "3m", label: "3 maanden" },
+] as const;
+type DurationKind = (typeof DURATIONS)[number]["kind"];
+
+function isoToDate(iso: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
+function dateToIso(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+/** Einddatum = startdatum + duur (inclusief: 1 week eindigt op dag 7). */
+function computeEnd(startISO: string, kind: DurationKind): string {
+  const d = isoToDate(startISO);
+  if (!d) return "";
+  if (kind === "1w") d.setDate(d.getDate() + 6);
+  else if (kind === "2w") d.setDate(d.getDate() + 13);
+  else if (kind === "1m") {
+    d.setMonth(d.getMonth() + 1);
+    d.setDate(d.getDate() - 1);
+  } else {
+    d.setMonth(d.getMonth() + 3);
+    d.setDate(d.getDate() - 1);
+  }
+  return dateToIso(d);
+}
 
 /** A clean upload card: icon + label + a styled picker + the chosen file(s). */
 function UploadCard({
@@ -434,6 +469,16 @@ export function PlacementForm({
   const [costRate, setCostRate] = useState<number>(placement?.costRate ?? 0);
   const [chargeRate, setChargeRate] = useState<number>(placement?.chargeRate ?? 0);
 
+  // Start/eind gecontroleerd, zodat de snelle duur-knoppen de einddatum kunnen zetten.
+  const [startDate, setStartDate] = useState<string>(
+    placement?.startDate
+      ? new Date(placement.startDate).toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10),
+  );
+  const [endDate, setEndDate] = useState<string>(
+    placement?.endDate ? new Date(placement.endDate).toISOString().slice(0, 10) : "",
+  );
+
   // The werknemer of an existing plaatsing is fixed and cannot be changed here.
   const currentPerson = placement
     ? consultants.find((c) => c.id === placement.consultantId)
@@ -677,32 +722,50 @@ export function PlacementForm({
             />
           </Field>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Startdatum" htmlFor="startDate" required error={e.startDate}>
-              <Input
-                id="startDate"
-                name="startDate"
-                type="date"
-                defaultValue={
-                  placement?.startDate
-                    ? new Date(placement.startDate).toISOString().slice(0, 10)
-                    : new Date().toISOString().slice(0, 10)
-                }
-                required
-              />
-            </Field>
-            <Field label="Einddatum" htmlFor="endDate" hint="Leeg laten als de plaatsing nog loopt" error={e.endDate}>
-              <Input
-                id="endDate"
-                name="endDate"
-                type="date"
-                defaultValue={
-                  placement?.endDate
-                    ? new Date(placement.endDate).toISOString().slice(0, 10)
-                    : ""
-                }
-              />
-            </Field>
+          <div className="space-y-3">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Startdatum" htmlFor="startDate" required error={e.startDate}>
+                <DateInput
+                  id="startDate"
+                  name="startDate"
+                  required
+                  value={startDate}
+                  onValueChange={setStartDate}
+                />
+              </Field>
+              <Field
+                label="Einddatum"
+                htmlFor="endDate"
+                hint="Leeg laten als de plaatsing nog loopt"
+                error={e.endDate}
+              >
+                <DateInput id="endDate" name="endDate" value={endDate} onValueChange={setEndDate} />
+              </Field>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-slate-500">Snelle duur:</span>
+              {DURATIONS.map((d) => (
+                <button
+                  key={d.kind}
+                  type="button"
+                  onClick={() => setEndDate(computeEnd(startDate, d.kind))}
+                  disabled={!startDate}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  title={`Einddatum = startdatum + ${d.label.toLowerCase()}`}
+                >
+                  {d.label}
+                </button>
+              ))}
+              {endDate && (
+                <button
+                  type="button"
+                  onClick={() => setEndDate("")}
+                  className="rounded-full px-2 py-1 text-xs text-slate-400 hover:text-slate-700"
+                >
+                  wissen
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
