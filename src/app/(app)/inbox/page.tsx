@@ -8,6 +8,8 @@ import {
   ClipboardCheck,
   FileText,
   Upload,
+  RefreshCw,
+  MailCheck,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,16 +17,20 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatHours, formatDate, formatWeekLabel } from "@/lib/utils";
 import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
+import { isMailIntakeConnected } from "@/lib/graph-mail";
 import { INBOX_SOURCES, INBOX_STATUSES } from "@/lib/domain";
 import { parseWeekParam, weekParam, currentWeekMonday } from "@/lib/timesheets";
 import { WeekPicker } from "@/components/week-picker";
 import { TimesheetDropzone } from "./TimesheetDropzone";
+import { pullMailNow } from "./actions";
 
 export const metadata = { title: "Timesheet-inbox" };
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 type InboxItem = Prisma.TimesheetInboxGetPayload<{ include: { consultant: true } }>;
 
@@ -43,13 +49,24 @@ function shiftWeek(monday: Date, deltaWeeks: number): string {
 export default async function InboxPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; week?: string; voor?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    week?: string;
+    voor?: string;
+    pull?: string;
+    mails?: string;
+    ts?: string;
+    inv?: string;
+    skip?: string;
+  }>;
 }) {
-  const { error, week, voor } = await searchParams;
+  const sp = await searchParams;
+  const { error, week, voor } = sp;
   const monday = parseWeekParam(week);
   const wp = weekParam(monday);
   const nextMonday = new Date(monday.getTime() + 7 * 86_400_000);
   const isCurrentWeek = weekParam(currentWeekMonday()) === wp;
+  const mailConnected = isMailIntakeConnected();
 
   // Kwam je hier via "Importeren" bij een ontbrekende urenstaat? Toon voor wie/
   // welke week, zodat je meteen het juiste bestand erbij sleept.
@@ -86,11 +103,59 @@ export default async function InboxPage({
         title="Timesheet-inbox"
         description="Binnengekomen urenstaten (via admin@q4s.nl, los bestand of een ZIP). AI leest naam, week en uren uit; bekijk ze per week."
         actions={
-          <Link href="/inbox/status" className={buttonVariants({ variant: "outline" })}>
-            <ClipboardCheck className="h-4 w-4" /> Timesheet-status
-          </Link>
+          <>
+            {mailConnected && (
+              <form action={pullMailNow}>
+                <SubmitButton variant="outline" pendingLabel="Ophalen…">
+                  <RefreshCw className="h-4 w-4" /> Postvak ophalen
+                </SubmitButton>
+              </form>
+            )}
+            <Link href="/inbox/status" className={buttonVariants({ variant: "outline" })}>
+              <ClipboardCheck className="h-4 w-4" /> Timesheet-status
+            </Link>
+          </>
         }
       />
+
+      {sp.pull === "ok" && (
+        <p className="flex items-start gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <MailCheck className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Postvak opgehaald: <strong>{sp.mails ?? 0}</strong> nieuw
+            {Number(sp.mails) === 1 ? " bericht" : "e berichten"}, <strong>{sp.ts ?? 0}</strong> urensta
+            {Number(sp.ts) === 1 ? "at" : "ten"} geïmporteerd
+            {Number(sp.inv) > 0 && (
+              <>
+                {" "}
+                · <strong>{sp.inv}</strong> factu{Number(sp.inv) === 1 ? "ur" : "ren"} apart gezet (nog
+                handmatig)
+              </>
+            )}
+            {Number(sp.skip) > 0 && <> · {sp.skip} al eerder verwerkt</>}.
+          </span>
+        </p>
+      )}
+      {sp.pull === "off" && (
+        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Postvak nog niet gekoppeld — zet de <code>MS_*</code>-gegevens (Microsoft 365, Mail.Read) in de omgeving.
+        </p>
+      )}
+      {sp.pull === "err" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Postvak ophalen mislukt — controleer de M365-koppeling en probeer opnieuw.
+        </p>
+      )}
+      {!mailConnected && (
+        <p className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+          <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+          <span>
+            <strong className="text-slate-700">Automatisch ophalen uit admin@q4s.nl</strong> staat klaar, maar is nog
+            niet gekoppeld. Zodra de Microsoft 365-koppeling (MS-gegevens) live staat, verschijnt hier de knop
+            “Postvak ophalen” en worden urenstaten vanzelf binnengehaald en uitgelezen.
+          </span>
+        </p>
+      )}
 
       {error === "upload" && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">

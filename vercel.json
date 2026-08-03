@@ -5,6 +5,10 @@
     {
       "path": "/api/jobs/daily-sync",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/jobs/mail-intake",
+      "schedule": "*/30 * * * *"
     }
   ]
 }

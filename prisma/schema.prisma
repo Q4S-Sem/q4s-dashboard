@@ -1795,3 +1795,20 @@ model ReceivedInvoice {
   @@index([consultantId])
   @@index([status])
 }
+
+/// Verwerkte binnengekomen e-mails (M365-postvak intake). Eén regel per bericht
+/// zodat de automatische ophaal elk bericht maar één keer verwerkt (idempotent),
+/// ook als het (nog) niet als gelezen gemarkeerd is.
+model MailIntakeLog {
+  /// Microsoft Graph message-id.
+  messageId  String   @id
+  subject    String?
+  sender     String?
+  /// Aantal geïmporteerde urenstaten uit dit bericht.
+  timesheets Int      @default(0)
+  /// Aantal herkende factuur-bijlagen (nog handmatig te verwerken — fase 2).
+  invoices   Int      @default(0)
+  /// Aantal overige/niet-herkende bijlagen.
+  others     Int      @default(0)
+  processedAt DateTime @default(now())
+}

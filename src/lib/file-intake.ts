@@ -40,18 +40,21 @@ export function guessMime(name: string): string {
   return "application/octet-stream";
 }
 
-/** Expand a list of Files into raw files, unzipping any ZIP archive into its
- *  entries. Reused by the field-based collectIncomingFiles and by the e-mail
- *  webhook (where attachments have arbitrary field names). */
-export async function expandFiles(files: File[]): Promise<IncomingFile[]> {
+function isZipName(name: string, mime: string): boolean {
+  return /\.zip$/i.test(name) || mime === "application/zip" || mime === "application/x-zip-compressed";
+}
+
+/** Expand raw {name,mime,bytes} items, unzipping any ZIP archive into its entries.
+ *  Reused by expandFiles (uploads) and by the M365-postvak-intake (Graph-bijlagen
+ *  komen al als bytes binnen). */
+export function expandRawFiles(items: IncomingFile[]): IncomingFile[] {
   const out: IncomingFile[] = [];
-  for (const f of files) {
-    if (f.size === 0) continue;
-    const buf = new Uint8Array(await f.arrayBuffer());
-    if (isZipFile(f)) {
+  for (const it of items) {
+    if (it.bytes.length === 0) continue;
+    if (isZipName(it.name, it.mime)) {
       let entries: Record<string, Uint8Array>;
       try {
-        entries = unzipSync(buf);
+        entries = unzipSync(it.bytes);
       } catch {
         continue; // corrupt/unsupported zip — skip
       }
@@ -61,10 +64,26 @@ export async function expandFiles(files: File[]): Promise<IncomingFile[]> {
         out.push({ name: base, mime: guessMime(base), bytes: data });
       }
     } else {
-      out.push({ name: f.name, mime: f.type || guessMime(f.name), bytes: buf });
+      out.push({ name: it.name, mime: it.mime || guessMime(it.name), bytes: it.bytes });
     }
   }
   return out;
+}
+
+/** Expand a list of Files into raw files, unzipping any ZIP archive into its
+ *  entries. Reused by the field-based collectIncomingFiles and by the e-mail
+ *  webhook (where attachments have arbitrary field names). */
+export async function expandFiles(files: File[]): Promise<IncomingFile[]> {
+  const raw: IncomingFile[] = [];
+  for (const f of files) {
+    if (f.size === 0) continue;
+    raw.push({
+      name: f.name,
+      mime: f.type || guessMime(f.name),
+      bytes: new Uint8Array(await f.arrayBuffer()),
+    });
+  }
+  return expandRawFiles(raw);
 }
 
 /** Collect all uploaded files under `field`, expanding ZIPs into their entries. */

@@ -10,6 +10,7 @@ import { saveInboxBytes, deleteInboxUpload, MAX_UPLOAD_BYTES } from "@/lib/uploa
 import { isSpreadsheet } from "@/lib/excel";
 import { startOfISOWeek, parseHours } from "@/lib/utils";
 import { runInboxExtraction } from "@/lib/inbox-extract";
+import { pullInboxMail } from "@/lib/mail-intake";
 
 // ---------- Upload (single, multiple, or a ZIP of timesheets) ----------
 
@@ -57,6 +58,17 @@ export async function uploadInboxTimesheet(formData: FormData) {
   // One file → open it; a batch/ZIP → back to the grouped inbox.
   if (createdIds.length === 1) redirect(`/inbox/${createdIds[0]}`);
   redirect("/inbox");
+}
+
+// ---------- Postvak nu ophalen (M365-intake, handmatige trigger) ----------
+
+export async function pullMailNow(_formData: FormData) {
+  const r = await pullInboxMail();
+  revalidatePath("/inbox");
+  revalidatePath("/", "layout");
+  if (!r.connected) redirect("/inbox?pull=off");
+  if (!r.ok) redirect("/inbox?pull=err");
+  redirect(`/inbox?pull=ok&mails=${r.mails}&ts=${r.timesheets}&inv=${r.invoices}&skip=${r.skipped}`);
 }
 
 // ---------- AI extraction ----------
