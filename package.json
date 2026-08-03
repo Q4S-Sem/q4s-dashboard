@@ -13,7 +13,7 @@
     "db:seed-facturatie": "tsx prisma/seed-facturatie.ts",
     "db:seed-ontvangen": "tsx prisma/seed-ontvangen.ts",
     "db:studio": "prisma studio",
-    "db:reset": "prisma db push --force-reset && npm run db:seed"
+    "db:reset": "tsx prisma/reset.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

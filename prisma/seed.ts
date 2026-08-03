@@ -3,6 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { seedCrm } from "./seed-crm";
+import { assertDestructiveAllowed } from "./guard";
 
 const db = new PrismaClient();
 
@@ -156,6 +157,9 @@ async function seedInbox(opts: {
 }
 
 async function main() {
+  // Weiger een volledige wipe zodra dit géén lokale database is (zie prisma/guard.ts).
+  assertDestructiveAllowed("db:seed (volledige demo-reset)");
+
   console.log("Seeding Q4S demo data…");
 
   // Clear (children first).
