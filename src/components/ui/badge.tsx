@@ -10,6 +10,7 @@ const colorMap: Record<BadgeColor, string> = {
   red: "bg-red-50 text-red-700 ring-red-200",
   violet: "bg-violet-50 text-violet-700 ring-violet-200",
   cyan: "bg-cyan-50 text-cyan-700 ring-cyan-200",
+  orange: "bg-orange-50 text-orange-700 ring-orange-200",
 };
 
 export function Badge({

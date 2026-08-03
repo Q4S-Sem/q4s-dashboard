@@ -51,6 +51,7 @@ const ICON_BG: Record<BadgeColor, string> = {
   red: "bg-red-50 text-red-600",
   violet: "bg-violet-50 text-violet-600",
   cyan: "bg-cyan-50 text-cyan-600",
+  orange: "bg-orange-50 text-orange-600",
 };
 
 const dtFmt = new Intl.DateTimeFormat("nl-NL", {

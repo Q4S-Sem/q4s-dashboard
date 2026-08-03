@@ -1263,7 +1263,7 @@ model Expense {
   consultantId String?
   /// Date on the receipt.
   date         DateTime?
-  /// REIS | MATERIAAL | VERBLIJF | ETEN | PARKEREN | OVERIG (see EXPENSE_CATEGORIES)
+  /// REIS | MATERIAAL | VERBLIJF | ETEN | PARKEREN | TOL | OVERIG (see EXPENSE_CATEGORIES)
   category     String   @default("OVERIG")
   /// Merchant / leverancier.
   vendor       String?

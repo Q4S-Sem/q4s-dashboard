@@ -38,6 +38,7 @@ const ACCENT: Record<BadgeColor, string> = {
   red: "bg-red-400",
   violet: "bg-violet-400",
   cyan: "bg-cyan-400",
+  orange: "bg-orange-400",
 };
 
 function isOverdue(iso: string | null): boolean {

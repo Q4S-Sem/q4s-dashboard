@@ -10,7 +10,8 @@ export type BadgeColor =
   | "amber"
   | "red"
   | "violet"
-  | "cyan";
+  | "cyan"
+  | "orange";
 
 /** The sectors Q4S specialises in. */
 export const DISCIPLINES: Option[] = [
@@ -58,6 +59,7 @@ export const BADGE_HEX: Record<BadgeColor, string> = {
   red: "#dc2626",
   violet: "#7c3aed",
   cyan: "#0891b2",
+  orange: "#ea580c",
 };
 
 /** Categorisch kleurenpalet voor charts zonder vaste domein-kleur (bijv. top-
@@ -428,7 +430,8 @@ export const EXPENSE_CATEGORIES: Option[] = [
   { value: "MATERIAAL", label: "Materiaal / gereedschap", color: "violet" },
   { value: "VERBLIJF", label: "Verblijf / overnachting", color: "cyan" },
   { value: "ETEN", label: "Eten & drinken", color: "amber" },
-  { value: "PARKEREN", label: "Parkeren / tol", color: "slate" },
+  { value: "PARKEREN", label: "Parkeren", color: "slate" },
+  { value: "TOL", label: "Tol / tunnel", color: "orange" },
   { value: "OVERIG", label: "Overig", color: "slate" },
 ];
 export const EXPENSE_CATEGORY_VALUES = EXPENSE_CATEGORIES.map((d) => d.value) as [string, ...string[]];

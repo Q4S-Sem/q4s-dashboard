@@ -7,7 +7,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Receipt } from "lucide-react";
 import { Field, Select, Label, Input } from "@/components/ui/field";
 import { NumberInput } from "@/components/ui/number-input";
 import { DateInput } from "@/components/ui/date-input";
@@ -320,34 +320,54 @@ export function TimesheetForm({
 
           {/* Declaraties — alleen bij een nieuwe urenstaat (create mode). */}
           {placements && (
-            <div>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <Label className="mb-0">
-                  Declaraties{" "}
-                  <span className="font-normal text-slate-400">(optioneel)</span>
-                </Label>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200">
+                    <Receipt className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <Label className="mb-0 block">
+                      Declaraties{" "}
+                      <span className="font-normal text-slate-400">(optioneel)</span>
+                    </Label>
+                    <p className="text-[11px] text-slate-400">
+                      Onkosten deze week — reis, materiaal, parkeren, tol, verblijf…
+                    </p>
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={addExpense}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50"
+                  className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-brand-300 hover:text-brand-700"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Declaratie
+                  <Plus className="h-3.5 w-3.5" /> Declaratie toevoegen
                 </button>
               </div>
+
               {expenses.length === 0 ? (
-                <p className="text-xs text-slate-400">
-                  Bonnetjes/onkosten voor deze week (materiaal, parkeren, verblijf…). Voeg ze
-                  hier direct toe — de foto van de bon koppel je later in Declaraties.
+                <p className="mt-3 rounded-lg border border-dashed border-slate-200 bg-white px-3 py-5 text-center text-xs text-slate-400">
+                  Nog geen declaraties. Voeg bonnetjes/onkosten toe — de foto van de bon
+                  koppel je later in Declaraties.
                 </p>
               ) : (
-                <div className="space-y-2">
+                <div className="mt-3 space-y-2">
+                  <div className="hidden grid-cols-[11rem_1fr_8rem_2rem] gap-2 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:grid">
+                    <span>Categorie</span>
+                    <span>Omschrijving</span>
+                    <span className="text-right">Bedrag incl. btw</span>
+                    <span className="sr-only">Acties</span>
+                  </div>
                   {expenses.map((row) => (
-                    <div key={row.key} className="flex flex-wrap items-center gap-2">
+                    <div
+                      key={row.key}
+                      className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-white p-2.5 sm:grid-cols-[11rem_1fr_8rem_2rem] sm:items-center sm:border-0 sm:bg-transparent sm:p-1"
+                    >
                       <Select
                         aria-label="Categorie"
                         defaultValue={row.category}
                         onValueChange={(v) => setExpense(row.key, { category: v })}
-                        className="w-44"
+                        className="w-full"
                       >
                         {EXPENSE_CATEGORIES.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -360,9 +380,9 @@ export function TimesheetForm({
                         value={row.description}
                         onChange={(ev) => setExpense(row.key, { description: ev.target.value })}
                         placeholder="Omschrijving / leverancier"
-                        className="min-w-[160px] flex-1"
+                        className="w-full"
                       />
-                      <div className="relative w-32">
+                      <div className="relative">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
                           €
                         </span>
@@ -380,18 +400,23 @@ export function TimesheetForm({
                         type="button"
                         onClick={() => removeExpense(row.key)}
                         aria-label="Declaratie verwijderen"
-                        className="rounded-md p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                        className="ml-auto rounded-md p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 sm:ml-0"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
-                  <p className="pt-1 text-right text-xs text-slate-500">
-                    Totaal declaraties:{" "}
-                    <span className="font-semibold text-slate-800">
-                      {formatCurrency(expensesTotal)}
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-2.5 text-xs">
+                    <span className="text-slate-500">
+                      {expenses.length} {expenses.length === 1 ? "declaratie" : "declaraties"}
                     </span>
-                  </p>
+                    <span className="text-slate-500">
+                      Totaal:{" "}
+                      <span className="font-semibold text-slate-800">
+                        {formatCurrency(expensesTotal)}
+                      </span>
+                    </span>
+                  </div>
                 </div>
               )}
               <input type="hidden" name="expenses" value={expensesPayload} />

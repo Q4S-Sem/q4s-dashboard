@@ -94,6 +94,7 @@ const CHIP: Record<BadgeColor, string> = {
   red: "bg-red-100 text-red-800 hover:bg-red-200",
   violet: "bg-violet-100 text-violet-800 hover:bg-violet-200",
   cyan: "bg-cyan-100 text-cyan-800 hover:bg-cyan-200",
+  orange: "bg-orange-100 text-orange-800 hover:bg-orange-200",
 };
 const DOT: Record<BadgeColor, string> = {
   slate: "bg-slate-400",
@@ -103,6 +104,7 @@ const DOT: Record<BadgeColor, string> = {
   red: "bg-red-500",
   violet: "bg-violet-500",
   cyan: "bg-cyan-500",
+  orange: "bg-orange-500",
 };
 const ICON_TEXT: Record<BadgeColor, string> = {
   slate: "text-slate-500",
@@ -112,6 +114,7 @@ const ICON_TEXT: Record<BadgeColor, string> = {
   red: "text-red-600",
   violet: "text-violet-600",
   cyan: "text-cyan-600",
+  orange: "text-orange-600",
 };
 
 const WEEKDAYS = ["ma", "di", "wo", "do", "vr", "za", "zo"];

@@ -36,6 +36,7 @@ const BAR: Record<BadgeColor, string> = {
   red: "bg-red-400",
   violet: "bg-violet-400",
   cyan: "bg-cyan-400",
+  orange: "bg-orange-400",
 };
 
 function WeakPointRow({ wp }: { wp: WeakPoint }) {

@@ -49,6 +49,7 @@ const DOT: Record<BadgeColor, string> = {
   red: "bg-red-500",
   violet: "bg-violet-500",
   cyan: "bg-cyan-500",
+  orange: "bg-orange-500",
 };
 
 function isoDate(d: Date): string {

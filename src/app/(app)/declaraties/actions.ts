@@ -34,7 +34,7 @@ const RECEIPT_SCHEMA = {
     vendor: { type: "string", description: "Naam van de winkel/leverancier; lege string als onbekend." },
     amount: { type: "number", description: "Totaalbedrag inclusief BTW in euro. 0 als onbekend." },
     vatAmount: { type: "number", description: "BTW-bedrag in euro. 0 als onbekend." },
-    category: { type: "string", description: "Eén van: REIS, MATERIAAL, VERBLIJF, ETEN, PARKEREN, OVERIG." },
+    category: { type: "string", description: "Eén van: REIS, MATERIAAL, VERBLIJF, ETEN, PARKEREN, TOL, OVERIG." },
     description: { type: "string", description: "Korte omschrijving van de uitgave." },
     notes: { type: "string", description: "Onzekerheden; anders lege string." },
   },
@@ -43,7 +43,7 @@ const RECEIPT_SCHEMA = {
 
 const SYSTEM_RECEIPT = `Je bent een nauwkeurige administratieve assistent bij Q4S, een Nederlands detacheringsbureau. Je leest binnengekomen bonnetjes/kassabonnen (declaraties) uit die gedetacheerde vakmensen indienen. Elke bon ziet er anders uit.
 
-Lees de bon zorgvuldig en haal de gegevens er exact uit. Verzin niets: laat een veld leeg (lege string) of 0 als je het niet zeker uit de bon kunt halen. Kies de meest passende categorie uit: REIS (brandstof/OV/km), MATERIAAL (gereedschap/materialen), VERBLIJF (hotel/overnachting), ETEN (eten & drinken), PARKEREN (parkeren/tol), OVERIG. Geef het resultaat terug volgens het JSON-schema.`;
+Lees de bon zorgvuldig en haal de gegevens er exact uit. Verzin niets: laat een veld leeg (lege string) of 0 als je het niet zeker uit de bon kunt halen. Kies de meest passende categorie uit: REIS (brandstof/tanken/OV/trein/km-vergoeding), MATERIAAL (gereedschap/materialen), VERBLIJF (hotel/overnachting), ETEN (eten & drinken/horeca), PARKEREN (parkeergeld/parkeergarage), TOL (tol- en tunnelgeld: Westerscheldetunnel, Kiltunnel, Liefkenshoektunnel, tolwegen, buitenlandse péage/Maut/tolvignet/telepass), OVERIG (rest). Let op: parkeren en tol zijn APARTE categorieën — een tunnel- of tolheffing hoort bij TOL, niet bij PARKEREN. Geef het resultaat terug volgens het JSON-schema.`;
 
 async function runExpenseExtraction(id: string): Promise<void> {
   const exp = await db.expense.findUnique({ where: { id } });
