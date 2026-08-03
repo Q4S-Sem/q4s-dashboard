@@ -22,6 +22,7 @@ export function ConfirmSubmit({
   size = "md",
   hidden,
   confirmLabel,
+  confirmVariant,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   id?: string;
@@ -36,11 +37,15 @@ export function ConfirmSubmit({
   hidden?: Record<string, string>;
   /** Tekst op de bevestig-knop in de modal (default afgeleid van de variant). */
   confirmLabel?: string;
+  /** Stijl van de bevestig-knop in de modal (default = `variant`). Zo kan de
+   *  trigger een subtiel ghost-icoon zijn terwijl de bevestiging rood/danger is. */
+  confirmVariant?: ButtonProps["variant"];
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const isDanger = variant === "danger";
+  const cv = confirmVariant ?? variant;
+  const isDanger = cv === "danger";
   const confirmText = confirmLabel ?? (isDanger ? "Verwijderen" : "Bevestigen");
 
   useEffect(() => setMounted(true), []);
@@ -108,7 +113,7 @@ export function ConfirmSubmit({
                 >
                   Annuleren
                 </button>
-                <SubmitButton variant={variant} size="md" pendingLabel="Bezig…">
+                <SubmitButton variant={cv} size="md" pendingLabel="Bezig…">
                   {confirmText}
                 </SubmitButton>
               </form>

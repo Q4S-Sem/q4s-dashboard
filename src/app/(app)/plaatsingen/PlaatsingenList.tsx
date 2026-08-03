@@ -73,27 +73,41 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
       key: "acties",
       header: "Acties",
       align: "right",
-      render: (r) => (
-        <div className="flex justify-end gap-1">
-          <Link
-            href={`/plaatsingen/${r.id}`}
-            className={buttonVariants({ variant: "ghost", size: "icon" })}
-            title="Openen om te bewerken"
-            aria-label="Plaatsing openen"
-          >
-            <Pencil className="h-4 w-4" />
-          </Link>
-          <ConfirmSubmit
-            action={deletePlacement}
-            id={r.id}
-            message={`Plaatsing van ${r.person} bij ${r.clientName} verwijderen? De bijbehorende urenstaten worden ook verwijderd.`}
-            variant="ghost"
-            size="icon"
-          >
-            <Trash2 className="h-4 w-4" />
-          </ConfirmSubmit>
-        </div>
-      ),
+      render: (r) => {
+        const active = r.status === "ACTIVE";
+        return (
+          <div className="flex justify-end gap-1">
+            <Link
+              href={`/plaatsingen/${r.id}`}
+              className={buttonVariants({ variant: "ghost", size: "icon" })}
+              title="Openen om te bewerken"
+              aria-label="Plaatsing openen"
+            >
+              <Pencil className="h-4 w-4" />
+            </Link>
+            <ConfirmSubmit
+              action={deletePlacement}
+              id={r.id}
+              message={
+                active
+                  ? `Let op: ${r.person} werkt nog actief via Q4S bij ${r.clientName}. Deze plaatsing verwijderen?`
+                  : `Plaatsing van ${r.person} bij ${r.clientName} verwijderen?`
+              }
+              description={
+                active
+                  ? "Dit is een lopende plaatsing. Alle urenstaten en facturatie-historie ervan worden óók verwijderd en dit kan niet ongedaan worden gemaakt. Is het werk klaar? Zet de plaatsing dan liever op ‘Beëindigd’ i.p.v. verwijderen."
+                  : "De bijbehorende urenstaten en facturatie-historie van deze plaatsing worden ook verwijderd. Dit kan niet ongedaan gemaakt worden."
+              }
+              confirmLabel="Toch verwijderen"
+              confirmVariant="danger"
+              variant="ghost"
+              size="icon"
+            >
+              <Trash2 className="h-4 w-4" />
+            </ConfirmSubmit>
+          </div>
+        );
+      },
     },
   ];
 
