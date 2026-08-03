@@ -24,6 +24,7 @@ import { PLACEMENT_STATUSES, DISCIPLINES, EMPLOYMENT_TYPES } from "@/lib/domain"
 import { cn, formatCurrency } from "@/lib/utils";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { quickCreateClient } from "../klanten/actions";
+import { lookupDutchAddress } from "../klanten/address-actions";
 
 // Snelle duur-knoppen: vullen de einddatum vanaf de startdatum. Handig voor korte
 // klussen (een week / paar weken) zodat je de einddatum niet los hoeft te kiezen.
@@ -479,6 +480,40 @@ export function PlacementForm({
     placement?.endDate ? new Date(placement.endDate).toISOString().slice(0, 10) : "",
   );
 
+  // ZZP-adres → postcode + plaats automatisch aanvullen via PDOK (gratis, geen
+  // sleutel). Schrijft rechtstreeks naar de (uncontrolled) inputs op hun id.
+  const [addrStatus, setAddrStatus] = useState<"idle" | "busy" | "done" | "none">("idle");
+  async function autofillZzpAddress(raw: string) {
+    const q = raw.trim();
+    if (q.length < 5 || !/\d/.test(q)) return; // geen huisnummer → niets op te zoeken
+    setAddrStatus("busy");
+    const res = await lookupDutchAddress(q);
+    if (!res) {
+      setAddrStatus("none");
+      return;
+    }
+    // Alleen vertrouwen als er een postcode in stond of de straat echt in de tekst
+    // voorkomt (voorkomt een verkeerde "beste gok" bij vage invoer).
+    const low = q.toLowerCase();
+    const pcInQuery = /\d{4}\s?[a-z]{2}/i.test(q);
+    const streetMatch = Boolean(res.street) && low.includes(res.street.toLowerCase());
+    if (!pcInQuery && !streetMatch) {
+      setAddrStatus("none");
+      return;
+    }
+    const setVal = (id: string, val: string) => {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      if (el && val) {
+        el.value = val;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    };
+    setVal("p-address", [res.street, res.houseNumber].filter(Boolean).join(" "));
+    setVal("p-postalCode", res.postcode);
+    setVal("p-city", res.city);
+    setAddrStatus("done");
+  }
+
   // The werknemer of an existing plaatsing is fixed and cannot be changed here.
   const currentPerson = placement
     ? consultants.find((c) => c.id === placement.consultantId)
@@ -656,8 +691,28 @@ export function PlacementForm({
                       <Field label="IBAN" htmlFor="p-iban" error={e.iban}>
                         <Input id="p-iban" name="iban" placeholder="NL00 BANK 0000 0000 00" />
                       </Field>
-                      <Field label="Adres" htmlFor="p-address" error={e.address}>
-                        <Input id="p-address" name="address" placeholder="Straat en huisnummer" />
+                      <Field
+                        label="Adres"
+                        htmlFor="p-address"
+                        hint={
+                          addrStatus === "busy"
+                            ? "Adres opzoeken…"
+                            : addrStatus === "done"
+                              ? "Postcode en plaats automatisch aangevuld ✓"
+                              : addrStatus === "none"
+                                ? "Niet gevonden — vul postcode en plaats zelf in."
+                                : "Typ straat + huisnummer — postcode en plaats worden automatisch aangevuld."
+                        }
+                        error={e.address}
+                      >
+                        <Input
+                          id="p-address"
+                          name="address"
+                          placeholder="Straat en huisnummer"
+                          autoComplete="off"
+                          onChange={() => addrStatus !== "idle" && setAddrStatus("idle")}
+                          onBlur={(ev) => autofillZzpAddress(ev.target.value)}
+                        />
                       </Field>
                       <div className="grid grid-cols-2 gap-3">
                         <Field label="Postcode" htmlFor="p-postalCode" error={e.postalCode}>
