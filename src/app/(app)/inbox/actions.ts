@@ -8,7 +8,7 @@ import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { ensureAiKeysLoaded } from "@/lib/ai-keys";
 import { saveInboxBytes, deleteInboxUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
 import { isSpreadsheet } from "@/lib/excel";
-import { startOfISOWeek, parseHours } from "@/lib/utils";
+import { startOfISOWeek, parseHours, round2, formatHours, formatDate } from "@/lib/utils";
 import { runInboxExtraction } from "@/lib/inbox-extract";
 import { pullInboxMail } from "@/lib/mail-intake";
 
@@ -106,6 +106,73 @@ export async function extractInbox(formData: FormData) {
 
 // ---------- Confirm into a real Timesheet ----------
 
+/**
+ * Leer-lus: vergelijk wat de AI las met wat er bij het bevestigen is vastgezet,
+ * en bewaar de verschillen als aandachtspunten bij de afzender (SenderProfile).
+ * Die worden bij een volgende staat van dezelfde afzender aan de AI meegegeven.
+ * Best-effort: mag de bevestiging nooit blokkeren.
+ */
+async function recordCorrection(
+  item: {
+    senderEmail: string | null;
+    extractedName: string | null;
+    extractedTotalHours: number | null;
+    extractedKilometers: number | null;
+    extractedOvertimeHours: number | null;
+    extractedWeekStart: Date | null;
+  },
+  confirmed: { hours: number; km: number | null; overtime: number | null; monday: Date },
+) {
+  const key = item.senderEmail?.trim().toLowerCase();
+  if (!key) return; // leren gebeurt per e-mailafzender (bekend bij de mail-intake)
+
+  const lines: string[] = [];
+  const aiH = item.extractedTotalHours ?? 0;
+  if (Math.abs(aiH - confirmed.hours) > 0.01) {
+    lines.push(
+      `Uren: AI las ${formatHours(aiH)} u, moest ${formatHours(confirmed.hours)} u zijn — tel per dag ALLE reguliere regels op (overuren erbuiten).`,
+    );
+  }
+  const aiKm = item.extractedKilometers ?? 0;
+  const cKm = confirmed.km ?? 0;
+  if (Math.abs(aiKm - cKm) > 0.01) {
+    lines.push(
+      `Kilometers: AI las ${formatHours(aiKm)} km, moest ${formatHours(cKm)} km zijn — km staan mogelijk in een apart reisblok of los totaal dat gemist werd.`,
+    );
+  }
+  const aiOt = item.extractedOvertimeHours ?? 0;
+  const cOt = confirmed.overtime ?? 0;
+  if (Math.abs(aiOt - cOt) > 0.01) {
+    lines.push(
+      `Overuren: AI las ${formatHours(aiOt)} u, moest ${formatHours(cOt)} u zijn — kijk naar de aparte overuren-sectie.`,
+    );
+  }
+  if (
+    item.extractedWeekStart &&
+    startOfISOWeek(item.extractedWeekStart).getTime() !== confirmed.monday.getTime()
+  ) {
+    lines.push(
+      `Week: AI koos de week van ${formatDate(item.extractedWeekStart)}, moest week van ${formatDate(confirmed.monday)} zijn — let op het jaar en de datums.`,
+    );
+  }
+  if (lines.length === 0) return; // niks te leren
+
+  const existing = await db.senderProfile.findUnique({ where: { key } });
+  const prev = existing?.hints ? existing.hints.split("\n").filter(Boolean) : [];
+  // Nieuwe aandachtspunten vooraan, dedup, cap op 8 regels / ~1200 tekens.
+  const merged = [...lines, ...prev.filter((p) => !lines.includes(p))].slice(0, 8);
+  const hints = merged.join("\n").slice(0, 1200);
+  await db.senderProfile.upsert({
+    where: { key },
+    update: {
+      hints,
+      corrections: { increment: 1 },
+      label: item.extractedName ?? existing?.label ?? null,
+    },
+    create: { key, hints, corrections: 1, label: item.extractedName ?? null },
+  });
+}
+
 export async function confirmInbox(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const placementId = String(formData.get("placementId") ?? "");
@@ -165,6 +232,15 @@ export async function confirmInbox(formData: FormData) {
       extractedWeekStart: monday,
     },
   });
+
+  // Leer-lus: onthoud wat de AI anders had dan de bevestigde waarden (per afzender).
+  const confirmedHours = round2(entries.reduce((s, e) => s + e.hours, 0));
+  await recordCorrection(item!, {
+    hours: confirmedHours,
+    km: kilometers,
+    overtime: overtimeHours,
+    monday,
+  }).catch(() => {});
 
   revalidatePath("/inbox");
   revalidatePath("/uren");

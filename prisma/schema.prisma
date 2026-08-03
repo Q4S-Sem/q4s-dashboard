@@ -653,6 +653,14 @@ model TimesheetInbox {
   extractedJson       String?
   aiNotes             String?
 
+  // Controle-vangnet: betrouwbaarheid + of een mens moet nakijken.
+  /// high | medium | low — hoe zeker de AI was over deze uitlezing.
+  confidence          String?
+  /// Moet dit worden nagekeken vóór bevestigen (afwijking/twijfel/geen match)?
+  needsReview         Boolean @default(false)
+  /// Controlevlaggen als JSON: [{ level: 'error'|'warn', message }].
+  reviewFlags         String?
+
   // Matching + result.
   consultantId  String?
   placementId   String?
@@ -667,6 +675,21 @@ model TimesheetInbox {
 
   @@index([status])
   @@index([extractedWeekStart])
+}
+
+/// Leer-lus: per afzender onthouden waar het uitlezen eerder misging, zodat de AI
+/// die aandachtspunten bij een volgende staat van dezelfde afzender meekrijgt.
+/// De AI zelf leert niet; het SYSTEEM onthoudt de correcties en voedt ze terug.
+model SenderProfile {
+  /// Genormaliseerde sleutel = het (lowercase) afzender-e-mailadres.
+  key         String   @id
+  /// Naam ter herkenning (laatst gezien).
+  label       String?
+  /// Opgebouwde aandachtspunten uit eerdere correcties (nieuwe-regel-gescheiden).
+  hints       String   @default("")
+  /// Aantal verwerkte correcties.
+  corrections Int      @default(0)
+  updatedAt   DateTime @default(now()) @updatedAt
 }
 
 /// A self-billing PURCHASE invoice: what Q4S pays a consultant (cost side),

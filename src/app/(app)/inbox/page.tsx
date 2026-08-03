@@ -15,7 +15,7 @@ import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { StatusBadge } from "@/components/ui/badge";
+import { StatusBadge, Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -238,7 +238,12 @@ export default async function InboxPage({
                     <StatusBadge options={INBOX_SOURCES} value={it.source} />
                   </TD>
                   <TD>
-                    <StatusBadge options={INBOX_STATUSES} value={it.status} />
+                    <div className="flex items-center gap-1.5">
+                      <StatusBadge options={INBOX_STATUSES} value={it.status} />
+                      {it.needsReview && it.status === "EXTRACTED" && (
+                        <Badge color="amber">Nakijken</Badge>
+                      )}
+                    </div>
                   </TD>
                 </TR>
               ))}
@@ -314,7 +319,12 @@ export default async function InboxPage({
                     <StatusBadge options={INBOX_SOURCES} value={it.source} />
                   </TD>
                   <TD>
-                    <StatusBadge options={INBOX_STATUSES} value={it.status} />
+                    <div className="flex items-center gap-1.5">
+                      <StatusBadge options={INBOX_STATUSES} value={it.status} />
+                      {it.needsReview && it.status === "EXTRACTED" && (
+                        <Badge color="amber">Nakijken</Badge>
+                      )}
+                    </div>
                   </TD>
                 </TR>
               ))}

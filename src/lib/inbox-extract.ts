@@ -25,6 +25,7 @@ type Extracted = {
   overtimeHours: number;
   project: string;
   notes: string;
+  confidence: string;
 };
 
 const EXTRACT_SCHEMA = {
@@ -55,8 +56,9 @@ const EXTRACT_SCHEMA = {
     overtimeHours: { type: "number", description: "Weektotaal aan OVERUREN/meeruren uit de aparte overuren-sectie (bv. 'Overtime Hrs. Total'). 0 als er geen overuren zijn." },
     project: { type: "string", description: "Project, opdrachtgever, locatie of uurcode indien vermeld (bv. 'HSM Stormpolder', 'Mistras'); anders lege string." },
     notes: { type: "string", description: "Onzekerheden of opvallende zaken, ALTIJD in het Nederlands (ook bij een Engelstalige staat); anders lege string." },
+    confidence: { type: "string", enum: ["high", "medium", "low"], description: "Hoe zeker ben je over deze uitlezing? 'low' als de opmaak onduidelijk was, cijfers slecht leesbaar zijn, of je moest gokken; 'high' als alles helder en eenduidig was; anders 'medium'." },
   },
-  required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes"],
+  required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes", "confidence"],
 };
 
 const SYSTEM_EXTRACT = `Je bent een uiterst nauwkeurige administratieve assistent bij Q4S, een Nederlands detacheringsbureau. Je leest binnengekomen WEEKstaten (timesheets) uit die door gedetacheerde vakmensen worden aangeleverd. Elke aanleverder gebruikt een eigen opmaak; herken ook het Q4S-formulier (FO-Q4S-18).
@@ -166,8 +168,22 @@ export async function runInboxExtraction(id: string): Promise<void> {
     if (!sheetText.trim()) throw new Error("Leeg of onleesbaar werkblad.");
   }
 
+  // Leer-lus: aandachtspunten uit eerdere correcties voor deze afzender meegeven,
+  // zodat de AI die punten (die eerder misgingen) extra controleert.
+  const senderKey = item.senderEmail?.trim().toLowerCase() || null;
+  let senderHints = "";
+  if (senderKey) {
+    const profile = await db.senderProfile.findUnique({ where: { key: senderKey } });
+    if (profile?.hints.trim()) senderHints = profile.hints.trim();
+  }
+
   const now = new Date();
-  const system = SYSTEM_EXTRACT + dateContext(now);
+  const system =
+    SYSTEM_EXTRACT +
+    dateContext(now) +
+    (senderHints
+      ? `\n\nLET OP — AANDACHTSPUNTEN bij deze afzender (uit eerdere correcties; deze gingen eerder mis, controleer ze hier extra — laat je niet leiden naar één vast getal, kijk gewoon extra goed):\n${senderHints}`
+      : "");
 
   const data = spreadsheet
     ? await aiJSON<Extracted>({
@@ -237,6 +253,47 @@ export async function runInboxExtraction(id: string): Promise<void> {
     }
   }
 
+  // Controle-vangnet: harde checks → vlaggen + 'moet nagekeken worden'.
+  const confidence = ["high", "medium", "low"].includes((data.confidence ?? "").toLowerCase())
+    ? (data.confidence as string).toLowerCase()
+    : "medium";
+  const flags: { level: "error" | "warn"; message: string }[] = [];
+  const hoursMismatch = statedHours != null && daySum > 0 && Math.abs(statedHours - daySum) > 0.01;
+  if (hoursMismatch) {
+    flags.push({
+      level: "warn",
+      message: `Opgeteld dagtotaal (${formatHours(daySum)} u) wijkt af van het vermelde totaal (${formatHours(statedHours!)} u).`,
+    });
+  }
+  const kmVal = typeof data.kilometers === "number" ? data.kilometers : 0;
+  const kmMismatch = statedKm != null && kmVal > 0 && Math.abs(statedKm - kmVal) > 0.01;
+  if (kmMismatch) {
+    flags.push({
+      level: "warn",
+      message: `Kilometer-optelling (${formatHours(kmVal)} km) wijkt af van het vermelde totaal (${formatHours(statedKm!)} km).`,
+    });
+  }
+  if (!finalHours || finalHours <= 0) {
+    flags.push({ level: "error", message: "Geen gewerkte uren gevonden — controleer de staat." });
+  } else if (finalHours > 80) {
+    flags.push({
+      level: "warn",
+      message: `Ongebruikelijk veel uren (${formatHours(finalHours)} u) voor één week — controleer.`,
+    });
+  }
+  if (!consultantId) {
+    flags.push({ level: "warn", message: "Geen medewerker automatisch gematcht — controleer de naam/plaatsing." });
+  }
+  if (confidence === "low") {
+    flags.push({ level: "warn", message: "De AI was onzeker over deze uitlezing — controleer alles goed." });
+  }
+  const needsReview =
+    flags.some((f) => f.level === "error") ||
+    hoursMismatch ||
+    kmMismatch ||
+    !consultantId ||
+    confidence === "low";
+
   await db.timesheetInbox.update({
     where: { id },
     data: {
@@ -249,6 +306,9 @@ export async function runInboxExtraction(id: string): Promise<void> {
         typeof data.overtimeHours === "number" && data.overtimeHours > 0 ? data.overtimeHours : null,
       extractedJson: JSON.stringify(data),
       aiNotes,
+      confidence,
+      needsReview,
+      reviewFlags: flags.length ? JSON.stringify(flags) : null,
       consultantId,
       placementId,
     },

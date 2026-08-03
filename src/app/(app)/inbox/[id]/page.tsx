@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Sparkles, ExternalLink, CheckCircle2, FileSpreadsheet } from "lucide-react";
+import {
+  ArrowLeft,
+  Sparkles,
+  ExternalLink,
+  CheckCircle2,
+  FileSpreadsheet,
+  AlertTriangle,
+} from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -41,6 +48,21 @@ function parseReported(extractedJson: string | null): { hours: number | null; km
   }
 }
 
+type ReviewFlag = { level: "error" | "warn"; message: string };
+
+/** De controlevlaggen uit het vangnet (JSON) veilig inlezen. */
+function parseFlags(reviewFlags: string | null): ReviewFlag[] {
+  if (!reviewFlags) return [];
+  try {
+    const p = JSON.parse(reviewFlags);
+    return Array.isArray(p) ? (p as ReviewFlag[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+const CONF_LABEL: Record<string, string> = { high: "hoog", medium: "gemiddeld", low: "laag" };
+
 /** Best-effort map of the extracted days onto Mon..Sun (index 0..6).
  *  Verdeling + robuustheid zit in {@link distributeDayHours}. */
 function prefillDays(
@@ -80,6 +102,8 @@ export default async function InboxDetailPage({
   const monday = item.extractedWeekStart ? new Date(item.extractedWeekStart) : null;
   const dayHours = prefillDays(item.extractedJson, monday);
   const reported = parseReported(item.extractedJson);
+  const flags = parseFlags(item.reviewFlags);
+  const hasError = flags.some((f) => f.level === "error");
   const isDone = item.status === "CONFIRMED";
   const title = item.consultant
     ? `${item.consultant.firstName} ${item.consultant.lastName}`
@@ -139,6 +163,48 @@ export default async function InboxDetailPage({
           >
             Naar urenstaat &amp; facturen
           </Link>
+        </div>
+      )}
+
+      {/* Controle-vangnet: afwijkingen/twijfel → eerst even nakijken. */}
+      {!isDone && flags.length > 0 && (
+        <div
+          className={cn(
+            "rounded-xl border p-4",
+            hasError ? "border-red-300 bg-red-50" : "border-amber-300 bg-amber-50",
+          )}
+        >
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-2 text-sm font-semibold",
+              hasError ? "text-red-800" : "text-amber-900",
+            )}
+          >
+            <AlertTriangle className="h-4 w-4" /> Even nakijken vóór je bevestigt
+            {item.confidence && (
+              <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-medium">
+                zekerheid: {CONF_LABEL[item.confidence] ?? item.confidence}
+              </span>
+            )}
+          </div>
+          <ul className="mt-2 space-y-1 text-sm">
+            {flags.map((f, i) => (
+              <li
+                key={i}
+                className={cn(
+                  "flex items-start gap-1.5",
+                  f.level === "error" ? "text-red-700" : "text-amber-800",
+                )}
+              >
+                <span aria-hidden>•</span>
+                <span>{f.message}</span>
+              </li>
+            ))}
+          </ul>
+          <p className={cn("mt-2 text-xs", hasError ? "text-red-600" : "text-amber-700")}>
+            Controleer de gemarkeerde punten hieronder en corrigeer waar nodig. Jouw correctie wordt
+            onthouden, zodat de AI hier bij een volgende staat van deze afzender extra op let.
+          </p>
         </div>
       )}
 
