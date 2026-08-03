@@ -47,6 +47,15 @@ const NewPersonSchema = z.object({
   phone: z.string().optional(),
   bsn: z.string().optional(),
   nationality: z.string().optional(),
+  // ZZP-/bedrijfsgegevens (de ZZP'er is zijn eigen bedrijf) — voor de inkoop-
+  // factuur en de betaling.
+  companyName: z.string().optional(),
+  kvkNumber: z.string().optional(),
+  vatNumber: z.string().optional(),
+  iban: z.string().optional(),
+  address: z.string().optional(),
+  postalCode: z.string().optional(),
+  city: z.string().optional(),
 });
 
 // Core placement DB payload (without consultantId), undefined optionals → null.
@@ -130,6 +139,13 @@ export async function createPlacement(
           phone: p.phone ?? null,
           bsn: p.bsn ?? null,
           nationality: p.nationality ?? null,
+          companyName: p.companyName ?? null,
+          kvkNumber: p.kvkNumber ?? null,
+          vatNumber: p.vatNumber ?? null,
+          iban: p.iban ?? null,
+          address: p.address ?? null,
+          postalCode: p.postalCode ?? null,
+          city: p.city ?? null,
         },
       });
       const placement = await tx.placement.create({

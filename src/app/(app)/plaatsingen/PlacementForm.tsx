@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState, type ReactNode, type KeyboardEvent } from "react";
-import Link from "next/link";
 import type { Placement } from "@prisma/client";
 import {
   FileText,
@@ -19,7 +18,7 @@ import { Field, Input, Select, Textarea, Label } from "@/components/ui/field";
 import { SearchSelect } from "@/components/ui/search-select";
 import { NumberInput } from "@/components/ui/number-input";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { buttonVariants } from "@/components/ui/button";
+import { ConfirmCancel } from "@/components/confirm-cancel";
 import { PLACEMENT_STATUSES, DISCIPLINES, EMPLOYMENT_TYPES } from "@/lib/domain";
 import { cn, formatCurrency } from "@/lib/utils";
 import { emptyFormState, type FormState } from "@/lib/form";
@@ -452,9 +451,7 @@ export function PlacementForm({
 
       {/* Snel opslaan — blijft bovenaan in beeld tijdens het scrollen. */}
       <div className="sticky top-16 z-20 mb-4 flex items-center justify-end gap-2 rounded-lg border border-slate-200 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur">
-        <Link href={cancelHref} className={buttonVariants({ variant: "outline", size: "sm" })}>
-          Annuleren
-        </Link>
+        <ConfirmCancel href={cancelHref} size="sm" />
         <SubmitButton>{submitLabel}</SubmitButton>
       </div>
 
@@ -593,6 +590,41 @@ export function PlacementForm({
                       <Input id="nationality" name="nationality" />
                     </Field>
                   </div>
+
+                  <div className="border-t border-slate-100 pt-4">
+                    <p className="mb-2.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Bedrijfsgegevens{" "}
+                      <span className="font-normal normal-case text-slate-400">
+                        (ZZP — voor de inkoopfactuur &amp; betaling)
+                      </span>
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Bedrijfsnaam" htmlFor="p-companyName" error={e.companyName}>
+                        <Input id="p-companyName" name="companyName" placeholder="Bijv. Balder Quality Service" />
+                      </Field>
+                      <Field label="KvK-nummer" htmlFor="p-kvk" error={e.kvkNumber}>
+                        <Input id="p-kvk" name="kvkNumber" placeholder="8 cijfers" />
+                      </Field>
+                      <Field label="BTW-nummer" htmlFor="p-vat" error={e.vatNumber}>
+                        <Input id="p-vat" name="vatNumber" placeholder="NL000000000B00" />
+                      </Field>
+                      <Field label="IBAN" htmlFor="p-iban" error={e.iban}>
+                        <Input id="p-iban" name="iban" placeholder="NL00 BANK 0000 0000 00" />
+                      </Field>
+                      <Field label="Adres" htmlFor="p-address" error={e.address}>
+                        <Input id="p-address" name="address" placeholder="Straat en huisnummer" />
+                      </Field>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Postcode" htmlFor="p-postalCode" error={e.postalCode}>
+                          <Input id="p-postalCode" name="postalCode" placeholder="1234 AB" />
+                        </Field>
+                        <Field label="Plaats" htmlFor="p-city" error={e.city}>
+                          <Input id="p-city" name="city" />
+                        </Field>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="border-t border-slate-100 pt-4">
                     <p className="mb-2.5 text-xs font-medium uppercase tracking-wide text-slate-500">
                       Documenten{" "}
@@ -777,9 +809,7 @@ export function PlacementForm({
           </Field>
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
-          <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>
-            Annuleren
-          </Link>
+          <ConfirmCancel href={cancelHref} />
           <SubmitButton>{submitLabel}</SubmitButton>
         </CardFooter>
       </Card>
