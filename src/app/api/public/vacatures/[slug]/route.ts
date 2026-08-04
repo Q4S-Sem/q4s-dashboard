@@ -1,6 +1,13 @@
 import { db } from "@/lib/db";
 import { DISCIPLINES } from "@/lib/domain";
-import { corsHeaders, dashboardBaseUrl, splitLines } from "@/lib/public-api";
+import { getCompanySettings } from "@/lib/settings";
+import {
+  corsHeaders,
+  dashboardBaseUrl,
+  splitLines,
+  composeDescriptionHtml,
+  buildJobPosting,
+} from "@/lib/public-api";
 
 /**
  * Publieke vacature-DETAIL voor de website (q4s.nl).
@@ -42,6 +49,34 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const niceToHave = splitLines(v.niceToHave);
   const hasStructured = Boolean(v.summary) || responsibilities.length > 0 || requirements.length > 0;
 
+  // SEO: semantische HTML + schema.org JobPosting (Google for Jobs), correct
+  // opgebouwd zodat q4s.nl 'm alleen hoeft te injecteren/renderen.
+  const settings = await getCompanySettings();
+  const siteUrl = (process.env.PUBLIC_SITE_ORIGIN?.trim() || "https://www.q4s.nl").replace(/\/+$/, "");
+  const descriptionHtml = composeDescriptionHtml({
+    summary: v.summary ?? null,
+    responsibilities,
+    requirements,
+    niceToHave,
+  });
+  const jobPosting = buildJobPosting(
+    {
+      slug: v.slug,
+      title: v.title,
+      descriptionHtml,
+      location: v.location ?? null,
+      employmentType: v.employmentType ?? null,
+      publishedAt: v.publishedAt ?? null,
+    },
+    {
+      name: settings.companyName || "Q4S",
+      url: settings.website?.trim() || siteUrl,
+      fallbackCity: settings.city || "",
+      fallbackCountry: settings.country || "Nederland",
+    },
+    siteUrl,
+  );
+
   const vacature = {
     slug: v.slug,
     title: v.title,
@@ -57,6 +92,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     niceToHave,
     // Volledige verbeterde tekst als er geen gestructureerde secties zijn.
     fullText: !hasStructured ? v.improvedText ?? null : null,
+    // SEO-klaar: nette HTML-omschrijving + injecteerbare JobPosting-structured-data.
+    descriptionHtml,
+    jobPosting,
     publishedAt: v.publishedAt?.toISOString() ?? null,
     url: `${dashboardBaseUrl()}/vacature/${v.slug}`,
   };
