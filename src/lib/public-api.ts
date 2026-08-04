@@ -11,6 +11,9 @@ export function corsHeaders(req: Request): Record<string, string> {
     "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type",
     "access-control-max-age": "86400",
+    // Nooit cachen: een gepauzeerde/verwijderde vacature moet meteen van de feed
+    // af zijn (anders blijft 'ie via een CDN/HTTP-cache hangen op de website).
+    "cache-control": "no-store, max-age=0",
     vary: "Origin",
   };
 }
