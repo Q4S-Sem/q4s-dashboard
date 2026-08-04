@@ -1760,10 +1760,21 @@ model CrmSettings {
 /// .env heeft voorrang; anders wint deze DB-waarde.
 model AiKey {
   id        String   @id @default(cuid())
-  /// deepseek | gemini | anthropic
+  /// deepseek | gemini | anthropic | hermes
   provider  String   @unique
   apiKey    String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// AI-configuratie als key/value (vanuit de Instellingen-hub), naast de sleutels.
+/// Bijv. welke tekst-provider actief is (AI_PROVIDER) en het Hermes-endpoint/model
+/// (HERMES_BASE_URL/HERMES_MODEL). Wordt bij het opstarten in process.env geladen,
+/// zodat ai.ts dynamisch de gekozen provider/endpoint pakt zonder env-gedoe.
+model AiSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
   updatedAt DateTime @updatedAt
 }
 

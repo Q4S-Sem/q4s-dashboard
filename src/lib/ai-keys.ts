@@ -27,6 +27,27 @@ const BOOT_ENV: Record<AiProviderKey, string | undefined> = {
   hermes: process.env.HERMES_API_KEY?.trim() || undefined,
 };
 
+// AI-CONFIG (naast de sleutels): env-namen die vanuit de Instellingen-hub via de DB
+// (model AiSetting) beheerd mogen worden — welke tekst-provider actief is en het
+// Hermes-endpoint/model. Zo hoeft niemand env-vars op Vercel te zetten.
+export const AI_SETTING_KEYS = [
+  "AI_PROVIDER",
+  "AI_PROVIDER_FAST",
+  "HERMES_BASE_URL",
+  "HERMES_MODEL",
+  "HERMES_MODEL_FAST",
+] as const;
+export type AiSettingKey = (typeof AI_SETTING_KEYS)[number];
+
+// Pristine .env-waarden van die configs — .env houdt altijd voorrang op de DB.
+const BOOT_SETTING: Record<string, string | undefined> = Object.fromEntries(
+  AI_SETTING_KEYS.map((k) => [k, process.env[k]?.trim() || undefined]),
+);
+
+function isSettingKey(v: string): v is AiSettingKey {
+  return (AI_SETTING_KEYS as readonly string[]).includes(v);
+}
+
 export const AI_KEY_META: { provider: AiProviderKey; label: string; hint: string; help: string }[] = [
   {
     provider: "deepseek",
@@ -50,7 +71,7 @@ export const AI_KEY_META: { provider: AiProviderKey; label: string; hint: string
     provider: "hermes",
     label: "Nous Hermes",
     hint: "Tekst/agent-AI — open model (OpenRouter of eigen server)",
-    help: "Open model voor tekst- en agent-taken (sourcing, matching, teksten, mail-triage). Standaard via OpenRouter; endpoint en model stel je in met HERMES_BASE_URL / HERMES_MODEL. Activeren als hoofd-tekst-AI: zet AI_PROVIDER=hermes.",
+    help: "Open model voor tekst- en agent-taken (sourcing, matching, teksten, mail-triage). Standaard via OpenRouter; endpoint + model stel je hieronder in bij 'AI-motor'. Activeren doe je daar met de keuzeknop 'Actieve tekst-AI'.",
   },
 ];
 
@@ -65,11 +86,18 @@ function isProvider(v: string): v is AiProviderKey {
  * .env-waarde blijft staan (die wint); alleen ontbrekende worden aangevuld.
  */
 export async function loadAiKeysIntoEnv(): Promise<void> {
-  const keys = await db.aiKey.findMany();
+  const [keys, settings] = await Promise.all([db.aiKey.findMany(), db.aiSetting.findMany()]);
   for (const k of keys) {
     if (!isProvider(k.provider) || !k.apiKey) continue;
     const varName = AI_KEY_ENV[k.provider];
     if (!process.env[varName]) process.env[varName] = k.apiKey;
+  }
+  for (const s of settings) {
+    if (!isSettingKey(s.key) || !s.value) continue;
+    // .env wint (BOOT_SETTING); anders altijd de DB-waarde toepassen — ook op een
+    // warme instance, zodat een UI-wijziging binnen ~60s doorwerkt (ensureAiKeysLoaded).
+    if (BOOT_SETTING[s.key]) continue;
+    process.env[s.key] = s.value;
   }
 }
 
@@ -159,6 +187,39 @@ export async function setAiKey(provider: string, key: string | null): Promise<vo
   } else {
     delete process.env[varName];
   }
+}
+
+/** Huidige AI-config voor de UI (uit .env als die er is, anders de DB-waarde). */
+export async function getAiConfig(): Promise<Record<AiSettingKey, string>> {
+  const rows = await db.aiSetting.findMany();
+  const byKey = new Map(rows.map((r) => [r.key, r.value]));
+  const out = {} as Record<AiSettingKey, string>;
+  for (const k of AI_SETTING_KEYS) out[k] = BOOT_SETTING[k] ?? byKey.get(k) ?? "";
+  return out;
+}
+
+/** True als deze config-waarde vast in .env staat (dan niet aanpasbaar via UI). */
+export function isSettingFromEnv(key: AiSettingKey): boolean {
+  return Boolean(BOOT_SETTING[key]);
+}
+
+/** Bewaar (of wis) een AI-config-waarde + zet 'm meteen live in env. */
+export async function setAiSetting(key: string, value: string | null): Promise<void> {
+  if (!isSettingKey(key)) return;
+  const trimmed = value?.trim() || null;
+  if (trimmed) {
+    await db.aiSetting.upsert({
+      where: { key },
+      create: { key, value: trimmed },
+      update: { value: trimmed },
+    });
+  } else {
+    await db.aiSetting.deleteMany({ where: { key } });
+  }
+  // .env houdt voorrang: raak het draaiende proces niet aan als de waarde uit .env komt.
+  if (BOOT_SETTING[key]) return;
+  if (trimmed) process.env[key] = trimmed;
+  else delete process.env[key];
 }
 
 // ---------------------------------------------------------------------------

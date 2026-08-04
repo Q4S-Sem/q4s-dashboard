@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { KeyRound, CheckCircle2, ShieldAlert, Info, BarChart3, Save, Trash2 } from "lucide-react";
+import { KeyRound, CheckCircle2, ShieldAlert, Info, BarChart3, Save, Trash2, Cpu } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Field, Input } from "@/components/ui/field";
+import { Field, Input, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
-import { getKeyStatuses } from "@/lib/ai-keys";
-import { saveAiKey, clearAiKey } from "./actions";
+import { getKeyStatuses, getAiConfig, isSettingFromEnv } from "@/lib/ai-keys";
+import { aiProviderSummary } from "@/lib/ai";
+import { saveAiKey, clearAiKey, saveAiConfig } from "./actions";
 import { TestConnectionButton } from "./TestConnectionButton";
 
 export const metadata = { title: "API-sleutels" };
@@ -18,8 +19,10 @@ export default async function ApiSleutelsPage({
   searchParams: Promise<{ ok?: string; cleared?: string }>;
 }) {
   const sp = await searchParams;
-  const statuses = await getKeyStatuses();
+  const [statuses, cfg] = await Promise.all([getKeyStatuses(), getAiConfig()]);
   const configured = statuses.filter((s) => s.configured).length;
+  const summary = aiProviderSummary();
+  const providerLocked = isSettingFromEnv("AI_PROVIDER");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -52,6 +55,71 @@ export default async function ApiSleutelsPage({
           heeft voorrang op wat je hier invult.
         </span>
       </p>
+
+      {/* AI-motor: welke tekst-AI draait + Hermes-endpoint/model — klik-en-klaar. */}
+      <Card>
+        <CardContent className="space-y-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+              <Cpu className="h-5 w-5" />
+            </span>
+            <div>
+              <div className="font-semibold text-slate-900">AI-motor</div>
+              <p className="text-xs text-slate-500">
+                Welke AI draait de tekst- en agent-taken (sourcing, matching, teksten, mail-triage). Beeld/OCR
+                (CV&apos;s, timesheets, bonnetjes) loopt altijd via Gemini.
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                Nu actief: <span className="font-medium text-slate-600">{summary}</span>
+              </p>
+            </div>
+          </div>
+
+          {providerLocked ? (
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+              De actieve provider is vastgezet via <code className="rounded bg-slate-100 px-1">.env</code>{" "}
+              (<code className="rounded bg-slate-100 px-1">AI_PROVIDER</code>) en kan hier niet gewijzigd worden.
+            </p>
+          ) : (
+            <form action={saveAiConfig} className="space-y-3">
+              <Field label="Actieve tekst-AI" htmlFor="textProvider">
+                <Select id="textProvider" name="textProvider" defaultValue={cfg.AI_PROVIDER || "deepseek"}>
+                  <option value="deepseek">DeepSeek — goedkoop &amp; snel (standaard)</option>
+                  <option value="anthropic">Anthropic Claude — krachtig, duurder</option>
+                  <option value="hermes">Nous Hermes — open model (OpenRouter of eigen server)</option>
+                  <option value="ollama">Ollama — lokaal draaiend</option>
+                </Select>
+              </Field>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Hermes-endpoint (optioneel)" htmlFor="hermesBaseUrl">
+                  <Input
+                    id="hermesBaseUrl"
+                    name="hermesBaseUrl"
+                    defaultValue={cfg.HERMES_BASE_URL}
+                    placeholder="https://openrouter.ai/api/v1"
+                  />
+                </Field>
+                <Field label="Hermes-model (optioneel)" htmlFor="hermesModel">
+                  <Input
+                    id="hermesModel"
+                    name="hermesModel"
+                    defaultValue={cfg.HERMES_MODEL}
+                    placeholder="nousresearch/hermes-4-70b"
+                  />
+                </Field>
+              </div>
+              <p className="text-xs text-slate-400">
+                De Hermes-velden gelden alleen als je Hermes kiest. Leeg = standaard (OpenRouter). Voor je eigen
+                EU-server: zet hier je endpoint-URL (dan mag Hermes ook persoonsgegevens verwerken met{" "}
+                <code className="rounded bg-slate-100 px-1">HERMES_PERSONAL_DATA=1</code>).
+              </p>
+              <SubmitButton pendingLabel="Opslaan…">
+                <Save className="h-4 w-4" /> AI-motor opslaan
+              </SubmitButton>
+            </form>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="space-y-4">
         {statuses.map((s) => (

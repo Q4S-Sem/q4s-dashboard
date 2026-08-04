@@ -22,11 +22,15 @@ function pickProvider(value: string | undefined, fallback: AiProvider): AiProvid
     : fallback;
 }
 
-export const AI_PROVIDER: AiProvider = pickProvider(process.env.AI_PROVIDER, "deepseek");
-export const AI_PROVIDER_FAST: AiProvider = pickProvider(
-  process.env.AI_PROVIDER_FAST,
-  AI_PROVIDER,
-);
+// Dynamisch (functie i.p.v. const): pakt een via de Instellingen-hub gekozen
+// provider op zodra die in process.env gehydrateerd is (zie ai-keys.ts), zonder
+// herstart. Standaard DeepSeek.
+export function activeTextProvider(): AiProvider {
+  return pickProvider(process.env.AI_PROVIDER, "deepseek");
+}
+export function activeTextProviderFast(): AiProvider {
+  return pickProvider(process.env.AI_PROVIDER_FAST, activeTextProvider());
+}
 
 // DeepSeek (OpenAI-compatibele API). Zeer lage kosten per miljoen tokens.
 // `deepseek-chat` = algemeen (V3); `deepseek-reasoner` = redeneren (R1).
@@ -41,12 +45,13 @@ export const DEEPSEEK_MODEL_FAST = process.env.DEEPSEEK_MODEL_FAST ?? DEEPSEEK_M
 // Standaard via OpenRouter; wijs HERMES_BASE_URL naar je eigen (EU-)server om
 // zelf te hosten. Alleen de API-sleutel staat in Instellingen; endpoint + model
 // via env, zodat "OpenRouter nu / self-host later" één env-wijziging is.
-const HERMES_BASE_URL = (process.env.HERMES_BASE_URL ?? "https://openrouter.ai/api/v1").replace(
-  /\/+$/,
-  "",
-);
-export const HERMES_MODEL = process.env.HERMES_MODEL ?? "nousresearch/hermes-4-70b";
-export const HERMES_MODEL_FAST = process.env.HERMES_MODEL_FAST ?? HERMES_MODEL;
+function hermesBaseUrl(): string {
+  return (process.env.HERMES_BASE_URL ?? "https://openrouter.ai/api/v1").replace(/\/+$/, "");
+}
+function hermesModel(tier: Tier): string {
+  const main = process.env.HERMES_MODEL ?? "nousresearch/hermes-4-70b";
+  return tier === "fast" ? process.env.HERMES_MODEL_FAST ?? main : main;
+}
 
 // Anthropic models. Defaults: most capable for writing, cheapest for bulk work.
 export const AI_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-4-8";
@@ -95,7 +100,7 @@ function providerReady(p: AiProvider): boolean {
 
 /** True when at least one tier can run, so the UI hints instead of hard-erroring. */
 export function isAIConfigured(): boolean {
-  return providerReady(AI_PROVIDER) || providerReady(AI_PROVIDER_FAST);
+  return providerReady(activeTextProvider()) || providerReady(activeTextProviderFast());
 }
 
 /**
@@ -108,8 +113,10 @@ export function isAIConfigured(): boolean {
  * keus zodra die is ingesteld.
  */
 export function readyTextProvider(): AiProvider | null {
-  if (providerReady(AI_PROVIDER)) return AI_PROVIDER;
-  if (providerReady(AI_PROVIDER_FAST)) return AI_PROVIDER_FAST;
+  const main = activeTextProvider();
+  if (providerReady(main)) return main;
+  const fast = activeTextProviderFast();
+  if (providerReady(fast)) return fast;
   if (process.env.DEEPSEEK_API_KEY) return "deepseek";
   if (process.env.HERMES_API_KEY) return "hermes";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
@@ -139,7 +146,7 @@ export function isPersonalDataProvider(p: AiProvider): boolean {
  */
 export function readyPersonalDataTextProvider(): AiProvider | null {
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
-  if (AI_PROVIDER === "ollama" || AI_PROVIDER_FAST === "ollama") return "ollama";
+  if (activeTextProvider() === "ollama" || activeTextProviderFast() === "ollama") return "ollama";
   return null;
 }
 
@@ -156,11 +163,11 @@ export function aiProviderSummary(): string {
   const label = (p: AiProvider, tier: Tier) => {
     if (p === "ollama") return `Ollama (${tier === "fast" ? OLLAMA_MODEL_FAST : OLLAMA_MODEL})`;
     if (p === "deepseek") return `DeepSeek (${tier === "fast" ? DEEPSEEK_MODEL_FAST : DEEPSEEK_MODEL})`;
-    if (p === "hermes") return `Hermes (${tier === "fast" ? HERMES_MODEL_FAST : HERMES_MODEL})`;
+    if (p === "hermes") return `Hermes (${hermesModel(tier)})`;
     return `Anthropic (${tier === "fast" ? AI_MODEL_FAST : AI_MODEL})`;
   };
-  const main = label(AI_PROVIDER, "main");
-  const fast = label(AI_PROVIDER_FAST, "fast");
+  const main = label(activeTextProvider(), "main");
+  const fast = label(activeTextProviderFast(), "fast");
   return main === fast ? main : `${main} · snel: ${fast}`;
 }
 
@@ -362,7 +369,7 @@ async function hermesChat(o: ChatOpts): Promise<string> {
   if (!key) {
     throw new Error("Hermes (Nous) is niet geconfigureerd. Zet de Hermes-sleutel in Instellingen of HERMES_API_KEY in je .env.");
   }
-  const model = o.tier === "fast" ? HERMES_MODEL_FAST : HERMES_MODEL;
+  const model = hermesModel(o.tier);
   let system = o.system;
   if (o.json && o.schema) {
     // OpenAI-compatibel JSON afdwingen kan per host/model verschillen; we vragen het
@@ -370,9 +377,10 @@ async function hermesChat(o: ChatOpts): Promise<string> {
     // tolereert eventueel omringende tekst. Geen provider-specifieke response_format.
     system += `\n\nAntwoord UITSLUITEND met geldige JSON die exact voldoet aan dit JSON-schema (geen tekst eromheen, geen uitleg, geen markdown):\n${JSON.stringify(o.schema)}`;
   }
+  const base = hermesBaseUrl();
   let res: Response;
   try {
-    res = await fetch(`${HERMES_BASE_URL}/chat/completions`, {
+    res = await fetch(`${base}/chat/completions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -392,7 +400,7 @@ async function hermesChat(o: ChatOpts): Promise<string> {
       }),
     });
   } catch {
-    throw new Error(`Hermes niet bereikbaar op ${HERMES_BASE_URL}.`);
+    throw new Error(`Hermes niet bereikbaar op ${base}.`);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -416,7 +424,7 @@ async function hermesChat(o: ChatOpts): Promise<string> {
  *  `o.provider` overschrijft die keuze (zie {@link readyTextProvider}). */
 async function chat(o: ChatOpts): Promise<string> {
   await ensureAiKeysLoaded(); // serverless: pak een via het dashboard toegevoegde sleutel op
-  const p = o.provider ?? (o.tier === "fast" ? AI_PROVIDER_FAST : AI_PROVIDER);
+  const p = o.provider ?? (o.tier === "fast" ? activeTextProviderFast() : activeTextProvider());
   if (p === "ollama") return ollamaChat(o);
   if (p === "deepseek") return deepseekChat(o);
   if (p === "hermes") return hermesChat(o);
@@ -462,7 +470,7 @@ export async function aiJSON<T>(opts: {
    *  {@link PERSONAL_DATA_PROVIDERS} (nooit DeepSeek/China). */
   personalData?: boolean;
 }): Promise<T> {
-  const chosen = opts.provider ?? (opts.fast ? AI_PROVIDER_FAST : AI_PROVIDER);
+  const chosen = opts.provider ?? (opts.fast ? activeTextProviderFast() : activeTextProvider());
   if (opts.personalData && !isPersonalDataProvider(chosen)) {
     throw new Error(
       `Persoonsgegevens mogen niet naar '${chosen}' verstuurd worden (buiten de EU/zonder verwerkersovereenkomst). Gebruik Anthropic of een lokale Ollama.`,
