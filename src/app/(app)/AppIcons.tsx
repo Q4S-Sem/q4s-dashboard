@@ -102,13 +102,18 @@ const Socials = svg(
   </>,
 );
 
-// 8) Website — wereldbol + teal golf.
-const Website = svg(
+// 8) Vacatures — vacaturekaart met tekstregels + koffer-badge (job).
+const Vacatures = svg(
   <>
-    <circle cx="24" cy="24" r="16" fill="#2563eb" />
-    <ellipse cx="24" cy="24" rx="6.5" ry="16" fill="none" stroke="#dbeafe" strokeWidth="1.8" opacity="0.7" />
-    <line x1="8" y1="24" x2="40" y2="24" stroke="#dbeafe" strokeWidth="1.8" opacity="0.7" />
-    <path d="M11 29 q6.5 -5 13 0 t13 0" fill="none" stroke="#2dd4bf" strokeWidth="3.5" strokeLinecap="round" />
+    {/* Vacaturekaart (paper) */}
+    <rect x="8" y="6" width="24" height="33" rx="3.5" fill="#dbeafe" />
+    <rect x="12" y="11" width="16" height="3.6" rx="1.8" fill="#2563eb" />
+    <rect x="12" y="18.5" width="16" height="2.8" rx="1.4" fill="#93c5fd" />
+    <rect x="12" y="24" width="11" height="2.8" rx="1.4" fill="#93c5fd" />
+    {/* Koffer-badge (job) rechtsonder */}
+    <rect x="24" y="26" width="18" height="14" rx="3" fill="#10b981" />
+    <rect x="30" y="23.6" width="6" height="4" rx="1.6" fill="#059669" />
+    <rect x="24" y="31" width="18" height="2.8" fill="#6ee7b7" />
   </>,
 );
 
@@ -159,7 +164,7 @@ export const APP_ICONS: Record<string, React.FC<IconProps>> = {
   "/recruitment": Recruitment,
   "/msp": Msp,
   "/socials": Socials,
-  "/website": Website,
+  "/website": Vacatures,
   "/data": Data,
   "/gebruikers": Instellingen,
 };

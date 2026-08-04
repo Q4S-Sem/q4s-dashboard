@@ -192,12 +192,12 @@ const HUB_LIST: NavHub[] = [
     ],
   },
   {
-    label: "Website",
+    label: "Vacatures",
     href: "/website",
-    icon: Globe,
+    icon: FileText,
     items: [
       { href: "/website", label: "Overzicht", icon: Globe, exact: true },
-      { href: "/website/vacatures", label: "Vacatures", icon: FileText },
+      { href: "/website/vacatures", label: "Alle vacatures", icon: FileText },
     ],
   },
   {
