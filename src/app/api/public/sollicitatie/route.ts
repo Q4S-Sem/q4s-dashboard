@@ -2,6 +2,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { saveCvUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
 import { DISCIPLINES, CANDIDATE_AVAILABILITY } from "@/lib/domain";
+import { corsHeaders } from "@/lib/public-api";
 
 /**
  * Publiek sollicitatie-/CV-endpoint voor de website (q4s.nl).
@@ -22,18 +23,6 @@ import { DISCIPLINES, CANDIDATE_AVAILABILITY } from "@/lib/domain";
  */
 
 export const runtime = "nodejs";
-
-function corsHeaders(req: Request): Record<string, string> {
-  const configured = process.env.PUBLIC_SITE_ORIGIN?.trim();
-  const origin = req.headers.get("origin") ?? "";
-  return {
-    "access-control-allow-origin": configured || origin || "*",
-    "access-control-allow-methods": "POST, OPTIONS",
-    "access-control-allow-headers": "content-type",
-    "access-control-max-age": "86400",
-    vary: "Origin",
-  };
-}
 
 export async function OPTIONS(req: Request) {
   return new Response(null, { status: 204, headers: corsHeaders(req) });
