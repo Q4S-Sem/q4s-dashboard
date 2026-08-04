@@ -27,6 +27,7 @@ export async function testProviderConnection(provider: AiProviderKey): Promise<C
   try {
     if (provider === "gemini") return await testGemini();
     if (provider === "deepseek") return await testDeepseek();
+    if (provider === "hermes") return await testHermes();
     return await testAnthropic();
   } catch (e) {
     return { ok: false, provider, message: netMessage(e) };
@@ -114,6 +115,34 @@ async function testDeepseek(): Promise<ConnTest> {
     return { ok: false, provider: "deepseek", message: hint };
   }
   return { ok: true, provider: "deepseek", message: `Verbonden met ${model} (${ms(t0)} ms).` };
+}
+
+async function testHermes(): Promise<ConnTest> {
+  const key = process.env.HERMES_API_KEY?.trim();
+  if (!key) return { ok: false, provider: "hermes", message: "Geen Hermes-sleutel ingesteld." };
+  const base = stripSlash(process.env.HERMES_BASE_URL ?? "https://openrouter.ai/api/v1");
+  const model = process.env.HERMES_MODEL ?? "nousresearch/hermes-4-70b";
+  const t0 = Date.now();
+  const res = await fetch(`${base}/chat/completions`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${key}`, "x-title": "Q4S Dashboard" },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8,
+      messages: [{ role: "user", content: "Antwoord met exact: OK" }],
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    const hint =
+      res.status === 401
+        ? "Sleutel ongeldig (401)."
+        : res.status === 404
+          ? `Model niet gevonden — controleer HERMES_MODEL ('${model}'). ${body.slice(0, 140)}`
+          : `HTTP ${res.status}: ${body.slice(0, 160)}`;
+    return { ok: false, provider: "hermes", message: hint };
+  }
+  return { ok: true, provider: "hermes", message: `Verbonden met ${model} (${ms(t0)} ms).` };
 }
 
 async function testAnthropic(): Promise<ConnTest> {

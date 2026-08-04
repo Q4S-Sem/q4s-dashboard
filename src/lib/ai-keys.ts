@@ -7,12 +7,13 @@ import { estimateCostUsd } from "./ai-pricing";
 // env-gebaseerde checks (isAIConfigured/isVisionConfigured) en ai.ts ongewijzigd
 // blijven werken. Een sleutel in .env heeft voorrang; anders wint de DB-waarde.
 
-export type AiProviderKey = "deepseek" | "gemini" | "anthropic";
+export type AiProviderKey = "deepseek" | "gemini" | "anthropic" | "hermes";
 
 export const AI_KEY_ENV: Record<AiProviderKey, string> = {
   deepseek: "DEEPSEEK_API_KEY",
   gemini: "GEMINI_API_KEY",
   anthropic: "ANTHROPIC_API_KEY",
+  hermes: "HERMES_API_KEY",
 };
 
 // Pristine .env-sleutels, vastgelegd bij het laden van de module — dus vóór
@@ -23,6 +24,7 @@ const BOOT_ENV: Record<AiProviderKey, string | undefined> = {
   deepseek: process.env.DEEPSEEK_API_KEY?.trim() || undefined,
   gemini: process.env.GEMINI_API_KEY?.trim() || undefined,
   anthropic: process.env.ANTHROPIC_API_KEY?.trim() || undefined,
+  hermes: process.env.HERMES_API_KEY?.trim() || undefined,
 };
 
 export const AI_KEY_META: { provider: AiProviderKey; label: string; hint: string; help: string }[] = [
@@ -44,9 +46,15 @@ export const AI_KEY_META: { provider: AiProviderKey; label: string; hint: string
     hint: "Optioneel — krachtig, duurder",
     help: "Alternatief voor tekst/documenten en nodig voor agentische web-sourcing.",
   },
+  {
+    provider: "hermes",
+    label: "Nous Hermes",
+    hint: "Tekst/agent-AI — open model (OpenRouter of eigen server)",
+    help: "Open model voor tekst- en agent-taken (sourcing, matching, teksten, mail-triage). Standaard via OpenRouter; endpoint en model stel je in met HERMES_BASE_URL / HERMES_MODEL. Activeren als hoofd-tekst-AI: zet AI_PROVIDER=hermes.",
+  },
 ];
 
-const PROVIDERS: AiProviderKey[] = ["deepseek", "gemini", "anthropic"];
+const PROVIDERS: AiProviderKey[] = ["deepseek", "gemini", "anthropic", "hermes"];
 
 function isProvider(v: string): v is AiProviderKey {
   return (PROVIDERS as string[]).includes(v);

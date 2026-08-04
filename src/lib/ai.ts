@@ -14,10 +14,12 @@ import { recordAiUsage, ensureAiKeysLoaded } from "./ai-keys";
 // features netjes terug (handmatig invullen resp. lege resultaten).
 // ---------------------------------------------------------------------------
 
-export type AiProvider = "deepseek" | "anthropic" | "ollama";
+export type AiProvider = "deepseek" | "anthropic" | "ollama" | "hermes";
 
 function pickProvider(value: string | undefined, fallback: AiProvider): AiProvider {
-  return value === "ollama" || value === "anthropic" || value === "deepseek" ? value : fallback;
+  return value === "ollama" || value === "anthropic" || value === "deepseek" || value === "hermes"
+    ? value
+    : fallback;
 }
 
 export const AI_PROVIDER: AiProvider = pickProvider(process.env.AI_PROVIDER, "deepseek");
@@ -34,6 +36,17 @@ const DEEPSEEK_BASE_URL = (process.env.DEEPSEEK_BASE_URL ?? "https://api.deepsee
 );
 export const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-chat";
 export const DEEPSEEK_MODEL_FAST = process.env.DEEPSEEK_MODEL_FAST ?? DEEPSEEK_MODEL;
+
+// Nous Hermes — open model via een OpenAI-compatibele chat-completions API.
+// Standaard via OpenRouter; wijs HERMES_BASE_URL naar je eigen (EU-)server om
+// zelf te hosten. Alleen de API-sleutel staat in Instellingen; endpoint + model
+// via env, zodat "OpenRouter nu / self-host later" één env-wijziging is.
+const HERMES_BASE_URL = (process.env.HERMES_BASE_URL ?? "https://openrouter.ai/api/v1").replace(
+  /\/+$/,
+  "",
+);
+export const HERMES_MODEL = process.env.HERMES_MODEL ?? "nousresearch/hermes-4-70b";
+export const HERMES_MODEL_FAST = process.env.HERMES_MODEL_FAST ?? HERMES_MODEL;
 
 // Anthropic models. Defaults: most capable for writing, cheapest for bulk work.
 export const AI_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-4-8";
@@ -76,6 +89,7 @@ type Tier = "main" | "fast";
 function providerReady(p: AiProvider): boolean {
   if (p === "ollama") return true;
   if (p === "deepseek") return Boolean(process.env.DEEPSEEK_API_KEY);
+  if (p === "hermes") return Boolean(process.env.HERMES_API_KEY);
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
@@ -97,6 +111,7 @@ export function readyTextProvider(): AiProvider | null {
   if (providerReady(AI_PROVIDER)) return AI_PROVIDER;
   if (providerReady(AI_PROVIDER_FAST)) return AI_PROVIDER_FAST;
   if (process.env.DEEPSEEK_API_KEY) return "deepseek";
+  if (process.env.HERMES_API_KEY) return "hermes";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   return null;
 }
@@ -110,6 +125,10 @@ export function readyTextProvider(): AiProvider | null {
 const PERSONAL_DATA_PROVIDERS: AiProvider[] = ["anthropic", "ollama"];
 
 export function isPersonalDataProvider(p: AiProvider): boolean {
+  // Zelf-gehoste Hermes (eigen EU-server, data verlaat je omgeving niet) mag
+  // persoonsgegevens verwerken — expliciet aanzetten met HERMES_PERSONAL_DATA=1.
+  // Via OpenRouter (data gaat naar buiten de EU) blijft dit UIT.
+  if (p === "hermes") return process.env.HERMES_PERSONAL_DATA === "1";
   return PERSONAL_DATA_PROVIDERS.includes(p);
 }
 
@@ -137,6 +156,7 @@ export function aiProviderSummary(): string {
   const label = (p: AiProvider, tier: Tier) => {
     if (p === "ollama") return `Ollama (${tier === "fast" ? OLLAMA_MODEL_FAST : OLLAMA_MODEL})`;
     if (p === "deepseek") return `DeepSeek (${tier === "fast" ? DEEPSEEK_MODEL_FAST : DEEPSEEK_MODEL})`;
+    if (p === "hermes") return `Hermes (${tier === "fast" ? HERMES_MODEL_FAST : HERMES_MODEL})`;
     return `Anthropic (${tier === "fast" ? AI_MODEL_FAST : AI_MODEL})`;
   };
   const main = label(AI_PROVIDER, "main");
@@ -335,6 +355,63 @@ async function deepseekChat(o: ChatOpts): Promise<string> {
   return (data.choices?.[0]?.message?.content ?? "").trim();
 }
 
+/** Nous Hermes via een OpenAI-compatibele chat-completions API (OpenRouter of een
+ *  zelf-gehoste server). Spiegelt {@link deepseekChat}; endpoint + model via env. */
+async function hermesChat(o: ChatOpts): Promise<string> {
+  const key = process.env.HERMES_API_KEY;
+  if (!key) {
+    throw new Error("Hermes (Nous) is niet geconfigureerd. Zet de Hermes-sleutel in Instellingen of HERMES_API_KEY in je .env.");
+  }
+  const model = o.tier === "fast" ? HERMES_MODEL_FAST : HERMES_MODEL;
+  let system = o.system;
+  if (o.json && o.schema) {
+    // OpenAI-compatibel JSON afdwingen kan per host/model verschillen; we vragen het
+    // schema strak in de system-prompt (Hermes volgt instructies goed) en parseJson
+    // tolereert eventueel omringende tekst. Geen provider-specifieke response_format.
+    system += `\n\nAntwoord UITSLUITEND met geldige JSON die exact voldoet aan dit JSON-schema (geen tekst eromheen, geen uitleg, geen markdown):\n${JSON.stringify(o.schema)}`;
+  }
+  let res: Response;
+  try {
+    res = await fetch(`${HERMES_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${key}`,
+        // OpenRouter-attributie (optioneel, schaadt niet bij een eigen server).
+        "x-title": "Q4S Dashboard",
+      },
+      body: JSON.stringify({
+        model,
+        stream: false,
+        temperature: o.json ? 0.3 : 0.6,
+        max_tokens: o.maxTokens ?? (o.json ? 8000 : 3000),
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: o.prompt },
+        ],
+      }),
+    });
+  } catch {
+    throw new Error(`Hermes niet bereikbaar op ${HERMES_BASE_URL}.`);
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Hermes-fout (${res.status})${body ? `: ${body.slice(0, 200)}` : ""}.`);
+  }
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+  };
+  await recordAiUsage({
+    provider: "hermes",
+    model,
+    kind: "text",
+    promptTokens: data.usage?.prompt_tokens,
+    completionTokens: data.usage?.completion_tokens,
+  });
+  return (data.choices?.[0]?.message?.content ?? "").trim();
+}
+
 /** Dispatch a chat completion to the configured provider for the given tier.
  *  `o.provider` overschrijft die keuze (zie {@link readyTextProvider}). */
 async function chat(o: ChatOpts): Promise<string> {
@@ -342,6 +419,7 @@ async function chat(o: ChatOpts): Promise<string> {
   const p = o.provider ?? (o.tier === "fast" ? AI_PROVIDER_FAST : AI_PROVIDER);
   if (p === "ollama") return ollamaChat(o);
   if (p === "deepseek") return deepseekChat(o);
+  if (p === "hermes") return hermesChat(o);
   return anthropicChat(o);
 }
 
