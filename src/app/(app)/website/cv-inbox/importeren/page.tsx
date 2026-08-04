@@ -32,7 +32,7 @@ export default async function CvImporterenPage({
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <Link
-        href="/website/cvs"
+        href="/website/cv-inbox"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar CV's
@@ -105,7 +105,7 @@ export default async function CvImporterenPage({
             </Field>
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
-            <Link href="/website/cvs" className={buttonVariants({ variant: "outline" })}>
+            <Link href="/website/cv-inbox" className={buttonVariants({ variant: "outline" })}>
               Annuleren
             </Link>
             <SubmitButton pendingLabel="Toevoegen…">

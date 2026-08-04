@@ -720,7 +720,7 @@ export default async function DashboardPage({
             title="Bron van instroom (kandidaten)"
             icon={<Sparkles className="h-5 w-5" />}
             iconColor="text-cyan-600"
-            action={<Link href="/website/cvs" className="text-sm font-medium text-cyan-700 hover:text-cyan-800">CV's</Link>}
+            action={<Link href="/website/cv-inbox" className="text-sm font-medium text-cyan-700 hover:text-cyan-800">CV's</Link>}
             note="Welk kanaal levert kandidaten — stuurt je budget/keuze."
           >
             <DashboardPie data={comp.kandidatenPerBron} kind="count" centerLabel="kandidaten" />

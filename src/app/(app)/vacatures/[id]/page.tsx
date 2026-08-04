@@ -109,7 +109,7 @@ export default async function VacatureDetailPage({
           <>
             <StatusBadge options={VACANCY_STATUSES} value={vacancy.status} />
             {vacancy.sourcing ? (
-              <Link href="/website/cvs/matches" className={buttonVariants({ variant: "outline" })}>
+              <Link href="/website/cv-inbox/matches" className={buttonVariants({ variant: "outline" })}>
                 <Target className="h-4 w-4" /> Op matchpagina
               </Link>
             ) : (

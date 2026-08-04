@@ -135,7 +135,7 @@ export default async function CvMatchesPage({
                   <Link href="/website/vacatures" className={buttonVariants()}>
                     <Briefcase className="h-4 w-4" /> Naar vacatures
                   </Link>
-                  <Link href="/website/cvs/importeren" className={buttonVariants({ variant: "outline" })}>
+                  <Link href="/website/cv-inbox/importeren" className={buttonVariants({ variant: "outline" })}>
                     <Upload className="h-4 w-4" /> CV's importeren
                   </Link>
                 </div>

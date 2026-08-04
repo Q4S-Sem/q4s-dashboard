@@ -17,9 +17,9 @@ import { aiJSONFromFile, isAIConfigured, isVisionConfigured } from "@/lib/ai";
  */
 export async function convertCvToLead(formData: FormData) {
   const candidateId = String(formData.get("candidateId") ?? "");
-  if (!candidateId) redirect("/website/cvs");
+  if (!candidateId) redirect("/website/cv-inbox");
   const cand = await db.candidate.findUnique({ where: { id: candidateId } });
-  if (!cand) redirect("/website/cvs");
+  if (!cand) redirect("/website/cv-inbox");
 
   const existing = await db.deal.findFirst({ where: { candidateId }, select: { id: true } });
   if (existing) redirect(`/crm/deals/${existing.id}`);
@@ -28,7 +28,7 @@ export async function convertCvToLead(formData: FormData) {
     (await db.crmStage.findFirst({ where: { key: "lead" } })) ??
     (await db.crmStage.findFirst({ where: { isWon: false, isLost: false }, orderBy: { order: "asc" } })) ??
     (await db.crmStage.findFirst({ orderBy: { order: "asc" } }));
-  if (!lead) redirect("/website/cvs?error=nostage");
+  if (!lead) redirect("/website/cv-inbox?error=nostage");
 
   const recruiterId = await currentRecruiterId();
   const name = `${cand.firstName} ${cand.lastName}`.trim();
@@ -56,7 +56,7 @@ export async function convertCvToLead(formData: FormData) {
     body: `Lead aangemaakt vanuit binnengekomen CV — ${name}${disc ? ` (${disc})` : ""}.`,
   });
 
-  revalidatePath("/website/cvs");
+  revalidatePath("/website/cv-inbox");
   revalidatePath("/crm");
   redirect(`/crm/deals/${deal.id}`);
 }
@@ -141,10 +141,10 @@ export async function importCv(formData: FormData) {
   const lastName = String(formData.get("lastName") ?? "").trim();
   const file = formData.get("file");
 
-  if (!firstName && !lastName) redirect("/website/cvs/importeren?error=naam");
-  if (!(file instanceof File) || file.size === 0) redirect("/website/cvs/importeren?error=bestand");
-  if (file.size > MAX_UPLOAD_BYTES) redirect("/website/cvs/importeren?error=groot");
-  if (!isAllowedCv(file)) redirect("/website/cvs/importeren?error=type");
+  if (!firstName && !lastName) redirect("/website/cv-inbox/importeren?error=naam");
+  if (!(file instanceof File) || file.size === 0) redirect("/website/cv-inbox/importeren?error=bestand");
+  if (file.size > MAX_UPLOAD_BYTES) redirect("/website/cv-inbox/importeren?error=groot");
+  if (!isAllowedCv(file)) redirect("/website/cv-inbox/importeren?error=type");
 
   const availabilityRaw = String(formData.get("availability") ?? "ONBEKEND");
   const availability = CANDIDATE_AVAILABILITY_VALUES.includes(availabilityRaw) ? availabilityRaw : "ONBEKEND";
@@ -173,15 +173,15 @@ export async function importCv(formData: FormData) {
     // matching is best-effort; het CV staat er nu al.
   }
 
-  revalidatePath("/website/cvs");
-  redirect("/website/cvs?import=1");
+  revalidatePath("/website/cv-inbox");
+  redirect("/website/cv-inbox?import=1");
 }
 
 /** Meerdere CV's tegelijk importeren (een stapel). Namen komen uit de
  *  bestandsnaam; met AI aan worden naam/discipline/contact uit PDF's gelezen. */
 export async function importCvsBulk(formData: FormData) {
   const files = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
-  if (files.length === 0) redirect("/website/cvs/importeren?error=bestand");
+  if (files.length === 0) redirect("/website/cv-inbox/importeren?error=bestand");
   const useAi = formData.get("useAi") === "on" && isVisionConfigured();
 
   let created = 0;
@@ -238,8 +238,8 @@ export async function importCvsBulk(formData: FormData) {
     }
   }
 
-  revalidatePath("/website/cvs");
-  redirect(`/website/cvs?import=bulk&n=${created}&skip=${skipped}`);
+  revalidatePath("/website/cv-inbox");
+  redirect(`/website/cv-inbox?import=bulk&n=${created}&skip=${skipped}`);
 }
 
 // --- Vacature-gedreven matchflow (zoekopdrachten) ----------------------------
@@ -248,12 +248,12 @@ export async function importCvsBulk(formData: FormData) {
  *  CV-matches-pagina en ga er meteen naartoe. */
 export async function startSourcing(formData: FormData) {
   const id = String(formData.get("vacancyId") ?? "");
-  if (!id) redirect("/website/cvs/matches");
+  if (!id) redirect("/website/cv-inbox/matches");
   await db.vacancy.update({ where: { id }, data: { sourcing: true } });
-  revalidatePath("/website/cvs/matches");
+  revalidatePath("/website/cv-inbox/matches");
   revalidatePath(`/vacatures/${id}`);
   revalidatePath("/website/vacatures");
-  redirect("/website/cvs/matches");
+  redirect("/website/cv-inbox/matches");
 }
 
 /** Stop de zoekopdracht: haal de vacature van de CV-matches-pagina. */
@@ -261,7 +261,7 @@ export async function stopSourcing(formData: FormData) {
   const id = String(formData.get("vacancyId") ?? "");
   if (!id) return;
   await db.vacancy.update({ where: { id }, data: { sourcing: false } });
-  revalidatePath("/website/cvs/matches");
+  revalidatePath("/website/cv-inbox/matches");
   revalidatePath(`/vacatures/${id}`);
   revalidatePath("/website/vacatures");
 }
@@ -278,7 +278,7 @@ export async function searchMatchesForVacancy(formData: FormData) {
   } catch {
     // best-effort
   }
-  revalidatePath("/website/cvs/matches");
+  revalidatePath("/website/cv-inbox/matches");
 }
 
 /**
@@ -300,7 +300,7 @@ export async function runCvMatching() {
       // per-vacature best-effort; ga door met de rest.
     }
   }
-  revalidatePath("/website/cvs/matches");
-  revalidatePath("/website/cvs");
-  redirect("/website/cvs/matches?matched=1");
+  revalidatePath("/website/cv-inbox/matches");
+  revalidatePath("/website/cv-inbox");
+  redirect("/website/cv-inbox/matches?matched=1");
 }

@@ -163,8 +163,8 @@ const HUB_LIST: NavHub[] = [
       { href: "/kandidaten", label: "Talentpool", icon: Users, section: "Kandidaten" },
       { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, section: "Kandidaten" },
       { href: "/sollicitaties", label: "Sollicitaties", icon: ClipboardList, section: "Kandidaten" },
-      { href: "/website/cvs", label: "Binnengekomen CV's", icon: Inbox, exact: true, section: "CV's" },
-      { href: "/website/cvs/matches", label: "CV-matches", icon: Target, section: "CV's" },
+      { href: "/website/cv-inbox", label: "Binnengekomen CV's", icon: Inbox, exact: true, section: "CV's" },
+      { href: "/website/cv-inbox/matches", label: "CV-matches", icon: Target, section: "CV's" },
     ],
   },
   {

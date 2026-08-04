@@ -75,7 +75,7 @@ export default async function WebsiteCvsPage({
 
   const tabLink = (t: "website" | "email", label: string, count: number, icon: React.ReactNode) => (
     <Link
-      href={`/website/cvs?bron=${t}`}
+      href={`/website/cv-inbox?bron=${t}`}
       className={cn(
         "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
         bron === t ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800",
@@ -103,10 +103,10 @@ export default async function WebsiteCvsPage({
             <Link href="/website" className={buttonVariants({ variant: "outline" })}>
               <ArrowLeft className="h-4 w-4" /> Website
             </Link>
-            <Link href="/website/cvs/matches" className={buttonVariants({ variant: "outline" })}>
+            <Link href="/website/cv-inbox/matches" className={buttonVariants({ variant: "outline" })}>
               <Target className="h-4 w-4" /> CV-matches
             </Link>
-            <Link href="/website/cvs/importeren" className={buttonVariants()}>
+            <Link href="/website/cv-inbox/importeren" className={buttonVariants()}>
               <Upload className="h-4 w-4" /> CV importeren
             </Link>
           </>
@@ -170,7 +170,7 @@ export default async function WebsiteCvsPage({
                   : "Zodra iemand via de website solliciteert en een CV meestuurt verschijnt die kandidaat hier — of importeer zelf een stapel CV's."
               }
               action={
-                <Link href="/website/cvs/importeren" className={buttonVariants()}>
+                <Link href="/website/cv-inbox/importeren" className={buttonVariants()}>
                   <Upload className="h-4 w-4" /> CV importeren
                 </Link>
               }

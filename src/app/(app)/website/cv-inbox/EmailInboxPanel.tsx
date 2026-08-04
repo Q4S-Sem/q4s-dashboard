@@ -154,7 +154,7 @@ export function EmailInboxPanel({
               <ScanLine className="h-4 w-4" /> Scan mailbox
             </SubmitButton>
           </form>
-          <Link href="/website/cvs/importeren" className={buttonVariants({ variant: "outline" })}>
+          <Link href="/website/cv-inbox/importeren" className={buttonVariants({ variant: "outline" })}>
             <Upload className="h-4 w-4" /> Handmatig importeren
           </Link>
           {!ready && (
