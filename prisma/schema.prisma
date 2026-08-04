@@ -170,6 +170,8 @@ model Client {
   /// KvK-nummer
   kvkNumber        String?
   invoiceEmail     String?
+  /// Bedrijfswebsite — bron voor automatische aanvulling (KvK/BTW/adres/e-mail).
+  website          String?
   paymentTermDays  Int     @default(30)
   notes            String?
   createdAt        DateTime @default(now())

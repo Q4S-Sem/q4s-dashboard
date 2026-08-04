@@ -1,5 +1,12 @@
 "use server";
 
+import { enrichFromWebsite } from "@/lib/enrichment";
+
+/** Bedrijfsdata ophalen vanaf een website (gratis, geen sleutel). Zie lib/enrichment. */
+export async function lookupCompanyByWebsite(url: string) {
+  return enrichFromWebsite(url);
+}
+
 // Nederlandse adres-opzoek via PDOK Locatieserver (gratis, geen API-sleutel).
 // Zowel een volledig adres ("Hofweg 15, 3208 LE Spijkenisse") als postcode +
 // huisnummer ("3208LE 15") levert straat/postcode/plaats op. Via de server

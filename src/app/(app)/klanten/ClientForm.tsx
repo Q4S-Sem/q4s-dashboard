@@ -2,16 +2,26 @@
 
 import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Globe, Loader2, Sparkles } from "lucide-react";
 import type { Client } from "@prisma/client";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { emptyFormState, type FormState } from "@/lib/form";
-import { lookupDutchAddress } from "./address-actions";
+import { lookupDutchAddress, lookupCompanyByWebsite } from "./address-actions";
 
 export type ClientLite = { id: string; name: string };
+
+/** Zet een veldwaarde + trigger 'input' (voor concept-opslag/sync). */
+function setFieldValue(id: string, val: string, onlyIfEmpty = false) {
+  const el = document.getElementById(id) as HTMLInputElement | null;
+  if (!el || !val) return false;
+  if (onlyIfEmpty && el.value.trim()) return false;
+  el.value = val;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  return true;
+}
 
 /** Naam normaliseren: kleine letters, accenten/leestekens weg — zodat "Mistras",
  *  "mistras" en "MISTRAS b.v." vergelijkbaar worden. */
@@ -106,17 +116,47 @@ export function ClientForm({
       setAddr("none");
       return;
     }
-    const setVal = (id: string, val: string) => {
-      const el = document.getElementById(id) as HTMLInputElement | null;
-      if (el && val) {
-        el.value = val;
-        el.dispatchEvent(new Event("input", { bubbles: true })); // concept-opslag + sync
-      }
-    };
-    setVal("address", [res.street, res.houseNumber].filter(Boolean).join(" "));
-    setVal("postalCode", res.postcode);
-    setVal("city", res.city);
+    setFieldValue("address", [res.street, res.houseNumber].filter(Boolean).join(" "));
+    setFieldValue("postalCode", res.postcode);
+    setFieldValue("city", res.city);
     setAddr("done");
+  }
+
+  // ---- Web-enrichment: bedrijfsdata ophalen vanaf de website (gratis) ----
+  const [website, setWebsite] = useState(client?.website ?? "");
+  const [enrich, setEnrich] = useState<"idle" | "busy" | "done" | "none">("idle");
+  const [enrichInfo, setEnrichInfo] = useState<string | null>(null);
+  const [foundEmails, setFoundEmails] = useState<string[]>([]);
+  const [foundPhones, setFoundPhones] = useState<string[]>([]);
+
+  async function fetchCompanyData() {
+    const u = website.trim();
+    if (!u) return;
+    setEnrich("busy");
+    setEnrichInfo(null);
+    setFoundEmails([]);
+    setFoundPhones([]);
+    const res = await lookupCompanyByWebsite(u);
+    if (!res) {
+      setEnrich("none");
+      return;
+    }
+    const filled: string[] = [];
+    // Alleen lege velden vullen — nooit overschrijven wat je zelf al invulde.
+    if (res.companyName && setFieldValue("companyName", res.companyName, true)) {
+      setName(res.companyName);
+      filled.push("bedrijfsnaam");
+    }
+    if (res.kvkNumber && setFieldValue("kvkNumber", res.kvkNumber, true)) filled.push("KvK");
+    if (res.vatNumber && setFieldValue("vatNumber", res.vatNumber, true)) filled.push("BTW");
+    if (res.email && setFieldValue("email", res.email, true)) filled.push("e-mail");
+    const invoiceMail = res.emails.find((x) => /factu|invoice|administrat|boekhoud|debiteur/i.test(x));
+    if (invoiceMail && setFieldValue("invoiceEmail", invoiceMail, true)) filled.push("factuur-e-mail");
+    if (res.phone && setFieldValue("phone", res.phone, true)) filled.push("telefoon");
+    setFoundEmails(res.emails);
+    setFoundPhones(res.phones);
+    setEnrichInfo(filled.length ? `Automatisch aangevuld: ${filled.join(", ")}.` : "Niets nieuws gevonden om aan te vullen.");
+    setEnrich("done");
   }
 
   return (
@@ -165,6 +205,82 @@ export function ClientForm({
                     Bekijk klant
                   </Link>
                 </span>
+              </div>
+            )}
+          </div>
+
+          {/* Web-enrichment — vul de site in en haal automatisch bedrijfsdata op. */}
+          <div className="rounded-xl border border-brand-100 bg-brand-50/40 p-3.5">
+            <div className="flex flex-wrap items-end gap-2">
+              <Field
+                label="Website"
+                htmlFor="website"
+                hint="Vul de bedrijfssite in → KvK, BTW, e-mail en telefoon worden automatisch opgehaald (gratis, ter controle)."
+                className="min-w-[200px] flex-1"
+              >
+                <Input
+                  id="website"
+                  name="website"
+                  placeholder="bijv. www.bedrijf.nl"
+                  value={website}
+                  onChange={(ev) => setWebsite(ev.target.value)}
+                  autoComplete="off"
+                />
+              </Field>
+              <button
+                type="button"
+                onClick={fetchCompanyData}
+                disabled={enrich === "busy" || !website.trim()}
+                className={buttonVariants({ variant: "outline" })}
+              >
+                {enrich === "busy" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Gegevens ophalen
+              </button>
+            </div>
+            {enrich === "done" && enrichInfo && (
+              <p className="mt-1.5 text-xs text-emerald-600">{enrichInfo}</p>
+            )}
+            {enrich === "none" && (
+              <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600">
+                <Globe className="h-3.5 w-3.5" /> Geen bedrijfsgegevens gevonden op deze site — vul handmatig in.
+              </p>
+            )}
+            {(foundEmails.length > 1 || foundPhones.length > 1) && (
+              <div className="mt-2 space-y-1.5 text-xs text-slate-500">
+                {foundEmails.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-slate-400">E-mails:</span>
+                    {foundEmails.map((em) => (
+                      <button
+                        key={em}
+                        type="button"
+                        onClick={() => setFieldValue("email", em)}
+                        className="rounded bg-white px-1.5 py-0.5 ring-1 ring-slate-200 transition-colors hover:ring-brand-300"
+                      >
+                        {em}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {foundPhones.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-slate-400">Telefoons:</span>
+                    {foundPhones.map((ph) => (
+                      <button
+                        key={ph}
+                        type="button"
+                        onClick={() => setFieldValue("phone", ph)}
+                        className="rounded bg-white px-1.5 py-0.5 ring-1 ring-slate-200 transition-colors hover:ring-brand-300"
+                      >
+                        {ph}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

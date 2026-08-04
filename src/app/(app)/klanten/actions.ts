@@ -18,6 +18,7 @@ const ClientSchema = z.object({
   vatNumber: z.string().optional(),
   kvkNumber: z.string().optional(),
   invoiceEmail: z.string().optional(),
+  website: z.string().optional(),
   paymentTermDays: z.coerce.number().int().min(0).max(365).default(30),
   notes: z.string().optional(),
 });
@@ -37,6 +38,7 @@ function toData(data: z.infer<typeof ClientSchema>) {
     vatNumber: data.vatNumber ?? null,
     kvkNumber: data.kvkNumber ?? null,
     invoiceEmail: data.invoiceEmail ?? null,
+    website: data.website ?? null,
     paymentTermDays: data.paymentTermDays,
     notes: data.notes ?? null,
   };
