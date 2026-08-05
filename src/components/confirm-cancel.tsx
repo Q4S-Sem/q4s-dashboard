@@ -73,25 +73,33 @@ export function ConfirmCancel({
             <div
               role="alertdialog"
               aria-modal="true"
-              className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-black/5"
+              className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
             >
-              <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
-                  <AlertTriangle className="h-5 w-5" />
+              <div className="flex items-start gap-3 px-6 pb-5 pt-6">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                  <AlertTriangle className="h-4 w-4" />
                 </span>
-                <div className="min-w-0 pt-0.5">
-                  <h2 className="text-base font-semibold text-slate-900">{message}</h2>
-                  {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+                <div className="min-w-0">
+                  <h2 className="text-[15px] font-semibold leading-snug text-slate-900">
+                    {message}
+                  </h2>
+                  {description && (
+                    <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{description}</p>
+                  )}
                 </div>
               </div>
 
-              {/* Huisstijl van de pop-ups: doorgaan = groen, terug/annuleren = rood. */}
-              <div className="mt-5 flex justify-end gap-2">
+              {/* Huisstijl van de vensters: doorgaan = groen, terug/annuleren = rood. */}
+              <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
                 <button
                   ref={cancelRef}
                   type="button"
                   onClick={() => setOpen(false)}
-                  className={buttonVariants({ variant: "danger", size: "md" })}
+                  className={buttonVariants({
+                    variant: "outline",
+                    size: "md",
+                    className: "border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800",
+                  })}
                 >
                   Terug
                 </button>

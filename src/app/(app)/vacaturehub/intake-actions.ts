@@ -89,6 +89,43 @@ export async function pullNow(formData: FormData) {
   redirect(withQuery(target, { pull: "ok", received: r.received, created: r.created }));
 }
 
+/**
+ * Koppel een platform aan het dashboard: API-adres + sleutel opslaan. Staan ze
+ * er allebei, dan gaat de koppeling op "Gekoppeld (API)" en kan er opgehaald
+ * worden; leeg maken zet 'm terug op handmatig/webhook.
+ */
+export async function connectApi(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const target = back(formData, "/vacaturehub/koppelingen");
+  if (!id) redirect(target);
+
+  const current = await db.vmsConnector.findUnique({ where: { id } });
+  if (!current) redirect(target);
+
+  const apiBaseUrl = String(formData.get("apiBaseUrl") ?? "").trim();
+  const typedKey = String(formData.get("apiKey") ?? "").trim();
+  const clear = String(formData.get("clearKey") ?? "") === "on";
+  // Leeg gelaten = huidige sleutel behouden (die tonen we nooit terug).
+  const apiKey = clear ? null : typedKey || current.apiKey;
+
+  if (apiBaseUrl && !/^https:\/\//i.test(apiBaseUrl)) {
+    redirect(withQuery(target, { conn: "url" }));
+  }
+
+  await db.vmsConnector.update({
+    where: { id },
+    data: {
+      apiBaseUrl: apiBaseUrl || null,
+      apiKey,
+      status: apiBaseUrl && apiKey ? "CONNECTED" : "MANUAL",
+    },
+  });
+
+  revalidate();
+  revalidatePath("/connectors");
+  redirect(withQuery(target, { conn: apiBaseUrl && apiKey ? "ok" : "saved" }));
+}
+
 /** Markeer één melding als gelezen. */
 export async function markAlertRead(formData: FormData) {
   const id = String(formData.get("id") ?? "");

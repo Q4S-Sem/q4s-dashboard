@@ -1,4 +1,4 @@
-import { LayoutGrid, Plug, Filter, Sparkles, XCircle } from "lucide-react";
+import { LayoutGrid, Plug, Filter, Sparkles, XCircle, Plug2 } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
@@ -69,6 +69,7 @@ export default async function VacaturehubLayout({ children }: { children: React.
             icon: <XCircle className="h-4 w-4" />,
             count: c.irrelevant,
           },
+          { seg: "koppelingen", label: "Koppelingen", icon: <Plug2 className="h-4 w-4" /> },
         ]}
       />
 

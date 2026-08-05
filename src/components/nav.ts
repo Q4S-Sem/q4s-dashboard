@@ -185,7 +185,6 @@ const HUB_LIST: NavHub[] = [
       { href: "/vacaturehub", label: "Vacaturehub", icon: Filter },
       { href: "/vacatures", label: "Alle vacatures", icon: FileText },
       { href: "/website/vacatures", label: "Op de website", icon: Globe },
-      { href: "/connectors", label: "Koppelingen", icon: Plug },
     ],
   },
   {
