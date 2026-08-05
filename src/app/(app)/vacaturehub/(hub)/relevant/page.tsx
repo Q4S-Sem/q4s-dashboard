@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { Sparkles, Rocket } from "lucide-react";
+import { Sparkles, PencilLine } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
-import { bulkPublishRelevant } from "../../actions";
 import { getHubCounts } from "../data";
 import { HubVacancyList, HUB_VACANCY_SELECT, toHubVacancies } from "../HubVacancyList";
 
@@ -50,17 +48,14 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
             <Sparkles className="h-5 w-5 text-violet-500" /> Past bij Q4S
             <span className="text-sm font-normal text-slate-400">({c.relevant})</span>
           </CardTitle>
-          <form action={bulkPublishRelevant}>
-            <input type="hidden" name="back" value="/vacaturehub/relevant" />
-            <SubmitButton pendingLabel="AI schrijft…" disabled={c.toPublish === 0}>
-              <Rocket className="h-4 w-4" /> Publiceer {c.toPublish} vacature(s)
-            </SubmitButton>
-          </form>
+          <Link href="/vacatures" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <PencilLine className="h-4 w-4" /> Naar maken
+          </Link>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-slate-500">
-            Deze vacatures passen binnen de niche. Bij publiceren schrijft de AI de tekst uit
-            (samenvatting, werkzaamheden, functie-eisen) en zet hem op q4s.nl.
+            Deze vacatures passen binnen de niche. Stuur ze door naar Maken: daar schrijf je de
+            tekst af (of laat je de AI dat doen), lees je 'm na en zet je 'm zelf op q4s.nl.
           </p>
           <div className="flex flex-wrap gap-1.5">
             <Link
@@ -71,7 +66,7 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
                   : "rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white"
               }
             >
-              Nog te publiceren ({c.toPublish})
+              Klaar voor maken ({c.toPublish})
             </Link>
             <Link
               href="/vacaturehub/relevant?tab=live"
@@ -82,12 +77,6 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
               }
             >
               Live op de site ({c.published})
-            </Link>
-            <Link
-              href="/vacatures"
-              className={buttonVariants({ variant: "outline", size: "sm", className: "ml-auto" })}
-            >
-              Naar maken
             </Link>
           </div>
         </CardContent>

@@ -5,17 +5,13 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import {
   simulateMspDelivery,
-  runIntakePipeline,
   pullConnector,
-  PROCESSABLE_VACANCY_WHERE,
   type PipelineResult,
 } from "@/lib/msp";
 
-// De intake-kant van de vacaturehub: leveringen ophalen bij een platform, de
-// volledige pijplijn draaien (filteren → uitschrijven → publiceren → matchen) en
-// de meldingen die daaruit komen afvinken. Hoorde eerder bij de losse MSP-pagina.
-
-const QUEUE_CAP = 5;
+// De intake-kant van de vacaturehub: platformen koppelen, leveringen ophalen en
+// de meldingen die daaruit komen afvinken. Publiceren gebeurt bewust niet hier —
+// dat doe je op de maken-pagina.
 
 function countFailed(results: PipelineResult[]): number {
   return results.reduce((n, r) => n + r.steps.filter((s) => s.status === "failed").length, 0);
@@ -50,28 +46,6 @@ export async function simulateDelivery(formData: FormData) {
       skipped: r.skipped,
       rel: relevant,
       failed: countFailed(r.results),
-    }),
-  );
-}
-
-/** Verwerk een batch nieuwe vacatures volledig: filteren, uitschrijven, matchen. */
-export async function processQueue(formData: FormData) {
-  const pending = await db.vacancy.findMany({
-    where: PROCESSABLE_VACANCY_WHERE,
-    orderBy: { createdAt: "asc" },
-    take: QUEUE_CAP,
-    select: { id: true },
-  });
-  const results: PipelineResult[] = [];
-  for (const v of pending) results.push(await runIntakePipeline(v.id));
-  const remaining = await db.vacancy.count({ where: PROCESSABLE_VACANCY_WHERE });
-  revalidate();
-  redirect(
-    withQuery(back(formData), {
-      batch: pending.length,
-      rel: results.filter((r) => r.relevant === true).length,
-      remaining,
-      failed: countFailed(results),
     }),
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Filter, Rocket, Plug, ExternalLink, Download } from "lucide-react";
+import { ArrowLeft, Filter, Sparkles, Plug, ExternalLink, Download } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -9,7 +9,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { StatusBadge } from "@/components/ui/badge";
 import { VMS_STATUSES } from "@/lib/domain";
 import { formatDate, cn } from "@/lib/utils";
-import { bulkFilterVacancies, bulkPublishRelevant } from "../../../actions";
+import { bulkFilterVacancies } from "../../../actions";
 import { pullNow } from "../../../intake-actions";
 import { getSource, sourceWhere, OVERIG_KEY } from "../../data";
 import { HubVacancyList, HUB_VACANCY_SELECT, toHubVacancies } from "../../HubVacancyList";
@@ -166,13 +166,12 @@ export default async function BronPage({
               <Filter className="h-4 w-4" /> Beoordeel {source.unknown} nieuwe
             </SubmitButton>
           </form>
-          <form action={bulkPublishRelevant}>
-            <input type="hidden" name="source" value={key} />
-            <input type="hidden" name="back" value={`/vacaturehub/instroom/${key}?tab=relevant`} />
-            <SubmitButton pendingLabel="AI schrijft…" disabled={source.relevant - source.published <= 0}>
-              <Rocket className="h-4 w-4" /> Publiceer relevante
-            </SubmitButton>
-          </form>
+          <Link
+            href={`/vacaturehub/instroom/${key}?tab=relevant`}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <Sparkles className="h-4 w-4" /> {source.relevant} relevante bekijken
+          </Link>
         </CardContent>
       </Card>
 

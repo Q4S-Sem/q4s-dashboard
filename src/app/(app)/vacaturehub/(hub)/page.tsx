@@ -8,7 +8,6 @@ import {
   Plug,
   CheckCircle2,
   BellRing,
-  Workflow,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,19 +16,11 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { DISCIPLINES, VMS_STATUSES, ALERT_TYPES, labelFor, colorFor } from "@/lib/domain";
 import { formatDate, cn } from "@/lib/utils";
-import { bulkFilterVacancies, bulkPublishRelevant } from "../actions";
-import { processQueue, markAllAlertsRead } from "../intake-actions";
+import { bulkFilterVacancies } from "../actions";
+import { markAllAlertsRead } from "../intake-actions";
 import { getHubCounts, getSources } from "./data";
 
-type SP = {
-  filtered?: string;
-  published?: string;
-  remaining?: string;
-  error?: string;
-  batch?: string;
-  rel?: string;
-  failed?: string;
-};
+type SP = { filtered?: string; remaining?: string; error?: string };
 
 /** Eén stap in de trechter van binnenkomst tot live op de site. */
 function Step({
@@ -110,18 +101,6 @@ export default async function VacaturehubOverzichtPage({
           {sp.filtered} vacature(s) beoordeeld · {sp.remaining} nog te gaan.
         </p>
       )}
-      {sp.published !== undefined && (
-        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {sp.published} vacature(s) uitgeschreven en gepubliceerd · {sp.remaining} relevante nog te doen.
-        </p>
-      )}
-      {sp.batch !== undefined && (
-        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {sp.batch} vacature(s) door de volledige pijplijn · {sp.rel} relevant · {sp.remaining} nog
-          in de wachtrij
-          {Number(sp.failed) > 0 ? ` · ${sp.failed} stap(pen) mislukt` : ""}.
-        </p>
-      )}
 
       {/* De route die elke vacature aflegt */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
@@ -151,7 +130,7 @@ export default async function VacaturehubOverzichtPage({
           href="/vacaturehub/relevant"
           label="Past bij Q4S"
           value={c.relevant}
-          sub={`${c.toPublish} nog te publiceren`}
+          sub={`${c.toPublish} nog uit te schrijven`}
           icon={<Sparkles className="h-5 w-5" />}
           tone="violet"
         />
@@ -184,29 +163,19 @@ export default async function VacaturehubOverzichtPage({
                 <Filter className="h-4 w-4" /> Beoordeel {c.unknown} nieuwe vacature(s)
               </SubmitButton>
             </form>
-            <form action={bulkPublishRelevant}>
-              <input type="hidden" name="back" value="/vacaturehub" />
-              <SubmitButton pendingLabel="AI schrijft…" disabled={c.toPublish === 0}>
-                <Rocket className="h-4 w-4" /> Publiceer {c.toPublish} relevante
-              </SubmitButton>
-            </form>
-            <form action={processQueue}>
-              <input type="hidden" name="back" value="/vacaturehub" />
-              <SubmitButton
-                variant="outline"
-                pendingLabel="Pijplijn draait…"
-                disabled={c.unknown === 0}
-                title="Beoordelen, uitschrijven, publiceren en kandidaten matchen in één keer"
-              >
-                <Workflow className="h-4 w-4" /> Volledige pijplijn (5)
-              </SubmitButton>
-            </form>
+            <Link
+              href="/vacaturehub/relevant"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Sparkles className="h-4 w-4" /> {c.toPublish} klaar om uit te schrijven
+            </Link>
           </div>
           <div className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-500">
             De AI legt elke binnengekomen vacature langs de Q4S-niche — QA/QC, HSE, Inspectie,
             Welding, Coating, E&amp;I, Civiel, Offshore, Commissioning en Project Management — en
-            zet erbij waaróm iets wel of niet past. Wat relevant is, wordt uitgeschreven en op
-            q4s.nl gezet; de rest verdwijnt naar Afgewezen. Je kunt elk oordeel zelf overrulen.
+            zet erbij waaróm iets wel of niet past. Wat past gaat naar Maken, waar je de tekst
+            afmaakt en hem zelf live zet; de rest verdwijnt naar Afgewezen. Je kunt elk oordeel zelf
+            overrulen.
           </div>
         </CardContent>
       </Card>

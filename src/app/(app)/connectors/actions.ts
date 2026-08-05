@@ -107,7 +107,8 @@ export async function addKnownConnector(formData: FormData) {
       apiKey: null,
       autoFilter: true,
       autoImprove: true,
-      autoPublishSite: true,
+      // Publiceren gebeurt bewust op de maken-pagina, niet automatisch.
+      autoPublishSite: false,
       autoDraftPost: true,
       autoMatch: true,
       notifyRecruiter: true,

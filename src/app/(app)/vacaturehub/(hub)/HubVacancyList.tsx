@@ -4,7 +4,6 @@ import {
   Sparkles,
   Check,
   X,
-  Rocket,
   RotateCcw,
   ExternalLink,
   PencilLine,
@@ -15,7 +14,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DISCIPLINES, VACANCY_STATUSES, VACANCY_RELEVANCE } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
-import { aiFilterOne, setRelevance, processVacancy } from "../actions";
+import { aiFilterOne, setRelevance } from "../actions";
 
 export type HubVacancy = {
   id: string;
@@ -120,13 +119,6 @@ function Row({ v, mode, back }: { v: HubVacancy; mode: HubListMode; back: string
 
         {mode === "publish" && (
           <>
-            <Link
-              href={`/vacatures/${v.id}`}
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-              title="Zelf uitschrijven op de maken-pagina"
-            >
-              <PencilLine className="h-3.5 w-3.5" /> Naar maken
-            </Link>
             {v.status === "PUBLISHED" ? (
               <a
                 href={`/vacature/${v.slug}`}
@@ -137,12 +129,13 @@ function Row({ v, mode, back }: { v: HubVacancy; mode: HubListMode; back: string
                 <ExternalLink className="h-3.5 w-3.5" /> Live bekijken
               </a>
             ) : (
-              <form action={processVacancy}>
-                {hidden}
-                <SubmitButton variant="success" size="sm" pendingLabel="AI schrijft…">
-                  <Rocket className="h-3.5 w-3.5" /> Uitschrijven &amp; publiceren
-                </SubmitButton>
-              </form>
+              // Publiceren doe je bewust op de maken-pagina, niet vanuit de hub.
+              <Link
+                href={`/vacatures/${v.id}`}
+                className={buttonVariants({ variant: "success", size: "sm" })}
+              >
+                <PencilLine className="h-3.5 w-3.5" /> Naar maken
+              </Link>
             )}
           </>
         )}

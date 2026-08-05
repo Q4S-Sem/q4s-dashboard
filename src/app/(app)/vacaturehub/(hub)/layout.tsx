@@ -22,7 +22,7 @@ export default async function VacaturehubLayout({ children }: { children: React.
     <div className="space-y-6">
       <PageHeader
         title="Vacaturehub"
-        description="Alle vacatures die binnenkomen bij de grote opdrachtgevers, door de AI-filter langs de Q4S-niche gelegd — en klaar om te publiceren."
+        description="Alle vacatures die binnenkomen bij de grote opdrachtgevers, door de AI-filter langs de Q4S-niche gelegd. Wat past stuur je door naar Maken — publiceren doe je daar."
         actions={
           <Link href="/vacatures/importeren" className={buttonVariants({ variant: "outline" })}>
             <Upload className="h-4 w-4" /> Bulk-import
