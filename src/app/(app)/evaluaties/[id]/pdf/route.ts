@@ -21,6 +21,13 @@ export async function GET(
   const pdf = await renderEvaluationPdf(ev, name, {
     name: settings.companyName,
     email: settings.email,
+    phone: settings.phone,
+    address: settings.address,
+    postalCode: settings.postalCode,
+    city: settings.city,
+    kvkNumber: settings.kvkNumber,
+    vatNumber: settings.vatNumber,
+    website: settings.website,
   });
   const fileName = `evaluatie-${name}-Q${ev.quarter}-${ev.year}.pdf`.replace(
     /[^\w.-]+/g,

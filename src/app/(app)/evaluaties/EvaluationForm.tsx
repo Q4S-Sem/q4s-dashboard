@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import Link from "next/link";
-import { UserRound, Building2, ClipboardList } from "lucide-react";
+import { UserRound, Building2, ClipboardList, Sparkles, Eraser, Check } from "lucide-react";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { PersonCombobox } from "@/components/ui/person-combobox";
 import { TextAutocomplete } from "@/components/ui/text-autocomplete";
@@ -45,7 +45,17 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
   );
 }
 
-function ScoreRow({ name, label, value }: { name: string; label: string; value: number | null }) {
+function ScoreRow({
+  name,
+  label,
+  value,
+  onPick,
+}: {
+  name: string;
+  label: string;
+  value: number | null;
+  onPick: (v: number) => void;
+}) {
   return (
     <div className="grid grid-cols-1 gap-2 px-3 py-3 transition-colors hover:bg-slate-50/60 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4">
       <span className="text-sm font-medium text-slate-700">{label}</span>
@@ -56,7 +66,8 @@ function ScoreRow({ name, label, value }: { name: string; label: string; value: 
               type="radio"
               name={name}
               value={s.value}
-              defaultChecked={String(value ?? "") === s.value}
+              checked={String(value ?? "") === s.value}
+              onChange={() => onPick(Number(s.value))}
               className="peer sr-only"
             />
             <span
@@ -113,10 +124,14 @@ function BoolRow({ name, label, value }: { name: string; label: string; value: s
   );
 }
 
+/** Wat we automatisch kunnen overnemen uit de lopende plaatsing van een persoon. */
+export type EvalPrefill = Partial<Record<HeaderKey, string>>;
+
 export function EvaluationForm({
   action,
   consultants,
   suggestions,
+  prefills,
   evaluation,
   defaults,
   cancelHref,
@@ -124,6 +139,8 @@ export function EvaluationForm({
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   consultants: { id: string; name: string }[];
   suggestions: Record<string, string[]>;
+  /** Per medewerker de gegevens van hun actieve plaatsing (klant, functie, locatie). */
+  prefills?: Record<string, EvalPrefill>;
   evaluation?: EvaluationFormData;
   defaults: { year: number; quarter: number; type?: string };
   cancelHref: string;
@@ -133,12 +150,48 @@ export function EvaluationForm({
   const fe = state.fieldErrors ?? {};
   const [type, setType] = useState(e?.type ?? defaults.type ?? "VCU");
   const def = getFormDef(type);
-  const scores = e?.scores ?? {};
   const answers = e?.answers ?? {};
-  const headerVal = (k: HeaderKey) => (e ? e[k] : "");
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Scores in state, zodat de voortgang en het gemiddelde live meelopen.
+  const [scoreMap, setScoreMap] = useState<Record<string, number>>(e?.scores ?? {});
+  const setScore = (key: string, v: number) => setScoreMap((m) => ({ ...m, [key]: v }));
+
+  // Automatisch overgenomen kopgegevens (alleen als die velden nog leeg zijn).
+  const [prefill, setPrefill] = useState<EvalPrefill | null>(null);
+  const [prefillFrom, setPrefillFrom] = useState<string>("");
+  const headerVal = (k: HeaderKey) => (e ? e[k] : (prefill?.[k] ?? ""));
+
+  /** Neem klant/functie/locatie over uit de actieve plaatsing van deze persoon. */
+  function applyPrefill(personId: string | null) {
+    if (e || !personId) return; // bij bewerken nooit overschrijven
+    const p = prefills?.[personId];
+    if (!p) return;
+    // Alleen invullen als de gebruiker nog niets in die velden heeft gezet.
+    const form = formRef.current;
+    if (form) {
+      const filled = (Object.keys(p) as HeaderKey[]).some((k) => {
+        const el = form.elements.namedItem(k);
+        return el instanceof HTMLInputElement && el.value.trim() !== "";
+      });
+      if (filled) return;
+    }
+    setPrefill(p);
+    setPrefillFrom(personId);
+  }
+
+  const allCriteria = def.scoreSections.flatMap((s) => s.criteria.map((c) => c.key));
+  const doneCount = allCriteria.filter((k) => scoreMap[k] >= 1).length;
+  const avg =
+    doneCount > 0
+      ? Math.round(
+          (allCriteria.reduce((sum, k) => sum + (scoreMap[k] ?? 0), 0) / doneCount) * 10,
+        ) / 10
+      : null;
+  const complete = doneCount === allCriteria.length && allCriteria.length > 0;
 
   return (
-    <form action={formAction} className="space-y-8">
+    <form ref={formRef} action={formAction} className="space-y-8">
       {e?.id && <input type="hidden" name="id" value={e.id} />}
       {state.error && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{state.error}</p>
@@ -166,6 +219,7 @@ export function EvaluationForm({
               }
               required
               placeholder="Typ of kies een medewerker…"
+              onSelect={(p) => applyPrefill(p?.id ?? null)}
             />
           </Field>
           <Field label="Soort formulier" required>
@@ -213,7 +267,15 @@ export function EvaluationForm({
           <SectionTitle icon={<Building2 className="h-4 w-4" />}>
             {def.subtitle}
           </SectionTitle>
-          <div className="grid gap-4 sm:grid-cols-2">
+          {prefill && (
+            <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+              Klant, functie en werklocatie zijn overgenomen uit de lopende plaatsing — pas ze
+              gerust aan.
+            </p>
+          )}
+          {/* key: bij een nieuwe medewerker opnieuw opbouwen met de overgenomen waarden */}
+          <div key={prefillFrom} className="grid gap-4 sm:grid-cols-2">
             {def.headerFields.map((h) => (
               <Field key={h.key} label={h.label}>
                 <TextAutocomplete
@@ -227,29 +289,74 @@ export function EvaluationForm({
         </section>
 
         {/* Score sections */}
-        {def.scoreSections.map((sec) => (
-          <section key={sec.title} className="space-y-3">
-            <SectionTitle icon={<ClipboardList className="h-4 w-4" />}>{sec.title}</SectionTitle>
-            <div className="flex items-center justify-end gap-2 text-[11px] font-medium text-slate-400">
-              <span>Slecht</span>
-              <span className="h-2 w-20 rounded-full bg-gradient-to-r from-red-500 via-orange-400 via-lime-400 to-emerald-500" />
-              <span>Goed</span>
-            </div>
-            <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
-              {sec.criteria.map((c) => (
-                <ScoreRow
-                  key={c.key}
-                  name={`s_${c.key}`}
-                  label={c.label}
-                  value={typeof scores[c.key] === "number" ? scores[c.key] : null}
-                />
-              ))}
-            </div>
-            <Field label="Toelichting">
-              <Textarea name={`a_${sec.noteKey}`} rows={2} defaultValue={answers[sec.noteKey] ?? ""} />
-            </Field>
-          </section>
-        ))}
+        {def.scoreSections.map((sec) => {
+          const keys = sec.criteria.map((c) => c.key);
+          const done = keys.filter((k) => scoreMap[k] >= 1).length;
+          return (
+            <section key={sec.title} className="space-y-3">
+              <SectionTitle icon={<ClipboardList className="h-4 w-4" />}>{sec.title}</SectionTitle>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 font-medium",
+                      done === keys.length
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-slate-100 text-slate-500",
+                    )}
+                  >
+                    {done} / {keys.length} beoordeeld
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setScoreMap((m) => {
+                        const next = { ...m };
+                        for (const k of keys) next[k] = 4;
+                        return next;
+                      })
+                    }
+                    className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 font-medium text-slate-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+                  >
+                    <Check className="h-3 w-3" /> Alles goed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setScoreMap((m) => {
+                        const next = { ...m };
+                        for (const k of keys) delete next[k];
+                        return next;
+                      })
+                    }
+                    className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 font-medium text-slate-500 transition-colors hover:border-slate-400 hover:text-slate-700"
+                  >
+                    <Eraser className="h-3 w-3" /> Wissen
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
+                  <span>Slecht</span>
+                  <span className="h-2 w-20 rounded-full bg-gradient-to-r from-red-500 via-orange-400 via-lime-400 to-emerald-500" />
+                  <span>Goed</span>
+                </div>
+              </div>
+              <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+                {sec.criteria.map((c) => (
+                  <ScoreRow
+                    key={c.key}
+                    name={`s_${c.key}`}
+                    label={c.label}
+                    value={typeof scoreMap[c.key] === "number" ? scoreMap[c.key] : null}
+                    onPick={(v) => setScore(c.key, v)}
+                  />
+                ))}
+              </div>
+              <Field label="Toelichting">
+                <Textarea name={`a_${sec.noteKey}`} rows={2} defaultValue={answers[sec.noteKey] ?? ""} />
+              </Field>
+            </section>
+          );
+        })}
 
         {/* Closing block: free text + yes/no */}
         {(def.textFields.length > 0 || def.boolQuestions.length > 0) && (
@@ -281,14 +388,36 @@ export function EvaluationForm({
         </Field>
       </div>
 
-      <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
-        <Link
-          href={cancelHref}
-          className={buttonVariants({ variant: "outline", className: "w-full sm:w-auto" })}
-        >
-          Annuleren
-        </Link>
-        <SubmitButton className="w-full sm:w-auto">Evaluatie opslaan</SubmitButton>
+      {/* Vaste balk onderaan: voortgang + opslaan altijd in beeld */}
+      <div className="sticky bottom-0 -mx-5 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-5 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 text-sm">
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-medium",
+              complete ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700",
+            )}
+          >
+            {doneCount} van {allCriteria.length} beoordeeld
+          </span>
+          {avg !== null && (
+            <span className="text-xs text-slate-500">
+              gemiddeld{" "}
+              <span className="font-semibold text-slate-900">
+                {avg.toFixed(1).replace(".", ",")}
+              </span>{" "}
+              / 4
+            </span>
+          )}
+        </div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          <Link
+            href={cancelHref}
+            className={buttonVariants({ variant: "outline", className: "w-full sm:w-auto" })}
+          >
+            Annuleren
+          </Link>
+          <SubmitButton className="w-full sm:w-auto">Evaluatie opslaan</SubmitButton>
+        </div>
       </div>
     </form>
   );

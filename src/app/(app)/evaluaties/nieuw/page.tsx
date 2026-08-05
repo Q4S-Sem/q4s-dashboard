@@ -23,15 +23,43 @@ export default async function NieuwEvaluatiePage({
   const backHref =
     presetType === "UITZENDKRACHT" ? "/evaluaties/inlener" : "/evaluaties/vcu";
 
-  const [consultants, suggestions] = await Promise.all([
+  const [consultants, suggestions, placements] = await Promise.all([
     db.consultant.findMany({
       where: { active: true },
       orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
       select: { id: true, firstName: true, lastName: true },
     }),
     getEvalSuggestions(),
+    // De lopende plaatsing per medewerker — daarmee vullen we klant, functie en
+    // werklocatie alvast in zodra je iemand kiest.
+    db.placement.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { startDate: "desc" },
+      select: {
+        consultantId: true,
+        title: true,
+        workLocation: true,
+        client: {
+          select: { companyName: true, address: true, postalCode: true, city: true },
+        },
+      },
+    }),
   ]);
   const now = new Date();
+
+  const prefills: Record<string, Record<string, string>> = {};
+  for (const p of placements) {
+    if (prefills[p.consultantId]) continue; // meest recente wint
+    const address = [p.client?.address, [p.client?.postalCode, p.client?.city].filter(Boolean).join(" ")]
+      .filter(Boolean)
+      .join(", ");
+    prefills[p.consultantId] = {
+      clientName: p.client?.companyName ?? "",
+      clientAddress: address,
+      functionTitle: p.title,
+      workLocation: p.workLocation ?? "",
+    };
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -54,6 +82,7 @@ export default async function NieuwEvaluatiePage({
               name: `${c.firstName} ${c.lastName}`,
             }))}
             suggestions={suggestions}
+            prefills={prefills}
             defaults={{
               year: now.getFullYear(),
               quarter: quarterOf(now),

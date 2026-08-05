@@ -178,6 +178,13 @@ export async function archiveEvaluationToDossier(formData: FormData) {
   const pdf = await renderEvaluationPdf(ev, name, {
     name: settings.companyName,
     email: settings.email,
+    phone: settings.phone,
+    address: settings.address,
+    postalCode: settings.postalCode,
+    city: settings.city,
+    kvkNumber: settings.kvkNumber,
+    vatNumber: settings.vatNumber,
+    website: settings.website,
   });
   const safeName = `evaluatie-${name}-Q${ev.quarter}-${ev.year}.pdf`.replace(
     /[^\w.-]+/g,

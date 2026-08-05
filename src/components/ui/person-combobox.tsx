@@ -23,6 +23,7 @@ export function PersonCombobox({
   required,
   allowCreate,
   placeholder = "Typ of kies een naam…",
+  onSelect,
 }: {
   name: string;
   /** Verborgen veld voor een NIEUWE naam. Vereist als je nieuwe personen toestaat. */
@@ -35,6 +36,9 @@ export function PersonCombobox({
    *  zodra `createName` is meegegeven; zet expliciet op false voor "alleen kiezen". */
   allowCreate?: boolean;
   placeholder?: string;
+  /** Wordt aangeroepen zodra er een bestaande persoon gekozen wordt (of null bij
+   *  een vrij getypte naam) — bijv. om andere velden alvast in te vullen. */
+  onSelect?: (person: ComboPerson | null) => void;
 }) {
   const canCreate = allowCreate ?? Boolean(createName);
   const [text, setText] = useState(defaultName ?? "");
@@ -64,12 +68,14 @@ export function PersonCombobox({
   function syncSelection(value: string) {
     const ex = people.find((p) => p.name.toLowerCase() === value.trim().toLowerCase());
     setSelectedId(ex ? ex.id : "");
+    onSelect?.(ex ?? null);
   }
 
   function pick(p: ComboPerson) {
     setText(p.name);
     setSelectedId(p.id);
     setOpen(false);
+    onSelect?.(p);
   }
 
   const newName = !selectedId && text.trim() ? text.trim() : "";

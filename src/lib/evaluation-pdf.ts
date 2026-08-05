@@ -4,24 +4,33 @@ import {
   rgb,
   type PDFFont,
   type PDFPage,
+  type RGB,
 } from "pdf-lib";
 import { formatDate } from "./utils";
 import { EVAL_SCORES } from "./domain";
-import { getFormDef, parseJsonMap, type HeaderKey } from "./evaluation-forms";
+import { getFormDef, parseJsonMap, averageOfScores, type HeaderKey } from "./evaluation-forms";
 import { getLogoFile } from "./branding";
 
-const BRAND = rgb(232 / 255, 67 / 255, 10 / 255); // #e8430a
-const INK = rgb(0.06, 0.09, 0.16);
-const MUTED = rgb(0.42, 0.45, 0.5);
-const LINE = rgb(0.82, 0.84, 0.88);
+// Het evaluatieformulier zoals externe partijen (inleners, auditors, VCU) het
+// krijgen: briefhoofd met logo én bedrijfsgegevens, een leesbare scoretabel,
+// een duidelijke eindscore, ondertekening en op elke pagina een voettekst met
+// paginanummer. Zelfde huisstijl (bijna-zwart + accentkleuren) als de factuur.
+
+const DARK = rgb(0.09, 0.09, 0.09); // #171717 — sectiebalken
+const INK = rgb(0.06, 0.09, 0.16); // slate-900
+const MUTED = rgb(0.42, 0.45, 0.5); // slate-500
+const FAINT = rgb(0.62, 0.64, 0.68); // slate-400
+const LINE = rgb(0.85, 0.87, 0.9); // slate-200
+const ZEBRA = rgb(0.973, 0.977, 0.984); // slate-50
+const BOXBG = rgb(0.98, 0.984, 0.99);
 const GREEN = rgb(0.09, 0.64, 0.29);
-const RED = rgb(0.94, 0.27, 0.27);
-const BARBG = rgb(0.93, 0.93, 0.94);
-const SCORE_RGB = [
-  rgb(0.94, 0.27, 0.27),
-  rgb(0.98, 0.45, 0.09),
-  rgb(0.52, 0.8, 0.09),
-  rgb(0.09, 0.64, 0.29),
+const RED = rgb(0.86, 0.15, 0.15);
+const WHITE = rgb(1, 1, 1);
+const SCORE_RGB: RGB[] = [
+  rgb(0.86, 0.15, 0.15), // Slecht
+  rgb(0.96, 0.62, 0.04), // Matig
+  rgb(0.52, 0.8, 0.09), // Normaal
+  rgb(0.09, 0.64, 0.29), // Goed
 ];
 
 const CP1252_EXTRA = "€–—‘’“”•…™";
@@ -42,6 +51,7 @@ function sanitize(s: string): string {
 
 export type EvaluationForPdf = {
   type: string;
+  status?: string | null;
   year: number;
   quarter: number;
   evaluationDate: Date | null;
@@ -57,90 +67,161 @@ export type EvaluationForPdf = {
   answersJson: string | null;
 };
 
+/** Afzendergegevens uit Instellingen — vormen het briefhoofd en de voettekst. */
+export type EvaluationPdfCompany = {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
+  kvkNumber?: string | null;
+  vatNumber?: string | null;
+  website?: string | null;
+};
+
 const W = 595.28;
 const H = 841.89;
-const M = 50;
+const M = 48;
 const RIGHT = W - M;
-const SCORE_CX = [355, 415, 475, 528];
+const BOTTOM = 66; // ruimte voor de voettekst
+/** Middens van de vier scorekolommen. */
+const SCORE_CX = [352, 412, 472, 528];
 
 /** Render a filled-in evaluation as a Q4S PDF, driven by the form template. */
 export async function renderEvaluationPdf(
   ev: EvaluationForPdf,
   consultantName: string,
-  company: { name: string; email: string },
+  company: EvaluationPdfCompany,
 ): Promise<Uint8Array> {
   const def = getFormDef(ev.type);
   const scores = parseJsonMap(ev.scoresJson);
   const answers = parseJsonMap(ev.answersJson);
-  const headerVal = (k: HeaderKey) => (ev[k] ?? "") as string;
+  const headerVal = (k: HeaderKey) => String(ev[k] ?? "");
 
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
   let page: PDFPage = pdf.addPage([W, H]);
-  let y = H - 50;
+  let y = H - M;
 
-  const text = (s: string, x: number, size: number, f: PDFFont = font, c = INK) =>
-    page.drawText(sanitize(s), { x, y, size, font: f, color: c });
-  const textAt = (s: string, x: number, yy: number, size: number, f: PDFFont = font, c = INK) =>
+  // ---- teken-helpers ----
+  const at = (s: string, x: number, yy: number, size: number, f: PDFFont = font, c = INK) =>
     page.drawText(sanitize(s), { x, y: yy, size, font: f, color: c });
-  const textC = (s: string, cx: number, yy: number, size: number, f: PDFFont = font, c = INK) => {
+  const right = (s: string, xr: number, yy: number, size: number, f: PDFFont = font, c = INK) => {
+    const t = sanitize(s);
+    page.drawText(t, { x: xr - f.widthOfTextAtSize(t, size), y: yy, size, font: f, color: c });
+  };
+  const center = (s: string, cx: number, yy: number, size: number, f: PDFFont = font, c = INK) => {
     const t = sanitize(s);
     page.drawText(t, { x: cx - f.widthOfTextAtSize(t, size) / 2, y: yy, size, font: f, color: c });
   };
+  const rule = (yy: number, c = LINE, thickness = 1) =>
+    page.drawLine({ start: { x: M, y: yy }, end: { x: RIGHT, y: yy }, thickness, color: c });
+
+  /** Knip tekst af op een maximale breedte (met …). */
+  const clip = (s: string, maxW: number, size: number, f: PDFFont = font) => {
+    let t = sanitize(s);
+    if (f.widthOfTextAtSize(t, size) <= maxW) return t;
+    while (t.length > 1 && f.widthOfTextAtSize(`${t}…`, size) > maxW) t = t.slice(0, -1);
+    return `${t}…`;
+  };
+
+  /** Woordwikkeling; geeft de regels terug zonder te tekenen. */
+  const wrap = (s: string, maxW: number, size: number, f: PDFFont = font): string[] => {
+    const out: string[] = [];
+    let line = "";
+    for (const word of sanitize(s).split(" ")) {
+      const test = line ? `${line} ${word}` : word;
+      if (f.widthOfTextAtSize(test, size) > maxW && line) {
+        out.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    }
+    if (line) out.push(line);
+    return out;
+  };
+
   const newPage = () => {
     page = pdf.addPage([W, H]);
-    y = H - 50;
+    y = H - M;
+    // Vervolgpagina's krijgen een compacte kop, zodat losse vellen herkenbaar blijven.
+    at(def.title, M, y, 8.5, bold, MUTED);
+    right(`${consultantName} · Q${ev.quarter} ${ev.year}`, RIGHT, y, 8.5, font, MUTED);
+    y -= 8;
+    rule(y);
+    y -= 20;
   };
   const ensure = (space: number): boolean => {
-    if (y - space < 50) {
+    if (y - space < BOTTOM) {
       newPage();
       return true;
     }
     return false;
   };
 
-  // Wrapped paragraph from current y.
-  const para = (s: string, size = 9, c = INK) => {
-    const maxW = RIGHT - M;
-    let line = "";
-    for (const word of sanitize(s).split(" ")) {
-      const test = line ? `${line} ${word}` : word;
-      if (font.widthOfTextAtSize(test, size) > maxW && line) {
-        ensure(14);
-        textAt(line, M, y, size, font, c);
-        y -= 13;
-        line = word;
-      } else {
-        line = test;
-      }
-    }
-    if (line) {
-      ensure(14);
-      textAt(line, M, y, size, font, c);
-      y -= 13;
+  /** Alinea vanaf de huidige y. */
+  const para = (s: string, size = 9, c = INK, indent = 0) => {
+    for (const line of wrap(s, RIGHT - M - indent, size)) {
+      ensure(13);
+      at(line, M + indent, y, size, font, c);
+      y -= 12.5;
     }
   };
 
   const sectionBar = (label: string) => {
-    ensure(34);
-    page.drawRectangle({ x: M, y: y - 14, width: RIGHT - M, height: 18, color: BARBG });
-    textAt(label, M + 8, y - 10, 9, bold, INK);
-    y -= 30;
+    // Ruim genoeg voor de balk, de kolomkoppen én een paar regels — zo blijft er
+    // nooit een losse sectiekop onderaan een pagina staan.
+    ensure(96);
+    page.drawRectangle({ x: M, y: y - 15, width: RIGHT - M, height: 20, color: DARK });
+    at(label.toUpperCase(), M + 9, y - 9, 8.5, bold, WHITE);
+    y -= 32;
   };
 
+  /** Kolomkoppen van de scoretabel (herhaalt bij een paginawissel). */
   const scoreHeader = () => {
-    textAt("Beoordeel op", M, y, 8, bold, MUTED);
-    EVAL_SCORES.forEach((s, i) => textC(s.label, SCORE_CX[i], y, 8, bold, MUTED));
-    y -= 6;
-    page.drawLine({ start: { x: M, y }, end: { x: RIGHT, y }, thickness: 1, color: LINE });
+    at("Beoordeeld op", M, y, 7.5, bold, MUTED);
+    EVAL_SCORES.forEach((s, i) => center(s.label.toUpperCase(), SCORE_CX[i], y, 7.5, bold, MUTED));
+    y -= 7;
+    rule(y);
     y -= 14;
   };
 
-  // ---- Header ----
-  // Logo linksboven (Q4S Project Partners) i.p.v. de bedrijfsnaam als tekst.
-  let logoOk = false;
+  /** Aankruisvakje (leeg of aangevinkt) met label ernaast. */
+  const checkbox = (x: number, yy: number, checked: boolean, label: string, color: RGB) => {
+    const s = 9;
+    page.drawRectangle({
+      x,
+      y: yy - 1,
+      width: s,
+      height: s,
+      color: checked ? color : WHITE,
+      borderColor: checked ? color : LINE,
+      borderWidth: 1,
+    });
+    if (checked) {
+      page.drawLine({
+        start: { x: x + 2, y: yy + 3.2 },
+        end: { x: x + 3.6, y: yy + 1.4 },
+        thickness: 1.3,
+        color: WHITE,
+      });
+      page.drawLine({
+        start: { x: x + 3.6, y: yy + 1.4 },
+        end: { x: x + 7, y: yy + 6 },
+        thickness: 1.3,
+        color: WHITE,
+      });
+    }
+    at(label, x + s + 5, yy, 9, checked ? bold : font, checked ? color : INK);
+  };
+
+  // ---- Briefhoofd: logo links, bedrijfsgegevens rechts ----
+  const topY = H - 40;
+  let headerBottom = topY - 44;
   const logoFile = getLogoFile();
   if (logoFile && [".png", ".jpg", ".jpeg"].includes(logoFile.ext)) {
     try {
@@ -148,125 +229,338 @@ export async function renderEvaluationPdf(
         logoFile.ext === ".png"
           ? await pdf.embedPng(logoFile.bytes)
           : await pdf.embedJpg(logoFile.bytes);
-      const targetH = 40;
+      const targetH = 42;
       let w = (img.width / img.height) * targetH;
       let h = targetH;
-      const maxW = 200; // botst nooit met het periode/datum-blok rechtsboven
-      if (w > maxW) {
-        h = (maxW / w) * targetH;
-        w = maxW;
+      if (w > 170) {
+        h = (170 / w) * targetH;
+        w = 170;
       }
-      page.drawImage(img, { x: M, y: H - 46 - h, width: w, height: h });
-      y = H - 46 - h - 14;
-      logoOk = true;
+      page.drawImage(img, { x: M, y: topY - h, width: w, height: h });
+      headerBottom = Math.min(headerBottom, topY - h);
     } catch {
-      logoOk = false;
+      at(company.name || "Q4S", M, topY - 16, 18, bold, DARK);
     }
+  } else {
+    at(company.name || "Q4S", M, topY - 16, 18, bold, DARK);
   }
-  if (!logoOk) {
-    // Terugval: bedrijfsnaam als tekst (als er geen logobestand is).
-    text(company.name || "Q4S", M, 19, bold, BRAND);
-    y -= 17;
-  }
-  text(def.title, M, 11, bold, INK);
-  y -= 13;
-  text(def.subtitle, M, 9, font, MUTED);
+
+  const companyLines = [
+    [company.address, [company.postalCode, company.city].filter(Boolean).join(" ")]
+      .filter(Boolean)
+      .join(", "),
+    [company.phone, company.email].filter(Boolean).join(" · "),
+    [
+      company.kvkNumber ? `KvK ${company.kvkNumber}` : "",
+      company.vatNumber ? `BTW ${company.vatNumber}` : "",
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    company.website ?? "",
+  ].filter(Boolean) as string[];
+
+  right(company.name, RIGHT, topY - 8, 10, bold, INK);
+  companyLines.forEach((l, i) => right(l, RIGHT, topY - 21 - i * 10, 7.8, font, MUTED));
+  headerBottom = Math.min(headerBottom, topY - 21 - companyLines.length * 10);
+
+  y = headerBottom - 14;
+  rule(y, LINE, 1);
+  y -= 24;
+
+  // ---- Titel + meta ----
+  at(def.title, M, y, 15, bold, INK);
+  at(def.subtitle, M, y - 15, 9.5, font, MUTED);
   if (company.email) {
-    y -= 12;
-    text(`Retour zenden naar ${company.email}`, M, 9, font, MUTED);
+    at(`Ingevuld formulier graag retour naar ${company.email}`, M, y - 28, 8.5, font, FAINT);
   }
-  // right meta
-  textAt("PERIODE", RIGHT - 150, H - 50, 8, bold, MUTED);
-  textAt(`Q${ev.quarter} · ${ev.year}`, RIGHT - 150, H - 63, 11, bold, INK);
-  textAt("DATUM", RIGHT - 150, H - 80, 8, bold, MUTED);
-  textAt(formatDate(ev.evaluationDate), RIGHT - 150, H - 92, 9, font, INK);
-  y -= 18;
-  page.drawLine({ start: { x: M, y }, end: { x: RIGHT, y }, thickness: 1, color: LINE });
-  y -= 20;
 
-  // ---- Uitzendkracht ----
-  text("Medewerker", M, 8, bold, MUTED);
-  y -= 14;
-  text(consultantName, M, 12, bold, INK);
-  y -= 22;
-
-  // ---- Header fields ----
-  sectionBar(def.subtitle);
-  for (const h of def.headerFields) {
-    ensure(15);
-    textAt(`${h.label}`, M, y, 8, bold, MUTED);
-    textAt(headerVal(h.key) || "—", M + 230, y, 9, font, INK);
-    y -= 15;
+  // Metablok rechtsboven: periode, datum en (indien concept) de status.
+  const metaW = 150;
+  const metaX = RIGHT - metaW;
+  const isConcept = (ev.status ?? "").toUpperCase() === "CONCEPT";
+  const metaH = isConcept ? 72 : 46;
+  page.drawRectangle({
+    x: metaX,
+    y: y - metaH + 14,
+    width: metaW,
+    height: metaH,
+    color: BOXBG,
+    borderColor: LINE,
+    borderWidth: 1,
+  });
+  at("PERIODE", metaX + 10, y + 2, 7, bold, MUTED);
+  at(`Q${ev.quarter} · ${ev.year}`, metaX + 10, y - 11, 11, bold, INK);
+  at("DATUM", metaX + 88, y + 2, 7, bold, MUTED);
+  at(formatDate(ev.evaluationDate), metaX + 88, y - 11, 9, font, INK);
+  if (isConcept) {
+    at("STATUS", metaX + 10, y - 28, 7, bold, MUTED);
+    at("CONCEPT — nog niet definitief", metaX + 10, y - 41, 8, bold, rgb(0.85, 0.5, 0.04));
   }
-  y -= 6;
 
-  // ---- Score sections ----
+  y -= 52;
+
+  // ---- Medewerker + gegevens van de uitzending ----
+  const boxTop = y;
+  const gap = 14;
+  const colW = (RIGHT - M - gap) / 2;
+
+  // Links: de beoordeelde medewerker.
+  const leftLines: [string, string][] = [
+    ["Functie", headerVal("functionTitle")],
+    ["Werklocatie", headerVal("workLocation")],
+    ["Periode", headerVal("periodText")],
+  ].filter(([, v]) => v) as [string, string][];
+  const leftH = 46 + leftLines.length * 12;
+
+  // Rechts: het inlenende bedrijf en de aanvraag. Korte labels, want de volledige
+  // formuliernamen ("Aanvraagnummer of referentie") passen niet naast de waarde.
+  const SHORT_LABEL: Partial<Record<HeaderKey, string>> = {
+    clientName: "Bedrijf",
+    clientAddress: "Adres",
+    department: "Afdeling",
+    reference: "Referentie",
+  };
+  const rightKeys: HeaderKey[] = ["clientName", "clientAddress", "department", "reference"];
+  const rightLines = def.headerFields
+    .filter((h) => rightKeys.includes(h.key))
+    .map((h) => [SHORT_LABEL[h.key] ?? h.label, headerVal(h.key)] as [string, string])
+    .filter(([, v]) => v);
+  const rightH = 30 + Math.max(1, rightLines.length) * 12;
+
+  const boxH = Math.max(leftH, rightH, 78);
+  const drawBox = (x: number, title: string) => {
+    page.drawRectangle({
+      x,
+      y: boxTop - boxH + 12,
+      width: colW,
+      height: boxH,
+      color: BOXBG,
+      borderColor: LINE,
+      borderWidth: 1,
+    });
+    at(title.toUpperCase(), x + 10, boxTop, 7, bold, MUTED);
+  };
+
+  drawBox(M, "Medewerker");
+  at(clip(consultantName, colW - 20, 13, bold), M + 10, boxTop - 15, 13, bold, INK);
+  leftLines.forEach(([label, value], i) => {
+    const yy = boxTop - 32 - i * 12;
+    at(`${label}:`, M + 10, yy, 8, bold, MUTED);
+    at(clip(value, colW - 78, 8.5), M + 68, yy, 8.5, font, INK);
+  });
+
+  const rx = M + colW + gap;
+  drawBox(rx, "Inlener & opdracht");
+  if (rightLines.length === 0) {
+    at("—", rx + 10, boxTop - 16, 9, font, FAINT);
+  }
+  rightLines.forEach(([label, value], i) => {
+    const yy = boxTop - 16 - i * 12;
+    at(`${label}:`, rx + 10, yy, 8, bold, MUTED);
+    at(clip(value, colW - 82, 8.5), rx + 72, yy, 8.5, font, INK);
+  });
+
+  y = boxTop - boxH - 6;
+
+  // ---- Scoresecties ----
   for (const sec of def.scoreSections) {
     sectionBar(sec.title);
     scoreHeader();
-    for (const crit of sec.criteria) {
-      if (ensure(20)) scoreHeader();
+
+    sec.criteria.forEach((crit, idx) => {
+      if (ensure(22)) scoreHeader();
       const val = Number(scores[crit.key]);
-      textAt(crit.label, M, y, 9, font, INK);
+      const rowH = 18;
+      if (idx % 2 === 1) {
+        page.drawRectangle({
+          x: M,
+          y: y - 5,
+          width: RIGHT - M,
+          height: rowH,
+          color: ZEBRA,
+        });
+      }
+      at(clip(crit.label, 280, 9), M + 2, y, 9, font, INK);
       EVAL_SCORES.forEach((s, i) => {
         const on = val === Number(s.value);
-        textC(on ? "X" : "·", SCORE_CX[i], y, on ? 12 : 9, on ? bold : font, on ? SCORE_RGB[i] : LINE);
+        if (on) {
+          page.drawCircle({ x: SCORE_CX[i], y: y + 3, size: 5, color: SCORE_RGB[i] });
+        } else {
+          page.drawCircle({
+            x: SCORE_CX[i],
+            y: y + 3,
+            size: 4,
+            borderColor: LINE,
+            borderWidth: 1,
+            color: WHITE,
+          });
+        }
       });
-      y -= 8;
-      page.drawLine({ start: { x: M, y }, end: { x: RIGHT, y }, thickness: 1, color: LINE });
-      y -= 14;
+      y -= rowH;
+      page.drawLine({
+        start: { x: M, y: y + 8 },
+        end: { x: RIGHT, y: y + 8 },
+        thickness: 0.5,
+        color: LINE,
+      });
+    });
+
+    // Gemiddelde van deze sectie.
+    const secScores: Record<string, unknown> = {};
+    for (const c of sec.criteria) if (scores[c.key] != null) secScores[c.key] = scores[c.key];
+    const secAvg = averageOfScores(secScores);
+    if (secAvg != null) {
+      ensure(16);
+      right(
+        `Gemiddelde ${sec.title.toLowerCase()}: ${secAvg.toFixed(1).replace(".", ",")} / 4`,
+        RIGHT,
+        y,
+        8.5,
+        bold,
+        MUTED,
+      );
+      y -= 16;
     }
+
     const note = String(answers[sec.noteKey] ?? "").trim();
     if (note) {
-      y -= 2;
-      textAt("Toelichting:", M, y, 8, bold, MUTED);
+      ensure(20);
+      at("Toelichting", M, y, 7.5, bold, MUTED);
       y -= 13;
-      para(note);
+      para(note, 9, INK);
     }
-    y -= 8;
+    y -= 12;
   }
 
-  // ---- Closing block ----
+  // ---- Afronding: vrije tekst + ja/nee ----
   if (def.textFields.length > 0 || def.boolQuestions.length > 0) {
     sectionBar(def.closingTitle ?? "Afronding");
     for (const t of def.textFields) {
       const v = String(answers[t.key] ?? "").trim();
-      ensure(16);
-      textAt(`${t.label}:`, M, y, 8, bold, MUTED);
+      ensure(18);
+      at(t.label, M, y, 7.5, bold, MUTED);
       y -= 13;
-      para(v || "—");
-      y -= 4;
+      para(v || "—", 9, v ? INK : FAINT);
+      y -= 6;
     }
     for (const b of def.boolQuestions) {
-      ensure(16);
+      ensure(20);
       const v = String(answers[b.key] ?? "");
-      const yes = v === "ja";
-      const no = v === "nee";
-      textAt(b.label, M, y, 9, font, INK);
-      textAt(`${yes ? "[X]" : "[  ]"} Ja`, RIGHT - 130, y, 10, yes ? bold : font, yes ? GREEN : INK);
-      textAt(`${no ? "[X]" : "[  ]"} Nee`, RIGHT - 70, y, 10, no ? bold : font, no ? RED : INK);
-      y -= 17;
+      at(clip(b.label, 330, 9), M, y, 9, font, INK);
+      checkbox(RIGHT - 120, y, v === "ja", "Ja", GREEN);
+      checkbox(RIGHT - 58, y, v === "nee", "Nee", RED);
+      y -= 20;
     }
     const note = String(answers[def.closingNoteKey] ?? "").trim();
     if (note) {
-      y -= 2;
-      textAt("Toelichting:", M, y, 8, bold, MUTED);
+      ensure(20);
+      at("Toelichting", M, y, 7.5, bold, MUTED);
       y -= 13;
-      para(note);
+      para(note, 9, INK);
     }
-    y -= 8;
+    y -= 10;
+  }
+
+  // ---- Eindscore ----
+  const avg = averageOfScores(scores);
+  if (avg != null) {
+    ensure(58);
+    const boxH2 = 48;
+    page.drawRectangle({
+      x: M,
+      y: y - boxH2 + 12,
+      width: RIGHT - M,
+      height: boxH2,
+      color: BOXBG,
+      borderColor: LINE,
+      borderWidth: 1,
+    });
+    at("EINDSCORE", M + 12, y, 7, bold, MUTED);
+    const rounded = Math.max(1, Math.min(4, Math.round(avg)));
+    const label = EVAL_SCORES[rounded - 1]?.label ?? "";
+    at(`${avg.toFixed(1).replace(".", ",")} / 4`, M + 12, y - 18, 16, bold, INK);
+    at(label, M + 74, y - 17, 11, bold, SCORE_RGB[rounded - 1]);
+
+    // Vier segmenten; de behaalde segmenten kleuren mee.
+    const segW = 46;
+    const barX = RIGHT - 12 - segW * 4 - 6;
+    for (let i = 0; i < 4; i++) {
+      page.drawRectangle({
+        x: barX + i * (segW + 2),
+        y: y - 20,
+        width: segW,
+        height: 9,
+        color: i < rounded ? SCORE_RGB[rounded - 1] : rgb(0.9, 0.91, 0.93),
+      });
+    }
+    right(
+      `${Object.values(scores).filter((v) => Number(v) >= 1 && Number(v) <= 4).length} van ${
+        def.scoreSections.reduce((n, s) => n + s.criteria.length, 0)
+      } punten beoordeeld`,
+      RIGHT - 12,
+      y,
+      7.5,
+      font,
+      MUTED,
+    );
+    y -= boxH2 + 10;
   }
 
   // ---- Ondertekening ----
-  ensure(40);
-  page.drawLine({ start: { x: M, y }, end: { x: RIGHT, y }, thickness: 1, color: LINE });
-  y -= 18;
-  textAt(def.evaluatorLabel, M, y, 8, bold, MUTED);
-  textAt(ev.evaluatorName || "—", M, y - 13, 10, font, INK);
-  textAt("Datum", M + 230, y, 8, bold, MUTED);
-  textAt(formatDate(ev.evaluationDate), M + 230, y - 13, 10, font, INK);
-  textAt("Paraaf", M + 380, y, 8, bold, MUTED);
-  page.drawLine({ start: { x: M + 380, y: y - 14 }, end: { x: RIGHT, y: y - 14 }, thickness: 1, color: LINE });
+  ensure(70);
+  rule(y);
+  y -= 20;
+  at("ONDERTEKENING", M, y, 7, bold, MUTED);
+  y -= 20;
+  const sigCol = (x: number, label: string, value: string, width: number) => {
+    at(label, x, y, 7.5, bold, MUTED);
+    if (value) at(clip(value, width, 10), x, y - 15, 10, font, INK);
+    page.drawLine({
+      start: { x, y: y - 22 },
+      end: { x: x + width, y: y - 22 },
+      thickness: 0.8,
+      color: LINE,
+    });
+  };
+  sigCol(M, def.evaluatorLabel, ev.evaluatorName || "", 190);
+  sigCol(M + 210, "Datum", formatDate(ev.evaluationDate), 110);
+  sigCol(M + 340, "Handtekening", "", RIGHT - (M + 340));
+
+  // ---- Voettekst op elke pagina ----
+  const pages = pdf.getPages();
+  const footerLeft = [
+    company.name,
+    [company.address, [company.postalCode, company.city].filter(Boolean).join(" ")]
+      .filter(Boolean)
+      .join(", "),
+    company.kvkNumber ? `KvK ${company.kvkNumber}` : "",
+    company.vatNumber ? `BTW ${company.vatNumber}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  pages.forEach((p, i) => {
+    p.drawLine({
+      start: { x: M, y: 44 },
+      end: { x: RIGHT, y: 44 },
+      thickness: 0.8,
+      color: LINE,
+    });
+    p.drawText(sanitize(clip(footerLeft, RIGHT - M - 90, 7, font)), {
+      x: M,
+      y: 32,
+      size: 7,
+      font,
+      color: MUTED,
+    });
+    const pageLabel = `Pagina ${i + 1} van ${pages.length}`;
+    p.drawText(pageLabel, {
+      x: RIGHT - font.widthOfTextAtSize(pageLabel, 7),
+      y: 32,
+      size: 7,
+      font,
+      color: MUTED,
+    });
+  });
 
   return pdf.save();
 }
