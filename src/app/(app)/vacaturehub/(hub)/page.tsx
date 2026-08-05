@@ -1,0 +1,313 @@
+import Link from "next/link";
+import {
+  Inbox,
+  Filter,
+  Sparkles,
+  Rocket,
+  ArrowRight,
+  Plug,
+  CheckCircle2,
+} from "lucide-react";
+import { db } from "@/lib/db";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { StatusBadge } from "@/components/ui/badge";
+import { DISCIPLINES, VMS_STATUSES } from "@/lib/domain";
+import { formatDate, cn } from "@/lib/utils";
+import { bulkFilterVacancies, bulkPublishRelevant } from "../actions";
+import { getHubCounts, getSources } from "./data";
+
+type SP = { filtered?: string; published?: string; remaining?: string; error?: string };
+
+/** Eén stap in de trechter van binnenkomst tot live op de site. */
+function Step({
+  href,
+  label,
+  value,
+  sub,
+  icon,
+  tone,
+}: {
+  href: string;
+  label: string;
+  value: number;
+  sub: string;
+  icon: React.ReactNode;
+  tone: "slate" | "amber" | "violet" | "green";
+}) {
+  const tones = {
+    slate: "bg-slate-100 text-slate-600",
+    amber: "bg-amber-50 text-amber-600",
+    violet: "bg-violet-50 text-violet-600",
+    green: "bg-emerald-50 text-emerald-600",
+  };
+  return (
+    <Link
+      href={href}
+      className="group flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 hover:bg-slate-50/60"
+    >
+      <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", tones[tone])}>
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-2xl font-bold tabular-nums text-slate-900">{value}</span>
+        <span className="block text-sm font-medium text-slate-700">{label}</span>
+        <span className="block text-xs text-slate-400">{sub}</span>
+      </span>
+    </Link>
+  );
+}
+
+export default async function VacaturehubOverzichtPage({
+  searchParams,
+}: {
+  searchParams: Promise<SP>;
+}) {
+  const sp = await searchParams;
+  const [c, sources, latest] = await Promise.all([
+    getHubCounts(),
+    getSources(),
+    db.vacancy.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        title: true,
+        discipline: true,
+        location: true,
+        createdAt: true,
+        relevance: true,
+        vmsConnector: { select: { name: true } },
+      },
+    }),
+  ]);
+
+  const withIntake = sources.filter((s) => s.total > 0).slice(0, 4);
+
+  return (
+    <div className="space-y-6">
+      {sp.error === "ai" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          De AI-actie is niet gelukt. Controleer de sleutel bij Instellingen › API-sleutels.
+        </p>
+      )}
+      {sp.filtered !== undefined && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {sp.filtered} vacature(s) beoordeeld · {sp.remaining} nog te gaan.
+        </p>
+      )}
+      {sp.published !== undefined && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {sp.published} vacature(s) uitgeschreven en gepubliceerd · {sp.remaining} relevante nog te doen.
+        </p>
+      )}
+
+      {/* De route die elke vacature aflegt */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
+        <Step
+          href="/vacaturehub/instroom"
+          label="Binnengekomen"
+          value={c.total}
+          sub="uit alle bronnen"
+          icon={<Inbox className="h-5 w-5" />}
+          tone="slate"
+        />
+        <span className="hidden items-center self-center text-slate-300 lg:flex">
+          <ArrowRight className="h-5 w-5" />
+        </span>
+        <Step
+          href="/vacaturehub/beoordelen"
+          label="Te beoordelen"
+          value={c.unknown}
+          sub="wacht op de AI-filter"
+          icon={<Filter className="h-5 w-5" />}
+          tone="amber"
+        />
+        <span className="hidden items-center self-center text-slate-300 lg:flex">
+          <ArrowRight className="h-5 w-5" />
+        </span>
+        <Step
+          href="/vacaturehub/relevant"
+          label="Past bij Q4S"
+          value={c.relevant}
+          sub={`${c.toPublish} nog te publiceren`}
+          icon={<Sparkles className="h-5 w-5" />}
+          tone="violet"
+        />
+        <span className="hidden items-center self-center text-slate-300 lg:flex">
+          <ArrowRight className="h-5 w-5" />
+        </span>
+        <Step
+          href="/vacatures"
+          label="Live op de site"
+          value={c.published}
+          sub="zichtbaar op q4s.nl"
+          icon={<Rocket className="h-5 w-5" />}
+          tone="green"
+        />
+      </div>
+
+      {/* AI-pijplijn */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-violet-500" /> AI-filter
+          </CardTitle>
+          <span className="text-sm text-slate-500">Per klik wordt een batch verwerkt</span>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <form action={bulkFilterVacancies}>
+              <input type="hidden" name="back" value="/vacaturehub" />
+              <SubmitButton variant="outline" pendingLabel="AI beoordeelt…" disabled={c.unknown === 0}>
+                <Filter className="h-4 w-4" /> Beoordeel {c.unknown} nieuwe vacature(s)
+              </SubmitButton>
+            </form>
+            <form action={bulkPublishRelevant}>
+              <input type="hidden" name="back" value="/vacaturehub" />
+              <SubmitButton pendingLabel="AI schrijft…" disabled={c.toPublish === 0}>
+                <Rocket className="h-4 w-4" /> Publiceer {c.toPublish} relevante
+              </SubmitButton>
+            </form>
+          </div>
+          <div className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-500">
+            De AI legt elke binnengekomen vacature langs de Q4S-niche — QA/QC, HSE, Inspectie,
+            Welding, Coating, E&amp;I, Civiel, Offshore, Commissioning en Project Management — en
+            zet erbij waaróm iets wel of niet past. Wat relevant is, wordt uitgeschreven en op
+            q4s.nl gezet; de rest verdwijnt naar Afgewezen. Je kunt elk oordeel zelf overrulen.
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Grootste opdrachtgevers */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plug className="h-5 w-5 text-slate-500" /> Grootste opdrachtgevers
+            </CardTitle>
+            <Link
+              href="/vacaturehub/instroom"
+              className="shrink-0 text-sm font-medium text-slate-500 hover:text-slate-900"
+            >
+              Alle bronnen →
+            </Link>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {withIntake.length === 0 ? (
+              <p className="py-6 text-center text-sm text-slate-400">
+                Nog geen instroom. Koppel een platform of importeer een lijst.
+              </p>
+            ) : (
+              withIntake.map((s) => {
+                const judged = s.relevant + s.irrelevant;
+                const pct = s.total > 0 ? Math.round((judged / s.total) * 100) : 0;
+                return (
+                  <Link
+                    key={s.key}
+                    href={`/vacaturehub/instroom/${s.key}`}
+                    className="block rounded-xl border border-slate-200 p-3 transition-colors hover:border-slate-300 hover:bg-slate-50/60"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate text-sm font-semibold text-slate-900">{s.name}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-slate-500">
+                        {s.total} vacature(s)
+                      </span>
+                    </div>
+                    <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100">
+                      <span
+                        className="bg-emerald-500"
+                        style={{ width: `${(s.relevant / Math.max(1, s.total)) * 100}%` }}
+                      />
+                      <span
+                        className="bg-slate-300"
+                        style={{ width: `${(s.irrelevant / Math.max(1, s.total)) * 100}%` }}
+                      />
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-x-3 text-[11px] text-slate-500">
+                      <span className="text-emerald-700">{s.relevant} relevant</span>
+                      <span>{s.irrelevant} afgewezen</span>
+                      {s.unknown > 0 && <span className="text-amber-700">{s.unknown} te doen</span>}
+                      <span className="ml-auto">{pct}% beoordeeld</span>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Laatste instroom */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Inbox className="h-5 w-5 text-slate-500" /> Laatst binnengekomen
+            </CardTitle>
+            <Link
+              href="/vacaturehub/beoordelen"
+              className="shrink-0 text-sm font-medium text-slate-500 hover:text-slate-900"
+            >
+              Naar beoordelen →
+            </Link>
+          </CardHeader>
+          <CardContent className="divide-y divide-slate-100">
+            {latest.length === 0 ? (
+              <p className="py-6 text-center text-sm text-slate-400">Nog geen vacatures.</p>
+            ) : (
+              latest.map((v) => (
+                <div key={v.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <div className="min-w-0">
+                    <Link
+                      href={`/vacatures/${v.id}`}
+                      className="block truncate text-sm font-medium text-slate-900 hover:text-brand-700"
+                    >
+                      {v.title}
+                    </Link>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
+                      {v.vmsConnector?.name && <span>{v.vmsConnector.name}</span>}
+                      {v.location && <span>· {v.location}</span>}
+                      <span>· {formatDate(v.createdAt)}</span>
+                    </div>
+                  </div>
+                  <span className="shrink-0">
+                    {v.relevance === "RELEVANT" ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    ) : v.discipline ? (
+                      <StatusBadge options={DISCIPLINES} value={v.discipline} />
+                    ) : null}
+                  </span>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Koppelingen die (nog) niets leveren */}
+      {sources.some((s) => s.total === 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Koppelingen zonder instroom</CardTitle>
+            <Link href="/connectors" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Koppelingen beheren
+            </Link>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {sources
+              .filter((s) => s.total === 0)
+              .map((s) => (
+                <span
+                  key={s.key}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600"
+                >
+                  {s.name}
+                  <StatusBadge options={VMS_STATUSES} value={s.status} />
+                </span>
+              ))}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

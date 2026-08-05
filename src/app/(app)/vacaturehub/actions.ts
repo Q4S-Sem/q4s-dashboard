@@ -11,16 +11,38 @@ const FILTER_BATCH = 10;
 const PUBLISH_BATCH = 3;
 
 function revalidate() {
-  revalidatePath("/vacaturehub");
+  revalidatePath("/vacaturehub", "layout");
   revalidatePath("/vacatures");
   revalidatePath("/website");
   revalidatePath("/recruitment");
 }
 
-/** AI-filter all not-yet-judged vacancies (bounded batch). */
-export async function bulkFilterVacancies() {
+/** Waar de gebruiker vandaan kwam — zo landt hij terug in hetzelfde mapje. */
+function backTo(formData: FormData, fallback = "/vacaturehub"): string {
+  const back = String(formData.get("back") ?? "").trim();
+  return back.startsWith("/vacaturehub") ? back : fallback;
+}
+
+function withQuery(path: string, params: Record<string, string | number>): string {
+  const [base, existing] = path.split("?");
+  const qs = new URLSearchParams(existing);
+  for (const [k, v] of Object.entries(params)) qs.set(k, String(v));
+  return `${base}?${qs.toString()}`;
+}
+
+/** Alleen de vacatures van één bron (connector-id, of "overig" = zonder koppeling). */
+function sourceFilter(source: string) {
+  if (!source) return {};
+  return source === "overig" ? { vmsConnectorId: null } : { vmsConnectorId: source };
+}
+
+/** AI-filter de nog niet beoordeelde vacatures (per batch, evt. per bron). */
+export async function bulkFilterVacancies(formData: FormData) {
+  const source = String(formData.get("source") ?? "");
+  const where = { relevance: "UNKNOWN", ...sourceFilter(source) };
+
   const pending = await db.vacancy.findMany({
-    where: { relevance: "UNKNOWN" },
+    where,
     orderBy: { createdAt: "asc" },
     take: FILTER_BATCH,
     select: { id: true },
@@ -32,19 +54,26 @@ export async function bulkFilterVacancies() {
       await aiFilterVacancy(v.id);
       done++;
     } catch {
-      // Skip this one (e.g. AI error) and continue the batch.
+      // Sla deze over (bijv. AI-fout) en ga door met de batch.
     }
   }
 
-  const remaining = await db.vacancy.count({ where: { relevance: "UNKNOWN" } });
+  const remaining = await db.vacancy.count({ where });
   revalidate();
-  redirect(`/vacaturehub?filtered=${done}&remaining=${remaining}`);
+  redirect(withQuery(backTo(formData, "/vacaturehub/beoordelen"), { filtered: done, remaining }));
 }
 
-/** Improve + publish RELEVANT, not-yet-published vacancies (bounded batch). */
-export async function bulkPublishRelevant() {
+/** Verbeter + publiceer de relevante vacatures (per batch, evt. per bron). */
+export async function bulkPublishRelevant(formData: FormData) {
+  const source = String(formData.get("source") ?? "");
+  const where = {
+    relevance: "RELEVANT",
+    status: { not: "PUBLISHED" },
+    ...sourceFilter(source),
+  };
+
   const pending = await db.vacancy.findMany({
-    where: { relevance: "RELEVANT", status: { not: "PUBLISHED" } },
+    where,
     orderBy: { createdAt: "asc" },
     take: PUBLISH_BATCH,
     select: { id: true, improvedText: true },
@@ -60,27 +89,26 @@ export async function bulkPublishRelevant() {
       });
       done++;
     } catch {
-      // Skip and continue.
+      // Sla over en ga door.
     }
   }
 
-  const remaining = await db.vacancy.count({
-    where: { relevance: "RELEVANT", status: { not: "PUBLISHED" } },
-  });
+  const remaining = await db.vacancy.count({ where });
   revalidate();
-  redirect(`/vacaturehub?published=${done}&remaining=${remaining}`);
+  redirect(withQuery(backTo(formData, "/vacaturehub/relevant"), { published: done, remaining }));
 }
 
-/** Process ONE vacancy end-to-end: filter (if needed) -> improve -> publish if relevant. */
+/** Eén vacature volledig door de molen: filteren (indien nodig) → uitschrijven → publiceren. */
 export async function processVacancy(formData: FormData) {
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  const back = backTo(formData);
+  if (!id) redirect(back);
 
   const v = await db.vacancy.findUnique({
     where: { id },
     select: { relevance: true, improvedText: true },
   });
-  if (!v) redirect("/vacaturehub");
+  if (!v) redirect(back);
 
   try {
     let relevance = v.relevance;
@@ -93,9 +121,45 @@ export async function processVacancy(formData: FormData) {
       });
     }
   } catch {
-    redirect(`/vacaturehub?error=ai`);
+    revalidate();
+    redirect(withQuery(back, { error: "ai" }));
   }
 
   revalidate();
-  redirect("/vacaturehub");
+  redirect(back);
+}
+
+/** Eén vacature door de AI-filter halen (alleen beoordelen, niet publiceren). */
+export async function aiFilterOne(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const back = backTo(formData, "/vacaturehub/beoordelen");
+  if (!id) redirect(back);
+
+  try {
+    await aiFilterVacancy(id);
+  } catch {
+    revalidate();
+    redirect(withQuery(back, { error: "ai" }));
+  }
+  revalidate();
+  redirect(back);
+}
+
+/** Zelf het oordeel geven (of dat van de AI terugdraaien). */
+export async function setRelevance(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const value = String(formData.get("relevance") ?? "");
+  const back = backTo(formData);
+  if (!id || !["RELEVANT", "IRRELEVANT", "UNKNOWN"].includes(value)) redirect(back);
+
+  await db.vacancy.update({
+    where: { id },
+    data: {
+      relevance: value,
+      relevanceReason:
+        value === "UNKNOWN" ? null : "Handmatig beoordeeld door een recruiter.",
+    },
+  });
+  revalidate();
+  redirect(back);
 }
