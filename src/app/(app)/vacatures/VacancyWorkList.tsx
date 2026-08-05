@@ -13,8 +13,11 @@ import {
   CheckCircle2,
   AlertTriangle,
   Sparkles,
+  Send,
+  FileText,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { FolderTabBar, FolderTab } from "@/components/dossier-tabs";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -41,12 +44,12 @@ export type WorkVacancy = {
 
 type TabKey = "todo" | "live" | "paused" | "incomplete" | "all";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "todo", label: "Nog te versturen" },
-  { key: "live", label: "Live op de site" },
-  { key: "paused", label: "Gepauzeerd" },
-  { key: "incomplete", label: "Onvolledig" },
-  { key: "all", label: "Alles" },
+const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  { key: "todo", label: "Nog te versturen", icon: <Send className="h-4 w-4" /> },
+  { key: "live", label: "Live op de site", icon: <Rocket className="h-4 w-4" /> },
+  { key: "paused", label: "Gepauzeerd", icon: <Pause className="h-4 w-4" /> },
+  { key: "incomplete", label: "Onvolledig", icon: <AlertTriangle className="h-4 w-4" /> },
+  { key: "all", label: "Alles", icon: <FileText className="h-4 w-4" /> },
 ];
 
 function fold(s: string): string {
@@ -220,35 +223,23 @@ export function VacancyWorkList({ vacancies }: { vacancies: WorkVacancy[] }) {
   );
 
   return (
-    <div className="space-y-3">
-      <Card>
-        <CardContent className="space-y-3 p-4">
-          <div className="flex flex-wrap gap-1.5">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setTab(t.key)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                  tab === t.key
-                    ? "bg-slate-900 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200",
-                )}
-              >
-                {t.label}
-                <span
-                  className={cn(
-                    "rounded-full px-1.5 tabular-nums",
-                    tab === t.key ? "bg-white/20" : "bg-white/70 text-slate-500",
-                  )}
-                >
-                  {counts[t.key] ?? 0}
-                </span>
-              </button>
-            ))}
-          </div>
+    <div className="space-y-4">
+      {/* Mapjes zoals in de dossiers: elk mapje is een stap in het proces. */}
+      <FolderTabBar label="Vacatures">
+        {TABS.map((t) => (
+          <FolderTab
+            key={t.key}
+            icon={t.icon}
+            label={t.label}
+            count={counts[t.key] ?? 0}
+            active={tab === t.key}
+            onClick={() => setTab(t.key)}
+          />
+        ))}
+      </FolderTabBar>
 
+      <Card>
+        <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative min-w-0 flex-1 sm:max-w-sm">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
