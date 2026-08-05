@@ -190,7 +190,6 @@ function Row({ v }: { v: WorkVacancy }) {
 export function VacancyWorkList({ vacancies }: { vacancies: WorkVacancy[] }) {
   const [tab, setTab] = useState<TabKey>("todo");
   const [q, setQ] = useState("");
-  const [discipline, setDiscipline] = useState("");
 
   const counts = useMemo(
     () =>
@@ -201,17 +200,11 @@ export function VacancyWorkList({ vacancies }: { vacancies: WorkVacancy[] }) {
     [vacancies],
   );
 
-  const disciplines = useMemo(
-    () => [...new Set(vacancies.map((v) => v.discipline).filter(Boolean))] as string[],
-    [vacancies],
-  );
-
   const term = fold(q.trim());
   const rows = useMemo(
     () =>
       vacancies
         .filter((v) => matchesTab(v, tab))
-        .filter((v) => (discipline ? v.discipline === discipline : true))
         .filter((v) =>
           term
             ? [v.title, v.location, v.companyName, v.sourceName]
@@ -219,7 +212,7 @@ export function VacancyWorkList({ vacancies }: { vacancies: WorkVacancy[] }) {
                 .some((s) => fold(String(s)).includes(term))
             : true,
         ),
-    [vacancies, tab, discipline, term],
+    [vacancies, tab, term],
   );
 
   return (
@@ -252,37 +245,6 @@ export function VacancyWorkList({ vacancies }: { vacancies: WorkVacancy[] }) {
                 className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
               />
             </div>
-            {disciplines.length > 1 && (
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setDiscipline("")}
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
-                    discipline === ""
-                      ? "bg-brand-600 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200",
-                  )}
-                >
-                  Alle disciplines
-                </button>
-                {disciplines.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => setDiscipline(d === discipline ? "" : d)}
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
-                      discipline === d
-                        ? "bg-brand-600 text-white"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200",
-                    )}
-                  >
-                    {DISCIPLINES.find((o) => o.value === d)?.label ?? d}
-                  </button>
-                ))}
-              </div>
-            )}
             <span className="ml-auto text-xs text-slate-400">
               {rows.length} van {vacancies.length}
             </span>
@@ -295,9 +257,7 @@ export function VacancyWorkList({ vacancies }: { vacancies: WorkVacancy[] }) {
           <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
             <Sparkles className="h-6 w-6 text-slate-300" />
             <p className="text-sm text-slate-500">
-              {q || discipline
-                ? "Geen vacature gevonden met deze filters."
-                : "Niets in dit onderdeel."}
+              {q ? `Geen vacature gevonden voor “${q}”.` : "Niets in dit onderdeel."}
             </p>
           </CardContent>
         </Card>
