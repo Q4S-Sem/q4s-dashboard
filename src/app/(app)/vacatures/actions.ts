@@ -128,6 +128,42 @@ export async function improveVacancy(formData: FormData) {
   redirect(`/vacatures/${id}`);
 }
 
+/**
+ * Opslaan vanuit de controleerpagina: alleen de tekst die op de website komt
+ * (plus de praktische velden die daar meegetoond worden). Met `publish=1` gaat
+ * hij in dezelfde klik live.
+ */
+export async function saveVacancyContent(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const text = (key: string) => {
+    const v = String(formData.get(key) ?? "").trim();
+    return v || null;
+  };
+  const publish = String(formData.get("publish") ?? "") === "1";
+
+  await db.vacancy.update({
+    where: { id },
+    data: {
+      summary: text("summary"),
+      responsibilities: text("responsibilities"),
+      requirements: text("requirements"),
+      niceToHave: text("niceToHave"),
+      location: text("location"),
+      employmentType: text("employmentType"),
+      salary: text("salary"),
+      ...(publish ? { status: "PUBLISHED", publishedAt: new Date() } : {}),
+    },
+  });
+
+  revalidatePath("/vacatures");
+  revalidatePath(`/vacatures/${id}`);
+  revalidatePath("/website");
+  revalidatePath("/vacaturehub", "layout");
+  redirect(`/vacatures/${id}?saved=${publish ? "published" : "1"}`);
+}
+
 /** AI: judge whether this vacancy fits the Q4S niche (sets relevance). */
 export async function filterRelevance(formData: FormData) {
   const id = String(formData.get("id") ?? "");

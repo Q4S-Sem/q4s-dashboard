@@ -28,10 +28,10 @@ import {
 import { isAIConfigured } from "@/lib/ai";
 import { formatDate, formatDateLong } from "@/lib/utils";
 import { CopyButton } from "../CopyButton";
+import { VacancyReview } from "./VacancyReview";
 import {
   deleteVacancy,
   improveVacancy,
-  publishVacancy,
   unpublishVacancy,
   filterRelevance,
   rematchVacancyMatches,
@@ -56,10 +56,10 @@ export default async function VacatureDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, saved } = await searchParams;
 
   const vacancy = await db.vacancy.findUnique({
     where: { id },
@@ -150,63 +150,80 @@ export default async function VacatureDetailPage({
         </p>
       )}
 
-      {/* AI / publicatie-acties */}
+      {saved === "1" && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Wijzigingen opgeslagen.
+        </p>
+      )}
+      {saved === "published" && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Opgeslagen en live op de website.{" "}
+          <Link href={`/vacature/${vacancy.slug}`} target="_blank" className="font-medium underline">
+            Bekijk de pagina
+          </Link>
+          .
+        </p>
+      )}
+
+      {/* Controleren, aanpassen, laten uitschrijven en publiceren */}
+      <VacancyReview
+        aiReady={aiReady}
+        v={{
+          id: vacancy.id,
+          title: vacancy.title,
+          companyName: company,
+          disciplineLabel: labelFor(DISCIPLINES, vacancy.discipline),
+          rawText: vacancy.rawText,
+          summary: vacancy.summary ?? "",
+          responsibilities: vacancy.responsibilities ?? "",
+          requirements: vacancy.requirements ?? "",
+          niceToHave: vacancy.niceToHave ?? "",
+          location: vacancy.location ?? "",
+          employmentType: vacancy.employmentType ?? "",
+          salary: vacancy.salary ?? "",
+          isPublished,
+        }}
+      />
+
+      {/* Overige acties rond publicatie en beoordeling */}
       <Card>
-        <CardContent className="space-y-4">
-          {!aiReady && (
-            <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-              Stel ANTHROPIC_API_KEY in je .env in om AI-functies te gebruiken.
-            </p>
+        <CardContent className="flex flex-wrap items-center gap-2">
+          {aiReady && (
+            <form action={filterRelevance}>
+              <input type="hidden" name="id" value={vacancy.id} />
+              <SubmitButton variant="outline" pendingLabel="AI is bezig…">
+                <Filter className="h-4 w-4" /> Beoordeel relevantie (AI)
+              </SubmitButton>
+            </form>
           )}
-
-          <div className="flex flex-wrap items-center gap-2">
-            {aiReady && (
-              <form action={improveVacancy}>
+          {aiReady && hasContent && (
+            <form action={improveVacancy}>
+              <input type="hidden" name="id" value={vacancy.id} />
+              <SubmitButton variant="outline" pendingLabel="AI is bezig…">
+                <Sparkles className="h-4 w-4" />
+                {hasImproved ? "Volledige tekst opnieuw laten schrijven" : "Volledige tekst laten schrijven"}
+              </SubmitButton>
+            </form>
+          )}
+          {isPublished && (
+            <>
+              <Link
+                href={`/vacature/${vacancy.slug}`}
+                target="_blank"
+                className={buttonVariants({ variant: "outline" })}
+              >
+                <ExternalLink className="h-4 w-4" /> Bekijk publieke pagina
+              </Link>
+              <form action={unpublishVacancy}>
                 <input type="hidden" name="id" value={vacancy.id} />
-                <SubmitButton pendingLabel="AI is bezig…">
-                  <Sparkles className="h-4 w-4" />
-                  {hasImproved ? "Opnieuw verbeteren" : "Verbeter met AI"}
-                </SubmitButton>
+                <SubmitButton variant="outline">Van de site halen</SubmitButton>
               </form>
-            )}
-
-            {aiReady && (
-              <form action={filterRelevance}>
-                <input type="hidden" name="id" value={vacancy.id} />
-                <SubmitButton variant="outline" pendingLabel="AI is bezig…">
-                  <Filter className="h-4 w-4" /> Beoordeel relevantie (AI)
-                </SubmitButton>
-              </form>
-            )}
-
-            {!isPublished && hasContent && (
-              <form action={publishVacancy}>
-                <input type="hidden" name="id" value={vacancy.id} />
-                <SubmitButton variant="success">Publiceren</SubmitButton>
-              </form>
-            )}
-
-            {isPublished && (
-              <>
-                <Link
-                  href={`/vacature/${vacancy.slug}`}
-                  target="_blank"
-                  className={buttonVariants({ variant: "outline" })}
-                >
-                  <ExternalLink className="h-4 w-4" /> Bekijk publieke pagina
-                </Link>
-                <form action={unpublishVacancy}>
-                  <input type="hidden" name="id" value={vacancy.id} />
-                  <SubmitButton variant="outline">Depubliceren</SubmitButton>
-                </form>
-              </>
-            )}
-          </div>
-
-          {isPublished && vacancy.publishedAt && (
-            <p className="text-xs text-slate-500">
-              Gepubliceerd op {formatDateLong(vacancy.publishedAt)}.
-            </p>
+              {vacancy.publishedAt && (
+                <span className="text-xs text-slate-500">
+                  live sinds {formatDateLong(vacancy.publishedAt)}
+                </span>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -269,16 +286,20 @@ export default async function VacatureDetailPage({
         </CardContent>
       </Card>
 
-      {/* Origineel */}
+      {/* Origineel — ingeklapt, want je werkt normaal met de uitgeschreven tekst */}
       <Card>
-        <CardHeader>
-          <CardTitle>Origineel</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="whitespace-pre-wrap text-sm text-slate-700">
-            {vacancy.rawText}
-          </p>
-        </CardContent>
+        <details className="group">
+          <summary className="flex cursor-pointer items-center justify-between gap-4 px-5 py-4 text-base font-semibold text-slate-900">
+            Originele tekst zoals binnengekomen
+            <span className="text-sm font-normal text-slate-400 group-open:hidden">tonen</span>
+            <span className="hidden text-sm font-normal text-slate-400 group-open:inline">
+              verbergen
+            </span>
+          </summary>
+          <div className="border-t border-slate-100 px-5 py-4">
+            <p className="whitespace-pre-wrap text-sm text-slate-700">{vacancy.rawText}</p>
+          </div>
+        </details>
       </Card>
 
       {/* Sollicitaties */}
