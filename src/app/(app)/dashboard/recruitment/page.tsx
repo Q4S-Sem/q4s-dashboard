@@ -232,7 +232,7 @@ export default async function RecruitmentDashboardPage() {
       <SectionCard
         icon={<Eye className="h-4 w-4" />}
         title="Best bekeken vacatures"
-        action={<ActionLink href="/vacatures">Alle vacatures →</ActionLink>}
+        action={<ActionLink href="/vacatures">Vacatures maken →</ActionLink>}
       >
         {topVacancies.length === 0 ? (
           <Empty>Nog geen vacatures.</Empty>

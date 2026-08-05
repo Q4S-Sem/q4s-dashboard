@@ -87,7 +87,7 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
               href="/vacatures"
               className={buttonVariants({ variant: "outline", size: "sm", className: "ml-auto" })}
             >
-              Alle vacatures beheren
+              Naar maken
             </Link>
           </div>
         </CardContent>

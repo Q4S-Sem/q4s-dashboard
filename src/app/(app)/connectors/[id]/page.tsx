@@ -226,7 +226,7 @@ export default async function ConnectorDetailPage({
             href="/vacatures"
             className={buttonVariants({ variant: "outline", size: "sm" })}
           >
-            Alle vacatures
+            Vacatures maken
           </Link>
         </CardHeader>
         {connector.vacancies.length === 0 ? (

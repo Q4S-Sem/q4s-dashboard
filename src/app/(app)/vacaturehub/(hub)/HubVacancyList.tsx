@@ -1,7 +1,17 @@
 import Link from "next/link";
-import { MapPin, Sparkles, Check, X, Rocket, RotateCcw, ExternalLink } from "lucide-react";
+import {
+  MapPin,
+  Sparkles,
+  Check,
+  X,
+  Rocket,
+  RotateCcw,
+  ExternalLink,
+  PencilLine,
+} from "lucide-react";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DISCIPLINES, VACANCY_STATUSES, VACANCY_RELEVANCE } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
@@ -111,10 +121,11 @@ function Row({ v, mode, back }: { v: HubVacancy; mode: HubListMode; back: string
         {mode === "publish" && (
           <>
             <Link
-              href={`/vacatures/${v.id}/bewerken`}
-              className="text-sm font-medium text-slate-500 hover:text-slate-900"
+              href={`/vacatures/${v.id}`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+              title="Zelf uitschrijven op de maken-pagina"
             >
-              Bewerken
+              <PencilLine className="h-3.5 w-3.5" /> Naar maken
             </Link>
             {v.status === "PUBLISHED" ? (
               <a

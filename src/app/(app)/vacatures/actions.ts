@@ -86,6 +86,34 @@ export async function createVacancy(
   redirect(`/vacatures/${created.id}`);
 }
 
+/**
+ * Snel toevoegen vanaf de maken-pagina: plak de binnengekomen tekst, wij maken
+ * er een concept van en brengen je meteen naar de werkplek om 'm uit te schrijven.
+ * Geen titel ingevuld? Dan pakken we de eerste regel van de tekst.
+ */
+export async function quickCreateVacancy(formData: FormData) {
+  const rawText = String(formData.get("rawText") ?? "").trim();
+  if (!rawText) redirect("/vacatures?error=leeg");
+
+  const typedTitle = String(formData.get("title") ?? "").trim();
+  const firstLine = rawText.split("\n")[0]?.trim() ?? "";
+  const title = (typedTitle || firstLine || "Nieuwe vacature").slice(0, 120);
+
+  const created = await db.vacancy.create({
+    data: {
+      title,
+      rawText,
+      status: "CONCEPT",
+      source: "MANUAL",
+      slug: makeSlug(title),
+    },
+  });
+
+  revalidatePath("/vacatures");
+  revalidatePath("/vacaturehub", "layout");
+  redirect(`/vacatures/${created.id}`);
+}
+
 export async function updateVacancy(
   _prev: FormState,
   formData: FormData,

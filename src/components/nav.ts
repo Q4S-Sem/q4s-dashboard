@@ -26,6 +26,7 @@ import {
   Sparkles,
   Factory,
   Plug,
+  PencilLine,
   Filter,
   Users,
   ClipboardList,
@@ -183,7 +184,7 @@ const HUB_LIST: NavHub[] = [
     items: [
       { href: "/website", label: "Overzicht", icon: Globe, exact: true },
       { href: "/vacaturehub", label: "Vacaturehub", icon: Filter },
-      { href: "/vacatures", label: "Alle vacatures", icon: FileText },
+      { href: "/vacatures", label: "Maken", icon: PencilLine },
       { href: "/website/vacatures", label: "Op de website", icon: Globe },
     ],
   },
