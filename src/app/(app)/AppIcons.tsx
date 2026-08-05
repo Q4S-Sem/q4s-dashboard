@@ -173,7 +173,6 @@ export const APP_ICONS: Record<string, React.FC<IconProps>> = {
   "/evaluaties": Evaluaties,
   "/agenda": Agenda,
   "/recruitment": Recruitment,
-  "/msp": Msp,
   "/socials": Socials,
   "/website": Vacatures,
   "/data": Data,

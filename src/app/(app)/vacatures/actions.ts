@@ -185,7 +185,7 @@ export async function rematchVacancyMatches(formData: FormData) {
   const count = await rematchVacancy(id);
   if (count > 0) await aiRefineMatches(id);
   revalidatePath(`/vacatures/${id}`);
-  revalidatePath("/msp");
+  revalidatePath("/vacaturehub", "layout");
   redirect(`/vacatures/${id}`);
 }
 

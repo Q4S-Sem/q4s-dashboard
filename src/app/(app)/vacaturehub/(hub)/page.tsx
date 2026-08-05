@@ -7,18 +7,29 @@ import {
   ArrowRight,
   Plug,
   CheckCircle2,
+  BellRing,
+  Workflow,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { StatusBadge } from "@/components/ui/badge";
-import { DISCIPLINES, VMS_STATUSES } from "@/lib/domain";
+import { StatusBadge, Badge } from "@/components/ui/badge";
+import { DISCIPLINES, VMS_STATUSES, ALERT_TYPES, labelFor, colorFor } from "@/lib/domain";
 import { formatDate, cn } from "@/lib/utils";
 import { bulkFilterVacancies, bulkPublishRelevant } from "../actions";
+import { processQueue, markAllAlertsRead } from "../intake-actions";
 import { getHubCounts, getSources } from "./data";
 
-type SP = { filtered?: string; published?: string; remaining?: string; error?: string };
+type SP = {
+  filtered?: string;
+  published?: string;
+  remaining?: string;
+  error?: string;
+  batch?: string;
+  rel?: string;
+  failed?: string;
+};
 
 /** Eén stap in de trechter van binnenkomst tot live op de site. */
 function Step({
@@ -65,7 +76,7 @@ export default async function VacaturehubOverzichtPage({
   searchParams: Promise<SP>;
 }) {
   const sp = await searchParams;
-  const [c, sources, latest] = await Promise.all([
+  const [c, sources, latest, alerts, unreadAlerts] = await Promise.all([
     getHubCounts(),
     getSources(),
     db.vacancy.findMany({
@@ -81,6 +92,8 @@ export default async function VacaturehubOverzichtPage({
         vmsConnector: { select: { name: true } },
       },
     }),
+    db.recruiterAlert.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
+    db.recruiterAlert.count({ where: { read: false } }),
   ]);
 
   const withIntake = sources.filter((s) => s.total > 0).slice(0, 4);
@@ -100,6 +113,13 @@ export default async function VacaturehubOverzichtPage({
       {sp.published !== undefined && (
         <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           {sp.published} vacature(s) uitgeschreven en gepubliceerd · {sp.remaining} relevante nog te doen.
+        </p>
+      )}
+      {sp.batch !== undefined && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {sp.batch} vacature(s) door de volledige pijplijn · {sp.rel} relevant · {sp.remaining} nog
+          in de wachtrij
+          {Number(sp.failed) > 0 ? ` · ${sp.failed} stap(pen) mislukt` : ""}.
         </p>
       )}
 
@@ -168,6 +188,17 @@ export default async function VacaturehubOverzichtPage({
               <input type="hidden" name="back" value="/vacaturehub" />
               <SubmitButton pendingLabel="AI schrijft…" disabled={c.toPublish === 0}>
                 <Rocket className="h-4 w-4" /> Publiceer {c.toPublish} relevante
+              </SubmitButton>
+            </form>
+            <form action={processQueue}>
+              <input type="hidden" name="back" value="/vacaturehub" />
+              <SubmitButton
+                variant="outline"
+                pendingLabel="Pijplijn draait…"
+                disabled={c.unknown === 0}
+                title="Beoordelen, uitschrijven, publiceren en kandidaten matchen in één keer"
+              >
+                <Workflow className="h-4 w-4" /> Volledige pijplijn (5)
               </SubmitButton>
             </form>
           </div>
@@ -283,6 +314,58 @@ export default async function VacaturehubOverzichtPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Meldingen uit de intake — wat de pijplijn zelf heeft gedaan */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BellRing className="h-5 w-5 text-slate-500" /> Meldingen
+            {unreadAlerts > 0 && (
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-semibold text-white">
+                {unreadAlerts}
+              </span>
+            )}
+          </CardTitle>
+          {unreadAlerts > 0 && (
+            <form action={markAllAlertsRead}>
+              <SubmitButton variant="ghost" size="sm">
+                Alles gelezen
+              </SubmitButton>
+            </form>
+          )}
+        </CardHeader>
+        {alerts.length === 0 ? (
+          <CardContent className="text-sm text-slate-500">
+            Nog geen meldingen. Elke verwerkte levering zet hier (en in het belletje bovenin) een
+            melding neer.
+          </CardContent>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {alerts.map((a) => (
+              <li
+                key={a.id}
+                className={cn("flex items-start gap-3 px-5 py-3", !a.read && "bg-amber-50/40")}
+              >
+                <Badge color={colorFor(ALERT_TYPES, a.type)}>{labelFor(ALERT_TYPES, a.type)}</Badge>
+                <div className="min-w-0 flex-1">
+                  {a.href ? (
+                    <Link
+                      href={a.href}
+                      className="block text-sm font-medium text-slate-900 hover:text-brand-700"
+                    >
+                      {a.title}
+                    </Link>
+                  ) : (
+                    <span className="block text-sm font-medium text-slate-900">{a.title}</span>
+                  )}
+                  {a.body && <p className="mt-0.5 text-xs text-slate-500">{a.body}</p>}
+                </div>
+                <span className="shrink-0 text-xs text-slate-400">{formatDate(a.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       {/* Koppelingen die (nog) niets leveren */}
       {sources.some((s) => s.total === 0) && (

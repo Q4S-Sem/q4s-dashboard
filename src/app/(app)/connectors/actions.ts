@@ -114,7 +114,7 @@ export async function addKnownConnector(formData: FormData) {
     },
   });
   revalidatePath("/connectors");
-  revalidatePath("/msp");
+  revalidatePath("/vacaturehub", "layout");
   redirect(`/connectors/${created.id}?added=1`);
 }
 
@@ -150,7 +150,7 @@ export async function updateConnector(
   await db.vmsConnector.update({ where: { id }, data });
   revalidatePath("/connectors");
   revalidatePath(`/connectors/${id}`);
-  revalidatePath("/msp");
+  revalidatePath("/vacaturehub", "layout");
   redirect(`/connectors/${id}`);
 }
 

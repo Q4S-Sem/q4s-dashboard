@@ -98,7 +98,7 @@ export default async function ConnectorDetailPage({
             <>
               De API-koppeling is ingesteld — de dagelijkse sync haalt automatisch nieuwe
               vacatures op en stuurt ze door de intake-pijplijn. Volg de instroom op de{" "}
-              <Link href="/msp" className="font-medium underline">
+              <Link href="/vacaturehub" className="font-medium underline">
                 MSP-intake
               </Link>
               -pagina.
@@ -107,7 +107,7 @@ export default async function ConnectorDetailPage({
             <>
               De echte API-key komt later. Plak hem bij <em>Bewerken</em> zodra je hem hebt; tot
               die tijd komt instroom binnen via de webhook, de testlevering op de{" "}
-              <Link href="/msp" className="font-medium underline">
+              <Link href="/vacaturehub" className="font-medium underline">
                 MSP-intake
               </Link>
               -pagina, of handmatig plakken hieronder.

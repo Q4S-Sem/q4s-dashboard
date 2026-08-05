@@ -115,7 +115,7 @@ export async function POST(req: Request) {
     await createAlert({
       type: "SYNC",
       title: `${connector.name}: ${createdIds.length} vacature(s) aangeleverd via de webhook`,
-      href: "/msp",
+      href: "/vacaturehub",
       vmsConnectorId: connector.id,
     });
   }

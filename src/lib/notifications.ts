@@ -116,7 +116,7 @@ export async function getNotifications(): Promise<Notifications> {
     { key: "certificeringen", label: "Certificaten", href: "/certificeringen", late: certLate, today: certToday, future: certFuture },
     { key: "facturen", label: "Facturen", href: "/facturen", late: facLate, today: facToday, future: facFuture },
     { key: "inbox", label: "Timesheet-inbox", href: "/inbox", late: 0, today: inboxCount, future: 0 },
-    { key: "msp", label: "MSP-intake", href: "/msp", late: 0, today: mspUnread, future: 0 },
+    { key: "msp", label: "Vacature-intake", href: "/vacaturehub", late: 0, today: mspUnread, future: 0 },
     {
       key: "factuur-afwijking",
       label: "Factuur wijkt af van tarief",
@@ -173,7 +173,7 @@ export function hubActionCounts(badges: NavBadges, notifs: Notifications): Recor
     "/agenda": urgent("agenda") + urgent("taken"),
     // Recruitment: nieuwe sollicitaties die opvolging nodig hebben.
     "/recruitment": all("sollicitaties"),
-    // MSP: ongelezen intake-meldingen.
-    "/msp": all("msp"),
+    // Vacatures: ongelezen meldingen uit de intake (vacaturehub).
+    "/website": all("msp"),
   };
 }

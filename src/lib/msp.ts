@@ -600,7 +600,7 @@ export async function simulateMspDelivery(connectorKey = "magnit"): Promise<{
         ? `Testlevering via ${connector.name}: ${createdIds.length} vacature(s) ontvangen`
         : `Testlevering via ${connector.name}: geen nieuwe (alle ${skipped} al aanwezig)`,
     body: "Gesimuleerde levering — zo werkt de koppeling straks met de echte API-key.",
-    href: "/msp",
+    href: "/vacaturehub",
     vmsConnectorId: connector.id,
   });
 
@@ -740,7 +740,7 @@ export async function pullConnector(connectorId: string): Promise<PullResult | n
       type: "ERROR",
       title: `${connector.name}: API-pull mislukt`,
       body: fetched.error,
-      href: "/msp",
+      href: "/vacaturehub",
       vmsConnectorId: connector.id,
     });
     return { ok: false, received: 0, created: 0, results: [], error: fetched.error };
@@ -753,7 +753,7 @@ export async function pullConnector(connectorId: string): Promise<PullResult | n
     await createAlert({
       type: "SYNC",
       title: `${connector.name}: ${createdIds.length} nieuwe vacature(s) via de API`,
-      href: "/msp",
+      href: "/vacaturehub",
       vmsConnectorId: connector.id,
     });
   }

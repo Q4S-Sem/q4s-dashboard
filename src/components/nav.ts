@@ -158,25 +158,13 @@ const HUB_LIST: NavHub[] = [
       { href: "/crm/contacten", label: "Contacten", icon: Contact, section: "CRM" },
       { href: "/crm/opvolging", label: "Opvolging", icon: CalendarClock, section: "CRM" },
       { href: "/crm/inzichten", label: "Inzichten", icon: BarChart3, section: "CRM" },
+      { href: "/opdrachtgevers", label: "Opdrachtgevers", icon: Factory, section: "CRM" },
       { href: "/crm/instellingen", label: "CRM-instellingen", icon: Settings, section: "CRM" },
       { href: "/kandidaten", label: "Talentpool", icon: Users, section: "Kandidaten" },
       { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, section: "Kandidaten" },
       { href: "/sollicitaties", label: "Sollicitaties", icon: ClipboardList, section: "Kandidaten" },
       { href: "/website/cv-inbox", label: "Binnengekomen CV's", icon: Inbox, exact: true, section: "CV's" },
       { href: "/website/cv-inbox/matches", label: "CV-matches", icon: Target, section: "CV's" },
-    ],
-  },
-  {
-    // Eigen hub voor de MSP-pijplijn: koppelingen met Magnit e.a. NL-MSP's →
-    // vacatures binnenhalen + filteren → op de website plaatsen → matchen in de
-    // database. Losgetrokken uit Recruitment zodat het personeel hier gericht werkt.
-    label: "MSP",
-    href: "/msp",
-    icon: Zap,
-    items: [
-      { href: "/msp", label: "Overzicht", icon: Zap, exact: true, section: "Intake" },
-      { href: "/connectors", label: "MSP-koppelingen", icon: Plug, section: "Koppelingen" },
-      { href: "/opdrachtgevers", label: "Opdrachtgevers", icon: Factory, section: "Koppelingen" },
     ],
   },
   {
@@ -197,6 +185,7 @@ const HUB_LIST: NavHub[] = [
       { href: "/vacaturehub", label: "Vacaturehub", icon: Filter },
       { href: "/vacatures", label: "Alle vacatures", icon: FileText },
       { href: "/website/vacatures", label: "Op de website", icon: Globe },
+      { href: "/connectors", label: "Koppelingen", icon: Plug },
     ],
   },
   {
@@ -234,7 +223,6 @@ const HUB_ORDER = [
   "/verwerken", // Facturatie
   "/recruitment",
   "/agenda",
-  "/msp",
   "/website",
   "/socials",
   "/evaluaties",

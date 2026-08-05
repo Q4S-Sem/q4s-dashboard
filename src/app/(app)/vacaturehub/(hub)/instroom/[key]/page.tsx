@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Filter, Rocket, Plug, ExternalLink } from "lucide-react";
+import { ArrowLeft, Filter, Rocket, Plug, ExternalLink, Download } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -10,10 +10,21 @@ import { StatusBadge } from "@/components/ui/badge";
 import { VMS_STATUSES } from "@/lib/domain";
 import { formatDate, cn } from "@/lib/utils";
 import { bulkFilterVacancies, bulkPublishRelevant } from "../../../actions";
+import { pullNow } from "../../../intake-actions";
 import { getSource, sourceWhere, OVERIG_KEY } from "../../data";
 import { HubVacancyList, HUB_VACANCY_SELECT, toHubVacancies } from "../../HubVacancyList";
 
-type SP = { tab?: string; filtered?: string; published?: string; remaining?: string; error?: string };
+type SP = {
+  tab?: string;
+  filtered?: string;
+  published?: string;
+  remaining?: string;
+  error?: string;
+  pull?: string;
+  received?: string;
+  created?: string;
+  msg?: string;
+};
 
 const TABS = [
   { key: "unknown", label: "Te beoordelen" },
@@ -70,6 +81,15 @@ export default async function BronPage({
           <ArrowLeft className="h-4 w-4" /> Alle opdrachtgevers
         </Link>
         <div className="flex flex-wrap items-center gap-2">
+          {source.id && (
+            <form action={pullNow}>
+              <input type="hidden" name="id" value={source.id} />
+              <input type="hidden" name="back" value={`/vacaturehub/instroom/${key}`} />
+              <SubmitButton variant="outline" size="sm" pendingLabel="Ophalen…">
+                <Download className="h-4 w-4" /> Nu ophalen
+              </SubmitButton>
+            </form>
+          )}
           {source.website && (
             <a
               href={source.website.startsWith("http") ? source.website : `https://${source.website}`}
@@ -91,6 +111,21 @@ export default async function BronPage({
       {sp.error === "ai" && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           De AI-actie is niet gelukt. Controleer de sleutel bij Instellingen › API-sleutels.
+        </p>
+      )}
+      {sp.pull === "ok" && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Opgehaald: {sp.received} ontvangen · {sp.created} nieuw toegevoegd.
+        </p>
+      )}
+      {sp.pull === "no-config" && (
+        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Deze koppeling heeft nog geen API-adres en sleutel — vul die in bij de koppeling.
+        </p>
+      )}
+      {sp.pull === "error" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Ophalen mislukt: {sp.msg}
         </p>
       )}
       {sp.filtered !== undefined && (

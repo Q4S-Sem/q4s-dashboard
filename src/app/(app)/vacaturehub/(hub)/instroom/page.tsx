@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plug, ArrowRight, Upload, Building2, Plus } from "lucide-react";
+import { Plug, ArrowRight, Upload, Building2, Plus, PlugZap } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
@@ -8,10 +8,21 @@ import { StatusBadge } from "@/components/ui/badge";
 import { VMS_STATUSES } from "@/lib/domain";
 import { MSP_PROVIDERS } from "@/lib/msp-providers";
 import { addKnownConnector } from "../../../connectors/actions";
+import { simulateDelivery } from "../../intake-actions";
 import { formatDate, cn } from "@/lib/utils";
 import { getSources, OVERIG_KEY } from "../data";
 
 export const metadata = { title: "Opdrachtgevers · Vacaturehub" };
+
+type SP = {
+  sim?: string;
+  skipped?: string;
+  rel?: string;
+  pull?: string;
+  received?: string;
+  created?: string;
+  msg?: string;
+};
 
 /** Verdeling relevant / afgewezen / nog te beoordelen als één balkje. */
 function Split({ relevant, irrelevant, unknown }: { relevant: number; irrelevant: number; unknown: number }) {
@@ -27,7 +38,8 @@ function Split({ relevant, irrelevant, unknown }: { relevant: number; irrelevant
   );
 }
 
-export default async function InstroomPage() {
+export default async function InstroomPage({ searchParams }: { searchParams: Promise<SP> }) {
+  const sp = await searchParams;
   const [sources, connected] = await Promise.all([
     getSources(),
     db.vmsConnector.findMany({ select: { key: true } }),
@@ -41,12 +53,39 @@ export default async function InstroomPage() {
 
   return (
     <div className="space-y-6">
+      {sp.sim !== undefined && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Testlevering verwerkt: {sp.sim} nieuw · {sp.skipped} dubbel · {sp.rel} relevant.
+        </p>
+      )}
+      {sp.pull === "ok" && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Opgehaald: {sp.received} ontvangen · {sp.created} nieuw toegevoegd.
+        </p>
+      )}
+      {sp.pull === "no-config" && (
+        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Deze koppeling heeft nog geen API-adres en sleutel. Vul die in bij de koppeling.
+        </p>
+      )}
+      {sp.pull === "error" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Ophalen mislukt: {sp.msg}
+        </p>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-slate-500" /> Waar de vacatures vandaan komen
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <form action={simulateDelivery}>
+              <input type="hidden" name="back" value="/vacaturehub/instroom" />
+              <SubmitButton variant="outline" size="sm" pendingLabel="Bezig…">
+                <PlugZap className="h-4 w-4" /> Testlevering
+              </SubmitButton>
+            </form>
             <Link href="/vacatures/importeren" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <Upload className="h-4 w-4" /> Bulk-import
             </Link>
@@ -58,7 +97,8 @@ export default async function InstroomPage() {
         <CardContent>
           <p className="text-sm text-slate-500">
             Elke opdrachtgever of inhuurdesk levert vacatures aan. Klik een bron open om te zien wat
-            er binnenkwam, wat de AI ervan vond en wat er nog beoordeeld moet worden.
+            er binnenkwam, wat de AI ervan vond en wat er nog beoordeeld moet worden. Met
+            “Testlevering” duw je een voorbeeldlevering door de hele pijplijn.
           </p>
         </CardContent>
       </Card>
