@@ -15,13 +15,24 @@ const svg = (children: React.ReactNode) =>
     );
   };
 
-// 1) Dashboard — vier gekleurde tegels.
-const Dashboard = svg(
+// 1) Analytics — oplopende staven met een stijgende trendlijn erboven.
+const Analytics = svg(
   <>
-    <rect x="6" y="6" width="15.5" height="15.5" rx="3.5" fill="#7c3aed" />
-    <rect x="26.5" y="6" width="15.5" height="15.5" rx="3.5" fill="#f43f5e" />
-    <rect x="6" y="26.5" width="15.5" height="15.5" rx="3.5" fill="#2563eb" />
-    <rect x="26.5" y="26.5" width="15.5" height="15.5" rx="3.5" fill="#10b981" />
+    {/* Staven op één basislijn (y=42), oplopend */}
+    <rect x="7" y="27" width="9" height="15" rx="2.6" fill="#2563eb" />
+    <rect x="19.5" y="20" width="9" height="22" rx="2.6" fill="#7c3aed" />
+    <rect x="32" y="13" width="9" height="29" rx="2.6" fill="#10b981" />
+    {/* Trendlijn erboven, met knikpunt en eindpunt */}
+    <path
+      d="M11.5 23 L24 16 L36.5 9"
+      stroke="#f59e0b"
+      strokeWidth="3"
+      fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="36.5" cy="9" r="3.4" fill="#f59e0b" />
+    <circle cx="11.5" cy="23" r="2.4" fill="#fbbf24" />
   </>,
 );
 
@@ -156,7 +167,7 @@ const Msp = svg(
 /** Custom icoon per hub-href. Ontbreekt er één, dan valt het startscherm terug
  *  op het lucide-icoon uit nav.ts. */
 export const APP_ICONS: Record<string, React.FC<IconProps>> = {
-  "/dashboard": Dashboard,
+  "/dashboard": Analytics,
   "/verwerken": Facturatie,
   "/klanten": Stamgegevens,
   "/evaluaties": Evaluaties,

@@ -40,7 +40,7 @@ type RouteEntry = { href: string; label: string; hub: string };
 /** Alle bereikbare pagina's uit de navigatie — de bron voor route-suggesties. */
 function routeCatalog(): RouteEntry[] {
   const out: RouteEntry[] = [
-    { href: DASHBOARD_APP.href, label: DASHBOARD_APP.label, hub: "Dashboard" },
+    { href: DASHBOARD_APP.href, label: DASHBOARD_APP.label, hub: "Analytics" },
   ];
   for (const hub of HUBS) {
     for (const item of hub.items) {

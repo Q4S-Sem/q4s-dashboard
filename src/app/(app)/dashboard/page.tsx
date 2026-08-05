@@ -50,7 +50,7 @@ import { invoicingOverview, pendingWorkByConsultant, companyCostsThisYear } from
 import { dashboardComposition } from "@/lib/dashboard-analytics";
 import type { ReactNode } from "react";
 
-export const metadata = { title: "Dashboard" };
+export const metadata = { title: "Analytics" };
 export const dynamic = "force-dynamic";
 
 const monthFmt = new Intl.DateTimeFormat("nl-NL", { month: "short" });
@@ -364,7 +364,7 @@ export default async function DashboardPage({
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Dashboard"
+        title="Analytics"
         description="Hoe staat Q4S ervoor — omzet, marge, recruitment en dossiers. Filter op heel jaar of een kwartaal; alle cijfers passen zich aan."
       />
 

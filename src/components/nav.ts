@@ -16,6 +16,7 @@ import {
   FolderOpen,
   Cloud,
   BarChart3,
+  ChartNoAxesCombined,
   Target,
   Inbox,
   Coins,
@@ -73,18 +74,18 @@ export type NavHub = {
   items: NavItem[];
 };
 
-/** The standalone Dashboard "app" (no sub-menu). */
+/** The standalone Analytics "app" (route blijft /dashboard). */
 export const DASHBOARD_APP = {
-  label: "Dashboard",
+  label: "Analytics",
   href: "/dashboard",
-  icon: LayoutDashboard,
+  icon: ChartNoAxesCombined,
 };
 
 const HUB_LIST: NavHub[] = [
   {
-    label: "Dashboard",
+    label: "Analytics",
     href: "/dashboard",
-    icon: LayoutDashboard,
+    icon: ChartNoAxesCombined,
     items: [
       { href: "/dashboard", label: "Overzicht", icon: LayoutDashboard, exact: true },
       { href: "/dashboard/te-doen", label: "Te doen", icon: ListTodo, badge: "teDoen" },
@@ -238,9 +239,9 @@ const HUB_ORDER = [
   "/msp",
   "/website",
   "/socials",
-  "/dashboard",
-  "/data",
   "/evaluaties",
+  "/dashboard", // Analytics
+  "/data",
   "/gebruikers", // Instellingen
 ];
 
