@@ -211,7 +211,7 @@ export default async function BeschikbaarPage({
             <UserCheck className="h-6 w-6" />
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
+            <h1 className="text-2xl font-semibold text-ink-900">
               Beschikbare kandidaten
             </h1>
             <p className="mt-0.5 text-sm text-ink-600">

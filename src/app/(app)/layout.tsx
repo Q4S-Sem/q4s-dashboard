@@ -3,7 +3,6 @@ import { AppShell } from "@/components/app-shell";
 import { FormAutosave } from "@/components/form-autosave";
 import { getNavBadges } from "@/lib/facturatie";
 import { getNotifications } from "@/lib/notifications";
-import { getLogoSrc } from "@/lib/branding";
 import { currentUser, authRequired } from "@/lib/session";
 import { ensureAiKeysLoaded } from "@/lib/ai-keys";
 
@@ -26,11 +25,10 @@ export default async function AppLayout({
     getNotifications(),
     ensureAiKeysLoaded(),
   ]);
-  const logoSrc = getLogoSrc();
   return (
     <>
       <FormAutosave />
-      <AppShell badges={badges} notifications={notifications} logoSrc={logoSrc} user={user}>
+      <AppShell badges={badges} notifications={notifications} user={user}>
         {children}
       </AppShell>
     </>

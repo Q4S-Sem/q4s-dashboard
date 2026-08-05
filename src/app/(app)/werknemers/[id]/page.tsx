@@ -130,7 +130,7 @@ export default async function WerknemerDetailPage({
             {initials || <User className="h-7 w-7" />}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
+            <h1 className="text-2xl font-semibold text-ink-900">
               {c.firstName} {c.lastName}
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">

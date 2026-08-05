@@ -140,7 +140,7 @@ export default async function BronPage({
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-xl font-bold tracking-tight text-ink-900">{source.name}</h2>
+        <h2 className="text-xl font-semibold text-ink-900">{source.name}</h2>
         {source.key !== OVERIG_KEY && <StatusBadge options={VMS_STATUSES} value={source.status} />}
         {source.lastIn && (
           <span className="text-sm text-ink-500">laatste levering {formatDate(source.lastIn)}</span>

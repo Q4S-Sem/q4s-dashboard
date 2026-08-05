@@ -64,7 +64,7 @@ export default async function MedewerkerDossierLayout({
             {initials(m.firstName, m.lastName)}
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
+            <h1 className="text-2xl font-semibold text-ink-900">
               {m.firstName} {m.lastName}
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-500">

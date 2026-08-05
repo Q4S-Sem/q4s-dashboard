@@ -31,7 +31,7 @@ export function HubCard({
       <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-brand-50 text-brand-600 transition-transform duration-200 group-hover:scale-110">
         {icon}
       </div>
-      <h3 className="mt-5 text-lg font-black tracking-tight text-ink-900">
+      <h3 className="mt-5 text-lg font-bold text-ink-900">
         {title}
       </h3>
       <p className="mt-1.5 flex-1 text-sm text-ink-400">{description}</p>

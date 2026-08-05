@@ -113,10 +113,10 @@ export function KanbanBoard({
                   HEADER[col.color ?? "slate"],
                 )}
               >
-                <span className="truncate text-[11px] font-black uppercase tracking-[0.12em]">
+                <span className="truncate text-[13px] font-semibold">
                   {col.label}
                 </span>
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/70 px-1.5 text-[11px] font-black tabular-nums">
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/70 px-1.5 text-[11px] font-bold tabular-nums">
                   {colCards.length}
                 </span>
               </div>
@@ -151,7 +151,7 @@ export function KanbanBoard({
                       <div className="min-w-0 flex-1">
                         <Link
                           href={card.href}
-                          className="block truncate font-bold tracking-tight text-ink-900 hover:text-brand-600"
+                          className="block truncate font-semibold text-ink-900 hover:text-brand-600"
                         >
                           {card.title}
                         </Link>

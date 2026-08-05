@@ -35,7 +35,7 @@ function AppTile({
         {/* Cijfer-badge rechtsboven: hoeveel er nog openstaat aan acties/meldingen */}
         {count > 0 && (
           <span
-            className="absolute right-2.5 top-2.5 inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-brand-600 px-2 text-sm font-black tabular-nums text-white ring-2 ring-white"
+            className="absolute right-2.5 top-2.5 inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-brand-600 px-2 text-sm font-bold tabular-nums text-white ring-2 ring-white"
             title={`${count} openstaand${count === 1 ? "e melding" : "e meldingen"}`}
             aria-label={`${count} openstaande meldingen`}
           >
@@ -57,14 +57,11 @@ export default async function StartPage() {
 
   return (
     <div className="mx-auto max-w-6xl pt-2 sm:pt-6">
-      {/* Kop in de stijl van q4s.nl: oranje bovenlabel, zware kop, streepje */}
-      <header className="mb-10 text-center">
-        <p className="q4s-eyebrow">Q4S Project Partners</p>
-        <h1 className="q4s-display mt-3 text-[clamp(30px,5vw,52px)]">
+      <header className="mb-9 text-center">
+        <h1 className="text-[28px] font-semibold text-ink-900">
           Waar wil je aan werken?
         </h1>
-        <span className="q4s-rule mx-auto mt-5" />
-        <p className="mt-5 text-sm text-ink-400">
+        <p className="mt-2 text-[15px] text-ink-500">
           {open > 0
             ? `${open} ${open === 1 ? "actie staat" : "acties staan"} open — de oranje cijfers wijzen de weg.`
             : "Alles is bijgewerkt. Kies een werkplek om te beginnen."}

@@ -66,7 +66,7 @@ export function KpiTile({
         <div className="min-w-0">
           <p className="q4s-label truncate">{label}</p>
           {/* Groot getal: proportionele cijfers (geen tabular) en in de kleur­tint. */}
-          <p className={cn("mt-2.5 text-3xl font-black leading-none tracking-[-0.035em]", c.value)}>{value}</p>
+          <p className={cn("mt-2 text-[28px] font-bold leading-tight", c.value)}>{value}</p>
           {sub && <p className="mt-2 text-xs font-medium text-ink-500">{sub}</p>}
         </div>
         {icon && (
@@ -98,7 +98,7 @@ export function SectionHeading({
 }) {
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 className="flex items-center gap-2.5 text-base font-black tracking-tight text-ink-900">
+      <h2 className="flex items-center gap-2.5 text-base font-bold text-ink-900">
         <span className={cn("h-5 w-1 rounded-full", BAR[color])} />
         {title}
       </h2>
@@ -131,7 +131,7 @@ export function HubTile({
     >
       <div className="flex items-center gap-2.5">
         <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", c.icon)}>{icon}</span>
-        <span className="flex-1 font-extrabold tracking-tight text-ink-900">{title}</span>
+        <span className="flex-1 font-semibold text-ink-900">{title}</span>
         <ChevronRight className={cn("h-4 w-4 text-ink-300 transition-all group-hover:translate-x-0.5 group-hover:text-brand-600")} />
       </div>
       <div className="mt-3 space-y-1.5 border-t border-ink-100 pt-3">

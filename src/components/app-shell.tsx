@@ -13,30 +13,6 @@ import { Avatar } from "./ui/avatar";
 import type { Notifications } from "@/lib/notifications";
 import { logout } from "@/app/login/actions";
 
-function Brand({ logoSrc }: { logoSrc?: string | null }) {
-  return (
-    <Link
-      href="/"
-      aria-label="Naar de hub"
-      className="flex items-center gap-2.5"
-      title="Q4S Project Partners — naar de hub"
-    >
-      {logoSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={logoSrc}
-          alt="Q4S Project Partners"
-          className="h-9 w-auto max-w-[220px] object-contain"
-        />
-      ) : (
-        <span className="flex h-8 w-8 items-center justify-center rounded-sm bg-brand-600 text-[11px] font-black tracking-tight text-white">
-          Q4S
-        </span>
-      )}
-    </Link>
-  );
-}
-
 // Kleurrijk icoon-palet voor de zijmenu-items — cyclisch toegekend per hub, in
 // vaste volgorde, zodat de kleuren stabiel zijn en het menu kleur krijgt i.p.v.
 // grijs.
@@ -94,7 +70,7 @@ function HubNav({
             {group.section && (
               <div
                 className={cn(
-                  "px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-300",
+                  "px-3 pb-2 text-[12px] font-semibold text-ink-400",
                   gi > 0 && "pt-4",
                 )}
               >
@@ -154,13 +130,11 @@ export function AppShell({
   children,
   badges,
   notifications,
-  logoSrc,
   user,
 }: {
   children: React.ReactNode;
   badges?: Record<string, number>;
   notifications?: Notifications;
-  logoSrc?: string | null;
   user?: { name: string; role: string } | null;
 }) {
   const pathname = usePathname();
@@ -170,15 +144,15 @@ export function AppShell({
 
   return (
     <div className="min-h-screen">
-      {/* Top bar */}
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b-2 border-ink-900 bg-white px-4 no-print">
-        <Brand logoSrc={logoSrc} />
+      {/* Top bar — links waar je bent, rechts één rustige groep met status,
+          meldingen en wie er is ingelogd. */}
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-ink-200 bg-white px-3 no-print sm:px-4">
         {hub && (
           <button
             type="button"
             aria-label="Menu openen"
             onClick={() => setOpen(true)}
-            className="rounded-sm p-2 text-ink-600 hover:bg-ink-100 lg:hidden"
+            className="rounded-sm p-2 text-ink-600 transition-colors hover:bg-ink-100 lg:hidden"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -186,50 +160,58 @@ export function AppShell({
         {!isHome && (
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-ink-600 transition-colors hover:bg-ink-50 hover:text-brand-600"
+            title="Terug naar alle werkplekken"
+            className="inline-flex h-9 items-center gap-2 rounded-sm px-2.5 text-[13px] font-semibold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900"
           >
-            <LayoutGrid className="h-4 w-4" /> Apps
+            <LayoutGrid className="h-4 w-4" />
+            <span className="hidden sm:inline">Werkplekken</span>
           </Link>
         )}
-        {/* Online-status links in de balk */}
-        <ConnectionStatus />
-        <div className="ml-auto flex items-center gap-2">
+        {/* Waar je nu bent — vervangt het logo als oriëntatiepunt. */}
+        {hub && (
+          <>
+            <span aria-hidden className="hidden text-ink-200 sm:inline">
+              /
+            </span>
+            <span className="truncate text-[15px] font-semibold text-ink-900">
+              {hub.label}
+            </span>
+          </>
+        )}
+
+        <div className="ml-auto flex items-center gap-0.5">
+          <ConnectionStatus />
           {notifications && <NotificationCenter data={notifications} />}
           {user && (
-            <div className="flex items-center gap-2.5 border-l border-ink-200 pl-3">
-              <Avatar name={user.name} size="sm" />
-              <span className="hidden flex-col items-start leading-tight sm:flex">
-                <span className="text-[13px] font-bold tracking-tight text-ink-900">
+            <>
+              <span aria-hidden className="mx-1.5 h-5 w-px bg-ink-200" />
+              <span
+                className="flex h-9 items-center gap-2 rounded-sm pl-1 pr-1.5"
+                title={`${user.name} — ${user.role === "ADMIN" ? "Beheerder" : "Gebruiker"}`}
+              >
+                <Avatar name={user.name} size="sm" />
+                <span className="hidden text-[13px] font-semibold text-ink-800 sm:inline">
                   {user.name}
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-ink-300">
-                  {user.role === "ADMIN" ? "Beheerder" : "Gebruiker"}
                 </span>
               </span>
               <form action={logout}>
                 <button
                   type="submit"
                   title="Uitloggen"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-sm text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-600"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-900"
                 >
                   <LogOut className="h-4 w-4" />
                   <span className="sr-only">Uitloggen</span>
                 </button>
               </form>
-            </div>
+            </>
           )}
         </div>
       </header>
 
       {/* Contextual sidebar — only inside an app */}
       {hub && (
-        <aside className="hidden border-r border-ink-200 bg-white no-print lg:fixed lg:bottom-0 lg:top-16 lg:flex lg:w-60 lg:flex-col">
-          <div className="px-4 pb-3 pt-5">
-            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-900">
-              {hub.label}
-            </div>
-            <span className="q4s-rule mt-2" />
-          </div>
+        <aside className="hidden border-r border-ink-200 bg-white no-print lg:fixed lg:bottom-0 lg:top-14 lg:flex lg:w-60 lg:flex-col">
           <HubNav hub={hub} badges={badges} />
         </aside>
       )}
@@ -239,10 +221,8 @@ export function AppShell({
         <div className="fixed inset-0 z-40 lg:hidden no-print">
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
           <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white">
-            <div className="flex items-center justify-between border-b-2 border-ink-900 px-5 py-4">
-              <span className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-900">
-                {hub.label}
-              </span>
+            <div className="flex items-center justify-between border-b border-ink-200 px-5 py-3">
+              <span className="text-[15px] font-semibold text-ink-900">{hub.label}</span>
               <button
                 type="button"
                 aria-label="Menu sluiten"

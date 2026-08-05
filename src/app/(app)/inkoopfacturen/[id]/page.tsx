@@ -88,7 +88,7 @@ export default async function InkoopfactuurDetailPage({
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
+            <h1 className="text-2xl font-semibold text-ink-900">
               {invoice.number}
             </h1>
             <StatusBadge options={PURCHASE_INVOICE_STATUSES} value={invoice.status} />

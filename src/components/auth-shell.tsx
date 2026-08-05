@@ -47,20 +47,19 @@ export function AuthShell({
               <img src={logoSrc} alt="Q4S Project Partners" className="h-9 w-auto object-contain" />
             </span>
           ) : (
-            <span className="inline-flex h-14 w-14 items-center justify-center rounded-sm bg-brand-600 text-lg font-black text-white">
+            <span className="inline-flex h-14 w-14 items-center justify-center rounded-sm bg-brand-600 text-lg font-bold text-white">
               Q4S
             </span>
           )}
         </div>
 
         <div className="relative max-w-md">
-          <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.25em] text-brand-500">
+          <p className="mb-4 text-sm font-semibold text-brand-500">
             Q4S Project Partners
           </p>
-          <h2 className="text-[2.6rem] font-black leading-[0.98] tracking-[-0.035em] text-white xl:text-[3.1rem]">
+          <h2 className="text-[2.3rem] font-bold leading-[1.15] tracking-[-0.01em] text-white xl:text-[2.7rem]">
             Eén dashboard voor de hele Q4S-operatie.
           </h2>
-          <span className="mt-6 block h-[3px] w-10 bg-brand-600" />
           <p className="mt-6 text-base leading-relaxed text-white/55">
             Uren, facturatie, recruitment en administratie — alles op één plek.
             Iedereen ziet direct wat er moet gebeuren.
@@ -82,9 +81,8 @@ export function AuthShell({
             />
           )}
 
-          <h1 className="q4s-display text-[28px]">{title}</h1>
-          <span className="q4s-rule mt-3" />
-          <p className="mt-3 text-sm text-ink-500">{subtitle}</p>
+          <h1 className="text-[26px] font-semibold text-ink-900">{title}</h1>
+          <p className="mt-2 text-[15px] text-ink-500">{subtitle}</p>
 
           <div className="mt-8">{children}</div>
 

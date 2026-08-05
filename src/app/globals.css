@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   /* ---------------------------------------------------------------------
@@ -91,48 +91,36 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   Q4S-typografie — overgenomen van q4s.nl:
-   koppen zijn `font-black` met strakke negatieve letterafstand, labels zijn
-   kleine kapitalen met veel spatiëring in de merkkleur.
+   Typografie — leesbaarheid boven stijl.
+   Bewust GEEN kapitalen met wijde spatiëring en geen samengeknepen zware
+   koppen (dat werkt op een website, niet in een scherm vol data).
    --------------------------------------------------------------------------- */
 
-/* Bovenlabel boven een kop: "WAAROM Q4S" */
+/* Klein oranje label boven een kop */
 @utility q4s-eyebrow {
-  font-size: 11px;
-  line-height: 1;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 600;
   color: var(--color-brand-600);
 }
 
-/* Micro-label in grijs (tabelkoppen, kaartsecties) */
+/* Rustig label boven een waarde (kaarten, tabelkoppen) */
 @utility q4s-label {
-  font-size: 10px;
-  line-height: 1;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 500;
   color: var(--color-ink-400);
 }
 
 /* Paginakop / grote getallen */
 @utility q4s-display {
-  font-weight: 900;
-  letter-spacing: -0.035em;
-  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
   color: var(--color-ink-900);
 }
 
-/* Het diagonale streepje onder een sectiekop op de site */
-@utility q4s-rule {
-  display: block;
-  height: 3px;
-  width: 34px;
-  background: var(--color-brand-600);
-}
-
-/* Kaart die oplicht bij hover — rand wordt zwart, zoals de expertise-blokken */
+/* Kaart die oplicht bij hover — rand wordt zwart */
 @utility q4s-hoverable {
   transition:
     border-color 120ms ease,

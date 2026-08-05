@@ -71,7 +71,7 @@ export default async function SollicitatiesPage() {
                       className="group flex items-center gap-2.5"
                     >
                       <Avatar {...person(a.candidate)} size="sm" />
-                      <span className="font-bold tracking-tight text-ink-900 group-hover:text-brand-600">
+                      <span className="font-semibold text-ink-900 group-hover:text-brand-600">
                         {a.candidate.firstName} {a.candidate.lastName}
                       </span>
                     </Link>

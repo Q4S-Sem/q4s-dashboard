@@ -23,7 +23,7 @@ export function THead({
     <thead
       className={cn(
         // Kleine kapitalen met ruime spatiëring — het labelritme van q4s.nl.
-        "border-b border-ink-200 bg-ink-50/60 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-ink-400",
+        "border-b border-ink-200 bg-ink-50/60 text-left text-[13px] font-semibold text-ink-500",
         className,
       )}
       {...props}

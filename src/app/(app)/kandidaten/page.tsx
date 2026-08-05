@@ -265,7 +265,7 @@ export default async function KandidatenPage({
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/kandidaten/${c.id}`}
-                        className="font-extrabold tracking-tight text-ink-900 hover:text-brand-600"
+                        className="font-semibold text-ink-900 hover:text-brand-600"
                       >
                         {c.firstName} {c.lastName}
                       </Link>

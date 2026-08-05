@@ -49,7 +49,7 @@ export default async function TalentpoolPage({
           <p className="text-sm font-medium uppercase tracking-wide text-brand-700">
             Q4S Talentpool
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-ink-900">
+          <h1 className="text-3xl font-semibold text-ink-900">
             Werk aan de mooiste technische opdrachten in Nederland
           </h1>
           <p className="text-lg leading-relaxed text-ink-700">

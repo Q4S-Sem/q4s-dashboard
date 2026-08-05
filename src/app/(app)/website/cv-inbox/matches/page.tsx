@@ -228,7 +228,7 @@ export default async function CvMatchesPage({
                                 <div className="flex items-center gap-2.5">
                                   <Avatar {...person(c)} size="sm" />
                                   <div className="min-w-0">
-                                    <Link href={`/kandidaten/${c.id}`} className="font-bold tracking-tight text-ink-900 hover:text-brand-600">
+                                    <Link href={`/kandidaten/${c.id}`} className="font-semibold text-ink-900 hover:text-brand-600">
                                       {name}
                                     </Link>
                                     {cdisc && <p className="text-xs text-ink-500">{cdisc}</p>}

@@ -94,7 +94,7 @@ export function ActivityHeatmap({ counts }: { counts: Record<string, number> }) 
     <div>
       <div className="mb-3 flex items-end justify-between">
         <div>
-          <p className="text-3xl font-bold tracking-tight text-ink-900 tabular-nums">
+          <p className="text-3xl font-semibold text-ink-900 tabular-nums">
             {total.toLocaleString("nl-NL")}
           </p>
           <p className="text-sm text-ink-500">activiteiten in het afgelopen jaar</p>

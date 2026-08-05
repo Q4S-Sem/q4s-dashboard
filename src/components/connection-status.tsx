@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Wifi, WifiOff } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { WifiOff } from "lucide-react";
 
 /**
  * Shows whether the dashboard can reach the server (online) or not (offline).
@@ -44,28 +43,28 @@ export function ConnectionStatus() {
     };
   }, []);
 
+  // Online is de normale toestand en verdient dus geen aandacht: één klein
+  // groen stipje, verder niets. Offline is wél belangrijk — dan groeit het uit
+  // tot een duidelijke rode melding, want je werk wordt dan niet opgeslagen.
+  if (online) {
+    return (
+      <span
+        title="Online — wijzigingen worden direct opgeslagen"
+        className="inline-flex h-9 w-6 items-center justify-center"
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        <span className="sr-only">Online</span>
+      </span>
+    );
+  }
+
   return (
     <span
-      title={
-        online
-          ? "Online — wijzigingen worden direct in de database opgeslagen"
-          : "Offline — wijzigingen worden NIET opgeslagen tot je weer verbinding hebt"
-      }
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
-        online
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border-red-200 bg-red-50 text-red-700",
-      )}
+      title="Offline — wijzigingen worden NIET opgeslagen tot je weer verbinding hebt"
+      className="inline-flex h-9 items-center gap-1.5 rounded-sm bg-red-50 px-2.5 text-[13px] font-semibold text-red-700 ring-1 ring-inset ring-red-200"
     >
-      <span
-        className={cn(
-          "h-2 w-2 rounded-full",
-          online ? "bg-emerald-500" : "animate-pulse bg-red-500",
-        )}
-      />
-      {online ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
-      <span className="hidden sm:inline">{online ? "Online" : "Offline"}</span>
+      <WifiOff className="h-4 w-4 animate-pulse" />
+      Offline
     </span>
   );
 }

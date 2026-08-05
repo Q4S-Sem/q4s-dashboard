@@ -282,7 +282,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                     {v.companyName}
                   </p>
                 )}
-                <h2 className="text-lg font-bold tracking-tight text-ink-900">{v.title}</h2>
+                <h2 className="text-lg font-semibold text-ink-900">{v.title}</h2>
                 {meta.length > 0 && <p className="text-xs text-ink-500">{meta.join(" · ")}</p>}
               </div>
 

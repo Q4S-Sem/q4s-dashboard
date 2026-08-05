@@ -89,7 +89,7 @@ export default async function PubliekeVacaturePage({
             {company}
           </p>
         )}
-        <h1 className="text-3xl font-bold tracking-tight text-ink-900">
+        <h1 className="text-3xl font-semibold text-ink-900">
           {vacancy.title}
         </h1>
         {meta.length > 0 && (

@@ -84,13 +84,17 @@ export function NotificationCenter({ data }: { data: Notifications }) {
         aria-label={`Meldingen${urgent > 0 ? ` (${urgent})` : ""}`}
         aria-haspopup="menu"
         className={cn(
-          "relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-          urgent > 0 ? "text-red-500 hover:bg-red-50 hover:text-red-600" : "text-ink-500 hover:bg-ink-100 hover:text-ink-900",
+          // Het aantal staat náást de bel in plaats van er bovenop: geen bolletje
+          // dat het icoon wegdrukt, en het getal blijft goed leesbaar.
+          "inline-flex h-9 items-center gap-1.5 rounded-sm transition-colors",
+          urgent > 0
+            ? "bg-brand-50 px-2 text-brand-700 hover:bg-brand-100"
+            : "w-9 justify-center text-ink-400 hover:bg-ink-100 hover:text-ink-900",
         )}
       >
-        {urgent > 0 ? <BellRing className="h-[18px] w-[18px]" /> : <Bell className="h-[18px] w-[18px]" />}
+        <Bell className="h-[18px] w-[18px]" />
         {urgent > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold tabular-nums text-white ring-2 ring-white">
+          <span className="text-[13px] font-semibold tabular-nums">
             {urgent > 99 ? "99+" : urgent}
           </span>
         )}
@@ -99,7 +103,7 @@ export function NotificationCenter({ data }: { data: Notifications }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-[26rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-xl ring-1 ring-black/5"
+          className="absolute right-0 z-50 mt-2 w-[26rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-md border border-ink-200 bg-white shadow-xl"
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-5 py-3.5">

@@ -40,7 +40,7 @@ export function CardTitle({
   return (
     <h3
       className={cn(
-        "text-[15px] font-extrabold tracking-tight text-ink-900",
+        "text-[15px] font-semibold text-ink-900",
         className,
       )}
       {...props}

@@ -77,7 +77,7 @@ export default async function EvaluatieDetailPage({
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900">{name}</h1>
+            <h1 className="text-2xl font-semibold text-ink-900">{name}</h1>
             <Badge color="slate">Q{e.quarter} · {e.year}</Badge>
             <StatusBadge options={EVALUATION_TYPES} value={e.type} />
             <StatusBadge options={EVALUATION_STATUSES} value={e.status} />
