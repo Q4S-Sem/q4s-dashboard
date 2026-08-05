@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { parseForm, type FormState } from "@/lib/form";
 import { EVENT_TYPE_VALUES, EVENT_STATUS_VALUES } from "@/lib/domain";
-import { parseIcs, icsStorageUid } from "@/lib/ics";
 
 const EventSchema = z
   .object({
@@ -176,44 +175,3 @@ export async function setEventStatus(formData: FormData) {
   revalidatePath(`/agenda/${id}`);
 }
 
-/**
- * Import events from pasted .ics text and/or an uploaded .ics file. De-dupes on
- * the iCalendar UID (re-importing the same invite updates it instead of
- * duplicating). Redirects back to the calendar with a count.
- */
-export async function importIcs(formData: FormData) {
-  let text = String(formData.get("ics") ?? "");
-  const file = formData.get("file");
-  if (file instanceof File && file.size > 0) {
-    text += "\n" + (await file.text());
-  }
-
-  const events = parseIcs(text);
-  let imported = 0;
-  for (const ev of events) {
-    const data = {
-      title: ev.title,
-      type: "MEETING",
-      start: ev.start,
-      end: ev.end ?? null,
-      allDay: ev.allDay,
-      location: ev.location ?? null,
-      notes: ev.description ?? null,
-      source: "ICS",
-    };
-    const uid = icsStorageUid(ev);
-    if (uid) {
-      await db.calendarEvent.upsert({
-        where: { uid },
-        create: { ...data, uid },
-        update: data,
-      });
-    } else {
-      await db.calendarEvent.create({ data });
-    }
-    imported++;
-  }
-
-  revalidatePath("/agenda");
-  redirect(`/agenda?imported=${imported}`);
-}

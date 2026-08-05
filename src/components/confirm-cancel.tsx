@@ -85,19 +85,20 @@ export function ConfirmCancel({
                 </div>
               </div>
 
+              {/* Huisstijl van de pop-ups: doorgaan = groen, terug/annuleren = rood. */}
               <div className="mt-5 flex justify-end gap-2">
                 <button
                   ref={cancelRef}
                   type="button"
                   onClick={() => setOpen(false)}
-                  className={buttonVariants({ variant: "outline", size: "md" })}
+                  className={buttonVariants({ variant: "danger", size: "md" })}
                 >
                   Terug
                 </button>
                 <button
                   type="button"
                   onClick={() => router.push(href)}
-                  className={buttonVariants({ variant: "danger", size: "md" })}
+                  className={buttonVariants({ variant: "success", size: "md" })}
                 >
                   {confirmLabel}
                 </button>

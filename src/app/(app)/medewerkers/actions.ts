@@ -104,7 +104,7 @@ export async function updateEmployee(
 
   await db.employee.update({ where: { id }, data: toData(parsed.data) });
   revalidatePath("/medewerkers");
-  revalidatePath(`/medewerkers/${id}`);
+  revalidatePath(`/medewerkers/${id}`, "layout");
   redirect(`/medewerkers/${id}`);
 }
 
@@ -140,9 +140,9 @@ export async function detachEmployee(formData: FormData) {
 
   const clientId = String(formData.get("clientId") ?? "");
   const title = String(formData.get("title") ?? "").trim();
-  if (!clientId || !title) redirect(`/medewerkers/${employeeId}?error=detach`);
+  if (!clientId || !title) redirect(`/medewerkers/${employeeId}/detachering?error=detach`);
   const client = await db.client.findUnique({ where: { id: clientId }, select: { id: true } });
-  if (!client) redirect(`/medewerkers/${employeeId}?error=detach`);
+  if (!client) redirect(`/medewerkers/${employeeId}/detachering?error=detach`);
 
   const num = (k: string) => {
     const n = Number(String(formData.get(k) ?? "").replace(",", "."));
@@ -182,7 +182,7 @@ export async function detachEmployee(formData: FormData) {
         where: { employeeId: emp.id },
         select: { id: true },
       });
-      if (!existing) redirect(`/medewerkers/${employeeId}?error=detach`);
+      if (!existing) redirect(`/medewerkers/${employeeId}/detachering?error=detach`);
       consultantId = existing.id;
     }
   } else {
@@ -207,7 +207,7 @@ export async function detachEmployee(formData: FormData) {
     },
   });
 
-  revalidatePath(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
   revalidatePath("/plaatsingen");
   revalidatePath("/werknemers");
   redirect(`/plaatsingen/${placement.id}?new=1`);
@@ -220,7 +220,7 @@ export async function addLeave(formData: FormData) {
   if (!employeeId) return;
   const type = String(formData.get("type") ?? "VAKANTIE");
   const start = new Date(String(formData.get("startDate") ?? ""));
-  if (isNaN(start.getTime())) redirect(`/medewerkers/${employeeId}?error=date`);
+  if (isNaN(start.getTime())) redirect(`/medewerkers/${employeeId}/uren?error=date`);
   const endRaw = String(formData.get("endDate") ?? "");
   const end = endRaw ? new Date(endRaw) : start;
   const inputDays = Number(formData.get("days") ?? 0);
@@ -240,16 +240,16 @@ export async function addLeave(formData: FormData) {
       notes: String(formData.get("notes") ?? "").trim() || null,
     },
   });
-  revalidatePath(`/medewerkers/${employeeId}`);
-  redirect(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/uren`);
 }
 
 export async function deleteLeave(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const employeeId = String(formData.get("employeeId") ?? "");
   if (id) await db.employeeLeave.delete({ where: { id } }).catch(() => {});
-  revalidatePath(`/medewerkers/${employeeId}`);
-  redirect(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/uren`);
 }
 
 // ---- Bonussen ----
@@ -270,16 +270,16 @@ export async function addBonus(formData: FormData) {
       description: String(formData.get("description") ?? "").trim() || null,
     },
   });
-  revalidatePath(`/medewerkers/${employeeId}`);
-  redirect(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/beloning`);
 }
 
 export async function deleteBonus(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const employeeId = String(formData.get("employeeId") ?? "");
   if (id) await db.employeeBonus.delete({ where: { id } }).catch(() => {});
-  revalidatePath(`/medewerkers/${employeeId}`);
-  redirect(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/beloning`);
 }
 
 // ---- Eindejaarsbeoordeling (percentage) ----
@@ -296,8 +296,8 @@ export async function saveReview(formData: FormData) {
     create: { employeeId, year, scorePct, notes },
     update: { scorePct, notes },
   });
-  revalidatePath(`/medewerkers/${employeeId}`);
-  redirect(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/beloning`);
 }
 
 // ---- Loonstroken (bruto/netto + optioneel PDF) ----
@@ -318,7 +318,7 @@ export async function addPayslip(formData: FormData) {
   } = {};
   const file = formData.get("file");
   if (file instanceof File && file.size > 0) {
-    if (file.size > MAX_UPLOAD_BYTES) redirect(`/medewerkers/${employeeId}?error=size`);
+    if (file.size > MAX_UPLOAD_BYTES) redirect(`/medewerkers/${employeeId}/beloning?error=size`);
     const stored = await saveUpload(employeeId, file);
     fileData = {
       fileName: stored,
@@ -339,8 +339,8 @@ export async function addPayslip(formData: FormData) {
       ...fileData,
     },
   });
-  revalidatePath(`/medewerkers/${employeeId}`);
-  redirect(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/beloning`);
 }
 
 export async function deletePayslip(formData: FormData) {
@@ -351,8 +351,8 @@ export async function deletePayslip(formData: FormData) {
     await db.employeePayslip.delete({ where: { id } }).catch(() => {});
     if (slip?.fileName) await deleteUpload(employeeId, slip.fileName);
   }
-  revalidatePath(`/medewerkers/${employeeId}`);
-  redirect(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/beloning`);
 }
 
 // ---- Documenten / contract ----
@@ -400,9 +400,9 @@ export async function uploadDocument(formData: FormData) {
   if (!employeeId) return;
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
-    redirect(`/medewerkers/${employeeId}?error=upload`);
+    redirect(`/medewerkers/${employeeId}/documenten?error=upload`);
   }
-  if (file.size > MAX_UPLOAD_BYTES) redirect(`/medewerkers/${employeeId}?error=size`);
+  if (file.size > MAX_UPLOAD_BYTES) redirect(`/medewerkers/${employeeId}/documenten?error=size`);
 
   const rawCategory = String(formData.get("category") ?? "CONTRACT");
   const category = (EMPLOYEE_DOC_CATEGORY_VALUES as string[]).includes(rawCategory)
@@ -473,13 +473,13 @@ export async function uploadDocument(formData: FormData) {
     }
   }
 
-  revalidatePath(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
   // Certificaten tellen mee in de certificeringen-hub → die + de sidebar-tellers bijwerken.
   if (isCert) {
     revalidatePath("/certificeringen");
     revalidatePath("/", "layout");
   }
-  redirect(`/medewerkers/${employeeId}`);
+  redirect(`/medewerkers/${employeeId}/documenten`);
 }
 
 export async function deleteDocument(formData: FormData) {
@@ -490,8 +490,8 @@ export async function deleteDocument(formData: FormData) {
     await db.employeeDocument.delete({ where: { id } }).catch(() => {});
     if (doc?.fileName) await deleteUpload(employeeId, doc.fileName);
   }
-  revalidatePath(`/medewerkers/${employeeId}`);
-  redirect(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/documenten`);
 }
 
 // ---- Eigen urenregistratie (gewerkte uren per week) ----
@@ -509,7 +509,7 @@ export async function addWorklog(formData: FormData) {
   if (!employeeId) return;
   const weekRaw = String(formData.get("week") ?? "");
   const date = weekRaw ? new Date(weekRaw) : new Date();
-  if (isNaN(date.getTime())) redirect(`/medewerkers/${employeeId}?error=date`);
+  if (isNaN(date.getTime())) redirect(`/medewerkers/${employeeId}/uren?error=date`);
   const weekStart = mondayOf(date);
   const hours = Number(formData.get("hours") ?? 0) || 0;
   const notes = String(formData.get("notes") ?? "").trim() || null;
@@ -519,14 +519,14 @@ export async function addWorklog(formData: FormData) {
     create: { employeeId, weekStart, hours, notes },
     update: { hours, notes },
   });
-  revalidatePath(`/medewerkers/${employeeId}`);
-  redirect(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/uren`);
 }
 
 export async function deleteWorklog(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const employeeId = String(formData.get("employeeId") ?? "");
   if (id) await db.employeeWorklog.delete({ where: { id } }).catch(() => {});
-  revalidatePath(`/medewerkers/${employeeId}`);
-  redirect(`/medewerkers/${employeeId}`);
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/uren`);
 }

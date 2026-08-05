@@ -111,8 +111,10 @@ export function Select({
   // Selectable (non-placeholder) options for the popup + keyboard nav.
   const items = React.useMemo(() => options.filter((o) => !o.disabled), [options]);
   const current = options.find((o) => o.value === value);
-  // Zoekveld alleen bij langere lijsten — korte status/type-selects blijven clean.
-  const searchable = items.length > 6;
+  // Zoekveld op élke keuzelijst met meer dan twee opties: typen filtert, de beste
+  // match springt naar boven — scrollen hoeft dan niet meer. Alleen een echte
+  // twee-keuze (ja/nee) blijft zonder zoekveld.
+  const searchable = items.length > 2;
   const visible = React.useMemo(() => rankOptions(items, query), [items, query]);
   const searching = searchable && query.trim() !== "";
 

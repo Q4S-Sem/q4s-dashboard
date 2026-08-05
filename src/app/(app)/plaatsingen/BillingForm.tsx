@@ -1,8 +1,10 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { Field, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { buttonVariants } from "@/components/ui/button";
 import { emptyFormState, type FormState } from "@/lib/form";
 
 type BillingConsultant = {
@@ -22,10 +24,13 @@ export function BillingForm({
   action,
   placementId,
   consultant,
+  cancelHref,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   placementId: string;
   consultant: BillingConsultant;
+  /** Terug naar de lees-weergave zonder op te slaan. */
+  cancelHref: string;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
@@ -73,7 +78,10 @@ export function BillingForm({
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Link href={cancelHref} scroll={false} className={buttonVariants({ variant: "outline" })}>
+          Annuleren
+        </Link>
         <SubmitButton pendingLabel="Opslaan…">Factuurgegevens opslaan</SubmitButton>
       </div>
     </form>

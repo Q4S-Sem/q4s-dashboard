@@ -70,12 +70,7 @@ export default async function PlaatsingDossierLayout({
         description={`${person} bij ${placement.client?.companyName ?? "— geen bedrijf"}`}
         actions={
           <>
-            <Link
-              href={`/uren/nieuw?placement=${placement.id}`}
-              className={buttonVariants({ variant: "outline" })}
-            >
-              <Clock className="h-4 w-4" /> Uren registreren
-            </Link>
+            {/* Uren registreren staat in het mapje Uren — niet meer in de kop. */}
             <Link
               href={`/plaatsingen/${placement.id}/bewerken`}
               className={buttonVariants({ variant: "outline" })}

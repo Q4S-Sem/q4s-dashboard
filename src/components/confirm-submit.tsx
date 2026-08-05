@@ -44,6 +44,9 @@ export function ConfirmSubmit({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  // De knoppen ín de pop-up volgen één huisstijl: doorgaan = groen, annuleren =
+  // rood. `variant`/`confirmVariant` bepalen alleen nog de trigger + het icoon
+  // (rood waarschuwingsrondje bij iets onomkeerbaars).
   const cv = confirmVariant ?? variant;
   const isDanger = cv === "danger";
   const confirmText = confirmLabel ?? (isDanger ? "Verwijderen" : "Bevestigen");
@@ -109,11 +112,11 @@ export function ConfirmSubmit({
                   ref={cancelRef}
                   type="button"
                   onClick={() => setOpen(false)}
-                  className={buttonVariants({ variant: "outline", size: "md" })}
+                  className={buttonVariants({ variant: "danger", size: "md" })}
                 >
                   Annuleren
                 </button>
-                <SubmitButton variant={cv} size="md" pendingLabel="Bezig…">
+                <SubmitButton variant="success" size="md" pendingLabel="Bezig…">
                   {confirmText}
                 </SubmitButton>
               </form>

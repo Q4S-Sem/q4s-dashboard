@@ -31,7 +31,6 @@ import {
   ClipboardList,
   CalendarDays,
   ListTodo,
-  CalendarPlus,
   Plane,
   ListChecks,
   PieChart,
@@ -148,7 +147,6 @@ const HUB_LIST: NavHub[] = [
       { href: "/agenda", label: "Kalender", icon: CalendarDays, exact: true },
       { href: "/agenda/taken", label: "Takenlijst", icon: ListTodo },
       { href: "/agenda/afwezigheid", label: "Afwezigheid", icon: Plane },
-      { href: "/agenda/importeren", label: "Importeren", icon: CalendarPlus },
     ],
   },
   {
@@ -179,8 +177,6 @@ const HUB_LIST: NavHub[] = [
       { href: "/msp", label: "Overzicht", icon: Zap, exact: true, section: "Intake" },
       { href: "/connectors", label: "MSP-koppelingen", icon: Plug, section: "Koppelingen" },
       { href: "/opdrachtgevers", label: "Opdrachtgevers", icon: Factory, section: "Koppelingen" },
-      { href: "/vacaturehub", label: "Vacaturehub", icon: Filter, section: "Vacatures" },
-      { href: "/vacatures", label: "Vacatures", icon: FileText, section: "Vacatures" },
     ],
   },
   {
@@ -197,8 +193,10 @@ const HUB_LIST: NavHub[] = [
     href: "/website",
     icon: FileText,
     items: [
-      { href: "/website", label: "Overzicht", icon: Globe, exact: true },
-      { href: "/website/vacatures", label: "Alle vacatures", icon: FileText },
+      { href: "/website", label: "Overzicht", icon: Globe, exact: true, section: "Website" },
+      { href: "/website/vacatures", label: "Op de website", icon: Globe, section: "Website" },
+      { href: "/vacatures", label: "Alle vacatures", icon: FileText, section: "Beheer" },
+      { href: "/vacaturehub", label: "Vacaturehub", icon: Filter, section: "Beheer" },
     ],
   },
   {

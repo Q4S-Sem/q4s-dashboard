@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   Plus,
-  CalendarPlus,
   ListTodo,
   AlertTriangle,
   CircleCheck,
@@ -71,9 +70,9 @@ function initials(name: string): string {
 export default async function AgendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ m?: string; imported?: string }>;
+  searchParams: Promise<{ m?: string }>;
 }) {
-  const { m, imported } = await searchParams;
+  const { m } = await searchParams;
 
   const now = new Date();
   let year = now.getFullYear();
@@ -232,23 +231,12 @@ export default async function AgendaPage({
             <Link href="/agenda/taken" className={buttonVariants({ variant: "outline" })}>
               <ListTodo className="h-4 w-4" /> Taken
             </Link>
-            <Link href="/agenda/importeren" className={buttonVariants({ variant: "outline" })}>
-              <CalendarPlus className="h-4 w-4" /> Importeren
-            </Link>
             <Link href="/agenda/nieuw" className={buttonVariants()}>
               <Plus className="h-4 w-4" /> Nieuwe afspraak
             </Link>
           </>
         }
       />
-
-      {imported !== undefined && (
-        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {Number(imported) > 0
-            ? `${imported} agenda-item(s) geïmporteerd.`
-            : "Geen agenda-items gevonden in het bestand."}
-        </p>
-      )}
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_336px]">
         <AgendaCalendar

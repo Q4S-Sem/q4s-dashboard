@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IdCard, ReceiptText, StickyNote } from "lucide-react";
+import { IdCard, ReceiptText, StickyNote, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -25,10 +25,10 @@ export default async function PlaatsingGegevensPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; saved?: string; new?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; new?: string; edit?: string }>;
 }) {
   const { id } = await params;
-  const { error, saved, new: isNew } = await searchParams;
+  const { error, saved, new: isNew, edit } = await searchParams;
 
   const placement = await getPlacement(id);
   if (!placement) notFound();
@@ -37,6 +37,14 @@ export default async function PlaatsingGegevensPage({
   // (KvK/BTW/IBAN) zijn niet nodig.
   const ownStaff = placement.consultant.employmentType === "LOONDIENST";
   const personName = `${placement.consultant.firstName} ${placement.consultant.lastName}`;
+
+  // De factuurgegevens staan standaard op slot (lezen); het potlood zet het
+  // formulier open via ?edit=billing, opslaan/annuleren brengt je terug.
+  const c = placement.consultant;
+  const editingBilling = edit === "billing";
+  const billingEmpty = !(
+    c.companyName || c.kvkNumber || c.vatNumber || c.iban || c.email || c.phone || c.address || c.city
+  );
 
   return (
     <div className="space-y-6">
@@ -126,14 +134,18 @@ export default async function PlaatsingGegevensPage({
           <CardTitle className="flex items-center gap-2">
             <ReceiptText className="h-5 w-5 text-slate-500" /> Factuur- &amp; betaalgegevens werknemer
           </CardTitle>
-          {!ownStaff && (
-            <span className="text-sm text-slate-500">
-              Voor de inkoopfactuur (zelffacturatie). Hoort bij {personName} en geldt voor al hun
-              plaatsingen.
-            </span>
+          {!ownStaff && !editingBilling && (
+            <Link
+              href={`/plaatsingen/${placement.id}?edit=billing`}
+              scroll={false}
+              aria-label="Factuurgegevens bewerken"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              <Pencil className="h-4 w-4" /> Bewerken
+            </Link>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           {ownStaff ? (
             <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
               <strong>Eigen loondienst-medewerker.</strong> {personName} krijgt salaris — er wordt
@@ -141,11 +153,56 @@ export default async function PlaatsingGegevensPage({
               zijn hier niet nodig. Naar de klant gaat wél gewoon de verkoopfactuur.
             </p>
           ) : (
-            <BillingForm
-              action={updatePlacementBilling}
-              placementId={placement.id}
-              consultant={placement.consultant}
-            />
+            <>
+              <p className="text-sm text-slate-500">
+                Voor de inkoopfactuur (zelffacturatie). Hoort bij {personName} en geldt voor al hun
+                plaatsingen.
+              </p>
+              {editingBilling ? (
+                <BillingForm
+                  action={updatePlacementBilling}
+                  placementId={placement.id}
+                  consultant={c}
+                  cancelHref={`/plaatsingen/${placement.id}`}
+                />
+              ) : billingEmpty ? (
+                <p className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+                  Nog geen factuurgegevens ingevuld — klik op <strong>Bewerken</strong> om ze toe te voegen.
+                </p>
+              ) : (
+                <dl className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+                  <Detail label="Bedrijfsnaam" value={c.companyName} />
+                  <Detail label="IBAN" value={c.iban} />
+                  <Detail label="KvK-nummer" value={c.kvkNumber} />
+                  <Detail label="BTW-nummer" value={c.vatNumber} />
+                  <Detail
+                    label="E-mail"
+                    value={
+                      c.email ? (
+                        <a href={`mailto:${c.email}`} className="text-brand-700 hover:underline">
+                          {c.email}
+                        </a>
+                      ) : null
+                    }
+                  />
+                  <Detail
+                    label="Telefoon"
+                    value={
+                      c.phone ? (
+                        <a href={`tel:${c.phone}`} className="text-slate-900 hover:underline">
+                          {c.phone}
+                        </a>
+                      ) : null
+                    }
+                  />
+                  <Detail label="Adres" value={c.address} />
+                  <Detail
+                    label="Postcode & plaats"
+                    value={[c.postalCode, c.city].filter(Boolean).join(" ") || null}
+                  />
+                </dl>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
