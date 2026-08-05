@@ -9,6 +9,7 @@ export type KlantRowData = {
   companyName: string;
   city: string | null;
   contactName: string | null;
+  contacts: number;
   placements: number;
   invoices: number;
 };
@@ -25,6 +26,13 @@ export function KlantRow({ c }: { c: KlantRowData }) {
       <TD className="font-medium text-slate-900">{c.companyName}</TD>
       <TD>{c.city ?? "—"}</TD>
       <TD>{c.contactName ?? "—"}</TD>
+      <TD className="text-right tabular-nums">
+        {c.contacts > 0 ? (
+          <span className="font-medium text-slate-700">{c.contacts}</span>
+        ) : (
+          <span className="text-slate-400">0</span>
+        )}
+      </TD>
       <TD className="text-right tabular-nums">
         {c.placements > 0 ? (
           <Link

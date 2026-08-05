@@ -18,7 +18,7 @@ export default async function KlantenPage({
   const [clients, activePlacements] = await Promise.all([
     db.client.findMany({
       orderBy: { companyName: "asc" },
-      include: { _count: { select: { placements: true, invoices: true } } },
+      include: { _count: { select: { placements: true, invoices: true, contacts: true } } },
     }),
     db.placement.findMany({ where: { status: "ACTIVE" }, select: { clientId: true } }),
   ]);
@@ -73,6 +73,7 @@ export default async function KlantenPage({
             companyName: c.companyName,
             city: c.city,
             contactName: c.contactName,
+            contacts: c._count.contacts,
             placements: c._count.placements,
             invoices: c._count.invoices,
           }))}

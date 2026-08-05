@@ -7,10 +7,10 @@ import { Card } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH } from "@/components/ui/table";
 import { KlantRow, type KlantRowData } from "./KlantRow";
 
-type SortKey = "companyName" | "city" | "contactName" | "placements" | "invoices";
+type SortKey = "companyName" | "city" | "contactName" | "contacts" | "placements" | "invoices";
 type SortDir = "asc" | "desc";
 
-const NUMERIC: SortKey[] = ["placements", "invoices"];
+const NUMERIC: SortKey[] = ["contacts", "placements", "invoices"];
 
 /** Klantenlijst: zoeken (bedrijf/plaats/contact) + sorteerbare kolommen.
  *  Standaard gesorteerd op aantal plaatsingen (meeste bovenaan). */
@@ -34,7 +34,7 @@ export function KlantenTable({ clients }: { clients: KlantRowData[] }) {
     const dir = sortDir === "asc" ? 1 : -1;
     return [...filtered].sort((a, b) => {
       let primary: number;
-      if (sortKey === "placements" || sortKey === "invoices") {
+      if (sortKey === "contacts" || sortKey === "placements" || sortKey === "invoices") {
         primary = a[sortKey] - b[sortKey];
       } else {
         primary = (a[sortKey] ?? "").localeCompare(b[sortKey] ?? "", "nl", {
@@ -124,6 +124,9 @@ export function KlantenTable({ clients }: { clients: KlantRowData[] }) {
                 <TH><SortHeader keyName="companyName" label="Bedrijf" /></TH>
                 <TH><SortHeader keyName="city" label="Plaats" /></TH>
                 <TH><SortHeader keyName="contactName" label="Contact" /></TH>
+                <TH className="text-right">
+                  <SortHeader keyName="contacts" label="Contacten" align="right" />
+                </TH>
                 <TH className="text-right">
                   <SortHeader keyName="placements" label="Plaatsingen" align="right" />
                 </TH>

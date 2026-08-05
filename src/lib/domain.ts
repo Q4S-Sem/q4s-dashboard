@@ -104,6 +104,25 @@ export const PLACEMENT_STATUS_VALUES = PLACEMENT_STATUSES.map((d) => d.value) as
 export const TIMESHEET_STATUS_VALUES = TIMESHEET_STATUSES.map((d) => d.value) as [string, ...string[]];
 export const INVOICE_STATUS_VALUES = INVOICE_STATUSES.map((d) => d.value) as [string, ...string[]];
 
+// --- Klanten (contactpersonen bij een bedrijf) ---
+
+/** De rollen die je bij een klant tegenkomt. Eén contactpersoon per rol, elk met
+ *  een eigen e-mail — zo mail je HR voor papieren en de planner voor uren.
+ *  Vrije tekst uit oudere records blijft werken (labelFor valt terug op de waarde). */
+export const CLIENT_CONTACT_ROLES: Option[] = [
+  { value: "HR", label: "HR / Personeelszaken", color: "violet" },
+  { value: "MANAGER", label: "Manager", color: "blue" },
+  { value: "PLANNER", label: "Planner / Werkvoorbereiding", color: "cyan" },
+  { value: "INKOOP", label: "Inkoop", color: "amber" },
+  { value: "FACTURATIE", label: "Facturatie / Administratie", color: "green" },
+  { value: "QHSE", label: "QA / QC / QHSE", color: "cyan" },
+  { value: "UITVOERING", label: "Uitvoering / Projectleider", color: "orange" },
+  { value: "DIRECTIE", label: "Directie", color: "red" },
+  { value: "RECRUITMENT", label: "Recruitment / Inhuur", color: "violet" },
+  { value: "OVERIG", label: "Overig", color: "slate" },
+];
+export const CLIENT_CONTACT_ROLE_VALUES = CLIENT_CONTACT_ROLES.map((d) => d.value) as [string, ...string[]];
+
 // --- Recruitment hub ---
 
 export const VACANCY_STATUSES: Option[] = [

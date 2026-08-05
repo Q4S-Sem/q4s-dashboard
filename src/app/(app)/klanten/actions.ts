@@ -167,10 +167,46 @@ export async function addClientContact(formData: FormData) {
   redirect(`/klanten/${clientId}`);
 }
 
+export async function updateClientContact(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const clientId = String(formData.get("clientId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!id || !clientId) return;
+  if (!name) redirect(`/klanten/${clientId}?error=contact`);
+
+  await db.clientContact.update({
+    where: { id },
+    data: {
+      name,
+      role: String(formData.get("role") ?? "").trim() || null,
+      email: String(formData.get("email") ?? "").trim() || null,
+      phone: String(formData.get("phone") ?? "").trim() || null,
+      notes: String(formData.get("notes") ?? "").trim() || null,
+    },
+  });
+  revalidatePath(`/klanten/${clientId}`);
+  redirect(`/klanten/${clientId}`);
+}
+
 export async function deleteClientContact(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const clientId = String(formData.get("clientId") ?? "");
   if (id) await db.clientContact.delete({ where: { id } }).catch(() => {});
   revalidatePath(`/klanten/${clientId}`);
   redirect(`/klanten/${clientId}`);
+}
+
+// ---- Vaste notitie bij de klant (tabblad Notities) ----
+
+export async function saveClientNotes(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  await db.client.update({
+    where: { id },
+    data: { notes: String(formData.get("notes") ?? "").trim() || null },
+  });
+  revalidatePath(`/klanten/${id}`);
+  revalidatePath(`/klanten/${id}/notities`);
+  redirect(`/klanten/${id}/notities?saved=1`);
 }
