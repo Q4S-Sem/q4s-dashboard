@@ -56,7 +56,7 @@ export function PurchaseInvoiceForm({
         <Card>
           <CardHeader>
             <CardTitle>Urenstaten (inkoop)</CardTitle>
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-ink-500">
               {selectedCount} van {lines.length} geselecteerd
             </span>
           </CardHeader>
@@ -66,8 +66,8 @@ export function PurchaseInvoiceForm({
                 key={l.timesheetId}
                 className={cn(
                   "flex cursor-pointer items-center gap-3 px-5 py-3",
-                  i > 0 && "border-t border-slate-100",
-                  checked[l.timesheetId] ? "bg-white" : "bg-slate-50/60",
+                  i > 0 && "border-t border-ink-100",
+                  checked[l.timesheetId] ? "bg-white" : "bg-ink-50/60",
                 )}
               >
                 <input
@@ -81,13 +81,13 @@ export function PurchaseInvoiceForm({
                       [l.timesheetId]: e.target.checked,
                     }))
                   }
-                  className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
                 />
-                <span className="flex-1 text-sm text-slate-700">{l.label}</span>
-                <span className="text-sm text-slate-500 tabular-nums">
+                <span className="flex-1 text-sm text-ink-700">{l.label}</span>
+                <span className="text-sm text-ink-500 tabular-nums">
                   {formatHours(l.hours)} u
                 </span>
-                <span className="w-28 text-right text-sm font-medium tabular-nums text-slate-900">
+                <span className="w-28 text-right text-sm font-medium tabular-nums text-ink-900">
                   {formatCurrency(l.amount)}
                 </span>
               </label>
@@ -115,14 +115,14 @@ export function PurchaseInvoiceForm({
           <Card>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Subtotaal (excl. BTW)</span>
+                <span className="text-ink-500">Subtotaal (excl. BTW)</span>
                 <span className="font-medium tabular-nums">{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">BTW ({formatHours(vatRate)}%)</span>
+                <span className="text-ink-500">BTW ({formatHours(vatRate)}%)</span>
                 <span className="font-medium tabular-nums">{formatCurrency(vatAmount)}</span>
               </div>
-              <div className="flex justify-between border-t border-slate-200 pt-3 text-base font-bold">
+              <div className="flex justify-between border-t border-ink-200 pt-3 text-base font-bold">
                 <span>Totaal</span>
                 <span className="tabular-nums">{formatCurrency(total)}</span>
               </div>

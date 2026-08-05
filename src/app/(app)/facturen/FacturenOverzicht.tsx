@@ -62,7 +62,7 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
       header: "Nummer",
       sortValue: (r) => r.number,
       render: (r) => (
-        <Link href={`/facturen/${r.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+        <Link href={`/facturen/${r.id}`} className="font-medium text-ink-900 hover:text-brand-700">
           {r.number}
         </Link>
       ),
@@ -123,7 +123,7 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
 
       {/* Table — met Odoo-stijl zoeken/filteren/groeperen/sorteren */}
       {rows.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-12 text-center text-sm text-slate-500 shadow-sm">
+        <div className="rounded-xl border border-ink-200 bg-white px-4 py-12 text-center text-sm text-ink-500 shadow-sm">
           Geen facturen in deze periode.
         </div>
       ) : (

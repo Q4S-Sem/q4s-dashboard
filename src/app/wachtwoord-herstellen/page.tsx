@@ -27,7 +27,7 @@ export default async function ResetPage({
           </p>
           <Link
             href="/wachtwoord-vergeten"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600 hover:text-ink-900"
           >
             <ArrowLeft className="h-4 w-4" /> Nieuwe link aanvragen
           </Link>

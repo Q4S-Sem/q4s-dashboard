@@ -51,9 +51,9 @@ export const metadata = { title: "Werknemer" };
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-sm text-slate-900">
-        {value || <span className="text-slate-300">—</span>}
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</p>
+      <p className="mt-1 text-sm text-ink-900">
+        {value || <span className="text-ink-300">—</span>}
       </p>
     </div>
   );
@@ -118,7 +118,7 @@ export default async function WerknemerDetailPage({
     <div className="space-y-6">
       <Link
         href="/werknemers"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar werknemers
       </Link>
@@ -130,7 +130,7 @@ export default async function WerknemerDetailPage({
             {initials || <User className="h-7 w-7" />}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
               {c.firstName} {c.lastName}
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -142,7 +142,7 @@ export default async function WerknemerDetailPage({
                 <Badge color="slate">Inactief</Badge>
               )}
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-slate-500">
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-ink-500">
               {c.email && (
                 <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1.5 hover:text-brand-700">
                   <Mail className="h-4 w-4" /> {c.email}
@@ -262,9 +262,9 @@ export default async function WerknemerDetailPage({
               <Detail label="IBAN" value={c.iban} />
             </div>
             {c.notes && (
-              <div className="mt-5 border-t border-slate-100 pt-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Notities</p>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{c.notes}</p>
+              <div className="mt-5 border-t border-ink-100 pt-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Notities</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-ink-600">{c.notes}</p>
               </div>
             )}
           </CardContent>
@@ -280,12 +280,12 @@ export default async function WerknemerDetailPage({
           {certAlerts > 0 ? (
             <Badge color="amber">{certAlerts} aandacht nodig</Badge>
           ) : (
-            <span className="text-sm text-slate-400">{c.certificates.length}</span>
+            <span className="text-sm text-ink-400">{c.certificates.length}</span>
           )}
         </CardHeader>
         {c.certificates.length === 0 ? (
-          <CardContent className="flex items-center gap-3 text-sm text-slate-500">
-            <Award className="h-5 w-5 text-slate-300" /> Nog geen certificaten vastgelegd —
+          <CardContent className="flex items-center gap-3 text-sm text-ink-500">
+            <Award className="h-5 w-5 text-ink-300" /> Nog geen certificaten vastgelegd —
             voeg er hieronder een toe.
           </CardContent>
         ) : (
@@ -303,10 +303,10 @@ export default async function WerknemerDetailPage({
             <TBody>
               {c.certificates.map((cert) => (
                 <TR key={cert.id}>
-                  <TD className="font-medium text-slate-900">{cert.name}</TD>
-                  <TD className="text-slate-600">{cert.number ?? "—"}</TD>
-                  <TD className="text-slate-600">{formatDate(cert.issuedDate)}</TD>
-                  <TD className="text-slate-600">{formatDate(cert.expiryDate)}</TD>
+                  <TD className="font-medium text-ink-900">{cert.name}</TD>
+                  <TD className="text-ink-600">{cert.number ?? "—"}</TD>
+                  <TD className="text-ink-600">{formatDate(cert.issuedDate)}</TD>
+                  <TD className="text-ink-600">{formatDate(cert.expiryDate)}</TD>
                   <TD>
                     <CertBadge expiry={cert.expiryDate} />
                   </TD>
@@ -326,7 +326,7 @@ export default async function WerknemerDetailPage({
             </TBody>
           </Table>
         )}
-        <CardContent className="border-t border-slate-100 bg-slate-50/60">
+        <CardContent className="border-t border-ink-100 bg-ink-50/60">
           <form action={addCertificate} className="grid items-end gap-3 sm:grid-cols-12">
             <input type="hidden" name="consultantId" value={c.id} />
             <Field label="Certificaat" htmlFor="cert-name" className="sm:col-span-4">
@@ -356,11 +356,11 @@ export default async function WerknemerDetailPage({
           <CardTitle className="flex items-center gap-2 text-base">
             <FolderOpen className="h-4 w-4 text-brand-600" /> Documenten
           </CardTitle>
-          <span className="text-sm text-slate-400">{c.documents.length}</span>
+          <span className="text-sm text-ink-400">{c.documents.length}</span>
         </CardHeader>
         {c.documents.length === 0 ? (
-          <CardContent className="flex items-center gap-3 text-sm text-slate-500">
-            <FolderOpen className="h-5 w-5 text-slate-300" /> Nog geen documenten — upload het
+          <CardContent className="flex items-center gap-3 text-sm text-ink-500">
+            <FolderOpen className="h-5 w-5 text-ink-300" /> Nog geen documenten — upload het
             contract, ID, CV of certificaten.
           </CardContent>
         ) : (
@@ -382,17 +382,17 @@ export default async function WerknemerDetailPage({
                       href={`/api/documents/${doc.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 font-medium text-slate-900 hover:text-brand-700"
+                      className="inline-flex items-center gap-2 font-medium text-ink-900 hover:text-brand-700"
                     >
-                      <FileText className="h-4 w-4 text-slate-400" />
-                      {doc.title} <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                      <FileText className="h-4 w-4 text-ink-400" />
+                      {doc.title} <ExternalLink className="h-3.5 w-3.5 text-ink-400" />
                     </a>
                   </TD>
                   <TD>
                     <StatusBadge options={DOCUMENT_CATEGORIES} value={doc.category} />
                   </TD>
-                  <TD className="text-slate-600">{fileSize(doc.size)}</TD>
-                  <TD className="text-slate-600">{formatDate(doc.createdAt)}</TD>
+                  <TD className="text-ink-600">{fileSize(doc.size)}</TD>
+                  <TD className="text-ink-600">{formatDate(doc.createdAt)}</TD>
                   <TD className="text-right">
                     <ConfirmSubmit
                       action={deleteDocument}
@@ -409,7 +409,7 @@ export default async function WerknemerDetailPage({
             </TBody>
           </Table>
         )}
-        <CardContent className="border-t border-slate-100 bg-slate-50/60">
+        <CardContent className="border-t border-ink-100 bg-ink-50/60">
           <form action={uploadDocument} className="space-y-4">
             <input type="hidden" name="consultantId" value={c.id} />
             <div className="grid gap-3 sm:grid-cols-2">
@@ -452,8 +452,8 @@ export default async function WerknemerDetailPage({
           </Link>
         </CardHeader>
         {c.placements.length === 0 ? (
-          <CardContent className="flex items-center gap-3 text-sm text-slate-500">
-            <Briefcase className="h-5 w-5 text-slate-300" /> Nog geen plaatsingen voor deze
+          <CardContent className="flex items-center gap-3 text-sm text-ink-500">
+            <Briefcase className="h-5 w-5 text-ink-300" /> Nog geen plaatsingen voor deze
             werknemer.
           </CardContent>
         ) : (
@@ -472,21 +472,21 @@ export default async function WerknemerDetailPage({
               {c.placements.map((p) => (
                 <TR key={p.id}>
                   <TD>
-                    <Link href={`/plaatsingen/${p.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={`/plaatsingen/${p.id}`} className="font-medium text-ink-900 hover:text-brand-700">
                       {p.title}
                     </Link>
                   </TD>
                   <TD>
                     {p.client ? (
-                      <Link href={`/klanten/${p.clientId}`} className="text-slate-700 hover:text-brand-700">
+                      <Link href={`/klanten/${p.clientId}`} className="text-ink-700 hover:text-brand-700">
                         {p.client.companyName}
                       </Link>
                     ) : (
-                      <span className="text-slate-400">— geen bedrijf</span>
+                      <span className="text-ink-400">— geen bedrijf</span>
                     )}
                   </TD>
-                  <TD className="text-right tabular-nums text-slate-600">{formatCurrency(p.costRate)}/u</TD>
-                  <TD className="text-right tabular-nums text-slate-600">{formatCurrency(p.chargeRate)}/u</TD>
+                  <TD className="text-right tabular-nums text-ink-600">{formatCurrency(p.costRate)}/u</TD>
+                  <TD className="text-right tabular-nums text-ink-600">{formatCurrency(p.chargeRate)}/u</TD>
                   <TD className="text-right tabular-nums font-medium text-emerald-700">
                     {formatCurrency(p.chargeRate - p.costRate)}/u
                   </TD>

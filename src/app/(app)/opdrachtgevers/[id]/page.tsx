@@ -19,10 +19,10 @@ export const metadata = { title: "Opdrachtgever" };
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -32,7 +32,7 @@ function Stars({ priority }: { priority: number }) {
   return (
     <span className="text-amber-500" title={`Prioriteit ${n}/5`}>
       {"★".repeat(n)}
-      <span className="text-slate-200">{"★".repeat(5 - n)}</span>
+      <span className="text-ink-200">{"★".repeat(5 - n)}</span>
     </span>
   );
 }
@@ -74,7 +74,7 @@ export default async function OpdrachtgeverDetailPage({
     <div className="space-y-6">
       <Link
         href="/opdrachtgevers"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar opdrachtgevers
       </Link>
@@ -150,8 +150,8 @@ export default async function OpdrachtgeverDetailPage({
             />
           </dl>
           {target.notes && (
-            <div className="mt-5 border-t border-slate-100 pt-4">
-              <p className="whitespace-pre-wrap text-sm text-slate-600">{target.notes}</p>
+            <div className="mt-5 border-t border-ink-100 pt-4">
+              <p className="whitespace-pre-wrap text-sm text-ink-600">{target.notes}</p>
             </div>
           )}
         </CardContent>
@@ -162,7 +162,7 @@ export default async function OpdrachtgeverDetailPage({
           <CardTitle>Voorgestelde kandidaten</CardTitle>
         </CardHeader>
         {applications.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog geen kandidaten voorgesteld aan deze opdrachtgever.
           </CardContent>
         ) : (
@@ -181,7 +181,7 @@ export default async function OpdrachtgeverDetailPage({
                   <TD>
                     <Link
                       href={`/kandidaten/${a.candidate.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {a.candidate.firstName} {a.candidate.lastName}
                     </Link>
@@ -201,14 +201,14 @@ export default async function OpdrachtgeverDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>
-            Deals (CRM){openDealValue > 0 && <span className="ml-2 text-xs font-normal text-slate-400">open: {formatCurrency(openDealValue)}</span>}
+            Deals (CRM){openDealValue > 0 && <span className="ml-2 text-xs font-normal text-ink-400">open: {formatCurrency(openDealValue)}</span>}
           </CardTitle>
           <Link href="/crm/deals/nieuw" className={buttonVariants({ variant: "outline", size: "sm" })}>
             <Plus className="h-4 w-4" /> Nieuwe deal
           </Link>
         </CardHeader>
         {target.deals.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog geen deals voor deze opdrachtgever. Start een deal om het verkoopproces te volgen.
           </CardContent>
         ) : (
@@ -226,7 +226,7 @@ export default async function OpdrachtgeverDetailPage({
               {target.deals.map((d) => (
                 <TR key={d.id}>
                   <TD>
-                    <Link href={`/crm/deals/${d.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={`/crm/deals/${d.id}`} className="font-medium text-ink-900 hover:text-brand-700">
                       {d.title}
                     </Link>
                   </TD>
@@ -249,7 +249,7 @@ export default async function OpdrachtgeverDetailPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Contact className="h-4 w-4 text-slate-400" /> Contactpersonen
+              <Contact className="h-4 w-4 text-ink-400" /> Contactpersonen
             </CardTitle>
             <Link href="/crm/contacten/nieuw" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <Plus className="h-4 w-4" /> Nieuw contact
@@ -267,7 +267,7 @@ export default async function OpdrachtgeverDetailPage({
               {target.crmContacts.map((c) => (
                 <TR key={c.id}>
                   <TD>
-                    <Link href={`/crm/contacten/${c.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={`/crm/contacten/${c.id}`} className="font-medium text-ink-900 hover:text-brand-700">
                       {c.firstName} {c.lastName ?? ""}
                     </Link>
                   </TD>

@@ -214,10 +214,10 @@ export default async function RecruitmentDashboardPage() {
                 {ratingRows.map((r) => (
                   <span
                     key={r.value}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm"
+                    className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3 py-1 text-sm"
                   >
                     <StatusBadge options={CANDIDATE_RATINGS} value={r.value} />
-                    <span className="font-medium tabular-nums text-slate-900">
+                    <span className="font-medium tabular-nums text-ink-900">
                       {r.count}
                     </span>
                   </span>
@@ -252,7 +252,7 @@ export default async function RecruitmentDashboardPage() {
                   <TD>
                     <Link
                       href={`/vacatures/${v.id}`}
-                      className="font-medium text-slate-900 hover:text-emerald-700"
+                      className="font-medium text-ink-900 hover:text-emerald-700"
                     >
                       {v.title}
                     </Link>

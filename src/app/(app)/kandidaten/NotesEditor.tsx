@@ -37,7 +37,7 @@ export function NotesEditor({ id, notes }: { id: string; notes: string | null })
       />
       <div className="flex items-center justify-end gap-3">
         {dirty && (
-          <span className="text-xs text-slate-400">Niet-opgeslagen wijzigingen</span>
+          <span className="text-xs text-ink-400">Niet-opgeslagen wijzigingen</span>
         )}
         <SubmitButton disabled={!dirty} pendingLabel="Opslaan…">
           Notitie opslaan

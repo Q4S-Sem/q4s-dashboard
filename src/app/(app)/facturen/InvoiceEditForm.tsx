@@ -104,8 +104,8 @@ export function InvoiceEditForm({
           {/* Editable lines */}
           <div>
             <Label>Factuurregels</Label>
-            <div className="overflow-hidden rounded-lg border border-slate-200">
-              <div className="grid grid-cols-[1fr_5rem_6.5rem_6.5rem] gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+            <div className="overflow-hidden rounded-lg border border-ink-200">
+              <div className="grid grid-cols-[1fr_5rem_6.5rem_6.5rem] gap-2 border-b border-ink-100 bg-ink-50 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-ink-400">
                 <span>Omschrijving</span>
                 <span className="text-right">Aantal</span>
                 <span className="text-right">Tarief</span>
@@ -114,7 +114,7 @@ export function InvoiceEditForm({
               {lines.map((l, i) => (
                 <div
                   key={l.id}
-                  className="grid grid-cols-[1fr_5rem_6.5rem_6.5rem] items-center gap-2 border-t border-slate-50 px-3 py-2 first:border-t-0"
+                  className="grid grid-cols-[1fr_5rem_6.5rem_6.5rem] items-center gap-2 border-t border-ink-50 px-3 py-2 first:border-t-0"
                 >
                   <Input
                     aria-label="Omschrijving"
@@ -137,13 +137,13 @@ export function InvoiceEditForm({
                     value={l.unitPrice}
                     onChange={(ev) => setLine(i, { unitPrice: ev.target.value })}
                   />
-                  <div className="text-right text-sm tabular-nums text-slate-700">
+                  <div className="text-right text-sm tabular-nums text-ink-700">
                     {formatCurrency(lineAmount(l))}
                   </div>
                 </div>
               ))}
             </div>
-            <p className="mt-1.5 text-xs text-slate-400">
+            <p className="mt-1.5 text-xs text-ink-400">
               Pas omschrijving, aantal of tarief aan — het bedrag, subtotaal, BTW en
               totaal worden automatisch herberekend.
             </p>
@@ -164,14 +164,14 @@ export function InvoiceEditForm({
             </Field>
             <div className="w-full space-y-1.5 text-sm sm:w-64">
               <div className="flex justify-between">
-                <span className="text-slate-500">Subtotaal</span>
+                <span className="text-ink-500">Subtotaal</span>
                 <span className="tabular-nums">{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">BTW ({num(vatRate)}%)</span>
+                <span className="text-ink-500">BTW ({num(vatRate)}%)</span>
                 <span className="tabular-nums">{formatCurrency(vat)}</span>
               </div>
-              <div className="flex justify-between border-t border-slate-200 pt-1.5 text-base font-bold text-slate-900">
+              <div className="flex justify-between border-t border-ink-200 pt-1.5 text-base font-bold text-ink-900">
                 <span>Totaal</span>
                 <span className="tabular-nums">{formatCurrency(total)}</span>
               </div>

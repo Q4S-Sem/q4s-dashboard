@@ -51,12 +51,12 @@ export default async function MedewerkerBeloningPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-slate-500" /> Loonstroken
+            <Wallet className="h-5 w-5 text-ink-500" /> Loonstroken
           </CardTitle>
           {s.payslipsThisYear.length > 0 && (
-            <span className="text-sm text-slate-500">
-              {year}: <span className="font-medium text-slate-900">{formatCurrency(s.brutoYear)}</span> bruto ·{" "}
-              <span className="font-medium text-slate-900">{formatCurrency(s.nettoYear)}</span> netto
+            <span className="text-sm text-ink-500">
+              {year}: <span className="font-medium text-ink-900">{formatCurrency(s.brutoYear)}</span> bruto ·{" "}
+              <span className="font-medium text-ink-900">{formatCurrency(s.nettoYear)}</span> netto
             </span>
           )}
         </CardHeader>
@@ -86,7 +86,7 @@ export default async function MedewerkerBeloningPage({
                 type="file"
                 accept="application/pdf,image/*"
                 title="Loonstrook (PDF) kiezen"
-                className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800"
+                className="block w-full text-sm text-ink-600 file:mr-3 file:rounded-md file:border-0 file:bg-ink-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-ink-800"
               />
             </Field>
             <SubmitButton className="w-full" pendingLabel="Opslaan…">
@@ -95,7 +95,7 @@ export default async function MedewerkerBeloningPage({
           </form>
 
           {m.payslips.length === 0 ? (
-            <p className="py-2 text-sm text-slate-400">Nog geen loonstroken geregistreerd.</p>
+            <p className="py-2 text-sm text-ink-400">Nog geen loonstroken geregistreerd.</p>
           ) : (
             <Table>
               <THead>
@@ -110,11 +110,11 @@ export default async function MedewerkerBeloningPage({
               <TBody>
                 {m.payslips.map((p) => (
                   <TR key={p.id}>
-                    <TD className="capitalize text-slate-700">
+                    <TD className="capitalize text-ink-700">
                       {MAANDEN[p.month - 1] ?? p.month} {p.year}
                     </TD>
                     <TD className="text-right tabular-nums">{formatCurrency(round2(p.grossAmount))}</TD>
-                    <TD className="text-right font-medium tabular-nums text-slate-900">
+                    <TD className="text-right font-medium tabular-nums text-ink-900">
                       {formatCurrency(round2(p.netAmount))}
                     </TD>
                     <TD>
@@ -123,13 +123,13 @@ export default async function MedewerkerBeloningPage({
                           href={`/api/medewerkers/payslip/${p.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-emerald-700"
+                          className="inline-flex items-center gap-1.5 text-sm text-ink-600 hover:text-emerald-700"
                         >
-                          <FileText className="h-3.5 w-3.5 text-slate-400" /> PDF
-                          <ExternalLink className="h-3 w-3 text-slate-400" />
+                          <FileText className="h-3.5 w-3.5 text-ink-400" /> PDF
+                          <ExternalLink className="h-3 w-3 text-ink-400" />
                         </a>
                       ) : (
-                        <span className="text-slate-300">—</span>
+                        <span className="text-ink-300">—</span>
                       )}
                     </TD>
                     <TD className="text-right">
@@ -156,11 +156,11 @@ export default async function MedewerkerBeloningPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5 text-slate-500" /> Bonussen &amp; provisie
+            <Gift className="h-5 w-5 text-ink-500" /> Bonussen &amp; provisie
           </CardTitle>
           {s.bonusTotal > 0 && (
-            <span className="text-sm text-slate-500">
-              {year}: <span className="font-medium text-slate-900">{formatCurrency(s.bonusTotal)}</span>
+            <span className="text-sm text-ink-500">
+              {year}: <span className="font-medium text-ink-900">{formatCurrency(s.bonusTotal)}</span>
             </span>
           )}
         </CardHeader>
@@ -189,7 +189,7 @@ export default async function MedewerkerBeloningPage({
           </form>
 
           {m.bonuses.length === 0 ? (
-            <p className="py-2 text-sm text-slate-400">Nog geen bonussen geregistreerd.</p>
+            <p className="py-2 text-sm text-ink-400">Nog geen bonussen geregistreerd.</p>
           ) : (
             <Table>
               <THead>
@@ -204,10 +204,10 @@ export default async function MedewerkerBeloningPage({
               <TBody>
                 {m.bonuses.map((b) => (
                   <TR key={b.id}>
-                    <TD className="text-slate-600">{formatDate(b.date)}</TD>
+                    <TD className="text-ink-600">{formatDate(b.date)}</TD>
                     <TD><StatusBadge options={BONUS_TYPES} value={b.type} /></TD>
-                    <TD className="text-slate-500">{b.description ?? "—"}</TD>
-                    <TD className="text-right font-medium tabular-nums text-slate-900">
+                    <TD className="text-ink-500">{b.description ?? "—"}</TD>
+                    <TD className="text-right font-medium tabular-nums text-ink-900">
                       {formatCurrency(round2(b.amount))}
                     </TD>
                     <TD className="text-right">
@@ -234,7 +234,7 @@ export default async function MedewerkerBeloningPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-slate-500" /> Eindejaarsbeoordeling (percentage)
+            <TrendingUp className="h-5 w-5 text-ink-500" /> Eindejaarsbeoordeling (percentage)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -274,21 +274,21 @@ export default async function MedewerkerBeloningPage({
               <TBody>
                 {m.reviews.map((r) => (
                   <TR key={r.id}>
-                    <TD className="tabular-nums text-slate-600">{r.year}</TD>
+                    <TD className="tabular-nums text-ink-600">{r.year}</TD>
                     <TD>
                       <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-ink-100">
                           <div
                             className="h-full rounded-full bg-emerald-500"
                             style={{ width: `${Math.min(100, r.scorePct)}%` }}
                           />
                         </div>
-                        <span className="font-medium tabular-nums text-slate-900">
+                        <span className="font-medium tabular-nums text-ink-900">
                           {Math.round(r.scorePct)}%
                         </span>
                       </div>
                     </TD>
-                    <TD className="text-slate-500">{r.notes ?? "—"}</TD>
+                    <TD className="text-ink-500">{r.notes ?? "—"}</TD>
                   </TR>
                 ))}
               </TBody>

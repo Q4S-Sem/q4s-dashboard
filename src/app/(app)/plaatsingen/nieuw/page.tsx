@@ -39,7 +39,7 @@ export default async function NieuwePlaatsingPage({
     <div className="space-y-6">
       <Link
         href="/plaatsingen"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar plaatsingen
       </Link>

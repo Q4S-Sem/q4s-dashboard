@@ -28,9 +28,9 @@ export const dynamic = "force-dynamic";
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-slate-100 py-2 last:border-0">
-      <dt className="text-sm text-slate-500">{label}</dt>
-      <dd className="text-right text-sm font-medium text-slate-900">{value}</dd>
+    <div className="flex items-baseline justify-between gap-4 border-b border-ink-100 py-2 last:border-0">
+      <dt className="text-sm text-ink-500">{label}</dt>
+      <dd className="text-right text-sm font-medium text-ink-900">{value}</dd>
     </div>
   );
 }
@@ -51,7 +51,7 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
     <div className="space-y-6">
       <Link
         href="/ontvangen-facturen"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar ontvangen facturen
       </Link>
@@ -67,7 +67,7 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
           zelf factureren zonder dat Q4S een inkoopfactuur maakt. */}
       <form
         action={setReceivedVatFlag}
-        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink-200 bg-ink-50/60 px-4 py-3"
       >
         <input type="hidden" name="id" value={inv.id} />
         <label className="flex cursor-pointer items-start gap-3 text-sm">
@@ -75,11 +75,11 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
             type="checkbox"
             name="countForVat"
             defaultChecked={inv.countForVat}
-            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30"
+            className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
           />
           <span>
-            <span className="font-medium text-slate-900">BTW meetellen als voorbelasting</span>
-            <span className="mt-0.5 block text-slate-500">
+            <span className="font-medium text-ink-900">BTW meetellen als voorbelasting</span>
+            <span className="mt-0.5 block text-ink-500">
               Zet aan als deze ZZP'er zélf factureert en Q4S géén inkoopfactuur maakt — zo voorkom je dubbeltelling.
               {inv.vatAmount == null && (
                 <span className="text-amber-700"> Let op: er is nog geen BTW-bedrag bekend op deze factuur.</span>
@@ -101,24 +101,24 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
           <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex flex-1 flex-wrap items-center justify-center gap-x-8 gap-y-4 text-center sm:justify-start">
               <div>
-                <div className="text-xs font-medium text-slate-500">Hun factuur</div>
-                <div className="text-2xl font-bold tabular-nums text-slate-900">
+                <div className="text-xs font-medium text-ink-500">Hun factuur</div>
+                <div className="text-2xl font-bold tabular-nums text-ink-900">
                   {formatCurrency(inv.amount)}
                 </div>
               </div>
-              <div className="text-lg font-medium text-slate-300">vs</div>
+              <div className="text-lg font-medium text-ink-300">vs</div>
               <div>
-                <div className="text-xs font-medium text-slate-500">Onze urenregistratie</div>
-                <div className="text-2xl font-bold tabular-nums text-slate-900">
+                <div className="text-xs font-medium text-ink-500">Onze urenregistratie</div>
+                <div className="text-2xl font-bold tabular-nums text-ink-900">
                   {formatCurrency(inv.expected.total)}
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-ink-400">
                   {inv.expected.weeks} wk · {formatHours(inv.expected.hours)} u
                 </div>
               </div>
-              <div className="self-stretch border-l border-slate-300/70" />
+              <div className="self-stretch border-l border-ink-300/70" />
               <div>
-                <div className="text-xs font-medium text-slate-500">Verschil</div>
+                <div className="text-xs font-medium text-ink-500">Verschil</div>
                 <div
                   className={cn(
                     "text-2xl font-bold tabular-nums",
@@ -166,13 +166,13 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
             </p>
           )}
           {!inv.matched && inv.status === "PAID" && (
-            <p className="mt-3 text-center text-sm text-slate-500 sm:text-left">
+            <p className="mt-3 text-center text-sm text-ink-500 sm:text-left">
               Deze factuur is <strong>betaald</strong> ondanks het verschil — bewaard als administratieve notitie.
             </p>
           )}
         </div>
       ) : (
-        <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+        <p className="rounded-xl border border-ink-200 bg-white px-4 py-3 text-sm text-ink-500">
           Geen periode ingevuld — vul de periode aan om automatisch tegen de timesheet te controleren.
         </p>
       )}
@@ -196,9 +196,9 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
                     className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2"
                   >
                     <div className="min-w-0 text-sm">
-                      <span className="font-medium text-slate-900">{p.title}</span>
-                      <span className="text-slate-400"> · {p.clientName}</span>
-                      <span className="block text-xs text-slate-500">
+                      <span className="font-medium text-ink-900">{p.title}</span>
+                      <span className="text-ink-400"> · {p.clientName}</span>
+                      <span className="block text-xs text-ink-500">
                         Plaatsingstarief: inkoop {formatCurrency(p.costRate)}/u · verkoop{" "}
                         {formatCurrency(p.chargeRate)}/u
                       </span>
@@ -229,10 +229,10 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
           <CardContent className="space-y-3">
             {inv.weeks.length > 0 ? (
               <>
-                <div className="overflow-hidden rounded-lg border border-slate-200">
+                <div className="overflow-hidden rounded-lg border border-ink-200">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-slate-50 text-xs text-slate-500">
+                      <tr className="bg-ink-50 text-xs text-ink-500">
                         <th className="px-3 py-2 text-left font-medium">Week</th>
                         <th className="px-3 py-2 text-right font-medium">Uren</th>
                         <th className="px-3 py-2 text-right font-medium">Bedrag</th>
@@ -243,15 +243,15 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
                     </thead>
                     <tbody>
                       {inv.weeks.map((w) => (
-                        <tr key={w.timesheetId} className="border-t border-slate-100 hover:bg-slate-50/60">
-                          <td className="px-3 py-2 text-slate-700">
+                        <tr key={w.timesheetId} className="border-t border-ink-100 hover:bg-ink-50/60">
+                          <td className="px-3 py-2 text-ink-700">
                             {w.weekLabel}
-                            <span className="block text-xs text-slate-400">{w.clientName}</span>
+                            <span className="block text-xs text-ink-400">{w.clientName}</span>
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums text-slate-600">
+                          <td className="px-3 py-2 text-right tabular-nums text-ink-600">
                             {formatHours(w.hours)}
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums text-slate-600">
+                          <td className="px-3 py-2 text-right tabular-nums text-ink-600">
                             {formatCurrency(w.buyTotal)}
                           </td>
                           <td className="px-3 py-2 text-right">
@@ -265,7 +265,7 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
                         </tr>
                       ))}
                       {inv.expected && (
-                        <tr className="border-t border-slate-200 bg-slate-50 font-semibold text-slate-800">
+                        <tr className="border-t border-ink-200 bg-ink-50 font-semibold text-ink-800">
                           <td className="px-3 py-2">Totaal (ex btw)</td>
                           <td className="px-3 py-2 text-right tabular-nums">
                             {formatHours(inv.expected.hours)}
@@ -279,13 +279,13 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
                     </tbody>
                   </table>
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-ink-400">
                   Klik <strong>Open</strong> bij een week om de volledige urenstaat te bekijken en met de
                   factuur te vergelijken.
                 </p>
               </>
             ) : (
-              <p className="py-6 text-center text-sm text-slate-500">
+              <p className="py-6 text-center text-sm text-ink-500">
                 Geen urenstaten in deze periode om mee te vergelijken.
               </p>
             )}
@@ -310,9 +310,9 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
             )}
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-baseline justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-sm text-slate-500">Gefactureerd (incl. btw)</span>
-              <span className="text-lg font-bold tabular-nums text-slate-900">
+            <div className="flex items-baseline justify-between rounded-lg bg-ink-50 px-3 py-2">
+              <span className="text-sm text-ink-500">Gefactureerd (incl. btw)</span>
+              <span className="text-lg font-bold tabular-nums text-ink-900">
                 {formatCurrency(inv.amount)}
               </span>
             </div>
@@ -320,10 +320,10 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
               <iframe
                 src={`/api/ontvangen-factuur/${inv.id}`}
                 title={inv.originalName ?? "Factuur"}
-                className="h-[560px] w-full rounded-lg border border-slate-200 bg-slate-50"
+                className="h-[560px] w-full rounded-lg border border-ink-200 bg-ink-50"
               />
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-4 py-12 text-center text-sm text-slate-500">
+              <div className="rounded-lg border border-dashed border-ink-300 bg-ink-50/60 px-4 py-12 text-center text-sm text-ink-500">
                 Geen bestand bijgevoegd bij deze factuur.
                 <div className="mt-2">
                   <Link

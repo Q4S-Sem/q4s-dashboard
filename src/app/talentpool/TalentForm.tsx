@@ -48,7 +48,7 @@ export function TalentForm({
   return (
     <form
       action={formAction}
-      className="mt-8 space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-6"
+      className="mt-8 space-y-5 rounded-xl border border-ink-200 bg-ink-50 p-6"
     >
       {/* Honeypot — hidden from real users; bots fill it and get silently dropped. */}
       <div className="hidden" aria-hidden="true">
@@ -60,10 +60,10 @@ export function TalentForm({
       {bron && <input type="hidden" name="bron" value={bron} />}
 
       <div>
-        <h2 className="text-base font-semibold text-slate-900">
+        <h2 className="text-base font-semibold text-ink-900">
           Meld je aan voor de Talentpool
         </h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-ink-600">
           Eén keer je gegevens achterlaten — wij matchen je daarna aan álle
           passende opdrachten.
         </p>
@@ -131,7 +131,7 @@ export function TalentForm({
           type="file"
           aria-label="CV kiezen"
           title="CV kiezen"
-          className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800"
+          className="block w-full text-sm text-ink-600 file:mr-3 file:rounded-md file:border-0 file:bg-ink-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-ink-800"
         />
       </Field>
 

@@ -97,7 +97,7 @@ export function SearchSelect({
     <div ref={rootRef} className="relative">
       <input type="hidden" name={name} value={value} />
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
         <input
           id={id}
           type="text"
@@ -115,15 +115,15 @@ export function SearchSelect({
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-9 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          className="w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-9 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
         />
-        <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
       </div>
 
       {open && (
-        <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 shadow-lg">
           {filtered.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-slate-400">{emptyText}</li>
+            <li className="px-3 py-2 text-sm text-ink-400">{emptyText}</li>
           ) : (
             filtered.map((o, i) => (
               <li key={o.value}>
@@ -140,12 +140,12 @@ export function SearchSelect({
                       ? query.trim()
                         ? "bg-emerald-50 font-medium text-emerald-700"
                         : "bg-brand-50 text-brand-800"
-                      : "text-slate-700 hover:bg-slate-50",
+                      : "text-ink-700 hover:bg-ink-50",
                   )}
                 >
                   <span className="min-w-0">
                     <span className="block truncate">{o.label}</span>
-                    {o.sub && <span className="block truncate text-xs text-slate-400">{o.sub}</span>}
+                    {o.sub && <span className="block truncate text-xs text-ink-400">{o.sub}</span>}
                   </span>
                   {o.value === value && <Check className="h-4 w-4 shrink-0 text-brand-600" />}
                 </button>

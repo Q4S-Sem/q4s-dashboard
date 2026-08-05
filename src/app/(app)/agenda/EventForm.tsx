@@ -104,13 +104,13 @@ export function EventForm({
             </Select>
           </Field>
 
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <label className="flex items-center gap-2 text-sm font-medium text-ink-700">
             <input
               type="checkbox"
               name="allDay"
               checked={allDay}
               onChange={(ev) => setAllDay(ev.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
             />
             Hele dag
           </label>
@@ -146,8 +146,8 @@ export function EventForm({
 
           {/* Koppelen aan — waar de recruiter overzicht op houdt: eerst kandidaat &
               vacature, dan de opdrachtgever/klant. */}
-          <div className="space-y-5 border-t border-slate-100 pt-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <div className="space-y-5 border-t border-ink-100 pt-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
               Koppelen aan
             </p>
             <div className="grid gap-5 sm:grid-cols-2">

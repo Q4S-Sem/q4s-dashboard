@@ -35,7 +35,7 @@ function CharCounter({ text }: { text: string }) {
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-      <span className={over ? "font-medium text-red-600" : tight ? "text-amber-700" : "text-slate-400"}>
+      <span className={over ? "font-medium text-red-600" : tight ? "text-amber-700" : "text-ink-400"}>
         {fmt(used)} / {fmt(LINKEDIN_MAX)} tekens
         {over && ` — ${fmt(-left)} te veel`}
       </span>
@@ -71,7 +71,7 @@ type Defaults = {
 };
 
 const INPUT_CLS =
-  "block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pl-9 pr-9 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30";
+  "block w-full rounded-lg border border-ink-300 bg-white px-3 py-2 pl-9 pr-9 text-sm text-ink-900 shadow-sm placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30";
 
 /** Kopieert via de Clipboard-API met een execCommand-fallback voor niet-beveiligde
  *  contexten (bijv. het dashboard via http op het LAN) + zichtbare foutstatus. */
@@ -110,7 +110,7 @@ function CopyButton({ text, label = "Kopieer" }: { text: string; label?: string 
         setState(ok ? "done" : "error");
         setTimeout(() => setState("idle"), 2200);
       }}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+      className="inline-flex items-center gap-1.5 rounded-lg bg-ink-900 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink-800"
     >
       {state === "done" ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
       {state === "done" ? "Gekopieerd!" : state === "error" ? "Selecteer & kopieer zelf" : label}
@@ -266,7 +266,7 @@ export function LinkedInGenerator({
     <div className="space-y-8">
       {/* LinkedIn */}
       <section className="space-y-4">
-        <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-ink-900">
           <Share2 className="h-5 w-5 text-brand-600" /> LinkedIn
         </h2>
         <div className="grid gap-6 lg:grid-cols-2">
@@ -307,8 +307,8 @@ export function LinkedInGenerator({
               </div>
             </div>
 
-            <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-slate-400">
-              <span className="h-px flex-1 bg-slate-200" /> of typ een titel <span className="h-px flex-1 bg-slate-200" />
+            <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-ink-400">
+              <span className="h-px flex-1 bg-ink-200" /> of typ een titel <span className="h-px flex-1 bg-ink-200" />
             </div>
 
             <Field
@@ -317,7 +317,7 @@ export function LinkedInGenerator({
               hint="Typ de titel van een vacature die live staat — kies 'm uit de lijst en de hele post wordt gemaakt."
             >
               <div ref={vacRef} className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
                 <input
                   id="vac"
                   type="text"
@@ -337,23 +337,23 @@ export function LinkedInGenerator({
                   aria-label="Typ een vacaturetitel"
                   className={INPUT_CLS}
                 />
-                <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
 
                 {vacOpen && (vacMatches.length > 0 || vacQ) && (
-                  <ul className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
+                  <ul className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 text-sm shadow-lg">
                     {vacMatches.map((v) => (
                       <li key={v.id}>
                         <button
                           type="button"
                           onClick={() => pickVacancy(v)}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-slate-700 hover:bg-slate-50"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-ink-50"
                         >
                           {v.status === "PUBLISHED" ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
                               live
                             </span>
                           ) : (
-                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-500">
+                            <span className="rounded-full bg-ink-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-ink-500">
                               concept
                             </span>
                           )}
@@ -363,7 +363,7 @@ export function LinkedInGenerator({
                       </li>
                     ))}
                     {vacMatches.length === 0 && (
-                      <li className="px-3 py-2 text-slate-400">Geen vacature met deze titel op de website.</li>
+                      <li className="px-3 py-2 text-ink-400">Geen vacature met deze titel op de website.</li>
                     )}
                   </ul>
                 )}
@@ -391,7 +391,7 @@ export function LinkedInGenerator({
 
             <CharCounter text={draft} />
 
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-ink-400">
               Je kunt de tekst hierboven zelf nog bijschaven. Vet is écht vet op LinkedIn (Unicode-tekens), en{" "}
               <strong>Kopieer post</strong> neemt alle opmaak exact mee. Plak direct op LinkedIn.
             </p>

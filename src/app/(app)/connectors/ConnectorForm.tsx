@@ -115,11 +115,11 @@ export function ConnectorForm({
             <Textarea id="notes" name="notes" defaultValue={connector?.notes ?? ""} />
           </Field>
 
-          <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-4">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <div className="rounded-lg border border-ink-100 bg-ink-50/60 p-4">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-400">
               API-koppeling (MSP)
             </p>
-            <p className="mb-4 text-xs text-slate-500">
+            <p className="mb-4 text-xs text-ink-500">
               De echte key komt later van het platform. Tot die tijd werkt de intake al via de
               webhook en de testlevering op de MSP-intake-pagina.
             </p>
@@ -149,18 +149,18 @@ export function ConnectorForm({
               </Field>
             </div>
             {hasApiKey && (
-              <label className="mt-3 inline-flex items-center gap-2 text-sm text-slate-600">
-                <input type="checkbox" name="apiKeyClear" className="h-4 w-4 rounded border-slate-300" />
+              <label className="mt-3 inline-flex items-center gap-2 text-sm text-ink-600">
+                <input type="checkbox" name="apiKeyClear" className="h-4 w-4 rounded border-ink-300" />
                 API-key wissen
               </label>
             )}
           </div>
 
-          <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-4">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <div className="rounded-lg border border-ink-100 bg-ink-50/60 p-4">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-400">
               Automatische pijplijn
             </p>
-            <p className="mb-4 text-xs text-slate-500">
+            <p className="mb-4 text-xs text-ink-500">
               Wat er automatisch gebeurt met elke vacature die via deze connector binnenkomt.
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -176,13 +176,13 @@ export function ConnectorForm({
               ).map(([name, label]) => (
                 <label
                   key={name}
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                  className="inline-flex items-center gap-2 rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-700"
                 >
                   <input
                     type="checkbox"
                     name={name}
                     defaultChecked={connector?.[name] ?? true}
-                    className="h-4 w-4 rounded border-slate-300"
+                    className="h-4 w-4 rounded border-ink-300"
                   />
                   {label}
                 </label>

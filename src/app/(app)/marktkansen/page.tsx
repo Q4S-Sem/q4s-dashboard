@@ -74,7 +74,7 @@ export default async function MarktkansenPage({
                   <TD>
                     <Link
                       href={`/marktkansen/${o.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {o.title}
                     </Link>

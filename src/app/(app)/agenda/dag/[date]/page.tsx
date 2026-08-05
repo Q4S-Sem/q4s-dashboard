@@ -102,7 +102,7 @@ export default async function DagPage({
     <div className="space-y-6">
       <Link
         href={`/agenda?m=${backMonth}`}
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar agenda
       </Link>
@@ -113,20 +113,20 @@ export default async function DagPage({
           <Link
             href={`/agenda/dag/${iso(prev)}`}
             aria-label="Vorige dag"
-            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-900"
           >
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <Link
             href={`/agenda/dag/${iso(next)}`}
             aria-label="Volgende dag"
-            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-900"
           >
             <ChevronRight className="h-5 w-5" />
           </Link>
         </div>
         <div>
-          <h1 className="text-2xl font-bold capitalize tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold capitalize tracking-tight text-ink-900">
             {headerLabel}
           </h1>
           {isToday && (
@@ -147,11 +147,11 @@ export default async function DagPage({
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-brand-600" /> Afspraken
           </CardTitle>
-          <span className="text-sm text-slate-400">{events.length}</span>
+          <span className="text-sm text-ink-400">{events.length}</span>
         </CardHeader>
         <CardContent className="space-y-3">
           {events.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-400">
+            <p className="py-6 text-center text-sm text-ink-400">
               Geen afspraken op deze dag.{" "}
               <Link
                 href={`/agenda/nieuw?date=${date}`}
@@ -175,14 +175,14 @@ export default async function DagPage({
                 <div
                   key={ev.id}
                   className={cn(
-                    "rounded-xl border border-slate-200 p-4",
+                    "rounded-xl border border-ink-200 p-4",
                     ev.status === "CANCELLED" && "opacity-60",
                   )}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold tabular-nums text-slate-900">
+                        <span className="text-sm font-semibold tabular-nums text-ink-900">
                           {ev.allDay
                             ? "Hele dag"
                             : `${formatTime(ev.start)}${ev.end ? `–${formatTime(ev.end)}` : ""}`}
@@ -194,13 +194,13 @@ export default async function DagPage({
                       </div>
                       <p
                         className={cn(
-                          "mt-1 font-medium text-slate-900",
+                          "mt-1 font-medium text-ink-900",
                           ev.status === "CANCELLED" && "line-through",
                         )}
                       >
                         {ev.title}
                       </p>
-                      <div className="mt-1 space-y-0.5 text-sm text-slate-500">
+                      <div className="mt-1 space-y-0.5 text-sm text-ink-500">
                         {ev.location && (
                           <p className="flex items-center gap-1.5">
                             <MapPin className="h-3.5 w-3.5" /> {ev.location}
@@ -220,10 +220,10 @@ export default async function DagPage({
                   {/* Verschuiven */}
                   <form
                     action={rescheduleEvent}
-                    className="mt-3 flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3"
+                    className="mt-3 flex flex-wrap items-end gap-2 border-t border-ink-100 pt-3"
                   >
                     <input type="hidden" name="id" value={ev.id} />
-                    <span className="flex items-center gap-1.5 self-center text-xs font-medium text-slate-500">
+                    <span className="flex items-center gap-1.5 self-center text-xs font-medium text-ink-500">
                       <CalendarClock className="h-3.5 w-3.5" /> Verschuif naar
                     </span>
                     {!ev.allDay && (
@@ -260,7 +260,7 @@ export default async function DagPage({
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-600" /> Deadlines
             </CardTitle>
-            <span className="text-sm text-slate-400">{deadlines.length}</span>
+            <span className="text-sm text-ink-400">{deadlines.length}</span>
           </CardHeader>
           <CardContent>
             <ul className="space-y-1">
@@ -268,7 +268,7 @@ export default async function DagPage({
                 <li key={`dl-${i}`}>
                   <Link
                     href={dl.href}
-                    className="flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-slate-50"
+                    className="flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-ink-50"
                   >
                     <AlertTriangle
                       className={cn(
@@ -276,7 +276,7 @@ export default async function DagPage({
                         dl.overdue ? "text-red-600" : "text-amber-600",
                       )}
                     />
-                    <span className="text-sm text-slate-700">{dl.title}</span>
+                    <span className="text-sm text-ink-700">{dl.title}</span>
                     {dl.overdue && (
                       <span className="ml-auto rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                         te laat
@@ -316,7 +316,7 @@ export default async function DagPage({
                       aria-label={t.done ? "Taak heropenen" : "Taak afronden"}
                       className={cn(
                         "flex hover:text-emerald-600",
-                        t.done ? "text-emerald-600" : "text-slate-300",
+                        t.done ? "text-emerald-600" : "text-ink-300",
                       )}
                     >
                       <CircleCheck className="h-5 w-5" />
@@ -325,7 +325,7 @@ export default async function DagPage({
                   <span
                     className={cn(
                       "flex-1 truncate text-sm",
-                      t.done ? "text-slate-400 line-through" : "text-slate-800",
+                      t.done ? "text-ink-400 line-through" : "text-ink-800",
                     )}
                   >
                     {t.title}
@@ -343,7 +343,7 @@ export default async function DagPage({
       )}
 
       {events.length === 0 && deadlines.length === 0 && tasks.length === 0 && (
-        <p className="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-slate-400">
+        <p className="rounded-lg bg-ink-50 px-4 py-6 text-center text-sm text-ink-400">
           Niets gepland op {formatDate(dayStart)}.
         </p>
       )}

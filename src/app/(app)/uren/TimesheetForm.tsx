@@ -197,7 +197,7 @@ export function TimesheetForm({
           ) : (
             <div>
               <Label>Plaatsing</Label>
-              <p className="text-sm font-medium text-slate-900">{placementLabel}</p>
+              <p className="text-sm font-medium text-ink-900">{placementLabel}</p>
             </div>
           )}
 
@@ -219,24 +219,24 @@ export function TimesheetForm({
 
           <div>
             <Label>Uren per dag</Label>
-            <div className="overflow-hidden rounded-lg border border-slate-200">
+            <div className="overflow-hidden rounded-lg border border-ink-200">
               {days.map((d, i) => (
                 <div
                   key={i}
                   className={cn(
                     "px-4 py-2.5",
-                    i >= 5 && "bg-slate-50",
-                    i > 0 && "border-t border-slate-100",
+                    i >= 5 && "bg-ink-50",
+                    i > 0 && "border-t border-ink-100",
                   )}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="text-sm">
-                      <span className="font-medium text-slate-700">{DAY_NAMES[i]}</span>{" "}
-                      <span className="text-slate-400">{dayFmt.format(d)}</span>
+                      <span className="font-medium text-ink-700">{DAY_NAMES[i]}</span>{" "}
+                      <span className="text-ink-400">{dayFmt.format(d)}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-400">Uren</span>
+                        <span className="text-xs text-ink-400">Uren</span>
                         <NumberInput
                           name={`hours_${i}`}
                           value={hours[i]}
@@ -249,7 +249,7 @@ export function TimesheetForm({
                         />
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-400">Km</span>
+                        <span className="text-xs text-ink-400">Km</span>
                         <NumberInput
                           name={`km_${i}`}
                           value={km[i]}
@@ -270,7 +270,7 @@ export function TimesheetForm({
                     onChange={(ev) => setNote(i, ev.target.value)}
                     placeholder="Notitie voor deze dag (optioneel)…"
                     aria-label={`Notitie ${DAY_NAMES[i]}`}
-                    className="mt-2 block w-full rounded-md border border-slate-200 bg-white px-2.5 py-1 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
+                    className="mt-2 block w-full rounded-md border border-ink-200 bg-white px-2.5 py-1 text-sm text-ink-700 placeholder:text-ink-400 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
                   />
                 </div>
               ))}
@@ -278,27 +278,27 @@ export function TimesheetForm({
           </div>
 
           {/* Overzicht onderaan */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="mb-3 text-sm font-semibold text-slate-700">Overzicht</p>
+          <div className="rounded-xl border border-ink-200 bg-ink-50 p-4">
+            <p className="mb-3 text-sm font-semibold text-ink-700">Overzicht</p>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
                   Totaal uren
                 </p>
-                <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
+                <p className="mt-1 text-xl font-bold tabular-nums text-ink-900">
                   {formatHours(total)} u
                 </p>
               </div>
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
                   Totaal kilometers
                 </p>
-                <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
+                <p className="mt-1 text-xl font-bold tabular-nums text-ink-900">
                   {formatHours(totalKm)} km
                 </p>
               </div>
               <div>
-                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-400">
                   Overuren
                 </p>
                 <NumberInput
@@ -312,7 +312,7 @@ export function TimesheetForm({
                 />
               </div>
             </div>
-            <p className="mt-3 text-xs text-slate-400">
+            <p className="mt-3 text-xs text-ink-400">
               Vul per dag de uren én de gereden kilometers in. De kilometervergoeding
               (inkoop/verkoop) volgt uit het km-tarief op de plaatsing.
             </p>
@@ -320,18 +320,18 @@ export function TimesheetForm({
 
           {/* Declaraties — alleen bij een nieuwe urenstaat (create mode). */}
           {placements && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+            <div className="rounded-xl border border-ink-200 bg-ink-50/60 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-slate-200">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-ink-500 ring-1 ring-ink-200">
                     <Receipt className="h-4 w-4" />
                   </div>
                   <div>
                     <Label className="mb-0 block">
                       Declaraties{" "}
-                      <span className="font-normal text-slate-400">(optioneel)</span>
+                      <span className="font-normal text-ink-400">(optioneel)</span>
                     </Label>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-ink-400">
                       Onkosten deze week — reis, materiaal, parkeren, tol, verblijf…
                     </p>
                   </div>
@@ -339,20 +339,20 @@ export function TimesheetForm({
                 <button
                   type="button"
                   onClick={addExpense}
-                  className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-brand-300 hover:text-brand-700"
+                  className="inline-flex items-center gap-1 rounded-md border border-ink-200 bg-white px-2.5 py-1.5 text-xs font-medium text-ink-700 transition-colors hover:border-brand-300 hover:text-brand-700"
                 >
                   <Plus className="h-3.5 w-3.5" /> Declaratie toevoegen
                 </button>
               </div>
 
               {expenses.length === 0 ? (
-                <p className="mt-3 rounded-lg border border-dashed border-slate-200 bg-white px-3 py-5 text-center text-xs text-slate-400">
+                <p className="mt-3 rounded-lg border border-dashed border-ink-200 bg-white px-3 py-5 text-center text-xs text-ink-400">
                   Nog geen declaraties. Voeg bonnetjes/onkosten toe — de foto van de bon
                   koppel je later in Declaraties.
                 </p>
               ) : (
                 <div className="mt-3 space-y-2">
-                  <div className="hidden grid-cols-[11rem_1fr_8rem_2rem] gap-2 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:grid">
+                  <div className="hidden grid-cols-[11rem_1fr_8rem_2rem] gap-2 px-1 text-[10px] font-semibold uppercase tracking-wide text-ink-400 sm:grid">
                     <span>Categorie</span>
                     <span>Omschrijving</span>
                     <span className="text-right">Bedrag incl. btw</span>
@@ -361,7 +361,7 @@ export function TimesheetForm({
                   {expenses.map((row) => (
                     <div
                       key={row.key}
-                      className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-white p-2.5 sm:grid-cols-[11rem_1fr_8rem_2rem] sm:items-center sm:border-0 sm:bg-transparent sm:p-1"
+                      className="grid grid-cols-1 gap-2 rounded-lg border border-ink-200 bg-white p-2.5 sm:grid-cols-[11rem_1fr_8rem_2rem] sm:items-center sm:border-0 sm:bg-transparent sm:p-1"
                     >
                       <Select
                         aria-label="Categorie"
@@ -383,7 +383,7 @@ export function TimesheetForm({
                         className="w-full"
                       />
                       <div className="relative">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-400">
                           €
                         </span>
                         <NumberInput
@@ -400,19 +400,19 @@ export function TimesheetForm({
                         type="button"
                         onClick={() => removeExpense(row.key)}
                         aria-label="Declaratie verwijderen"
-                        className="ml-auto rounded-md p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 sm:ml-0"
+                        className="ml-auto rounded-md p-2 text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600 sm:ml-0"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
-                  <div className="flex items-center justify-between border-t border-slate-200 pt-2.5 text-xs">
-                    <span className="text-slate-500">
+                  <div className="flex items-center justify-between border-t border-ink-200 pt-2.5 text-xs">
+                    <span className="text-ink-500">
                       {expenses.length} {expenses.length === 1 ? "declaratie" : "declaraties"}
                     </span>
-                    <span className="text-slate-500">
+                    <span className="text-ink-500">
                       Totaal:{" "}
-                      <span className="font-semibold text-slate-800">
+                      <span className="font-semibold text-ink-800">
                         {formatCurrency(expensesTotal)}
                       </span>
                     </span>

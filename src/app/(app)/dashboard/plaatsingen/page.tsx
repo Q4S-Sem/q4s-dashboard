@@ -158,13 +158,13 @@ export default async function PlaatsingenMargesPage() {
                     <TD>
                       <Link
                         href={`/plaatsingen/${p.id}`}
-                        className="font-medium text-slate-900 hover:text-emerald-700"
+                        className="font-medium text-ink-900 hover:text-emerald-700"
                       >
                         {p.consultant.firstName} {p.consultant.lastName}
                       </Link>
                     </TD>
-                    <TD className="text-slate-600">{p.client?.companyName ?? "— geen bedrijf"}</TD>
-                    <TD className="text-slate-600">{p.title}</TD>
+                    <TD className="text-ink-600">{p.client?.companyName ?? "— geen bedrijf"}</TD>
+                    <TD className="text-ink-600">{p.title}</TD>
                     <TD className="text-right tabular-nums">
                       {formatCurrency(p.costRate)}/u
                     </TD>
@@ -174,7 +174,7 @@ export default async function PlaatsingenMargesPage() {
                     <TD className="text-right font-medium tabular-nums text-emerald-700">
                       {formatCurrency(margePerHour)}/u
                     </TD>
-                    <TD className="text-right tabular-nums text-slate-700">
+                    <TD className="text-right tabular-nums text-ink-700">
                       {pct.toLocaleString("nl-NL")}%
                     </TD>
                     <TD>
@@ -194,7 +194,7 @@ export default async function PlaatsingenMargesPage() {
           icon={<Building2 className="h-4 w-4" />}
           title="Marge per klant"
           action={
-            <span className="hidden shrink-0 text-sm text-slate-400 sm:inline">
+            <span className="hidden shrink-0 text-sm text-ink-400 sm:inline">
               som marge/uur · actief
             </span>
           }
@@ -210,7 +210,7 @@ export default async function PlaatsingenMargesPage() {
                     label={
                       <Link
                         href={`/klanten/${c.id}`}
-                        className="hover:text-slate-900"
+                        className="hover:text-ink-900"
                         title={c.name}
                       >
                         {c.name}
@@ -231,7 +231,7 @@ export default async function PlaatsingenMargesPage() {
           icon={<Users className="h-4 w-4" />}
           title="Plaatsingen per discipline"
           action={
-            <span className="hidden shrink-0 text-sm text-slate-400 sm:inline">
+            <span className="hidden shrink-0 text-sm text-ink-400 sm:inline">
               aantal · actief
             </span>
           }

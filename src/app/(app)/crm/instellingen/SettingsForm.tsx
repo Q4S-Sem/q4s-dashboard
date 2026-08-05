@@ -83,19 +83,19 @@ export function SettingsForm({
           </Field>
 
           <div>
-            <p className="mb-2 text-sm font-medium text-slate-700">Zichtbare fases op mijn bord</p>
-            <p className="mb-3 text-xs text-slate-500">
+            <p className="mb-2 text-sm font-medium text-ink-700">Zichtbare fases op mijn bord</p>
+            <p className="mb-3 text-xs text-ink-500">
               Kies welke pipeline-fases je op je bord ziet. Vink alles aan (of niets) om alle fases te tonen.
             </p>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {stages.map((s) => (
-                <label key={s.key} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                <label key={s.key} className="inline-flex items-center gap-2 rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-700">
                   <input
                     type="checkbox"
                     name="visibleStages"
                     value={s.key}
                     defaultChecked={showsAll || (settings.visibleStages?.includes(s.key) ?? false)}
-                    className="h-4 w-4 rounded border-slate-300"
+                    className="h-4 w-4 rounded border-ink-300"
                   />
                   {s.name}
                 </label>

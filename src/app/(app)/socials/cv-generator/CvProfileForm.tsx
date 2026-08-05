@@ -41,7 +41,7 @@ function SectionCard({
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        {description && <span className="text-sm text-slate-400">{description}</span>}
+        {description && <span className="text-sm text-ink-400">{description}</span>}
       </CardHeader>
       <CardContent className="space-y-4">
         {children}
@@ -57,14 +57,14 @@ function SectionCard({
 
 function RowShell({ onRemove, children }: { onRemove: () => void; children: React.ReactNode }) {
   return (
-    <div className="relative rounded-lg border border-slate-200 bg-slate-50/60 p-3 pr-10">
+    <div className="relative rounded-lg border border-ink-200 bg-ink-50/60 p-3 pr-10">
       {children}
       <button
         type="button"
         onClick={onRemove}
         aria-label="Verwijderen"
         title="Verwijderen"
-        className="absolute right-2 top-2 rounded-md p-1.5 text-slate-400 hover:bg-white hover:text-red-600"
+        className="absolute right-2 top-2 rounded-md p-1.5 text-ink-400 hover:bg-white hover:text-red-600"
       >
         <Trash2 className="h-4 w-4" />
       </button>
@@ -132,18 +132,18 @@ export function CvProfileForm({
               name="anonymize"
               checked={anonymize}
               onChange={(ev) => setAnonymize(ev.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30"
+              className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
             />
             <span className="min-w-0">
-              <span className="flex items-center gap-1.5 text-sm font-medium text-slate-900">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-ink-900">
                 {anonymize ? (
-                  <EyeOff className="h-4 w-4 text-slate-400" />
+                  <EyeOff className="h-4 w-4 text-ink-400" />
                 ) : (
-                  <Eye className="h-4 w-4 text-slate-400" />
+                  <Eye className="h-4 w-4 text-ink-400" />
                 )}
                 Anonimiseren voor de opdrachtgever
               </span>
-              <span className="mt-0.5 block text-sm text-slate-500">
+              <span className="mt-0.5 block text-sm text-ink-500">
                 {anonymize ? (
                   <>
                     Achternaam wordt een initiaal en contactgegevens van de kandidaat
@@ -221,7 +221,7 @@ export function CvProfileForm({
             {skills.map((s, i) => (
               <span
                 key={`${s}-${i}`}
-                className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 py-1 pl-2.5 pr-1 text-sm text-slate-700"
+                className="inline-flex items-center gap-1.5 rounded-md border border-ink-200 bg-ink-50 py-1 pl-2.5 pr-1 text-sm text-ink-700"
               >
                 {s}
                 <button
@@ -229,7 +229,7 @@ export function CvProfileForm({
                   onClick={() => setSkills(skills.filter((_, idx) => idx !== i))}
                   aria-label={`${s} verwijderen`}
                   title={`${s} verwijderen`}
-                  className="rounded p-0.5 text-slate-400 hover:bg-white hover:text-red-600"
+                  className="rounded p-0.5 text-ink-400 hover:bg-white hover:text-red-600"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -271,7 +271,7 @@ export function CvProfileForm({
         }
       >
         {experience.length === 0 && (
-          <p className="text-sm text-slate-500">Nog geen werkervaring — voeg een functie toe.</p>
+          <p className="text-sm text-ink-500">Nog geen werkervaring — voeg een functie toe.</p>
         )}
         {experience.map((job, i) => (
           <RowShell key={i} onRemove={() => setExperience(experience.filter((_, idx) => idx !== i))}>

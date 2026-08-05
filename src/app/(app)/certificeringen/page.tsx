@@ -178,7 +178,7 @@ export default async function CertificeringenPage() {
             <CardTitle className="flex items-center gap-2">
               <BellRing className="h-5 w-5 text-amber-500" /> Actie nodig — bijna of al verlopen
             </CardTitle>
-            <span className="text-sm text-slate-500">{alerts.length}</span>
+            <span className="text-sm text-ink-500">{alerts.length}</span>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -196,10 +196,10 @@ export default async function CertificeringenPage() {
                   const meta = CERT_STATUS_META[a.st];
                   return (
                     <TR key={`${a.kind}-${a.certId}`}>
-                      <TD className="font-medium text-slate-900">
+                      <TD className="font-medium text-ink-900">
                         {a.personName}
                         {a.kind === "employee" && (
-                          <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                          <span className="ml-2 rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-500">
                             eigen medewerker
                           </span>
                         )}
@@ -209,7 +209,7 @@ export default async function CertificeringenPage() {
                       <TD>
                         <Badge color={meta.color}>{meta.label}</Badge>
                         {a.reminderSentAt && (
-                          <span className="ml-2 text-xs text-slate-400">
+                          <span className="ml-2 text-xs text-ink-400">
                             herinnerd {formatDate(a.reminderSentAt)}
                           </span>
                         )}
@@ -246,7 +246,7 @@ export default async function CertificeringenPage() {
 
       {/* Mappen per medewerker — gesorteerd, onder elkaar, met naam-filter */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
           Mappen per medewerker
         </h2>
         <CertPeopleList people={people} />

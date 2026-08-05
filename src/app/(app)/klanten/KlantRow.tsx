@@ -23,14 +23,14 @@ export function KlantRow({ c }: { c: KlantRowData }) {
 
   return (
     <TR className="cursor-pointer" onClick={() => router.push(`/klanten/${c.id}`)}>
-      <TD className="font-medium text-slate-900">{c.companyName}</TD>
+      <TD className="font-medium text-ink-900">{c.companyName}</TD>
       <TD>{c.city ?? "—"}</TD>
       <TD>{c.contactName ?? "—"}</TD>
       <TD className="text-right tabular-nums">
         {c.contacts > 0 ? (
-          <span className="font-medium text-slate-700">{c.contacts}</span>
+          <span className="font-medium text-ink-700">{c.contacts}</span>
         ) : (
-          <span className="text-slate-400">0</span>
+          <span className="text-ink-400">0</span>
         )}
       </TD>
       <TD className="text-right tabular-nums">
@@ -44,7 +44,7 @@ export function KlantRow({ c }: { c: KlantRowData }) {
             {c.placements}
           </Link>
         ) : (
-          <span className="text-slate-400">0</span>
+          <span className="text-ink-400">0</span>
         )}
       </TD>
       <TD className="text-right tabular-nums">
@@ -58,7 +58,7 @@ export function KlantRow({ c }: { c: KlantRowData }) {
             {c.invoices}
           </Link>
         ) : (
-          <span className="text-slate-400">0</span>
+          <span className="text-ink-400">0</span>
         )}
       </TD>
     </TR>

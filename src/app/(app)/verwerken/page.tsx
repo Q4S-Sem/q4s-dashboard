@@ -81,7 +81,7 @@ export default async function VerwerkenPage({
               ? "bg-amber-50 text-amber-800"
               : batchCreated > 0
                 ? "bg-emerald-50 text-emerald-800"
-                : "bg-slate-50 text-slate-600"
+                : "bg-ink-50 text-ink-600"
           }`}
         >
           {batchCreated > 0 ? (
@@ -109,7 +109,7 @@ export default async function VerwerkenPage({
         </p>
       )}
 
-      <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
+      <p className="rounded-lg bg-ink-50 px-4 py-3 text-sm text-ink-600">
         Timesheets komen binnen via <strong>admin@q4s.nl</strong> of upload je zelf in de{" "}
         <Link href="/inbox" className="font-medium text-brand-700 hover:underline">
           inbox
@@ -164,10 +164,10 @@ export default async function VerwerkenPage({
         <Card className="border-brand-200 bg-brand-50/30">
           <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5">
             <div>
-              <p className="flex items-center gap-2 font-semibold text-slate-900">
+              <p className="flex items-center gap-2 font-semibold text-ink-900">
                 <Sparkles className="h-4 w-4 text-brand-600" /> Alles in één keer verwerken
               </p>
-              <p className="mt-1 max-w-xl text-sm text-slate-600">
+              <p className="mt-1 max-w-xl text-sm text-ink-600">
                 Genereert automatisch de inkoop- én verkoopfacturen voor {readyToBill} medewerker(s) met goedgekeurde
                 uren. Weekstaten die nog ter goedkeuring staan worden hiermee overgeslagen — die keur je zelf goed per
                 medewerker.
@@ -187,23 +187,23 @@ export default async function VerwerkenPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Send className="h-4 w-4 text-slate-400" /> Klaar om te versturen
+              <Send className="h-4 w-4 text-ink-400" /> Klaar om te versturen
             </CardTitle>
             <Link href="/verzenden" className={buttonVariants({ variant: "outline", size: "sm" })}>
               Naar verzendmap <ArrowRight className="h-4 w-4" />
             </Link>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border border-slate-200 p-4">
-              <p className="text-2xl font-bold text-slate-900">{readyClient}</p>
-              <p className="text-sm text-slate-500">verkoopfactu{readyClient === 1 ? "ur" : "ren"} naar de klant</p>
+            <div className="rounded-lg border border-ink-200 p-4">
+              <p className="text-2xl font-bold text-ink-900">{readyClient}</p>
+              <p className="text-sm text-ink-500">verkoopfactu{readyClient === 1 ? "ur" : "ren"} naar de klant</p>
             </div>
-            <div className="rounded-lg border border-slate-200 p-4">
-              <p className="text-2xl font-bold text-slate-900">{readyWorker}</p>
-              <p className="text-sm text-slate-500">
+            <div className="rounded-lg border border-ink-200 p-4">
+              <p className="text-2xl font-bold text-ink-900">{readyWorker}</p>
+              <p className="text-sm text-ink-500">
                 inkoopfactu{readyWorker === 1 ? "ur" : "ren"} naar de medewerker
               </p>
-              <p className="mt-1 text-[11px] text-slate-400">Uitbetaling naar de medewerker gaat later automatisch.</p>
+              <p className="mt-1 text-[11px] text-ink-400">Uitbetaling naar de medewerker gaat later automatisch.</p>
             </div>
           </CardContent>
         </Card>
@@ -240,7 +240,7 @@ export default async function VerwerkenPage({
                   <TD>
                     <Link
                       href={`/verwerken/${r.consultantId}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {r.name}
                     </Link>
@@ -250,7 +250,7 @@ export default async function VerwerkenPage({
                       </span>
                     )}
                   </TD>
-                  <TD className="text-slate-500">
+                  <TD className="text-ink-500">
                     {r.discipline ? labelFor(DISCIPLINES, r.discipline) : "—"}
                   </TD>
                   <TD className="text-right tabular-nums">{r.weeks}</TD>

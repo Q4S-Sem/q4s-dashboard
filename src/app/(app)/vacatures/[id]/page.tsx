@@ -43,10 +43,10 @@ export const metadata = { title: "Vacature" };
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -95,7 +95,7 @@ export default async function VacatureDetailPage({
     <div className="space-y-6">
       <Link
         href="/vacatures"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar vacatures
       </Link>
@@ -219,7 +219,7 @@ export default async function VacatureDetailPage({
                 <SubmitButton variant="outline">Van de site halen</SubmitButton>
               </form>
               {vacancy.publishedAt && (
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-ink-500">
                   live sinds {formatDateLong(vacancy.publishedAt)}
                 </span>
               )}
@@ -274,11 +274,11 @@ export default async function VacatureDetailPage({
             />
           </dl>
           {vacancy.relevanceReason && (
-            <div className="mt-5 border-t border-slate-100 pt-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <div className="mt-5 border-t border-ink-100 pt-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
                 Onderbouwing relevantie
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+              <p className="mt-1 whitespace-pre-wrap text-sm text-ink-700">
                 {vacancy.relevanceReason}
               </p>
             </div>
@@ -289,15 +289,15 @@ export default async function VacatureDetailPage({
       {/* Origineel — ingeklapt, want je werkt normaal met de uitgeschreven tekst */}
       <Card>
         <details className="group">
-          <summary className="flex cursor-pointer items-center justify-between gap-4 px-5 py-4 text-base font-semibold text-slate-900">
+          <summary className="flex cursor-pointer items-center justify-between gap-4 px-5 py-4 text-base font-semibold text-ink-900">
             Originele tekst zoals binnengekomen
-            <span className="text-sm font-normal text-slate-400 group-open:hidden">tonen</span>
-            <span className="hidden text-sm font-normal text-slate-400 group-open:inline">
+            <span className="text-sm font-normal text-ink-400 group-open:hidden">tonen</span>
+            <span className="hidden text-sm font-normal text-ink-400 group-open:inline">
               verbergen
             </span>
           </summary>
-          <div className="border-t border-slate-100 px-5 py-4">
-            <p className="whitespace-pre-wrap text-sm text-slate-700">{vacancy.rawText}</p>
+          <div className="border-t border-ink-100 px-5 py-4">
+            <p className="whitespace-pre-wrap text-sm text-ink-700">{vacancy.rawText}</p>
           </div>
         </details>
       </Card>
@@ -306,12 +306,12 @@ export default async function VacatureDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>Sollicitaties</CardTitle>
-          <span className="inline-flex items-center gap-1.5 text-sm text-slate-400">
+          <span className="inline-flex items-center gap-1.5 text-sm text-ink-400">
             <Users className="h-4 w-4" /> {vacancy.applications.length}
           </span>
         </CardHeader>
         {vacancy.applications.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog geen sollicitaties op deze vacature.
           </CardContent>
         ) : (
@@ -330,7 +330,7 @@ export default async function VacatureDetailPage({
                   <TD>
                     <Link
                       href={`/sollicitaties/${app.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {app.candidate.firstName} {app.candidate.lastName}
                     </Link>
@@ -354,8 +354,8 @@ export default async function VacatureDetailPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-slate-400" /> Kandidaat-matches
-            <span className="text-xs font-normal text-slate-400">({vacancy.matches.length})</span>
+            <Users className="h-4 w-4 text-ink-400" /> Kandidaat-matches
+            <span className="text-xs font-normal text-ink-400">({vacancy.matches.length})</span>
           </CardTitle>
           <form action={rematchVacancyMatches}>
             <input type="hidden" name="id" value={vacancy.id} />
@@ -365,7 +365,7 @@ export default async function VacatureDetailPage({
           </form>
         </CardHeader>
         {vacancy.matches.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog geen matches uit de talentpool. Klik op &ldquo;Matches verversen&rdquo; om te zoeken;
             de AI scoort kandidaten daarna tegen de eisen van deze vacature.
           </CardContent>
@@ -378,24 +378,24 @@ export default async function VacatureDetailPage({
                   <div className="min-w-0">
                     <Link
                       href={`/kandidaten/${m.candidate.id}`}
-                      className="block truncate text-sm font-medium text-slate-900 hover:text-brand-700"
+                      className="block truncate text-sm font-medium text-ink-900 hover:text-brand-700"
                     >
                       {m.candidate.firstName} {m.candidate.lastName}
                     </Link>
-                    <p className="truncate text-xs text-slate-500">
+                    <p className="truncate text-xs text-ink-500">
                       {[labelFor(DISCIPLINES, m.candidate.discipline), m.reason]
                         .filter((x) => x && x !== "—")
                         .join(" · ")}
                     </p>
                   </div>
                   <span className="flex shrink-0 items-center gap-2">
-                    <span className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-100">
+                    <span className="h-1.5 w-20 overflow-hidden rounded-full bg-ink-100">
                       <span
                         className="block h-full rounded-full bg-emerald-500"
                         style={{ width: `${Math.max(4, Math.min(100, pct))}%` }}
                       />
                     </span>
-                    <span className="w-9 text-right text-xs font-semibold tabular-nums text-slate-700">
+                    <span className="w-9 text-right text-xs font-semibold tabular-nums text-ink-700">
                       {pct}%
                     </span>
                   </span>
@@ -413,7 +413,7 @@ export default async function VacatureDetailPage({
             <CardTitle>Samenvatting</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-700">{vacancy.summary}</p>
+            <p className="text-sm text-ink-700">{vacancy.summary}</p>
           </CardContent>
         </Card>
       )}
@@ -425,7 +425,7 @@ export default async function VacatureDetailPage({
             <CardTitle>Verbeterde vacaturetekst</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap text-sm text-slate-700">
+            <p className="whitespace-pre-wrap text-sm text-ink-700">
               {vacancy.improvedText}
             </p>
           </CardContent>
@@ -440,7 +440,7 @@ export default async function VacatureDetailPage({
             <CopyButton text={vacancy.linkedinPost} label="Kopieer post" />
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap text-sm text-slate-700">
+            <p className="whitespace-pre-wrap text-sm text-ink-700">
               {vacancy.linkedinPost}
             </p>
           </CardContent>

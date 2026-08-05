@@ -25,7 +25,7 @@ function Section({
 }) {
   return (
     <section>
-      <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+      <h2 className="text-xs font-bold uppercase tracking-wider text-ink-900">
         {title}
       </h2>
       <div className="mt-3">{children}</div>
@@ -37,10 +37,10 @@ function DetailRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-ink-400">
         {label}
       </p>
-      <p className="mt-0.5 text-sm text-slate-900">{value}</p>
+      <p className="mt-0.5 text-sm text-ink-900">{value}</p>
     </div>
   );
 }
@@ -80,7 +80,7 @@ export default async function PubliekeVacaturePage({
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
-      <header className="space-y-3 border-b border-slate-200 pb-6">
+      <header className="space-y-3 border-b border-ink-200 pb-6">
         <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600 text-white">
           <FileText className="h-5 w-5" />
         </div>
@@ -89,11 +89,11 @@ export default async function PubliekeVacaturePage({
             {company}
           </p>
         )}
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-3xl font-bold tracking-tight text-ink-900">
           {vacancy.title}
         </h1>
         {meta.length > 0 && (
-          <p className="text-sm text-slate-500">{meta.join(" · ")}</p>
+          <p className="text-sm text-ink-500">{meta.join(" · ")}</p>
         )}
       </header>
 
@@ -102,7 +102,7 @@ export default async function PubliekeVacaturePage({
         <article className="space-y-8">
           {vacancy.summary && (
             <Section title="Over de functie">
-              <p className="leading-relaxed text-slate-700">{vacancy.summary}</p>
+              <p className="leading-relaxed text-ink-700">{vacancy.summary}</p>
             </Section>
           )}
 
@@ -110,7 +110,7 @@ export default async function PubliekeVacaturePage({
             <Section title="Werkzaamheden">
               <ul className="space-y-2">
                 {werk.map((t, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                  <li key={i} className="flex items-start gap-2 text-sm text-ink-700">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
                     <span>{t}</span>
                   </li>
@@ -123,8 +123,8 @@ export default async function PubliekeVacaturePage({
             <Section title="Functie-eisen">
               <ul className="space-y-2">
                 {eisen.map((t, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
+                  <li key={i} className="flex items-start gap-2 text-sm text-ink-700">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-ink-300" />
                     <span>{t}</span>
                   </li>
                 ))}
@@ -136,7 +136,7 @@ export default async function PubliekeVacaturePage({
             <Section title="Pré">
               <ul className="space-y-2">
                 {pre.map((t, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                  <li key={i} className="flex items-start gap-2 text-sm text-ink-600">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
                     <span>{t}</span>
                   </li>
@@ -147,7 +147,7 @@ export default async function PubliekeVacaturePage({
 
           {/* Fallback: nothing structured filled in, but we do have a full text. */}
           {!hasStructured && vacancy.improvedText && (
-            <div className="whitespace-pre-wrap leading-relaxed text-slate-800">
+            <div className="whitespace-pre-wrap leading-relaxed text-ink-800">
               {vacancy.improvedText}
             </div>
           )}
@@ -155,9 +155,9 @@ export default async function PubliekeVacaturePage({
 
         {/* Sidebar */}
         <aside className="space-y-4">
-          <div className="rounded-xl border border-slate-200 p-5">
-            <h2 className="font-semibold text-slate-900">Direct solliciteren</h2>
-            <p className="mt-1 text-sm text-slate-500">
+          <div className="rounded-xl border border-ink-200 p-5">
+            <h2 className="font-semibold text-ink-900">Direct solliciteren</h2>
+            <p className="mt-1 text-sm text-ink-500">
               Stuur je CV en motivatie naar ons toe of neem contact op voor meer
               informatie.
             </p>
@@ -169,14 +169,14 @@ export default async function PubliekeVacaturePage({
             </a>
             <a
               href="#solliciteren"
-              className="mt-2 flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold uppercase tracking-wide text-slate-700 hover:bg-slate-50"
+              className="mt-2 flex w-full items-center justify-center rounded-lg border border-ink-300 bg-white px-4 py-2.5 text-sm font-semibold uppercase tracking-wide text-ink-700 hover:bg-ink-50"
             >
               CV uploaden
             </a>
           </div>
 
-          <div className="rounded-xl border border-slate-200 p-5">
-            <h2 className="font-semibold text-slate-900">Details</h2>
+          <div className="rounded-xl border border-ink-200 p-5">
+            <h2 className="font-semibold text-ink-900">Details</h2>
             <div className="mt-3 space-y-3">
               <DetailRow label="Locatie" value={vacancy.location} />
               <DetailRow label="Contractvorm" value={vacancy.employmentType} />

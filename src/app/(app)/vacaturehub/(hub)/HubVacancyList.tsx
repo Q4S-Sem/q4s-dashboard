@@ -44,16 +44,16 @@ function Snippet({ v }: { v: HubVacancy }) {
     <div className="min-w-0">
       <Link
         href={`/vacatures/${v.id}`}
-        className="font-medium text-slate-900 hover:text-brand-700"
+        className="font-medium text-ink-900 hover:text-brand-700"
       >
         {v.title}
       </Link>
-      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-        {showSource(v) && <span className="font-medium text-slate-600">{v.sourceName}</span>}
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
+        {showSource(v) && <span className="font-medium text-ink-600">{v.sourceName}</span>}
         {v.companyName && <span>{v.companyName}</span>}
         {v.location && (
           <span className="inline-flex items-center gap-1">
-            <MapPin className="h-3 w-3 text-slate-400" /> {v.location}
+            <MapPin className="h-3 w-3 text-ink-400" /> {v.location}
           </span>
         )}
         <span>binnengekomen {formatDate(v.createdAt)}</span>
@@ -75,7 +75,7 @@ function Row({ v, mode, back }: { v: HubVacancy; mode: HubListMode; back: string
   );
 
   return (
-    <li className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-slate-50/60 lg:flex-row lg:items-start lg:justify-between">
+    <li className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-ink-50/60 lg:flex-row lg:items-start lg:justify-between">
       <div className="min-w-0 flex-1">
         <Snippet v={v} />
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -84,7 +84,7 @@ function Row({ v, mode, back }: { v: HubVacancy; mode: HubListMode; back: string
           {mode !== "judge" && <StatusBadge options={VACANCY_RELEVANCE} value={v.relevance} />}
         </div>
         {v.relevanceReason && (
-          <p className="mt-2 flex items-start gap-1.5 text-xs text-slate-500">
+          <p className="mt-2 flex items-start gap-1.5 text-xs text-ink-500">
             <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-violet-400" />
             <span className="line-clamp-2">{v.relevanceReason}</span>
           </p>
@@ -179,7 +179,7 @@ export function HubVacancyList({
   }
 
   return (
-    <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
       {vacancies.map((v) => (
         <Row key={v.id} v={v} mode={mode} back={back} />
       ))}

@@ -25,10 +25,10 @@ export function GenerateForm({
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">
+              <h3 className="text-base font-semibold text-ink-900">
                 Genereer marktkansen met AI
               </h3>
-              <p className="mt-0.5 text-sm text-slate-500">
+              <p className="mt-0.5 text-sm text-ink-500">
                 Laat AI nieuwe groeikansen voorstellen voor de sectoren van Q4S.
               </p>
             </div>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { CLIENT_CONTACT_ROLES, colorFor, labelFor } from "@/lib/domain";
@@ -104,33 +105,31 @@ function ContactItem({ contact, clientId }: { contact: ContactRow; clientId: str
 
   return (
     <li className="flex flex-wrap items-start gap-3 py-3">
-      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-        {initials(contact.name)}
-      </span>
+      <Avatar name={contact.name} size="sm" className="mt-0.5" />
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-slate-900">{contact.name}</span>
+          <span className="text-sm font-medium text-ink-900">{contact.name}</span>
           {contact.role && (
             <Badge color={colorFor(CLIENT_CONTACT_ROLES, contact.role)}>
               {labelFor(CLIENT_CONTACT_ROLES, contact.role)}
             </Badge>
           )}
         </div>
-        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-500">
           {contact.email && (
             <a href={`mailto:${contact.email}`} className="inline-flex items-center gap-1 hover:text-brand-700 hover:underline">
               <Mail className="h-3.5 w-3.5" /> {contact.email}
             </a>
           )}
           {contact.phone && (
-            <a href={`tel:${contact.phone}`} className="inline-flex items-center gap-1 hover:text-slate-900 hover:underline">
+            <a href={`tel:${contact.phone}`} className="inline-flex items-center gap-1 hover:text-ink-900 hover:underline">
               <Phone className="h-3.5 w-3.5" /> {contact.phone}
             </a>
           )}
-          {!contact.email && !contact.phone && <span className="text-slate-300">geen contactgegevens</span>}
+          {!contact.email && !contact.phone && <span className="text-ink-300">geen contactgegevens</span>}
         </div>
-        {contact.notes && <p className="mt-1 text-xs text-slate-400">{contact.notes}</p>}
+        {contact.notes && <p className="mt-1 text-xs text-ink-400">{contact.notes}</p>}
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
@@ -176,8 +175,8 @@ export function ContactsCard({ clientId, contacts }: { clientId: string; contact
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-slate-500" /> Contactpersonen
-          <span className="text-sm font-normal text-slate-400">({contacts.length})</span>
+          <Users className="h-5 w-5 text-ink-500" /> Contactpersonen
+          <span className="text-sm font-normal text-ink-400">({contacts.length})</span>
         </CardTitle>
         {mails.length > 1 && (
           <a
@@ -190,19 +189,19 @@ export function ContactsCard({ clientId, contacts }: { clientId: string; contact
       </CardHeader>
 
       <CardContent className="space-y-5">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-ink-500">
           Zet hier per rol een eigen e-mailadres neer — HR, de manager, de planner, de administratie.
           Zo bereik je altijd de juiste persoon, ook als je vaste contact er niet is.
         </p>
 
         {sorted.length > 0 ? (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-ink-100">
             {sorted.map((c) => (
               <ContactItem key={c.id} contact={c} clientId={clientId} />
             ))}
           </ul>
         ) : (
-          <p className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-ink-200 px-4 py-6 text-center text-sm text-ink-400">
             Nog geen contactpersonen. Voeg hieronder de eerste toe.
           </p>
         )}
@@ -211,10 +210,10 @@ export function ContactsCard({ clientId, contacts }: { clientId: string; contact
         <form
           key={contacts.length}
           action={addClientContact}
-          className={cn("rounded-xl border border-slate-200 bg-slate-50/60 p-4")}
+          className={cn("rounded-xl border border-ink-200 bg-ink-50/60 p-4")}
         >
           <input type="hidden" name="clientId" value={clientId} />
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500">
             Contactpersoon toevoegen
           </p>
           <div className="grid gap-3 sm:grid-cols-2">

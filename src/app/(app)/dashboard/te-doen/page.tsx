@@ -19,8 +19,8 @@ const BUCKETS = [
   { label: "Te laat", accent: "border-rose-200 bg-rose-50/50", dot: "bg-rose-500" },
   { label: "Vandaag", accent: "border-amber-200 bg-amber-50/50", dot: "bg-amber-500" },
   { label: "Deze week", accent: "border-blue-200 bg-blue-50/40", dot: "bg-blue-500" },
-  { label: "Later", accent: "border-slate-200 bg-white", dot: "bg-slate-300" },
-  { label: "Zonder datum", accent: "border-slate-200 bg-white", dot: "bg-slate-300" },
+  { label: "Later", accent: "border-ink-200 bg-white", dot: "bg-ink-300" },
+  { label: "Zonder datum", accent: "border-ink-200 bg-white", dot: "bg-ink-300" },
 ];
 
 export default async function TeDoenPage() {
@@ -52,13 +52,13 @@ export default async function TeDoenPage() {
       <form action={completeActivity}>
         <input type="hidden" name="id" value={t.id} />
         <input type="hidden" name="path" value={PATH} />
-        <button type="submit" title="Afronden" aria-label="Taak afronden" className="mt-0.5 text-slate-300 transition-colors hover:text-emerald-600">
+        <button type="submit" title="Afronden" aria-label="Taak afronden" className="mt-0.5 text-ink-300 transition-colors hover:text-emerald-600">
           <Circle className="h-5 w-5" />
         </button>
       </form>
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-slate-800">{t.body}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+        <p className="text-sm text-ink-800">{t.body}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-500">
           <Badge color={colorFor(CRM_NOTE_TYPES, t.type)}>{labelFor(CRM_NOTE_TYPES, t.type)}</Badge>
           {t.ruleGenerated && (
             <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-700">
@@ -70,7 +70,7 @@ export default async function TeDoenPage() {
               <CalendarClock className="h-3.5 w-3.5" /> {formatDate(t.dueAt)}
             </span>
           )}
-          <Link href={t.href} className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-brand-700">
+          <Link href={t.href} className="inline-flex items-center gap-1 font-medium text-ink-600 hover:text-brand-700">
             {t.entityLabel} <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
@@ -78,7 +78,7 @@ export default async function TeDoenPage() {
       <form action={deleteActivity}>
         <input type="hidden" name="id" value={t.id} />
         <input type="hidden" name="path" value={PATH} />
-        <button type="submit" title="Verwijderen" aria-label="Verwijderen" className="text-slate-300 transition-colors hover:text-rose-600">
+        <button type="submit" title="Verwijderen" aria-label="Verwijderen" className="text-ink-300 transition-colors hover:text-rose-600">
           <Trash2 className="h-4 w-4" />
         </button>
       </form>
@@ -111,12 +111,12 @@ export default async function TeDoenPage() {
               <div key={b.label}>
                 <div className="mb-2 flex items-center gap-2">
                   <span className={`h-2.5 w-2.5 rounded-full ${b.dot}`} />
-                  <h2 className="text-sm font-semibold text-slate-700">{b.label}</h2>
-                  <span className="text-xs text-slate-400">{groups[i].length}</span>
+                  <h2 className="text-sm font-semibold text-ink-700">{b.label}</h2>
+                  <span className="text-xs text-ink-400">{groups[i].length}</span>
                 </div>
                 <Card className={b.accent}>
                   <CardContent className="p-0">
-                    <div className="divide-y divide-slate-100">
+                    <div className="divide-y divide-ink-100">
                       {groups[i].map((t) => (
                         <TaskRow key={t.id} t={t} />
                       ))}

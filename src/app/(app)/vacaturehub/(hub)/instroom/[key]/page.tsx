@@ -76,7 +76,7 @@ export default async function BronPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/vacaturehub/instroom"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+          className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
         >
           <ArrowLeft className="h-4 w-4" /> Alle opdrachtgevers
         </Link>
@@ -140,10 +140,10 @@ export default async function BronPage({
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-xl font-bold tracking-tight text-slate-900">{source.name}</h2>
+        <h2 className="text-xl font-bold tracking-tight text-ink-900">{source.name}</h2>
         {source.key !== OVERIG_KEY && <StatusBadge options={VMS_STATUSES} value={source.status} />}
         {source.lastIn && (
-          <span className="text-sm text-slate-500">laatste levering {formatDate(source.lastIn)}</span>
+          <span className="text-sm text-ink-500">laatste levering {formatDate(source.lastIn)}</span>
         )}
       </div>
 
@@ -183,8 +183,8 @@ export default async function BronPage({
             className={cn(
               "rounded-full px-3 py-1 text-xs font-medium transition-colors",
               tab === t.key
-                ? "bg-slate-900 text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                ? "bg-ink-900 text-white"
+                : "bg-ink-100 text-ink-600 hover:bg-ink-200",
             )}
           >
             {t.label}

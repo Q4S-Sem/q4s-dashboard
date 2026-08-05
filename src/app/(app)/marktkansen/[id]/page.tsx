@@ -16,10 +16,10 @@ export const metadata = { title: "Marktkans" };
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -44,7 +44,7 @@ export default async function MarktkansDetailPage({
     <div className="space-y-6">
       <Link
         href="/marktkansen"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar marktkansen
       </Link>
@@ -137,7 +137,7 @@ export default async function MarktkansDetailPage({
           <CardTitle>Omschrijving</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="whitespace-pre-wrap text-sm text-slate-700">
+          <p className="whitespace-pre-wrap text-sm text-ink-700">
             {opportunity.description}
           </p>
         </CardContent>
@@ -149,11 +149,11 @@ export default async function MarktkansDetailPage({
         </CardHeader>
         <CardContent>
           {opportunity.rationale ? (
-            <p className="whitespace-pre-wrap text-sm text-slate-700">
+            <p className="whitespace-pre-wrap text-sm text-ink-700">
               {opportunity.rationale}
             </p>
           ) : (
-            <p className="text-sm text-slate-500">Nog geen onderbouwing toegevoegd.</p>
+            <p className="text-sm text-ink-500">Nog geen onderbouwing toegevoegd.</p>
           )}
         </CardContent>
       </Card>
@@ -167,11 +167,11 @@ export default async function MarktkansDetailPage({
         </CardHeader>
         <CardContent>
           {opportunity.targetCompanies ? (
-            <p className="whitespace-pre-wrap text-sm text-slate-700">
+            <p className="whitespace-pre-wrap text-sm text-ink-700">
               {opportunity.targetCompanies}
             </p>
           ) : (
-            <p className="text-sm text-slate-500">Nog geen doelbedrijven toegevoegd.</p>
+            <p className="text-sm text-ink-500">Nog geen doelbedrijven toegevoegd.</p>
           )}
         </CardContent>
       </Card>

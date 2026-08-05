@@ -51,7 +51,7 @@ export default async function AfwezigheidPage({
     <div className="space-y-6">
       <Link
         href="/agenda"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar agenda
       </Link>
@@ -129,10 +129,10 @@ export default async function AfwezigheidPage({
 
       {/* Overzicht huidige + geplande afwezigheid */}
       <Card>
-        <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+        <div className="flex items-center gap-2 border-b border-ink-100 px-5 py-3">
           <CalendarRange className="h-4 w-4 text-brand-600" />
-          <h2 className="text-sm font-semibold text-slate-900">Huidig &amp; gepland</h2>
-          <span className="ml-auto text-xs text-slate-400">{leaves.length}</span>
+          <h2 className="text-sm font-semibold text-ink-900">Huidig &amp; gepland</h2>
+          <span className="ml-auto text-xs text-ink-400">{leaves.length}</span>
         </div>
         {leaves.length === 0 ? (
           <EmptyState
@@ -142,7 +142,7 @@ export default async function AfwezigheidPage({
             className="border-0"
           />
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-ink-100">
             {leaves.map((lv) => {
               const current =
                 startOfDay(new Date(lv.startDate)) <= today0 &&
@@ -151,7 +151,7 @@ export default async function AfwezigheidPage({
                 <li key={lv.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium text-slate-800">
+                      <span className="truncate text-sm font-medium text-ink-800">
                         {fullName(lv.employee)}
                       </span>
                       {current && (
@@ -160,13 +160,13 @@ export default async function AfwezigheidPage({
                         </span>
                       )}
                     </span>
-                    {lv.notes && <span className="block truncate text-xs text-slate-500">{lv.notes}</span>}
+                    {lv.notes && <span className="block truncate text-xs text-ink-500">{lv.notes}</span>}
                   </span>
                   <StatusBadge options={LEAVE_TYPES} value={lv.type} />
-                  <span className="shrink-0 text-xs tabular-nums text-slate-500">
+                  <span className="shrink-0 text-xs tabular-nums text-ink-500">
                     {formatDate(lv.startDate)} – {formatDate(lv.endDate)}
                   </span>
-                  <span className="shrink-0 text-xs text-slate-400">{formatHours(lv.days)} dg</span>
+                  <span className="shrink-0 text-xs text-ink-400">{formatHours(lv.days)} dg</span>
                   <ConfirmSubmit
                     action={deleteAbsence}
                     id={lv.id}

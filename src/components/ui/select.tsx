@@ -8,14 +8,14 @@ type Opt = { value: string; label: string; disabled?: boolean; color?: string };
 
 /** BadgeColor-token → gekleurd stipje, voor opties met een `data-color`. */
 const DOT_CLASS: Record<string, string> = {
-  slate: "bg-slate-400",
+  slate: "bg-ink-300",
   blue: "bg-blue-500",
   green: "bg-emerald-500",
   amber: "bg-amber-500",
   red: "bg-red-500",
   violet: "bg-violet-500",
   cyan: "bg-cyan-500",
-  orange: "bg-orange-500",
+  orange: "bg-brand-600",
 };
 
 /** Flatten an option's children (e.g. `{firstName} {lastName}`) into one label. */
@@ -68,7 +68,7 @@ function rankOptions(items: Opt[], query: string): Opt[] {
 }
 
 const triggerBase =
-  "flex w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm text-slate-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-slate-50";
+  "flex w-full items-center justify-between gap-2 rounded-sm border border-ink-200 bg-white px-3 py-2 text-left text-sm text-ink-900 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-600 disabled:cursor-not-allowed disabled:bg-ink-50";
 
 /**
  * Themed, rounded select that replaces the native one (whose popup the browser
@@ -193,22 +193,22 @@ export function Select({
         aria-label={rest["aria-label"]}
         onClick={() => !disabled && setOpen((o) => !o)}
         onKeyDown={onTriggerKeys}
-        className={cn(triggerBase, open && "border-brand-500 ring-2 ring-brand-500/30")}
+        className={cn(triggerBase, open && "border-brand-600 ring-2 ring-brand-500/25")}
       >
-        <span className={cn("flex items-center gap-2 truncate", !current?.value && "text-slate-400")}>
+        <span className={cn("flex items-center gap-2 truncate", !current?.value && "text-ink-300")}>
           {current?.color && DOT_CLASS[current.color] && (
             <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT_CLASS[current.color])} />
           )}
           <span className="truncate">{current?.label ?? "—"}</span>
         </span>
-        <ChevronsUpDown className="h-4 w-4 shrink-0 text-slate-400" />
+        <ChevronsUpDown className="h-4 w-4 shrink-0 text-ink-300" />
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-sm border border-ink-900 bg-white shadow-[0_16px_36px_-22px_rgb(0_0_0/0.55)]">
           {searchable && (
-            <div className="flex items-center gap-2 border-b border-slate-100 px-2.5 py-2">
-              <Search className="h-4 w-4 shrink-0 text-slate-400" />
+            <div className="flex items-center gap-2 border-b border-ink-100 px-2.5 py-2">
+              <Search className="h-4 w-4 shrink-0 text-ink-300" />
               <input
                 ref={searchRef}
                 type="text"
@@ -220,13 +220,13 @@ export function Select({
                 onKeyDown={onListKeys}
                 placeholder="Typ om te zoeken…"
                 autoComplete="off"
-                className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                className="w-full bg-transparent text-sm text-ink-900 placeholder:text-ink-300 focus:outline-none"
               />
             </div>
           )}
           <div className="max-h-60 overflow-auto p-1">
             {visible.length === 0 ? (
-              <p className="px-2.5 py-3 text-center text-sm text-slate-400">Geen resultaten.</p>
+              <p className="px-2.5 py-3 text-center text-sm text-ink-300">Geen resultaten.</p>
             ) : (
               visible.map((o, i) => {
                 const selected = o.value === value;
@@ -241,13 +241,13 @@ export function Select({
                     onClick={() => choose(o.value)}
                     onMouseEnter={() => setActive(i)}
                     className={cn(
-                      "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
+                      "flex w-full items-center justify-between gap-2 rounded-sm px-2.5 py-2 text-left text-sm transition-colors",
                       green
-                        ? "bg-emerald-50 font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200"
+                        ? "bg-emerald-50 font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200"
                         : selected
-                          ? "bg-brand-50 font-medium text-brand-700"
-                          : "text-slate-700",
-                      !green && isActive && !selected && "bg-slate-100",
+                          ? "bg-brand-50 font-bold text-brand-700"
+                          : "text-ink-700",
+                      !green && isActive && !selected && "bg-ink-100",
                       !green && isActive && selected && "bg-brand-100",
                     )}
                   >

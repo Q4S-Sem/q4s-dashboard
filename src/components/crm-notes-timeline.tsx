@@ -44,7 +44,7 @@ const ICONS: Record<string, typeof StickyNote> = {
 };
 
 const ICON_BG: Record<BadgeColor, string> = {
-  slate: "bg-slate-100 text-slate-500",
+  slate: "bg-ink-100 text-ink-500",
   blue: "bg-blue-50 text-blue-600",
   green: "bg-emerald-50 text-emerald-600",
   amber: "bg-amber-50 text-amber-600",
@@ -88,7 +88,7 @@ export function CrmNotesTimeline({
 }) {
   if (notes.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+      <p className="rounded-lg border border-dashed border-ink-200 px-4 py-8 text-center text-sm text-ink-400">
         Nog niets vastgelegd. Log je eerste contactmoment hierboven — alles wordt bewaard.
       </p>
     );
@@ -111,15 +111,15 @@ export function CrmNotesTimeline({
             key={n.id}
             className={cn(
               "flex gap-3 rounded-lg border p-3",
-              n.pinned ? "border-amber-200 bg-amber-50/40" : "border-slate-200 bg-white",
+              n.pinned ? "border-amber-200 bg-amber-50/40" : "border-ink-200 bg-white",
             )}
           >
             <div className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full", ICON_BG[color])}>
               <Icon className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                <span className="font-medium text-slate-600">{labelFor(CRM_NOTE_TYPES, n.type)}</span>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-ink-400">
+                <span className="font-medium text-ink-600">{labelFor(CRM_NOTE_TYPES, n.type)}</span>
                 <span>·</span>
                 <span>{formatStamp(n.createdAt)}</span>
                 {n.authorName && (
@@ -135,7 +135,7 @@ export function CrmNotesTimeline({
                 )}
                 {n.pinned && <Pin className="h-3 w-3 text-amber-500" />}
               </div>
-              <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-700">{n.body}</p>
+              <p className="mt-1 whitespace-pre-wrap break-words text-sm text-ink-700">{n.body}</p>
 
               {n.followUpAt && (
                 <div className="mt-2 flex items-center gap-2">
@@ -143,7 +143,7 @@ export function CrmNotesTimeline({
                     className={cn(
                       "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
                       n.followUpDone
-                        ? "bg-slate-100 text-slate-400 line-through"
+                        ? "bg-ink-100 text-ink-400 line-through"
                         : "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
                     )}
                   >
@@ -173,7 +173,7 @@ export function CrmNotesTimeline({
                 <button
                   type="submit"
                   title={n.pinned ? "Losmaken" : "Vastpinnen"}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700"
                 >
                   {n.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                 </button>

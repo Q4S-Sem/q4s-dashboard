@@ -28,7 +28,7 @@ export default async function CvGeneratorPage() {
     <div className="space-y-6">
       <Link
         href="/socials"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar Socials
       </Link>
@@ -62,17 +62,17 @@ export default async function CvGeneratorPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-slate-400" /> Nieuw Q4S-CV
+            <Sparkles className="h-4 w-4 text-ink-400" /> Nieuw Q4S-CV
           </CardTitle>
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-ink-400">
             Upload het CV zoals je het kreeg. De AI leest het uit, jij kijkt het na, en daarna
             rolt het Q4S-CV eruit als PDF en Word.
           </span>
         </CardHeader>
         <CardContent>
           <UploadCvForm action={startCvProfile} />
-          <p className="mt-3 flex items-start gap-1.5 text-xs text-slate-500">
-            <EyeOff className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+          <p className="mt-3 flex items-start gap-1.5 text-xs text-ink-500">
+            <EyeOff className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-400" />
             CV&apos;s worden standaard geanonimiseerd: achternaam wordt een initiaal en Q4S staat
             als enige contact op het CV. Per CV uit te zetten in het volgende scherm.
           </p>
@@ -109,7 +109,7 @@ export default async function CvGeneratorPage() {
                   <TD>
                     <Link
                       href={`/socials/cv-generator/${p.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {p.fullName}
                     </Link>
@@ -119,18 +119,18 @@ export default async function CvGeneratorPage() {
                     {p.candidate ? (
                       <Link
                         href={`/kandidaten/${p.candidate.id}`}
-                        className="text-slate-600 hover:text-brand-700"
+                        className="text-ink-600 hover:text-brand-700"
                       >
                         {p.candidate.firstName} {p.candidate.lastName}
                       </Link>
                     ) : (
-                      <span className="text-slate-400">Los CV</span>
+                      <span className="text-ink-400">Los CV</span>
                     )}
                   </TD>
                   <TD>
                     {p.anonymize ? (
-                      <span className="inline-flex items-center gap-1.5 text-slate-600">
-                        <EyeOff className="h-3.5 w-3.5 text-slate-400" /> Ja
+                      <span className="inline-flex items-center gap-1.5 text-ink-600">
+                        <EyeOff className="h-3.5 w-3.5 text-ink-400" /> Ja
                       </span>
                     ) : (
                       <span className="text-amber-700">Nee</span>

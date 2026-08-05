@@ -32,7 +32,7 @@ export function DashboardPie({
   if (total <= 0 || shown.length === 0) {
     return (
       <div
-        className="flex items-center justify-center text-sm text-slate-400"
+        className="flex items-center justify-center text-sm text-ink-400"
         style={{ minHeight: size }}
       >
         {emptyLabel}
@@ -67,11 +67,11 @@ export function DashboardPie({
         {/* Totaal in het (ruime, witte) gat van de donut — fors en vet, zonder
             kader, zodat het bedrag netjes past en toch duidelijk leesbaar is. */}
         <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-2 text-center">
-          <span className="text-lg font-extrabold leading-tight tracking-tight text-slate-900">
+          <span className="text-lg font-extrabold leading-tight tracking-tight text-ink-900">
             {fmt(total)}
           </span>
           {centerLabel && (
-            <span className="mt-0.5 text-[11px] font-semibold text-slate-500">{centerLabel}</span>
+            <span className="mt-0.5 text-[11px] font-semibold text-ink-500">{centerLabel}</span>
           )}
         </div>
       </div>
@@ -83,9 +83,9 @@ export function DashboardPie({
           return (
             <li key={d.name} className="flex items-center gap-2 text-sm">
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.color }} />
-              <span className="min-w-0 flex-1 truncate text-slate-600">{d.name}</span>
-              <span className="shrink-0 font-semibold tabular-nums text-slate-900">{fmt(d.value)}</span>
-              <span className="w-9 shrink-0 text-right text-xs tabular-nums text-slate-400">{pct}%</span>
+              <span className="min-w-0 flex-1 truncate text-ink-600">{d.name}</span>
+              <span className="shrink-0 font-semibold tabular-nums text-ink-900">{fmt(d.value)}</span>
+              <span className="w-9 shrink-0 text-right text-xs tabular-nums text-ink-400">{pct}%</span>
             </li>
           );
         })}

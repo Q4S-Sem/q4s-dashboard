@@ -57,8 +57,8 @@ export function CrmNoteComposer({
         <Field label="Opvolgen op" htmlFor="followUpAt" className="w-44">
           <Input id="followUpAt" name="followUpAt" type="date" />
         </Field>
-        <label className="mb-2 inline-flex items-center gap-2 text-sm text-slate-600">
-          <input type="checkbox" name="pinned" className="h-4 w-4 rounded border-slate-300" />
+        <label className="mb-2 inline-flex items-center gap-2 text-sm text-ink-600">
+          <input type="checkbox" name="pinned" className="h-4 w-4 rounded border-ink-300" />
           Vastpinnen
         </label>
         <div className="mb-0 ml-auto">

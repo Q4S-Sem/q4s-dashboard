@@ -75,10 +75,10 @@ export default async function TokenverbruikPage() {
             />
           </div>
 
-          <p className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+          <p className="flex items-start gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3 text-sm text-ink-600">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
             De kosten zijn een <strong>schatting</strong> op basis van publieke tarieven per model
-            (zie <code className="rounded bg-slate-100 px-1">lib/ai-pricing</code>) — Ollama is lokaal en
+            (zie <code className="rounded bg-ink-100 px-1">lib/ai-pricing</code>) — Ollama is lokaal en
             telt als gratis. Gebruik dit om trends en verhoudingen te zien, niet als exacte factuur.
           </p>
 
@@ -97,12 +97,12 @@ export default async function TokenverbruikPage() {
                 <TBody>
                   {o.byProvider.map((p) => (
                     <TR key={p.provider}>
-                      <TD className="font-medium text-slate-900">
+                      <TD className="font-medium text-ink-900">
                         {PROVIDER_LABEL[p.provider] ?? p.provider}
                       </TD>
-                      <TD className="text-right tabular-nums text-slate-600">{fmtTokens(p.calls)}</TD>
-                      <TD className="text-right tabular-nums text-slate-700">{fmtTokens(p.tokens)}</TD>
-                      <TD className="text-right tabular-nums text-slate-900">{eur(p.costUsd)}</TD>
+                      <TD className="text-right tabular-nums text-ink-600">{fmtTokens(p.calls)}</TD>
+                      <TD className="text-right tabular-nums text-ink-700">{fmtTokens(p.tokens)}</TD>
+                      <TD className="text-right tabular-nums text-ink-900">{eur(p.costUsd)}</TD>
                     </TR>
                   ))}
                 </TBody>
@@ -114,21 +114,21 @@ export default async function TokenverbruikPage() {
           {o.perDay.length > 0 && (
             <Card>
               <CardContent className="space-y-2">
-                <div className="text-sm font-semibold text-slate-800">Verbruik per dag</div>
+                <div className="text-sm font-semibold text-ink-800">Verbruik per dag</div>
                 <div className="space-y-1.5">
                   {o.perDay.map((d) => (
                     <div key={d.date} className="flex items-center gap-3 text-xs">
-                      <span className="w-20 shrink-0 tabular-nums text-slate-500">{d.date}</span>
-                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <span className="w-20 shrink-0 tabular-nums text-ink-500">{d.date}</span>
+                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-ink-100">
                         <div
                           className="h-full rounded-full bg-brand-500"
                           style={{ width: `${Math.max(2, (d.tokens / maxDay) * 100)}%` }}
                         />
                       </div>
-                      <span className="w-24 shrink-0 text-right tabular-nums text-slate-600">
+                      <span className="w-24 shrink-0 text-right tabular-nums text-ink-600">
                         {fmtTokens(d.tokens)}
                       </span>
-                      <span className="w-16 shrink-0 text-right tabular-nums text-slate-400">
+                      <span className="w-16 shrink-0 text-right tabular-nums text-ink-400">
                         {eur(d.costUsd)}
                       </span>
                     </div>
@@ -141,7 +141,7 @@ export default async function TokenverbruikPage() {
           {/* Recente aanroepen */}
           <Card>
             <CardContent className="p-0">
-              <div className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-800">
+              <div className="border-b border-ink-100 px-4 py-3 text-sm font-semibold text-ink-800">
                 Recente aanroepen
               </div>
               <Table>
@@ -158,12 +158,12 @@ export default async function TokenverbruikPage() {
                 <TBody>
                   {o.recent.map((r) => (
                     <TR key={r.id}>
-                      <TD className="whitespace-nowrap text-sm text-slate-500">{formatDate(r.createdAt)}</TD>
-                      <TD className="text-slate-700">{PROVIDER_LABEL[r.provider] ?? r.provider}</TD>
-                      <TD className="font-mono text-xs text-slate-500">{r.model}</TD>
-                      <TD className="text-sm text-slate-500">{KIND_LABEL[r.kind] ?? r.kind}</TD>
-                      <TD className="text-right tabular-nums text-slate-700">{fmtTokens(r.totalTokens)}</TD>
-                      <TD className="text-right tabular-nums text-slate-600">{eur(r.estCostUsd)}</TD>
+                      <TD className="whitespace-nowrap text-sm text-ink-500">{formatDate(r.createdAt)}</TD>
+                      <TD className="text-ink-700">{PROVIDER_LABEL[r.provider] ?? r.provider}</TD>
+                      <TD className="font-mono text-xs text-ink-500">{r.model}</TD>
+                      <TD className="text-sm text-ink-500">{KIND_LABEL[r.kind] ?? r.kind}</TD>
+                      <TD className="text-right tabular-nums text-ink-700">{fmtTokens(r.totalTokens)}</TD>
+                      <TD className="text-right tabular-nums text-ink-600">{eur(r.estCostUsd)}</TD>
                     </TR>
                   ))}
                 </TBody>

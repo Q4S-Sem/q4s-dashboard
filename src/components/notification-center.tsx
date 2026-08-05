@@ -46,7 +46,7 @@ const CHIP: Record<string, string> = {
   indigo: "bg-indigo-100 text-indigo-700",
   orange: "bg-orange-100 text-orange-700",
   red: "bg-red-100 text-red-700",
-  slate: "bg-slate-100 text-slate-500",
+  slate: "bg-ink-100 text-ink-500",
 };
 
 /**
@@ -85,7 +85,7 @@ export function NotificationCenter({ data }: { data: Notifications }) {
         aria-haspopup="menu"
         className={cn(
           "relative inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-          urgent > 0 ? "text-red-500 hover:bg-red-50 hover:text-red-600" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
+          urgent > 0 ? "text-red-500 hover:bg-red-50 hover:text-red-600" : "text-ink-500 hover:bg-ink-100 hover:text-ink-900",
         )}
       >
         {urgent > 0 ? <BellRing className="h-[18px] w-[18px]" /> : <Bell className="h-[18px] w-[18px]" />}
@@ -99,17 +99,17 @@ export function NotificationCenter({ data }: { data: Notifications }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-[26rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ring-1 ring-black/5"
+          className="absolute right-0 z-50 mt-2 w-[26rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-xl ring-1 ring-black/5"
         >
           {/* Header */}
-          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+          <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-5 py-3.5">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink-900 text-white">
                 <BellRing className="h-4 w-4" />
               </span>
               <div>
-                <div className="text-[15px] font-bold leading-tight text-slate-900">Meldingen</div>
-                <div className="text-xs text-slate-400">
+                <div className="text-[15px] font-bold leading-tight text-ink-900">Meldingen</div>
+                <div className="text-xs text-ink-400">
                   {urgent > 0 ? `${urgent} ${urgent === 1 ? "vraagt" : "vragen"} aandacht` : "Alles bij — niets urgents"}
                 </div>
               </div>
@@ -128,11 +128,11 @@ export function NotificationCenter({ data }: { data: Notifications }) {
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                 <CheckCircle2 className="h-6 w-6" />
               </span>
-              <p className="text-sm font-medium text-slate-700">Geen openstaande acties</p>
-              <p className="text-xs text-slate-400">Je bent helemaal bij. 🎉</p>
+              <p className="text-sm font-medium text-ink-700">Geen openstaande acties</p>
+              <p className="text-xs text-ink-400">Je bent helemaal bij. 🎉</p>
             </div>
           ) : (
-            <ul className="mt-3 max-h-[26rem] divide-y divide-slate-50 overflow-y-auto">
+            <ul className="mt-3 max-h-[26rem] divide-y divide-ink-50 overflow-y-auto">
               {groups.map((g) => {
                 const meta = META[g.key] ?? { icon: Bell, color: "slate", desc: "" };
                 const Icon = meta.icon;
@@ -141,7 +141,7 @@ export function NotificationCenter({ data }: { data: Notifications }) {
                     <Link
                       href={g.href}
                       onClick={() => setOpen(false)}
-                      className="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50"
+                      className="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-ink-50"
                     >
                       <span
                         className={cn(
@@ -153,10 +153,10 @@ export function NotificationCenter({ data }: { data: Notifications }) {
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="truncate text-sm font-semibold text-slate-900">{g.label}</span>
-                          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-slate-500" />
+                          <span className="truncate text-sm font-semibold text-ink-900">{g.label}</span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-ink-300 transition-colors group-hover:text-ink-500" />
                         </div>
-                        {meta.desc && <p className="truncate text-xs text-slate-400">{meta.desc}</p>}
+                        {meta.desc && <p className="truncate text-xs text-ink-400">{meta.desc}</p>}
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                           {g.late > 0 && <Pill n={g.late} label="te laat" tone="red" />}
                           {g.today > 0 && <Pill n={g.today} label="vandaag" tone="amber" />}
@@ -171,11 +171,11 @@ export function NotificationCenter({ data }: { data: Notifications }) {
           )}
 
           {/* Footer */}
-          <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-2.5">
+          <div className="border-t border-ink-100 bg-ink-50/60 px-4 py-2.5">
             <Link
               href="/dashboard"
               onClick={() => setOpen(false)}
-              className="flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-white hover:text-slate-900"
+              className="flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-white hover:text-ink-900"
             >
               <LayoutDashboard className="h-4 w-4" /> Volledig overzicht op het dashboard
             </Link>
@@ -188,14 +188,14 @@ export function NotificationCenter({ data }: { data: Notifications }) {
 
 function SummaryTile({ label, value, tone }: { label: string; value: number; tone: "red" | "amber" | "slate" }) {
   const map = {
-    red: { tile: "bg-red-50 ring-red-100", value: value > 0 ? "text-red-600" : "text-slate-300" },
-    amber: { tile: "bg-amber-50 ring-amber-100", value: value > 0 ? "text-amber-600" : "text-slate-300" },
-    slate: { tile: "bg-slate-50 ring-slate-200", value: value > 0 ? "text-slate-700" : "text-slate-300" },
+    red: { tile: "bg-red-50 ring-red-100", value: value > 0 ? "text-red-600" : "text-ink-300" },
+    amber: { tile: "bg-amber-50 ring-amber-100", value: value > 0 ? "text-amber-600" : "text-ink-300" },
+    slate: { tile: "bg-ink-50 ring-ink-200", value: value > 0 ? "text-ink-700" : "text-ink-300" },
   }[tone];
   return (
     <div className={cn("rounded-xl px-3 py-2.5 text-center ring-1", map.tile)}>
       <div className={cn("text-2xl font-bold leading-none tabular-nums", map.value)}>{value}</div>
-      <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-ink-500">{label}</div>
     </div>
   );
 }
@@ -206,7 +206,7 @@ function Pill({ n, label, tone }: { n: number; label: string; tone: "red" | "amb
       ? "bg-red-50 text-red-700 ring-red-100"
       : tone === "amber"
         ? "bg-amber-50 text-amber-700 ring-amber-100"
-        : "bg-slate-100 text-slate-500 ring-slate-200";
+        : "bg-ink-100 text-ink-500 ring-ink-200";
   return (
     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset", cls)}>
       <span className="tabular-nums">{n}</span>

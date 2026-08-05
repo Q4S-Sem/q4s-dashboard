@@ -141,7 +141,7 @@ export function SettingsForm({
       <Card className="border-amber-300 ring-1 ring-amber-200">
         <CardHeader>
           <CardTitle className="text-amber-900">Testmodus — e-mail omleiden</CardTitle>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-ink-500">
             Vul een adres in om <strong>alle</strong> uitgaande mail (facturen, herinneringen, …) daarheen te
             sturen i.p.v. naar klanten en medewerkers. Leeg = normaal versturen naar de echte ontvanger.
           </span>

@@ -29,7 +29,7 @@ export const metadata = { title: "CRM-inzichten" };
 export const dynamic = "force-dynamic";
 
 const BAR: Record<BadgeColor, string> = {
-  slate: "bg-slate-300",
+  slate: "bg-ink-300",
   blue: "bg-blue-400",
   green: "bg-emerald-400",
   amber: "bg-amber-400",
@@ -43,7 +43,7 @@ function WeakPointRow({ wp }: { wp: WeakPoint }) {
   const map = {
     high: { ring: "border-red-200 bg-red-50", text: "text-red-700", Icon: AlertTriangle },
     medium: { ring: "border-amber-200 bg-amber-50", text: "text-amber-800", Icon: AlertCircle },
-    low: { ring: "border-slate-200 bg-slate-50", text: "text-slate-600", Icon: Info },
+    low: { ring: "border-ink-200 bg-ink-50", text: "text-ink-600", Icon: Info },
   }[wp.severity];
   const Icon = map.Icon;
   return (
@@ -51,7 +51,7 @@ function WeakPointRow({ wp }: { wp: WeakPoint }) {
       <Icon className={cn("mt-0.5 h-5 w-5 shrink-0", map.text)} />
       <div>
         <p className={cn("text-sm font-semibold", map.text)}>{wp.title}</p>
-        <p className="mt-0.5 text-sm text-slate-600">{wp.detail}</p>
+        <p className="mt-0.5 text-sm text-ink-600">{wp.detail}</p>
       </div>
     </li>
   );
@@ -77,7 +77,7 @@ export default async function InzichtenPage({
       href={`/crm/inzichten?scope=${value}`}
       className={cn(
         "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        scope === value ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800",
+        scope === value ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
       )}
     >
       {label}
@@ -86,7 +86,7 @@ export default async function InzichtenPage({
 
   return (
     <div className="space-y-6">
-      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
+      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
         <ArrowLeft className="h-4 w-4" /> Terug naar CRM
       </Link>
 
@@ -95,7 +95,7 @@ export default async function InzichtenPage({
         description="Terugkoppeling uit alles wat je vastlegt: waar staat de pipeline, en — belangrijker — waar liggen de zwakke punten?"
       />
 
-      <div className="inline-flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+      <div className="inline-flex gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1">
         {scopeTab("mine", "Mijn cijfers")}
         {scopeTab("all", "Team")}
       </div>
@@ -135,7 +135,7 @@ export default async function InzichtenPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-slate-400" /> Pipeline per fase
+            <BarChart3 className="h-4 w-4 text-ink-400" /> Pipeline per fase
           </CardTitle>
           {ins.biggestDrop && (
             <span className="text-xs text-red-600">
@@ -145,19 +145,19 @@ export default async function InzichtenPage({
         </CardHeader>
         <CardContent className="space-y-3">
           {ins.funnel.length === 0 ? (
-            <p className="text-sm text-slate-500">Nog geen open deals.</p>
+            <p className="text-sm text-ink-500">Nog geen open deals.</p>
           ) : (
             ins.funnel.map((f) => (
               <div key={f.key}>
                 <div className="mb-1 flex items-center justify-between text-sm">
-                  <span className="font-medium text-slate-700">{f.name}</span>
-                  <span className="flex items-center gap-3 text-xs text-slate-500 tabular-nums">
+                  <span className="font-medium text-ink-700">{f.name}</span>
+                  <span className="flex items-center gap-3 text-xs text-ink-500 tabular-nums">
                     {f.stalled > 0 && <span className="text-red-500">{f.stalled} vastgelopen</span>}
                     <span>{formatCurrency(f.value)}</span>
-                    <span className="w-6 text-right font-semibold text-slate-700">{f.count}</span>
+                    <span className="w-6 text-right font-semibold text-ink-700">{f.count}</span>
                   </span>
                 </div>
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-ink-100">
                   <div
                     className={cn("h-full rounded-full", BAR[f.color])}
                     style={{ width: `${Math.round((f.count / maxFunnel) * 100)}%` }}
@@ -174,7 +174,7 @@ export default async function InzichtenPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-slate-400" /> Winnen &amp; verliezen
+              <Trophy className="h-4 w-4 text-ink-400" /> Winnen &amp; verliezen
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -187,21 +187,21 @@ export default async function InzichtenPage({
                 <p className="text-2xl font-bold text-red-700">{ins.lostCount}</p>
                 <p className="text-xs text-red-700">Verloren</p>
               </div>
-              <div className="flex-1 rounded-lg bg-slate-50 p-3 text-center">
-                <p className="text-2xl font-bold text-slate-700">{ins.winRate === null ? "—" : `${ins.winRate}%`}</p>
-                <p className="text-xs text-slate-500">Winkans</p>
+              <div className="flex-1 rounded-lg bg-ink-50 p-3 text-center">
+                <p className="text-2xl font-bold text-ink-700">{ins.winRate === null ? "—" : `${ins.winRate}%`}</p>
+                <p className="text-xs text-ink-500">Winkans</p>
               </div>
             </div>
             <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Verliesredenen</p>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-ink-400">Verliesredenen</p>
               {ins.lostReasons.length === 0 ? (
-                <p className="text-sm text-slate-500">Nog geen verloren deals geregistreerd.</p>
+                <p className="text-sm text-ink-500">Nog geen verloren deals geregistreerd.</p>
               ) : (
                 <ul className="space-y-1.5">
                   {ins.lostReasons.map((r) => (
                     <li key={r.reason} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-700">{r.reason}</span>
-                      <span className="font-semibold tabular-nums text-slate-500">{r.count}×</span>
+                      <span className="text-ink-700">{r.reason}</span>
+                      <span className="font-semibold tabular-nums text-ink-500">{r.count}×</span>
                     </li>
                   ))}
                 </ul>
@@ -214,23 +214,23 @@ export default async function InzichtenPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Heart className="h-4 w-4 text-slate-400" /> Relatie &amp; activiteit
+              <Heart className="h-4 w-4 text-ink-400" /> Relatie &amp; activiteit
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Relatiegevoel (90 dagen)</p>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-ink-400">Relatiegevoel (90 dagen)</p>
               {totalSentiment === 0 ? (
-                <p className="text-sm text-slate-500">Nog geen gevoel vastgelegd bij contactmomenten.</p>
+                <p className="text-sm text-ink-500">Nog geen gevoel vastgelegd bij contactmomenten.</p>
               ) : (
                 <div className="flex h-3 overflow-hidden rounded-full">
                   <div className="bg-emerald-400" style={{ width: `${(ins.sentiment.positive / totalSentiment) * 100}%` }} />
-                  <div className="bg-slate-300" style={{ width: `${(ins.sentiment.neutral / totalSentiment) * 100}%` }} />
+                  <div className="bg-ink-300" style={{ width: `${(ins.sentiment.neutral / totalSentiment) * 100}%` }} />
                   <div className="bg-red-400" style={{ width: `${(ins.sentiment.negative / totalSentiment) * 100}%` }} />
                 </div>
               )}
               {totalSentiment > 0 && (
-                <div className="mt-1.5 flex gap-4 text-xs text-slate-500">
+                <div className="mt-1.5 flex gap-4 text-xs text-ink-500">
                   <span>😊 {ins.sentiment.positive}</span>
                   <span>😐 {ins.sentiment.neutral}</span>
                   <span>☹️ {ins.sentiment.negative}</span>
@@ -238,17 +238,17 @@ export default async function InzichtenPage({
               )}
             </div>
             <div>
-              <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-400">
                 <Activity className="h-3.5 w-3.5" /> Activiteit (30 dagen)
               </p>
               {ins.activityByType.length === 0 ? (
-                <p className="text-sm text-slate-500">Nog niets vastgelegd deze maand.</p>
+                <p className="text-sm text-ink-500">Nog niets vastgelegd deze maand.</p>
               ) : (
                 <ul className="space-y-1.5">
                   {ins.activityByType.map((a) => (
                     <li key={a.type} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-700">{labelFor(CRM_NOTE_TYPES, a.type)}</span>
-                      <span className="font-semibold tabular-nums text-slate-500">{a.count}</span>
+                      <span className="text-ink-700">{labelFor(CRM_NOTE_TYPES, a.type)}</span>
+                      <span className="font-semibold tabular-nums text-ink-500">{a.count}</span>
                     </li>
                   ))}
                 </ul>
@@ -278,7 +278,7 @@ export default async function InzichtenPage({
             <TBody>
               {ins.leaderboard.map((l) => (
                 <TR key={l.ownerId}>
-                  <TD className="font-medium text-slate-900">{l.name}</TD>
+                  <TD className="font-medium text-ink-900">{l.name}</TD>
                   <TD className="text-right tabular-nums">{l.open}</TD>
                   <TD className="text-right tabular-nums text-emerald-700">{l.won}</TD>
                   <TD className="text-right tabular-nums text-red-600">{l.lost}</TD>

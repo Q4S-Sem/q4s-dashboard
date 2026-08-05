@@ -10,7 +10,7 @@ export function CopyLink({ url, className }: { url: string; className?: string }
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <code className="truncate rounded bg-slate-100 px-2 py-1 text-xs text-slate-700">
+      <code className="truncate rounded bg-ink-100 px-2 py-1 text-xs text-ink-700">
         {url}
       </code>
       <button
@@ -25,7 +25,7 @@ export function CopyLink({ url, className }: { url: string; className?: string }
             // clipboard unavailable — ignore
           }
         }}
-        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-ink-300 px-2 py-1 text-xs font-medium text-ink-600 hover:bg-ink-50"
       >
         {copied ? (
           <>

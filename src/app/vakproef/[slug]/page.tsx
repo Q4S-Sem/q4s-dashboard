@@ -29,14 +29,14 @@ export default async function PubliekeVakproefPage({
   return (
     <main className="mx-auto max-w-2xl p-8">
       <article className="space-y-6">
-        <header className="space-y-3 border-b border-slate-200 pb-6">
+        <header className="space-y-3 border-b border-ink-200 pb-6">
           <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600 text-white">
             <GraduationCap className="h-5 w-5" />
           </div>
           <p className="text-sm font-medium uppercase tracking-wide text-brand-700">
             Q4S Vakproef · {discipline}
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-3xl font-bold tracking-tight text-ink-900">
             {challenge.title}
           </h1>
         </header>
@@ -66,17 +66,17 @@ export default async function PubliekeVakproefPage({
                   >
                     {wasCorrect ? "Goed gedaan! 🎯" : "Helaas, net niet."}
                   </h2>
-                  <p className="mt-1 text-sm text-slate-700">
+                  <p className="mt-1 text-sm text-ink-700">
                     Het juiste antwoord:{" "}
                     <strong>{options[challenge.correctIndex] ?? "—"}</strong>
                   </p>
                   {challenge.explanation && (
-                    <p className="mt-2 text-sm text-slate-600">{challenge.explanation}</p>
+                    <p className="mt-2 text-sm text-ink-600">{challenge.explanation}</p>
                   )}
                 </div>
               </div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-700">
+            <div className="rounded-xl border border-ink-200 bg-ink-50 p-6 text-sm text-ink-700">
               ✅ Je staat nu in de <strong>Q4S Talentpool</strong>. Zodra er een
               opdracht voorbijkomt die bij jouw vak past, nemen we als eerste
               contact met je op.
@@ -84,7 +84,7 @@ export default async function PubliekeVakproefPage({
           </div>
         ) : challenge.status === "ACTIVE" ? (
           <>
-            <p className="whitespace-pre-wrap text-lg leading-relaxed text-slate-800">
+            <p className="whitespace-pre-wrap text-lg leading-relaxed text-ink-800">
               {challenge.question}
             </p>
             <AnswerForm
@@ -94,7 +94,7 @@ export default async function PubliekeVakproefPage({
             />
           </>
         ) : (
-          <p className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
+          <p className="rounded-xl border border-ink-200 bg-ink-50 p-6 text-sm text-ink-600">
             Deze vakproef is op dit moment gesloten. Houd onze socials in de gaten
             voor de volgende!
           </p>

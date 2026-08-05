@@ -125,10 +125,10 @@ export default async function TalentpoolAnalyticsPage() {
           <CardTitle className="flex items-center gap-2">
             <Radio className="h-4 w-4 text-brand-600" /> Per kanaal
           </CardTitle>
-          <span className="text-xs text-slate-400">gesorteerd op aanmeldingen</span>
+          <span className="text-xs text-ink-400">gesorteerd op aanmeldingen</span>
         </CardHeader>
         {channelRows.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog geen kanalen. Klik op <strong>Links voor alle kanalen</strong> om te
             starten.
           </CardContent>
@@ -247,8 +247,8 @@ export default async function TalentpoolAnalyticsPage() {
                 return (
                   <TR key={l.id}>
                     <TD>
-                      <div className="font-medium text-slate-900">{l.label}</div>
-                      <div className="text-xs text-slate-400">
+                      <div className="font-medium text-ink-900">{l.label}</div>
+                      <div className="text-xs text-ink-400">
                         aangemaakt {formatDate(l.createdAt)}
                       </div>
                     </TD>
@@ -256,7 +256,7 @@ export default async function TalentpoolAnalyticsPage() {
                       {l.channel ? (
                         <StatusBadge options={RECRUITMENT_CHANNELS} value={l.channel} />
                       ) : (
-                        <span className="text-slate-400">—</span>
+                        <span className="text-ink-400">—</span>
                       )}
                     </TD>
                     <TD>

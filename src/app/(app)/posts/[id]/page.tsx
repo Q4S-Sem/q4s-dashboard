@@ -25,10 +25,10 @@ export const metadata = { title: "Social post" };
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -56,7 +56,7 @@ export default async function PostDetailPage({
     <div className="space-y-6">
       <Link
         href="/posts"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar social posts
       </Link>
@@ -180,11 +180,11 @@ export default async function PostDetailPage({
             />
           </dl>
           {post.topic && (
-            <div className="mt-5 border-t border-slate-100 pt-4">
-              <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <div className="mt-5 border-t border-ink-100 pt-4">
+              <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
                 Aanleiding / context
               </dt>
-              <dd className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+              <dd className="mt-1 whitespace-pre-wrap text-sm text-ink-700">
                 {post.topic}
               </dd>
             </div>
@@ -199,11 +199,11 @@ export default async function PostDetailPage({
         </CardHeader>
         <CardContent>
           {hasContent ? (
-            <p className="whitespace-pre-wrap text-sm text-slate-800">
+            <p className="whitespace-pre-wrap text-sm text-ink-800">
               {post.content}
             </p>
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-500">
               Nog geen tekst. Gebruik &ldquo;Genereer met AI&rdquo; voor een
               concept, of schrijf het zelf via Bewerken.
             </p>

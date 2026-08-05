@@ -13,7 +13,7 @@ export default async function NewDealPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
+      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
         <ArrowLeft className="h-4 w-4" /> Terug naar CRM
       </Link>
       <PageHeader

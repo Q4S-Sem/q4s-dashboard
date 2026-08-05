@@ -41,18 +41,18 @@ const peekDayFmt = new Intl.DateTimeFormat("nl-NL", {
 function SourceTag({ source }: { source: string | null }) {
   if (source === "EMAIL")
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+      <span className="inline-flex items-center gap-1 text-xs text-ink-500">
         <Mail className="h-3.5 w-3.5" /> E-mail
       </span>
     );
   if (source === "UPLOAD")
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+      <span className="inline-flex items-center gap-1 text-xs text-ink-500">
         <Upload className="h-3.5 w-3.5" /> Upload
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+    <span className="inline-flex items-center gap-1 text-xs text-ink-400">
       <PencilLine className="h-3.5 w-3.5" /> Handmatig
     </span>
   );
@@ -64,16 +64,16 @@ function Totals({ subtotal, vatRate }: { subtotal: number; vatRate: number }) {
   return (
     <dl className="ml-auto w-full max-w-xs space-y-1 text-sm">
       <div className="flex justify-between">
-        <dt className="text-slate-500">Subtotaal (excl. btw)</dt>
-        <dd className="tabular-nums text-slate-700">{formatCurrency(subtotal)}</dd>
+        <dt className="text-ink-500">Subtotaal (excl. btw)</dt>
+        <dd className="tabular-nums text-ink-700">{formatCurrency(subtotal)}</dd>
       </div>
       <div className="flex justify-between">
-        <dt className="text-slate-500">Btw {vatRate}%</dt>
-        <dd className="tabular-nums text-slate-700">{formatCurrency(vat)}</dd>
+        <dt className="text-ink-500">Btw {vatRate}%</dt>
+        <dd className="tabular-nums text-ink-700">{formatCurrency(vat)}</dd>
       </div>
-      <div className="flex justify-between border-t border-slate-100 pt-1 font-semibold">
-        <dt className="text-slate-900">Totaal</dt>
-        <dd className="tabular-nums text-slate-900">{formatCurrency(total)}</dd>
+      <div className="flex justify-between border-t border-ink-100 pt-1 font-semibold">
+        <dt className="text-ink-900">Totaal</dt>
+        <dd className="tabular-nums text-ink-900">{formatCurrency(total)}</dd>
       </div>
     </dl>
   );
@@ -124,7 +124,7 @@ export default async function VerwerkenPage({
       <div className="mx-auto max-w-3xl space-y-6">
         <Link
           href="/verwerken"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+          className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
         >
           <ArrowLeft className="h-4 w-4" /> Terug naar verwerken
         </Link>
@@ -135,10 +135,10 @@ export default async function VerwerkenPage({
               <CheckCircle2 className="h-7 w-7" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900">
+              <h2 className="text-xl font-bold text-ink-900">
                 {justProcessed ? "Verwerkt!" : "Niets openstaand"}
               </h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-ink-500">
                 {justProcessed ? (
                   <>
                     De facturatie voor <strong>{name}</strong> is verwerkt
@@ -163,12 +163,12 @@ export default async function VerwerkenPage({
             )}
 
             <div className="mx-auto grid max-w-2xl gap-4 text-left sm:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <div className="rounded-xl border border-ink-200 p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink-900">
                   <Coins className="h-4 w-4 text-brand-600" /> Inkoopfacturen
                 </div>
                 {recentPurchases.length === 0 ? (
-                  <p className="text-sm text-slate-400">—</p>
+                  <p className="text-sm text-ink-400">—</p>
                 ) : (
                   <ul className="space-y-1">
                     {recentPurchases.map((p) => (
@@ -177,20 +177,20 @@ export default async function VerwerkenPage({
                           href={`/inkoopfacturen/${p.id}`}
                           className="flex justify-between text-sm hover:text-brand-700"
                         >
-                          <span className="font-medium text-slate-700">{p.number}</span>
-                          <span className="tabular-nums text-slate-500">{formatCurrency(p.total)}</span>
+                          <span className="font-medium text-ink-700">{p.number}</span>
+                          <span className="tabular-nums text-ink-500">{formatCurrency(p.total)}</span>
                         </Link>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <div className="rounded-xl border border-ink-200 p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink-900">
                   <Receipt className="h-4 w-4 text-brand-600" /> Verkoopfacturen
                 </div>
                 {recentSales.length === 0 ? (
-                  <p className="text-sm text-slate-400">—</p>
+                  <p className="text-sm text-ink-400">—</p>
                 ) : (
                   <ul className="space-y-1">
                     {recentSales.map((s) => (
@@ -199,8 +199,8 @@ export default async function VerwerkenPage({
                           href={`/facturen/${s.id}`}
                           className="flex justify-between text-sm hover:text-brand-700"
                         >
-                          <span className="font-medium text-slate-700">{s.number}</span>
-                          <span className="tabular-nums text-slate-500">{formatCurrency(s.total)}</span>
+                          <span className="font-medium text-ink-700">{s.number}</span>
+                          <span className="tabular-nums text-ink-500">{formatCurrency(s.total)}</span>
                         </Link>
                       </li>
                     ))}
@@ -294,7 +294,7 @@ export default async function VerwerkenPage({
     <div className="mx-auto max-w-6xl space-y-6 pb-4">
       <Link
         href="/verwerken"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar verwerken
       </Link>
@@ -326,32 +326,32 @@ export default async function VerwerkenPage({
 
       {/* Snelle samenvatting */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-sm text-ink-500">
             <Coins className="h-4 w-4 text-brand-600" /> {flow.ownStaff ? "Kost — loon" : `Wij betalen ${name}`}
           </div>
           {flow.ownStaff ? (
             <>
-              <p className="mt-1 text-2xl font-bold text-slate-900">Salaris</p>
-              <p className="text-xs text-slate-400">eigen personeel — geen inkoopfactuur</p>
+              <p className="mt-1 text-2xl font-bold text-ink-900">Salaris</p>
+              <p className="text-xs text-ink-400">eigen personeel — geen inkoopfactuur</p>
             </>
           ) : (
             <>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+              <p className="mt-1 text-2xl font-bold tabular-nums text-ink-900">
                 {formatCurrency(inkoopSubtotal)}
               </p>
-              <p className="text-xs text-slate-400">inkoop, excl. btw</p>
+              <p className="text-xs text-ink-400">inkoop, excl. btw</p>
             </>
           )}
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-sm text-ink-500">
             <Receipt className="h-4 w-4 text-brand-600" /> Klant betaalt
           </div>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+          <p className="mt-1 text-2xl font-bold tabular-nums text-ink-900">
             {formatCurrency(verkoopSubtotal)}
           </p>
-          <p className="text-xs text-slate-400">verkoop, excl. btw</p>
+          <p className="text-xs text-ink-400">verkoop, excl. btw</p>
         </div>
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
           <div className="flex items-center gap-2 text-sm text-emerald-700">
@@ -370,14 +370,14 @@ export default async function VerwerkenPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink-900 text-xs font-semibold text-white">
               1
             </span>
             Uren controleren
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-500">
             Controleer per week de <strong>uren</strong> en <strong>kilometers</strong> via{" "}
             <strong>Bekijken</strong> (snel overzicht in een pop-up). Klopt alles? Dan hoef je alleen
             onderaan op <strong>Verwerk alles</strong> te klikken.
@@ -409,13 +409,13 @@ export default async function VerwerkenPage({
                     <TD>
                       <Link
                         href={`/uren/${w.timesheetId}`}
-                        className="font-medium text-slate-900 hover:text-brand-700"
+                        className="font-medium text-ink-900 hover:text-brand-700"
                       >
                         {formatWeekLabel(w.weekStart)}
                       </Link>
                     </TD>
                     <TD>{w.clientName}</TD>
-                    <TD className="text-slate-500">{w.placementTitle}</TD>
+                    <TD className="text-ink-500">{w.placementTitle}</TD>
                     <TD>
                       <SourceTag source={w.source} />
                     </TD>
@@ -427,7 +427,7 @@ export default async function VerwerkenPage({
                         </span>
                       )}
                     </TD>
-                    <TD className="text-right tabular-nums text-slate-600">
+                    <TD className="text-right tabular-nums text-ink-600">
                       {w.kilometers > 0 ? `${formatHours(w.kilometers)} km` : "—"}
                     </TD>
                     <TD>
@@ -466,13 +466,13 @@ export default async function VerwerkenPage({
           <CardContent className="space-y-4">
             {inkoopPreview.length === 0 ? (
               flow.ownStaff ? (
-                <p className="rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                <p className="rounded-lg bg-ink-50 px-3 py-3 text-sm text-ink-600">
                   <strong>Eigen loondienst-medewerker.</strong> Betaling loopt via het salaris — er komt
                   <span className="font-medium"> géén inkoopfactuur</span>. De marge hiernaast is berekend
                   met de interne loonkost/uur; overuren worden als loon uitbetaald.
                 </p>
               ) : (
-                <p className="py-4 text-center text-sm text-slate-400">
+                <p className="py-4 text-center text-sm text-ink-400">
                   Inkoop is al aangemaakt voor deze weken.
                 </p>
               )
@@ -504,17 +504,17 @@ export default async function VerwerkenPage({
                           <TD className="text-right tabular-nums">
                             {formatCurrency(w.buy.base)}
                             {w.buy.overtime > 0 && (
-                              <div className="text-xs font-normal text-slate-400">
+                              <div className="text-xs font-normal text-ink-400">
                                 + {formatCurrency(w.buy.overtime)} overuren ({formatHours(w.overtimeHours)} u)
                               </div>
                             )}
                             {w.buy.weekend > 0 && (
-                              <div className="text-xs font-normal text-slate-400">
+                              <div className="text-xs font-normal text-ink-400">
                                 + {formatCurrency(w.buy.weekend)} weekend
                               </div>
                             )}
                             {w.buy.km > 0 && (
-                              <div className="text-xs font-normal text-slate-400">
+                              <div className="text-xs font-normal text-ink-400">
                                 + {formatCurrency(w.buy.km)} km ({formatHours(w.kilometers)} km)
                               </div>
                             )}
@@ -541,13 +541,13 @@ export default async function VerwerkenPage({
           </CardHeader>
           <CardContent className="space-y-5">
             {verkoopGroups.length === 0 ? (
-              <p className="py-4 text-center text-sm text-slate-400">
+              <p className="py-4 text-center text-sm text-ink-400">
                 Verkoop is al aangemaakt voor deze weken.
               </p>
             ) : (
               verkoopGroups.map((g) => (
-                <div key={g.clientId} className="rounded-xl border border-slate-200">
-                  <div className="border-b border-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-900">
+                <div key={g.clientId} className="rounded-xl border border-ink-200">
+                  <div className="border-b border-ink-100 px-4 py-2.5 text-sm font-semibold text-ink-900">
                     {g.clientName}
                   </div>
                   <div className="space-y-3 p-4">
@@ -577,17 +577,17 @@ export default async function VerwerkenPage({
                               <TD className="text-right tabular-nums">
                                 {formatCurrency(w.sell.base)}
                                 {w.sell.overtime > 0 && (
-                                  <div className="text-xs font-normal text-slate-400">
+                                  <div className="text-xs font-normal text-ink-400">
                                     + {formatCurrency(w.sell.overtime)} overuren ({formatHours(w.overtimeHours)} u)
                                   </div>
                                 )}
                                 {w.sell.weekend > 0 && (
-                                  <div className="text-xs font-normal text-slate-400">
+                                  <div className="text-xs font-normal text-ink-400">
                                     + {formatCurrency(w.sell.weekend)} weekend
                                   </div>
                                 )}
                                 {w.sell.km > 0 && (
-                                  <div className="text-xs font-normal text-slate-400">
+                                  <div className="text-xs font-normal text-ink-400">
                                     + {formatCurrency(w.sell.km)} km ({formatHours(w.kilometers)} km)
                                   </div>
                                 )}
@@ -643,20 +643,20 @@ export default async function VerwerkenPage({
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
               {flow.ownStaff ? (
-                <span className="text-slate-500">Kost via salaris</span>
+                <span className="text-ink-500">Kost via salaris</span>
               ) : (
-                <span className="text-slate-600">
-                  Inkoop <span className="font-semibold tabular-nums text-slate-900">{formatCurrency(inkoopSubtotal)}</span>
+                <span className="text-ink-600">
+                  Inkoop <span className="font-semibold tabular-nums text-ink-900">{formatCurrency(inkoopSubtotal)}</span>
                 </span>
               )}
-              <span className="text-slate-600">
-                Verkoop <span className="font-semibold tabular-nums text-slate-900">{formatCurrency(verkoopSubtotal)}</span>
+              <span className="text-ink-600">
+                Verkoop <span className="font-semibold tabular-nums text-ink-900">{formatCurrency(verkoopSubtotal)}</span>
               </span>
               <span className="text-emerald-700">
                 Marge <span className="font-semibold tabular-nums text-emerald-800">{formatCurrency(margeTotal)}</span>
               </span>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-500">
               Dit keurt {submittedCount > 0 ? "de ingediende uren goed en " : ""}maakt {maaktLabel} aan.
               Ze komen klaar te staan in de verzendmap.
             </p>

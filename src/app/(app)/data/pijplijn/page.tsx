@@ -44,17 +44,17 @@ function Stage({
   detail: string;
 }) {
   return (
-    <div className="flex-1 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="flex-1 rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
       <div className="flex items-center gap-2">
         <span
           className={cn(
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-            active ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400",
+            active ? "bg-emerald-50 text-emerald-600" : "bg-ink-100 text-ink-400",
           )}
         >
           {icon}
         </span>
-        <span className="font-semibold text-slate-900">{title}</span>
+        <span className="font-semibold text-ink-900">{title}</span>
       </div>
       <div className="mt-3">
         <span
@@ -67,7 +67,7 @@ function Stage({
           {active ? activeLabel : gatedLabel}
         </span>
       </div>
-      <p className="mt-2 text-xs text-slate-500">{detail}</p>
+      <p className="mt-2 text-xs text-ink-500">{detail}</p>
     </div>
   );
 }
@@ -121,7 +121,7 @@ export default async function DataPijplijnPage() {
           gatedLabel=""
           detail={`${consultants} werknemers · ${candidates} kandidaten · ${clients} klanten · ${invoices} facturen`}
         />
-        <ArrowRight className="mx-auto hidden h-5 w-5 shrink-0 text-slate-300 lg:block" />
+        <ArrowRight className="mx-auto hidden h-5 w-5 shrink-0 text-ink-300 lg:block" />
         <Stage
           icon={<FolderOpen className="h-5 w-5" />}
           title="Data-map"
@@ -130,7 +130,7 @@ export default async function DataPijplijnPage() {
           gatedLabel=""
           detail={`${mirroredFiles} bestanden geïndexeerd in ${categories.length} mappen · ${docCount} documenten`}
         />
-        <ArrowRight className="mx-auto hidden h-5 w-5 shrink-0 text-slate-300 lg:block" />
+        <ArrowRight className="mx-auto hidden h-5 w-5 shrink-0 text-ink-300 lg:block" />
         <Stage
           icon={<Server className="h-5 w-5" />}
           title="Supabase"
@@ -139,7 +139,7 @@ export default async function DataPijplijnPage() {
           gatedLabel={supabase.configured ? "Klaar — migratie nodig" : "Niet gekoppeld"}
           detail={supabase.host ? `Host: ${supabase.host}` : supabase.note}
         />
-        <ArrowRight className="mx-auto hidden h-5 w-5 shrink-0 text-slate-300 lg:block" />
+        <ArrowRight className="mx-auto hidden h-5 w-5 shrink-0 text-ink-300 lg:block" />
         <Stage
           icon={<Cloud className="h-5 w-5" />}
           title="OneDrive / SharePoint"
@@ -179,14 +179,14 @@ export default async function DataPijplijnPage() {
       {/* Data-map index per mapje */}
       <Card>
         <CardContent className="p-0">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <div className="text-sm font-semibold text-slate-800">Data-map — per mapje</div>
-            <div className="text-xs text-slate-500">
+          <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
+            <div className="text-sm font-semibold text-ink-800">Data-map — per mapje</div>
+            <div className="text-xs text-ink-500">
               {syncedCount} echt gesynct · {simulatedCount} klaargezet
             </div>
           </div>
           {categories.length === 0 ? (
-            <p className="px-6 py-10 text-center text-sm text-slate-500">
+            <p className="px-6 py-10 text-center text-sm text-ink-500">
               Nog niets in de Data-map. Zodra je bestanden uploadt (dossiers, CV's, urenstaten,
               bonnetjes) verschijnen ze hier, gesorteerd per mapje.
             </p>
@@ -203,12 +203,12 @@ export default async function DataPijplijnPage() {
               <TBody>
                 {categories.map((c) => (
                   <TR key={c.category}>
-                    <TD className="font-medium text-slate-900">{c.category}</TD>
-                    <TD className="text-right tabular-nums text-slate-600">{c._count}</TD>
-                    <TD className="text-right tabular-nums text-slate-600">
+                    <TD className="font-medium text-ink-900">{c.category}</TD>
+                    <TD className="text-right tabular-nums text-ink-600">{c._count}</TD>
+                    <TD className="text-right tabular-nums text-ink-600">
                       {fileSize(c._sum.size ?? 0)}
                     </TD>
-                    <TD className="whitespace-nowrap text-sm text-slate-500">
+                    <TD className="whitespace-nowrap text-sm text-ink-500">
                       {c._max.createdAt ? formatDate(c._max.createdAt) : "—"}
                     </TD>
                   </TR>
@@ -219,7 +219,7 @@ export default async function DataPijplijnPage() {
         </CardContent>
       </Card>
 
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-ink-400">
         De lokale schijf + het dashboard blijven altijd de bron. Supabase en OneDrive/SharePoint zijn
         extra kopieën die aanslaan zodra je ze koppelt — er gaat niets verloren in de tussentijd.
       </p>

@@ -42,7 +42,7 @@ export default async function CertificaatBewerkenPage({
     <div className="mx-auto max-w-2xl space-y-6">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar de map
       </Link>

@@ -69,17 +69,17 @@ export default async function PlaatsingenPage({
             <CardTitle className="flex items-center gap-2 text-base text-amber-900">
               <FileText className="h-4 w-4 text-amber-600" /> Concepten — nog af te maken
             </CardTitle>
-            <span className="text-sm text-slate-500">{drafts.length}</span>
+            <span className="text-sm text-ink-500">{drafts.length}</span>
           </CardHeader>
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-ink-100">
             {drafts.map((d) => (
               <li key={d.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
                 <FileText className="h-4 w-4 shrink-0 text-amber-500" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-900">
+                  <p className="truncate text-sm font-medium text-ink-900">
                     {d.label || "Concept-plaatsing"}
                   </p>
-                  <p className="text-xs text-slate-400">Laatst bewerkt {formatDate(d.updatedAt)}</p>
+                  <p className="text-xs text-ink-400">Laatst bewerkt {formatDate(d.updatedAt)}</p>
                 </div>
                 <Link
                   href={`/plaatsingen/nieuw?draft=${d.id}`}

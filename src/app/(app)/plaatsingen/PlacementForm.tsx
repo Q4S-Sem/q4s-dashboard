@@ -81,19 +81,19 @@ function UploadCard({
 }) {
   const [files, setFiles] = useState<string[]>([]);
   return (
-    <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-3">
+    <div className="flex flex-col rounded-xl border border-ink-200 bg-white p-3">
       <div className="flex items-center gap-2.5">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-800">{label}</p>
-          <p className="truncate text-xs text-slate-400">{hint}</p>
+          <p className="text-sm font-semibold text-ink-800">{label}</p>
+          <p className="truncate text-xs text-ink-400">{hint}</p>
         </div>
       </div>
       <label
         htmlFor={id}
-        className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
+        className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-ink-300 bg-ink-50 px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
       >
         <Upload className="h-4 w-4" />
         {files.length > 0 ? "Wijzigen" : multiple ? "Bestanden kiezen" : "Bestand kiezen"}
@@ -110,14 +110,14 @@ function UploadCard({
       {files.length > 0 ? (
         <ul className="mt-2 space-y-1">
           {files.map((f, i) => (
-            <li key={i} className="flex items-center gap-1.5 text-xs text-slate-600">
+            <li key={i} className="flex items-center gap-1.5 text-xs text-ink-600">
               <FileText className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
               <span className="truncate">{f}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-xs text-slate-400">Nog geen bestand gekozen</p>
+        <p className="mt-2 text-xs text-ink-400">Nog geen bestand gekozen</p>
       )}
     </div>
   );
@@ -139,7 +139,7 @@ function ToeslagField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-400">
         {label}
       </span>
       <div className="relative">
@@ -152,7 +152,7 @@ function ToeslagField({
           className="pr-12 text-right"
           aria-label={`${label} (${suffix})`}
         />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-400">
           {suffix}
         </span>
       </div>
@@ -181,9 +181,9 @@ function ToeslagBlock({
   step: number | string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <p className="text-sm font-semibold text-slate-800">{title}</p>
-      <p className="mt-0.5 text-xs text-slate-400">{hint}</p>
+    <div className="rounded-lg border border-ink-200 bg-white p-4">
+      <p className="text-sm font-semibold text-ink-800">{title}</p>
+      <p className="mt-0.5 text-xs text-ink-400">{hint}</p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <ToeslagField label="Inkoop — wij betalen" name={buyName} def={buyDefault} suffix={suffix} step={step} />
         <ToeslagField label="Verkoop — klant betaalt" name={sellName} def={sellDefault} suffix={suffix} step={step} />
@@ -282,7 +282,7 @@ function ClientPicker({
     <div className="space-y-0">
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <Label htmlFor="clientId" className="mb-0">
-          Klant <span className="font-normal text-slate-400">(optioneel)</span>
+          Klant <span className="font-normal text-ink-400">(optioneel)</span>
         </Label>
         <button
           type="button"
@@ -327,8 +327,8 @@ function ClientPicker({
               <Building2 className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-800">Nieuw bedrijf toevoegen</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm font-semibold text-ink-800">Nieuw bedrijf toevoegen</p>
+              <p className="text-xs text-ink-500">
                 Vul in wat je hebt — later aanvullen of wijzigen kan altijd op de klantpagina.
               </p>
             </div>
@@ -436,7 +436,7 @@ function ClientPicker({
                 setErr(null);
                 setOpen(false);
               }}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-white"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:bg-white"
             >
               Annuleren
             </button>
@@ -591,7 +591,7 @@ export function PlacementForm({
       {draftId && <input type="hidden" name="draftId" value={draftId} />}
 
       {/* Snel opslaan — blijft bovenaan in beeld tijdens het scrollen. */}
-      <div className="sticky top-16 z-20 mb-4 flex flex-wrap items-center justify-end gap-2 rounded-lg border border-slate-200 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur">
+      <div className="sticky top-16 z-20 mb-4 flex flex-wrap items-center justify-end gap-2 rounded-lg border border-ink-200 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur">
         <ConfirmCancel href={cancelHref} size="sm" />
         {!placement && (
           <button
@@ -620,11 +620,11 @@ export function PlacementForm({
               <Field label="Werknemer" error={e.consultantId}>
                 {/* Fixed — the person on a plaatsing cannot be changed here. */}
                 <input type="hidden" name="consultantId" value={placement.consultantId} />
-                <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <span className="text-sm font-medium text-slate-900">
+                <div className="flex items-center gap-2 rounded-lg border border-ink-200 bg-ink-50 px-3 py-2">
+                  <span className="text-sm font-medium text-ink-900">
                     {currentPersonName}
                   </span>
-                  <span className="ml-auto inline-flex items-center gap-1 text-xs text-slate-400">
+                  <span className="ml-auto inline-flex items-center gap-1 text-xs text-ink-400">
                     <Lock className="h-3 w-3" /> Vast
                   </span>
                 </div>
@@ -640,7 +640,7 @@ export function PlacementForm({
               <input type="hidden" name="personMode" value={personMode} />
               <div>
                 <Label>Werknemer</Label>
-                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-sm">
+                <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-1 text-sm">
                   <button
                     type="button"
                     onClick={() => setPersonMode("new")}
@@ -648,7 +648,7 @@ export function PlacementForm({
                       "rounded-md px-3 py-1.5 font-medium transition-colors",
                       personMode === "new"
                         ? "bg-white text-brand-700 shadow-sm"
-                        : "text-slate-600 hover:text-slate-900",
+                        : "text-ink-600 hover:text-ink-900",
                     )}
                   >
                     Nieuwe werknemer
@@ -660,7 +660,7 @@ export function PlacementForm({
                       "rounded-md px-3 py-1.5 font-medium transition-colors",
                       personMode === "existing"
                         ? "bg-white text-brand-700 shadow-sm"
-                        : "text-slate-600 hover:text-slate-900",
+                        : "text-ink-600 hover:text-ink-900",
                     )}
                   >
                     Bestaande werknemer
@@ -687,8 +687,8 @@ export function PlacementForm({
                   />
                 </Field>
               ) : (
-                <div className="space-y-4 rounded-lg border border-slate-200 p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                <div className="space-y-4 rounded-lg border border-ink-200 p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-ink-500">
                     Nieuwe werknemer — gegevens
                   </p>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -744,10 +744,10 @@ export function PlacementForm({
                     </Field>
                   </div>
 
-                  <div className="border-t border-slate-100 pt-4">
-                    <p className="mb-2.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <div className="border-t border-ink-100 pt-4">
+                    <p className="mb-2.5 text-xs font-medium uppercase tracking-wide text-ink-500">
                       Bedrijfsgegevens{" "}
-                      <span className="font-normal normal-case text-slate-400">
+                      <span className="font-normal normal-case text-ink-400">
                         (ZZP — voor de inkoopfactuur &amp; betaling)
                       </span>
                     </p>
@@ -798,10 +798,10 @@ export function PlacementForm({
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-100 pt-4">
-                    <p className="mb-2.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <div className="border-t border-ink-100 pt-4">
+                    <p className="mb-2.5 text-xs font-medium uppercase tracking-wide text-ink-500">
                       Documenten{" "}
-                      <span className="font-normal normal-case text-slate-400">
+                      <span className="font-normal normal-case text-ink-400">
                         (optioneel)
                       </span>
                     </p>
@@ -829,7 +829,7 @@ export function PlacementForm({
                         multiple
                       />
                     </div>
-                    <p className="mt-2.5 text-xs text-slate-400">
+                    <p className="mt-2.5 text-xs text-ink-400">
                       Je kunt deze ook later op de plaatsing toevoegen.
                     </p>
                   </div>
@@ -871,14 +871,14 @@ export function PlacementForm({
               </Field>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium text-slate-500">Snelle duur:</span>
+              <span className="text-xs font-medium text-ink-500">Snelle duur:</span>
               {DURATIONS.map((d) => (
                 <button
                   key={d.kind}
                   type="button"
                   onClick={() => setEndDate(computeEnd(startDate, d.kind))}
                   disabled={!startDate}
-                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-full border border-ink-200 bg-white px-3 py-1 text-xs font-medium text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
                   title={`Einddatum = startdatum + ${d.label.toLowerCase()}`}
                 >
                   {d.label}
@@ -888,7 +888,7 @@ export function PlacementForm({
                 <button
                   type="button"
                   onClick={() => setEndDate("")}
-                  className="rounded-full px-2 py-1 text-xs text-slate-400 hover:text-slate-700"
+                  className="rounded-full px-2 py-1 text-xs text-ink-400 hover:text-ink-700"
                 >
                   wissen
                 </button>
@@ -935,13 +935,13 @@ export function PlacementForm({
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-            <p className="text-sm font-semibold text-slate-700">
+          <div className="rounded-xl border border-ink-200 bg-ink-50/60 p-4">
+            <p className="text-sm font-semibold text-ink-700">
               Toeslagen &amp; kilometervergoeding
             </p>
-            <p className="mt-1 text-xs text-slate-400">
-              Per persoon. <span className="font-medium text-slate-500">Inkoop</span> ={" "}
-              wat we de werknemer betalen, <span className="font-medium text-slate-500">Verkoop</span>{" "}
+            <p className="mt-1 text-xs text-ink-400">
+              Per persoon. <span className="font-medium text-ink-500">Inkoop</span> ={" "}
+              wat we de werknemer betalen, <span className="font-medium text-ink-500">Verkoop</span>{" "}
               = wat we de klant rekenen. Laat 0 staan als er geen toeslag geldt — het
               komt als aparte regel bovenop het basisbedrag op de factuur.
             </p>

@@ -106,8 +106,8 @@ export function PeriodFilter({
 }) {
   const range = periodRange(gran, anchor);
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-sm">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
+      <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-1 text-sm">
         {GRANS.map((g) => (
           <button
             key={g.key}
@@ -117,7 +117,7 @@ export function PeriodFilter({
               "rounded-md px-3 py-1.5 font-medium transition-colors",
               gran === g.key
                 ? "bg-white text-brand-700 shadow-sm"
-                : "text-slate-600 hover:text-slate-900",
+                : "text-ink-600 hover:text-ink-900",
             )}
           >
             {g.label}
@@ -130,7 +130,7 @@ export function PeriodFilter({
             type="button"
             aria-label="Vorige periode"
             onClick={() => onAnchor(shift(gran, anchor, -1))}
-            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+            className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -144,7 +144,7 @@ export function PeriodFilter({
               className="w-60"
             />
           ) : (
-            <span className="min-w-[11rem] text-center text-sm font-semibold capitalize text-slate-800">
+            <span className="min-w-[11rem] text-center text-sm font-semibold capitalize text-ink-800">
               {range.label}
             </span>
           )}
@@ -152,7 +152,7 @@ export function PeriodFilter({
             type="button"
             aria-label="Volgende periode"
             onClick={() => onAnchor(shift(gran, anchor, 1))}
-            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+            className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

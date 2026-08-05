@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
+import { person } from "@/lib/people";
 import { Field, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
@@ -28,10 +30,10 @@ export const metadata = { title: "Sollicitatie" };
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -83,7 +85,7 @@ export default async function SollicitatieDetailPage({
     <div className="space-y-6">
       <Link
         href="/sollicitaties"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar sollicitaties
       </Link>
@@ -172,12 +174,12 @@ export default async function SollicitatieDetailPage({
             )}
           </div>
 
-          <div className="border-t border-slate-100 pt-5">
-            <h4 className="mb-3 text-sm font-semibold text-slate-900">
+          <div className="border-t border-ink-100 pt-5">
+            <h4 className="mb-3 text-sm font-semibold text-ink-900">
               Doorzetten naar opdrachtgever
             </h4>
             {targets.length === 0 ? (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-ink-500">
                 Nog geen doelopdrachtgevers. Voeg eerst een opdrachtgever toe.
               </p>
             ) : (
@@ -209,9 +211,9 @@ export default async function SollicitatieDetailPage({
             )}
 
             {application.submittedTo && (
-              <p className="mt-3 text-sm text-slate-600">
+              <p className="mt-3 text-sm text-ink-600">
                 Voorgesteld aan{" "}
-                <span className="font-medium text-slate-900">
+                <span className="font-medium text-ink-900">
                   {application.submittedTo.name}
                 </span>
                 {application.submittedAt && (
@@ -236,7 +238,15 @@ export default async function SollicitatieDetailPage({
         </CardHeader>
         <CardContent className="space-y-5">
           <dl className="grid grid-cols-2 gap-5 sm:grid-cols-3">
-            <Detail label="Naam" value={candidateName} />
+            <Detail
+              label="Naam"
+              value={
+                <span className="flex items-center gap-2.5">
+                  <Avatar {...person(candidate)} size="sm" />
+                  {candidateName}
+                </span>
+              }
+            />
             <Detail label="E-mail" value={candidate.email} />
             <Detail label="Telefoon" value={candidate.phone} />
             <Detail
@@ -283,7 +293,7 @@ export default async function SollicitatieDetailPage({
               <Detail label="Locatie" value={vacancy.location} />
             </dl>
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-500">
               Niet gekoppeld aan een specifieke vacature (open sollicitatie).
             </p>
           )}
@@ -296,11 +306,11 @@ export default async function SollicitatieDetailPage({
         </CardHeader>
         <CardContent>
           {application.motivation ? (
-            <p className="whitespace-pre-wrap text-sm text-slate-700">
+            <p className="whitespace-pre-wrap text-sm text-ink-700">
               {application.motivation}
             </p>
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-500">
               Geen motivatie meegestuurd.
             </p>
           )}

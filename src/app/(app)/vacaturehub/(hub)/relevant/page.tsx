@@ -46,14 +46,14 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-violet-500" /> Past bij Q4S
-            <span className="text-sm font-normal text-slate-400">({c.relevant})</span>
+            <span className="text-sm font-normal text-ink-400">({c.relevant})</span>
           </CardTitle>
           <Link href="/vacatures" className={buttonVariants({ variant: "outline", size: "sm" })}>
             <PencilLine className="h-4 w-4" /> Naar maken
           </Link>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-500">
             Deze vacatures passen binnen de niche. Stuur ze door naar Maken: daar schrijf je de
             tekst af (of laat je de AI dat doen), lees je 'm na en zet je 'm zelf op q4s.nl.
           </p>
@@ -62,8 +62,8 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
               href="/vacaturehub/relevant"
               className={
                 showLive
-                  ? "rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200"
-                  : "rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white"
+                  ? "rounded-full bg-ink-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200"
+                  : "rounded-full bg-ink-900 px-3 py-1 text-xs font-medium text-white"
               }
             >
               Klaar voor maken ({c.toPublish})
@@ -72,8 +72,8 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
               href="/vacaturehub/relevant?tab=live"
               className={
                 showLive
-                  ? "rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white"
-                  : "rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200"
+                  ? "rounded-full bg-ink-900 px-3 py-1 text-xs font-medium text-white"
+                  : "rounded-full bg-ink-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200"
               }
             >
               Live op de site ({c.published})

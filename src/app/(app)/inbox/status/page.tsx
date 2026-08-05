@@ -70,7 +70,7 @@ export default async function TimesheetStatusPage({
 
   return (
     <div className="space-y-6">
-      <Link href="/inbox" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
+      <Link href="/inbox" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
         <ArrowLeft className="h-4 w-4" /> Terug naar de inbox
       </Link>
 
@@ -94,7 +94,7 @@ export default async function TimesheetStatusPage({
         </Link>
         <div className="flex flex-col items-center">
           <WeekPicker value={wp} basePath="/inbox/status" className="w-72" />
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-ink-400">
             week van {formatDate(monday)}
             {weekParam(currentWeekMonday()) === wp ? " · huidige week" : ""}
           </p>
@@ -141,23 +141,23 @@ export default async function TimesheetStatusPage({
               <AlertTriangle className="h-5 w-5 text-amber-600" /> Dit moet je oppakken —{" "}
               {unlinkedItems.length} onbevestigd(e) item(s)
             </CardTitle>
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-ink-500">
               Deze urenstaten liggen in de inbox maar zijn nog niet aan een medewerker gekoppeld.
               Bevestig ze eerst — anders lijkt iemand hieronder onterecht te "ontbreken".
             </span>
           </CardHeader>
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-ink-100">
             {unlinkedItems.map((it) => (
               <li key={it.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
-                <FileText className="h-4 w-4 shrink-0 text-slate-400" />
+                <FileText className="h-4 w-4 shrink-0 text-ink-400" />
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/inbox/${it.id}`}
-                    className="block truncate text-sm font-medium text-slate-900 hover:text-brand-700"
+                    className="block truncate text-sm font-medium text-ink-900 hover:text-brand-700"
                   >
                     {it.name}
                   </Link>
-                  <span className="block truncate text-xs text-slate-400">
+                  <span className="block truncate text-xs text-ink-400">
                     {it.originalName}
                     {it.weekStart ? ` · week van ${formatDate(it.weekStart)}` : ""}
                   </span>
@@ -239,7 +239,7 @@ export default async function TimesheetStatusPage({
                 return (
                 <TR key={row.placementId}>
                   <TD>
-                    <Link href={nameHref} className="block w-fit font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={nameHref} className="block w-fit font-medium text-ink-900 hover:text-brand-700">
                       {row.consultantName}
                     </Link>
                     {row.presence === "REMINDED" && row.reminderSentAt && (
@@ -262,12 +262,12 @@ export default async function TimesheetStatusPage({
                       </Link>
                     )}
                   </TD>
-                  <TD className="text-slate-500">
+                  <TD className="text-ink-500">
                     {row.discipline ? labelFor(DISCIPLINES, row.discipline) : "—"}
                   </TD>
-                  <TD className="text-slate-500">
-                    <span className="text-slate-900">{row.placementTitle}</span>
-                    <span className="block text-xs text-slate-400">{row.clientName}</span>
+                  <TD className="text-ink-500">
+                    <span className="text-ink-900">{row.placementTitle}</span>
+                    <span className="block text-xs text-ink-400">{row.clientName}</span>
                   </TD>
                   <TD>
                     <StatusBadge options={TIMESHEET_PRESENCE} value={row.presence} />

@@ -13,7 +13,11 @@ import {
 import {
   saveCvUpload,
   deleteCvUpload,
+  savePhotoUpload,
+  deletePhotoUpload,
   MAX_UPLOAD_BYTES,
+  MAX_PHOTO_BYTES,
+  PHOTO_MIME_TYPES,
 } from "@/lib/uploads";
 
 const CandidateSchema = z.object({
@@ -299,6 +303,63 @@ export async function deleteCv(formData: FormData) {
       cvSize: null,
     },
   });
+  revalidatePath(`/kandidaten/${id}`);
+  redirect(`/kandidaten/${id}`);
+}
+
+// ---------- Profielfoto ----------
+
+/** Upload of vervang de pasfoto van een kandidaat. */
+export async function uploadPhoto(formData: FormData) {
+  const candidateId = String(formData.get("candidateId") ?? "");
+  const file = formData.get("file");
+
+  if (!candidateId) return;
+  if (!(file instanceof File) || file.size === 0) {
+    redirect(`/kandidaten/${candidateId}?error=foto`);
+  }
+  if (file.size > MAX_PHOTO_BYTES) {
+    redirect(`/kandidaten/${candidateId}?error=foto-groot`);
+  }
+  if (!PHOTO_MIME_TYPES.includes(file.type)) {
+    redirect(`/kandidaten/${candidateId}?error=foto-type`);
+  }
+
+  // Oude foto opruimen zodat er geen wees-bestanden achterblijven.
+  const current = await db.candidate.findUnique({
+    where: { id: candidateId },
+    select: { photoFileName: true },
+  });
+  if (current?.photoFileName) {
+    await deletePhotoUpload(current.photoFileName).catch(() => {});
+  }
+
+  const fileName = await savePhotoUpload(file);
+  await db.candidate.update({
+    where: { id: candidateId },
+    data: { photoFileName: fileName, photoMimeType: file.type },
+  });
+
+  revalidatePath("/kandidaten");
+  revalidatePath(`/kandidaten/${candidateId}`);
+  redirect(`/kandidaten/${candidateId}`);
+}
+
+export async function deletePhoto(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const candidate = await db.candidate.findUnique({
+    where: { id },
+    select: { photoFileName: true },
+  });
+  if (candidate?.photoFileName) {
+    await deletePhotoUpload(candidate.photoFileName).catch(() => {});
+  }
+  await db.candidate.update({
+    where: { id },
+    data: { photoFileName: null, photoMimeType: null },
+  });
+  revalidatePath("/kandidaten");
   revalidatePath(`/kandidaten/${id}`);
   redirect(`/kandidaten/${id}`);
 }

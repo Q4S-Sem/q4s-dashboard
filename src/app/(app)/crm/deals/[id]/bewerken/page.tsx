@@ -17,7 +17,7 @@ export default async function EditDealPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link href={`/crm/deals/${deal.id}`} className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
+      <Link href={`/crm/deals/${deal.id}`} className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
         <ArrowLeft className="h-4 w-4" /> Terug naar deal
       </Link>
       <PageHeader title="Deal bewerken" description={deal.title} />

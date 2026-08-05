@@ -39,7 +39,7 @@ function Step({
   tone: "slate" | "amber" | "violet" | "green";
 }) {
   const tones = {
-    slate: "bg-slate-100 text-slate-600",
+    slate: "bg-ink-100 text-ink-600",
     amber: "bg-amber-50 text-amber-600",
     violet: "bg-violet-50 text-violet-600",
     green: "bg-emerald-50 text-emerald-600",
@@ -47,15 +47,15 @@ function Step({
   return (
     <Link
       href={href}
-      className="group flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300 hover:bg-slate-50/60"
+      className="group flex flex-1 items-center gap-3 rounded-xl border border-ink-200 bg-white p-4 transition-colors hover:border-ink-300 hover:bg-ink-50/60"
     >
       <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", tones[tone])}>
         {icon}
       </span>
       <span className="min-w-0">
-        <span className="block text-2xl font-bold tabular-nums text-slate-900">{value}</span>
-        <span className="block text-sm font-medium text-slate-700">{label}</span>
-        <span className="block text-xs text-slate-400">{sub}</span>
+        <span className="block text-2xl font-bold tabular-nums text-ink-900">{value}</span>
+        <span className="block text-sm font-medium text-ink-700">{label}</span>
+        <span className="block text-xs text-ink-400">{sub}</span>
       </span>
     </Link>
   );
@@ -112,7 +112,7 @@ export default async function VacaturehubOverzichtPage({
           icon={<Inbox className="h-5 w-5" />}
           tone="slate"
         />
-        <span className="hidden items-center self-center text-slate-300 lg:flex">
+        <span className="hidden items-center self-center text-ink-300 lg:flex">
           <ArrowRight className="h-5 w-5" />
         </span>
         <Step
@@ -123,7 +123,7 @@ export default async function VacaturehubOverzichtPage({
           icon={<Filter className="h-5 w-5" />}
           tone="amber"
         />
-        <span className="hidden items-center self-center text-slate-300 lg:flex">
+        <span className="hidden items-center self-center text-ink-300 lg:flex">
           <ArrowRight className="h-5 w-5" />
         </span>
         <Step
@@ -134,7 +134,7 @@ export default async function VacaturehubOverzichtPage({
           icon={<Sparkles className="h-5 w-5" />}
           tone="violet"
         />
-        <span className="hidden items-center self-center text-slate-300 lg:flex">
+        <span className="hidden items-center self-center text-ink-300 lg:flex">
           <ArrowRight className="h-5 w-5" />
         </span>
         <Step
@@ -153,7 +153,7 @@ export default async function VacaturehubOverzichtPage({
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-violet-500" /> AI-filter
           </CardTitle>
-          <span className="text-sm text-slate-500">Per klik wordt een batch verwerkt</span>
+          <span className="text-sm text-ink-500">Per klik wordt een batch verwerkt</span>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -170,7 +170,7 @@ export default async function VacaturehubOverzichtPage({
               <Sparkles className="h-4 w-4" /> {c.toPublish} klaar om uit te schrijven
             </Link>
           </div>
-          <div className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-500">
+          <div className="rounded-lg bg-ink-50 px-4 py-3 text-xs text-ink-500">
             De AI legt elke binnengekomen vacature langs de Q4S-niche — QA/QC, HSE, Inspectie,
             Welding, Coating, E&amp;I, Civiel, Offshore, Commissioning en Project Management — en
             zet erbij waaróm iets wel of niet past. Wat past gaat naar Maken, waar je de tekst
@@ -185,18 +185,18 @@ export default async function VacaturehubOverzichtPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Plug className="h-5 w-5 text-slate-500" /> Grootste opdrachtgevers
+              <Plug className="h-5 w-5 text-ink-500" /> Grootste opdrachtgevers
             </CardTitle>
             <Link
               href="/vacaturehub/instroom"
-              className="shrink-0 text-sm font-medium text-slate-500 hover:text-slate-900"
+              className="shrink-0 text-sm font-medium text-ink-500 hover:text-ink-900"
             >
               Alle bronnen →
             </Link>
           </CardHeader>
           <CardContent className="space-y-3">
             {withIntake.length === 0 ? (
-              <p className="py-6 text-center text-sm text-slate-400">
+              <p className="py-6 text-center text-sm text-ink-400">
                 Nog geen instroom. Koppel een platform of importeer een lijst.
               </p>
             ) : (
@@ -207,25 +207,25 @@ export default async function VacaturehubOverzichtPage({
                   <Link
                     key={s.key}
                     href={`/vacaturehub/instroom/${s.key}`}
-                    className="block rounded-xl border border-slate-200 p-3 transition-colors hover:border-slate-300 hover:bg-slate-50/60"
+                    className="block rounded-xl border border-ink-200 p-3 transition-colors hover:border-ink-300 hover:bg-ink-50/60"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span className="truncate text-sm font-semibold text-slate-900">{s.name}</span>
-                      <span className="shrink-0 text-xs tabular-nums text-slate-500">
+                      <span className="truncate text-sm font-semibold text-ink-900">{s.name}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-ink-500">
                         {s.total} vacature(s)
                       </span>
                     </div>
-                    <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-ink-100">
                       <span
                         className="bg-emerald-500"
                         style={{ width: `${(s.relevant / Math.max(1, s.total)) * 100}%` }}
                       />
                       <span
-                        className="bg-slate-300"
+                        className="bg-ink-300"
                         style={{ width: `${(s.irrelevant / Math.max(1, s.total)) * 100}%` }}
                       />
                     </div>
-                    <div className="mt-1.5 flex flex-wrap gap-x-3 text-[11px] text-slate-500">
+                    <div className="mt-1.5 flex flex-wrap gap-x-3 text-[11px] text-ink-500">
                       <span className="text-emerald-700">{s.relevant} relevant</span>
                       <span>{s.irrelevant} afgewezen</span>
                       {s.unknown > 0 && <span className="text-amber-700">{s.unknown} te doen</span>}
@@ -242,29 +242,29 @@ export default async function VacaturehubOverzichtPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Inbox className="h-5 w-5 text-slate-500" /> Laatst binnengekomen
+              <Inbox className="h-5 w-5 text-ink-500" /> Laatst binnengekomen
             </CardTitle>
             <Link
               href="/vacaturehub/beoordelen"
-              className="shrink-0 text-sm font-medium text-slate-500 hover:text-slate-900"
+              className="shrink-0 text-sm font-medium text-ink-500 hover:text-ink-900"
             >
               Naar beoordelen →
             </Link>
           </CardHeader>
-          <CardContent className="divide-y divide-slate-100">
+          <CardContent className="divide-y divide-ink-100">
             {latest.length === 0 ? (
-              <p className="py-6 text-center text-sm text-slate-400">Nog geen vacatures.</p>
+              <p className="py-6 text-center text-sm text-ink-400">Nog geen vacatures.</p>
             ) : (
               latest.map((v) => (
                 <div key={v.id} className="flex items-center justify-between gap-3 py-2.5">
                   <div className="min-w-0">
                     <Link
                       href={`/vacatures/${v.id}`}
-                      className="block truncate text-sm font-medium text-slate-900 hover:text-brand-700"
+                      className="block truncate text-sm font-medium text-ink-900 hover:text-brand-700"
                     >
                       {v.title}
                     </Link>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-400">
                       {v.vmsConnector?.name && <span>{v.vmsConnector.name}</span>}
                       {v.location && <span>· {v.location}</span>}
                       <span>· {formatDate(v.createdAt)}</span>
@@ -288,7 +288,7 @@ export default async function VacaturehubOverzichtPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BellRing className="h-5 w-5 text-slate-500" /> Meldingen
+            <BellRing className="h-5 w-5 text-ink-500" /> Meldingen
             {unreadAlerts > 0 && (
               <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-semibold text-white">
                 {unreadAlerts}
@@ -304,12 +304,12 @@ export default async function VacaturehubOverzichtPage({
           )}
         </CardHeader>
         {alerts.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog geen meldingen. Elke verwerkte levering zet hier (en in het belletje bovenin) een
             melding neer.
           </CardContent>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-ink-100">
             {alerts.map((a) => (
               <li
                 key={a.id}
@@ -320,16 +320,16 @@ export default async function VacaturehubOverzichtPage({
                   {a.href ? (
                     <Link
                       href={a.href}
-                      className="block text-sm font-medium text-slate-900 hover:text-brand-700"
+                      className="block text-sm font-medium text-ink-900 hover:text-brand-700"
                     >
                       {a.title}
                     </Link>
                   ) : (
-                    <span className="block text-sm font-medium text-slate-900">{a.title}</span>
+                    <span className="block text-sm font-medium text-ink-900">{a.title}</span>
                   )}
-                  {a.body && <p className="mt-0.5 text-xs text-slate-500">{a.body}</p>}
+                  {a.body && <p className="mt-0.5 text-xs text-ink-500">{a.body}</p>}
                 </div>
-                <span className="shrink-0 text-xs text-slate-400">{formatDate(a.createdAt)}</span>
+                <span className="shrink-0 text-xs text-ink-400">{formatDate(a.createdAt)}</span>
               </li>
             ))}
           </ul>
@@ -351,7 +351,7 @@ export default async function VacaturehubOverzichtPage({
               .map((s) => (
                 <span
                   key={s.key}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600"
+                  className="inline-flex items-center gap-2 rounded-full border border-ink-200 px-3 py-1 text-xs text-ink-600"
                 >
                   {s.name}
                   <StatusBadge options={VMS_STATUSES} value={s.status} />

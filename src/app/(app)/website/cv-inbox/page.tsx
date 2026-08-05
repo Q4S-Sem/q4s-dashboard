@@ -78,14 +78,14 @@ export default async function WebsiteCvsPage({
       href={`/website/cv-inbox?bron=${t}`}
       className={cn(
         "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        bron === t ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800",
+        bron === t ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
       )}
     >
       {icon} {label}
       <span
         className={cn(
           "rounded-full px-1.5 text-xs font-semibold tabular-nums",
-          bron === t ? "bg-brand-100 text-brand-700" : "bg-slate-200 text-slate-600",
+          bron === t ? "bg-brand-100 text-brand-700" : "bg-ink-200 text-ink-600",
         )}
       >
         {count}
@@ -137,7 +137,7 @@ export default async function WebsiteCvsPage({
       )}
 
       {/* Bron-switch */}
-      <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+      <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-0.5">
         {tabLink("website", "Website", websiteCount, <Globe className="h-4 w-4" />)}
         {tabLink("email", "E-mail", emailCount, <Mail className="h-4 w-4" />)}
       </div>

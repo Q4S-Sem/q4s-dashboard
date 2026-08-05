@@ -87,7 +87,7 @@ function initialsOf(name: string): string {
 }
 
 const CHIP: Record<BadgeColor, string> = {
-  slate: "bg-slate-100 text-slate-700 hover:bg-slate-200",
+  slate: "bg-ink-100 text-ink-700 hover:bg-ink-200",
   blue: "bg-blue-100 text-blue-800 hover:bg-blue-200",
   green: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
   amber: "bg-amber-100 text-amber-800 hover:bg-amber-200",
@@ -97,7 +97,7 @@ const CHIP: Record<BadgeColor, string> = {
   orange: "bg-orange-100 text-orange-800 hover:bg-orange-200",
 };
 const DOT: Record<BadgeColor, string> = {
-  slate: "bg-slate-400",
+  slate: "bg-ink-400",
   blue: "bg-blue-500",
   green: "bg-emerald-500",
   amber: "bg-amber-500",
@@ -107,7 +107,7 @@ const DOT: Record<BadgeColor, string> = {
   orange: "bg-orange-500",
 };
 const ICON_TEXT: Record<BadgeColor, string> = {
-  slate: "text-slate-500",
+  slate: "text-ink-500",
   blue: "text-blue-600",
   green: "text-emerald-600",
   amber: "text-amber-600",
@@ -225,17 +225,17 @@ export function AgendaCalendar({
     setPop({ kind: "add", dateKey, rect: el.getBoundingClientRect() });
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-sm">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-ink-100 px-4 py-3">
         <div className="flex items-center gap-1">
-          <Link href={prevHref} aria-label="Vorige maand" className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+          <Link href={prevHref} aria-label="Vorige maand" className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-900">
             <ChevronLeft className="h-5 w-5" />
           </Link>
-          <Link href={nextHref} aria-label="Volgende maand" className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+          <Link href={nextHref} aria-label="Volgende maand" className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-900">
             <ChevronRight className="h-5 w-5" />
           </Link>
-          <h2 className="ml-2 text-base font-semibold capitalize text-slate-900">{monthLabel}</h2>
+          <h2 className="ml-2 text-base font-semibold capitalize text-ink-900">{monthLabel}</h2>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
@@ -243,13 +243,13 @@ export function AgendaCalendar({
             Vandaag
           </Link>
           {/* Weergave-schakelaar */}
-          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+          <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-0.5">
             <button
               type="button"
               onClick={() => setView("maand")}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium transition-colors",
-                view === "maand" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800",
+                view === "maand" ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
               )}
             >
               <CalendarDays className="h-4 w-4" /> Maand
@@ -259,7 +259,7 @@ export function AgendaCalendar({
               onClick={() => setView("lijst")}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium transition-colors",
-                view === "lijst" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800",
+                view === "lijst" ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
               )}
             >
               <ListTree className="h-4 w-4" /> Lijst
@@ -269,7 +269,7 @@ export function AgendaCalendar({
       </div>
 
       {/* Legenda */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-slate-100 bg-slate-50/60 px-4 py-2 text-[11px] font-medium text-slate-500">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-ink-100 bg-ink-50/60 px-4 py-2 text-[11px] font-medium text-ink-500">
         {EVENT_TYPES.map((t) => (
           <span key={t.value} className="inline-flex items-center gap-1.5">
             <span className={cn("h-2 w-2 rounded-full", DOT[t.color as BadgeColor])} />
@@ -316,7 +316,7 @@ export function AgendaCalendar({
           <div
             style={anchorStyle(pop.rect, pop.kind === "event")}
             className={cn(
-              "fixed z-50 w-80 max-w-[calc(100vw-1rem)] rounded-xl border border-slate-200 bg-white p-4 shadow-xl",
+              "fixed z-50 w-80 max-w-[calc(100vw-1rem)] rounded-xl border border-ink-200 bg-white p-4 shadow-xl",
               pop.kind === "event" ? "overflow-y-auto" : "overflow-visible",
             )}
           >
@@ -355,16 +355,16 @@ function MonthGrid({
 }) {
   return (
     <div className="min-w-0">
-      <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+      <div className="grid grid-cols-7 border-b border-ink-100 bg-ink-50 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-500">
         {WEEKDAYS.map((w) => (
           <div key={w} className="py-2">
             {w}
           </div>
         ))}
       </div>
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-ink-100">
         {weeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7 divide-x divide-slate-100">
+          <div key={wi} className="grid grid-cols-7 divide-x divide-ink-100">
             {week.map((day) => {
               const [, mm, dd] = day.split("-").map(Number);
               const inMonth = mm - 1 === monthNum;
@@ -390,7 +390,7 @@ function MonthGrid({
                 shownTasks.length;
 
               return (
-                <div key={day} className={cn("group relative min-h-[116px]", inMonth ? "bg-white" : "bg-slate-50/60")}>
+                <div key={day} className={cn("group relative min-h-[116px]", inMonth ? "bg-white" : "bg-ink-50/60")}>
                   {/* Klik op lege ruimte → snel toevoegen */}
                   <button
                     type="button"
@@ -408,13 +408,13 @@ function MonthGrid({
                           isToday
                             ? "bg-brand-600 text-white"
                             : inMonth
-                              ? "text-slate-700 hover:bg-slate-100"
-                              : "text-slate-400 hover:bg-slate-100",
+                              ? "text-ink-700 hover:bg-ink-100"
+                              : "text-ink-400 hover:bg-ink-100",
                         )}
                       >
                         {dd}
                       </Link>
-                      <Plus className="h-3.5 w-3.5 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100" />
+                      <Plus className="h-3.5 w-3.5 text-ink-300 opacity-0 transition-opacity group-hover:opacity-100" />
                     </div>
 
                     <div className="mt-1 space-y-1">
@@ -483,7 +483,7 @@ function MonthGrid({
                       {hidden + hiddenAbs > 0 && (
                         <Link
                           href={`/agenda/dag/${day}`}
-                          className="pointer-events-auto block px-1.5 text-[11px] font-medium text-slate-400 hover:text-brand-700"
+                          className="pointer-events-auto block px-1.5 text-[11px] font-medium text-ink-400 hover:text-brand-700"
                         >
                           +{hidden + hiddenAbs} meer
                         </Link>
@@ -532,14 +532,14 @@ function AgendaList({
   }, [events, deadlines, tasks, absences]);
 
   if (groups.length === 0) {
-    return <p className="px-4 py-16 text-center text-sm text-slate-400">Niets gepland deze maand.</p>;
+    return <p className="px-4 py-16 text-center text-sm text-ink-400">Niets gepland deze maand.</p>;
   }
 
   return (
-    <div className="divide-y divide-slate-100">
+    <div className="divide-y divide-ink-100">
       {groups.map(([dateKey, items]) => (
         <div key={dateKey} className="px-2 py-2 sm:px-3">
-          <div className="px-2 py-1.5 text-xs font-semibold capitalize text-slate-500">{dayHeaderLabel(dateKey)}</div>
+          <div className="px-2 py-1.5 text-xs font-semibold capitalize text-ink-500">{dayHeaderLabel(dateKey)}</div>
           <ul>
             {items.map((it, i) => {
               if (it.t === "absence") {
@@ -548,9 +548,9 @@ function AgendaList({
                     key={`a-${dateKey}-${i}`}
                     className="flex items-center gap-3 rounded-lg px-2 py-2"
                   >
-                    <span className="w-14 shrink-0 text-xs text-slate-400">afwezig</span>
+                    <span className="w-14 shrink-0 text-xs text-ink-400">afwezig</span>
                     <Plane className={cn("h-4 w-4 shrink-0", ICON_TEXT[it.abs.color])} />
-                    <span className="min-w-0 flex-1 truncate text-sm text-slate-700">{it.abs.name}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-ink-700">{it.abs.name}</span>
                     <StatusBadge options={LEAVE_TYPES} value={it.abs.type} />
                   </li>
                 );
@@ -560,16 +560,16 @@ function AgendaList({
                   <li key={`t-${it.task.id}`}>
                     <Link
                       href="/agenda/taken"
-                      className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50"
+                      className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-ink-50"
                     >
-                      <span className="w-14 shrink-0 text-xs tabular-nums text-slate-400">
+                      <span className="w-14 shrink-0 text-xs tabular-nums text-ink-400">
                         {it.task.overdue ? "te laat" : "taak"}
                       </span>
                       <ListTodo className={cn("h-4 w-4 shrink-0", it.task.overdue ? "text-red-600" : "text-brand-600")} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-slate-800">{it.task.title}</span>
+                        <span className="block truncate text-sm font-medium text-ink-800">{it.task.title}</span>
                         {it.task.assignee && (
-                          <span className="block truncate text-xs text-slate-500">{it.task.assignee}</span>
+                          <span className="block truncate text-xs text-ink-500">{it.task.assignee}</span>
                         )}
                       </span>
                       <StatusBadge options={TASK_PRIORITIES} value={it.task.priority} />
@@ -583,23 +583,23 @@ function AgendaList({
                     <button
                       type="button"
                       onClick={(e) => onOpenEvent(it.ev, e.currentTarget)}
-                      className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50"
+                      className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-ink-50"
                     >
-                      <span className="w-14 shrink-0 text-xs tabular-nums text-slate-500">
+                      <span className="w-14 shrink-0 text-xs tabular-nums text-ink-500">
                         {it.ev.allDay ? "hele dag" : it.ev.timeShort}
                       </span>
                       <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT[colorFor(EVENT_TYPES, it.ev.type)])} />
                       <span className="min-w-0 flex-1">
                         <span
                           className={cn(
-                            "block truncate text-sm font-medium text-slate-800",
-                            it.ev.status === "CANCELLED" && "text-slate-400 line-through",
+                            "block truncate text-sm font-medium text-ink-800",
+                            it.ev.status === "CANCELLED" && "text-ink-400 line-through",
                           )}
                         >
                           {it.ev.title}
                         </span>
                         {(it.ev.linked || it.ev.location || it.ev.assignee) && (
-                          <span className="block truncate text-xs text-slate-500">
+                          <span className="block truncate text-xs text-ink-500">
                             {[it.ev.linked, it.ev.location, it.ev.assignee].filter(Boolean).join(" · ")}
                           </span>
                         )}
@@ -611,13 +611,13 @@ function AgendaList({
               }
               return (
                 <li key={`d-${dateKey}-${i}`}>
-                  <Link href={it.dl.href} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50">
-                    <span className="w-14 shrink-0 text-xs tabular-nums text-slate-400">
+                  <Link href={it.dl.href} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-ink-50">
+                    <span className="w-14 shrink-0 text-xs tabular-nums text-ink-400">
                       {it.dl.overdue ? "te laat" : ""}
                     </span>
                     <AlertTriangle className={cn("h-4 w-4 shrink-0", it.dl.overdue ? "text-red-600" : "text-amber-600")} />
-                    <span className="min-w-0 flex-1 truncate text-sm text-slate-700">{it.dl.title}</span>
-                    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                    <span className="min-w-0 flex-1 truncate text-sm text-ink-700">{it.dl.title}</span>
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-ink-300" />
                   </Link>
                 </li>
               );
@@ -635,17 +635,17 @@ function EventPopover({ ev, onClose }: { ev: CalEvent; onClose: () => void }) {
     <div>
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <span className="text-sm font-semibold tabular-nums text-slate-900">{ev.timeLabel}</span>
+          <span className="text-sm font-semibold tabular-nums text-ink-900">{ev.timeLabel}</span>
           <StatusBadge options={EVENT_TYPES} value={ev.type} />
           {ev.status !== "PLANNED" && <StatusBadge options={EVENT_STATUSES} value={ev.status} />}
         </div>
-        <button type="button" onClick={onClose} aria-label="Sluiten" className="-mr-1 -mt-1 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+        <button type="button" onClick={onClose} aria-label="Sluiten" className="-mr-1 -mt-1 rounded-lg p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-600">
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <p className={cn("mt-2 font-semibold text-slate-900", ev.status === "CANCELLED" && "line-through")}>{ev.title}</p>
-      <div className="mt-1 space-y-0.5 text-sm text-slate-500">
+      <p className={cn("mt-2 font-semibold text-ink-900", ev.status === "CANCELLED" && "line-through")}>{ev.title}</p>
+      <div className="mt-1 space-y-0.5 text-sm text-ink-500">
         {ev.location && (
           <p className="flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5 shrink-0" /> {ev.location}
@@ -658,9 +658,9 @@ function EventPopover({ ev, onClose }: { ev: CalEvent; onClose: () => void }) {
         )}
         {ev.linked && <p className="truncate">{ev.linked}</p>}
       </div>
-      {ev.notes && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:4] overflow-hidden">{ev.notes}</p>}
+      {ev.notes && <p className="mt-2 whitespace-pre-wrap text-sm text-ink-600 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:4] overflow-hidden">{ev.notes}</p>}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-ink-100 pt-3">
         <Link href={`/agenda/${ev.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
           Openen
         </Link>
@@ -705,8 +705,8 @@ function AddPopover({ dateKey, onClose }: { dateKey: string; onClose: () => void
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold capitalize text-slate-900">Nieuw op {dayHeaderLabel(dateKey)}</h3>
-        <button type="button" onClick={onClose} aria-label="Sluiten" className="-mr-1 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+        <h3 className="text-sm font-semibold capitalize text-ink-900">Nieuw op {dayHeaderLabel(dateKey)}</h3>
+        <button type="button" onClick={onClose} aria-label="Sluiten" className="-mr-1 rounded-lg p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-600">
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -717,7 +717,7 @@ function AddPopover({ dateKey, onClose }: { dateKey: string; onClose: () => void
         <Input name="title" placeholder="Titel — bijv. Bellen kandidaat" autoFocus required />
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">Type</label>
+          <label className="mb-1 block text-xs font-medium text-ink-500">Type</label>
           <Select name="type" defaultValue="MEETING" aria-label="Type">
             {EVENT_TYPES.map((o) => (
               <option key={o.value} value={o.value}>
@@ -728,7 +728,7 @@ function AddPopover({ dateKey, onClose }: { dateKey: string; onClose: () => void
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500">Tijd</label>
+          <label className="mb-1 block text-xs font-medium text-ink-500">Tijd</label>
           <div className="flex items-center gap-2">
             <Select defaultValue={hour} onValueChange={setHour} aria-label="Uur" className="w-24">
               {HOUR_OPTIONS.map((h) => (
@@ -737,7 +737,7 @@ function AddPopover({ dateKey, onClose }: { dateKey: string; onClose: () => void
                 </option>
               ))}
             </Select>
-            <span className="text-sm font-semibold text-slate-400">:</span>
+            <span className="text-sm font-semibold text-ink-400">:</span>
             <Select defaultValue={minute} onValueChange={setMinute} aria-label="Minuten" className="w-24">
               {MINUTE_OPTIONS.map((mnt) => (
                 <option key={mnt} value={mnt}>
@@ -748,7 +748,7 @@ function AddPopover({ dateKey, onClose }: { dateKey: string; onClose: () => void
           </div>
         </div>
 
-        <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
+        <div className="flex items-center gap-2 border-t border-ink-100 pt-3">
           <SubmitButton size="sm" pendingLabel="Opslaan…">
             <Plus className="h-4 w-4" /> Opslaan
           </SubmitButton>

@@ -67,7 +67,7 @@ export default async function BerichtenPage({
                   <TD>
                     <Link
                       href={`/berichten/${m.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {m.recipientName}
                     </Link>

@@ -29,10 +29,10 @@ export const metadata = { title: "Voorbeeld e-mail" };
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
-      <span className="w-24 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <span className="w-24 shrink-0 text-xs font-semibold uppercase tracking-wide text-ink-400">
         {label}
       </span>
-      <span className="text-sm text-slate-700">{children}</span>
+      <span className="text-sm text-ink-700">{children}</span>
     </div>
   );
 }
@@ -79,7 +79,7 @@ export default async function VoorbeeldPage({
     <div className="mx-auto max-w-3xl space-y-6">
       <Link
         href="/verzenden"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar verzendmap
       </Link>
@@ -97,9 +97,9 @@ export default async function VoorbeeldPage({
           <Row label="Aan">
             {data.to ? (
               <span className="inline-flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5 text-slate-400" />
-                <span className="font-medium text-slate-900">{data.recipientName}</span>
-                <span className="text-slate-500">&lt;{data.to}&gt;</span>
+                <Mail className="h-3.5 w-3.5 text-ink-400" />
+                <span className="font-medium text-ink-900">{data.recipientName}</span>
+                <span className="text-ink-500">&lt;{data.to}&gt;</span>
               </span>
             ) : (
               <Link
@@ -124,8 +124,8 @@ export default async function VoorbeeldPage({
             </a>
           </Row>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-            <p className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 pt-3">
+            <p className="inline-flex items-center gap-1.5 text-xs text-ink-500">
               <Info className="h-3.5 w-3.5" />
               {mailRedirect
                 ? `Testmodus — bij versturen gaat de mail naar ${mailRedirect}, niet naar de klant.`

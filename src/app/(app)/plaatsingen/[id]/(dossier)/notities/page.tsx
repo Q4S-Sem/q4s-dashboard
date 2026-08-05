@@ -34,7 +34,7 @@ export default async function PlaatsingNotitiesPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <StickyNote className="h-5 w-5 text-slate-500" /> Vaste notitie
+            <StickyNote className="h-5 w-5 text-ink-500" /> Vaste notitie
           </CardTitle>
           {saved && (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
@@ -43,7 +43,7 @@ export default async function PlaatsingNotitiesPage({
           )}
         </CardHeader>
         <CardContent>
-          <p className="mb-3 text-sm text-slate-500">
+          <p className="mb-3 text-sm text-ink-500">
             Wat je altijd bij deze plaatsing wilt weten: werktijden, contactpersoon op locatie,
             afspraken over toeslagen. Losse gebeurtenissen leg je hieronder in de tijdlijn vast.
           </p>

@@ -53,25 +53,25 @@ export default async function MedewerkerDossierLayout({
     <div className="space-y-6">
       <Link
         href="/medewerkers"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar medewerkers
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-100 text-lg font-semibold text-slate-600">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-ink-100 text-lg font-semibold text-ink-600">
             {initials(m.firstName, m.lastName)}
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
               {m.firstName} {m.lastName}
             </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-500">
               {m.jobTitle && <span>{m.jobTitle}</span>}
               <StatusBadge options={EMPLOYEE_DEPARTMENTS} value={m.department} />
               <StatusBadge options={EMPLOYEE_EMPLOYMENT_TYPES} value={m.employmentType} />
-              {!m.active && <span className="text-slate-400">· uit dienst</span>}
+              {!m.active && <span className="text-ink-400">· uit dienst</span>}
             </div>
           </div>
         </div>

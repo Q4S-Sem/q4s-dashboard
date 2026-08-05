@@ -106,7 +106,7 @@ export default async function UrenstaatDetailPage({
     <div className="space-y-6">
       <Link
         href="/uren"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar urenregistratie
       </Link>
@@ -243,10 +243,10 @@ export default async function UrenstaatDetailPage({
             <StatCard label="Kilometers" value={`${formatHours(ts.kilometers ?? 0)} km`} accent="brand" />
           </div>
           {hasToeslag ? (
-            <div className="mt-4 overflow-hidden rounded-lg border border-slate-100">
+            <div className="mt-4 overflow-hidden rounded-lg border border-ink-100">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+                  <tr className="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-400">
                     <th className="px-4 py-2 font-medium">Toeslag / vergoeding</th>
                     <th className="px-4 py-2 text-right font-medium">Verkoop</th>
                     <th className="px-4 py-2 text-right font-medium">Inkoop</th>
@@ -254,8 +254,8 @@ export default async function UrenstaatDetailPage({
                 </thead>
                 <tbody>
                   {(money.sell.weekend > 0 || money.buy.weekend > 0) && (
-                    <tr className="border-t border-slate-100">
-                      <td className="px-4 py-2 text-slate-700">
+                    <tr className="border-t border-ink-100">
+                      <td className="px-4 py-2 text-ink-700">
                         Weekendtoeslag ({formatHours(placement.weekendSurchargeSell)}% verkoop / {formatHours(placement.weekendSurchargeBuy)}% inkoop)
                       </td>
                       <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(money.sell.weekend)}</td>
@@ -263,8 +263,8 @@ export default async function UrenstaatDetailPage({
                     </tr>
                   )}
                   {(money.sell.overtime > 0 || money.buy.overtime > 0) && (
-                    <tr className="border-t border-slate-100">
-                      <td className="px-4 py-2 text-slate-700">
+                    <tr className="border-t border-ink-100">
+                      <td className="px-4 py-2 text-ink-700">
                         Overurentoeslag ({formatHours(placement.overtimeSurchargeSell)}% verkoop / {formatHours(placement.overtimeSurchargeBuy)}% inkoop)
                       </td>
                       <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(money.sell.overtime)}</td>
@@ -272,13 +272,13 @@ export default async function UrenstaatDetailPage({
                     </tr>
                   )}
                   {(money.sell.km > 0 || money.buy.km > 0) && (
-                    <tr className="border-t border-slate-100">
-                      <td className="px-4 py-2 text-slate-700">Kilometervergoeding ({formatHours(money.kilometers)} km)</td>
+                    <tr className="border-t border-ink-100">
+                      <td className="px-4 py-2 text-ink-700">Kilometervergoeding ({formatHours(money.kilometers)} km)</td>
                       <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(money.sell.km)}</td>
                       <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(money.buy.km)}</td>
                     </tr>
                   )}
-                  <tr className="border-t border-slate-200 bg-slate-50 font-semibold">
+                  <tr className="border-t border-ink-200 bg-ink-50 font-semibold">
                     <td className="px-4 py-2">Totaal incl. toeslagen (excl. BTW)</td>
                     <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(money.sell.total)}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(money.buy.total)}</td>
@@ -287,7 +287,7 @@ export default async function UrenstaatDetailPage({
               </table>
             </div>
           ) : (
-            <p className="mt-3 text-xs text-slate-500">
+            <p className="mt-3 text-xs text-ink-500">
               Geen toeslagen of km-vergoeding ingesteld voor deze plaatsing — de
               factuur is dan uren × tarief. Stel ze per persoon in via{" "}
               <Link href={`/plaatsingen/${placement.id}/bewerken`} className="font-medium text-brand-700 hover:text-brand-800">
@@ -314,23 +314,23 @@ export default async function UrenstaatDetailPage({
         </CardHeader>
         <CardContent className="space-y-3">
           {!canInvoice && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-500">
               Keur de urenstaat eerst goed om een inkoop- en verkoopfactuur te
               genereren.
             </p>
           )}
 
           {/* Sales (client) */}
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-4 py-3">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-100 px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                 <Building2 className="h-[18px] w-[18px]" />
               </div>
               <div>
-                <div className="text-sm font-medium text-slate-900">
+                <div className="text-sm font-medium text-ink-900">
                   Verkoopfactuur — {placement.client?.companyName ?? "— geen bedrijf"}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-ink-500">
                   {formatHours(totalHours)} u × {formatCurrency(placement.chargeRate)} ={" "}
                   {formatCurrency(money.sell.base)}
                   {hasToeslag && <> + toeslagen = {formatCurrency(revenue)}</>} (excl. BTW)
@@ -354,34 +354,34 @@ export default async function UrenstaatDetailPage({
                 </SubmitButton>
               </form>
             ) : (
-              <span className="text-xs text-slate-400">—</span>
+              <span className="text-xs text-ink-400">—</span>
             )}
           </div>
 
           {/* Purchase (consultant) — of, bij loondienst, salaris i.p.v. inkoopfactuur */}
           {ownStaff ? (
-            <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/60 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-lg border border-ink-100 bg-ink-50/60 px-4 py-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
                 <Coins className="h-[18px] w-[18px]" />
               </div>
-              <div className="text-sm text-slate-600">
-                <span className="font-medium text-slate-900">Salaris — geen inkoopfactuur.</span>{" "}
+              <div className="text-sm text-ink-600">
+                <span className="font-medium text-ink-900">Salaris — geen inkoopfactuur.</span>{" "}
                 {placement.consultant.firstName} is eigen loondienst-personeel; betaling loopt via het
                 salaris (overuren als loon). De loonkost/uur telt alleen mee voor de marge.
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-4 py-3">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-100 px-4 py-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
                   <Coins className="h-[18px] w-[18px]" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-slate-900">
+                  <div className="text-sm font-medium text-ink-900">
                     Inkoopfactuur — {placement.consultant.firstName}{" "}
                     {placement.consultant.lastName}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-ink-500">
                     {formatHours(totalHours)} u × {formatCurrency(placement.costRate)} ={" "}
                     {formatCurrency(money.buy.base)}
                     {hasToeslag && <> + toeslagen = {formatCurrency(cost)}</>} (excl. BTW)
@@ -403,7 +403,7 @@ export default async function UrenstaatDetailPage({
                   </SubmitButton>
                 </form>
               ) : (
-                <span className="text-xs text-slate-400">—</span>
+                <span className="text-xs text-ink-400">—</span>
               )}
             </div>
           )}
@@ -414,12 +414,12 @@ export default async function UrenstaatDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>Uren per dag</CardTitle>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-ink-500">
             Tarief: {formatCurrency(placement.chargeRate)}/u
           </span>
         </CardHeader>
         {ts.entries.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Geen uren geregistreerd.
           </CardContent>
         ) : (
@@ -447,14 +447,14 @@ export default async function UrenstaatDetailPage({
                       )}
                     </TD>
                     <TD>{formatDate(e.date)}</TD>
-                    <TD className="text-slate-600">
-                      {e.description || <span className="text-slate-300">—</span>}
+                    <TD className="text-ink-600">
+                      {e.description || <span className="text-ink-300">—</span>}
                     </TD>
-                    <TD className="text-right tabular-nums text-slate-600">
+                    <TD className="text-right tabular-nums text-ink-600">
                       {e.kilometers ? (
                         formatHours(e.kilometers)
                       ) : (
-                        <span className="text-slate-300">—</span>
+                        <span className="text-ink-300">—</span>
                       )}
                     </TD>
                     <TD className="text-right tabular-nums">{formatHours(e.hours)}</TD>
@@ -466,7 +466,7 @@ export default async function UrenstaatDetailPage({
                   <TD className="font-medium text-violet-600" colSpan={3}>
                     Overuren (los ingevoerd)
                   </TD>
-                  <TD className="text-right tabular-nums text-slate-300">—</TD>
+                  <TD className="text-right tabular-nums text-ink-300">—</TD>
                   <TD className="text-right font-medium tabular-nums text-violet-600">
                     + {formatHours(overtimeHours)}
                   </TD>
@@ -476,7 +476,7 @@ export default async function UrenstaatDetailPage({
                 <TD className="font-semibold" colSpan={3}>
                   Totaal gewerkt
                 </TD>
-                <TD className="text-right font-bold tabular-nums text-slate-600">
+                <TD className="text-right font-bold tabular-nums text-ink-600">
                   {ts.kilometers ? formatHours(ts.kilometers) : "—"}
                 </TD>
                 <TD className="text-right font-bold tabular-nums">
@@ -493,7 +493,7 @@ export default async function UrenstaatDetailPage({
           <CardHeader>
             <CardTitle>Notitie</CardTitle>
           </CardHeader>
-          <CardContent className="whitespace-pre-wrap text-sm text-slate-600">
+          <CardContent className="whitespace-pre-wrap text-sm text-ink-600">
             {ts.note}
           </CardContent>
         </Card>

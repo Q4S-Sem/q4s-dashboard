@@ -75,7 +75,7 @@ export function KlantenTable({ clients }: { clients: KlantRowData[] }) {
         className={cn(
           "group inline-flex select-none items-center gap-1 transition-colors",
           align === "right" && "flex-row-reverse",
-          active ? "text-slate-900" : "text-slate-500 hover:text-slate-700",
+          active ? "text-ink-900" : "text-ink-500 hover:text-ink-700",
         )}
       >
         {label}
@@ -86,7 +86,7 @@ export function KlantenTable({ clients }: { clients: KlantRowData[] }) {
             <ChevronDown className="h-3.5 w-3.5" />
           )
         ) : (
-          <ChevronsUpDown className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-400" />
+          <ChevronsUpDown className="h-3.5 w-3.5 text-ink-300 group-hover:text-ink-400" />
         )}
       </button>
     );
@@ -96,24 +96,24 @@ export function KlantenTable({ clients }: { clients: KlantRowData[] }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative w-full max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Zoek op bedrijf, plaats of contact…"
             aria-label="Zoek klant"
-            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
+            className="w-full rounded-lg border border-ink-200 bg-white py-2 pl-9 pr-3 text-sm text-ink-800 placeholder:text-ink-400 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
           />
         </div>
         {query && (
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-ink-400">
             {sorted.length} van {clients.length} klanten
           </span>
         )}
       </div>
 
       {sorted.length === 0 ? (
-        <p className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
+        <p className="rounded-lg border border-ink-200 bg-white px-4 py-8 text-center text-sm text-ink-500">
           Geen klanten gevonden voor “{q}”.
         </p>
       ) : (

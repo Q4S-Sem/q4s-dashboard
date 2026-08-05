@@ -66,7 +66,7 @@ export default async function VakproefPage() {
                   <TD>
                     <Link
                       href={`/socials/vakproef/${c.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {c.title}
                     </Link>
@@ -88,7 +88,7 @@ export default async function VakproefPage() {
                         Bekijken <ExternalLink className="h-3.5 w-3.5" />
                       </a>
                     ) : (
-                      <span className="text-sm text-slate-400">—</span>
+                      <span className="text-sm text-ink-400">—</span>
                     )}
                   </TD>
                 </TR>

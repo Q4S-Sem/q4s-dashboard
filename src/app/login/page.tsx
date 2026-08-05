@@ -23,7 +23,7 @@ export default async function LoginPage({
       subtitle="Log in met je Q4S-werkaccount."
       footer={
         <>
-          <Link href="/wachtwoord-vergeten" className="font-medium text-slate-600 hover:text-slate-900">
+          <Link href="/wachtwoord-vergeten" className="font-medium text-ink-600 hover:text-ink-900">
             Wachtwoord vergeten?
           </Link>{" "}
           — je krijgt een e-mail om een nieuw wachtwoord in te stellen. Alleen voor Q4S-medewerkers.
@@ -41,7 +41,7 @@ export default async function LoginPage({
       {!authRequired() && (
         <Link
           href="/"
-          className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-ink-200 bg-white px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50"
         >
           Doorgaan zonder inloggen <ArrowRight className="h-4 w-4" />
         </Link>

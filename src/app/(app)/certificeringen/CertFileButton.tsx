@@ -15,7 +15,7 @@ export function CertFileButton({
   return (
     <form action={action}>
       <input type="hidden" name="id" value={certId} />
-      <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50">
+      <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-ink-300 bg-white px-3 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-50">
         <Upload className="h-4 w-4" /> {label}
         <input
           type="file"

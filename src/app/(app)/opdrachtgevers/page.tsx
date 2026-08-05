@@ -16,7 +16,7 @@ function Stars({ priority }: { priority: number }) {
   return (
     <span className="text-amber-500" title={`Prioriteit ${n}/5`}>
       {"★".repeat(n)}
-      <span className="text-slate-200">{"★".repeat(5 - n)}</span>
+      <span className="text-ink-200">{"★".repeat(5 - n)}</span>
     </span>
   );
 }
@@ -80,7 +80,7 @@ export default async function OpdrachtgeversPage({
                   <TD>
                     <Link
                       href={`/opdrachtgevers/${t.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {t.name}
                     </Link>

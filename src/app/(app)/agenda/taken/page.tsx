@@ -53,8 +53,8 @@ function TaskRow({
           className={cn(
             "flex transition-colors",
             done
-              ? "text-emerald-600 hover:text-slate-400"
-              : "text-slate-300 hover:text-emerald-600",
+              ? "text-emerald-600 hover:text-ink-400"
+              : "text-ink-300 hover:text-emerald-600",
           )}
         >
           {done ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
@@ -65,17 +65,17 @@ function TaskRow({
         <p
           className={cn(
             "truncate text-sm font-medium",
-            done ? "text-slate-400 line-through" : "text-slate-800",
+            done ? "text-ink-400 line-through" : "text-ink-800",
           )}
         >
           {task.title}
         </p>
-        {task.notes && <p className="truncate text-xs text-slate-500">{task.notes}</p>}
+        {task.notes && <p className="truncate text-xs text-ink-500">{task.notes}</p>}
       </div>
 
       {done ? (
         task.assignee && (
-          <span className="shrink-0 text-xs text-slate-400">{fullName(task.assignee)}</span>
+          <span className="shrink-0 text-xs text-ink-400">{fullName(task.assignee)}</span>
         )
       ) : (
         <AssigneeSelect taskId={task.id} value={task.assigneeId} people={people} />
@@ -87,7 +87,7 @@ function TaskRow({
         <span
           className={cn(
             "shrink-0 text-xs tabular-nums",
-            overdue ? "font-medium text-red-600" : "text-slate-400",
+            overdue ? "font-medium text-red-600" : "text-ink-400",
           )}
         >
           {formatDate(task.dueDate)}
@@ -144,7 +144,7 @@ export default async function TakenPage({
       "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
       active
         ? "border-brand-300 bg-brand-50 text-brand-700"
-        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+        : "border-ink-200 bg-white text-ink-600 hover:bg-ink-50",
     );
 
   return (
@@ -185,7 +185,7 @@ export default async function TakenPage({
 
       {/* Filter op collega */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-400">
           <Users className="h-3.5 w-3.5" /> Filter:
         </span>
         <Link href="/agenda/taken" className={chip(!wie)}>
@@ -203,10 +203,10 @@ export default async function TakenPage({
 
       {/* Open tasks */}
       <Card>
-        <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+        <div className="flex items-center gap-2 border-b border-ink-100 px-5 py-3">
           <ListTodo className="h-4 w-4 text-brand-600" />
-          <h2 className="text-sm font-semibold text-slate-900">Te doen</h2>
-          <span className="ml-auto text-xs text-slate-400">{open.length}</span>
+          <h2 className="text-sm font-semibold text-ink-900">Te doen</h2>
+          <span className="ml-auto text-xs text-ink-400">{open.length}</span>
         </div>
         {open.length === 0 ? (
           <EmptyState
@@ -216,7 +216,7 @@ export default async function TakenPage({
             className="border-0"
           />
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-ink-100">
             {open.map((t) => (
               <TaskRow key={t.id} task={t} done={false} people={people} />
             ))}
@@ -227,12 +227,12 @@ export default async function TakenPage({
       {/* Completed */}
       {completed.length > 0 && (
         <Card>
-          <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
-            <RotateCcw className="h-4 w-4 text-slate-400" />
-            <h2 className="text-sm font-semibold text-slate-900">Afgerond</h2>
-            <span className="ml-auto text-xs text-slate-400">{completed.length}</span>
+          <div className="flex items-center gap-2 border-b border-ink-100 px-5 py-3">
+            <RotateCcw className="h-4 w-4 text-ink-400" />
+            <h2 className="text-sm font-semibold text-ink-900">Afgerond</h2>
+            <span className="ml-auto text-xs text-ink-400">{completed.length}</span>
           </div>
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-ink-100">
             {completed.map((t) => (
               <TaskRow key={t.id} task={t} done people={people} />
             ))}

@@ -888,6 +888,10 @@ model Candidate {
   cvOriginalName String?
   cvMimeType     String?
   cvSize         Int?
+  // Optionele profielfoto (uploads/_foto/). Alleen de pasfoto voor de
+  // recruitment-schermen; ontbreekt hij, dan toont de app gekleurde initialen.
+  photoFileName  String?
+  photoMimeType  String?
   notes          String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

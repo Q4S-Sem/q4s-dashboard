@@ -32,7 +32,7 @@ function Chip({ href, icon, children }: { href: string; icon: React.ReactNode; c
       href={href}
       target={href.startsWith("http") ? "_blank" : undefined}
       rel={href.startsWith("http") ? "noreferrer" : undefined}
-      className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+      className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1 text-xs text-ink-600 transition-colors hover:border-brand-300 hover:text-brand-700"
     >
       {icon}
       <span className="truncate">{children}</span>
@@ -68,7 +68,7 @@ export default async function KlantDossierLayout({
     <div className="space-y-6">
       <Link
         href="/klanten"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar klanten
       </Link>

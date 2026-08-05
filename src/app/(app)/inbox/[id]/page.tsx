@@ -122,7 +122,7 @@ export default async function InboxDetailPage({
     <div className="space-y-6">
       <Link
         href="/inbox"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar inbox
       </Link>
@@ -228,14 +228,14 @@ export default async function InboxDetailPage({
               <iframe
                 src={`/api/inbox/${item.id}`}
                 title="Timesheet"
-                className="h-[480px] w-full rounded-lg border border-slate-200"
+                className="h-[480px] w-full rounded-lg border border-ink-200"
               />
             ) : item.mimeType.startsWith("image/") ? (
               <a href={`/api/inbox/${item.id}`} target="_blank" rel="noopener noreferrer">
                 <img
                   src={`/api/inbox/${item.id}`}
                   alt="Timesheet"
-                  className="max-h-[480px] w-full rounded-lg border border-slate-200 object-contain"
+                  className="max-h-[480px] w-full rounded-lg border border-ink-200 object-contain"
                 />
               </a>
             ) : (
@@ -243,7 +243,7 @@ export default async function InboxDetailPage({
                 href={`/api/inbox/${item.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-[200px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 text-sm text-slate-500 hover:bg-slate-50"
+                className="flex h-[200px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-ink-200 text-sm text-ink-500 hover:bg-ink-50"
               >
                 <FileSpreadsheet className="h-8 w-8 text-emerald-600" />
                 Excel-bestand — klik om te openen of downloaden
@@ -268,7 +268,7 @@ export default async function InboxDetailPage({
           </CardHeader>
           <CardContent className="space-y-5">
             {item.status === "NEW" ? (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-ink-500">
                 {aiReady
                   ? "Klik op “Lees uit met AI” om naam, week en uren automatisch uit het document te halen."
                   : "Stel ANTHROPIC_API_KEY in om automatisch uit te lezen, of vul de gegevens hieronder handmatig in."}
@@ -276,44 +276,44 @@ export default async function InboxDetailPage({
             ) : (
               <dl className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400">Naam</dt>
-                  <dd className="text-slate-900">{item.extractedName ?? "—"}</dd>
+                  <dt className="text-xs uppercase tracking-wide text-ink-400">Naam</dt>
+                  <dd className="text-ink-900">{item.extractedName ?? "—"}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400">Totaal uren</dt>
-                  <dd className="text-slate-900">
+                  <dt className="text-xs uppercase tracking-wide text-ink-400">Totaal uren</dt>
+                  <dd className="text-ink-900">
                     {item.extractedTotalHours != null ? `${formatHours(item.extractedTotalHours)} u` : "—"}
                     {reported.hours != null && (
-                      <span className="ml-1 text-xs text-slate-400">(op staat: {formatHours(reported.hours)} u)</span>
+                      <span className="ml-1 text-xs text-ink-400">(op staat: {formatHours(reported.hours)} u)</span>
                     )}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400">Kilometers</dt>
-                  <dd className="text-slate-900">
+                  <dt className="text-xs uppercase tracking-wide text-ink-400">Kilometers</dt>
+                  <dd className="text-ink-900">
                     {item.extractedKilometers != null ? `${formatHours(item.extractedKilometers)} km` : "—"}
                     {reported.km != null && (
-                      <span className="ml-1 text-xs text-slate-400">(op staat: {formatHours(reported.km)} km)</span>
+                      <span className="ml-1 text-xs text-ink-400">(op staat: {formatHours(reported.km)} km)</span>
                     )}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400">Overuren</dt>
-                  <dd className="text-slate-900">
+                  <dt className="text-xs uppercase tracking-wide text-ink-400">Overuren</dt>
+                  <dd className="text-ink-900">
                     {item.extractedOvertimeHours != null ? `${formatHours(item.extractedOvertimeHours)} u` : "—"}
                   </dd>
                 </div>
                 {item.aiNotes && (
                   <div className="col-span-2">
-                    <dt className="text-xs uppercase tracking-wide text-slate-400">AI-notities</dt>
-                    <dd className="text-slate-600">{item.aiNotes}</dd>
+                    <dt className="text-xs uppercase tracking-wide text-ink-400">AI-notities</dt>
+                    <dd className="text-ink-600">{item.aiNotes}</dd>
                   </div>
                 )}
               </dl>
             )}
 
             {!isDone && (
-              <form action={confirmInbox} className="space-y-4 border-t border-slate-100 pt-5">
+              <form action={confirmInbox} className="space-y-4 border-t border-ink-100 pt-5">
                 <input type="hidden" name="id" value={item.id} />
 
                 <Field label="Plaatsing (werknemer · klant)" htmlFor="placementId" required>
@@ -349,7 +349,7 @@ export default async function InboxDetailPage({
                 </Field>
 
                 <div>
-                  <span className="mb-1.5 block text-sm font-medium text-slate-700">Uren per dag</span>
+                  <span className="mb-1.5 block text-sm font-medium text-ink-700">Uren per dag</span>
                   <div className="grid grid-cols-7 gap-1.5">
                     {DAY_LABELS.map((label, i) => {
                       const weekend = i >= 5;
@@ -359,7 +359,7 @@ export default async function InboxDetailPage({
                             htmlFor={`hours_${i}`}
                             className={cn(
                               "mb-1 block text-center text-xs",
-                              weekend ? "font-semibold text-amber-600" : "text-slate-500",
+                              weekend ? "font-semibold text-amber-600" : "text-ink-500",
                             )}
                           >
                             {label}
@@ -377,7 +377,7 @@ export default async function InboxDetailPage({
                       );
                     })}
                   </div>
-                  <p className="mt-1.5 text-xs text-slate-400">
+                  <p className="mt-1.5 text-xs text-ink-400">
                     Za en zo zijn gemarkeerd — deze uren krijgen meestal een toeslag.
                   </p>
                 </div>

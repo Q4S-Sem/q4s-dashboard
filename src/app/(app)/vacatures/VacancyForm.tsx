@@ -220,7 +220,7 @@ export function VacancyForm({
                 <Sparkles className="h-4 w-4" />
                 {aiBusy ? "AI is bezig…" : "Verbeter met AI"}
               </Button>
-              <p className="flex-1 text-sm text-slate-600">
+              <p className="flex-1 text-sm text-ink-600">
                 Laat AI de tekst uitschrijven naar Over de functie, Werkzaamheden,
                 Functie-eisen en Pré. Je kunt alles daarna nog aanpassen.
               </p>
@@ -239,8 +239,8 @@ export function VacancyForm({
           </div>
 
           {/* Website-inhoud */}
-          <div className="space-y-5 border-t border-slate-100 pt-5">
-            <p className="text-sm font-semibold text-slate-900">
+          <div className="space-y-5 border-t border-ink-100 pt-5">
+            <p className="text-sm font-semibold text-ink-900">
               Website-inhoud
             </p>
 

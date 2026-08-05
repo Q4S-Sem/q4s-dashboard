@@ -44,16 +44,16 @@ export function ApplyForm({
   return (
     <form
       action={formAction}
-      className="mt-8 space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-6"
+      className="mt-8 space-y-5 rounded-xl border border-ink-200 bg-ink-50 p-6"
     >
       <input type="hidden" name="vacancyId" value={vacancyId} />
       <input type="hidden" name="slug" value={slug} />
 
       <div>
-        <h2 className="text-base font-semibold text-slate-900">
+        <h2 className="text-base font-semibold text-ink-900">
           Solliciteer op deze functie
         </h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-ink-600">
           Laat je gegevens achter, dan nemen we snel contact met je op.
         </p>
       </div>
@@ -111,7 +111,7 @@ export function ApplyForm({
           type="file"
           aria-label="CV kiezen"
           title="CV kiezen"
-          className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800"
+          className="block w-full text-sm text-ink-600 file:mr-3 file:rounded-md file:border-0 file:bg-ink-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-ink-800"
         />
       </Field>
 

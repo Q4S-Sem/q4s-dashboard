@@ -103,7 +103,7 @@ export default async function MedewerkerCertificatenPage({
     <div className="space-y-6">
       <Link
         href="/certificeringen"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar certificeringen
       </Link>
@@ -115,7 +115,7 @@ export default async function MedewerkerCertificatenPage({
           <span
             className={
               email
-                ? "inline-flex items-center gap-1.5 text-sm text-slate-500"
+                ? "inline-flex items-center gap-1.5 text-sm text-ink-500"
                 : "inline-flex items-center gap-1.5 text-sm text-amber-600"
             }
           >
@@ -161,16 +161,16 @@ export default async function MedewerkerCertificatenPage({
                 "inline-flex items-center gap-2.5 rounded-full border px-3 py-1.5 transition-colors",
                 aiEnabled
                   ? "border-brand-200 bg-brand-50 hover:bg-brand-100"
-                  : "border-slate-200 bg-white hover:bg-slate-50",
+                  : "border-ink-200 bg-white hover:bg-ink-50",
               )}
             >
               <Sparkles
-                className={cn("h-4 w-4 shrink-0", aiEnabled ? "text-brand-600" : "text-slate-400")}
+                className={cn("h-4 w-4 shrink-0", aiEnabled ? "text-brand-600" : "text-ink-400")}
               />
               <span
                 className={cn(
                   "text-sm font-medium",
-                  aiEnabled ? "text-brand-800" : "text-slate-500",
+                  aiEnabled ? "text-brand-800" : "text-ink-500",
                 )}
               >
                 AI uitlezen
@@ -178,7 +178,7 @@ export default async function MedewerkerCertificatenPage({
               <span
                 className={cn(
                   "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
-                  aiEnabled ? "bg-brand-600" : "bg-slate-300",
+                  aiEnabled ? "bg-brand-600" : "bg-ink-300",
                 )}
               >
                 <span
@@ -217,28 +217,28 @@ export default async function MedewerkerCertificatenPage({
             return (
               <div
                 key={ct.id}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="rounded-xl border border-ink-200 bg-white p-4 shadow-sm"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   {/* Gegevens */}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-slate-900">{ct.name}</h3>
+                      <h3 className="font-semibold text-ink-900">{ct.name}</h3>
                       <Badge color={meta.color}>{meta.label}</Badge>
                     </div>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-slate-500">
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-ink-500">
                       <span>
                         Nr.{" "}
-                        <span className="text-slate-700">{ct.number ?? "—"}</span>
+                        <span className="text-ink-700">{ct.number ?? "—"}</span>
                       </span>
-                      <span className="text-slate-300">·</span>
+                      <span className="text-ink-300">·</span>
                       <span>{ct.issuer ?? "Uitgever onbekend"}</span>
                     </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-slate-500">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-ink-500">
                       <span>Afgegeven {formatDate(ct.issuedDate)}</span>
                       <span>Vervalt {formatDate(ct.expiryDate)}</span>
                       {ct.reminderSentAt && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-ink-400">
                           herinnerd {formatDate(ct.reminderSentAt)}
                         </span>
                       )}
@@ -252,7 +252,7 @@ export default async function MedewerkerCertificatenPage({
                           href={`/api/certificates/${ct.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-slate-50"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200 px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-ink-50"
                         >
                           <FileText className="h-4 w-4" /> Bekijk bestand
                         </a>
@@ -273,7 +273,7 @@ export default async function MedewerkerCertificatenPage({
                 </div>
 
                 {/* Acties */}
-                <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-ink-100 pt-3">
                   {needsReminder &&
                     (email ? (
                       <form action={sendCertificateReminder}>

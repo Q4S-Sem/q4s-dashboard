@@ -147,10 +147,10 @@ export default async function InboxPage({
         </p>
       )}
       {!mailConnected && (
-        <p className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-          <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+        <p className="flex items-start gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3 text-sm text-ink-600">
+          <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
           <span>
-            <strong className="text-slate-700">Automatisch ophalen uit admin@q4s.nl</strong> staat klaar, maar is nog
+            <strong className="text-ink-700">Automatisch ophalen uit admin@q4s.nl</strong> staat klaar, maar is nog
             niet gekoppeld. Zodra de Microsoft 365-koppeling (MS-gegevens) live staat, verschijnt hier de knop
             “Postvak ophalen” en worden urenstaten vanzelf binnengehaald en uitgelezen.
           </span>
@@ -192,7 +192,7 @@ export default async function InboxPage({
       <Card>
         <CardHeader>
           <CardTitle>Timesheets toevoegen</CardTitle>
-          <span className="text-sm text-slate-500">{openCount} te verwerken</span>
+          <span className="text-sm text-ink-500">{openCount} te verwerken</span>
         </CardHeader>
         <CardContent>
           <TimesheetDropzone />
@@ -205,13 +205,13 @@ export default async function InboxPage({
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4 text-amber-600" /> Nog uit te lezen
           </CardTitle>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-ink-500">
             {backlog.length} {backlog.length === 1 ? "urenstaat" : "urenstaten"}
           </span>
         </CardHeader>
         {backlog.length === 0 ? (
           <CardContent>
-            <p className="py-3 text-center text-sm text-slate-400">
+            <p className="py-3 text-center text-sm text-ink-400">
               Alles is uitgelezen — geen openstaande urenstaten.
             </p>
           </CardContent>
@@ -229,11 +229,11 @@ export default async function InboxPage({
               {backlog.map((it) => (
                 <TR key={it.id}>
                   <TD>
-                    <Link href={`/inbox/${it.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={`/inbox/${it.id}`} className="font-medium text-ink-900 hover:text-brand-700">
                       {personName(it)}
                     </Link>
                   </TD>
-                  <TD className="text-sm text-slate-500">{formatDate(it.createdAt)}</TD>
+                  <TD className="text-sm text-ink-500">{formatDate(it.createdAt)}</TD>
                   <TD>
                     <StatusBadge options={INBOX_SOURCES} value={it.source} />
                   </TD>
@@ -262,7 +262,7 @@ export default async function InboxPage({
         </Link>
         <div className="flex flex-col items-center">
           <WeekPicker value={wp} basePath="/inbox" className="w-72" />
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-ink-400">
             week van {formatDate(monday)}
             {isCurrentWeek ? " · huidige week" : ""}
           </p>
@@ -281,7 +281,7 @@ export default async function InboxPage({
           <CardTitle className="flex items-center gap-2 text-base">
             <CalendarDays className="h-4 w-4 text-brand-600" /> Uitgelezen — {formatWeekLabel(monday)}
           </CardTitle>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-ink-500">
             {weekItems.length} {weekItems.length === 1 ? "urenstaat" : "urenstaten"}
             {weekHours > 0 ? ` · ${formatHours(weekHours)} u` : ""}
           </span>
@@ -308,7 +308,7 @@ export default async function InboxPage({
               {weekItems.map((it) => (
                 <TR key={it.id}>
                   <TD>
-                    <Link href={`/inbox/${it.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={`/inbox/${it.id}`} className="font-medium text-ink-900 hover:text-brand-700">
                       {personName(it)}
                     </Link>
                   </TD>

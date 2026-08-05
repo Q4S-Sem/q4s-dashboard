@@ -17,7 +17,7 @@ export default async function NieuweConnectorPage() {
     <div className="mx-auto max-w-3xl space-y-8">
       <Link
         href="/connectors"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar koppelingen
       </Link>
@@ -28,7 +28,7 @@ export default async function NieuweConnectorPage() {
 
       {/* Bekende NL-MSP's — één klik koppelen */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
           Bekende MSP-platformen
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -37,10 +37,10 @@ export default async function NieuweConnectorPage() {
             return (
               <div
                 key={p.key}
-                className="flex flex-col rounded-xl border border-slate-200 bg-white p-4"
+                className="flex flex-col rounded-xl border border-ink-200 bg-white p-4"
               >
                 <div className="flex items-start gap-2">
-                  <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold text-slate-900">
+                  <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold text-ink-900">
                     {p.name}
                     {p.recommended && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-200">
@@ -53,14 +53,14 @@ export default async function NieuweConnectorPage() {
                       href={p.website}
                       target="_blank"
                       rel="noreferrer"
-                      className="shrink-0 text-slate-300 transition-colors hover:text-slate-600"
+                      className="shrink-0 text-ink-300 transition-colors hover:text-ink-600"
                       aria-label={`${p.name} website`}
                     >
                       <ExternalLink className="h-4 w-4" />
                     </a>
                   )}
                 </div>
-                <p className="mt-1 flex-1 text-xs text-slate-500">{p.description}</p>
+                <p className="mt-1 flex-1 text-xs text-ink-500">{p.description}</p>
                 <div className="mt-3">
                   {connectedId ? (
                     <Link
@@ -86,7 +86,7 @@ export default async function NieuweConnectorPage() {
 
       {/* Handmatig / eigen platform */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
           Of: eigen platform handmatig toevoegen
         </h2>
         <ConnectorForm

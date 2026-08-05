@@ -26,8 +26,8 @@ export const dynamic = "force-dynamic";
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</dt>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -63,7 +63,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
-      <Link href="/crm/contacten" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
+      <Link href="/crm/contacten" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
         <ArrowLeft className="h-4 w-4" /> Terug naar contacten
       </Link>
 
@@ -129,8 +129,8 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
             />
           </dl>
           {contact.notes && (
-            <div className="mt-5 border-t border-slate-100 pt-4">
-              <p className="whitespace-pre-wrap text-sm text-slate-600">{contact.notes}</p>
+            <div className="mt-5 border-t border-ink-100 pt-4">
+              <p className="whitespace-pre-wrap text-sm text-ink-600">{contact.notes}</p>
             </div>
           )}
         </CardContent>
@@ -154,7 +154,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               {contact.deals.map((d) => (
                 <TR key={d.id}>
                   <TD>
-                    <Link href={`/crm/deals/${d.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={`/crm/deals/${d.id}`} className="font-medium text-ink-900 hover:text-brand-700">
                       {d.title}
                     </Link>
                   </TD>
@@ -175,12 +175,12 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-slate-400" /> Notitieblok
-            <span className="text-xs font-normal text-slate-400">({notes.length})</span>
+            <MessageSquare className="h-4 w-4 text-ink-400" /> Notitieblok
+            <span className="text-xs font-normal text-ink-400">({notes.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+          <div className="rounded-lg border border-ink-200 bg-ink-50/60 p-4">
             <CrmNoteComposer
               key={notes.length}
               action={addContactNote}

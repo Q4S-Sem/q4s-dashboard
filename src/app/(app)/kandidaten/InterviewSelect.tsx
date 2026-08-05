@@ -8,12 +8,12 @@ import { setCandidateInterview } from "./actions";
 const TONE: Record<string, string> = {
   DONE: "border-emerald-200 bg-emerald-50 text-emerald-700",
   PLANNED: "border-amber-200 bg-amber-50 text-amber-700",
-  NONE: "border-slate-200 bg-white text-slate-600",
+  NONE: "border-ink-200 bg-white text-ink-600",
 };
 const DOT: Record<string, string> = {
   DONE: "bg-emerald-500",
   PLANNED: "bg-amber-500",
-  NONE: "bg-slate-300",
+  NONE: "bg-ink-300",
 };
 
 /**
@@ -106,14 +106,14 @@ export function InterviewSelect({ id, value }: { id: string; value: string }) {
             left: pos.left,
             width: Math.max(pos.width, 208),
           }}
-          className="z-50 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5"
+          className="z-50 overflow-hidden rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5"
         >
           {CANDIDATE_INTERVIEW_STATUSES.map((s) => (
             <button
               key={s.value}
               type="button"
               onClick={() => choose(s.value)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50"
             >
               <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[s.value] ?? DOT.NONE}`} />
               <span className="flex-1">{s.label}</span>

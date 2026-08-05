@@ -72,7 +72,7 @@ export default async function WerknemersPage({
                   <TD>
                     <Link
                       href={`/werknemers/${c.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {c.firstName} {c.lastName}
                     </Link>

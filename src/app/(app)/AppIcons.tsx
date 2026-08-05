@@ -79,7 +79,7 @@ const Evaluaties = svg(
 // 5) Agenda — kalender met gekleurde koptekst + dagen.
 const Agenda = svg(
   <>
-    <rect x="7" y="10" width="34" height="32" rx="4" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1.5" />
+    <rect x="7" y="10" width="34" height="32" rx="4" fill="#ffffff" stroke="#e7e7e5" strokeWidth="1.5" />
     <path d="M7 14 a4 4 0 0 1 4 -4 h26 a4 4 0 0 1 4 4 v5 h-34 z" fill="#f43f5e" />
     <rect x="13" y="6" width="4" height="8" rx="2" fill="#be123c" />
     <rect x="31" y="6" width="4" height="8" rx="2" fill="#be123c" />

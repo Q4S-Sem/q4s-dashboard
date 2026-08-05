@@ -60,7 +60,7 @@ export default async function VakproefDetailPage({
     <div className="space-y-6">
       <Link
         href="/socials/vakproef"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar vakproef
       </Link>
@@ -133,7 +133,7 @@ export default async function VakproefDetailPage({
           <CardTitle>Vraag</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="whitespace-pre-wrap text-sm text-slate-800">
+          <p className="whitespace-pre-wrap text-sm text-ink-800">
             {challenge.question}
           </p>
           <ul className="space-y-2">
@@ -146,7 +146,7 @@ export default async function VakproefDetailPage({
                     "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm",
                     isCorrect
                       ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-slate-200 text-slate-700",
+                      : "border-ink-200 text-ink-700",
                   )}
                 >
                   {isCorrect ? (
@@ -160,8 +160,8 @@ export default async function VakproefDetailPage({
             })}
           </ul>
           {challenge.explanation && (
-            <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              <span className="font-medium text-slate-700">Toelichting: </span>
+            <div className="rounded-lg bg-ink-50 px-3 py-2 text-sm text-ink-600">
+              <span className="font-medium text-ink-700">Toelichting: </span>
               {challenge.explanation}
             </div>
           )}
@@ -173,7 +173,7 @@ export default async function VakproefDetailPage({
           <CardTitle>Recente deelnemers</CardTitle>
         </CardHeader>
         {challenge.attempts.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog geen deelnemers. Zet de vakproef op ACTIEF en deel de publieke link.
           </CardContent>
         ) : (
@@ -192,12 +192,12 @@ export default async function VakproefDetailPage({
                     {a.candidate ? (
                       <Link
                         href={`/kandidaten/${a.candidate.id}`}
-                        className="font-medium text-slate-900 hover:text-brand-700"
+                        className="font-medium text-ink-900 hover:text-brand-700"
                       >
                         {a.candidate.firstName} {a.candidate.lastName}
                       </Link>
                     ) : (
-                      <span className="text-slate-400">anoniem</span>
+                      <span className="text-ink-400">anoniem</span>
                     )}
                   </TD>
                   <TD>
@@ -206,7 +206,7 @@ export default async function VakproefDetailPage({
                         <Check className="h-4 w-4" /> Goed
                       </span>
                     ) : (
-                      <span className="text-slate-500">Fout</span>
+                      <span className="text-ink-500">Fout</span>
                     )}
                   </TD>
                   <TD>{formatDate(a.createdAt)}</TD>

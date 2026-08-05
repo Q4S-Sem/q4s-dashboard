@@ -78,7 +78,7 @@ const BADGE_TO_DASH: Record<string, DashColor> = {
 function ChartCard({
   title,
   icon,
-  iconColor = "text-slate-500",
+  iconColor = "text-ink-500",
   action,
   note,
   children,
@@ -101,7 +101,7 @@ function ChartCard({
       </CardHeader>
       <CardContent>
         {children}
-        {note && <div className="mt-3 text-xs text-slate-400">{note}</div>}
+        {note && <div className="mt-3 text-xs text-ink-400">{note}</div>}
       </CardContent>
     </Card>
   );
@@ -115,7 +115,7 @@ function BarList({
 }) {
   const max = Math.max(1, ...rows.map((r) => r.value));
   if (rows.every((r) => r.value === 0)) {
-    return <p className="py-6 text-center text-sm text-slate-400">Nog geen gegevens.</p>;
+    return <p className="py-6 text-center text-sm text-ink-400">Nog geen gegevens.</p>;
   }
   return (
     <div className="space-y-2.5">
@@ -354,7 +354,7 @@ export default async function DashboardPage({
       href={`/dashboard?q=${param}&year=${year}`}
       className={cn(
         "rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors",
-        active ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50",
+        active ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-ink-50",
       )}
     >
       {label}
@@ -370,26 +370,26 @@ export default async function DashboardPage({
 
       {/* Periodefilter — heel jaar of per kwartaal */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Periode</span>
-        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-400">Periode</span>
+        <div className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5">
           {periodBtn("Heel jaar", isYear, "all")}
           {QUARTERS.map((qq) => periodBtn(`Q${qq.value}`, !isYear && qNum === Number(qq.value), qq.value))}
         </div>
-        <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-ink-200 bg-white p-0.5">
           {year > START_YEAR ? (
-            <Link href={`/dashboard?q=${qParam}&year=${year - 1}`} aria-label="Vorig jaar" className="rounded-md p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+            <Link href={`/dashboard?q=${qParam}&year=${year - 1}`} aria-label="Vorig jaar" className="rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900">
               <ChevronLeft className="h-4 w-4" />
             </Link>
           ) : (
-            <span className="cursor-not-allowed p-1.5 text-slate-200"><ChevronLeft className="h-4 w-4" /></span>
+            <span className="cursor-not-allowed p-1.5 text-ink-200"><ChevronLeft className="h-4 w-4" /></span>
           )}
-          <span className="min-w-[3rem] text-center text-sm font-semibold text-slate-900">{year}</span>
+          <span className="min-w-[3rem] text-center text-sm font-semibold text-ink-900">{year}</span>
           {year < maxYear ? (
-            <Link href={`/dashboard?q=${qParam}&year=${year + 1}`} aria-label="Volgend jaar" className="rounded-md p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+            <Link href={`/dashboard?q=${qParam}&year=${year + 1}`} aria-label="Volgend jaar" className="rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900">
               <ChevronRight className="h-4 w-4" />
             </Link>
           ) : (
-            <span className="cursor-not-allowed p-1.5 text-slate-200"><ChevronRight className="h-4 w-4" /></span>
+            <span className="cursor-not-allowed p-1.5 text-ink-200"><ChevronRight className="h-4 w-4" /></span>
           )}
         </div>
       </div>
@@ -407,7 +407,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Omzet, inkoop & marge ${periodLabel}`}
           color="blue"
-          action={<Link href="/totaaloverzicht" className="text-sm font-medium text-blue-700 hover:text-blue-800">Totaaloverzicht →</Link>}
+          action={<Link href="/totaaloverzicht" className="text-sm font-bold text-brand-700 hover:text-brand-800">Totaaloverzicht →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
@@ -421,12 +421,12 @@ export default async function DashboardPage({
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" /> Verbeterpunten
               </CardTitle>
-              <span className="text-xs text-slate-400">huidige stand</span>
+              <span className="text-xs text-ink-400">huidige stand</span>
             </CardHeader>
             <CardContent className="space-y-1">
               {signals.map((s) => (
-                <Link key={s.label} href={s.href} className="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-50">
-                  <span className="text-sm text-slate-700">{s.label}</span>
+                <Link key={s.label} href={s.href} className="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-ink-50">
+                  <span className="text-sm text-ink-700">{s.label}</span>
                   <span className="flex items-center gap-2">
                     <span
                       className={cn(
@@ -434,12 +434,12 @@ export default async function DashboardPage({
                         s.tone === "red" && "bg-rose-100 text-rose-700",
                         s.tone === "amber" && "bg-amber-100 text-amber-700",
                         s.tone === "blue" && "bg-blue-100 text-blue-700",
-                        s.tone === "slate" && "bg-slate-100 text-slate-500",
+                        s.tone === "slate" && "bg-ink-100 text-ink-500",
                       )}
                     >
                       {s.value}
                     </span>
-                    <ArrowRight className="h-4 w-4 text-slate-300" />
+                    <ArrowRight className="h-4 w-4 text-ink-300" />
                   </span>
                 </Link>
               ))}
@@ -469,11 +469,11 @@ export default async function DashboardPage({
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-blue-600" /> Top klanten (omzet {periodLabel})
             </CardTitle>
-            <Link href="/totaaloverzicht" className="text-sm font-medium text-blue-700 hover:text-blue-800">Overzicht</Link>
+            <Link href="/totaaloverzicht" className="text-sm font-bold text-brand-700 hover:text-brand-800">Overzicht</Link>
           </CardHeader>
           <CardContent className="space-y-2.5">
             {topClients.length === 0 ? (
-              <p className="py-4 text-center text-sm text-slate-400">Nog geen omzet.</p>
+              <p className="py-4 text-center text-sm text-ink-400">Nog geen omzet.</p>
             ) : (
               topClients.map((c) => (
                 <MiniBar
@@ -538,7 +538,7 @@ export default async function DashboardPage({
               <CardTitle className="flex items-center gap-2">
                 <Wallet className="h-5 w-5 text-emerald-600" /> Van omzet naar winst
               </CardTitle>
-              <span className="text-xs text-slate-400">{periodLabel} · ex. btw</span>
+              <span className="text-xs text-ink-400">{periodLabel} · ex. btw</span>
             </CardHeader>
             <CardContent className="pt-2">
               <ResultRow label="Omzet (verkoop aan klanten)" amount={overview.omzet} />
@@ -549,7 +549,7 @@ export default async function DashboardPage({
               <ResultRow label="Declaraties" amount={costs.declaraties} variant="cost" />
               <ResultRow label="Nettowinst — wat Q4S overhoudt" amount={nettoWinst} variant="total" />
               {costs.loonkostenGeschat && (
-                <p className="mt-3 text-xs text-slate-400">
+                <p className="mt-3 text-xs text-ink-400">
                   Loonkosten geschat op de maandsalarissen van het actieve team × {costs.monthsElapsed} maanden — er zijn nog geen loonstroken voor deze periode vastgelegd. Zodra je loonstroken invoert, rekent het dashboard met de echte bedragen.
                 </p>
               )}
@@ -563,14 +563,14 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Omzet- & kostenmix (${periodLabel})`}
           color="blue"
-          action={<span className="hidden text-xs text-slate-400 sm:inline">op verkoopfacturen · ex btw</span>}
+          action={<span className="hidden text-xs text-ink-400 sm:inline">op verkoopfacturen · ex btw</span>}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           <ChartCard
             title="Omzet per discipline"
             icon={<Layers className="h-5 w-5" />}
             iconColor="text-blue-600"
-            action={<Link href="/dashboard/rapportage" className="text-sm font-medium text-blue-700 hover:text-blue-800">Rapportage</Link>}
+            action={<Link href="/dashboard/rapportage" className="text-sm font-bold text-brand-700 hover:text-brand-800">Rapportage</Link>}
           >
             <DashboardPie data={comp.omzetPerDiscipline} kind="currency" centerLabel="omzet" />
           </ChartCard>
@@ -658,7 +658,7 @@ export default async function DashboardPage({
               <span className="text-5xl font-bold tracking-tight text-blue-700">
                 {comp.dso != null ? comp.dso : "—"}
               </span>
-              <span className="mt-2 text-sm text-slate-500">
+              <span className="mt-2 text-sm text-ink-500">
                 {comp.dso != null ? "dagen gemiddeld tot betaling" : "geen betaalde facturen in periode"}
               </span>
             </div>
@@ -766,7 +766,7 @@ export default async function DashboardPage({
                 display: (
                   <span className="text-xs">
                     {formatCurrency(s.value)}
-                    <span className="text-slate-400"> · {formatCurrency(s.weighted)}</span>
+                    <span className="text-ink-400"> · {formatCurrency(s.weighted)}</span>
                   </span>
                 ),
               }))}
@@ -805,10 +805,10 @@ export default async function DashboardPage({
             <CardTitle className="flex items-center gap-2">
               <Receipt className="h-5 w-5 text-blue-600" /> Recente facturen
             </CardTitle>
-            <Link href="/facturen" className="text-sm font-medium text-blue-700 hover:text-blue-800">Alle facturen</Link>
+            <Link href="/facturen" className="text-sm font-bold text-brand-700 hover:text-brand-800">Alle facturen</Link>
           </CardHeader>
           {recentInvoices.length === 0 ? (
-            <CardContent className="text-sm text-slate-500">Geen facturen in {periodLabel}.</CardContent>
+            <CardContent className="text-sm text-ink-500">Geen facturen in {periodLabel}.</CardContent>
           ) : (
             <Table>
               <THead>
@@ -823,9 +823,9 @@ export default async function DashboardPage({
                 {recentInvoices.map((inv) => (
                   <TR key={inv.id}>
                     <TD>
-                      <Link href={`/facturen/${inv.id}`} className="font-medium text-slate-900 hover:text-blue-700">{inv.number}</Link>
+                      <Link href={`/facturen/${inv.id}`} className="font-bold text-ink-900 hover:text-brand-600">{inv.number}</Link>
                     </TD>
-                    <TD className="truncate text-slate-600">{inv.client.companyName}</TD>
+                    <TD className="truncate text-ink-600">{inv.client.companyName}</TD>
                     <TD className="text-right tabular-nums">{formatCurrency(inv.total)}</TD>
                     <TD><StatusBadge options={INVOICE_STATUSES} value={effectiveStatus(inv.status, inv.dueDate, now)} /></TD>
                   </TR>
@@ -843,7 +843,7 @@ export default async function DashboardPage({
             <Link href="/sollicitaties" className="text-sm font-medium text-violet-700 hover:text-violet-800">Alle</Link>
           </CardHeader>
           {recentApplications.length === 0 ? (
-            <CardContent className="text-sm text-slate-500">Geen sollicitaties in {periodLabel}.</CardContent>
+            <CardContent className="text-sm text-ink-500">Geen sollicitaties in {periodLabel}.</CardContent>
           ) : (
             <Table>
               <THead>
@@ -857,11 +857,11 @@ export default async function DashboardPage({
                 {recentApplications.map((a) => (
                   <TR key={a.id}>
                     <TD>
-                      <Link href={`/sollicitaties/${a.id}`} className="font-medium text-slate-900 hover:text-violet-700">
+                      <Link href={`/sollicitaties/${a.id}`} className="font-medium text-ink-900 hover:text-violet-700">
                         {a.candidate.firstName} {a.candidate.lastName}
                       </Link>
                     </TD>
-                    <TD className="truncate text-slate-600">{a.vacancy ? a.vacancy.title : "—"}</TD>
+                    <TD className="truncate text-ink-600">{a.vacancy ? a.vacancy.title : "—"}</TD>
                     <TD><StatusBadge options={APPLICATION_STATUSES} value={a.status} /></TD>
                   </TR>
                 ))}
@@ -873,7 +873,7 @@ export default async function DashboardPage({
 
       {/* Activiteit — heatmap (laatste ~53 weken) */}
       <div>
-        <SectionHeading title="Q4S-activiteit" color="cyan" action={<span className="hidden text-sm text-slate-400 sm:inline">laatste 53 weken · urenstaten · facturen · sollicitaties · agenda · declaraties</span>} />
+        <SectionHeading title="Q4S-activiteit" color="cyan" action={<span className="hidden text-sm text-ink-400 sm:inline">laatste 53 weken · urenstaten · facturen · sollicitaties · agenda · declaraties</span>} />
         <Card>
           <CardContent className="pt-5">
             <ActivityHeatmap counts={activityCounts} />

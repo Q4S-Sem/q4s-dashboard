@@ -9,8 +9,8 @@ import { getEmployee, yearStats } from "./data";
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <div className="mt-1 break-words text-sm text-slate-900">{value || "—"}</div>
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</p>
+      <div className="mt-1 break-words text-sm text-ink-900">{value || "—"}</div>
     </div>
   );
 }
@@ -74,13 +74,13 @@ export default async function MedewerkerGegevensPage({
       <Card>
         <CardContent className="py-5">
           <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="font-medium text-slate-700">Vakantiesaldo {year}</span>
-            <span className="tabular-nums text-slate-500">
+            <span className="font-medium text-ink-700">Vakantiesaldo {year}</span>
+            <span className="tabular-nums text-ink-500">
               {s.vakantieTaken} van {round2(m.vacationDaysPerYear)} dagen opgenomen ·{" "}
-              <span className="font-semibold text-slate-900">{s.vakantieRest} resterend</span>
+              <span className="font-semibold text-ink-900">{s.vakantieRest} resterend</span>
             </span>
           </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="h-3 w-full overflow-hidden rounded-full bg-ink-100">
             <div className="h-full rounded-full bg-emerald-500" style={{ width: `${s.vacPct}%` }} />
           </div>
         </CardContent>
@@ -90,7 +90,7 @@ export default async function MedewerkerGegevensPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <IdCard className="h-5 w-5 text-slate-500" /> Gegevens &amp; contract
+            <IdCard className="h-5 w-5 text-ink-500" /> Gegevens &amp; contract
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -101,9 +101,9 @@ export default async function MedewerkerGegevensPage({
                 m.email ? (
                   <a
                     href={`mailto:${m.email}`}
-                    className="inline-flex items-center gap-1.5 text-slate-700 hover:text-emerald-700 hover:underline"
+                    className="inline-flex items-center gap-1.5 text-ink-700 hover:text-emerald-700 hover:underline"
                   >
-                    <Mail className="h-3.5 w-3.5 text-slate-400" /> {m.email}
+                    <Mail className="h-3.5 w-3.5 text-ink-400" /> {m.email}
                   </a>
                 ) : null
               }
@@ -114,9 +114,9 @@ export default async function MedewerkerGegevensPage({
                 m.phone ? (
                   <a
                     href={`tel:${m.phone}`}
-                    className="inline-flex items-center gap-1.5 text-slate-700 hover:underline"
+                    className="inline-flex items-center gap-1.5 text-ink-700 hover:underline"
                   >
-                    <Phone className="h-3.5 w-3.5 text-slate-400" /> {m.phone}
+                    <Phone className="h-3.5 w-3.5 text-ink-400" /> {m.phone}
                   </a>
                 ) : null
               }
@@ -163,8 +163,8 @@ export default async function MedewerkerGegevensPage({
             />
           </div>
           {m.notes && (
-            <div className="mt-5 border-t border-slate-100 pt-4">
-              <p className="whitespace-pre-wrap text-sm text-slate-600">{m.notes}</p>
+            <div className="mt-5 border-t border-ink-100 pt-4">
+              <p className="whitespace-pre-wrap text-sm text-ink-600">{m.notes}</p>
             </div>
           )}
         </CardContent>

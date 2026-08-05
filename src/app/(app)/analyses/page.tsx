@@ -57,10 +57,10 @@ export default async function AnalysesPage() {
 
       <Card className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">
+          <h3 className="text-lg font-semibold text-ink-900">
             Laat AI nieuwe kansen vinden
           </h3>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
+          <p className="mt-1 max-w-2xl text-sm text-ink-500">
             De AI denkt mee als strategisch adviseur en stelt concrete
             groeirichtingen voor — nieuwe sectoren (scheepsbouw, offshore,
             petrochemie), regio's en doelbedrijven — die je daarna in je pijplijn
@@ -80,7 +80,7 @@ export default async function AnalysesPage() {
           </Link>
         </CardHeader>
         {recent.length === 0 ? (
-          <CardContent className="flex items-center justify-between text-sm text-slate-500">
+          <CardContent className="flex items-center justify-between text-sm text-ink-500">
             <span>Nog geen marktkansen.</span>
             <Link href="/marktkansen/nieuw" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <Plus className="h-4 w-4" /> Nieuwe kans
@@ -100,7 +100,7 @@ export default async function AnalysesPage() {
               {recent.map((o) => (
                 <TR key={o.id}>
                   <TD>
-                    <Link href={`/marktkansen/${o.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={`/marktkansen/${o.id}`} className="font-medium text-ink-900 hover:text-brand-700">
                       {o.title}
                     </Link>
                   </TD>

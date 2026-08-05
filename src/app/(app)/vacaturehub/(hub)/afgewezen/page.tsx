@@ -22,12 +22,12 @@ export default async function AfgewezenPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <XCircle className="h-5 w-5 text-slate-400" /> Buiten de niche
-            <span className="text-sm font-normal text-slate-400">({c.irrelevant})</span>
+            <XCircle className="h-5 w-5 text-ink-400" /> Buiten de niche
+            <span className="text-sm font-normal text-ink-400">({c.irrelevant})</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-500">
             Deze vacatures vallen volgens de beoordeling buiten wat Q4S doet. Bij elke regel staat
             de reden. Ben je het er niet mee eens, zet hem dan terug in de wachtrij — dan beoordeel
             je hem opnieuw.

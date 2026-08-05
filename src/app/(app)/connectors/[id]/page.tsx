@@ -19,10 +19,10 @@ export const metadata = { title: "Connector" };
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -50,7 +50,7 @@ export default async function ConnectorDetailPage({
     <div className="space-y-6">
       <Link
         href="/connectors"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar connectors
       </Link>
@@ -171,8 +171,8 @@ export default async function ConnectorDetailPage({
             />
           </dl>
           {connector.notes && (
-            <div className="mt-5 border-t border-slate-100 pt-4">
-              <p className="whitespace-pre-wrap text-sm text-slate-600">
+            <div className="mt-5 border-t border-ink-100 pt-4">
+              <p className="whitespace-pre-wrap text-sm text-ink-600">
                 {connector.notes}
               </p>
             </div>
@@ -230,7 +230,7 @@ export default async function ConnectorDetailPage({
           </Link>
         </CardHeader>
         {connector.vacancies.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog geen vacatures geïmporteerd via deze connector.
           </CardContent>
         ) : (
@@ -248,7 +248,7 @@ export default async function ConnectorDetailPage({
                   <TD>
                     <Link
                       href={`/vacatures/${v.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {v.title}
                     </Link>

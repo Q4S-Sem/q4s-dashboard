@@ -8,7 +8,9 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-xl border border-slate-200 bg-white shadow-sm",
+        // Strak blok met dunne rand — zoals de expertise-blokken op q4s.nl.
+        // Bijna geen schaduw; de rand doet het werk.
+        "rounded-md border border-ink-100 bg-white shadow-[0_1px_2px_0_rgb(0_0_0/0.04)]",
         className,
       )}
       {...props}
@@ -23,7 +25,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4",
+        "flex items-center justify-between gap-4 border-b border-ink-100 px-5 py-4",
         className,
       )}
       {...props}
@@ -37,7 +39,10 @@ export function CardTitle({
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("text-base font-semibold text-slate-900", className)}
+      className={cn(
+        "text-[15px] font-extrabold tracking-tight text-ink-900",
+        className,
+      )}
       {...props}
     />
   );
@@ -56,7 +61,7 @@ export function CardFooter({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("border-t border-slate-100 px-5 py-4", className)}
+      className={cn("border-t border-ink-100 px-5 py-4", className)}
       {...props}
     />
   );

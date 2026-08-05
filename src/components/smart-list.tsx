@@ -142,14 +142,14 @@ export function SmartList<T extends { id: string }>({
       <div className="flex flex-wrap items-center gap-2">
         {search && (
           <div className="relative min-w-[14rem] flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
             <input
               type="search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={searchPlaceholder}
               aria-label="Zoeken"
-              className="block w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+              className="block w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
             />
           </div>
         )}
@@ -170,7 +170,7 @@ export function SmartList<T extends { id: string }>({
           </Select>
         ))}
         {groups.length > 0 && (
-          <div className="ml-auto flex items-center gap-1.5 text-sm text-slate-500">
+          <div className="ml-auto flex items-center gap-1.5 text-sm text-ink-500">
             <Layers className="h-4 w-4" />
             <Select
               aria-label="Groeperen op"
@@ -189,7 +189,7 @@ export function SmartList<T extends { id: string }>({
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-ink-200 bg-white">
         <Table>
           <THead>
             <TR className="hover:bg-transparent">
@@ -200,7 +200,7 @@ export function SmartList<T extends { id: string }>({
                       type="button"
                       onClick={() => toggleSort(c.key)}
                       className={cn(
-                        "inline-flex items-center gap-1 transition-colors hover:text-slate-800",
+                        "inline-flex items-center gap-1 transition-colors hover:text-ink-800",
                         c.align === "right" && "flex-row-reverse",
                       )}
                     >
@@ -212,7 +212,7 @@ export function SmartList<T extends { id: string }>({
                           <ArrowDown className="h-3.5 w-3.5 text-brand-600" />
                         )
                       ) : (
-                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-300" />
+                        <ArrowUpDown className="h-3.5 w-3.5 text-ink-300" />
                       )}
                     </button>
                   ) : (
@@ -225,7 +225,7 @@ export function SmartList<T extends { id: string }>({
           <TBody>
             {filtered.length === 0 ? (
               <TR className="hover:bg-transparent">
-                <TD colSpan={colCount} className="py-8 text-center text-slate-400">
+                <TD colSpan={colCount} className="py-8 text-center text-ink-400">
                   {emptyLabel}
                 </TD>
               </TR>
@@ -235,18 +235,18 @@ export function SmartList<T extends { id: string }>({
                 return (
                   <Fragment key={g.key}>
                     <TR
-                      className="cursor-pointer bg-slate-50/70 hover:bg-slate-100"
+                      className="cursor-pointer bg-ink-50/70 hover:bg-ink-100"
                       onClick={() => toggleCollapse(g.key)}
                     >
-                      <TD colSpan={colCount} className="font-semibold text-slate-800">
+                      <TD colSpan={colCount} className="font-semibold text-ink-800">
                         <span className="inline-flex items-center gap-1.5">
                           {isCollapsed ? (
-                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                            <ChevronRight className="h-4 w-4 text-ink-400" />
                           ) : (
-                            <ChevronDown className="h-4 w-4 text-slate-400" />
+                            <ChevronDown className="h-4 w-4 text-ink-400" />
                           )}
                           {g.label}
-                          <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+                          <span className="rounded-full bg-ink-200 px-2 py-0.5 text-xs font-medium text-ink-600">
                             {g.rows.length}
                           </span>
                         </span>
@@ -263,7 +263,7 @@ export function SmartList<T extends { id: string }>({
         </Table>
       </div>
 
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-ink-400">
         {filtered.length} van {rows.length}
         {grouped ? ` · ${grouped.length} groep${grouped.length === 1 ? "" : "en"}` : ""}
       </p>

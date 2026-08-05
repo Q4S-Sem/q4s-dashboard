@@ -36,11 +36,11 @@ export type EvaluationFormData = {
 
 function SectionTitle({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+    <div className="flex items-center gap-2.5 border-b border-ink-100 pb-3">
       <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
         {icon}
       </span>
-      <h2 className="text-sm font-semibold text-slate-800">{children}</h2>
+      <h2 className="text-sm font-semibold text-ink-800">{children}</h2>
     </div>
   );
 }
@@ -57,8 +57,8 @@ function ScoreRow({
   onPick: (v: number) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-2 px-3 py-3 transition-colors hover:bg-slate-50/60 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+    <div className="grid grid-cols-1 gap-2 px-3 py-3 transition-colors hover:bg-ink-50/60 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-4">
+      <span className="text-sm font-medium text-ink-700">{label}</span>
       <div className="grid grid-cols-4 gap-1.5 sm:flex sm:gap-1.5">
         {EVAL_SCORES.map((s) => (
           <label key={s.value} className="cursor-pointer">
@@ -72,7 +72,7 @@ function ScoreRow({
             />
             <span
               className={cn(
-                "block rounded-lg border border-slate-200 px-2 py-2 text-center text-xs font-medium text-slate-500 transition-colors hover:bg-white sm:w-[72px] sm:px-3 sm:py-1.5",
+                "block rounded-lg border border-ink-200 px-2 py-2 text-center text-xs font-medium text-ink-500 transition-colors hover:bg-white sm:w-[72px] sm:px-3 sm:py-1.5",
                 SCORE_CHECKED[s.value],
               )}
             >
@@ -111,7 +111,7 @@ function BoolRow({ name, label, value }: { name: string; label: string; value: s
             />
             <span
               className={cn(
-                "block rounded-lg border border-slate-200 px-8 py-2 text-center text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50",
+                "block rounded-lg border border-ink-200 px-8 py-2 text-center text-sm font-medium text-ink-500 transition-colors hover:bg-ink-50",
                 o.on,
               )}
             >
@@ -302,7 +302,7 @@ export function EvaluationForm({
                       "rounded-full px-2 py-0.5 font-medium",
                       done === keys.length
                         ? "bg-emerald-50 text-emerald-700"
-                        : "bg-slate-100 text-slate-500",
+                        : "bg-ink-100 text-ink-500",
                     )}
                   >
                     {done} / {keys.length} beoordeeld
@@ -316,7 +316,7 @@ export function EvaluationForm({
                         return next;
                       })
                     }
-                    className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 font-medium text-slate-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+                    className="inline-flex items-center gap-1 rounded-full border border-ink-200 px-2 py-0.5 font-medium text-ink-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
                   >
                     <Check className="h-3 w-3" /> Alles goed
                   </button>
@@ -329,18 +329,18 @@ export function EvaluationForm({
                         return next;
                       })
                     }
-                    className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 font-medium text-slate-500 transition-colors hover:border-slate-400 hover:text-slate-700"
+                    className="inline-flex items-center gap-1 rounded-full border border-ink-200 px-2 py-0.5 font-medium text-ink-500 transition-colors hover:border-ink-400 hover:text-ink-700"
                   >
                     <Eraser className="h-3 w-3" /> Wissen
                   </button>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
+                <div className="flex items-center gap-2 text-[11px] font-medium text-ink-400">
                   <span>Slecht</span>
                   <span className="h-2 w-20 rounded-full bg-gradient-to-r from-red-500 via-orange-400 via-lime-400 to-emerald-500" />
                   <span>Goed</span>
                 </div>
               </div>
-              <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+              <div className="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200">
                 {sec.criteria.map((c) => (
                   <ScoreRow
                     key={c.key}
@@ -389,7 +389,7 @@ export function EvaluationForm({
       </div>
 
       {/* Vaste balk onderaan: voortgang + opslaan altijd in beeld */}
-      <div className="sticky bottom-0 -mx-5 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-5 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div className="sticky bottom-0 -mx-5 flex flex-col-reverse gap-3 border-t border-ink-200 bg-white/95 px-5 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3 text-sm">
           <span
             className={cn(
@@ -400,9 +400,9 @@ export function EvaluationForm({
             {doneCount} van {allCriteria.length} beoordeeld
           </span>
           {avg !== null && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-ink-500">
               gemiddeld{" "}
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-ink-900">
                 {avg.toFixed(1).replace(".", ",")}
               </span>{" "}
               / 4

@@ -48,7 +48,7 @@ export default async function GearchiveerdItemPage({
     <div className="space-y-6">
       <Link
         href="/archief"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar archief
       </Link>
@@ -79,7 +79,7 @@ export default async function GearchiveerdItemPage({
                 href={`/api/archief/${item.id}/file/${i}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-brand-700 hover:bg-slate-50"
+                className="flex items-center gap-2 rounded-lg border border-ink-200 px-3 py-2 text-sm font-medium text-brand-700 hover:bg-ink-50"
               >
                 <Download className="h-4 w-4" /> {f.name}
               </a>
@@ -91,18 +91,18 @@ export default async function GearchiveerdItemPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Archive className="h-4 w-4 text-slate-400" /> Gegevens
+            <Archive className="h-4 w-4 text-ink-400" /> Gegevens
           </CardTitle>
         </CardHeader>
         <CardContent>
           {fields.length === 0 ? (
-            <p className="text-sm text-slate-400">Geen gegevens bewaard.</p>
+            <p className="text-sm text-ink-400">Geen gegevens bewaard.</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {fields.map(([k, v]) => (
                 <div key={k}>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{k}</p>
-                  <p className="mt-0.5 break-words text-sm text-slate-900">{renderValue(v)}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-ink-400">{k}</p>
+                  <p className="mt-0.5 break-words text-sm text-ink-900">{renderValue(v)}</p>
                 </div>
               ))}
             </div>

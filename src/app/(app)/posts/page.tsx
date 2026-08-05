@@ -68,7 +68,7 @@ export default async function PostsPage({
                   <TD>
                     <Link
                       href={`/posts/${p.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {p.title}
                     </Link>

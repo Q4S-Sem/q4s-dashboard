@@ -128,8 +128,8 @@ export function CertAddForm({
       </Field>
 
       {/* File + automatic read */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <div className="rounded-xl border border-ink-200 bg-ink-50/60 p-4">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">
           Certificaatbestand (scan / PDF)
         </p>
         <div className="flex flex-wrap items-center gap-3">
@@ -145,8 +145,8 @@ export function CertAddForm({
               onChange={onPick}
             />
           </label>
-          <span className="inline-flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
-            <FileText className="h-4 w-4 shrink-0 text-slate-400" />
+          <span className="inline-flex min-w-0 items-center gap-1.5 text-sm text-ink-500">
+            <FileText className="h-4 w-4 shrink-0 text-ink-400" />
             <span className="truncate">{fileLabel}</span>
           </span>
           <div className="ml-auto flex items-center gap-2">
@@ -181,13 +181,13 @@ export function CertAddForm({
               <img
                 src={preview.url}
                 alt="Voorbeeld certificaat"
-                className="max-h-80 w-auto rounded-lg border border-slate-200 bg-white"
+                className="max-h-80 w-auto rounded-lg border border-ink-200 bg-white"
               />
             ) : (
               <iframe
                 src={preview.url}
                 title="Voorbeeld certificaat"
-                className="h-[28rem] w-full rounded-lg border border-slate-200 bg-white"
+                className="h-[28rem] w-full rounded-lg border border-ink-200 bg-white"
               />
             )}
             <a
@@ -201,11 +201,11 @@ export function CertAddForm({
           </div>
         )}
         {!aiReady && (
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="mt-2 text-xs text-ink-400">
             {!aiConfigured ? (
               <>
                 Automatisch uitlezen werkt zodra{" "}
-                <code className="rounded bg-slate-100 px-1">GEMINI_API_KEY</code> is
+                <code className="rounded bg-ink-100 px-1">GEMINI_API_KEY</code> is
                 ingesteld.
               </>
             ) : (

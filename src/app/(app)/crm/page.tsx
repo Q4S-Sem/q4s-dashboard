@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, Kanban, Coins, Gauge, CalendarClock, Users2, BarChart3 } from "lucide-react";
 import { db } from "@/lib/db";
+import { candidatePhotoSrc } from "@/lib/people";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { buttonVariants } from "@/components/ui/button";
@@ -104,6 +105,8 @@ export default async function CrmPage({
     title: `${a.candidate.firstName} ${a.candidate.lastName}`,
     subtitle: a.vacancy ? a.vacancy.title : "Open sollicitatie",
     href: `/sollicitaties/${a.id}`,
+    showAvatar: true,
+    avatarSrc: candidatePhotoSrc(a.candidate),
     tags: a.candidate.discipline
       ? [{ label: labelFor(DISCIPLINES, a.candidate.discipline), color: colorFor(DISCIPLINES, a.candidate.discipline) }]
       : [],
@@ -114,7 +117,7 @@ export default async function CrmPage({
       href={`/crm?scope=${value}`}
       className={cn(
         "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        scope === value ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800",
+        scope === value ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
       )}
     >
       {label}
@@ -136,7 +139,7 @@ export default async function CrmPage({
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+        <div className="inline-flex gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1">
           {scopeTab("mine", "Mijn deals")}
           {scopeTab("all", "Team")}
         </div>

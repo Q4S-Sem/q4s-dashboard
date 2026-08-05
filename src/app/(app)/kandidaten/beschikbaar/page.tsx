@@ -14,9 +14,11 @@ import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { Input, Select } from "@/components/ui/field";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { cn, formatDate } from "@/lib/utils";
+import { person } from "@/lib/people";
 import {
   DISCIPLINES,
   CANDIDATE_AVAILABLE_VALUES,
@@ -32,14 +34,10 @@ export const dynamic = "force-dynamic";
 
 type SP = { q?: string; discipline?: string };
 
-function initials(first: string, last: string): string {
-  return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase() || "?";
-}
-
 /** Compacte, scanbare tabel met beschikbare kandidaten (één rij per persoon). */
 function CandidateTable({ candidates }: { candidates: Candidate[] }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-xl border border-ink-200 bg-white">
       <Table>
         <THead>
           <TR className="hover:bg-transparent">
@@ -53,33 +51,25 @@ function CandidateTable({ candidates }: { candidates: Candidate[] }) {
         <TBody>
           {candidates.map((c) => {
             const soon = c.availability === "BINNENKORT";
-            const avatarTone = soon
-              ? "bg-amber-50 text-amber-700 ring-amber-200"
-              : "bg-emerald-50 text-emerald-700 ring-emerald-200";
+            // Ring om de foto verklapt de beschikbaarheid: groen = nu, amber = binnenkort.
+            const avatarTone = soon ? "ring-amber-400" : "ring-emerald-400";
             const sub = [c.location, c.headline].filter(Boolean).join(" · ");
             return (
               <TR key={c.id}>
                 <TD>
                   <div className="flex items-center gap-2.5">
-                    <span
-                      className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1",
-                        avatarTone,
-                      )}
-                    >
-                      {initials(c.firstName, c.lastName)}
-                    </span>
+                    <Avatar {...person(c)} size="sm" className={cn("ring-2", avatarTone)} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <Link
                           href={`/kandidaten/${c.id}`}
-                          className="truncate font-medium text-slate-900 hover:text-emerald-700"
+                          className="truncate font-medium text-ink-900 hover:text-emerald-700"
                         >
                           {c.firstName} {c.lastName}
                         </Link>
                         {c.discipline && <StatusBadge options={DISCIPLINES} value={c.discipline} />}
                       </div>
-                      {sub && <p className="max-w-[17rem] truncate text-xs text-slate-400">{sub}</p>}
+                      {sub && <p className="max-w-[17rem] truncate text-xs text-ink-400">{sub}</p>}
                     </div>
                   </div>
                 </TD>
@@ -97,13 +87,13 @@ function CandidateTable({ candidates }: { candidates: Candidate[] }) {
                       <a
                         href={`mailto:${c.email}`}
                         title={c.email}
-                        className="inline-flex min-w-0 max-w-[10rem] items-center gap-1.5 text-slate-600 transition-colors hover:text-emerald-700"
+                        className="inline-flex min-w-0 max-w-[10rem] items-center gap-1.5 text-ink-600 transition-colors hover:text-emerald-700"
                       >
-                        <Mail className="h-4 w-4 shrink-0 text-slate-400" />
+                        <Mail className="h-4 w-4 shrink-0 text-ink-400" />
                         <span className="truncate">{c.email}</span>
                       </a>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 text-slate-400">
+                      <span className="inline-flex items-center gap-1.5 text-ink-400">
                         <Mail className="h-4 w-4" />
                       </span>
                     )}
@@ -146,10 +136,10 @@ function Section({
     <section className="space-y-3">
       <div className="flex items-center gap-2">
         <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} />
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500">
           {title}
         </h2>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-600">
+        <span className="rounded-full bg-ink-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-ink-600">
           {count}
         </span>
       </div>
@@ -209,7 +199,7 @@ export default async function BeschikbaarPage({
     <div className="space-y-6">
       <Link
         href="/kandidaten"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar talentpool
       </Link>
@@ -221,10 +211,10 @@ export default async function BeschikbaarPage({
             <UserCheck className="h-6 w-6" />
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
               Beschikbare kandidaten
             </h1>
-            <p className="mt-0.5 text-sm text-slate-600">
+            <p className="mt-0.5 text-sm text-ink-600">
               De mensen die nu of binnenkort inzetbaar zijn — direct te plaatsen bij een klant.
             </p>
           </div>
@@ -245,7 +235,7 @@ export default async function BeschikbaarPage({
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_220px_auto]"
           >
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
               <Input
                 name="q"
                 defaultValue={q}

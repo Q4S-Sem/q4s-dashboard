@@ -21,17 +21,17 @@ function Tile({
   tone?: "slate" | "green" | "red" | "amber" | "blue";
 }) {
   const toneCls = {
-    slate: "text-slate-900",
+    slate: "text-ink-900",
     green: "text-emerald-700",
     red: "text-red-700",
     amber: "text-amber-700",
     blue: "text-blue-700",
   }[tone];
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+    <div className="rounded-xl border border-ink-200 bg-white p-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</p>
       <p className={`mt-1 text-2xl font-bold tabular-nums ${toneCls}`}>{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-slate-500">{sub}</p>}
+      {sub && <p className="mt-0.5 text-xs text-ink-500">{sub}</p>}
     </div>
   );
 }
@@ -40,7 +40,7 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
   return (
     <div className="flex items-center gap-2">
       {icon}
-      <h2 className="text-base font-semibold text-slate-900">{children}</h2>
+      <h2 className="text-base font-semibold text-ink-900">{children}</h2>
     </div>
   );
 }
@@ -78,7 +78,7 @@ export default async function TotaaloverzichtPage({
           <CardContent>
             <form method="get" className="flex flex-wrap items-end gap-3">
               <div className="text-sm">
-                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">Jaar</span>
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-400">Jaar</span>
                 <Select name="jaar" defaultValue={String(year)} aria-label="Jaar" className="w-32">
                   {years.map((y) => (
                     <option key={y} value={String(y)}>
@@ -88,7 +88,7 @@ export default async function TotaaloverzichtPage({
                 </Select>
               </div>
               <div className="text-sm">
-                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">Periode</span>
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-400">Periode</span>
                 <Select
                   name="kwartaal"
                   defaultValue={quarter ? String(quarter) : ""}
@@ -115,8 +115,8 @@ export default async function TotaaloverzichtPage({
 
       {/* Printbare kop */}
       <div className="hidden print:block">
-        <h1 className="text-xl font-bold text-slate-900">Q4S — Totaaloverzicht</h1>
-        <p className="text-sm text-slate-500">{range.label}</p>
+        <h1 className="text-xl font-bold text-ink-900">Q4S — Totaaloverzicht</h1>
+        <p className="text-sm text-ink-500">{range.label}</p>
       </div>
 
       {/* Van omzet naar nettowinst */}
@@ -138,7 +138,7 @@ export default async function TotaaloverzichtPage({
       <div className="grid gap-6 lg:grid-cols-3">
         <Card>
           <CardContent className="space-y-3">
-            <SectionTitle icon={<Wallet className="h-5 w-5 text-slate-500" />}>Geldstroom (incl. BTW)</SectionTitle>
+            <SectionTitle icon={<Wallet className="h-5 w-5 text-ink-500" />}>Geldstroom (incl. BTW)</SectionTitle>
             <dl className="space-y-1.5 text-sm">
               <Row label="Geld in" value={formatCurrency(btw.geldIn)} />
               <Row label="Geld uit" value={formatCurrency(btw.geldUit)} />
@@ -158,7 +158,7 @@ export default async function TotaaloverzichtPage({
         </Card>
         <Card>
           <CardContent className="space-y-3">
-            <SectionTitle icon={<Scale className="h-5 w-5 text-slate-500" />}>BTW-indicatie</SectionTitle>
+            <SectionTitle icon={<Scale className="h-5 w-5 text-ink-500" />}>BTW-indicatie</SectionTitle>
             <dl className="space-y-1.5 text-sm">
               <Row label="Verschuldigd" value={formatCurrency(btw.verschuldigd)} />
               <Row label="Voorbelasting" value={formatCurrency(btw.voorbelasting)} />
@@ -168,7 +168,7 @@ export default async function TotaaloverzichtPage({
                 strong
               />
             </dl>
-            <p className="text-xs text-slate-400">Indicatie — geen officiële aangifte.</p>
+            <p className="text-xs text-ink-400">Indicatie — geen officiële aangifte.</p>
           </CardContent>
         </Card>
       </div>
@@ -198,7 +198,7 @@ export default async function TotaaloverzichtPage({
               empty="Geen gegevens in deze periode."
             />
             {inv.perConsultant.some((c) => c.loondienst) && (
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-ink-400">
                 Loondienst: marge = brutomarge — de loonkost loopt via de eigen loonkosten (nettowinst),
                 niet per persoon.
               </p>
@@ -210,7 +210,7 @@ export default async function TotaaloverzichtPage({
       {/* Per maand */}
       <Card>
         <CardContent>
-          <SectionTitle icon={<TrendingUp className="h-5 w-5 text-slate-500" />}>Per maand (laatste 12)</SectionTitle>
+          <SectionTitle icon={<TrendingUp className="h-5 w-5 text-ink-500" />}>Per maand (laatste 12)</SectionTitle>
           <MiniTable
             head={["Maand", "Omzet", "Inkoop", "Marge"]}
             rows={inv.perMonth.map((m) => [
@@ -239,10 +239,10 @@ function Row({
   tone?: "red";
 }) {
   return (
-    <div className={`flex justify-between gap-4 ${strong ? "border-t border-slate-200 pt-1.5" : ""}`}>
-      <dt className={strong ? "font-semibold text-slate-900" : "text-slate-500"}>{label}</dt>
+    <div className={`flex justify-between gap-4 ${strong ? "border-t border-ink-200 pt-1.5" : ""}`}>
+      <dt className={strong ? "font-semibold text-ink-900" : "text-ink-500"}>{label}</dt>
       <dd
-        className={`tabular-nums ${strong ? "font-bold text-slate-900" : tone === "red" ? "font-medium text-red-600" : "text-slate-900"}`}
+        className={`tabular-nums ${strong ? "font-bold text-ink-900" : tone === "red" ? "font-medium text-red-600" : "text-ink-900"}`}
       >
         {value}
       </dd>
@@ -251,12 +251,12 @@ function Row({
 }
 
 function MiniTable({ head, rows, empty }: { head: string[]; rows: string[][]; empty: string }) {
-  if (rows.length === 0) return <p className="py-4 text-sm text-slate-500">{empty}</p>;
+  if (rows.length === 0) return <p className="py-4 text-sm text-ink-500">{empty}</p>;
   return (
     <div className="mt-2 overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <tr className="border-b border-ink-200 text-left text-xs font-semibold uppercase tracking-wide text-ink-500">
             {head.map((h, i) => (
               <th key={i} className={i === 0 ? "py-2 pr-2" : "py-2 px-2 text-right"}>
                 {h}
@@ -264,13 +264,13 @@ function MiniTable({ head, rows, empty }: { head: string[]; rows: string[][]; em
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-ink-100">
           {rows.map((r, ri) => (
             <tr key={ri}>
               {r.map((cell, ci) => (
                 <td
                   key={ci}
-                  className={ci === 0 ? "py-2 pr-2 text-slate-700" : "py-2 px-2 text-right tabular-nums text-slate-900"}
+                  className={ci === 0 ? "py-2 pr-2 text-ink-700" : "py-2 px-2 text-right tabular-nums text-ink-900"}
                 >
                   {cell}
                 </td>

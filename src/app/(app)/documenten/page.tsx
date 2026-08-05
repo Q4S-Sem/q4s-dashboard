@@ -106,10 +106,10 @@ export default async function DocumentenPage({
                       href={`/api/documents/${doc.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 font-medium text-slate-900 hover:text-brand-700"
+                      className="inline-flex items-center gap-1.5 font-medium text-ink-900 hover:text-brand-700"
                     >
                       {doc.title}{" "}
-                      <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                      <ExternalLink className="h-3.5 w-3.5 text-ink-400" />
                     </a>
                   </TD>
                   <TD>
@@ -118,7 +118,7 @@ export default async function DocumentenPage({
                   <TD>
                     <Link
                       href={`/werknemers/${doc.consultant.id}`}
-                      className="text-slate-700 hover:text-brand-700"
+                      className="text-ink-700 hover:text-brand-700"
                     >
                       {doc.consultant.firstName} {doc.consultant.lastName}
                     </Link>
@@ -155,12 +155,12 @@ function FolderTile({
         "flex flex-col gap-1 rounded-xl border p-4 transition-colors",
         active
           ? "border-brand-600 bg-brand-50 text-brand-700"
-          : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+          : "border-ink-200 bg-white text-ink-700 hover:border-ink-300 hover:bg-ink-50",
       )}
     >
-      <span className={active ? "text-brand-600" : "text-slate-400"}>{icon}</span>
+      <span className={active ? "text-brand-600" : "text-ink-400"}>{icon}</span>
       <span className="mt-1 text-sm font-semibold">{label}</span>
-      <span className="text-xs text-slate-500">
+      <span className="text-xs text-ink-500">
         {count} bestand{count === 1 ? "" : "en"}
       </span>
     </Link>

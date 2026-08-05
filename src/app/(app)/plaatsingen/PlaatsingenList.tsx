@@ -31,7 +31,7 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
       header: "Werknemer",
       sortValue: (r) => r.person.toLowerCase(),
       render: (r) => (
-        <Link href={`/plaatsingen/${r.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+        <Link href={`/plaatsingen/${r.id}`} className="font-medium text-ink-900 hover:text-brand-700">
           {r.person}
         </Link>
       ),

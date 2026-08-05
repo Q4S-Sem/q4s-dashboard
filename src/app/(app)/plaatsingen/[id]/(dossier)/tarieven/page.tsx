@@ -95,14 +95,14 @@ export default async function PlaatsingTarievenPage({
           </Link>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-500">
             Komt als aparte regel bovenop het uurbedrag op de factuur. Inkoop = wat de werknemer
             krijgt, verkoop = wat de klant betaalt.
           </p>
-          <div className="overflow-hidden rounded-lg border border-slate-100">
+          <div className="overflow-hidden rounded-lg border border-ink-100">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+                <tr className="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-400">
                   <th className="px-4 py-2 font-medium">Toeslag / vergoeding</th>
                   <th className="px-4 py-2 text-right font-medium">Inkoop</th>
                   <th className="px-4 py-2 text-right font-medium">Verkoop</th>
@@ -110,12 +110,12 @@ export default async function PlaatsingTarievenPage({
               </thead>
               <tbody>
                 {surcharges.map((s) => (
-                  <tr key={s.label} className="border-t border-slate-100">
-                    <td className="px-4 py-2 text-slate-700">{s.label}</td>
-                    <td className={`px-4 py-2 text-right tabular-nums ${s.set ? "" : "text-slate-300"}`}>
+                  <tr key={s.label} className="border-t border-ink-100">
+                    <td className="px-4 py-2 text-ink-700">{s.label}</td>
+                    <td className={`px-4 py-2 text-right tabular-nums ${s.set ? "" : "text-ink-300"}`}>
                       {s.buy}
                     </td>
-                    <td className={`px-4 py-2 text-right tabular-nums ${s.set ? "" : "text-slate-300"}`}>
+                    <td className={`px-4 py-2 text-right tabular-nums ${s.set ? "" : "text-ink-300"}`}>
                       {s.sell}
                     </td>
                   </tr>
@@ -124,7 +124,7 @@ export default async function PlaatsingTarievenPage({
             </table>
           </div>
           {!anySurcharge && (
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-ink-400">
               Er zijn geen toeslagen ingesteld — er wordt alleen op uurtarief gefactureerd.
             </p>
           )}

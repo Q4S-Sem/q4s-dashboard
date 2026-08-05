@@ -66,10 +66,10 @@ export default async function WebsitePage() {
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
             >
               <Globe className="h-4 w-4" /> {settings?.website}
-              <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+              <ExternalLink className="h-3.5 w-3.5 text-ink-400" />
             </a>
           ) : undefined
         }
@@ -138,12 +138,12 @@ export default async function WebsitePage() {
                   <TD>
                     <Link
                       href={`/vacatures/${v.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {v.title}
                     </Link>
                     {v.vmsConnector && (
-                      <span className="ml-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                      <span className="ml-2 inline-flex items-center rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-500">
                         via {v.vmsConnector.name}
                       </span>
                     )}
@@ -153,8 +153,8 @@ export default async function WebsitePage() {
                     <StatusBadge options={VACANCY_STATUSES} value={v.status} />
                   </TD>
                   <TD className="text-right">
-                    <span className="inline-flex items-center gap-1.5 font-medium tabular-nums text-slate-900">
-                      <Eye className="h-3.5 w-3.5 text-slate-400" />
+                    <span className="inline-flex items-center gap-1.5 font-medium tabular-nums text-ink-900">
+                      <Eye className="h-3.5 w-3.5 text-ink-400" />
                       {v.views ?? 0}
                     </span>
                   </TD>

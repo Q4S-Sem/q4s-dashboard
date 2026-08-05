@@ -20,11 +20,11 @@ function periodLabel(start: Date | null, end: Date | null): string {
 function iconBtn(tone: "slate" | "green" | "red" | "brand" | "delete"): string {
   return cn(
     "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-transparent transition-colors",
-    tone === "slate" && "text-slate-500 hover:border-slate-200 hover:bg-slate-100",
+    tone === "slate" && "text-ink-500 hover:border-ink-200 hover:bg-ink-100",
     tone === "green" && "text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50",
     tone === "red" && "text-red-600 hover:border-red-200 hover:bg-red-50",
     tone === "brand" && "text-brand-600 hover:border-brand-200 hover:bg-brand-50",
-    tone === "delete" && "text-slate-400 hover:border-red-200 hover:bg-red-50 hover:text-red-600",
+    tone === "delete" && "text-ink-400 hover:border-red-200 hover:bg-red-50 hover:text-red-600",
   );
 }
 
@@ -59,7 +59,7 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
       header: "Medewerker",
       sortValue: (r) => r.consultantName.toLowerCase(),
       render: (r) => (
-        <Link href={`/ontvangen-facturen/${r.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+        <Link href={`/ontvangen-facturen/${r.id}`} className="font-medium text-ink-900 hover:text-brand-700">
           {r.consultantName}
         </Link>
       ),
@@ -69,8 +69,8 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
       header: "Factuur · periode",
       render: (r) => (
         <div>
-          <div className="text-sm text-slate-700">{r.number ?? "—"}</div>
-          <div className="text-xs text-slate-400">{periodLabel(r.periodStart, r.periodEnd)}</div>
+          <div className="text-sm text-ink-700">{r.number ?? "—"}</div>
+          <div className="text-xs text-ink-400">{periodLabel(r.periodStart, r.periodEnd)}</div>
         </div>
       ),
     },
@@ -79,7 +79,7 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
       header: "Binnengekomen",
       sortValue: (r) => (r.issueDate ? new Date(r.issueDate).getTime() : 0),
       render: (r) => (
-        <span className="whitespace-nowrap text-sm text-slate-500">
+        <span className="whitespace-nowrap text-sm text-ink-500">
           {r.issueDate ? formatDate(r.issueDate) : "—"}
         </span>
       ),
@@ -89,7 +89,7 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
       header: "Gefactureerd",
       align: "right",
       sortValue: (r) => r.amount,
-      render: (r) => <span className="tabular-nums text-slate-900">{formatCurrency(r.amount)}</span>,
+      render: (r) => <span className="tabular-nums text-ink-900">{formatCurrency(r.amount)}</span>,
     },
     {
       key: "verwacht",
@@ -99,14 +99,14 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
       render: (r) =>
         r.expected ? (
           <div>
-            <span className="tabular-nums text-slate-700">{formatCurrency(r.expected.total)}</span>
-            <div className="text-xs text-slate-400">
+            <span className="tabular-nums text-ink-700">{formatCurrency(r.expected.total)}</span>
+            <div className="text-xs text-ink-400">
               {formatCurrency(r.expected.subtotal)} ex · {r.expected.weeks} wk ·{" "}
               {formatHours(r.expected.hours)} u
             </div>
           </div>
         ) : (
-          <span className="text-xs text-slate-400">geen periode</span>
+          <span className="text-xs text-ink-400">geen periode</span>
         ),
     },
     {
@@ -114,7 +114,7 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
       header: "Controle",
       render: (r) =>
         r.matched == null ? (
-          <span className="text-xs text-slate-400">—</span>
+          <span className="text-xs text-ink-400">—</span>
         ) : r.matched ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
             <CheckCircle2 className="h-3 w-3" /> Klopt
@@ -159,7 +159,7 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
           )}
 
           {/* Vaste acties — altijd rechts, uitgelijnd over alle rijen */}
-          <span className="mx-1 h-6 w-px shrink-0 bg-slate-200" aria-hidden="true" />
+          <span className="mx-1 h-6 w-px shrink-0 bg-ink-200" aria-hidden="true" />
           <Link
             href={`/ontvangen-facturen/${r.id}`}
             title="Open de factuur"

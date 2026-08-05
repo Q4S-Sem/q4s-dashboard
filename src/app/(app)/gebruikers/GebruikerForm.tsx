@@ -96,12 +96,12 @@ export function GebruikerForm({
             </Field>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-slate-700">
+          <label className="flex items-center gap-2 text-sm text-ink-700">
             <input
               type="checkbox"
               name="active"
               defaultChecked={user ? user.active : true}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
             />
             Actief — deze medewerker mag inloggen
           </label>

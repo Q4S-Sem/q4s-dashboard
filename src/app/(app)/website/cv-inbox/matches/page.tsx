@@ -14,6 +14,8 @@ import {
   Users2,
 } from "lucide-react";
 import { db } from "@/lib/db";
+import { Avatar } from "@/components/ui/avatar";
+import { person } from "@/lib/people";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card } from "@/components/ui/card";
@@ -38,7 +40,7 @@ function telHref(phone: string | null): string | null {
 function scoreClass(pct: number): string {
   if (pct >= 70) return "bg-emerald-100 text-emerald-800";
   if (pct >= 50) return "bg-amber-100 text-amber-800";
-  return "bg-slate-100 text-slate-600";
+  return "bg-ink-100 text-ink-600";
 }
 
 export default async function CvMatchesPage({
@@ -68,7 +70,7 @@ export default async function CvMatchesPage({
           score: true,
           reason: true,
           candidate: {
-            select: { id: true, firstName: true, lastName: true, phone: true, discipline: true, availability: true },
+            select: { id: true, firstName: true, lastName: true, phone: true, discipline: true, availability: true, photoFileName: true },
           },
         },
       },
@@ -117,7 +119,7 @@ export default async function CvMatchesPage({
         </p>
       )}
       {!aiOn && searches.length > 0 && (
-        <p className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-500">
+        <p className="rounded-lg bg-ink-50 px-4 py-3 text-xs text-ink-500">
           AI is niet ingesteld — matches zijn op basis van discipline, trefwoorden en regio. Met een AI-sleutel worden ze
           verfijnd op de vacature-eisen.
         </p>
@@ -157,15 +159,15 @@ export default async function CvMatchesPage({
               return (
                 <Card key={v.id} className="overflow-hidden">
                   {/* Kaartkop: vacature + acties */}
-                  <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3 border-b border-ink-100 px-5 py-4">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Link href={`/vacatures/${v.id}`} className="text-base font-semibold text-slate-900 hover:text-brand-700">
+                        <Link href={`/vacatures/${v.id}`} className="text-base font-semibold text-ink-900 hover:text-brand-700">
                           {v.title}
                         </Link>
                         <StatusBadge options={VACANCY_STATUSES} value={v.status} />
                       </div>
-                      <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                      <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
                         {disc && <span>{disc}</span>}
                         {v.location && <span>{v.location}</span>}
                         <span className="inline-flex items-center gap-1">
@@ -195,7 +197,7 @@ export default async function CvMatchesPage({
 
                   {/* Kandidaten */}
                   {v.matches.length === 0 ? (
-                    <div className="px-5 py-10 text-center text-sm text-slate-400">
+                    <div className="px-5 py-10 text-center text-sm text-ink-400">
                       {v.lastMatchedAt
                         ? "Geen passende kandidaten gevonden. Importeer meer CV's of pas de vacature-eisen aan."
                         : "Nog niet gezocht — klik op “Zoek match” om de database te doorzoeken."}
@@ -223,10 +225,15 @@ export default async function CvMatchesPage({
                           return (
                             <TR key={m.id}>
                               <TD>
-                                <Link href={`/kandidaten/${c.id}`} className="font-medium text-slate-900 hover:text-brand-700">
-                                  {name}
-                                </Link>
-                                {cdisc && <p className="text-xs text-slate-500">{cdisc}</p>}
+                                <div className="flex items-center gap-2.5">
+                                  <Avatar {...person(c)} size="sm" />
+                                  <div className="min-w-0">
+                                    <Link href={`/kandidaten/${c.id}`} className="font-bold tracking-tight text-ink-900 hover:text-brand-600">
+                                      {name}
+                                    </Link>
+                                    {cdisc && <p className="text-xs text-ink-500">{cdisc}</p>}
+                                  </div>
+                                </div>
                               </TD>
                               <TD>
                                 {tel ? (
@@ -234,7 +241,7 @@ export default async function CvMatchesPage({
                                     <Phone className="h-3.5 w-3.5" /> {c.phone}
                                   </a>
                                 ) : (
-                                  <span className="text-xs text-slate-400">geen nummer</span>
+                                  <span className="text-xs text-ink-400">geen nummer</span>
                                 )}
                               </TD>
                               <TD className="text-right">
@@ -246,7 +253,7 @@ export default async function CvMatchesPage({
                                 <StatusBadge options={CANDIDATE_AVAILABILITY} value={c.availability} />
                               </TD>
                               <TD>
-                                {m.reason ? <span className="line-clamp-2 text-xs text-slate-500">{m.reason}</span> : <span className="text-slate-300">—</span>}
+                                {m.reason ? <span className="line-clamp-2 text-xs text-ink-500">{m.reason}</span> : <span className="text-ink-300">—</span>}
                               </TD>
                               <TD className="text-right">
                                 {dealId ? (
@@ -273,7 +280,7 @@ export default async function CvMatchesPage({
                   )}
 
                   {v._count.matches > v.matches.length && (
-                    <p className="border-t border-slate-100 px-5 py-2 text-xs text-slate-400">
+                    <p className="border-t border-ink-100 px-5 py-2 text-xs text-ink-400">
                       Top 12 getoond · nog {v._count.matches - v.matches.length} meer matches.
                     </p>
                   )}

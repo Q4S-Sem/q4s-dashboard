@@ -25,10 +25,10 @@ export const metadata = { title: "Bericht" };
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -56,7 +56,7 @@ export default async function BerichtDetailPage({
     <div className="space-y-6">
       <Link
         href="/berichten"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar outreach
       </Link>
@@ -190,11 +190,11 @@ export default async function BerichtDetailPage({
         </CardHeader>
         <CardContent>
           {message.context ? (
-            <p className="whitespace-pre-wrap text-sm text-slate-700">
+            <p className="whitespace-pre-wrap text-sm text-ink-700">
               {message.context}
             </p>
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-500">
               Geen context opgegeven. Voeg via Bewerken een aanleiding toe voor een
               beter AI-bericht.
             </p>
@@ -209,11 +209,11 @@ export default async function BerichtDetailPage({
         </CardHeader>
         <CardContent>
           {hasDraft ? (
-            <p className="whitespace-pre-wrap text-sm text-slate-800">
+            <p className="whitespace-pre-wrap text-sm text-ink-800">
               {message.draft}
             </p>
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-500">
               Nog geen bericht. Gebruik &ldquo;Genereer met AI&rdquo; voor een
               concept, of schrijf het zelf via Bewerken.
             </p>

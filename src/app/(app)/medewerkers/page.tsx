@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { IdCard, Plus } from "lucide-react";
 import { db } from "@/lib/db";
+import { Avatar } from "@/components/ui/avatar";
 import { round2, formatCurrency } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -12,10 +13,6 @@ import { EMPLOYEE_DEPARTMENTS, EMPLOYEE_EMPLOYMENT_TYPES } from "@/lib/domain";
 
 export const metadata = { title: "Medewerkers" };
 export const dynamic = "force-dynamic";
-
-function initials(first: string, last: string): string {
-  return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase() || "?";
-}
 
 export default async function MedewerkersPage({
   searchParams,
@@ -100,18 +97,16 @@ export default async function MedewerkersPage({
                   >
                     <TD>
                       <div className="flex items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                          {initials(m.firstName, m.lastName)}
-                        </span>
+                        <Avatar name={`${m.firstName} ${m.lastName}`} size="sm" />
                         <div className="min-w-0">
                           <Link
                             href={`/medewerkers/${m.id}`}
-                            className="font-medium text-slate-900 after:absolute after:inset-0 hover:text-emerald-700"
+                            className="font-medium text-ink-900 after:absolute after:inset-0 hover:text-emerald-700"
                           >
                             {m.firstName} {m.lastName}
                           </Link>
                           {m.jobTitle && (
-                            <div className="truncate text-xs text-slate-400">{m.jobTitle}</div>
+                            <div className="truncate text-xs text-ink-400">{m.jobTitle}</div>
                           )}
                         </div>
                       </div>
@@ -124,19 +119,19 @@ export default async function MedewerkersPage({
                     </TD>
                     <TD>
                       <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-ink-100">
                           <div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="whitespace-nowrap text-xs tabular-nums text-slate-500">
+                        <span className="whitespace-nowrap text-xs tabular-nums text-ink-500">
                           {vakantieTaken}/{round2(m.vacationDaysPerYear)} dgn
                         </span>
                       </div>
                     </TD>
-                    <TD className="text-right tabular-nums text-slate-700">
+                    <TD className="text-right tabular-nums text-ink-700">
                       {bonusYear > 0 ? formatCurrency(bonusYear) : "—"}
                     </TD>
-                    <TD className="text-right tabular-nums font-medium text-slate-900">
-                      {reviewPct != null ? `${Math.round(reviewPct)}%` : <span className="text-slate-300">—</span>}
+                    <TD className="text-right tabular-nums font-medium text-ink-900">
+                      {reviewPct != null ? `${Math.round(reviewPct)}%` : <span className="text-ink-300">—</span>}
                     </TD>
                   </TR>
                 );

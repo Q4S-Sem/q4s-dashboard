@@ -31,7 +31,7 @@ export type DealCard = {
 };
 
 const ACCENT: Record<BadgeColor, string> = {
-  slate: "bg-slate-300",
+  slate: "bg-ink-300",
   blue: "bg-blue-400",
   green: "bg-emerald-400",
   amber: "bg-amber-400",
@@ -79,7 +79,7 @@ export function DealBoard({
 
   if (columns.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-400">
+      <p className="rounded-lg border border-dashed border-ink-200 px-4 py-10 text-center text-sm text-ink-400">
         Geen zichtbare fases. Stel je pipeline in bij CRM-instellingen.
       </p>
     );
@@ -107,30 +107,30 @@ export function DealBoard({
               if (id) move(id, col.id);
             }}
             className={cn(
-              "flex w-72 shrink-0 flex-col rounded-xl border bg-slate-50/60 transition-colors",
-              overCol === col.id ? "border-brand-400 bg-brand-50/40" : "border-slate-200",
+              "flex w-72 shrink-0 flex-col rounded-xl border bg-ink-50/60 transition-colors",
+              overCol === col.id ? "border-brand-400 bg-brand-50/40" : "border-ink-200",
             )}
           >
             <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
               <div className="flex items-center gap-2">
                 <span className={cn("h-2.5 w-2.5 rounded-full", accent)} />
-                <span className="text-sm font-semibold text-slate-700">{col.label}</span>
-                <span className="text-[11px] text-slate-400">{col.probability}%</span>
+                <span className="text-sm font-semibold text-ink-700">{col.label}</span>
+                <span className="text-[11px] text-ink-400">{col.probability}%</span>
               </div>
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-200 px-1.5 text-xs font-semibold tabular-nums text-slate-600">
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-ink-200 px-1.5 text-xs font-semibold tabular-nums text-ink-600">
                 {colCards.length}
               </span>
             </div>
             <div className={cn("h-1 rounded-full mx-3", accent)} />
             {colValue > 0 && (
-              <div className="px-3 pt-1.5 text-[11px] font-medium tabular-nums text-slate-500">
+              <div className="px-3 pt-1.5 text-[11px] font-medium tabular-nums text-ink-500">
                 {formatCurrency(colValue)}
               </div>
             )}
 
             <div className="flex flex-1 flex-col gap-2 p-3">
               {colCards.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
+                <p className="rounded-lg border border-dashed border-ink-200 px-3 py-6 text-center text-xs text-ink-400">
                   Sleep hier een deal
                 </p>
               ) : (
@@ -147,14 +147,14 @@ export function DealBoard({
                       }}
                       onDragEnd={() => setDragId(null)}
                       className={cn(
-                        "group cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing",
+                        "group cursor-grab rounded-lg border border-ink-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing",
                         dragId === card.id && "opacity-50",
                       )}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <Link
                           href={`/crm/deals/${card.id}`}
-                          className="block font-medium text-slate-900 hover:text-brand-700"
+                          className="block font-medium text-ink-900 hover:text-brand-700"
                         >
                           {card.title}
                         </Link>
@@ -165,14 +165,14 @@ export function DealBoard({
                                 key={i}
                                 className={cn(
                                   "h-3 w-3",
-                                  i < card.fitScore ? "fill-amber-400 text-amber-400" : "text-slate-200",
+                                  i < card.fitScore ? "fill-amber-400 text-amber-400" : "text-ink-200",
                                 )}
                               />
                             ))}
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-slate-500">{card.company}</p>
+                      <p className="mt-0.5 truncate text-xs text-ink-500">{card.company}</p>
 
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         {card.discipline && (
@@ -181,18 +181,18 @@ export function DealBoard({
                           </Badge>
                         )}
                         {card.value > 0 && (
-                          <span className="text-xs font-semibold tabular-nums text-slate-700">
+                          <span className="text-xs font-semibold tabular-nums text-ink-700">
                             {formatCurrency(card.value)}
                           </span>
                         )}
                         {card.positions > 1 && (
-                          <span className="inline-flex items-center gap-0.5 text-[11px] text-slate-400">
+                          <span className="inline-flex items-center gap-0.5 text-[11px] text-ink-400">
                             <Users className="h-3 w-3" /> {card.positions}
                           </span>
                         )}
                       </div>
 
-                      <div className="mt-2 flex items-center justify-between gap-2 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+                      <div className="mt-2 flex items-center justify-between gap-2 border-t border-ink-100 pt-2 text-[11px] text-ink-400">
                         <span className="inline-flex items-center gap-1 truncate">
                           {card.ownerName ? (
                             <>
@@ -200,7 +200,7 @@ export function DealBoard({
                               <span className="truncate">{card.ownerName}</span>
                             </>
                           ) : (
-                            <span className="text-slate-300">Geen eigenaar</span>
+                            <span className="text-ink-300">Geen eigenaar</span>
                           )}
                         </span>
                         <span className="flex shrink-0 items-center gap-2">
@@ -211,7 +211,7 @@ export function DealBoard({
                             <span
                               className={cn(
                                 "inline-flex items-center gap-0.5",
-                                overdue ? "font-semibold text-red-600" : "text-slate-400",
+                                overdue ? "font-semibold text-red-600" : "text-ink-400",
                               )}
                               title="Opvolgen op"
                             >

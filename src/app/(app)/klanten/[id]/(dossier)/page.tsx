@@ -22,8 +22,8 @@ import { ContactsCard } from "./ContactsCard";
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="mt-1 break-words text-sm text-slate-900">{value || "—"}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</dt>
+      <dd className="mt-1 break-words text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -108,7 +108,7 @@ export default async function KlantOverzichtPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-slate-500" /> Bedrijfsgegevens
+              <Building2 className="h-5 w-5 text-ink-500" /> Bedrijfsgegevens
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -147,7 +147,7 @@ export default async function KlantOverzichtPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ReceiptText className="h-5 w-5 text-slate-500" /> Hoofdcontact &amp; facturatie
+              <ReceiptText className="h-5 w-5 text-ink-500" /> Hoofdcontact &amp; facturatie
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -167,7 +167,7 @@ export default async function KlantOverzichtPage({
                 label="Telefoon"
                 value={
                   client.phone ? (
-                    <a href={`tel:${client.phone}`} className="text-slate-900 hover:underline">
+                    <a href={`tel:${client.phone}`} className="text-ink-900 hover:underline">
                       {client.phone}
                     </a>
                   ) : null
@@ -206,7 +206,7 @@ export default async function KlantOverzichtPage({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <StickyNote className="h-5 w-5 text-slate-500" /> Notitie
+              <StickyNote className="h-5 w-5 text-ink-500" /> Notitie
             </CardTitle>
             <Link
               href={`/klanten/${client.id}/notities`}
@@ -216,7 +216,7 @@ export default async function KlantOverzichtPage({
             </Link>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap text-sm text-slate-600">{client.notes}</p>
+            <p className="whitespace-pre-wrap text-sm text-ink-600">{client.notes}</p>
           </CardContent>
         </Card>
       )}

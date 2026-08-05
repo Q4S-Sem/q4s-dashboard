@@ -139,7 +139,7 @@ export default async function DeclaratiesPage({
               hint="Foto, scan, PDF of ZIP · meerdere tegelijk mag"
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-ink-500">
                 Je kunt meerdere bonnetjes tegelijk of een <strong>ZIP</strong> uploaden —
                 elk bonnetje wordt automatisch uitgelezen.
               </p>
@@ -150,22 +150,22 @@ export default async function DeclaratiesPage({
           </form>
 
           {/* Handmatige bon zonder foto — werkt ook live zolang R2 nog niet gekoppeld is. */}
-          <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50/60">
-            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-slate-700 hover:text-slate-900">
+          <details className="mt-4 rounded-lg border border-ink-200 bg-ink-50/60">
+            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-ink-700 hover:text-ink-900">
               + Bon handmatig invoeren (zonder foto)
             </summary>
-            <form action={createManualExpense} className="space-y-4 border-t border-slate-200 p-4">
+            <form action={createManualExpense} className="space-y-4 border-t border-ink-200 p-4">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <label htmlFor="m-date" className="mb-1.5 block text-sm font-medium text-slate-700">Datum</label>
+                  <label htmlFor="m-date" className="mb-1.5 block text-sm font-medium text-ink-700">Datum</label>
                   <Input id="m-date" name="date" type="date" />
                 </div>
                 <div>
-                  <label htmlFor="m-vendor" className="mb-1.5 block text-sm font-medium text-slate-700">Leverancier</label>
+                  <label htmlFor="m-vendor" className="mb-1.5 block text-sm font-medium text-ink-700">Leverancier</label>
                   <Input id="m-vendor" name="vendor" placeholder="Bijv. Shell, Gamma…" />
                 </div>
                 <div>
-                  <label htmlFor="m-category" className="mb-1.5 block text-sm font-medium text-slate-700">Categorie</label>
+                  <label htmlFor="m-category" className="mb-1.5 block text-sm font-medium text-ink-700">Categorie</label>
                   <Select id="m-category" name="category" defaultValue="OVERIG">
                     {EXPENSE_CATEGORIES.map((c) => (
                       <option key={c.value} value={c.value}>{c.label}</option>
@@ -173,7 +173,7 @@ export default async function DeclaratiesPage({
                   </Select>
                 </div>
                 <div>
-                  <label htmlFor="m-consultant" className="mb-1.5 block text-sm font-medium text-slate-700">Persoon</label>
+                  <label htmlFor="m-consultant" className="mb-1.5 block text-sm font-medium text-ink-700">Persoon</label>
                   <Select id="m-consultant" name="consultantId" defaultValue="">
                     <option value="">— niet toegewezen —</option>
                     {consultants.map((c) => (
@@ -184,11 +184,11 @@ export default async function DeclaratiesPage({
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
-                  <label htmlFor="m-amount" className="mb-1.5 block text-sm font-medium text-slate-700">Bedrag (incl. BTW) <span className="text-red-500">*</span></label>
+                  <label htmlFor="m-amount" className="mb-1.5 block text-sm font-medium text-ink-700">Bedrag (incl. BTW) <span className="text-red-500">*</span></label>
                   <Input id="m-amount" name="amount" type="number" step="0.01" placeholder="0,00" required />
                 </div>
                 <div>
-                  <label htmlFor="m-vatRate" className="mb-1.5 block text-sm font-medium text-slate-700">BTW-tarief</label>
+                  <label htmlFor="m-vatRate" className="mb-1.5 block text-sm font-medium text-ink-700">BTW-tarief</label>
                   <Select id="m-vatRate" name="vatRate" defaultValue="21">
                     <option value="">— onbekend —</option>
                     <option value="21">21%</option>
@@ -197,12 +197,12 @@ export default async function DeclaratiesPage({
                   </Select>
                 </div>
                 <div>
-                  <label htmlFor="m-vatAmount" className="mb-1.5 block text-sm font-medium text-slate-700">Waarvan BTW</label>
+                  <label htmlFor="m-vatAmount" className="mb-1.5 block text-sm font-medium text-ink-700">Waarvan BTW</label>
                   <Input id="m-vatAmount" name="vatAmount" type="number" step="0.01" placeholder="uit tarief" />
                 </div>
               </div>
-              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
-                <input type="checkbox" name="vatDeductible" defaultChecked className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30" />
+              <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-700">
+                <input type="checkbox" name="vatDeductible" defaultChecked className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30" />
                 BTW aftrekbaar (uit bij eten/horeca)
               </label>
               <div className="flex justify-end">
@@ -223,7 +223,7 @@ export default async function DeclaratiesPage({
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_180px_180px_180px_auto]"
           >
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
               <Input name="q" defaultValue={q} placeholder="Zoek op leverancier of omschrijving…" className="pl-9" aria-label="Zoeken" />
             </div>
             <Select name="status" defaultValue={status} aria-label="Status">
@@ -286,22 +286,22 @@ export default async function DeclaratiesPage({
               {expenses.map((e) => (
                 <TR key={e.id}>
                   <TD className="whitespace-nowrap">
-                    {e.date ? formatDate(e.date) : <span className="text-slate-400">—</span>}
+                    {e.date ? formatDate(e.date) : <span className="text-ink-400">—</span>}
                   </TD>
                   <TD>
                     {e.consultant ? (
                       `${e.consultant.firstName} ${e.consultant.lastName}`
                     ) : (
-                      <span className="text-slate-400">—</span>
+                      <span className="text-ink-400">—</span>
                     )}
                   </TD>
-                  <TD className="text-slate-700">
+                  <TD className="text-ink-700">
                     {e.vendor ?? e.originalName}
                   </TD>
                   <TD>
                     <StatusBadge options={EXPENSE_CATEGORIES} value={e.category} />
                   </TD>
-                  <TD className="text-right tabular-nums font-medium text-slate-900">
+                  <TD className="text-right tabular-nums font-medium text-ink-900">
                     {e.amount > 0 ? formatCurrency(e.amount) : "—"}
                   </TD>
                   <TD>

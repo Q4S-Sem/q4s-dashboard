@@ -22,7 +22,8 @@ export function THead({
   return (
     <thead
       className={cn(
-        "border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500",
+        // Kleine kapitalen met ruime spatiëring — het labelritme van q4s.nl.
+        "border-b border-ink-200 bg-ink-50/60 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-ink-400",
         className,
       )}
       {...props}
@@ -34,12 +35,7 @@ export function TBody({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return (
-    <tbody
-      className={cn("divide-y divide-slate-100", className)}
-      {...props}
-    />
-  );
+  return <tbody className={cn("divide-y divide-ink-100", className)} {...props} />;
 }
 
 export function TR({
@@ -47,7 +43,10 @@ export function TR({
   ...props
 }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
-    <tr className={cn("transition-colors hover:bg-slate-50", className)} {...props} />
+    <tr
+      className={cn("transition-colors hover:bg-brand-50/50", className)}
+      {...props}
+    />
   );
 }
 
@@ -55,14 +54,12 @@ export function TH({
   className,
   ...props
 }: React.ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th className={cn("px-4 py-3 font-semibold", className)} {...props} />;
+  return <th className={cn("px-4 py-3 font-bold", className)} {...props} />;
 }
 
 export function TD({
   className,
   ...props
 }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return (
-    <td className={cn("px-4 py-3 text-slate-700", className)} {...props} />
-  );
+  return <td className={cn("px-4 py-3 text-ink-700", className)} {...props} />;
 }

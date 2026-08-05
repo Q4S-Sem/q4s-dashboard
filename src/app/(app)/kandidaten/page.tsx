@@ -19,7 +19,9 @@ import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { Input, Select } from "@/components/ui/field";
+import { person } from "@/lib/people";
 import { cn, formatDate } from "@/lib/utils";
 import {
   DISCIPLINES,
@@ -45,18 +47,17 @@ type SP = {
   error?: string;
 };
 
-function initials(first: string, last: string): string {
-  return `${first[0] ?? ""}${last[0] ?? ""}`.toUpperCase() || "?";
-}
-
-/** Avatar-kleur naar beoordeling — geeft de kaart in één oogopslag een signaal. */
+/**
+ * Ring om de profielfoto naar beoordeling — geeft de kaart in één oogopslag een
+ * signaal, ook wanneer er een foto in plaats van initialen staat.
+ */
 const RATING_RING: Record<string, string> = {
-  GOED: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  REDELIJK: "bg-amber-50 text-amber-700 ring-amber-200",
-  NIET_MEER: "bg-red-50 text-red-700 ring-red-200",
+  GOED: "ring-emerald-400",
+  REDELIJK: "ring-amber-400",
+  NIET_MEER: "ring-red-400",
 };
 function ringByRating(rating: string): string {
-  return RATING_RING[rating] ?? "bg-slate-100 text-slate-600 ring-slate-200";
+  return RATING_RING[rating] ?? "ring-ink-200";
 }
 
 export default async function KandidatenPage({
@@ -173,7 +174,7 @@ export default async function KandidatenPage({
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_180px_180px_180px_auto]"
           >
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
               <Input
                 name="q"
                 defaultValue={q}
@@ -243,7 +244,7 @@ export default async function KandidatenPage({
         />
       ) : (
         <>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-ink-400">
             {candidates.length} kandida{candidates.length === 1 ? "at" : "ten"} · beste beoordeling eerst
           </p>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -252,26 +253,23 @@ export default async function KandidatenPage({
               return (
                 <div
                   key={c.id}
-                  className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                  className="q4s-hoverable flex flex-col rounded-md border border-ink-100 bg-white p-4"
                 >
-                  {/* Kop: avatar + naam + disciplines */}
+                  {/* Kop: profielfoto + naam + disciplines */}
                   <div className="flex items-start gap-3">
-                    <span
-                      className={cn(
-                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold ring-2",
-                        ringByRating(c.rating),
-                      )}
-                    >
-                      {initials(c.firstName, c.lastName)}
-                    </span>
+                    <Avatar
+                      {...person(c)}
+                      size="lg"
+                      className={cn("ring-2", ringByRating(c.rating))}
+                    />
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/kandidaten/${c.id}`}
-                        className="font-semibold text-slate-900 hover:text-emerald-700"
+                        className="font-extrabold tracking-tight text-ink-900 hover:text-brand-600"
                       >
                         {c.firstName} {c.lastName}
                       </Link>
-                      {c.headline && <p className="truncate text-xs text-slate-500">{c.headline}</p>}
+                      {c.headline && <p className="truncate text-xs text-ink-500">{c.headline}</p>}
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                         {c.discipline && <StatusBadge options={DISCIPLINES} value={c.discipline} />}
                         <StatusBadge options={CANDIDATE_SOURCES} value={c.source} />
@@ -280,17 +278,17 @@ export default async function KandidatenPage({
                     <Link
                       href={`/kandidaten/${c.id}`}
                       aria-label="Open kandidaat"
-                      className="shrink-0 rounded-lg p-1 text-slate-300 transition-colors hover:bg-slate-100 hover:text-emerald-600"
+                      className="shrink-0 rounded-lg p-1 text-ink-300 transition-colors hover:bg-ink-100 hover:text-emerald-600"
                     >
                       <ChevronRight className="h-5 w-5" />
                     </Link>
                   </div>
 
                   {/* Contact */}
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-slate-100 pt-3 text-xs text-slate-500">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-ink-100 pt-3 text-xs text-ink-500">
                     {c.location && (
                       <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5 text-slate-400" /> {c.location}
+                        <MapPin className="h-3.5 w-3.5 text-ink-400" /> {c.location}
                       </span>
                     )}
                     {c.email && (
@@ -298,50 +296,50 @@ export default async function KandidatenPage({
                         href={`mailto:${c.email}`}
                         className="inline-flex items-center gap-1 transition-colors hover:text-emerald-700"
                       >
-                        <Mail className="h-3.5 w-3.5 text-slate-400" />
+                        <Mail className="h-3.5 w-3.5 text-ink-400" />
                         <span className="max-w-[150px] truncate">{c.email}</span>
                       </a>
                     )}
                     <PhoneReveal phone={c.phone} />
-                    <span className="ml-auto inline-flex items-center gap-1 text-slate-400">
+                    <span className="ml-auto inline-flex items-center gap-1 text-ink-400">
                       <ClipboardList className="h-3.5 w-3.5" /> {c._count.applications}
                     </span>
                   </div>
 
                   {/* Beoordeling · beschikbaarheid · interview */}
-                  <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                  <div className="mt-3 space-y-2 border-t border-ink-100 pt-3">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-slate-400">Beoordeling</span>
+                      <span className="text-xs font-medium text-ink-400">Beoordeling</span>
                       <RatingSelect id={c.id} value={c.rating} />
                     </div>
                     <div className="flex items-start justify-between gap-2">
-                      <span className="pt-1.5 text-xs font-medium text-slate-400">Beschikbaar</span>
+                      <span className="pt-1.5 text-xs font-medium text-ink-400">Beschikbaar</span>
                       <div className="text-right">
                         <AvailabilitySelect id={c.id} value={c.availability} />
                         {c.availability === "BINNENKORT" && c.availableFrom && (
-                          <div className="mt-0.5 text-[11px] text-slate-400">
+                          <div className="mt-0.5 text-[11px] text-ink-400">
                             Vanaf {formatDate(c.availableFrom)}
                           </div>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-slate-400">Interview</span>
+                      <span className="text-xs font-medium text-ink-400">Interview</span>
                       <InterviewSelect id={c.id} value={c.interviewStatus} />
                     </div>
                   </div>
 
                   {/* Geplaatst bij */}
                   {companies.length > 0 && (
-                    <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3">
-                      <span className="text-xs text-slate-400">Geplaatst:</span>
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-ink-100 pt-3">
+                      <span className="text-xs text-ink-400">Geplaatst:</span>
                       {companies.slice(0, 2).map((co) => (
                         <Badge key={co} color="violet">
                           {co}
                         </Badge>
                       ))}
                       {companies.length > 2 && (
-                        <span className="text-xs text-slate-400">+{companies.length - 2}</span>
+                        <span className="text-xs text-ink-400">+{companies.length - 2}</span>
                       )}
                     </div>
                   )}

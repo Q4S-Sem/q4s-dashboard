@@ -14,8 +14,8 @@ import { getPlacement } from "./data";
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="mt-1 break-words text-sm text-slate-900">{value || "—"}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</dt>
+      <dd className="mt-1 break-words text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -68,7 +68,7 @@ export default async function PlaatsingGegevensPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <IdCard className="h-5 w-5 text-slate-500" /> Gegevens
+            <IdCard className="h-5 w-5 text-ink-500" /> Gegevens
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -92,7 +92,7 @@ export default async function PlaatsingGegevensPage({
                     {placement.client.companyName}
                   </Link>
                 ) : (
-                  <span className="text-slate-400">— geen bedrijf gekoppeld</span>
+                  <span className="text-ink-400">— geen bedrijf gekoppeld</span>
                 )
               }
             />
@@ -119,9 +119,9 @@ export default async function PlaatsingGegevensPage({
           </dl>
 
           {placement.notes && (
-            <div className="mt-5 flex items-start gap-3 border-t border-slate-100 pt-4">
-              <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-              <p className="whitespace-pre-wrap text-sm text-slate-600">{placement.notes}</p>
+            <div className="mt-5 flex items-start gap-3 border-t border-ink-100 pt-4">
+              <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
+              <p className="whitespace-pre-wrap text-sm text-ink-600">{placement.notes}</p>
             </div>
           )}
         </CardContent>
@@ -132,7 +132,7 @@ export default async function PlaatsingGegevensPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ReceiptText className="h-5 w-5 text-slate-500" /> Factuur- &amp; betaalgegevens werknemer
+            <ReceiptText className="h-5 w-5 text-ink-500" /> Factuur- &amp; betaalgegevens werknemer
           </CardTitle>
           {!ownStaff && !editingBilling && (
             <Link
@@ -147,14 +147,14 @@ export default async function PlaatsingGegevensPage({
         </CardHeader>
         <CardContent className="space-y-4">
           {ownStaff ? (
-            <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <p className="rounded-lg bg-ink-50 px-4 py-3 text-sm text-ink-600">
               <strong>Eigen loondienst-medewerker.</strong> {personName} krijgt salaris — er wordt
               géén inkoopfactuur (zelffacturatie) gemaakt, dus factuurgegevens zoals KvK, BTW en IBAN
               zijn hier niet nodig. Naar de klant gaat wél gewoon de verkoopfactuur.
             </p>
           ) : (
             <>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-ink-500">
                 Voor de inkoopfactuur (zelffacturatie). Hoort bij {personName} en geldt voor al hun
                 plaatsingen.
               </p>
@@ -166,7 +166,7 @@ export default async function PlaatsingGegevensPage({
                   cancelHref={`/plaatsingen/${placement.id}`}
                 />
               ) : billingEmpty ? (
-                <p className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+                <p className="rounded-lg border border-dashed border-ink-200 px-4 py-6 text-center text-sm text-ink-400">
                   Nog geen factuurgegevens ingevuld — klik op <strong>Bewerken</strong> om ze toe te voegen.
                 </p>
               ) : (
@@ -189,7 +189,7 @@ export default async function PlaatsingGegevensPage({
                     label="Telefoon"
                     value={
                       c.phone ? (
-                        <a href={`tel:${c.phone}`} className="text-slate-900 hover:underline">
+                        <a href={`tel:${c.phone}`} className="text-ink-900 hover:underline">
                           {c.phone}
                         </a>
                       ) : null

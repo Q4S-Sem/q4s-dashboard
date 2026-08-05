@@ -23,8 +23,8 @@ function Benefit({
         {icon}
       </div>
       <div>
-        <p className="text-sm font-semibold text-slate-900">{title}</p>
-        <p className="mt-0.5 text-sm text-slate-600">{text}</p>
+        <p className="text-sm font-semibold text-ink-900">{title}</p>
+        <p className="mt-0.5 text-sm text-ink-600">{text}</p>
       </div>
     </div>
   );
@@ -42,17 +42,17 @@ export default async function TalentpoolPage({
   return (
     <main className="mx-auto max-w-2xl p-8">
       <article className="space-y-6">
-        <header className="space-y-3 border-b border-slate-200 pb-6">
+        <header className="space-y-3 border-b border-ink-200 pb-6">
           <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600 text-white">
             <Users className="h-5 w-5" />
           </div>
           <p className="text-sm font-medium uppercase tracking-wide text-brand-700">
             Q4S Talentpool
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-3xl font-bold tracking-tight text-ink-900">
             Werk aan de mooiste technische opdrachten in Nederland
           </h1>
-          <p className="text-lg leading-relaxed text-slate-700">
+          <p className="text-lg leading-relaxed text-ink-700">
             Ben je specialist in QA/QC, lassen, NDT/NDO, fitten of HSE? Meld je
             één keer aan en wij koppelen je aan passende opdrachten bij
             toonaangevende opdrachtgevers — van offshore wind tot petrochemie.

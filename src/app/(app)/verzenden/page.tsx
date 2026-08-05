@@ -57,13 +57,13 @@ function SendRow({
 }) {
   return (
     <TR>
-      <TD className="font-medium text-slate-900">{row.number}</TD>
-      <TD className="text-slate-700">{row.recipientName}</TD>
-      <TD className="whitespace-nowrap text-sm text-slate-500">{weekShort(row.weekKeys)}</TD>
+      <TD className="font-medium text-ink-900">{row.number}</TD>
+      <TD className="text-ink-700">{row.recipientName}</TD>
+      <TD className="whitespace-nowrap text-sm text-ink-500">{weekShort(row.weekKeys)}</TD>
       <TD>
         {row.email ? (
-          <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
-            <Mail className="h-3.5 w-3.5 text-slate-400" />
+          <span className="inline-flex items-center gap-1.5 text-sm text-ink-600">
+            <Mail className="h-3.5 w-3.5 text-ink-400" />
             {row.email}
           </span>
         ) : (
@@ -75,7 +75,7 @@ function SendRow({
           </Link>
         )}
       </TD>
-      <TD className="text-right tabular-nums text-slate-900">{formatCurrency(row.total)}</TD>
+      <TD className="text-right tabular-nums text-ink-900">{formatCurrency(row.total)}</TD>
       <TD className="text-right">
         <div className="flex items-center justify-end gap-2">
           <Link
@@ -186,14 +186,14 @@ export default async function VerzendmapPage({
       href={`/verzenden?tab=${t}${week ? `&week=${week}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
       className={cn(
         "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        tab === t ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800",
+        tab === t ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
       )}
     >
       {icon} {label}
       <span
         className={cn(
           "rounded-full px-1.5 text-xs font-semibold tabular-nums",
-          tab === t ? "bg-brand-100 text-brand-700" : "bg-slate-200 text-slate-600",
+          tab === t ? "bg-brand-100 text-brand-700" : "bg-ink-200 text-ink-600",
         )}
       >
         {count}
@@ -245,7 +245,7 @@ export default async function VerzendmapPage({
             ? "flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
             : live
               ? "flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-              : "flex items-start gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"
+              : "flex items-start gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3 text-sm text-ink-600"
         }
       >
         {mailRedirect ? (
@@ -270,8 +270,8 @@ export default async function VerzendmapPage({
           <span>
             <strong>Klaarzet-modus:</strong> er wordt nog niets écht gemaild. De Q4S-e-mail + PDF-bijlage worden
             samengesteld en je kunt ze als voorbeeld bekijken. Zet{" "}
-            <code className="rounded bg-slate-100 px-1">SMTP_*</code> in je{" "}
-            <code className="rounded bg-slate-100 px-1">.env</code> om echte verzending aan te zetten.
+            <code className="rounded bg-ink-100 px-1">SMTP_*</code> in je{" "}
+            <code className="rounded bg-ink-100 px-1">.env</code> om echte verzending aan te zetten.
           </span>
         )}
       </p>
@@ -315,7 +315,7 @@ export default async function VerzendmapPage({
 
           {/* Tabs + zoeken */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+            <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-0.5">
               {tabLink("verkoop", "Verkoop", sales.length, <Receipt className="h-4 w-4" />)}
               {tabLink("inkoop", "Inkoop", purchase.length, <Coins className="h-4 w-4" />)}
             </div>
@@ -326,18 +326,18 @@ export default async function VerzendmapPage({
           <WeekNav tab={tab} q={q} week={week} currentWeek={currentWeek} />
 
           {/* Overzicht van de huidige selectie */}
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-500">
             {rows.length} {tab === "verkoop" ? "verkoopfactu" : "inkoopfactu"}
             {rows.length === 1 ? "ur" : "ren"}
             {week ? ` in ${formatWeekLabel(new Date(`${week}T00:00:00`))}` : ""}
             {q ? ` voor "${q}"` : ""} · totaal{" "}
-            <span className="font-medium text-slate-700">{formatCurrency(sum(rows))}</span>
+            <span className="font-medium text-ink-700">{formatCurrency(sum(rows))}</span>
           </p>
 
           <Card>
             <CardContent className="p-0">
               {rows.length === 0 ? (
-                <p className="px-6 py-10 text-center text-sm text-slate-500">
+                <p className="px-6 py-10 text-center text-sm text-ink-500">
                   {week || q
                     ? `Geen ${tab === "verkoop" ? "verkoop" : "inkoop"}facturen die aan je filters voldoen.`
                     : `Geen ${tab === "verkoop" ? "verkoop" : "inkoop"}facturen klaar om te versturen.`}

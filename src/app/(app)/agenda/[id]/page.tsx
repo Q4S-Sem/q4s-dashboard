@@ -36,11 +36,11 @@ function Detail({
 }) {
   return (
     <div>
-      <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">
+      <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-ink-400">
         {icon}
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -76,7 +76,7 @@ export default async function AfspraakDetailPage({
     <div className="space-y-6">
       <Link
         href="/agenda"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar agenda
       </Link>
@@ -219,9 +219,9 @@ export default async function AfspraakDetailPage({
         </CardHeader>
         <CardContent>
           {event.notes ? (
-            <p className="whitespace-pre-wrap text-sm text-slate-700">{event.notes}</p>
+            <p className="whitespace-pre-wrap text-sm text-ink-700">{event.notes}</p>
           ) : (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-ink-400">
               Nog geen notities.{" "}
               <Link
                 href={`/agenda/${event.id}/bewerken`}

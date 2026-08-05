@@ -33,7 +33,7 @@ export default async function CvImporterenPage({
     <div className="mx-auto max-w-3xl space-y-6">
       <Link
         href="/website/cv-inbox"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar CV's
       </Link>
@@ -121,7 +121,7 @@ export default async function CvImporterenPage({
           <CardTitle className="flex items-center gap-2">
             <Files className="h-5 w-5 text-brand-600" /> Meerdere CV's tegelijk
           </CardTitle>
-          <span className="text-sm text-slate-400">Een hele stapel in één keer</span>
+          <span className="text-sm text-ink-400">Een hele stapel in één keer</span>
         </CardHeader>
         <form action={importCvsBulk}>
           <CardContent className="space-y-5">
@@ -134,24 +134,24 @@ export default async function CvImporterenPage({
             </Field>
 
             {aiOn ? (
-              <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-sm text-slate-700">
+              <label className="flex items-start gap-2.5 rounded-lg border border-ink-200 bg-ink-50/60 px-3 py-2.5 text-sm text-ink-700">
                 <input
                   type="checkbox"
                   name="useAi"
                   defaultChecked
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
                 />
                 <span>
-                  <span className="inline-flex items-center gap-1.5 font-medium text-slate-800">
+                  <span className="inline-flex items-center gap-1.5 font-medium text-ink-800">
                     <Sparkles className="h-4 w-4 text-brand-600" /> Namen & discipline automatisch uitlezen
                   </span>
-                  <span className="mt-0.5 block text-xs text-slate-500">
+                  <span className="mt-0.5 block text-xs text-ink-500">
                     Voor PDF-CV's leest de AI naam, discipline, e-mail en telefoon uit het bestand. Word/Excel gebruiken de bestandsnaam.
                   </span>
                 </span>
               </label>
             ) : (
-              <p className="rounded-lg bg-slate-50 px-3 py-2.5 text-xs text-slate-500">
+              <p className="rounded-lg bg-ink-50 px-3 py-2.5 text-xs text-ink-500">
                 Automatisch uitlezen (AI) is niet ingesteld — namen komen uit de bestandsnamen. Je kunt ze per kandidaat aanvullen.
               </p>
             )}

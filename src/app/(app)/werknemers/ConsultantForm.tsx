@@ -146,12 +146,12 @@ export function ConsultantForm({
               <Input id="startDate" name="startDate" type="date" defaultValue={toDateInput(c?.startDate)} />
             </Field>
             <Field label="Status" htmlFor="active" error={e.active}>
-              <label className="inline-flex h-10 items-center gap-2 text-sm text-slate-700">
+              <label className="inline-flex h-10 items-center gap-2 text-sm text-ink-700">
                 <input
                   type="checkbox"
                   name="active"
                   defaultChecked={c?.active ?? true}
-                  className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30"
+                  className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
                 />
                 Actief
               </label>

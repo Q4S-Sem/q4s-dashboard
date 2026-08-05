@@ -126,8 +126,8 @@ export function ClientChooser({
                 <Building2 className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-800">Nieuw bedrijf toevoegen</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-sm font-semibold text-ink-800">Nieuw bedrijf toevoegen</p>
+                <p className="text-xs text-ink-500">
                   Wordt meteen aan het klantenbestand toegevoegd. De rest vul je later aan.
                 </p>
               </div>
@@ -195,7 +195,7 @@ export function ClientChooser({
                   setErr(null);
                   setOpen(false);
                 }}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-white"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:bg-white"
               >
                 Annuleren
               </button>

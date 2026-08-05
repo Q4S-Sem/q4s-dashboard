@@ -39,7 +39,7 @@ export default async function ImporterenPage({
     <div className="mx-auto max-w-3xl space-y-6">
       <Link
         href="/ontvangen-facturen"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar ontvangen facturen
       </Link>
@@ -106,10 +106,10 @@ export default async function ImporterenPage({
         </CardContent>
       </Card>
 
-      <p className="flex items-start gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-4 py-3 text-sm text-slate-500">
-        <Mail className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+      <p className="flex items-start gap-2 rounded-lg border border-dashed border-ink-300 bg-ink-50/60 px-4 py-3 text-sm text-ink-500">
+        <Mail className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
         <span>
-          <strong className="font-medium text-slate-700">Binnenkort:</strong> AI leest de factuur
+          <strong className="font-medium text-ink-700">Binnenkort:</strong> AI leest de factuur
           automatisch uit je mailbox en vult deze velden zelf in — net als de CV-inbox.
         </span>
       </p>

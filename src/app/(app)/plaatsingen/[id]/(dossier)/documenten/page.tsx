@@ -54,20 +54,20 @@ export default async function PlaatsingDocumentenPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-slate-500" /> Contract &amp; documenten
-            <span className="text-sm font-normal text-slate-400">({documents.length})</span>
+            <FileText className="h-5 w-5 text-ink-500" /> Contract &amp; documenten
+            <span className="text-sm font-normal text-ink-400">({documents.length})</span>
           </CardTitle>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-ink-500">
             Hoort bij {personName} — ook zichtbaar bij hun andere plaatsingen
           </span>
         </CardHeader>
         <CardContent className="space-y-5">
           {documents.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+            <p className="rounded-lg border border-dashed border-ink-200 px-4 py-6 text-center text-sm text-ink-400">
               Nog geen documenten. Voeg hieronder het contract of een ander document toe.
             </p>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-slate-100">
+            <div className="overflow-hidden rounded-lg border border-ink-100">
               <Table>
                 <THead>
                   <TR className="hover:bg-transparent">
@@ -95,10 +95,10 @@ export default async function PlaatsingDocumentenPage({
                       <TD>
                         <StatusBadge options={DOCUMENT_CATEGORIES} value={doc.category} />
                       </TD>
-                      <TD className="text-right tabular-nums text-slate-500">
+                      <TD className="text-right tabular-nums text-ink-500">
                         {Math.max(1, Math.round(doc.size / 1024))} kB
                       </TD>
-                      <TD className="text-slate-500">{formatDate(doc.createdAt)}</TD>
+                      <TD className="text-ink-500">{formatDate(doc.createdAt)}</TD>
                       <TD>
                         <div className="flex justify-end">
                           <ConfirmSubmit
@@ -122,7 +122,7 @@ export default async function PlaatsingDocumentenPage({
 
           <form
             action={uploadPlacementDocument}
-            className="grid items-end gap-3 rounded-lg border border-dashed border-slate-200 p-4 sm:grid-cols-[10rem_1fr_auto]"
+            className="grid items-end gap-3 rounded-lg border border-dashed border-ink-200 p-4 sm:grid-cols-[10rem_1fr_auto]"
           >
             <input type="hidden" name="placementId" value={placement.id} />
             <input type="hidden" name="consultantId" value={placement.consultantId} />
@@ -139,7 +139,7 @@ export default async function PlaatsingDocumentenPage({
               <Input id="doc-title" name="title" placeholder="Bijv. Arbeidsovereenkomst 2026" />
             </Field>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="doc-file" className="text-sm font-medium text-slate-700">
+              <label htmlFor="doc-file" className="text-sm font-medium text-ink-700">
                 Bestand
               </label>
               <div className="flex items-center gap-2">
@@ -148,7 +148,7 @@ export default async function PlaatsingDocumentenPage({
                   name="file"
                   type="file"
                   required
-                  className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+                  className="block w-full text-sm text-ink-600 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-200"
                 />
                 <SubmitButton pendingLabel="Uploaden…">
                   <Upload className="h-4 w-4" /> Upload

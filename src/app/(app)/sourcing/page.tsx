@@ -85,7 +85,7 @@ export default async function SourcingPage({
       <Card>
         <CardHeader>
           <CardTitle>Recente matches</CardTitle>
-          <span className="text-sm text-slate-500">CV&apos;s gekoppeld aan vacatures</span>
+          <span className="text-sm text-ink-500">CV&apos;s gekoppeld aan vacatures</span>
         </CardHeader>
         {matches.length === 0 ? (
           <CardContent>
@@ -109,16 +109,16 @@ export default async function SourcingPage({
               {matches.map((m) => (
                 <TR key={m.id}>
                   <TD>
-                    <Link href={`/kandidaten/${m.candidate.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={`/kandidaten/${m.candidate.id}`} className="font-medium text-ink-900 hover:text-brand-700">
                       {m.candidate.firstName} {m.candidate.lastName}
                     </Link>
                   </TD>
                   <TD>
-                    <Link href={`/vacatures/${m.vacancy.id}`} className="text-slate-700 hover:text-brand-700">
+                    <Link href={`/vacatures/${m.vacancy.id}`} className="text-ink-700 hover:text-brand-700">
                       {m.vacancy.title}
                     </Link>
                   </TD>
-                  <TD className="text-slate-500">{m.reason ?? "—"}</TD>
+                  <TD className="text-ink-500">{m.reason ?? "—"}</TD>
                   <TD className="text-right tabular-nums">{Math.round(m.score * 100)}%</TD>
                 </TR>
               ))}
@@ -133,7 +133,7 @@ export default async function SourcingPage({
           <CardTitle>Run-historie</CardTitle>
         </CardHeader>
         {runs.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">Nog geen runs.</CardContent>
+          <CardContent className="text-sm text-ink-500">Nog geen runs.</CardContent>
         ) : (
           <Table>
             <THead>
@@ -172,20 +172,20 @@ export default async function SourcingPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-slate-400" /> Dagelijks automatisch draaien
+            <Clock className="h-4 w-4 text-ink-400" /> Dagelijks automatisch draaien
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-slate-600">
+        <CardContent className="space-y-3 text-sm text-ink-600">
           <p>
             De app draait niet zelf continu; laat een planner het endpoint één keer per dag
             aanroepen. Zet eerst <code>JOB_SECRET</code> in je <code>.env</code> en richt
             dan bijv. een cron (of cron-job.org / Vercel Cron) in op:
           </p>
-          <pre className="overflow-x-auto rounded-lg bg-slate-900 px-4 py-3 text-xs text-slate-100">
+          <pre className="overflow-x-auto rounded-lg bg-ink-900 px-4 py-3 text-xs text-ink-100">
 {`# elke dag om 07:00
 0 7 * * *  curl -fsS "https://<jouw-domein>/api/jobs/daily-sync?token=$JOB_SECRET"`}
           </pre>
-          <p className="text-slate-500">
+          <p className="text-ink-500">
             <strong>Let op:</strong> de agent doorzoekt het <em>openbare</em> web naar
             geplaatste vacatures. Afgeschermde VMS-portalen (Magnit, SAP Fieldglass, Beeline,
             FlexOord) vereisen een echte API-koppeling met credentials per platform — die plug

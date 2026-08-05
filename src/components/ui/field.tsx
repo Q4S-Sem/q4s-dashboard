@@ -7,8 +7,10 @@ import { NumberInput } from "./number-input";
 // be styled). Same import path + API, so every form keeps working.
 export { Select } from "./select";
 
+// Strak invoerveld: rechte hoeken, dunne rand, oranje focus — zoals de
+// formulieren op q4s.nl.
 const fieldBase =
-  "block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:cursor-not-allowed disabled:bg-slate-50";
+  "block w-full rounded-sm border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/25 disabled:cursor-not-allowed disabled:bg-ink-50";
 
 export const Input = React.forwardRef<
   HTMLInputElement,
@@ -68,7 +70,10 @@ export function Label({
 }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn("mb-1.5 block text-sm font-medium text-slate-700", className)}
+      className={cn(
+        "mb-1.5 block text-[11px] font-bold uppercase tracking-[0.1em] text-ink-500",
+        className,
+      )}
       {...props}
     />
   );
@@ -97,11 +102,11 @@ export function Field({
       {label && (
         <Label htmlFor={htmlFor}>
           {label}
-          {required && <span className="ml-0.5 text-red-500">*</span>}
+          {required && <span className="ml-0.5 text-brand-600">*</span>}
         </Label>
       )}
       {children}
-      {hint && !error && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+      {hint && !error && <p className="mt-1 text-xs text-ink-400">{hint}</p>}
       {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
   );

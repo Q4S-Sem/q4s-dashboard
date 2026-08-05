@@ -41,7 +41,7 @@ import {
 export const metadata = { title: "Agenda" };
 
 const DOT: Record<BadgeColor, string> = {
-  slate: "bg-slate-400",
+  slate: "bg-ink-400",
   blue: "bg-blue-500",
   green: "bg-emerald-500",
   amber: "bg-amber-500",
@@ -257,40 +257,40 @@ export default async function AgendaPage({
         <div className="space-y-6">
           {/* Today */}
           <Card>
-            <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+            <div className="flex items-center gap-2 border-b border-ink-100 px-5 py-3">
               <Clock className="h-4 w-4 text-brand-600" />
-              <h2 className="text-sm font-semibold text-slate-900">Vandaag</h2>
-              <span className="ml-auto text-xs capitalize text-slate-400">{formatDate(now)}</span>
+              <h2 className="text-sm font-semibold text-ink-900">Vandaag</h2>
+              <span className="ml-auto text-xs capitalize text-ink-400">{formatDate(now)}</span>
             </div>
             <div className="p-3">
               {todayEvents.length === 0 && todayDeadlines.length === 0 ? (
-                <p className="px-2 py-4 text-center text-sm text-slate-400">Geen afspraken vandaag.</p>
+                <p className="px-2 py-4 text-center text-sm text-ink-400">Geen afspraken vandaag.</p>
               ) : (
                 <ul className="space-y-1">
                   {todayEvents.map((ev) => (
                     <li key={ev.id}>
                       <Link
                         href={`/agenda/${ev.id}`}
-                        className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50"
+                        className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-ink-50"
                       >
                         <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT[colorFor(EVENT_TYPES, ev.type)])} />
-                        <span className="w-12 shrink-0 text-xs tabular-nums text-slate-500">
+                        <span className="w-12 shrink-0 text-xs tabular-nums text-ink-500">
                           {ev.allDay ? "hele dag" : ev.timeShort}
                         </span>
-                        <span className="min-w-0 flex-1 truncate text-sm text-slate-800">{ev.title}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm text-ink-800">{ev.title}</span>
                         {ev.assignee && (
-                          <span className="shrink-0 text-[10px] font-semibold text-slate-400">{initials(ev.assignee)}</span>
+                          <span className="shrink-0 text-[10px] font-semibold text-ink-400">{initials(ev.assignee)}</span>
                         )}
                       </Link>
                     </li>
                   ))}
                   {todayDeadlines.map((dl, i) => (
                     <li key={`td-${i}`}>
-                      <Link href={dl.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50">
+                      <Link href={dl.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-ink-50">
                         <AlertTriangle
                           className={cn("h-3.5 w-3.5 shrink-0", dl.overdue ? "text-red-600" : "text-amber-600")}
                         />
-                        <span className="truncate text-sm text-slate-700">{dl.title}</span>
+                        <span className="truncate text-sm text-ink-700">{dl.title}</span>
                       </Link>
                     </li>
                   ))}
@@ -301,25 +301,25 @@ export default async function AgendaPage({
 
           {/* Afwezig */}
           <Card>
-            <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+            <div className="flex items-center gap-2 border-b border-ink-100 px-5 py-3">
               <Plane className="h-4 w-4 text-emerald-600" />
-              <h2 className="text-sm font-semibold text-slate-900">Afwezig</h2>
+              <h2 className="text-sm font-semibold text-ink-900">Afwezig</h2>
               <Link href="/agenda/afwezigheid" className="ml-auto text-xs font-medium text-brand-700 hover:underline">
                 Beheren
               </Link>
             </div>
             <div className="p-3">
               {awayToday.length === 0 && awaySoon.length === 0 ? (
-                <p className="px-2 py-4 text-center text-sm text-slate-400">Iedereen aanwezig 🎉</p>
+                <p className="px-2 py-4 text-center text-sm text-ink-400">Iedereen aanwezig 🎉</p>
               ) : (
                 <ul className="space-y-1">
                   {awayToday.map((lv) => (
                     <li key={lv.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5">
                       <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT[colorFor(LEAVE_TYPES, lv.type)])} />
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-800">
                         {fullName(lv.employee)}
                       </span>
-                      <span className="shrink-0 text-xs text-slate-400">
+                      <span className="shrink-0 text-xs text-ink-400">
                         vandaag · t/m {formatDate(lv.endDate)}
                       </span>
                     </li>
@@ -327,8 +327,8 @@ export default async function AgendaPage({
                   {awaySoon.map((lv) => (
                     <li key={lv.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5">
                       <span className={cn("h-2 w-2 shrink-0 rounded-full opacity-50", DOT[colorFor(LEAVE_TYPES, lv.type)])} />
-                      <span className="min-w-0 flex-1 truncate text-sm text-slate-600">{fullName(lv.employee)}</span>
-                      <span className="shrink-0 text-xs text-slate-400">
+                      <span className="min-w-0 flex-1 truncate text-sm text-ink-600">{fullName(lv.employee)}</span>
+                      <span className="shrink-0 text-xs text-ink-400">
                         {formatDate(lv.startDate)}
                       </span>
                     </li>
@@ -340,9 +340,9 @@ export default async function AgendaPage({
 
           {/* Deadlines */}
           <Card>
-            <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+            <div className="flex items-center gap-2 border-b border-ink-100 px-5 py-3">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <h2 className="text-sm font-semibold text-slate-900">Openstaande facturen</h2>
+              <h2 className="text-sm font-semibold text-ink-900">Openstaande facturen</h2>
               {overdueCount > 0 && (
                 <span className="ml-auto rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                   {overdueCount} te laat
@@ -351,21 +351,21 @@ export default async function AgendaPage({
             </div>
             <div className="p-3">
               {upcomingDeadlines.length === 0 ? (
-                <p className="px-2 py-4 text-center text-sm text-slate-400">Geen openstaande deadlines deze maand.</p>
+                <p className="px-2 py-4 text-center text-sm text-ink-400">Geen openstaande deadlines deze maand.</p>
               ) : (
                 <ul className="space-y-1">
                   {upcomingDeadlines.map((dl, i) => (
                     <li key={`ud-${i}`}>
-                      <Link href={dl.href} className="flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50">
+                      <Link href={dl.href} className="flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-ink-50">
                         <span
                           className={cn(
                             "mt-0.5 w-14 shrink-0 text-xs tabular-nums",
-                            dl.overdue ? "text-red-600" : "text-slate-500",
+                            dl.overdue ? "text-red-600" : "text-ink-500",
                           )}
                         >
                           {formatDate(dl.date)}
                         </span>
-                        <span className="truncate text-sm text-slate-700">{dl.title}</span>
+                        <span className="truncate text-sm text-ink-700">{dl.title}</span>
                       </Link>
                     </li>
                   ))}
@@ -376,16 +376,16 @@ export default async function AgendaPage({
 
           {/* Tasks */}
           <Card>
-            <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
+            <div className="flex items-center gap-2 border-b border-ink-100 px-5 py-3">
               <ListTodo className="h-4 w-4 text-brand-600" />
-              <h2 className="text-sm font-semibold text-slate-900">Taken</h2>
+              <h2 className="text-sm font-semibold text-ink-900">Taken</h2>
               <Link href="/agenda/taken" className="ml-auto text-xs font-medium text-brand-700 hover:underline">
                 Alles
               </Link>
             </div>
             <div className="p-3">
               {openTasks.length === 0 ? (
-                <p className="px-2 py-4 text-center text-sm text-slate-400">Geen open taken.</p>
+                <p className="px-2 py-4 text-center text-sm text-ink-400">Geen open taken.</p>
               ) : (
                 <ul className="space-y-1">
                   {openTasks.map((t) => {
@@ -398,16 +398,16 @@ export default async function AgendaPage({
                           <button
                             type="submit"
                             aria-label="Taak afronden"
-                            className="flex text-slate-300 hover:text-emerald-600"
+                            className="flex text-ink-300 hover:text-emerald-600"
                           >
                             <CircleCheck className="h-4 w-4" />
                           </button>
                         </form>
-                        <span className="flex-1 truncate text-sm text-slate-800">{t.title}</span>
+                        <span className="flex-1 truncate text-sm text-ink-800">{t.title}</span>
                         {t.assignee && (
                           <span
                             title={fullName(t.assignee)}
-                            className="shrink-0 rounded-full bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-500"
+                            className="shrink-0 rounded-full bg-ink-100 px-1.5 text-[10px] font-semibold text-ink-500"
                           >
                             {initials(fullName(t.assignee))}
                           </span>
@@ -421,7 +421,7 @@ export default async function AgendaPage({
                           <span
                             className={cn(
                               "shrink-0 text-xs tabular-nums",
-                              overdue ? "text-red-600" : "text-slate-400",
+                              overdue ? "text-red-600" : "text-ink-400",
                             )}
                           >
                             {formatDate(t.dueDate)}

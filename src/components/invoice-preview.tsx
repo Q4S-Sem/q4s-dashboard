@@ -19,18 +19,18 @@ export function InvoicePreview({
     <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <FileText className="h-4 w-4 text-slate-500" /> Voorbeeld — zo ziet jullie factuur eruit
+          <FileText className="h-4 w-4 text-ink-500" /> Voorbeeld — zo ziet jullie factuur eruit
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+        <div className="overflow-hidden rounded-lg border border-ink-200 bg-ink-100">
           <iframe
             title="Voorbeeld Q4S-factuur"
             src={`${src}#toolbar=0&navpanes=0&view=FitH`}
             className="h-[600px] w-full border-0"
           />
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink-500">
           {caption ??
             "De echte Q4S-factuuropmaak met jullie bedrijfsgegevens en voorbeeldregels. Pas de gegevens aan en sla op — het voorbeeld verandert mee."}
         </p>

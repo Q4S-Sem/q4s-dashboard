@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 export type ComboPerson = { id: string; name: string };
 
 const fieldBase =
-  "block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 pr-9 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30";
+  "block w-full rounded-lg border border-ink-300 bg-white px-3 py-2 pr-9 text-sm text-ink-900 shadow-sm placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30";
 
 /**
  * A typeable person picker. As you type it filters existing people; pick one to
@@ -105,20 +105,20 @@ export function PersonCombobox({
         aria-label="Zoek of typ een naam"
         className={fieldBase}
       />
-      <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
 
       {/* Submitted values: an existing id, OR (when allowed) a new name to create. */}
       <input type="hidden" name={name} value={selectedId} />
       {createName && <input type="hidden" name={createName} value={canCreate ? newName : ""} />}
 
       {open && (matches.length > 0 || showCreate || showNoMatch) && (
-        <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
+        <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 text-sm shadow-lg">
           {matches.slice(0, 50).map((p) => (
             <li key={p.id}>
               <button
                 type="button"
                 onClick={() => pick(p)}
-                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-slate-700 hover:bg-slate-50"
+                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-ink-700 hover:bg-ink-50"
               >
                 <span className="truncate">{p.name}</span>
                 {selectedId === p.id && <Check className="h-4 w-4 shrink-0 text-brand-600" />}
@@ -126,7 +126,7 @@ export function PersonCombobox({
             </li>
           ))}
           {showCreate && (
-            <li className={cn(matches.length > 0 && "border-t border-slate-100")}>
+            <li className={cn(matches.length > 0 && "border-t border-ink-100")}>
               <button
                 type="button"
                 onClick={() => {
@@ -141,7 +141,7 @@ export function PersonCombobox({
             </li>
           )}
           {showNoMatch && (
-            <li className="px-3 py-2 text-slate-400">Geen medewerker gevonden.</li>
+            <li className="px-3 py-2 text-ink-400">Geen medewerker gevonden.</li>
           )}
         </ul>
       )}

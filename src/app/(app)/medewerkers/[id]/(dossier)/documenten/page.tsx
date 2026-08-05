@@ -49,19 +49,19 @@ export default async function MedewerkerDocumentenPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-slate-500" /> Documenten &amp; contract
-            <span className="text-sm font-normal text-slate-400">({m.documents.length})</span>
+            <FileText className="h-5 w-5 text-ink-500" /> Documenten &amp; contract
+            <span className="text-sm font-normal text-ink-400">({m.documents.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           <DocUploadForm employeeId={m.id} aiReady={aiReady} />
 
           {m.documents.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+            <p className="rounded-lg border border-dashed border-ink-200 px-4 py-6 text-center text-sm text-ink-400">
               Nog geen documenten. Upload hier het contract en andere dossierstukken.
             </p>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-ink-100">
               {m.documents.map((d) => {
                 const st = d.category === "DIPLOMA" ? certStatus(d.expiryDate, now) : null;
                 const days =
@@ -70,22 +70,22 @@ export default async function MedewerkerDocumentenPage({
                     : null;
                 return (
                   <div key={d.id} className="flex items-center gap-3 py-2.5">
-                    <FileText className="h-5 w-5 shrink-0 text-slate-400" />
+                    <FileText className="h-5 w-5 shrink-0 text-ink-400" />
                     <div className="min-w-0 flex-1">
                       <a
                         href={`/api/medewerkers/document/${d.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium text-slate-900 hover:text-emerald-700"
+                        className="font-medium text-ink-900 hover:text-emerald-700"
                       >
                         {d.title}
                       </a>
-                      <div className="truncate text-xs text-slate-400">{d.originalName}</div>
+                      <div className="truncate text-xs text-ink-400">{d.originalName}</div>
                       {st && (
                         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                           <Badge color={CERT_STATUS_META[st].color}>{CERT_STATUS_META[st].label}</Badge>
                           {d.expiryDate ? (
-                            <span className="text-slate-500">
+                            <span className="text-ink-500">
                               geldig tot {formatDate(d.expiryDate)}
                               {st !== "expired" && days != null && days > 0 &&
                                 ` · nog ${days} ${days === 1 ? "dag" : "dagen"}`}
@@ -95,7 +95,7 @@ export default async function MedewerkerDocumentenPage({
                                   : ` · ${-days} ${-days === 1 ? "dag" : "dagen"} verlopen`)}
                             </span>
                           ) : (
-                            <span className="text-slate-400">geen vervaldatum bekend</span>
+                            <span className="text-ink-400">geen vervaldatum bekend</span>
                           )}
                           {d.aiExtracted && (
                             <span className="inline-flex items-center gap-1 text-cyan-600">

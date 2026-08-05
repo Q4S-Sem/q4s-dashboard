@@ -19,11 +19,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
+import { person } from "@/lib/people";
 import {
   DISCIPLINES,
   CANDIDATE_SOURCES,
@@ -36,6 +38,8 @@ import {
   deleteCandidate,
   uploadCv,
   deleteCv,
+  uploadPhoto,
+  deletePhoto,
   addCandidatePlacement,
   deleteCandidatePlacement,
   saveCandidateInterviewDetails,
@@ -63,10 +67,10 @@ function toDateInputValue(d: Date | null): string {
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
         {label}
       </dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
@@ -146,7 +150,7 @@ export default async function KandidaatDetailPage({
     <div className="space-y-6">
       <Link
         href="/kandidaten"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar talentpool
       </Link>
@@ -173,10 +177,71 @@ export default async function KandidaatDetailPage({
         }
       />
 
+      {/* Identiteitskaart: profielfoto + naam, zodat je meteen weet wie je voor
+          je hebt. Zonder foto verschijnen gekleurde initialen. */}
+      <Card>
+        <CardContent className="flex flex-col gap-5 sm:flex-row sm:items-center">
+          <Avatar {...person(candidate)} size="xl" className="ring-2 ring-ink-100" />
+          <div className="min-w-0 flex-1">
+            <p className="q4s-label">Profielfoto</p>
+            <p className="mt-2 text-sm text-ink-500">
+              {candidate.photoFileName
+                ? "Deze foto verschijnt in de talentpool, de pipeline en bij sollicitaties."
+                : "Nog geen foto. Voeg er een toe — kandidaten met foto vallen sneller op in de lijsten."}
+            </p>
+            <form
+              action={uploadPhoto}
+              className="mt-3 flex flex-wrap items-center gap-3"
+            >
+              <input type="hidden" name="candidateId" value={candidate.id} />
+              <input
+                id="foto-file"
+                name="file"
+                type="file"
+                required
+                accept="image/jpeg,image/png,image/webp"
+                aria-label="Profielfoto kiezen"
+                title="Profielfoto kiezen"
+                className="block max-w-full text-sm text-ink-600 file:mr-3 file:rounded-sm file:border-0 file:bg-ink-900 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white hover:file:bg-ink-700"
+              />
+              <SubmitButton size="sm" pendingLabel="Uploaden…">
+                <Upload className="h-4 w-4" />
+                {candidate.photoFileName ? "Vervangen" : "Foto uploaden"}
+              </SubmitButton>
+              {candidate.photoFileName && (
+                <ConfirmSubmit
+                  action={deletePhoto}
+                  id={candidate.id}
+                  message="Profielfoto verwijderen?"
+                  variant="ghost"
+                >
+                  Verwijderen
+                </ConfirmSubmit>
+              )}
+            </form>
+          </div>
+        </CardContent>
+      </Card>
+
       {error === "in-use" && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           Deze kandidaat kan niet verwijderd worden zolang er sollicitaties aan
           gekoppeld zijn.
+        </p>
+      )}
+      {error === "foto" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Kies een afbeelding om te uploaden.
+        </p>
+      )}
+      {error === "foto-groot" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          De foto is te groot (max. 5 MB).
+        </p>
+      )}
+      {error === "foto-type" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          Alleen JPG, PNG of WebP.
         </p>
       )}
       {error === "upload" && (
@@ -243,7 +308,7 @@ export default async function KandidaatDetailPage({
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge options={CANDIDATE_AVAILABILITY} value={candidate.availability} />
                   {candidate.availability === "BINNENKORT" && candidate.availableFrom && (
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-ink-500">
                       vanaf {formatDate(candidate.availableFrom)}
                     </span>
                   )}
@@ -260,7 +325,7 @@ export default async function KandidaatDetailPage({
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-brand-700 hover:underline"
                   >
-                    Profiel <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                    Profiel <ExternalLink className="h-3.5 w-3.5 text-ink-400" />
                   </a>
                 ) : null
               }
@@ -274,7 +339,7 @@ export default async function KandidaatDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>Pijplijn</CardTitle>
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-ink-400">
             Interview met Q4S en bij welke bedrijven we deze kandidaat eerder plaatsten.
           </span>
         </CardHeader>
@@ -282,7 +347,7 @@ export default async function KandidaatDetailPage({
           {/* Interview met Q4S */}
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
                 Interview met Q4S
               </span>
               <InterviewSelect id={candidate.id} value={candidate.interviewStatus} />
@@ -291,7 +356,7 @@ export default async function KandidaatDetailPage({
             {candidate.interviewStatus !== "NONE" && (
               <form
                 action={saveCandidateInterviewDetails}
-                className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3"
+                className="space-y-3 rounded-lg border border-ink-200 bg-ink-50/60 p-3"
               >
                 <input type="hidden" name="id" value={candidate.id} />
                 <div className="max-w-[220px]">
@@ -323,14 +388,14 @@ export default async function KandidaatDetailPage({
           </div>
 
           {/* Plaatsingshistorie */}
-          <div className="border-t border-slate-100 pt-5">
-            <h3 className="mb-3 text-sm font-semibold text-slate-900">
+          <div className="border-t border-ink-100 pt-5">
+            <h3 className="mb-3 text-sm font-semibold text-ink-900">
               Eerder geplaatst bij
             </h3>
             {candidate.candidatePlacements.length === 0 ? (
-              <p className="text-sm text-slate-500">Nog geen plaatsingen vastgelegd.</p>
+              <p className="text-sm text-ink-500">Nog geen plaatsingen vastgelegd.</p>
             ) : (
-              <ul className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
+              <ul className="divide-y divide-ink-100 overflow-hidden rounded-lg border border-ink-200">
                 {candidate.candidatePlacements.map((p) => (
                   <li
                     key={p.id}
@@ -338,20 +403,20 @@ export default async function KandidaatDetailPage({
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2">
-                        <Building2 className="h-4 w-4 shrink-0 text-slate-400" />
-                        <span className="font-medium text-slate-900">{p.company}</span>
+                        <Building2 className="h-4 w-4 shrink-0 text-ink-400" />
+                        <span className="font-medium text-ink-900">{p.company}</span>
                         {p.role && (
-                          <span className="text-sm text-slate-500">— {p.role}</span>
+                          <span className="text-sm text-ink-500">— {p.role}</span>
                         )}
                       </div>
                       {(p.startDate || p.endDate) && (
-                        <div className="mt-0.5 text-xs text-slate-400">
+                        <div className="mt-0.5 text-xs text-ink-400">
                           {p.startDate ? formatDate(p.startDate) : "?"} –{" "}
                           {p.endDate ? formatDate(p.endDate) : "heden"}
                         </div>
                       )}
                       {p.notes && (
-                        <p className="mt-1 whitespace-pre-wrap text-xs text-slate-500">
+                        <p className="mt-1 whitespace-pre-wrap text-xs text-ink-500">
                           {p.notes}
                         </p>
                       )}
@@ -420,7 +485,7 @@ export default async function KandidaatDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>Notities</CardTitle>
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-ink-400">
             Vrije aantekeningen over deze kandidaat — alleen intern zichtbaar.
           </span>
         </CardHeader>
@@ -440,16 +505,16 @@ export default async function KandidaatDetailPage({
               href={`/api/cv/${candidate.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 font-medium text-slate-900 hover:text-brand-700"
+              className="inline-flex items-center gap-1.5 font-medium text-ink-900 hover:text-brand-700"
             >
-              <FileText className="h-4 w-4 text-slate-400" />
+              <FileText className="h-4 w-4 text-ink-400" />
               {candidate.cvOriginalName ?? "CV"}
               {candidate.cvSize != null && (
-                <span className="text-sm font-normal text-slate-400">
+                <span className="text-sm font-normal text-ink-400">
                   ({fileSize(candidate.cvSize)})
                 </span>
               )}
-              <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+              <ExternalLink className="h-3.5 w-3.5 text-ink-400" />
             </a>
             <ConfirmSubmit
               action={deleteCv}
@@ -475,7 +540,7 @@ export default async function KandidaatDetailPage({
                   required
                   aria-label="CV kiezen"
                   title="CV kiezen"
-                  className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800"
+                  className="block w-full text-sm text-ink-600 file:mr-3 file:rounded-md file:border-0 file:bg-ink-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-ink-800"
                 />
               </Field>
               <div className="sm:col-span-3">
@@ -492,20 +557,20 @@ export default async function KandidaatDetailPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileUser className="h-4 w-4 text-slate-400" /> Q4S-CV
+            <FileUser className="h-4 w-4 text-ink-400" /> Q4S-CV
           </CardTitle>
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-ink-400">
             Het CV in Q4S-opmaak met ons logo — klaar om naar een opdrachtgever te sturen.
           </span>
         </CardHeader>
         <CardContent>
           {candidate.cvProfile ? (
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="text-sm text-slate-500">
+              <div className="text-sm text-ink-500">
                 Gemaakt · bijgewerkt {formatDate(candidate.cvProfile.updatedAt)}
                 {candidate.cvProfile.anonymize ? (
-                  <span className="ml-2 inline-flex items-center gap-1 text-slate-600">
-                    <EyeOff className="h-3.5 w-3.5 text-slate-400" /> geanonimiseerd
+                  <span className="ml-2 inline-flex items-center gap-1 text-ink-600">
+                    <EyeOff className="h-3.5 w-3.5 text-ink-400" /> geanonimiseerd
                   </span>
                 ) : (
                   <span className="ml-2 text-amber-700">volledige gegevens</span>
@@ -540,7 +605,7 @@ export default async function KandidaatDetailPage({
               className="flex flex-wrap items-center justify-between gap-3"
             >
               <input type="hidden" name="candidateId" value={candidate.id} />
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-ink-500">
                 Laat de AI het CV hierboven uitlezen; daarna kun je het nakijken en als Q4S-CV
                 downloaden.
               </p>
@@ -549,7 +614,7 @@ export default async function KandidaatDetailPage({
               </SubmitButton>
             </form>
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-500">
               Upload eerst een CV hierboven — daarna kan de generator er een Q4S-CV van maken.
             </p>
           )}
@@ -562,7 +627,7 @@ export default async function KandidaatDetailPage({
           <CardTitle>Sollicitaties</CardTitle>
         </CardHeader>
         {candidate.applications.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog geen sollicitaties voor deze kandidaat.
           </CardContent>
         ) : (
@@ -580,7 +645,7 @@ export default async function KandidaatDetailPage({
                   <TD>
                     <Link
                       href={`/sollicitaties/${a.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {a.vacancy ? a.vacancy.title : "Open sollicitatie"}
                     </Link>
@@ -600,16 +665,16 @@ export default async function KandidaatDetailPage({
       <Card>
         <CardHeader>
           <CardTitle>Mogelijke matches</CardTitle>
-          <span className="inline-flex items-center gap-1.5 text-sm text-slate-400">
+          <span className="inline-flex items-center gap-1.5 text-sm text-ink-400">
             <Sparkles className="h-4 w-4" /> Zelfde discipline
           </span>
         </CardHeader>
         {!candidate.discipline ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Stel een discipline in om openstaande vacatures te matchen.
           </CardContent>
         ) : matches.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Geen openstaande vacatures binnen deze discipline.
           </CardContent>
         ) : (
@@ -627,7 +692,7 @@ export default async function KandidaatDetailPage({
                   <TD>
                     <Link
                       href={`/vacatures/${v.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {v.title}
                     </Link>
@@ -646,12 +711,12 @@ export default async function KandidaatDetailPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-slate-400" /> Notitieblok
-            <span className="text-xs font-normal text-slate-400">({crmNotes.length})</span>
+            <MessageSquare className="h-4 w-4 text-ink-400" /> Notitieblok
+            <span className="text-xs font-normal text-ink-400">({crmNotes.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+          <div className="rounded-lg border border-ink-200 bg-ink-50/60 p-4">
             <CrmNoteComposer
               key={crmNotes.length}
               action={addCandidateNote}

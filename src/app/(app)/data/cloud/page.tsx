@@ -89,9 +89,9 @@ export default async function CloudPage({
                   key={t.provider}
                   className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200"
                 >
-                  <CheckCircle2 className={`h-4 w-4 ${t.live ? "text-emerald-600" : "text-slate-300"}`} />
+                  <CheckCircle2 className={`h-4 w-4 ${t.live ? "text-emerald-600" : "text-ink-300"}`} />
                   Op {PROVIDER_META[t.provider]?.label ?? t.provider}
-                  {!t.live && <span className="text-xs font-normal text-slate-400">(klaargezet)</span>}
+                  {!t.live && <span className="text-xs font-normal text-ink-400">(klaargezet)</span>}
                 </span>
               ))}
             </div>
@@ -111,14 +111,14 @@ export default async function CloudPage({
               <Cloud className="h-6 w-6" />
             </span>
             <div>
-              <p className="font-semibold text-slate-900">
+              <p className="font-semibold text-ink-900">
                 {live
                   ? `Gekoppeld — ${targetsText}`
                   : summary.enabled
                     ? "Koppeling aan, gegevens onvolledig"
                     : "Nog niet gekoppeld — klaarzet-modus"}
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-ink-500">
                 {live
                   ? `Bestanden worden dubbel gespiegeld naar "${summary.rootFolder}"${
                       summary.source === "env" ? " (via server-instellingen)" : ""
@@ -151,20 +151,20 @@ export default async function CloudPage({
           </form>
         </CardHeader>
         <CardContent className="space-y-2">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-500">
             Alles wat je in het dashboard zet, komt automatisch in deze mappen onder{" "}
-            <span className="font-medium text-slate-700">{summary.rootFolder}</span> — en elke map is
+            <span className="font-medium text-ink-700">{summary.rootFolder}</span> — en elke map is
             doorgekoppeld aan {targetsText}:
           </p>
-          <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+          <ul className="divide-y divide-ink-100 rounded-lg border border-ink-200">
             {CLOUD_FOLDERS.map((f) => (
               <li key={f.category} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3">
                 <FolderTree className="h-4 w-4 shrink-0 text-amber-500" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-800">
+                  <p className="text-sm font-medium text-ink-800">
                     {summary.rootFolder} / {f.category}
                   </p>
-                  <p className="text-xs text-slate-500">{f.description}</p>
+                  <p className="text-xs text-ink-500">{f.description}</p>
                 </div>
                 <div className="flex shrink-0 gap-1.5">
                   {summary.targets.map((t) => (
@@ -181,7 +181,7 @@ export default async function CloudPage({
 
       {/* Koppeling instellen */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
           Koppeling instellen
         </h2>
         <CloudForm
@@ -203,10 +203,10 @@ export default async function CloudPage({
       <Card>
         <CardHeader>
           <CardTitle>Recent veiliggesteld</CardTitle>
-          <span className="text-sm text-slate-400">laatste {logs.length}</span>
+          <span className="text-sm text-ink-400">laatste {logs.length}</span>
         </CardHeader>
         {logs.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog niets gespiegeld. Upload een document of klik “Bestaande data nu veiligstellen”.
           </CardContent>
         ) : (
@@ -226,10 +226,10 @@ export default async function CloudPage({
                 const pm = PROVIDER_META[l.provider];
                 return (
                   <TR key={l.id}>
-                    <TD className="max-w-[14rem] truncate font-medium text-slate-800" title={l.originalName}>
+                    <TD className="max-w-[14rem] truncate font-medium text-ink-800" title={l.originalName}>
                       {l.originalName}
                     </TD>
-                    <TD className="max-w-[18rem] truncate text-slate-500" title={l.folder}>
+                    <TD className="max-w-[18rem] truncate text-ink-500" title={l.folder}>
                       {l.folder}
                     </TD>
                     <TD>
@@ -238,7 +238,7 @@ export default async function CloudPage({
                     <TD>
                       <Badge color={meta.color}>{meta.label}</Badge>
                     </TD>
-                    <TD className="whitespace-nowrap text-slate-500">{formatDate(l.createdAt)}</TD>
+                    <TD className="whitespace-nowrap text-ink-500">{formatDate(l.createdAt)}</TD>
                   </TR>
                 );
               })}

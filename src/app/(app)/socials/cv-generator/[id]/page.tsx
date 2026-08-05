@@ -38,7 +38,7 @@ export default async function CvProfileReviewPage({
     <div className="space-y-6">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" />
         {profile.candidate
@@ -71,31 +71,31 @@ export default async function CvProfileReviewPage({
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
           <div className="min-w-0 space-y-1">
-            <div className="flex flex-wrap items-center gap-x-2 text-sm text-slate-500">
+            <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-500">
               {profile.candidate ? (
                 <span className="inline-flex items-center gap-1.5">
-                  <User className="h-4 w-4 text-slate-400" />
+                  <User className="h-4 w-4 text-ink-400" />
                   <Link
                     href={`/kandidaten/${profile.candidateId}`}
-                    className="font-medium text-slate-900 hover:text-brand-700"
+                    className="font-medium text-ink-900 hover:text-brand-700"
                   >
                     {profile.candidate.firstName} {profile.candidate.lastName}
                   </Link>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5">
-                  <User className="h-4 w-4 text-slate-400" /> Los CV (geen kandidaat)
+                  <User className="h-4 w-4 text-ink-400" /> Los CV (geen kandidaat)
                 </span>
               )}
               {profile.sourceOriginalName && (
                 <span className="inline-flex items-center gap-1.5">
-                  <FileText className="h-4 w-4 text-slate-400" />
+                  <FileText className="h-4 w-4 text-ink-400" />
                   uit {profile.sourceOriginalName}
                 </span>
               )}
               <span>· bijgewerkt {formatDate(profile.updatedAt)}</span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-ink-400">
               De download geeft altijd de laatst opgeslagen versie — sla eerst je wijzigingen op.
             </p>
           </div>

@@ -250,16 +250,16 @@ export function ClientForm({
               </p>
             )}
             {(foundEmails.length > 1 || foundPhones.length > 1) && (
-              <div className="mt-2 space-y-1.5 text-xs text-slate-500">
+              <div className="mt-2 space-y-1.5 text-xs text-ink-500">
                 {foundEmails.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-slate-400">E-mails:</span>
+                    <span className="text-ink-400">E-mails:</span>
                     {foundEmails.map((em) => (
                       <button
                         key={em}
                         type="button"
                         onClick={() => setFieldValue("email", em)}
-                        className="rounded bg-white px-1.5 py-0.5 ring-1 ring-slate-200 transition-colors hover:ring-brand-300"
+                        className="rounded bg-white px-1.5 py-0.5 ring-1 ring-ink-200 transition-colors hover:ring-brand-300"
                       >
                         {em}
                       </button>
@@ -268,13 +268,13 @@ export function ClientForm({
                 )}
                 {foundPhones.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-slate-400">Telefoons:</span>
+                    <span className="text-ink-400">Telefoons:</span>
                     {foundPhones.map((ph) => (
                       <button
                         key={ph}
                         type="button"
                         onClick={() => setFieldValue("phone", ph)}
-                        className="rounded bg-white px-1.5 py-0.5 ring-1 ring-slate-200 transition-colors hover:ring-brand-300"
+                        className="rounded bg-white px-1.5 py-0.5 ring-1 ring-ink-200 transition-colors hover:ring-brand-300"
                       >
                         {ph}
                       </button>
@@ -317,7 +317,7 @@ export function ClientForm({
                 onBlur={(ev) => autofillAddress(ev.target.value)}
               />
             </Field>
-            {addr === "busy" && <p className="mt-1 text-xs text-slate-400">Adres opzoeken…</p>}
+            {addr === "busy" && <p className="mt-1 text-xs text-ink-400">Adres opzoeken…</p>}
             {addr === "done" && (
               <p className="mt-1 text-xs text-emerald-600">Postcode en plaats automatisch aangevuld.</p>
             )}

@@ -35,7 +35,7 @@ export function FolderTabBar({
   return (
     <nav
       aria-label={label}
-      className="flex items-end gap-1 overflow-x-auto border-b border-slate-200"
+      className="flex items-end gap-1 overflow-x-auto border-b border-ink-200"
     >
       {children}
     </nav>
@@ -46,8 +46,8 @@ export function FolderTabBar({
 // (#fafafa) zodat het mapje "open" staat.
 const TAB_BASE =
   "-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors";
-const TAB_ACTIVE = "border-slate-200 border-b-[#fafafa] bg-white text-slate-900";
-const TAB_IDLE = "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900";
+const TAB_ACTIVE = "border-ink-200 border-b-[#fafafa] bg-white text-ink-900";
+const TAB_IDLE = "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900";
 
 /** De inhoud van één mapje: icoon, tekst en eventueel een aantal. */
 function TabInner({
@@ -63,13 +63,13 @@ function TabInner({
 }) {
   return (
     <>
-      <span className={active ? "text-brand-600" : "text-slate-400"}>{icon}</span>
+      <span className={active ? "text-brand-600" : "text-ink-400"}>{icon}</span>
       {label}
       {count ? (
         <span
           className={cn(
             "rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
-            active ? "bg-brand-50 text-brand-700" : "bg-slate-100 text-slate-500",
+            active ? "bg-brand-50 text-brand-700" : "bg-ink-100 text-ink-500",
           )}
         >
           {count}

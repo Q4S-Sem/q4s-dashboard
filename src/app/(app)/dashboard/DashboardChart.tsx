@@ -33,7 +33,7 @@ export function DashboardChart({
         barCategoryGap="22%"
       >
         {/* Hairline grid, solide (nooit gestreept), recessief. */}
-        <CartesianGrid vertical={false} stroke="#e2e8f0" />
+        <CartesianGrid vertical={false} stroke="#e7e7e5" />
         <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} stroke="#898781" />
         <YAxis
           tickFormatter={(v) => `€${Math.round(Number(v) / 1000)}k`}
@@ -44,14 +44,14 @@ export function DashboardChart({
           width={52}
         />
         <Tooltip
-          cursor={{ fill: "rgba(15,23,42,0.04)" }}
+          cursor={{ fill: "rgba(232,67,10,0.06)" }}
           formatter={(value) => formatCurrency(Number(value))}
-          contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}
+          contentStyle={{ borderRadius: 2, border: "1px solid #111110", fontSize: 13 }}
         />
         <Legend wrapperStyle={{ fontSize: 13, paddingTop: 8 }} iconType="circle" />
-        <Bar dataKey="omzet" name="Omzet" fill={OMZET} radius={[4, 4, 0, 0]} maxBarSize={16} />
-        <Bar dataKey="inkoop" name="Inkoop" fill={INKOOP} radius={[4, 4, 0, 0]} maxBarSize={16} />
-        <Bar dataKey="marge" name="Marge" fill={MARGE} radius={[4, 4, 0, 0]} maxBarSize={16} />
+        <Bar dataKey="omzet" name="Omzet" fill={OMZET} radius={[2, 2, 0, 0]} maxBarSize={16} />
+        <Bar dataKey="inkoop" name="Inkoop" fill={INKOOP} radius={[2, 2, 0, 0]} maxBarSize={16} />
+        <Bar dataKey="marge" name="Marge" fill={MARGE} radius={[2, 2, 0, 0]} maxBarSize={16} />
       </BarChart>
     </ResponsiveContainer>
   );

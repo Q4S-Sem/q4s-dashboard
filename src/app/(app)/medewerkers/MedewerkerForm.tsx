@@ -88,7 +88,7 @@ export function MedewerkerForm({
       {/* Dienstverband & salaris */}
       <Card>
         <CardContent className="space-y-5">
-          <h2 className="text-sm font-semibold text-slate-900">Dienstverband &amp; salaris</h2>
+          <h2 className="text-sm font-semibold text-ink-900">Dienstverband &amp; salaris</h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Dienstverband" htmlFor="employmentType" error={e.employmentType}>
               <Select id="employmentType" name="employmentType" defaultValue={employee?.employmentType ?? "LOONDIENST"}>
@@ -127,7 +127,7 @@ export function MedewerkerForm({
       {/* Pensioenregeling */}
       <Card>
         <CardContent className="space-y-5">
-          <h2 className="text-sm font-semibold text-slate-900">Pensioenregeling</h2>
+          <h2 className="text-sm font-semibold text-ink-900">Pensioenregeling</h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <Field
               label="Regeling / uitvoerder"
@@ -175,7 +175,7 @@ export function MedewerkerForm({
       {/* Persoonlijk dossier */}
       <Card>
         <CardContent className="space-y-5">
-          <h2 className="text-sm font-semibold text-slate-900">Persoonlijk dossier</h2>
+          <h2 className="text-sm font-semibold text-ink-900">Persoonlijk dossier</h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="Geboortedatum" htmlFor="dateOfBirth" error={e.dateOfBirth}>
               <Input id="dateOfBirth" name="dateOfBirth" type="date" defaultValue={di(employee?.dateOfBirth)} />

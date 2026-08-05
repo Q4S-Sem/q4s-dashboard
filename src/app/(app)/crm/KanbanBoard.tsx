@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import type { BadgeColor } from "@/lib/domain";
 
@@ -18,17 +19,33 @@ export type KanbanCard = {
   /** 1..5 prioriteit (optioneel) — getoond als sterren. */
   stars?: number;
   meta?: string | null;
+  /** Profielfoto (kandidaatkaarten); leeg = gekleurde initialen van `title`. */
+  avatarSrc?: string | null;
+  /** Zet een avatar op de kaart, ook zonder foto. */
+  showAvatar?: boolean;
 };
 
 const ACCENT: Record<BadgeColor, string> = {
-  slate: "bg-slate-300",
+  slate: "bg-ink-300",
   blue: "bg-blue-400",
   green: "bg-emerald-400",
   amber: "bg-amber-400",
   red: "bg-red-400",
   violet: "bg-violet-400",
   cyan: "bg-cyan-400",
-  orange: "bg-orange-400",
+  orange: "bg-brand-500",
+};
+
+/** Gekleurde kop per kolom — geeft het bord in één oogopslag structuur. */
+const HEADER: Record<BadgeColor, string> = {
+  slate: "bg-ink-100 text-ink-700",
+  blue: "bg-blue-100 text-blue-800",
+  green: "bg-emerald-100 text-emerald-800",
+  amber: "bg-amber-100 text-amber-800",
+  red: "bg-red-100 text-red-800",
+  violet: "bg-violet-100 text-violet-800",
+  cyan: "bg-cyan-100 text-cyan-800",
+  orange: "bg-brand-100 text-brand-800",
 };
 
 /**
@@ -85,24 +102,30 @@ export function KanbanBoard({
               if (id) move(id, col.id);
             }}
             className={cn(
-              "flex w-72 shrink-0 flex-col rounded-xl border bg-slate-50/60 transition-colors",
-              overCol === col.id ? "border-brand-400 bg-brand-50/40" : "border-slate-200",
+              "flex w-72 shrink-0 flex-col rounded-md border bg-ink-50/70 transition-colors",
+              overCol === col.id ? "border-brand-600 bg-brand-50/60" : "border-ink-100",
             )}
           >
-            <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
-              <div className="flex items-center gap-2">
-                <span className={cn("h-2.5 w-2.5 rounded-full", accent)} />
-                <span className="text-sm font-semibold text-slate-700">{col.label}</span>
+            <div className="p-2.5">
+              <div
+                className={cn(
+                  "flex items-center justify-between gap-2 rounded-sm px-3 py-2",
+                  HEADER[col.color ?? "slate"],
+                )}
+              >
+                <span className="truncate text-[11px] font-black uppercase tracking-[0.12em]">
+                  {col.label}
+                </span>
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/70 px-1.5 text-[11px] font-black tabular-nums">
+                  {colCards.length}
+                </span>
               </div>
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-200 px-1.5 text-xs font-semibold tabular-nums text-slate-600">
-                {colCards.length}
-              </span>
+              <div className={cn("mt-1.5 h-[3px] rounded-full", accent)} />
             </div>
-            <div className={cn("h-1 rounded-full mx-3", accent)} />
 
-            <div className="flex flex-1 flex-col gap-2 p-3">
+            <div className="flex flex-1 flex-col gap-2 px-2.5 pb-2.5">
               {colCards.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
+                <p className="rounded-sm border border-dashed border-ink-200 px-3 py-6 text-center text-xs text-ink-400">
                   {emptyLabel}
                 </p>
               ) : (
@@ -117,19 +140,26 @@ export function KanbanBoard({
                     }}
                     onDragEnd={() => setDragId(null)}
                     className={cn(
-                      "group cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing",
+                      "group q4s-hoverable cursor-grab rounded-sm border border-ink-100 bg-white p-3 active:cursor-grabbing",
                       dragId === card.id && "opacity-50",
                     )}
                   >
-                    <Link
-                      href={card.href}
-                      className="block font-medium text-slate-900 hover:text-brand-700"
-                    >
-                      {card.title}
-                    </Link>
-                    {card.subtitle && (
-                      <p className="mt-0.5 truncate text-xs text-slate-500">{card.subtitle}</p>
-                    )}
+                    <div className="flex items-start gap-2.5">
+                      {card.showAvatar && (
+                        <Avatar name={card.title} src={card.avatarSrc} size="md" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={card.href}
+                          className="block truncate font-bold tracking-tight text-ink-900 hover:text-brand-600"
+                        >
+                          {card.title}
+                        </Link>
+                        {card.subtitle && (
+                          <p className="mt-0.5 truncate text-xs text-ink-500">{card.subtitle}</p>
+                        )}
+                      </div>
+                    </div>
                     {(card.tags?.length || card.stars || card.meta) && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {card.tags?.map((t, i) => (
@@ -146,14 +176,14 @@ export function KanbanBoard({
                                   "h-3.5 w-3.5",
                                   i < (card.stars ?? 0)
                                     ? "fill-amber-400 text-amber-400"
-                                    : "text-slate-300",
+                                    : "text-ink-300",
                                 )}
                               />
                             ))}
                           </span>
                         ) : null}
                         {card.meta && (
-                          <span className="text-xs text-slate-400">{card.meta}</span>
+                          <span className="text-xs text-ink-400">{card.meta}</span>
                         )}
                       </div>
                     )}

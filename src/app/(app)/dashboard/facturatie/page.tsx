@@ -163,25 +163,25 @@ export default async function FacturatieDashboardPage() {
       {received.total > 0 && (
         <Link
           href={received.awaitingCount > 0 ? "/ontvangen-facturen#wacht" : "/ontvangen-facturen?toon=tebetalen"}
-          className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-brand-300"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-ink-200 bg-white p-5 shadow-sm transition-colors hover:border-brand-300"
         >
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
               <Wallet className="h-5 w-5" />
             </span>
             <div>
-              <div className="font-semibold text-slate-900">Ontvangen facturen (ZZP)</div>
-              <div className="text-sm text-slate-500">
+              <div className="font-semibold text-ink-900">Ontvangen facturen (ZZP)</div>
+              <div className="text-sm text-ink-500">
                 Op tijd betalen wat klopt — afwijkingen wachten op een correctie.
               </div>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-6">
             <div className="text-right">
-              <div className="text-lg font-bold tabular-nums text-slate-900">
+              <div className="text-lg font-bold tabular-nums text-ink-900">
                 {formatCurrency(received.toPayAmount)}
               </div>
-              <div className="text-xs text-slate-400">{received.toPayCount} op tijd te betalen</div>
+              <div className="text-xs text-ink-400">{received.toPayCount} op tijd te betalen</div>
             </div>
             <div className="text-right">
               <div
@@ -193,7 +193,7 @@ export default async function FacturatieDashboardPage() {
               >
                 {received.awaitingCount}
               </div>
-              <div className="text-xs text-slate-400">wacht op correctie</div>
+              <div className="text-xs text-ink-400">wacht op correctie</div>
             </div>
           </div>
         </Link>
@@ -225,7 +225,7 @@ export default async function FacturatieDashboardPage() {
                   color={r.color}
                 />
               ))}
-              <div className="space-y-1 border-t border-slate-100 pt-3 text-xs text-slate-500">
+              <div className="space-y-1 border-t border-ink-100 pt-3 text-xs text-ink-500">
                 {statusRows
                   .filter((r) => r.count > 0)
                   .map((r) => (
@@ -267,21 +267,21 @@ export default async function FacturatieDashboardPage() {
                       <TD>
                         <Link
                           href={`/klanten/${c.id}`}
-                          className="font-medium text-slate-900 hover:text-emerald-700"
+                          className="font-medium text-ink-900 hover:text-emerald-700"
                         >
                           {c.name}
                         </Link>
                       </TD>
-                      <TD className="text-right tabular-nums text-slate-600">{c.count}</TD>
+                      <TD className="text-right tabular-nums text-ink-600">{c.count}</TD>
                       <TD className="w-32">
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-ink-100">
                           <div
                             className={`h-full rounded-full ${TONE.green}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
                       </TD>
-                      <TD className="text-right tabular-nums font-medium text-slate-900">
+                      <TD className="text-right tabular-nums font-medium text-ink-900">
                         {formatCurrency(c.omzet)}
                       </TD>
                     </TR>
@@ -318,25 +318,25 @@ export default async function FacturatieDashboardPage() {
                       <TD>
                         <Link
                           href={`/facturen/${inv.id}`}
-                          className="font-medium text-slate-900 hover:text-emerald-700"
+                          className="font-medium text-ink-900 hover:text-emerald-700"
                         >
                           {inv.number}
                         </Link>
                       </TD>
-                      <TD className="truncate text-slate-600">{inv.client.companyName}</TD>
+                      <TD className="truncate text-ink-600">{inv.client.companyName}</TD>
                       <TD>
                         <span
                           className={
                             overdue
                               ? "inline-flex items-center gap-1 font-medium text-red-700"
-                              : "text-slate-600"
+                              : "text-ink-600"
                           }
                         >
                           {overdue && <AlertTriangle className="h-3.5 w-3.5" />}
                           {formatDate(inv.dueDate)}
                         </span>
                       </TD>
-                      <TD className="text-right tabular-nums font-medium text-slate-900">
+                      <TD className="text-right tabular-nums font-medium text-ink-900">
                         {formatCurrency(inv.total)}
                       </TD>
                       <TD>

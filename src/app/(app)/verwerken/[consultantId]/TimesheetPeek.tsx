@@ -9,9 +9,9 @@ export type PeekDay = { label: string; hours: number; weekend: boolean };
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 px-2 py-2">
-      <div className="text-sm font-bold tabular-nums text-slate-900">{value}</div>
-      <div className="text-[11px] uppercase tracking-wide text-slate-400">{label}</div>
+    <div className="rounded-lg bg-ink-50 px-2 py-2">
+      <div className="text-sm font-bold tabular-nums text-ink-900">{value}</div>
+      <div className="text-[11px] uppercase tracking-wide text-ink-400">{label}</div>
     </div>
   );
 }
@@ -66,14 +66,14 @@ export function TimesheetPeek({
           aria-modal="true"
         >
           <div
-            className="absolute inset-0 bg-slate-900/40"
+            className="absolute inset-0 bg-ink-900/40"
             onClick={() => setOpen(false)}
           />
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+          <div className="relative w-full max-w-md rounded-2xl border border-ink-200 bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="text-base font-bold text-slate-900">{weekLabel}</h3>
-                <p className="truncate text-xs text-slate-500">
+                <h3 className="text-base font-bold text-ink-900">{weekLabel}</h3>
+                <p className="truncate text-xs text-ink-500">
                   {clientName} · {placementTitle}
                 </p>
               </div>
@@ -81,7 +81,7 @@ export function TimesheetPeek({
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Sluiten"
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-600"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -93,12 +93,12 @@ export function TimesheetPeek({
               <Stat label="Overuren" value={`${formatHours(overtimeHours)} u`} />
             </div>
 
-            <p className="mb-1.5 mt-4 text-xs font-medium uppercase tracking-wide text-slate-400">
+            <p className="mb-1.5 mt-4 text-xs font-medium uppercase tracking-wide text-ink-400">
               Uren per dag
             </p>
-            <div className="overflow-hidden rounded-lg border border-slate-100">
+            <div className="overflow-hidden rounded-lg border border-ink-100">
               {days.length === 0 ? (
-                <p className="px-3 py-3 text-sm text-slate-400">
+                <p className="px-3 py-3 text-sm text-ink-400">
                   Geen uren geregistreerd.
                 </p>
               ) : (
@@ -108,10 +108,10 @@ export function TimesheetPeek({
                     className={cn(
                       "flex items-center justify-between px-3 py-1.5 text-sm",
                       d.weekend && "bg-amber-50",
-                      i > 0 && "border-t border-slate-50",
+                      i > 0 && "border-t border-ink-50",
                     )}
                   >
-                    <span className="capitalize text-slate-600">
+                    <span className="capitalize text-ink-600">
                       {d.label}
                       {d.weekend && (
                         <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
@@ -122,7 +122,7 @@ export function TimesheetPeek({
                     <span
                       className={cn(
                         "font-medium tabular-nums",
-                        d.hours > 0 ? "text-slate-800" : "text-slate-300",
+                        d.hours > 0 ? "text-ink-800" : "text-ink-300",
                       )}
                     >
                       {formatHours(d.hours)} u

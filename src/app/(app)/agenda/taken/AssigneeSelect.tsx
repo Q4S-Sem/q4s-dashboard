@@ -22,7 +22,7 @@ export function AssigneeSelect({
 
   return (
     <span className="inline-flex items-center gap-1">
-      {pending && <Loader2 className="h-3 w-3 animate-spin text-slate-400" />}
+      {pending && <Loader2 className="h-3 w-3 animate-spin text-ink-400" />}
       <Select
         aria-label="Toewijzen aan"
         defaultValue={value ?? ""}

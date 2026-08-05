@@ -90,7 +90,7 @@ export default async function ArchiefPage({
               <form method="get" className="flex flex-wrap items-center gap-3">
                 {type && <input type="hidden" name="type" value={type} />}
                 <div className="relative flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
                   <Input name="q" defaultValue={q} placeholder="Zoek in het archief op naam of inhoud…" className="pl-9" aria-label="Zoeken" />
                 </div>
                 <button type="submit" className={buttonVariants()}>
@@ -107,19 +107,19 @@ export default async function ArchiefPage({
 
           {/* Mappen */}
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
               Mappen
             </h2>
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
               <Link
                 href={q ? `/archief?q=${encodeURIComponent(q)}` : "/archief"}
                 className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
-                  type === "" ? "border-brand-300 bg-brand-50" : "border-slate-200 bg-white hover:bg-slate-50"
+                  type === "" ? "border-brand-300 bg-brand-50" : "border-ink-200 bg-white hover:bg-ink-50"
                 }`}
               >
                 <Archive className="h-5 w-5 text-brand-600" />
-                <span className="flex-1 text-sm font-medium text-slate-800">Alles</span>
-                <span className="text-sm tabular-nums text-slate-500">{total}</span>
+                <span className="flex-1 text-sm font-medium text-ink-800">Alles</span>
+                <span className="text-sm tabular-nums text-ink-500">{total}</span>
               </Link>
               {folders.map((f) => {
                 const href = `/archief?type=${f.type}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
@@ -128,12 +128,12 @@ export default async function ArchiefPage({
                     key={f.type}
                     href={href}
                     className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
-                      type === f.type ? "border-brand-300 bg-brand-50" : "border-slate-200 bg-white hover:bg-slate-50"
+                      type === f.type ? "border-brand-300 bg-brand-50" : "border-ink-200 bg-white hover:bg-ink-50"
                     }`}
                   >
-                    <Folder className="h-5 w-5 text-slate-400" />
-                    <span className="flex-1 truncate text-sm font-medium text-slate-800">{f.label}</span>
-                    <span className="text-sm tabular-nums text-slate-500">{f.count}</span>
+                    <Folder className="h-5 w-5 text-ink-400" />
+                    <span className="flex-1 truncate text-sm font-medium text-ink-800">{f.label}</span>
+                    <span className="text-sm tabular-nums text-ink-500">{f.count}</span>
                   </Link>
                 );
               })}
@@ -144,7 +144,7 @@ export default async function ArchiefPage({
           <Card>
             <CardContent className="p-0">
               {items.length === 0 ? (
-                <p className="px-4 py-10 text-center text-sm text-slate-400">
+                <p className="px-4 py-10 text-center text-sm text-ink-400">
                   Niets gevonden in het archief.
                 </p>
               ) : (
@@ -163,19 +163,19 @@ export default async function ArchiefPage({
                         <TD>
                           <Link
                             href={`/archief/${it.id}`}
-                            className="font-medium text-slate-900 hover:text-brand-700"
+                            className="font-medium text-ink-900 hover:text-brand-700"
                           >
                             {it.label}
                           </Link>
                           {it.filesJson && (
-                            <Paperclip className="ml-2 inline h-3.5 w-3.5 text-slate-400" />
+                            <Paperclip className="ml-2 inline h-3.5 w-3.5 text-ink-400" />
                           )}
                           {it.summary && (
-                            <div className="truncate text-xs text-slate-400">{it.summary}</div>
+                            <div className="truncate text-xs text-ink-400">{it.summary}</div>
                           )}
                         </TD>
-                        <TD className="text-slate-600">{entLabel(it.entityType)}</TD>
-                        <TD className="whitespace-nowrap text-slate-600">
+                        <TD className="text-ink-600">{entLabel(it.entityType)}</TD>
+                        <TD className="whitespace-nowrap text-ink-600">
                           {formatDateLong(it.deletedAt)}
                         </TD>
                         <TD className="text-right">

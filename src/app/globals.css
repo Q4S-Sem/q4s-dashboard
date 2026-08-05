@@ -3,17 +3,50 @@
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  /* Minimalistische, neutrale stijl — zwarte knoppen/accenten op grijs/wit. */
-  --color-brand-50: #f5f5f5;
-  --color-brand-100: #e5e5e5;
-  --color-brand-200: #d4d4d4;
-  --color-brand-300: #a3a3a3;
-  --color-brand-400: #737373;
-  --color-brand-500: #404040;
-  --color-brand-600: #171717;
-  --color-brand-700: #0a0a0a;
-  --color-brand-800: #000000;
-  --color-brand-900: #000000;
+
+  /* ---------------------------------------------------------------------
+     Merkkleur = het oranje van q4s.nl (#e8430a, hover #c73508).
+     De hele app tekent hierop via `bg-brand-600`, `text-brand-700`, enz.
+     --------------------------------------------------------------------- */
+  --color-brand-50: #fff4ef;
+  --color-brand-100: #ffe3d6;
+  --color-brand-200: #ffc7ae;
+  --color-brand-300: #ffa17b;
+  --color-brand-400: #fb7440;
+  --color-brand-500: #f6551c;
+  --color-brand-600: #e8430a; /* q4s.nl primair */
+  --color-brand-700: #c73508; /* q4s.nl hover */
+  --color-brand-800: #9e2a08;
+  --color-brand-900: #7f240b;
+
+  /* Zwart/antraciet van de site — voor koppen, knoppen en randen. */
+  --color-ink-50: #f6f6f5;
+  --color-ink-100: #e7e7e5;
+  --color-ink-200: #d1d1ce;
+  --color-ink-300: #a8a8a3;
+  --color-ink-400: #787873;
+  --color-ink-500: #4d4d49;
+  --color-ink-600: #2e2e2b;
+  --color-ink-700: #1c1c1a;
+  --color-ink-800: #111110;
+  --color-ink-900: #000000;
+
+  /* ---------------------------------------------------------------------
+     q4s.nl gebruikt vrijwel geen ronde hoeken. We schalen de hele
+     radius-schaal terug, zodat élke bestaande `rounded-lg` / `rounded-xl`
+     meteen de strakke, industriële uitstraling van de site krijgt.
+     `rounded-full` blijft rond — dat houdt pillen, badges en profielfoto's
+     speels.
+     --------------------------------------------------------------------- */
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-2xl: 8px;
+  --radius-3xl: 12px;
+  --radius-4xl: 16px;
+
   /* Snappier UI — speeds up every `transition-*` utility (buttons, hovers,
      nav, pills) that doesn't set its own duration. Default is 150ms. */
   --default-transition-duration: 75ms;
@@ -25,26 +58,90 @@ body {
 }
 
 body {
-  background: #fafafa; /* koel, minimalistisch grijs */
-  color: #0f172a; /* slate-900 */
+  background: #f4f4f2; /* warm, papierachtig grijs — zoals de site */
+  color: #111110;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Selectie in merkkleur */
+::selection {
+  background: #ffd9c7;
+  color: #7f240b;
 }
 
 /* Subtle, modern scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: #c9c9c4 transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #c9c9c4;
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a3;
+  background-clip: content-box;
+}
+
+/* ---------------------------------------------------------------------------
+   Q4S-typografie — overgenomen van q4s.nl:
+   koppen zijn `font-black` met strakke negatieve letterafstand, labels zijn
+   kleine kapitalen met veel spatiëring in de merkkleur.
+   --------------------------------------------------------------------------- */
+
+/* Bovenlabel boven een kop: "WAAROM Q4S" */
+@utility q4s-eyebrow {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--color-brand-600);
+}
+
+/* Micro-label in grijs (tabelkoppen, kaartsecties) */
+@utility q4s-label {
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-ink-400);
+}
+
+/* Paginakop / grote getallen */
+@utility q4s-display {
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: var(--color-ink-900);
+}
+
+/* Het diagonale streepje onder een sectiekop op de site */
+@utility q4s-rule {
+  display: block;
+  height: 3px;
+  width: 34px;
+  background: var(--color-brand-600);
+}
+
+/* Kaart die oplicht bij hover — rand wordt zwart, zoals de expertise-blokken */
+@utility q4s-hoverable {
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+  &:hover {
+    border-color: var(--color-ink-900);
+    box-shadow: 0 10px 24px -18px rgb(0 0 0 / 0.55);
+  }
 }
 
 /* Hide number input spinners for cleaner money/hour fields */

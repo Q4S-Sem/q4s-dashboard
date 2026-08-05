@@ -39,7 +39,7 @@ export function CrmBoards({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+      <div className="flex gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1">
         {tabs.map((t) => {
           const Icon = t.icon;
           const active = tab === t.id;
@@ -50,7 +50,7 @@ export function CrmBoards({
               onClick={() => setTab(t.id)}
               className={cn(
                 "inline-flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                active ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800",
+                active ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -58,7 +58,7 @@ export function CrmBoards({
               <span
                 className={cn(
                   "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums",
-                  active ? "bg-slate-100 text-slate-600" : "bg-slate-200 text-slate-500",
+                  active ? "bg-ink-100 text-ink-600" : "bg-ink-200 text-ink-500",
                 )}
               >
                 {t.count}

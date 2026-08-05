@@ -83,7 +83,7 @@ export function FileInput({
         "relative flex cursor-pointer items-center gap-3 rounded-xl border border-dashed px-3.5 py-3 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40",
         drag
           ? "border-brand-500 bg-brand-50"
-          : "border-slate-300 bg-white hover:border-brand-400 hover:bg-brand-50/40",
+          : "border-ink-300 bg-white hover:border-brand-400 hover:bg-brand-50/40",
         className,
       )}
     >
@@ -103,8 +103,8 @@ export function FileInput({
             <FileText className="h-5 w-5" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate font-medium text-slate-800">{file.name}</span>
-            <span className="text-xs text-slate-400">
+            <span className="block truncate font-medium text-ink-800">{file.name}</span>
+            <span className="text-xs text-ink-400">
               {formatSize(file.size)} · klik om te wijzigen
             </span>
           </span>
@@ -112,7 +112,7 @@ export function FileInput({
             type="button"
             onClick={clear}
             aria-label="Bestand verwijderen"
-            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="rounded-lg p-1.5 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
           >
             <X className="h-4 w-4" />
           </button>
@@ -122,16 +122,16 @@ export function FileInput({
           <span
             className={cn(
               "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors",
-              drag ? "bg-brand-100 text-brand-600" : "bg-slate-100 text-slate-500",
+              drag ? "bg-brand-100 text-brand-600" : "bg-ink-100 text-ink-500",
             )}
           >
             <UploadCloud className="h-5 w-5" />
           </span>
           <span className="min-w-0">
-            <span className="block font-medium text-slate-700">
-              Kies een bestand <span className="font-normal text-slate-400">of sleep het hierheen</span>
+            <span className="block font-medium text-ink-700">
+              Kies een bestand <span className="font-normal text-ink-400">of sleep het hierheen</span>
             </span>
-            <span className="text-xs text-slate-400">{hint}</span>
+            <span className="text-xs text-ink-400">{hint}</span>
           </span>
         </>
       )}

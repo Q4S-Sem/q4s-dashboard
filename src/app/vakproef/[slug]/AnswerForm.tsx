@@ -23,7 +23,7 @@ export function AnswerForm({
   return (
     <form
       action={formAction}
-      className="mt-6 space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-6"
+      className="mt-6 space-y-5 rounded-xl border border-ink-200 bg-ink-50 p-6"
     >
       <input type="hidden" name="slug" value={slug} />
       <div className="hidden" aria-hidden="true">
@@ -40,13 +40,13 @@ export function AnswerForm({
       )}
 
       <fieldset className="space-y-2">
-        <legend className="mb-1 text-sm font-medium text-slate-700">
+        <legend className="mb-1 text-sm font-medium text-ink-700">
           Jouw antwoord
         </legend>
         {options.map((o, i) => (
           <label
             key={i}
-            className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 hover:border-brand-300"
+            className="flex cursor-pointer items-center gap-3 rounded-lg border border-ink-200 bg-white px-3 py-2.5 text-sm text-ink-800 hover:border-brand-300"
           >
             <input
               type="radio"
@@ -63,8 +63,8 @@ export function AnswerForm({
         )}
       </fieldset>
 
-      <div className="border-t border-slate-200 pt-4">
-        <p className="mb-3 text-sm text-slate-600">
+      <div className="border-t border-ink-200 pt-4">
+        <p className="mb-3 text-sm text-ink-600">
           Laat je gegevens achter om je resultaat te zien — en gelijk in de Q4S
           Talentpool te komen.
         </p>

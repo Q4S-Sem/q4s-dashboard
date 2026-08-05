@@ -25,7 +25,7 @@ function StatusPill({ ok, label }: { ok: boolean; label: string }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
-        ok ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500",
+        ok ? "bg-emerald-100 text-emerald-700" : "bg-ink-100 text-ink-500",
       )}
     >
       {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
@@ -67,8 +67,8 @@ export function EmailInboxPanel({
               <Mail className="h-5 w-5" />
             </span>
             <div>
-              <div className="font-semibold text-slate-900">E-mail-inbox — {address}</div>
-              <p className="text-sm text-slate-500">
+              <div className="font-semibold text-ink-900">E-mail-inbox — {address}</div>
+              <p className="text-sm text-ink-500">
                 Scan de mailbox op oude CV's (PDF/Word/Excel), lees ze uit met AI en zet ze
                 automatisch als kandidaat in het dashboard.
               </p>
@@ -81,32 +81,32 @@ export function EmailInboxPanel({
         </div>
 
         {/* Kostenraming */}
-        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <div className="rounded-xl border border-ink-200 bg-ink-50/60 p-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-800">
             <Calculator className="h-4 w-4 text-brand-600" /> Kostenraming
           </div>
           <div className="flex flex-wrap items-end gap-4">
             <label className="text-sm">
-              <span className="mb-1 block font-medium text-slate-600">Aantal e-mails met CV</span>
+              <span className="mb-1 block font-medium text-ink-600">Aantal e-mails met CV</span>
               <input
                 type="number"
                 min={0}
                 step={100}
                 value={count}
                 onChange={(e) => setCount(Number(e.target.value))}
-                className="w-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                className="w-40 rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
               />
             </label>
             <div className="text-sm">
-              <span className="mb-1 block font-medium text-slate-600">± Tokens</span>
-              <span className="tabular-nums text-slate-900">{nf.format(tokens)}</span>
+              <span className="mb-1 block font-medium text-ink-600">± Tokens</span>
+              <span className="tabular-nums text-ink-900">{nf.format(tokens)}</span>
             </div>
             <div className="text-sm">
-              <span className="mb-1 block font-medium text-slate-600">± Kosten (Gemini Flash)</span>
+              <span className="mb-1 block font-medium text-ink-600">± Kosten (Gemini Flash)</span>
               <span className="text-lg font-bold tabular-nums text-emerald-700">{formatCurrency(cost)}</span>
             </div>
           </div>
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="mt-2 text-xs text-ink-400">
             Schatting: ± {nf.format(tokensPerCv)} tokens per CV. Het echte verbruik zie je live op{" "}
             <Link href="/gebruikers/tokenverbruik" className="font-medium text-brand-700 hover:underline">
               Tokenverbruik
@@ -158,7 +158,7 @@ export function EmailInboxPanel({
             <Upload className="h-4 w-4" /> Handmatig importeren
           </Link>
           {!ready && (
-            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="inline-flex items-center gap-1.5 text-xs text-ink-400">
               <Sparkles className="h-3.5 w-3.5" /> Scannen kan zodra beide koppelingen groen zijn.
             </span>
           )}

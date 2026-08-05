@@ -73,7 +73,7 @@ export default async function PlaatsingUrenPage({ params }: { params: Promise<{ 
           </Link>
         </CardHeader>
         {timesheets.length === 0 ? (
-          <CardContent className="text-sm text-slate-500">
+          <CardContent className="text-sm text-ink-500">
             Nog geen urenstaten voor deze plaatsing.
           </CardContent>
         ) : (
@@ -89,7 +89,7 @@ export default async function PlaatsingUrenPage({ params }: { params: Promise<{ 
               {timesheets.map((ts) => (
                 <TR key={ts.id}>
                   <TD>
-                    <Link href={`/uren/${ts.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+                    <Link href={`/uren/${ts.id}`} className="font-medium text-ink-900 hover:text-brand-700">
                       {formatDate(ts.weekStart)}
                     </Link>
                   </TD>

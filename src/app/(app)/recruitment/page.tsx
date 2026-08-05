@@ -80,18 +80,18 @@ export default async function RecruitmentPage() {
           </CardHeader>
           <CardContent className="p-2">
             {recentDeals.length === 0 ? (
-              <p className="px-2 py-6 text-center text-sm text-slate-400">Nog geen deals.</p>
+              <p className="px-2 py-6 text-center text-sm text-ink-400">Nog geen deals.</p>
             ) : (
               <ul className="space-y-0.5">
                 {recentDeals.map((d) => (
                   <li key={d.id}>
                     <Link
                       href={`/crm/deals/${d.id}`}
-                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50"
+                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-ink-50"
                     >
-                      <span className="flex-1 truncate text-sm font-medium text-slate-800">
+                      <span className="flex-1 truncate text-sm font-medium text-ink-800">
                         {d.title}
-                        <span className="ml-1 text-xs font-normal text-slate-400">· {d.company}</span>
+                        <span className="ml-1 text-xs font-normal text-ink-400">· {d.company}</span>
                       </span>
                       <StatusBadge options={DEAL_STATUSES} value={d.status} />
                     </Link>
@@ -114,19 +114,19 @@ export default async function RecruitmentPage() {
           </CardHeader>
           <CardContent className="p-2">
             {recentCandidates.length === 0 ? (
-              <p className="px-2 py-6 text-center text-sm text-slate-400">Nog geen kandidaten.</p>
+              <p className="px-2 py-6 text-center text-sm text-ink-400">Nog geen kandidaten.</p>
             ) : (
               <ul className="space-y-0.5">
                 {recentCandidates.map((c) => (
                   <li key={c.id}>
                     <Link
                       href={`/kandidaten/${c.id}`}
-                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50"
+                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-ink-50"
                     >
-                      <span className="flex-1 truncate text-sm font-medium text-slate-800">
+                      <span className="flex-1 truncate text-sm font-medium text-ink-800">
                         {c.firstName} {c.lastName}
                       </span>
-                      <span className="shrink-0 text-xs text-slate-500">
+                      <span className="shrink-0 text-xs text-ink-500">
                         {labelFor(DISCIPLINES, c.discipline)}
                       </span>
                     </Link>
@@ -149,16 +149,16 @@ export default async function RecruitmentPage() {
           </CardHeader>
           <CardContent className="p-2">
             {recentApplications.length === 0 ? (
-              <p className="px-2 py-6 text-center text-sm text-slate-400">Nog geen sollicitaties.</p>
+              <p className="px-2 py-6 text-center text-sm text-ink-400">Nog geen sollicitaties.</p>
             ) : (
               <ul className="space-y-0.5">
                 {recentApplications.map((a) => (
                   <li key={a.id}>
                     <Link
                       href={`/sollicitaties/${a.id}`}
-                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50"
+                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-ink-50"
                     >
-                      <span className="flex-1 truncate text-sm font-medium text-slate-800">
+                      <span className="flex-1 truncate text-sm font-medium text-ink-800">
                         {a.candidate.firstName} {a.candidate.lastName}
                       </span>
                       <StatusBadge options={APPLICATION_STATUSES} value={a.status} />

@@ -75,7 +75,7 @@ export function SearchFilter({
 
   return (
     <div className="relative w-64">
-      <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
       <Input
         type="text"
         aria-label="Zoek op nummer, klant of naam"
@@ -89,7 +89,7 @@ export function SearchFilter({
           type="button"
           onClick={clear}
           aria-label="Wis zoekopdracht"
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-700"
         >
           <X className="h-4 w-4" />
         </button>

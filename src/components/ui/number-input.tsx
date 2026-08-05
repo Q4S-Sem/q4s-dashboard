@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 // Mirrors `fieldBase` in field.tsx (kept local to avoid a circular import).
 const base =
-  "block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:cursor-not-allowed disabled:bg-slate-50";
+  "block w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:cursor-not-allowed disabled:bg-ink-50";
 
 function selectAll(el: HTMLInputElement) {
   // Number inputs reject setSelectionRange in some browsers; .select() is safe

@@ -80,7 +80,7 @@ export function ConfirmSubmit({
           onClick={() => setOpen(true)}
           title={label}
           aria-label={label}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -95,14 +95,14 @@ export function ConfirmSubmit({
         createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div
-              className="fixed inset-0 bg-slate-900/50"
+              className="fixed inset-0 bg-ink-900/50"
               aria-hidden
               onClick={() => setOpen(false)}
             />
             <div
               role="alertdialog"
               aria-modal="true"
-              className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+              className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-ink-200 bg-white shadow-2xl"
             >
               <div className="flex items-start gap-3 px-6 pb-5 pt-6">
                 <span
@@ -114,10 +114,10 @@ export function ConfirmSubmit({
                   <AlertTriangle className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <h2 className="text-[15px] font-semibold leading-snug text-slate-900">
+                  <h2 className="text-[15px] font-semibold leading-snug text-ink-900">
                     {message}
                   </h2>
-                  <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
                     {description ?? "Dit kun je hierna niet meer terugdraaien."}
                   </p>
                 </div>
@@ -125,7 +125,7 @@ export function ConfirmSubmit({
 
               <form
                 action={action}
-                className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4"
+                className="flex justify-end gap-2 border-t border-ink-100 bg-ink-50/60 px-6 py-4"
               >
                 {id && <input type="hidden" name="id" value={id} />}
                 {hidden &&

@@ -87,9 +87,9 @@ export function ChallengeForm({
           </Field>
 
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-700">
+            <p className="text-sm font-medium text-ink-700">
               Antwoordopties{" "}
-              <span className="font-normal text-slate-400">(min. 2; laat leeg om over te slaan)</span>
+              <span className="font-normal text-ink-400">(min. 2; laat leeg om over te slaan)</span>
             </p>
             {[1, 2, 3, 4].map((n) => (
               <Input

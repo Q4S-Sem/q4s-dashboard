@@ -125,7 +125,7 @@ export default async function EvaluatiesDashboardPage() {
         <SectionCard
           icon={<BarChart3 className="h-4 w-4" />}
           title="Gemiddelde score per kwartaal"
-          action={<span className="hidden text-sm text-slate-400 sm:inline">schaal 1–4</span>}
+          action={<span className="hidden text-sm text-ink-400 sm:inline">schaal 1–4</span>}
         >
           {quarterBars.length === 0 ? (
             <Empty>Nog geen scores om te tonen.</Empty>
@@ -195,22 +195,22 @@ export default async function EvaluatiesDashboardPage() {
                     <TD>
                       <Link
                         href={`/evaluaties/${e.id}`}
-                        className="font-medium text-slate-900 hover:text-emerald-700"
+                        className="font-medium text-ink-900 hover:text-emerald-700"
                       >
                         {e.consultant.firstName} {e.consultant.lastName}
                       </Link>
                     </TD>
-                    <TD className="text-slate-600">
+                    <TD className="text-ink-600">
                       {labelFor(EVALUATION_TYPES, e.type)}
                     </TD>
-                    <TD className="whitespace-nowrap tabular-nums text-slate-600">
+                    <TD className="whitespace-nowrap tabular-nums text-ink-600">
                       Q{e.quarter} {e.year}
                     </TD>
                     <TD className="text-right tabular-nums">
                       {a !== null ? (
-                        <span className="font-medium text-slate-900">{nl1(a)} / 4</span>
+                        <span className="font-medium text-ink-900">{nl1(a)} / 4</span>
                       ) : (
-                        <span className="text-slate-400">—</span>
+                        <span className="text-ink-400">—</span>
                       )}
                     </TD>
                     <TD>

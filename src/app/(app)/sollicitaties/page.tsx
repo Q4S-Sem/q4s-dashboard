@@ -5,8 +5,10 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { APPLICATION_STATUSES } from "@/lib/domain";
+import { person } from "@/lib/people";
 import { formatDate } from "@/lib/utils";
 
 export const metadata = { title: "Sollicitaties" };
@@ -33,10 +35,10 @@ export default async function SollicitatiesPage() {
         {APPLICATION_STATUSES.map((s) => (
           <div
             key={s.value}
-            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm"
+            className="flex items-center gap-2 rounded-lg border border-ink-200 bg-white px-3 py-2 shadow-sm"
           >
             <StatusBadge options={APPLICATION_STATUSES} value={s.value} />
-            <span className="text-sm font-semibold tabular-nums text-slate-900">
+            <span className="text-sm font-semibold tabular-nums text-ink-900">
               {counts.get(s.value) ?? 0}
             </span>
           </div>
@@ -66,9 +68,12 @@ export default async function SollicitatiesPage() {
                   <TD>
                     <Link
                       href={`/sollicitaties/${a.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="group flex items-center gap-2.5"
                     >
-                      {a.candidate.firstName} {a.candidate.lastName}
+                      <Avatar {...person(a.candidate)} size="sm" />
+                      <span className="font-bold tracking-tight text-ink-900 group-hover:text-brand-600">
+                        {a.candidate.firstName} {a.candidate.lastName}
+                      </span>
                     </Link>
                   </TD>
                   <TD>{a.vacancy?.title ?? "—"}</TD>

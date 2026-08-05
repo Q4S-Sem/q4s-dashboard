@@ -127,8 +127,8 @@ export default async function OntvangenFacturenPage({
 
       {/* Zachtere melding: facturen zonder periode kunnen we (nog) niet controleren */}
       {toCheck.length > 0 && (
-        <p className="flex items-start gap-2 rounded-lg border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-          <FileQuestion className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+        <p className="flex items-start gap-2 rounded-lg border border-ink-300 bg-ink-50 px-4 py-3 text-sm text-ink-700">
+          <FileQuestion className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
           <span>
             <strong>
               {toCheck.length} factu{toCheck.length === 1 ? "ur heeft" : "ren hebben"} geen periode
@@ -219,12 +219,12 @@ export default async function OntvangenFacturenPage({
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/ontvangen-facturen/${r.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {r.consultantName}
                     </Link>
-                    {r.number && <span className="ml-2 text-sm text-slate-400">{r.number}</span>}
-                    <div className="text-xs text-slate-500">
+                    {r.number && <span className="ml-2 text-sm text-ink-400">{r.number}</span>}
+                    <div className="text-xs text-ink-500">
                       Gefactureerd {formatCurrency(r.amount)} · verwacht{" "}
                       {r.expected ? formatCurrency(r.expected.total) : "—"} ·{" "}
                       <span className="font-medium text-red-600">
@@ -233,7 +233,7 @@ export default async function OntvangenFacturenPage({
                     </div>
                   </div>
 
-                  <div className={cn("text-xs", stale ? "font-semibold text-red-600" : "text-slate-500")}>
+                  <div className={cn("text-xs", stale ? "font-semibold text-red-600" : "text-ink-500")}>
                     {r.mailed
                       ? days === 0
                         ? "Vandaag gemaild"
@@ -299,7 +299,7 @@ export default async function OntvangenFacturenPage({
               className={cn(
                 "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
                 hasWeek
-                  ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  ? "border border-ink-200 text-ink-600 hover:bg-ink-50"
                   : "bg-brand-600 text-white shadow-sm",
               )}
             >
@@ -307,7 +307,7 @@ export default async function OntvangenFacturenPage({
             </Link>
           </div>
 
-          <p className="text-center text-xs text-slate-400">
+          <p className="text-center text-xs text-ink-400">
             {hasWeek ? formatWeekLabel(anchor) : "Alle weken"} · {shown.length} factu
             {shown.length === 1 ? "ur" : "ren"} (afwijkingen staan apart hierboven)
           </p>
@@ -331,7 +331,7 @@ export default async function OntvangenFacturenPage({
             </CardContent>
           </Card>
         ) : (
-          <p className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
+          <p className="rounded-xl border border-ink-200 bg-white px-4 py-8 text-center text-sm text-ink-500">
             Geen facturen in deze selectie — alle openstaande facturen wachten op een correctie (zie hierboven).
           </p>
         )
@@ -340,14 +340,14 @@ export default async function OntvangenFacturenPage({
       )}
 
       {/* Gated: AI-uit-de-mail (later) */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-3 text-sm text-slate-500">
-        <Mail className="h-4 w-4 shrink-0 text-slate-400" />
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-ink-300 bg-ink-50/60 px-4 py-3 text-sm text-ink-500">
+        <Mail className="h-4 w-4 shrink-0 text-ink-400" />
         <span className="flex-1">
-          <strong className="font-medium text-slate-700">Binnenkort:</strong> AI leest inkomende facturen
+          <strong className="font-medium text-ink-700">Binnenkort:</strong> AI leest inkomende facturen
           automatisch uit je mailbox en zet ze hier klaar — net als de CV-inbox. Tot die tijd importeer je
           ze zelf.
         </span>
-        <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-500">
+        <span className="rounded-full bg-ink-200 px-2 py-0.5 text-xs font-semibold text-ink-500">
           Gepland
         </span>
       </div>

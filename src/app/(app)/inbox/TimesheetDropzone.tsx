@@ -25,7 +25,7 @@ export function TimesheetDropzone() {
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink-500">
           Alles wordt automatisch uitgelezen en per week gesorteerd. Of laat admin@q4s.nl doorsturen
           naar <code>/api/inbox/email</code>.
         </p>

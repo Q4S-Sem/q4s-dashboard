@@ -20,20 +20,20 @@ export const dynamic = "force-dynamic";
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="mt-1 text-sm text-slate-900">{value || "—"}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</dt>
+      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
     </div>
   );
 }
 
 function Stars({ n }: { n: number }) {
-  if (!n) return <span className="text-slate-400">Onbeoordeeld</span>;
+  if (!n) return <span className="text-ink-400">Onbeoordeeld</span>;
   return (
     <span className="inline-flex items-center gap-0.5">
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
-          className={cn("h-3.5 w-3.5", i < n ? "fill-amber-400 text-amber-400" : "text-slate-200")}
+          className={cn("h-3.5 w-3.5", i < n ? "fill-amber-400 text-amber-400" : "text-ink-200")}
         />
       ))}
     </span>
@@ -77,7 +77,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="space-y-6">
-      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
+      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
         <ArrowLeft className="h-4 w-4" /> Terug naar CRM
       </Link>
 
@@ -122,7 +122,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
             <input type="hidden" name="id" value={deal.id} />
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-ink-700 shadow-sm ring-1 ring-inset ring-ink-200 hover:bg-ink-50"
             >
               <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Opvolging afronden
             </button>
@@ -192,12 +192,12 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-slate-400" /> Notitieblok
-            <span className="text-xs font-normal text-slate-400">({notes.length})</span>
+            <MessageSquare className="h-4 w-4 text-ink-400" /> Notitieblok
+            <span className="text-xs font-normal text-ink-400">({notes.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+          <div className="rounded-lg border border-ink-200 bg-ink-50/60 p-4">
             <CrmNoteComposer
               key={notes.length}
               action={addDealNote}

@@ -79,12 +79,12 @@ export default async function VacaturesMakenPage({
         <CardContent className="p-5">
           <form action={quickCreateVacancy} className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-ink-900">
                 <Sparkles className="h-5 w-5 text-violet-500" /> Zelf een vacature toevoegen
               </h2>
               <Link
                 href="/vacatures/nieuw"
-                className="text-sm font-medium text-slate-500 hover:text-slate-900"
+                className="text-sm font-medium text-ink-500 hover:text-ink-900"
               >
                 Uitgebreid formulier →
               </Link>
@@ -115,8 +115,8 @@ export default async function VacaturesMakenPage({
       {rows.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
-            <FileText className="h-6 w-6 text-slate-300" />
-            <p className="text-sm text-slate-500">
+            <FileText className="h-6 w-6 text-ink-300" />
+            <p className="text-sm text-ink-500">
               Nog geen vacatures. Plak er hierboven één, of haal ze binnen via de{" "}
               <Link href="/vacaturehub" className="font-medium text-brand-700 hover:underline">
                 vacaturehub
@@ -128,7 +128,7 @@ export default async function VacaturesMakenPage({
       ) : (
         <>
           <VacancyWorkList vacancies={rows} />
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-ink-400">
             {rows.length} vacature(s) in totaal · {live} live op q4s.nl · {views} weergaven via de
             website
           </p>

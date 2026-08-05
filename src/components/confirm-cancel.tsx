@@ -66,31 +66,31 @@ export function ConfirmCancel({
         createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
+              className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm"
               aria-hidden
               onClick={() => setOpen(false)}
             />
             <div
               role="alertdialog"
               aria-modal="true"
-              className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+              className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-ink-200 bg-white shadow-2xl"
             >
               <div className="flex items-start gap-3 px-6 pb-5 pt-6">
                 <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <h2 className="text-[15px] font-semibold leading-snug text-slate-900">
+                  <h2 className="text-[15px] font-semibold leading-snug text-ink-900">
                     {message}
                   </h2>
                   {description && (
-                    <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{description}</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink-500">{description}</p>
                   )}
                 </div>
               </div>
 
               {/* Huisstijl van de vensters: doorgaan = groen, terug/annuleren = rood. */}
-              <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+              <div className="flex justify-end gap-2 border-t border-ink-100 bg-ink-50/60 px-6 py-4">
                 <button
                   ref={cancelRef}
                   type="button"

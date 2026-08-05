@@ -62,7 +62,7 @@ export function DiscrepancyMailButton({
 
       {popup && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-900/40 p-4"
           onClick={() => setPopup(null)}
         >
           <div
@@ -79,10 +79,10 @@ export function DiscrepancyMailButton({
             >
               {popup.ok ? <CheckCircle2 className="h-6 w-6" /> : <AlertTriangle className="h-6 w-6" />}
             </div>
-            <h3 className="mt-3 text-lg font-bold text-slate-900">
+            <h3 className="mt-3 text-lg font-bold text-ink-900">
               {popup.ok ? "Mail verzonden" : "Niet verzonden"}
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-ink-500">
               {popup.ok
                 ? popup.simulated
                   ? "De mail is klaargezet — stel SMTP in om 'm ook écht te versturen."
@@ -94,7 +94,7 @@ export function DiscrepancyMailButton({
             <button
               type="button"
               onClick={() => setPopup(null)}
-              className="mt-5 w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
+              className="mt-5 w-full rounded-lg bg-ink-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-ink-700"
             >
               Sluiten
             </button>

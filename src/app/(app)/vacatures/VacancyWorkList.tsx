@@ -65,27 +65,27 @@ function Row({ v }: { v: WorkVacancy }) {
     v.sourceName && !(v.companyName ?? "").toLowerCase().includes(v.sourceName.toLowerCase());
 
   return (
-    <li className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-slate-50/60 lg:flex-row lg:items-center lg:justify-between">
+    <li className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-ink-50/60 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0 flex-1">
         <Link
           href={`/vacatures/${v.id}`}
-          className="font-medium text-slate-900 hover:text-brand-700"
+          className="font-medium text-ink-900 hover:text-brand-700"
         >
           {v.title}
         </Link>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
           {v.location && (
             <span className="inline-flex items-center gap-1">
-              <MapPin className="h-3 w-3 text-slate-400" /> {v.location}
+              <MapPin className="h-3 w-3 text-ink-400" /> {v.location}
             </span>
           )}
           {v.companyName && <span className="truncate">{v.companyName}</span>}
-          {showSource && <span className="text-slate-400">via {v.sourceName}</span>}
+          {showSource && <span className="text-ink-400">via {v.sourceName}</span>}
           {paused && <span className="font-medium text-amber-700">gepauzeerd</span>}
           {stage === "live" && (
             <>
               <span className="inline-flex items-center gap-1">
-                <Eye className="h-3 w-3 text-slate-400" /> {v.views}
+                <Eye className="h-3 w-3 text-ink-400" /> {v.views}
               </span>
               {v.publishedAt && <span>sinds {formatDate(v.publishedAt)}</span>}
             </>
@@ -229,28 +229,28 @@ export function VacancyWorkList({ vacancies }: { vacancies: WorkVacancy[] }) {
 
       {vacancies.length > 6 && (
         <div className="relative max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
           <input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Zoek op titel, plaats of opdrachtgever…"
             aria-label="Zoek vacature"
-            className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            className="w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
           />
         </div>
       )}
 
       {rows.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-sm text-slate-500">
+          <CardContent className="py-12 text-center text-sm text-ink-500">
             {term ? `Geen vacature gevonden voor “${q}”.` : empty[tab]}
           </CardContent>
         </Card>
       ) : (
         <ul
           className={cn(
-            "divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white",
+            "divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white",
           )}
         >
           {rows.map((v) => (

@@ -6,16 +6,21 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 // Gedeelde presentatie-bouwstenen voor de analytics sub-dashboards, zodat
 // Facturatie / Recruitment / Plaatsingen / Evaluaties er identiek + strak uitzien.
 
-/** Tailwind bar-fill per badge-kleur — minimalistisch zwart/neutraal/groen palet. */
+/**
+ * Tailwind bar-fill per badge-kleur. De balk krijgt dezelfde kleur als de badge
+ * van dezelfde status, zodat een grafiek en een lijst dezelfde taal spreken.
+ */
 export const TONE: Record<string, string> = {
-  slate: "bg-slate-400",
-  blue: "bg-slate-500",
+  slate: "bg-ink-300",
+  blue: "bg-blue-500",
   green: "bg-emerald-500",
   emerald: "bg-emerald-500",
   amber: "bg-amber-500",
   red: "bg-rose-500",
-  violet: "bg-slate-500",
-  cyan: "bg-slate-500",
+  violet: "bg-violet-500",
+  cyan: "bg-cyan-500",
+  orange: "bg-brand-600",
+  brand: "bg-brand-600",
 };
 
 /** A card with a consistent icon-chip header + optional right-aligned action link. */
@@ -37,7 +42,7 @@ export function SectionCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2.5">
           {icon && (
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-brand-50 text-brand-600">
               {icon}
             </span>
           )}
@@ -55,7 +60,7 @@ export function ActionLink({ href, children }: { href: string; children: React.R
   return (
     <Link
       href={href}
-      className="shrink-0 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
+      className="shrink-0 text-sm font-medium text-ink-500 transition-colors hover:text-ink-900"
     >
       {children}
     </Link>
@@ -83,16 +88,16 @@ export function Bar({
   const pct = value > 0 ? Math.max(raw, 5) : 0;
   return (
     <div className="flex items-center gap-3">
-      <span className={cn("shrink-0 truncate text-sm text-slate-600", labelWidth)} title={typeof label === "string" ? label : undefined}>
+      <span className={cn("shrink-0 truncate text-sm text-ink-600", labelWidth)} title={typeof label === "string" ? label : undefined}>
         {label}
       </span>
-      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink-100">
         <div
           className={cn("h-full rounded-full transition-all", TONE[color] ?? "bg-emerald-500")}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="w-20 shrink-0 text-right text-sm font-semibold tabular-nums text-slate-900">
+      <span className="w-20 shrink-0 text-right text-sm font-semibold tabular-nums text-ink-900">
         {display ?? value}
       </span>
     </div>
@@ -101,5 +106,5 @@ export function Bar({
 
 /** A consistent empty-state body inside a SectionCard. */
 export function Empty({ children }: { children: React.ReactNode }) {
-  return <CardContent className="py-8 text-center text-sm text-slate-400">{children}</CardContent>;
+  return <CardContent className="py-8 text-center text-sm text-ink-400">{children}</CardContent>;
 }

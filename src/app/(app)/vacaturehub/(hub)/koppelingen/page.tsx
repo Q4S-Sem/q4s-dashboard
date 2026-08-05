@@ -87,7 +87,7 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Plug className="h-5 w-5 text-slate-500" /> Platformen koppelen
+            <Plug className="h-5 w-5 text-ink-500" /> Platformen koppelen
           </CardTitle>
           <Link
             href="/vacatures/importeren"
@@ -97,7 +97,7 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
           </Link>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-500">
             Per platform kun je hier inloggen op hun portaal, je API-sleutel aan het dashboard
             hangen en meteen ophalen. Zodra een koppeling staat, komt alles binnen in de
             vacaturehub en beoordeel je daar of we er mensen voor hebben. Werkt een platform niet
@@ -163,9 +163,9 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
 
               <CardContent className="space-y-4">
                 {/* Cijfers van deze bron */}
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-slate-500">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-ink-500">
                   <span>
-                    <span className="font-semibold text-slate-900">{stats?.total ?? 0}</span>{" "}
+                    <span className="font-semibold text-ink-900">{stats?.total ?? 0}</span>{" "}
                     binnengekomen
                   </span>
                   <span className={cn((stats?.unknown ?? 0) > 0 && "text-amber-700")}>
@@ -189,7 +189,7 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
                 {/* API-koppeling */}
                 <form
                   action={connectApi}
-                  className="grid items-end gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 lg:grid-cols-[1fr_1fr_auto]"
+                  className="grid items-end gap-3 rounded-xl border border-ink-200 bg-ink-50/60 p-4 lg:grid-cols-[1fr_1fr_auto]"
                 >
                   <input type="hidden" name="id" value={c.id} />
                   <input type="hidden" name="back" value="/vacaturehub/koppelingen" />
@@ -228,11 +228,11 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
                       <KeyRound className="h-4 w-4" /> Koppelen
                     </SubmitButton>
                     {c.apiKey && (
-                      <label className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                      <label className="inline-flex items-center gap-1.5 text-xs text-ink-500">
                         <input
                           type="checkbox"
                           name="clearKey"
-                          className="h-4 w-4 rounded border-slate-300"
+                          className="h-4 w-4 rounded border-ink-300"
                         />
                         sleutel wissen
                       </label>
@@ -241,19 +241,19 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
                 </form>
 
                 {/* Webhook als alternatief */}
-                <details className="group rounded-xl border border-slate-200 px-4 py-3">
-                  <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
-                    <Webhook className="h-4 w-4 text-slate-400" />
+                <details className="group rounded-xl border border-ink-200 px-4 py-3">
+                  <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-ink-700">
+                    <Webhook className="h-4 w-4 text-ink-400" />
                     Geen API? Laat {c.name} aanleveren via de webhook
                   </summary>
                   <div className="mt-3 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <code className="min-w-0 flex-1 truncate rounded-lg bg-slate-900 px-3 py-2 text-xs text-slate-100">
+                      <code className="min-w-0 flex-1 truncate rounded-lg bg-ink-900 px-3 py-2 text-xs text-ink-100">
                         POST {webhookUrl(c.key)}
                       </code>
                       <CopyButton text={webhookUrl(c.key)} label="Kopieer" />
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-ink-500">
                       Met header <code>x-job-token</code> = je <code>JOB_SECRET</code>. Body: een
                       lijst met <code>externalId</code>, <code>title</code>,{" "}
                       <code>description</code>, <code>company</code>, <code>location</code> en{" "}
@@ -271,21 +271,21 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-slate-500" /> Platform toevoegen
+              <Plus className="h-5 w-5 text-ink-500" /> Platform toevoegen
             </CardTitle>
-            <span className="text-sm text-slate-500">{missing.length} bekend in de NL-markt</span>
+            <span className="text-sm text-ink-500">{missing.length} bekend in de NL-markt</span>
           </CardHeader>
           <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {missing.map((p) => (
               <form
                 key={p.key}
                 action={addKnownConnector}
-                className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-4 py-3"
+                className="flex items-center justify-between gap-3 rounded-lg border border-ink-100 px-4 py-3"
               >
                 <input type="hidden" name="key" value={p.key} />
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-slate-800">{p.name}</span>
-                  <span className="line-clamp-1 text-xs text-slate-400">{p.description}</span>
+                  <span className="block truncate text-sm font-medium text-ink-800">{p.name}</span>
+                  <span className="line-clamp-1 text-xs text-ink-400">{p.description}</span>
                 </span>
                 <SubmitButton variant="outline" size="sm" pendingLabel="Bezig…">
                   <Plus className="h-3.5 w-3.5" /> Toevoegen

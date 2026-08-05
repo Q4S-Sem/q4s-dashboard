@@ -47,7 +47,7 @@ function lines(s: string): string[] {
 function PreviewSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-900">{title}</h3>
+      <h3 className="text-[11px] font-bold uppercase tracking-wider text-ink-900">{title}</h3>
       <div className="mt-2">{children}</div>
     </section>
   );
@@ -151,7 +151,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-violet-500" /> Tekst voor de website
               </CardTitle>
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-ink-500">
                 {done} van {checks.length} onderdelen
               </span>
             </CardHeader>
@@ -166,7 +166,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                     <RotateCcw className="h-4 w-4" /> Terug naar vorige tekst
                   </Button>
                 )}
-                <p className="min-w-40 flex-1 text-xs text-slate-600">
+                <p className="min-w-40 flex-1 text-xs text-ink-600">
                   De AI schrijft de originele tekst om naar Over de functie, Werkzaamheden,
                   Functie-eisen en Pré. Niets wordt opgeslagen tot jij op opslaan klikt.
                 </p>
@@ -233,7 +233,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
           <Card>
             <CardHeader>
               <CardTitle>Praktische gegevens</CardTitle>
-              <span className="text-sm text-slate-500">staan mee op de website</span>
+              <span className="text-sm text-ink-500">staan mee op de website</span>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-3">
               <Field label="Plaats" htmlFor="location">
@@ -272,27 +272,27 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
           <Card className="xl:sticky xl:top-20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5 text-slate-500" /> Zo komt hij op de website
+                <Eye className="h-5 w-5 text-ink-500" /> Zo komt hij op de website
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="space-y-1 border-b border-slate-100 pb-4">
+              <div className="space-y-1 border-b border-ink-100 pb-4">
                 {v.companyName && (
                   <p className="text-xs font-medium uppercase tracking-wide text-brand-700">
                     {v.companyName}
                   </p>
                 )}
-                <h2 className="text-lg font-bold tracking-tight text-slate-900">{v.title}</h2>
-                {meta.length > 0 && <p className="text-xs text-slate-500">{meta.join(" · ")}</p>}
+                <h2 className="text-lg font-bold tracking-tight text-ink-900">{v.title}</h2>
+                {meta.length > 0 && <p className="text-xs text-ink-500">{meta.join(" · ")}</p>}
               </div>
 
               <div className="max-h-[26rem] space-y-5 overflow-y-auto pr-1">
                 {summary.trim() ? (
                   <PreviewSection title="Over de functie">
-                    <p className="text-sm leading-relaxed text-slate-700">{summary}</p>
+                    <p className="text-sm leading-relaxed text-ink-700">{summary}</p>
                   </PreviewSection>
                 ) : (
-                  <p className="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-400">
+                  <p className="rounded-lg border border-dashed border-ink-200 px-3 py-4 text-center text-xs text-ink-400">
                     Nog geen intro — de website toont dan alleen de losse onderdelen.
                   </p>
                 )}
@@ -301,7 +301,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                   <PreviewSection title="Werkzaamheden">
                     <ul className="space-y-1.5">
                       {werk.map((t, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                        <li key={i} className="flex items-start gap-2 text-sm text-ink-700">
                           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
                           <span>{t}</span>
                         </li>
@@ -314,8 +314,8 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                   <PreviewSection title="Functie-eisen">
                     <ul className="space-y-1.5">
                       {eisen.map((t, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-300" />
+                        <li key={i} className="flex items-start gap-2 text-sm text-ink-700">
+                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-300" />
                           <span>{t}</span>
                         </li>
                       ))}
@@ -327,7 +327,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                   <PreviewSection title="Pré">
                     <ul className="space-y-1.5">
                       {pre.map((t, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                        <li key={i} className="flex items-start gap-2 text-sm text-ink-600">
                           <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
                           <span>{t}</span>
                         </li>
@@ -337,20 +337,20 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                 )}
 
                 {(location || employmentType || salary) && (
-                  <div className="grid gap-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
+                  <div className="grid gap-2 rounded-lg bg-ink-50 p-3 text-xs text-ink-600">
                     {location && (
                       <span className="inline-flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 text-slate-400" /> {location}
+                        <MapPin className="h-3.5 w-3.5 text-ink-400" /> {location}
                       </span>
                     )}
                     {employmentType && (
                       <span className="inline-flex items-center gap-1.5">
-                        <Briefcase className="h-3.5 w-3.5 text-slate-400" /> {employmentType}
+                        <Briefcase className="h-3.5 w-3.5 text-ink-400" /> {employmentType}
                       </span>
                     )}
                     {salary && (
                       <span className="inline-flex items-center gap-1.5">
-                        <Coins className="h-3.5 w-3.5 text-slate-400" /> {salary}
+                        <Coins className="h-3.5 w-3.5 text-ink-400" /> {salary}
                       </span>
                     )}
                   </div>
@@ -362,7 +362,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
       </div>
 
       {/* Vaste balk: checklist + opslaan */}
-      <div className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border border-ink-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           {checks.map((c) => (
             <span

@@ -49,7 +49,7 @@ export default async function DeclaratieBewerkenPage({
     <div className="space-y-6">
       <Link
         href="/declaraties"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar declaraties
       </Link>
@@ -158,16 +158,16 @@ export default async function DeclaratieBewerkenPage({
                 </Field>
               </div>
 
-              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-ink-200 bg-ink-50/60 p-3">
                 <input
                   type="checkbox"
                   name="vatDeductible"
                   defaultChecked={expense.vatDeductible}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/30"
+                  className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
                 />
                 <span className="min-w-0 text-sm">
-                  <span className="font-medium text-slate-900">BTW aftrekbaar (terugvorderbaar)</span>
-                  <span className="mt-0.5 block text-slate-500">
+                  <span className="font-medium text-ink-900">BTW aftrekbaar (terugvorderbaar)</span>
+                  <span className="mt-0.5 block text-ink-500">
                     Zet uit bij eten/horeca en andere niet-aftrekbare kosten — dan telt de BTW niet mee in je terugvordering.
                   </span>
                 </span>
@@ -178,7 +178,7 @@ export default async function DeclaratieBewerkenPage({
               </Field>
 
               {expense.aiNotes && (
-                <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                <p className="rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">
                   AI-notitie: {expense.aiNotes}
                 </p>
               )}
@@ -209,7 +209,7 @@ export default async function DeclaratieBewerkenPage({
           </CardHeader>
           <CardContent>
             {!hasFile ? (
-              <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+              <p className="rounded-lg border border-dashed border-ink-300 bg-ink-50 px-4 py-10 text-center text-sm text-ink-500">
                 Handmatig ingevoerd — geen bon toegevoegd.
                 <br />
                 <span className="text-xs">Een foto/scan toevoegen kan zodra Cloudflare R2 gekoppeld is.</span>
@@ -219,14 +219,14 @@ export default async function DeclaratieBewerkenPage({
               <img
                 src={`/api/declaraties/${expense.id}`}
                 alt={expense.originalName ?? "Bon"}
-                className="w-full rounded-lg border border-slate-200"
+                className="w-full rounded-lg border border-ink-200"
               />
             ) : (
               <a
                 href={`/api/declaraties/${expense.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-sm font-medium text-brand-700 hover:bg-slate-100"
+                className="flex items-center justify-center rounded-lg border border-dashed border-ink-300 bg-ink-50 px-4 py-10 text-sm font-medium text-brand-700 hover:bg-ink-100"
               >
                 Bon openen ({(expense.mimeType ?? "").includes("pdf") ? "PDF" : "bestand"})
               </a>

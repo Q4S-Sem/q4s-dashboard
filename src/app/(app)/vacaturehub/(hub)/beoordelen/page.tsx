@@ -39,7 +39,7 @@ export default async function BeoordelenPage({ searchParams }: { searchParams: P
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-amber-500" /> Nog te beoordelen
-            <span className="text-sm font-normal text-slate-400">({c.unknown})</span>
+            <span className="text-sm font-normal text-ink-400">({c.unknown})</span>
           </CardTitle>
           <form action={bulkFilterVacancies}>
             <input type="hidden" name="back" value="/vacaturehub/beoordelen" />
@@ -49,7 +49,7 @@ export default async function BeoordelenPage({ searchParams }: { searchParams: P
           </form>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-500">
             De AI kijkt of een vacature binnen de Q4S-niche valt en schrijft erbij waarom. Ben je
             het er niet mee eens, of wil je niet wachten? Beoordeel zelf met “Past bij ons” of
             “Niet passend”.

@@ -126,7 +126,7 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
       href={`/dashboard/rapportage?dim=${dim}&q=${param}&year=${year}`}
       className={cn(
         "rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors",
-        active ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50",
+        active ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-ink-50",
       )}
     >
       {label}
@@ -142,39 +142,39 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
 
       {/* Periode */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Periode</span>
-        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-400">Periode</span>
+        <div className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5">
           {periodBtn("Heel jaar", isYear, "all")}
           {QUARTERS.map((qq) => periodBtn(`Q${qq.value}`, !isYear && qNum === Number(qq.value), qq.value))}
         </div>
-        <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5">
+        <div className="inline-flex items-center gap-1 rounded-lg border border-ink-200 bg-white p-0.5">
           {year > START_YEAR ? (
-            <Link href={`/dashboard/rapportage?dim=${dim}&q=${qParam}&year=${year - 1}`} aria-label="Vorig jaar" className="rounded-md p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+            <Link href={`/dashboard/rapportage?dim=${dim}&q=${qParam}&year=${year - 1}`} aria-label="Vorig jaar" className="rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900">
               <ChevronLeft className="h-4 w-4" />
             </Link>
           ) : (
-            <span className="cursor-not-allowed p-1.5 text-slate-200"><ChevronLeft className="h-4 w-4" /></span>
+            <span className="cursor-not-allowed p-1.5 text-ink-200"><ChevronLeft className="h-4 w-4" /></span>
           )}
-          <span className="min-w-[3rem] text-center text-sm font-semibold text-slate-900">{year}</span>
+          <span className="min-w-[3rem] text-center text-sm font-semibold text-ink-900">{year}</span>
           {year < maxYear ? (
-            <Link href={`/dashboard/rapportage?dim=${dim}&q=${qParam}&year=${year + 1}`} aria-label="Volgend jaar" className="rounded-md p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+            <Link href={`/dashboard/rapportage?dim=${dim}&q=${qParam}&year=${year + 1}`} aria-label="Volgend jaar" className="rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900">
               <ChevronRight className="h-4 w-4" />
             </Link>
           ) : (
-            <span className="cursor-not-allowed p-1.5 text-slate-200"><ChevronRight className="h-4 w-4" /></span>
+            <span className="cursor-not-allowed p-1.5 text-ink-200"><ChevronRight className="h-4 w-4" /></span>
           )}
         </div>
       </div>
 
       {/* Dimensie-tabs */}
-      <div className="inline-flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-white p-0.5">
+      <div className="inline-flex flex-wrap gap-1 rounded-lg border border-ink-200 bg-white p-0.5">
         {DIMS.map((d) => (
           <Link
             key={d.value}
             href={`/dashboard/rapportage?dim=${d.value}&q=${qParam}&year=${year}`}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              dim === d.value ? "bg-violet-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50",
+              dim === d.value ? "bg-violet-600 text-white shadow-sm" : "text-ink-600 hover:bg-ink-50",
             )}
           >
             <d.icon className="h-4 w-4" /> {d.label}
@@ -191,10 +191,10 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-violet-600" /> {dimMeta.head} × omzet
             </CardTitle>
-            <span className="text-sm font-semibold tabular-nums text-slate-900">{formatCurrency(totalOmzet)}</span>
+            <span className="text-sm font-semibold tabular-nums text-ink-900">{formatCurrency(totalOmzet)}</span>
           </CardHeader>
           {rows.length === 0 ? (
-            <CardContent className="text-sm text-slate-500">Geen omzet in {periodLabel}.</CardContent>
+            <CardContent className="text-sm text-ink-500">Geen omzet in {periodLabel}.</CardContent>
           ) : (
             <Table>
               <THead>
@@ -209,16 +209,16 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
               <TBody>
                 {rows.map((r) => (
                   <TR key={r.key}>
-                    <TD className="font-medium text-slate-900">{r.label}</TD>
+                    <TD className="font-medium text-ink-900">{r.label}</TD>
                     <TD className="text-right tabular-nums">{formatCurrency(r.omzet)}</TD>
                     {r.extra.map((e, i) => (
-                      <TD key={i} className="text-right tabular-nums text-slate-600">{e}</TD>
+                      <TD key={i} className="text-right tabular-nums text-ink-600">{e}</TD>
                     ))}
                   </TR>
                 ))}
                 <TR className="hover:bg-transparent">
-                  <TD className="font-bold text-slate-900">Totaal</TD>
-                  <TD className="text-right font-bold tabular-nums text-slate-900">{formatCurrency(totalOmzet)}</TD>
+                  <TD className="font-bold text-ink-900">Totaal</TD>
+                  <TD className="text-right font-bold tabular-nums text-ink-900">{formatCurrency(totalOmzet)}</TD>
                   {extraHeaders.map((h) => (
                     <TD key={h} />
                   ))}
@@ -235,7 +235,7 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
           </CardHeader>
           <CardContent className="space-y-2.5">
             {rows.length === 0 ? (
-              <p className="py-4 text-center text-sm text-slate-400">Nog geen data.</p>
+              <p className="py-4 text-center text-sm text-ink-400">Nog geen data.</p>
             ) : (
               rows.map((r) => (
                 <MiniBar

@@ -50,7 +50,7 @@ export function InkoopfacturenOverzicht({ invoices }: { invoices: InkoopRow[] })
       header: "Nummer",
       sortValue: (r) => r.number,
       render: (r) => (
-        <Link href={`/inkoopfacturen/${r.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+        <Link href={`/inkoopfacturen/${r.id}`} className="font-medium text-ink-900 hover:text-brand-700">
           {r.number}
         </Link>
       ),
@@ -104,7 +104,7 @@ export function InkoopfacturenOverzicht({ invoices }: { invoices: InkoopRow[] })
 
       {/* Tabel — met zoeken/filteren/groeperen/sorteren */}
       {rows.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-12 text-center text-sm text-slate-500 shadow-sm">
+        <div className="rounded-xl border border-ink-200 bg-white px-4 py-12 text-center text-sm text-ink-500 shadow-sm">
           Geen inkoopfacturen in deze periode.
         </div>
       ) : (

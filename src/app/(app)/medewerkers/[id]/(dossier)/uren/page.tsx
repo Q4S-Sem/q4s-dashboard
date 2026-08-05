@@ -45,11 +45,11 @@ export default async function MedewerkerUrenPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-slate-500" /> Gewerkte uren
+            <Clock className="h-5 w-5 text-ink-500" /> Gewerkte uren
           </CardTitle>
           {s.workedHoursYear > 0 && (
-            <span className="text-sm text-slate-500">
-              {year}: <span className="font-medium text-slate-900">{formatHours(s.workedHoursYear)}</span> gewerkt
+            <span className="text-sm text-ink-500">
+              {year}: <span className="font-medium text-ink-900">{formatHours(s.workedHoursYear)}</span> gewerkt
             </span>
           )}
         </CardHeader>
@@ -77,7 +77,7 @@ export default async function MedewerkerUrenPage({
           </form>
 
           {m.worklogs.length === 0 ? (
-            <p className="py-2 text-sm text-slate-400">
+            <p className="py-2 text-sm text-ink-400">
               Nog geen uren geregistreerd. Voer per week de gewerkte uren in — het totaal verschijnt
               op het mapje Gegevens.
             </p>
@@ -94,13 +94,13 @@ export default async function MedewerkerUrenPage({
               <TBody>
                 {m.worklogs.map((w) => (
                   <TR key={w.id}>
-                    <TD className="text-slate-700">
+                    <TD className="text-ink-700">
                       {formatWeekLabel(w.weekStart)} · {formatDate(w.weekStart)}
                     </TD>
-                    <TD className="text-right font-medium tabular-nums text-slate-900">
+                    <TD className="text-right font-medium tabular-nums text-ink-900">
                       {formatHours(round2(w.hours))}
                     </TD>
-                    <TD className="text-slate-500">{w.notes ?? "—"}</TD>
+                    <TD className="text-ink-500">{w.notes ?? "—"}</TD>
                     <TD className="text-right">
                       <ConfirmSubmit
                         action={deleteWorklog}
@@ -125,11 +125,11 @@ export default async function MedewerkerUrenPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Plane className="h-5 w-5 text-slate-500" /> Verlof &amp; ziekte
+            <Plane className="h-5 w-5 text-ink-500" /> Verlof &amp; ziekte
           </CardTitle>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-ink-500">
             {s.vakantieTaken} van {round2(m.vacationDaysPerYear)} vakantiedagen op ·{" "}
-            <span className="font-medium text-slate-900">{s.vakantieRest} resterend</span>
+            <span className="font-medium text-ink-900">{s.vakantieRest} resterend</span>
           </span>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -168,7 +168,7 @@ export default async function MedewerkerUrenPage({
           </form>
 
           {m.leaves.length === 0 ? (
-            <p className="py-2 text-sm text-slate-400">Nog geen verlof geregistreerd.</p>
+            <p className="py-2 text-sm text-ink-400">Nog geen verlof geregistreerd.</p>
           ) : (
             <Table>
               <THead>
@@ -184,14 +184,14 @@ export default async function MedewerkerUrenPage({
                 {m.leaves.map((l) => (
                   <TR key={l.id}>
                     <TD><StatusBadge options={LEAVE_TYPES} value={l.type} /></TD>
-                    <TD className="text-slate-600">
+                    <TD className="text-ink-600">
                       {formatDate(l.startDate)}
                       {l.endDate && l.endDate.getTime() !== l.startDate.getTime()
                         ? ` – ${formatDate(l.endDate)}`
                         : ""}
                     </TD>
                     <TD className="text-right tabular-nums">{round2(l.days)}</TD>
-                    <TD className="text-slate-500">{l.notes ?? "—"}</TD>
+                    <TD className="text-ink-500">{l.notes ?? "—"}</TD>
                     <TD className="text-right">
                       <ConfirmSubmit
                         action={deleteLeave}

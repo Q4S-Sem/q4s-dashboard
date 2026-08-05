@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 /** Eén feitje in de rij onder de titel. */
 function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1 text-xs text-ink-600">
       {icon}
       <span className="truncate">{children}</span>
     </span>
@@ -60,7 +60,7 @@ export default async function PlaatsingDossierLayout({
     <div className="space-y-6">
       <Link
         href="/plaatsingen"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" /> Terug naar plaatsingen
       </Link>

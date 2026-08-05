@@ -20,7 +20,7 @@ function Stars({ value }: { value: number }) {
           className={
             i <= value
               ? "h-3.5 w-3.5 fill-brand-500 text-brand-500"
-              : "h-3.5 w-3.5 text-slate-300"
+              : "h-3.5 w-3.5 text-ink-300"
           }
         />
       ))}
@@ -74,7 +74,7 @@ export default async function ConnectorsPage() {
                   <TD>
                     <Link
                       href={`/connectors/${c.id}`}
-                      className="font-medium text-slate-900 hover:text-brand-700"
+                      className="font-medium text-ink-900 hover:text-brand-700"
                     >
                       {c.name}
                     </Link>

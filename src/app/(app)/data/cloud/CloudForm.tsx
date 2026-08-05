@@ -37,16 +37,16 @@ export function CloudForm({
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
           )}
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-ink-200 bg-ink-50 px-4 py-3">
             <input
               type="checkbox"
               name="cloudEnabled"
               defaultChecked={initial.enabled}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
             />
             <span>
-              <span className="block text-sm font-medium text-slate-900">Koppeling actief</span>
-              <span className="block text-xs text-slate-500">
+              <span className="block text-sm font-medium text-ink-900">Koppeling actief</span>
+              <span className="block text-xs text-ink-500">
                 Aan = uploads worden echt naar de cloud gespiegeld. Uit = klaarzet-modus
                 (alleen gelogd, niets verzonden).
               </span>
@@ -76,8 +76,8 @@ export function CloudForm({
             </Field>
           </div>
 
-          <div className="rounded-xl border border-slate-200 p-4">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="rounded-xl border border-ink-200 p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-500">
               Entra ID app-registratie (app-only, Files.ReadWrite.All)
             </p>
             <div className="grid gap-5 sm:grid-cols-2">
@@ -105,11 +105,11 @@ export function CloudForm({
                 />
               </Field>
               {hasSecret && (
-                <label className="flex items-center gap-2 self-end pb-2 text-sm text-slate-600">
+                <label className="flex items-center gap-2 self-end pb-2 text-sm text-ink-600">
                   <input
                     type="checkbox"
                     name="cloudSecretClear"
-                    className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                    className="h-4 w-4 rounded border-ink-300 text-red-600 focus:ring-red-500"
                   />
                   Secret wissen
                 </label>

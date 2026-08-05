@@ -24,38 +24,44 @@ export function AuthShell({
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       {/* LINKS — gebrand paneel */}
-      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[#1c1c1c] to-[#0a0a0a] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
+      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[#242320] to-[#0a0a0a] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
+        {/* Industriële textuur: fijne raster-lijnen + een oranje gloed, zoals de
+            hero-foto op q4s.nl. */}
         <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-40 -top-40 h-[30rem] w-[30rem] rounded-full border border-white/[0.05]" />
-          <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full border border-white/[0.05]" />
-          <div className="absolute -bottom-52 -right-36 h-[38rem] w-[38rem] rounded-full bg-white/[0.025]" />
-          <div className="absolute -bottom-32 -right-20 h-[24rem] w-[24rem] rounded-full border border-white/[0.04]" />
-          <div className="absolute right-16 top-24 h-1.5 w-1.5 rounded-full bg-white/25" />
-          <div className="absolute right-28 top-40 h-1 w-1 rounded-full bg-white/15" />
-          <div className="absolute left-1/3 top-16 h-1 w-1 rounded-full bg-white/10" />
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+              backgroundSize: "56px 56px",
+            }}
+          />
+          <div className="absolute -bottom-40 -right-32 h-[34rem] w-[34rem] rounded-full bg-brand-600/20 blur-3xl" />
+          <div className="absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-brand-600/10 blur-3xl" />
         </div>
 
         <div className="relative">
           {logoSrc ? (
-            <span className="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-3 shadow-lg shadow-black/20">
+            <span className="inline-flex items-center justify-center rounded-sm bg-white px-4 py-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={logoSrc} alt="Q4S Project Partners" className="h-9 w-auto object-contain" />
             </span>
           ) : (
-            <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-lg font-bold text-neutral-900">
+            <span className="inline-flex h-14 w-14 items-center justify-center rounded-sm bg-brand-600 text-lg font-black text-white">
               Q4S
             </span>
           )}
         </div>
 
         <div className="relative max-w-md">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.22em] text-white/45">
+          <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.25em] text-brand-500">
             Q4S Project Partners
           </p>
-          <h2 className="text-3xl font-bold leading-[1.15] tracking-tight text-white xl:text-[2.6rem]">
+          <h2 className="text-[2.6rem] font-black leading-[0.98] tracking-[-0.035em] text-white xl:text-[3.1rem]">
             Eén dashboard voor de hele Q4S-operatie.
           </h2>
-          <p className="mt-5 text-base leading-relaxed text-white/55">
+          <span className="mt-6 block h-[3px] w-10 bg-brand-600" />
+          <p className="mt-6 text-base leading-relaxed text-white/55">
             Uren, facturatie, recruitment en administratie — alles op één plek.
             Iedereen ziet direct wat er moet gebeuren.
           </p>
@@ -76,12 +82,13 @@ export function AuthShell({
             />
           )}
 
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-          <p className="mt-1.5 text-sm text-slate-500">{subtitle}</p>
+          <h1 className="q4s-display text-[28px]">{title}</h1>
+          <span className="q4s-rule mt-3" />
+          <p className="mt-3 text-sm text-ink-500">{subtitle}</p>
 
           <div className="mt-8">{children}</div>
 
-          {footer && <div className="mt-8 text-xs leading-relaxed text-slate-400">{footer}</div>}
+          {footer && <div className="mt-8 text-xs leading-relaxed text-ink-400">{footer}</div>}
         </div>
       </main>
     </div>

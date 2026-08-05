@@ -81,7 +81,7 @@ export function WeekNav({
           "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
           isAll
             ? "bg-brand-600 text-white shadow-sm"
-            : "border border-slate-200 text-slate-600 hover:bg-slate-50",
+            : "border border-ink-200 text-ink-600 hover:bg-ink-50",
         )}
       >
         Alle weken

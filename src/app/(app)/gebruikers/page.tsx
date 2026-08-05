@@ -76,7 +76,7 @@ export default async function GebruikersPage() {
             <TBody>
               {users.map((u) => (
                 <TR key={u.id}>
-                  <TD className="font-medium text-slate-900">{u.name}</TD>
+                  <TD className="font-medium text-ink-900">{u.name}</TD>
                   <TD>{u.email}</TD>
                   <TD>{u.jobTitle ?? "—"}</TD>
                   <TD>
@@ -124,7 +124,7 @@ export default async function GebruikersPage() {
         </Card>
       )}
 
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-ink-400">
         Let op: inloggen en sessies worden in de auth-fase ingeschakeld. Tot die
         tijd is dit het beheer van accounts en (versleutelde) wachtwoorden.
       </p>

@@ -80,14 +80,14 @@ export function Dropzone({
           "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400",
           dragOver
             ? "border-brand-400 bg-brand-50"
-            : "border-slate-300 bg-slate-100 hover:border-slate-400 hover:bg-slate-50",
+            : "border-ink-300 bg-ink-100 hover:border-ink-400 hover:bg-ink-50",
         )}
       >
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-ink-500 shadow-sm">
           <UploadCloud className="h-5 w-5" />
         </span>
-        <p className="text-sm font-medium text-slate-700">{label}</p>
-        {hint && <p className="text-xs text-slate-400">{hint}</p>}
+        <p className="text-sm font-medium text-ink-700">{label}</p>
+        {hint && <p className="text-xs text-ink-400">{hint}</p>}
 
         <input
           ref={inputRef}
@@ -102,26 +102,26 @@ export function Dropzone({
 
       {files.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-slate-500">
+          <span className="text-xs font-medium text-ink-500">
             {files.length} bestand{files.length === 1 ? "" : "en"} gekozen:
           </span>
           {files.slice(0, 6).map((f, i) => (
             <span
               key={i}
-              className="inline-flex max-w-[16rem] items-center gap-1 truncate rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"
+              className="inline-flex max-w-[16rem] items-center gap-1 truncate rounded-full bg-ink-100 px-2.5 py-1 text-xs text-ink-600"
               title={f.name}
             >
-              <FileText className="h-3 w-3 shrink-0 text-slate-400" />
+              <FileText className="h-3 w-3 shrink-0 text-ink-400" />
               <span className="truncate">{f.name}</span>
             </span>
           ))}
           {files.length > 6 && (
-            <span className="text-xs text-slate-400">+{files.length - 6} meer</span>
+            <span className="text-xs text-ink-400">+{files.length - 6} meer</span>
           )}
           <button
             type="button"
             onClick={clear}
-            className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-slate-400 hover:text-slate-700"
+            className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-ink-400 hover:text-ink-700"
           >
             <X className="h-3 w-3" /> wissen
           </button>

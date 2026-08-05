@@ -44,9 +44,9 @@ export default async function MedewerkerDetacheringPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-slate-500" /> Detachering
+            <Briefcase className="h-5 w-5 text-ink-500" /> Detachering
           </CardTitle>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-ink-500">
             Loondienst → wél klantfactuur, géén inkoopfactuur (salaris).
           </span>
         </CardHeader>
@@ -65,10 +65,10 @@ export default async function MedewerkerDetacheringPage({
               <TBody>
                 {detacheringen.map((p) => (
                   <TR key={p.id}>
-                    <TD className="font-medium text-slate-900">
+                    <TD className="font-medium text-ink-900">
                       {p.client?.companyName ?? "— geen bedrijf"}
                     </TD>
-                    <TD className="text-slate-600">
+                    <TD className="text-ink-600">
                       {p.title}
                       {p.workLocation ? ` · ${p.workLocation}` : ""}
                     </TD>
@@ -144,7 +144,7 @@ export default async function MedewerkerDetacheringPage({
             </form>
           )}
 
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-ink-400">
             Overuren worden aan de klant gefactureerd (toeslag) en aan {m.firstName} als loon uitbetaald
             volgens contract — er komt <span className="font-medium">géén inkoopfactuur</span>. De
             loonkost/uur is puur voor de margeweergave; het salaris zit al in de eigen loonkosten.

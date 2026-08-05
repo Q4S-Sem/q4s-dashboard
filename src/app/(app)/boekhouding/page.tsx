@@ -46,7 +46,7 @@ export default async function BoekhoudingPage({ searchParams }: { searchParams: 
       href={`/boekhouding?q=${q}&year=${year}`}
       className={cn(
         "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        active ? "bg-brand-600 text-white" : "text-slate-600 hover:bg-slate-100",
+        active ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-ink-100",
       )}
     >
       {label}
@@ -62,25 +62,25 @@ export default async function BoekhoudingPage({ searchParams }: { searchParams: 
 
       {/* Periode-filter */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
+        <div className="flex flex-wrap items-center gap-1 rounded-lg border border-ink-200 bg-white p-1">
           {QUARTERS.map((q) => periodBtn(q.label.replace(/ .*/, ""), !isYear && qNum === Number(q.value), q.value))}
           {periodBtn("Heel jaar", isYear, "jaar")}
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
+        <div className="flex items-center gap-1 rounded-lg border border-ink-200 bg-white p-1">
           {year > START_YEAR ? (
-            <Link href={`/boekhouding?q=${qParam}&year=${year - 1}`} aria-label="Vorig jaar" className="rounded-md p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+            <Link href={`/boekhouding?q=${qParam}&year=${year - 1}`} aria-label="Vorig jaar" className="rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900">
               <ChevronLeft className="h-4 w-4" />
             </Link>
           ) : (
-            <span className="p-1.5 text-slate-200"><ChevronLeft className="h-4 w-4" /></span>
+            <span className="p-1.5 text-ink-200"><ChevronLeft className="h-4 w-4" /></span>
           )}
-          <span className="min-w-[3rem] text-center text-sm font-semibold text-slate-900">{year}</span>
+          <span className="min-w-[3rem] text-center text-sm font-semibold text-ink-900">{year}</span>
           {year < maxYear ? (
-            <Link href={`/boekhouding?q=${qParam}&year=${year + 1}`} aria-label="Volgend jaar" className="rounded-md p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-900">
+            <Link href={`/boekhouding?q=${qParam}&year=${year + 1}`} aria-label="Volgend jaar" className="rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900">
               <ChevronRight className="h-4 w-4" />
             </Link>
           ) : (
-            <span className="p-1.5 text-slate-200"><ChevronRight className="h-4 w-4" /></span>
+            <span className="p-1.5 text-ink-200"><ChevronRight className="h-4 w-4" /></span>
           )}
         </div>
       </div>
@@ -89,9 +89,9 @@ export default async function BoekhoudingPage({ searchParams }: { searchParams: 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Scale className="h-5 w-5 text-slate-400" /> BTW — {o.period.label}
+            <Scale className="h-5 w-5 text-ink-400" /> BTW — {o.period.label}
           </CardTitle>
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-ink-400">
             Verschuldigd over je omzet, min de voorbelasting die je terugvordert.
           </span>
         </CardHeader>
@@ -160,7 +160,7 @@ export default async function BoekhoudingPage({ searchParams }: { searchParams: 
         <Card>
           <CardHeader>
             <CardTitle>Voorbelasting per bron</CardTitle>
-            <span className="text-sm text-slate-400">Waar je terugvorderbare BTW vandaan komt.</span>
+            <span className="text-sm text-ink-400">Waar je terugvorderbare BTW vandaan komt.</span>
           </CardHeader>
           <Table>
             <THead>
@@ -174,7 +174,7 @@ export default async function BoekhoudingPage({ searchParams }: { searchParams: 
             <TBody>
               {o.voorbelastingBronnen.map((b) => (
                 <TR key={b.key}>
-                  <TD className="font-medium text-slate-900">
+                  <TD className="font-medium text-ink-900">
                     {b.label}
                     {b.unknownVatCount > 0 && (
                       <span className="ml-2 text-xs text-amber-600">
@@ -182,13 +182,13 @@ export default async function BoekhoudingPage({ searchParams }: { searchParams: 
                       </span>
                     )}
                   </TD>
-                  <TD className="text-right text-slate-600">{b.count}</TD>
-                  <TD className="text-right text-slate-600">{formatCurrency(b.net)}</TD>
-                  <TD className="text-right font-semibold text-slate-900">{formatCurrency(b.vat)}</TD>
+                  <TD className="text-right text-ink-600">{b.count}</TD>
+                  <TD className="text-right text-ink-600">{formatCurrency(b.net)}</TD>
+                  <TD className="text-right font-semibold text-ink-900">{formatCurrency(b.vat)}</TD>
                 </TR>
               ))}
               <TR className="hover:bg-transparent">
-                <TD className="font-semibold text-slate-900">Totaal voorbelasting</TD>
+                <TD className="font-semibold text-ink-900">Totaal voorbelasting</TD>
                 <TD />
                 <TD />
                 <TD className="text-right font-bold text-emerald-700">{formatCurrency(o.voorbelasting)}</TD>
@@ -202,9 +202,9 @@ export default async function BoekhoudingPage({ searchParams }: { searchParams: 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-slate-400" /> Geldstroom {o.period.label}
+            <TrendingUp className="h-5 w-5 text-ink-400" /> Geldstroom {o.period.label}
           </CardTitle>
-          <span className="text-sm text-slate-400">
+          <span className="text-sm text-ink-400">
             Incl. BTW, op factuurdatum. Uit = inkoop + meetellende ontvangen facturen + bonnetjes.
           </span>
         </CardHeader>
@@ -221,8 +221,8 @@ export default async function BoekhoudingPage({ searchParams }: { searchParams: 
       </Card>
 
       {/* Disclaimer */}
-      <p className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-        <strong className="text-slate-600">Let op:</strong> dit is een management-overzicht ter voorbereiding en controle, geen
+      <p className="rounded-lg border border-ink-200 bg-ink-50 px-4 py-3 text-xs text-ink-500">
+        <strong className="text-ink-600">Let op:</strong> dit is een management-overzicht ter voorbereiding en controle, geen
         officiële BTW-aangifte. De echte aangifte doe je via je boekhouder of de Belastingdienst. Verlegde BTW, buitenlandse
         leveranciers, intracommunautaire leveringen en privégebruik vallen buiten deze berekening.
       </p>
@@ -240,7 +240,7 @@ function Notice({
   children: React.ReactNode;
 }) {
   const styles = {
-    info: "border-slate-200 bg-slate-50 text-slate-600",
+    info: "border-ink-200 bg-ink-50 text-ink-600",
     amber: "border-amber-200 bg-amber-50 text-amber-800",
     red: "border-red-200 bg-red-50 text-red-700",
   }[tone];

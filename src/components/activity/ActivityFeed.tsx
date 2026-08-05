@@ -43,11 +43,11 @@ export function ActivityFeed({
         <CardTitle className="flex items-center gap-2">
           <MessageSquarePlus className="h-5 w-5 text-brand-600" /> Activiteiten &amp; notities
         </CardTitle>
-        <span className="text-xs text-slate-400">{activities.length}</span>
+        <span className="text-xs text-ink-400">{activities.length}</span>
       </CardHeader>
       <CardContent className="space-y-5">
         {/* Composer — key op aantal zodat 't veld leegt na opslaan */}
-        <form key={activities.length} action={addActivity} className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+        <form key={activities.length} action={addActivity} className="space-y-2 rounded-xl border border-ink-200 bg-ink-50/60 p-3">
           <input type="hidden" name="entityType" value={entityType} />
           <input type="hidden" name="entityId" value={entityId} />
           {hidden}
@@ -65,7 +65,7 @@ export function ActivityFeed({
             <div className="w-44">
               <Input name="dueAt" type="date" aria-label="Plan datum (maakt een taak)" />
             </div>
-            <span className="mb-2 text-xs text-slate-400">Datum = geplande taak</span>
+            <span className="mb-2 text-xs text-ink-400">Datum = geplande taak</span>
             <div className="ml-auto mb-0">
               <SubmitButton size="sm" pendingLabel="Opslaan…">
                 Vastleggen
@@ -77,7 +77,7 @@ export function ActivityFeed({
         {/* Open taken */}
         {open.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gepland</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Gepland</p>
             {open.map((a) => {
               const overdue = a.dueAt ? a.dueAt.slice(0, 10) < today : false;
               return (
@@ -85,24 +85,24 @@ export function ActivityFeed({
                   <form action={completeActivity}>
                     <input type="hidden" name="id" value={a.id} />
                     {hidden}
-                    <button type="submit" title="Afronden" aria-label="Taak afronden" className="mt-0.5 text-slate-400 transition-colors hover:text-emerald-600">
+                    <button type="submit" title="Afronden" aria-label="Taak afronden" className="mt-0.5 text-ink-400 transition-colors hover:text-emerald-600">
                       <Circle className="h-4 w-4" />
                     </button>
                   </form>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge color={colorFor(CRM_NOTE_TYPES, a.type)}>{labelFor(CRM_NOTE_TYPES, a.type)}</Badge>
-                      <span className={cn("inline-flex items-center gap-1 text-xs", overdue ? "font-semibold text-rose-600" : "text-slate-500")}>
+                      <span className={cn("inline-flex items-center gap-1 text-xs", overdue ? "font-semibold text-rose-600" : "text-ink-500")}>
                         <CalendarClock className="h-3.5 w-3.5" /> {formatDate(a.dueAt)}
                         {overdue ? " · te laat" : ""}
                       </span>
                     </div>
-                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{a.body}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-ink-700">{a.body}</p>
                   </div>
                   <form action={deleteActivity}>
                     <input type="hidden" name="id" value={a.id} />
                     {hidden}
-                    <button type="submit" title="Verwijderen" aria-label="Verwijderen" className="text-slate-300 transition-colors hover:text-rose-600">
+                    <button type="submit" title="Verwijderen" aria-label="Verwijderen" className="text-ink-300 transition-colors hover:text-rose-600">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </form>
@@ -114,29 +114,29 @@ export function ActivityFeed({
 
         {/* Tijdlijn */}
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tijdlijn</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">Tijdlijn</p>
           {timeline.length === 0 ? (
-            <p className="text-sm text-slate-400">Nog niets vastgelegd.</p>
+            <p className="text-sm text-ink-400">Nog niets vastgelegd.</p>
           ) : (
             <ul className="space-y-3">
               {timeline.map((a) => (
                 <li key={a.id} className="flex items-start gap-2.5">
-                  <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", a.done ? "bg-emerald-400" : "bg-slate-300")} />
+                  <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", a.done ? "bg-emerald-400" : "bg-ink-300")} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
                       <Badge color={colorFor(CRM_NOTE_TYPES, a.type)}>{labelFor(CRM_NOTE_TYPES, a.type)}</Badge>
-                      {a.authorName && <span className="font-medium text-slate-600">{a.authorName}</span>}
+                      {a.authorName && <span className="font-medium text-ink-600">{a.authorName}</span>}
                       <span>{formatDate(a.createdAt)}</span>
                       {a.done && <span className="text-emerald-600">✓ afgerond</span>}
                     </div>
-                    <p className="mt-0.5 whitespace-pre-wrap text-sm text-slate-700">{a.body}</p>
+                    <p className="mt-0.5 whitespace-pre-wrap text-sm text-ink-700">{a.body}</p>
                   </div>
                   <div className="flex shrink-0 gap-1">
                     {a.kind === "TODO" && a.done && (
                       <form action={reopenActivity}>
                         <input type="hidden" name="id" value={a.id} />
                         {hidden}
-                        <button type="submit" title="Heropenen" aria-label="Heropenen" className="text-slate-300 transition-colors hover:text-amber-600">
+                        <button type="submit" title="Heropenen" aria-label="Heropenen" className="text-ink-300 transition-colors hover:text-amber-600">
                           <Circle className="h-4 w-4" />
                         </button>
                       </form>
@@ -144,7 +144,7 @@ export function ActivityFeed({
                     <form action={deleteActivity}>
                       <input type="hidden" name="id" value={a.id} />
                       {hidden}
-                      <button type="submit" title="Verwijderen" aria-label="Verwijderen" className="text-slate-300 transition-colors hover:text-rose-600">
+                      <button type="submit" title="Verwijderen" aria-label="Verwijderen" className="text-ink-300 transition-colors hover:text-rose-600">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </form>

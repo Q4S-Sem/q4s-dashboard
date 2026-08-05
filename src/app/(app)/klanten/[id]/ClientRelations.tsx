@@ -30,16 +30,16 @@ function SearchBox({
   label: string;
 }) {
   return (
-    <div className="border-b border-slate-100 px-5 py-3">
+    <div className="border-b border-ink-100 px-5 py-3">
       <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
         <input
           type="search"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           aria-label={label}
-          className="block w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          className="block w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
         />
       </div>
     </div>
@@ -81,7 +81,7 @@ export function PlacementsPanel({ placements }: { placements: PlacementRow[] }) 
       </CardHeader>
 
       {placements.length === 0 ? (
-        <CardContent className="text-sm text-slate-500">
+        <CardContent className="text-sm text-ink-500">
           Nog geen plaatsingen voor deze klant.
         </CardContent>
       ) : (
@@ -93,7 +93,7 @@ export function PlacementsPanel({ placements }: { placements: PlacementRow[] }) 
             label="Zoek plaatsing op werknemer of functie"
           />
           {filtered.length === 0 ? (
-            <CardContent className="text-sm text-slate-500">
+            <CardContent className="text-sm text-ink-500">
               Geen plaatsing gevonden voor “{q}”.
             </CardContent>
           ) : (
@@ -112,7 +112,7 @@ export function PlacementsPanel({ placements }: { placements: PlacementRow[] }) 
                     <TD>
                       <Link
                         href={`/plaatsingen/${p.id}`}
-                        className="font-medium text-slate-900 hover:text-brand-700"
+                        className="font-medium text-ink-900 hover:text-brand-700"
                       >
                         {p.title}
                       </Link>
@@ -162,7 +162,7 @@ export function InvoicesPanel({ invoices }: { invoices: InvoiceRow[] }) {
       </CardHeader>
 
       {invoices.length === 0 ? (
-        <CardContent className="text-sm text-slate-500">
+        <CardContent className="text-sm text-ink-500">
           Nog geen facturen voor deze klant.
         </CardContent>
       ) : (
@@ -174,7 +174,7 @@ export function InvoicesPanel({ invoices }: { invoices: InvoiceRow[] }) {
             label="Zoek factuur op nummer"
           />
           {filtered.length === 0 ? (
-            <CardContent className="text-sm text-slate-500">
+            <CardContent className="text-sm text-ink-500">
               Geen factuur gevonden voor “{q}”.
             </CardContent>
           ) : (
@@ -193,7 +193,7 @@ export function InvoicesPanel({ invoices }: { invoices: InvoiceRow[] }) {
                     <TD>
                       <Link
                         href={`/facturen/${inv.id}`}
-                        className="font-medium text-slate-900 hover:text-brand-700"
+                        className="font-medium text-ink-900 hover:text-brand-700"
                       >
                         {inv.number}
                       </Link>

@@ -24,13 +24,13 @@ export function TestConnectionButton({
   }
 
   return (
-    <div className="space-y-2 border-t border-slate-100 pt-3">
+    <div className="space-y-2 border-t border-ink-100 pt-3">
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={run}
           disabled={pending || !configured}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -40,7 +40,7 @@ export function TestConnectionButton({
           {pending ? "Testen…" : "Test verbinding"}
         </button>
         {!configured && (
-          <span className="text-xs text-slate-400">Stel eerst een sleutel in.</span>
+          <span className="text-xs text-ink-400">Stel eerst een sleutel in.</span>
         )}
       </div>
 

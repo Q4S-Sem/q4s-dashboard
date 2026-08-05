@@ -28,7 +28,7 @@ export function DashboardLine({
 }) {
   if (!data.length) {
     return (
-      <div className="flex items-center justify-center text-sm text-slate-400" style={{ height }}>
+      <div className="flex items-center justify-center text-sm text-ink-400" style={{ height }}>
         {emptyLabel}
       </div>
     );
@@ -43,13 +43,13 @@ export function DashboardLine({
             <stop offset="100%" stopColor={color} stopOpacity={0.02} />
           </linearGradient>
         </defs>
-        <CartesianGrid vertical={false} stroke="#e2e8f0" />
+        <CartesianGrid vertical={false} stroke="#e7e7e5" />
         <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} stroke="#898781" minTickGap={16} />
         <YAxis tickLine={false} axisLine={false} fontSize={12} stroke="#898781" width={40} />
         <Tooltip
-          cursor={{ stroke: "#cbd5e1" }}
+          cursor={{ stroke: "#e8430a", strokeOpacity: 0.4 }}
           formatter={(value) => fmt(Number(value))}
-          contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 13 }}
+          contentStyle={{ borderRadius: 2, border: "1px solid #111110", fontSize: 13 }}
         />
         <Area
           type="monotone"

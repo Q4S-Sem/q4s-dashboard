@@ -38,7 +38,7 @@ function FilterPill({
       className={
         active
           ? "rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white"
-          : "rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          : "rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-600 hover:bg-ink-50"
       }
     >
       {children}
@@ -114,7 +114,7 @@ export async function EvaluatiesList({
       <Card>
         <CardContent className="space-y-3 py-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="w-16 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <span className="w-16 text-xs font-semibold uppercase tracking-wide text-ink-400">
               Kwartaal
             </span>
             <FilterPill active={!quarter} href={hrefWith(basePath, sp, { quarter: undefined })}>
@@ -133,7 +133,7 @@ export async function EvaluatiesList({
 
           {years.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="w-16 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <span className="w-16 text-xs font-semibold uppercase tracking-wide text-ink-400">
                 Jaar
               </span>
               <FilterPill active={!year} href={hrefWith(basePath, sp, { year: undefined })}>
@@ -196,13 +196,13 @@ export async function EvaluatiesList({
                   const a = avgOf(e);
                   return (
                     <TR key={e.id}>
-                      <TD className="font-medium text-slate-900">
+                      <TD className="font-medium text-ink-900">
                         {e.consultant.firstName} {e.consultant.lastName}
                       </TD>
                       <TD className="whitespace-nowrap">
                         Q{e.quarter} · {e.year}
                       </TD>
-                      <TD className="text-slate-600">{e.clientName ?? "—"}</TD>
+                      <TD className="text-ink-600">{e.clientName ?? "—"}</TD>
                       <TD>
                         {a !== null ? (
                           <span
@@ -214,7 +214,7 @@ export async function EvaluatiesList({
                             {a.toLocaleString("nl-NL")} · {scoreLabel(Math.round(a))}
                           </span>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-ink-400">—</span>
                         )}
                       </TD>
                       <TD>

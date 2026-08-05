@@ -54,7 +54,7 @@ export type ContactRow = {
  *  belbare tel:-link (niet-belbare/lege waarden vallen netjes terug). */
 function PhoneCell({ phone, name }: { phone: string | null; name: string }) {
   const [shown, setShown] = useState(false);
-  if (!phone) return <span className="text-slate-400">—</span>;
+  if (!phone) return <span className="text-ink-400">—</span>;
 
   if (!shown) {
     return (
@@ -87,7 +87,7 @@ function PhoneCell({ phone, name }: { phone: string | null; name: string }) {
     );
   }
   // Waarde aanwezig maar niet belbaar → toon 'm als tekst.
-  return <span className="tabular-nums text-slate-500">{phone}</span>;
+  return <span className="tabular-nums text-ink-500">{phone}</span>;
 }
 
 export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
@@ -113,22 +113,22 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
 
   return (
     <Card>
-      <div className="border-b border-slate-100 px-5 py-3">
+      <div className="border-b border-ink-100 px-5 py-3">
         <div className="relative max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
           <input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Zoek op naam, functie, bedrijf of telefoon…"
             aria-label="Zoek contact"
-            className="block w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            className="block w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
           />
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="px-5 py-8 text-center text-sm text-slate-500">
+        <p className="px-5 py-8 text-center text-sm text-ink-500">
           Geen contact gevonden voor “{q}”.
         </p>
       ) : (
@@ -150,7 +150,7 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
                 <TD>
                   <Link
                     href={`/crm/contacten/${c.id}`}
-                    className="font-medium text-slate-900 hover:text-brand-700"
+                    className="font-medium text-ink-900 hover:text-brand-700"
                   >
                     {c.name}
                   </Link>

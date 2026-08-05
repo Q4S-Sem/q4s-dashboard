@@ -48,11 +48,11 @@ export function CvsList({ rows }: { rows: CvRow[] }) {
       sortValue: (r) => r.name.toLowerCase(),
       render: (r) => (
         <div>
-          <Link href={`/kandidaten/${r.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+          <Link href={`/kandidaten/${r.id}`} className="font-medium text-ink-900 hover:text-brand-700">
             {r.name}
           </Link>
           {(r.headline || r.location || r.email) && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-500">
               {[r.headline, r.location, r.email].filter(Boolean).join(" · ")}
             </p>
           )}
@@ -63,7 +63,7 @@ export function CvsList({ rows }: { rows: CvRow[] }) {
       key: "discipline",
       header: "Discipline",
       sortValue: (r) => r.disciplineLabel.toLowerCase(),
-      render: (r) => (r.disciplineLabel ? <span className="text-slate-700">{r.disciplineLabel}</span> : <span className="text-slate-400">—</span>),
+      render: (r) => (r.disciplineLabel ? <span className="text-ink-700">{r.disciplineLabel}</span> : <span className="text-ink-400">—</span>),
     },
     {
       key: "source",
@@ -81,7 +81,7 @@ export function CvsList({ rows }: { rows: CvRow[] }) {
       key: "createdAt",
       header: "Binnengekomen",
       sortValue: (r) => r.createdAt,
-      render: (r) => <span className="tabular-nums text-slate-600">{formatDate(new Date(r.createdAt))}</span>,
+      render: (r) => <span className="tabular-nums text-ink-600">{formatDate(new Date(r.createdAt))}</span>,
     },
     {
       key: "cv",
@@ -94,10 +94,10 @@ export function CvsList({ rows }: { rows: CvRow[] }) {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800"
           >
-            <FileText className="h-4 w-4" /> Bekijk <ExternalLink className="h-3 w-3 text-slate-400" />
+            <FileText className="h-4 w-4" /> Bekijk <ExternalLink className="h-3 w-3 text-ink-400" />
           </a>
         ) : (
-          <span className="text-slate-400">—</span>
+          <span className="text-ink-400">—</span>
         ),
     },
     {

@@ -201,3 +201,30 @@ export async function saveCvUpload(file: File): Promise<string> {
 export async function deleteCvUpload(fileName: string): Promise<void> {
   await deleteObject(cvKey(fileName));
 }
+
+// ---------- Profielfoto's van kandidaten ----------
+
+/** Toegestane foto-formaten; alles daarbuiten weigeren we vóór het opslaan. */
+export const PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+export function photoKey(fileName: string): string {
+  return `_foto/${fileName}`;
+}
+
+/**
+ * Bewaar een profielfoto; geeft de opgeslagen (willekeurige) bestandsnaam terug.
+ * Bewust NIET gespiegeld naar de Data-map/cloud: een pasfoto is een
+ * persoonsgegeven en hoort niet in de gedeelde documentenmappen (AVG).
+ */
+export async function savePhotoUpload(file: File): Promise<string> {
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const ext = path.extname(file.name) || ".jpg";
+  const fileName = `${randomUUID()}${ext}`;
+  await putObject(photoKey(fileName), bytes, file.type || undefined);
+  return fileName;
+}
+
+export async function deletePhotoUpload(fileName: string): Promise<void> {
+  await deleteObject(photoKey(fileName));
+}

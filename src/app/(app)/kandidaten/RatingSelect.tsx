@@ -9,13 +9,13 @@ const TONE: Record<string, string> = {
   GOED: "border-emerald-200 bg-emerald-50 text-emerald-700",
   REDELIJK: "border-amber-200 bg-amber-50 text-amber-700",
   NIET_MEER: "border-red-200 bg-red-50 text-red-700",
-  ONBEKEND: "border-slate-200 bg-white text-slate-600",
+  ONBEKEND: "border-ink-200 bg-white text-ink-600",
 };
 const DOT: Record<string, string> = {
   GOED: "bg-emerald-500",
   REDELIJK: "bg-amber-500",
   NIET_MEER: "bg-red-500",
-  ONBEKEND: "bg-slate-300",
+  ONBEKEND: "bg-ink-300",
 };
 
 /**
@@ -115,14 +115,14 @@ export function RatingSelect({
             left: pos.left,
             width: Math.max(pos.width, 208),
           }}
-          className="z-50 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5"
+          className="z-50 overflow-hidden rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5"
         >
           {CANDIDATE_RATINGS.map((r) => (
             <button
               key={r.value}
               type="button"
               onClick={() => choose(r.value)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50"
             >
               <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[r.value] ?? DOT.ONBEKEND}`} />
               <span className="flex-1">{r.label}</span>

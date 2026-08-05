@@ -31,7 +31,7 @@ function FollowUpRow({ item, tone }: { item: FollowUpItem; tone: "red" | "amber"
   const toneMap = {
     red: "text-red-600",
     amber: "text-amber-600",
-    slate: "text-slate-400",
+    slate: "text-ink-400",
   };
   return (
     <li className="flex items-center gap-3 px-5 py-3">
@@ -41,18 +41,18 @@ function FollowUpRow({ item, tone }: { item: FollowUpItem; tone: "red" | "amber"
         <button
           type="submit"
           title="Afronden"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-300 hover:bg-emerald-50 hover:text-emerald-600"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-300 hover:bg-emerald-50 hover:text-emerald-600"
         >
           <CheckCircle2 className="h-5 w-5" />
         </button>
       </form>
       <div className="min-w-0 flex-1">
-        <Link href={item.href} className="block truncate font-medium text-slate-900 hover:text-brand-700">
+        <Link href={item.href} className="block truncate font-medium text-ink-900 hover:text-brand-700">
           {item.title}
         </Link>
-        {item.subtitle && <p className="truncate text-xs text-slate-500">{item.subtitle}</p>}
+        {item.subtitle && <p className="truncate text-xs text-ink-500">{item.subtitle}</p>}
       </div>
-      {item.ownerName && <span className="hidden text-xs text-slate-400 sm:block">{item.ownerName}</span>}
+      {item.ownerName && <span className="hidden text-xs text-ink-400 sm:block">{item.ownerName}</span>}
       <span className={cn("inline-flex items-center gap-1 text-xs font-medium tabular-nums", toneMap[tone])}>
         <CalendarClock className="h-3.5 w-3.5" />
         {formatDate(item.due)}
@@ -92,7 +92,7 @@ export default async function OpvolgingPage({
       href={`/crm/opvolging?scope=${value}`}
       className={cn(
         "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        scope === value ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800",
+        scope === value ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
       )}
     >
       {label}
@@ -103,7 +103,7 @@ export default async function OpvolgingPage({
 
   return (
     <div className="space-y-6">
-      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
+      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
         <ArrowLeft className="h-4 w-4" /> Terug naar CRM
       </Link>
 
@@ -112,7 +112,7 @@ export default async function OpvolgingPage({
         description="Alles wat een vervolgactie nodig heeft — geplande opvolgingen en openstaande taken. Niets valt tussen wal en schip."
       />
 
-      <div className="inline-flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+      <div className="inline-flex gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1">
         {scopeTab("mine", "Mijn opvolging")}
         {scopeTab("all", "Team")}
       </div>
@@ -132,7 +132,7 @@ export default async function OpvolgingPage({
                   <AlertTriangle className="h-4 w-4" /> Over tijd ({overdue.length})
                 </CardTitle>
               </CardHeader>
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-ink-100">
                 {overdue.map((i) => (
                   <FollowUpRow key={i.id} item={i} tone="red" />
                 ))}
@@ -147,9 +147,9 @@ export default async function OpvolgingPage({
               </CardTitle>
             </CardHeader>
             {today.length === 0 ? (
-              <CardContent className="text-sm text-slate-500">Niets gepland voor vandaag.</CardContent>
+              <CardContent className="text-sm text-ink-500">Niets gepland voor vandaag.</CardContent>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-ink-100">
                 {today.map((i) => (
                   <FollowUpRow key={i.id} item={i} tone="amber" />
                 ))}
@@ -161,10 +161,10 @@ export default async function OpvolgingPage({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CalendarClock className="h-4 w-4 text-slate-400" /> Binnenkort ({upcoming.length})
+                  <CalendarClock className="h-4 w-4 text-ink-400" /> Binnenkort ({upcoming.length})
                 </CardTitle>
               </CardHeader>
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-ink-100">
                 {upcoming.map((i) => (
                   <FollowUpRow key={i.id} item={i} tone="slate" />
                 ))}
@@ -176,13 +176,13 @@ export default async function OpvolgingPage({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <ListTodo className="h-4 w-4 text-slate-400" /> Openstaande taken ({tasks.length})
+                  <ListTodo className="h-4 w-4 text-ink-400" /> Openstaande taken ({tasks.length})
                 </CardTitle>
                 <Link href="/agenda/taken" className="text-sm text-brand-700 hover:underline">
                   Alle taken
                 </Link>
               </CardHeader>
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-ink-100">
                 {tasks.map((t) => (
                   <li key={t.id} className="flex items-center gap-3 px-5 py-3">
                     <form action={completeTask}>
@@ -190,17 +190,17 @@ export default async function OpvolgingPage({
                       <button
                         type="submit"
                         title="Afvinken"
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-300 hover:bg-emerald-50 hover:text-emerald-600"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-300 hover:bg-emerald-50 hover:text-emerald-600"
                       >
                         <CheckCircle2 className="h-5 w-5" />
                       </button>
                     </form>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-slate-900">{t.title}</p>
-                      {t.notes && <p className="truncate text-xs text-slate-500">{t.notes}</p>}
+                      <p className="truncate font-medium text-ink-900">{t.title}</p>
+                      {t.notes && <p className="truncate text-xs text-ink-500">{t.notes}</p>}
                     </div>
                     <StatusBadge options={TASK_PRIORITIES} value={t.priority} />
-                    <span className="w-24 text-right text-xs text-slate-400 tabular-nums">
+                    <span className="w-24 text-right text-xs text-ink-400 tabular-nums">
                       {t.dueDate ? formatDate(t.dueDate) : "—"}
                     </span>
                   </li>

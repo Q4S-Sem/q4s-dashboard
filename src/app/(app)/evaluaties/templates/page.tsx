@@ -52,13 +52,13 @@ export default function TemplatesPage() {
         description="Blanco sjablonen om te downloaden — om in te vullen of naar de klant/inlener te sturen."
       />
 
-      <p className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+      <p className="flex items-start gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3 text-sm text-ink-600">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
         <span>
           Plaats je template-bestanden in de projectmap{" "}
-          <code className="rounded bg-slate-100 px-1">public/templates/evaluaties/</code>{" "}
+          <code className="rounded bg-ink-100 px-1">public/templates/evaluaties/</code>{" "}
           (evaluatieformulieren) en{" "}
-          <code className="rounded bg-slate-100 px-1">public/templates/certificeringen/</code>{" "}
+          <code className="rounded bg-ink-100 px-1">public/templates/certificeringen/</code>{" "}
           (certificaten). Alles wat je daar neerzet, verschijnt hier automatisch als
           download.
         </span>
@@ -70,22 +70,22 @@ export default function TemplatesPage() {
             <CardTitle className="flex items-center gap-2">
               <FolderOpen className="h-5 w-5 text-brand-600" /> {g.label}
             </CardTitle>
-            <code className="text-xs text-slate-400">public/templates/{g.dir}/</code>
+            <code className="text-xs text-ink-400">public/templates/{g.dir}/</code>
           </CardHeader>
           <CardContent className="p-0">
             {g.files.length === 0 ? (
-              <p className="px-6 py-6 text-sm text-slate-500">
+              <p className="px-6 py-6 text-sm text-ink-500">
                 Nog geen bestanden. {g.hint} Plaats ze in{" "}
-                <code className="rounded bg-slate-100 px-1">public/templates/{g.dir}/</code>.
+                <code className="rounded bg-ink-100 px-1">public/templates/{g.dir}/</code>.
               </p>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-ink-100">
                 {g.files.map((f) => (
                   <li key={f.name} className="flex items-center justify-between gap-3 px-5 py-3">
-                    <span className="flex min-w-0 items-center gap-2 text-sm text-slate-700">
-                      <FileText className="h-4 w-4 shrink-0 text-slate-400" />
+                    <span className="flex min-w-0 items-center gap-2 text-sm text-ink-700">
+                      <FileText className="h-4 w-4 shrink-0 text-ink-400" />
                       <span className="truncate">{f.name}</span>
-                      <span className="shrink-0 text-xs text-slate-400">{f.kb} KB</span>
+                      <span className="shrink-0 text-xs text-ink-400">{f.kb} KB</span>
                     </span>
                     <a
                       href={f.href}

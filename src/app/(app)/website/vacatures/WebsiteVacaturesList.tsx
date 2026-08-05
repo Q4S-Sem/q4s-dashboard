@@ -34,11 +34,11 @@ export function WebsiteVacaturesList({ rows }: { rows: VacancyRow[] }) {
       sortValue: (r) => r.title.toLowerCase(),
       render: (r) => (
         <div>
-          <Link href={`/vacatures/${r.id}`} className="font-medium text-slate-900 hover:text-brand-700">
+          <Link href={`/vacatures/${r.id}`} className="font-medium text-ink-900 hover:text-brand-700">
             {r.title}
           </Link>
           {(r.company || r.location) && (
-            <p className="text-xs text-slate-500">{[r.company, r.location].filter(Boolean).join(" · ")}</p>
+            <p className="text-xs text-ink-500">{[r.company, r.location].filter(Boolean).join(" · ")}</p>
           )}
         </div>
       ),
@@ -47,7 +47,7 @@ export function WebsiteVacaturesList({ rows }: { rows: VacancyRow[] }) {
       key: "discipline",
       header: "Discipline",
       sortValue: (r) => r.disciplineLabel.toLowerCase(),
-      render: (r) => (r.disciplineLabel ? <span className="text-slate-700">{r.disciplineLabel}</span> : <span className="text-slate-400">—</span>),
+      render: (r) => (r.disciplineLabel ? <span className="text-ink-700">{r.disciplineLabel}</span> : <span className="text-ink-400">—</span>),
     },
     {
       key: "status",
@@ -61,8 +61,8 @@ export function WebsiteVacaturesList({ rows }: { rows: VacancyRow[] }) {
       align: "right",
       sortValue: (r) => r.views,
       render: (r) => (
-        <span className="inline-flex items-center gap-1.5 font-medium tabular-nums text-slate-900">
-          <Eye className="h-3.5 w-3.5 text-slate-400" />
+        <span className="inline-flex items-center gap-1.5 font-medium tabular-nums text-ink-900">
+          <Eye className="h-3.5 w-3.5 text-ink-400" />
           {r.views}
         </span>
       ),
@@ -71,7 +71,7 @@ export function WebsiteVacaturesList({ rows }: { rows: VacancyRow[] }) {
       key: "publishedAt",
       header: "Gepubliceerd",
       sortValue: (r) => r.publishedAt ?? "",
-      render: (r) => (r.publishedAt ? <span className="tabular-nums text-slate-600">{formatDate(new Date(r.publishedAt))}</span> : <span className="text-slate-400">—</span>),
+      render: (r) => (r.publishedAt ? <span className="tabular-nums text-ink-600">{formatDate(new Date(r.publishedAt))}</span> : <span className="text-ink-400">—</span>),
     },
     {
       key: "kandidaten",
@@ -133,7 +133,7 @@ export function WebsiteVacaturesList({ rows }: { rows: VacancyRow[] }) {
               <Play className="h-4 w-4" /> Hervatten
             </ConfirmSubmit>
           ) : (
-            <Link href={`/vacatures/${r.id}`} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            <Link href={`/vacatures/${r.id}`} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-50">
               Bewerken
             </Link>
           )}

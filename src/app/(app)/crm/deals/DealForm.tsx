@@ -159,8 +159,8 @@ export function DealForm({
             </Field>
           </div>
 
-          <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <div className="rounded-lg border border-ink-100 bg-ink-50/60 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-400">
               Koppelingen (optioneel)
             </p>
             <div className="grid gap-5 sm:grid-cols-2">

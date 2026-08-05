@@ -35,7 +35,7 @@ export default async function CrmInstellingenPage({
 
   return (
     <div className="space-y-6">
-      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
+      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
         <ArrowLeft className="h-4 w-4" /> Terug naar CRM
       </Link>
 
@@ -52,12 +52,12 @@ export default async function CrmInstellingenPage({
 
       <div>
         <div className="mb-3 flex items-center gap-2">
-          <Settings className="h-4 w-4 text-slate-400" />
-          <h2 className="text-sm font-semibold text-slate-700">
+          <Settings className="h-4 w-4 text-ink-400" />
+          <h2 className="text-sm font-semibold text-ink-700">
             Persoonlijk{recruiter ? ` — ${recruiter.name}` : ""}
           </h2>
         </div>
-        <p className="mb-3 text-xs text-slate-500">
+        <p className="mb-3 text-xs text-ink-500">
           Deze voorkeuren gelden alleen voor jou. Wissel bovenin de CRM van recruiter om iemand anders in te stellen.
         </p>
         <SettingsForm action={saveCrmSettings} settings={settings} stages={stageOpts} />
@@ -66,28 +66,28 @@ export default async function CrmInstellingenPage({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <GripVertical className="h-4 w-4 text-slate-400" /> Pipeline-fases
+            <GripVertical className="h-4 w-4 text-ink-400" /> Pipeline-fases
           </CardTitle>
-          <span className="text-xs text-slate-400">Gedeeld met het hele team</span>
+          <span className="text-xs text-ink-400">Gedeeld met het hele team</span>
         </CardHeader>
         <CardContent className="space-y-3">
           {stages.map((s, i) => {
             const closing = s.isWon || s.isLost;
             const deletable = !closing && s._count.deals === 0;
             return (
-              <div key={s.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-2">
+              <div key={s.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 p-2">
                 <div className="flex flex-col">
                   <form action={moveStage}>
                     <input type="hidden" name="id" value={s.id} />
                     <input type="hidden" name="dir" value="up" />
-                    <button type="submit" disabled={i === 0} title="Omhoog" className="text-slate-400 hover:text-slate-700 disabled:opacity-30">
+                    <button type="submit" disabled={i === 0} title="Omhoog" className="text-ink-400 hover:text-ink-700 disabled:opacity-30">
                       <ChevronUp className="h-4 w-4" />
                     </button>
                   </form>
                   <form action={moveStage}>
                     <input type="hidden" name="id" value={s.id} />
                     <input type="hidden" name="dir" value="down" />
-                    <button type="submit" disabled={i === stages.length - 1} title="Omlaag" className="text-slate-400 hover:text-slate-700 disabled:opacity-30">
+                    <button type="submit" disabled={i === stages.length - 1} title="Omlaag" className="text-ink-400 hover:text-ink-700 disabled:opacity-30">
                       <ChevronDown className="h-4 w-4" />
                     </button>
                   </form>
@@ -105,7 +105,7 @@ export default async function CrmInstellingenPage({
                   </Select>
                   <div className="flex items-center gap-1">
                     <Input name="probability" type="number" min={0} max={100} defaultValue={s.probability} className="h-9 w-20" />
-                    <span className="text-xs text-slate-400">% kans</span>
+                    <span className="text-xs text-ink-400">% kans</span>
                   </div>
                   {s.isWon && <Badge color="green">Gewonnen</Badge>}
                   {s.isLost && <Badge color="red">Verloren</Badge>}
@@ -127,7 +127,7 @@ export default async function CrmInstellingenPage({
                   </ConfirmSubmit>
                 ) : (
                   <span
-                    className="inline-flex h-9 w-9 items-center justify-center text-slate-300"
+                    className="inline-flex h-9 w-9 items-center justify-center text-ink-300"
                     title={closing ? "Vaste win/verlies-fase" : "Bevat deals — niet te verwijderen"}
                   >
                     <Lock className="h-4 w-4" />
@@ -137,7 +137,7 @@ export default async function CrmInstellingenPage({
             );
           })}
 
-          <div className="border-t border-slate-100 pt-4">
+          <div className="border-t border-ink-100 pt-4">
             <AddStageForm action={createStage} />
           </div>
         </CardContent>
