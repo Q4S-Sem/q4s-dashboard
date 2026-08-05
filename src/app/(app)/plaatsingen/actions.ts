@@ -358,11 +358,11 @@ export async function uploadPlacementDocument(formData: FormData) {
   const consultantId = String(formData.get("consultantId") ?? "");
   const file = formData.get("file");
   if (!consultantId || !(file instanceof File) || file.size === 0) {
-    redirect(`/plaatsingen/${placementId}?error=upload`);
+    redirect(`/plaatsingen/${placementId}/documenten?error=upload`);
   }
   const f = file as File;
   if (f.size > MAX_UPLOAD_BYTES) {
-    redirect(`/plaatsingen/${placementId}?error=size`);
+    redirect(`/plaatsingen/${placementId}/documenten?error=size`);
   }
 
   const categoryRaw = String(formData.get("category") ?? "CONTRACT");
@@ -403,9 +403,9 @@ export async function uploadPlacementDocument(formData: FormData) {
     });
   }
 
-  revalidatePath(`/plaatsingen/${placementId}`);
+  revalidatePath(`/plaatsingen/${placementId}/documenten`);
   revalidatePath(`/werknemers/${consultantId}`);
-  redirect(`/plaatsingen/${placementId}?saved=doc`);
+  redirect(`/plaatsingen/${placementId}/documenten?saved=doc`);
 }
 
 export async function deletePlacementDocument(formData: FormData) {
@@ -419,6 +419,21 @@ export async function deletePlacementDocument(formData: FormData) {
     await db.document.delete({ where: { id } });
     revalidatePath(`/werknemers/${doc.consultantId}`);
   }
-  revalidatePath(`/plaatsingen/${placementId}`);
-  redirect(`/plaatsingen/${placementId}`);
+  revalidatePath(`/plaatsingen/${placementId}/documenten`);
+  redirect(`/plaatsingen/${placementId}/documenten`);
+}
+
+// ---- Vaste notitie bij de plaatsing (tabblad Notities) ----
+
+export async function savePlacementNotes(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  await db.placement.update({
+    where: { id },
+    data: { notes: String(formData.get("notes") ?? "").trim() || null },
+  });
+  revalidatePath(`/plaatsingen/${id}`);
+  revalidatePath(`/plaatsingen/${id}/notities`);
+  redirect(`/plaatsingen/${id}/notities?saved=1`);
 }

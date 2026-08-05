@@ -2,46 +2,48 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Briefcase, StickyNote, Receipt, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * De "mappen" van het klantdossier: tabbladen in de kop die er als tabs van een
- * hangmap uitzien. Elk mapje is een eigen route (/klanten/[id]/plaatsingen, …),
- * dus je kunt er direct naartoe linken en de browser-terugknop werkt gewoon.
+ * De "mappen" van een dossier: tabbladen in de kop die er als tabs van een
+ * hangmap uitzien. Elk mapje is een eigen route, dus je kunt er direct naartoe
+ * linken en de browser-terugknop werkt gewoon. Gedeeld door de klant- en
+ * plaatsing-dossiers (zie /klanten/[id] en /plaatsingen/[id]).
  */
 
-type Tab = { seg: string; label: string; icon: LucideIcon; count: number };
+export type DossierTab = {
+  /** Pad-segment onder `base`; leeg = het eerste mapje (de basisroute zelf). */
+  seg: string;
+  label: string;
+  /** Een al gerenderd icoon (`<Users className="h-4 w-4" />`), zodat een
+   *  server-component het gewoon kan meegeven. Kleurt mee met het tabblad. */
+  icon: React.ReactNode;
+  /** Getal op het mapje — laat weg (of 0) om het te verbergen. */
+  count?: number;
+};
 
 export function DossierTabs({
-  clientId,
-  counts,
+  base,
+  tabs,
+  label = "Dossier",
 }: {
-  clientId: string;
-  counts: { contacts: number; placements: number; notes: number; invoices: number };
+  base: string;
+  tabs: DossierTab[];
+  label?: string;
 }) {
   const pathname = usePathname();
-  const base = `/klanten/${clientId}`;
-
-  const tabs: Tab[] = [
-    { seg: "", label: "Overzicht", icon: Building2, count: counts.contacts },
-    { seg: "plaatsingen", label: "Plaatsingen", icon: Briefcase, count: counts.placements },
-    { seg: "notities", label: "Notities", icon: StickyNote, count: counts.notes },
-    { seg: "facturen", label: "Facturen", icon: Receipt, count: counts.invoices },
-  ];
 
   return (
     <nav
-      aria-label="Klantdossier"
+      aria-label={label}
       className="flex items-end gap-1 overflow-x-auto border-b border-slate-200"
     >
       {tabs.map((t) => {
         const href = t.seg ? `${base}/${t.seg}` : base;
         const active = t.seg ? pathname.startsWith(href) : pathname === base;
-        const Icon = t.icon;
         return (
           <Link
-            key={t.seg || "overzicht"}
+            key={t.seg || "_root"}
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
@@ -53,9 +55,9 @@ export function DossierTabs({
                 : "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900",
             )}
           >
-            <Icon className={cn("h-4 w-4", active ? "text-brand-600" : "text-slate-400")} />
+            <span className={active ? "text-brand-600" : "text-slate-400"}>{t.icon}</span>
             {t.label}
-            {t.count > 0 && (
+            {t.count ? (
               <span
                 className={cn(
                   "rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
@@ -64,7 +66,7 @@ export function DossierTabs({
               >
                 {t.count}
               </span>
-            )}
+            ) : null}
           </Link>
         );
       })}

@@ -1,12 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Pencil, Mail, Phone, Globe, MapPin } from "lucide-react";
+import {
+  ArrowLeft,
+  Pencil,
+  Mail,
+  Phone,
+  Globe,
+  MapPin,
+  Building2,
+  Briefcase,
+  StickyNote,
+  Receipt,
+} from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { DossierTabs } from "@/components/dossier-tabs";
 import { deleteClient } from "../../actions";
 import { getClient, getDossierCounts } from "./data";
-import { DossierTabs } from "./DossierTabs";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -116,13 +127,34 @@ export default async function KlantDossierLayout({
       )}
 
       <DossierTabs
-        clientId={client.id}
-        counts={{
-          contacts: client.contacts.length,
-          placements: counts.placements,
-          notes: counts.notes,
-          invoices: counts.invoices,
-        }}
+        base={`/klanten/${client.id}`}
+        label="Klantdossier"
+        tabs={[
+          {
+            seg: "",
+            label: "Overzicht",
+            icon: <Building2 className="h-4 w-4" />,
+            count: client.contacts.length,
+          },
+          {
+            seg: "plaatsingen",
+            label: "Plaatsingen",
+            icon: <Briefcase className="h-4 w-4" />,
+            count: counts.placements,
+          },
+          {
+            seg: "notities",
+            label: "Notities",
+            icon: <StickyNote className="h-4 w-4" />,
+            count: counts.notes,
+          },
+          {
+            seg: "facturen",
+            label: "Facturen",
+            icon: <Receipt className="h-4 w-4" />,
+            count: counts.invoices,
+          },
+        ]}
       />
 
       {children}
