@@ -164,7 +164,7 @@ export async function addCandidatePlacement(formData: FormData) {
   const candidateId = String(formData.get("candidateId") ?? "");
   const company = String(formData.get("company") ?? "").trim();
   if (!candidateId) return;
-  if (!company) redirect(`/kandidaten/${candidateId}?error=plaatsing`);
+  if (!company) redirect(`/kandidaten/${candidateId}/plaatsingen?error=plaatsing`);
 
   const role = String(formData.get("role") ?? "").trim() || null;
   const notes = String(formData.get("notes") ?? "").trim() || null;
@@ -187,7 +187,7 @@ export async function addCandidatePlacement(formData: FormData) {
   });
   revalidatePath(`/kandidaten/${candidateId}`);
   revalidatePath("/kandidaten");
-  redirect(`/kandidaten/${candidateId}`);
+  redirect(`/kandidaten/${candidateId}/plaatsingen`);
 }
 
 export async function deleteCandidatePlacement(formData: FormData) {
@@ -206,7 +206,7 @@ export async function deleteCandidatePlacement(formData: FormData) {
   revalidatePath("/kandidaten");
   if (placement?.candidateId) {
     revalidatePath(`/kandidaten/${placement.candidateId}`);
-    redirect(`/kandidaten/${placement.candidateId}`);
+    redirect(`/kandidaten/${placement.candidateId}/plaatsingen`);
   }
   redirect("/kandidaten");
 }
@@ -265,10 +265,10 @@ export async function uploadCv(formData: FormData) {
 
   if (!candidateId) return;
   if (!(file instanceof File) || file.size === 0) {
-    redirect(`/kandidaten/${candidateId}?error=upload`);
+    redirect(`/kandidaten/${candidateId}/cv?error=upload`);
   }
   if ((file as File).size > MAX_UPLOAD_BYTES) {
-    redirect(`/kandidaten/${candidateId}?error=size`);
+    redirect(`/kandidaten/${candidateId}/cv?error=size`);
   }
 
   const fileName = await saveCvUpload(file as File);
@@ -283,7 +283,7 @@ export async function uploadCv(formData: FormData) {
   });
 
   revalidatePath(`/kandidaten/${candidateId}`);
-  redirect(`/kandidaten/${candidateId}`);
+  redirect(`/kandidaten/${candidateId}/cv`);
 }
 
 export async function deleteCv(formData: FormData) {
@@ -304,7 +304,7 @@ export async function deleteCv(formData: FormData) {
     },
   });
   revalidatePath(`/kandidaten/${id}`);
-  redirect(`/kandidaten/${id}`);
+  redirect(`/kandidaten/${id}/cv`);
 }
 
 // ---------- Profielfoto ----------

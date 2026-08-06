@@ -39,7 +39,17 @@ type SP = { q?: string; discipline?: string };
 function CandidateTable({ candidates }: { candidates: Candidate[] }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-ink-200 bg-white">
-      <Table>
+      {/* Vaste kolombreedtes, zodat "Nu beschikbaar" en "Binnenkort beschikbaar"
+          exact onder elkaar uitlijnen — met automatische breedtes verschoven de
+          kolommen per tabel mee met de inhoud. */}
+      <Table className="min-w-[58rem] table-fixed">
+        <colgroup>
+          <col />
+          <col className="w-[13rem]" />
+          <col className="w-[7.5rem]" />
+          <col className="w-[11rem]" />
+          <col className="w-[7.5rem]" />
+        </colgroup>
         <THead>
           <TR className="hover:bg-transparent">
             <TH>Kandidaat</TH>
@@ -83,18 +93,23 @@ function CandidateTable({ candidates }: { candidates: Candidate[] }) {
                   )}
                 </TD>
                 <TD>
-                  <div className="flex items-center gap-2 text-sm">
+                  {/* Alleen icoontjes: het adres zelf zit in de tooltip, zodat de
+                      kolom smal en scanbaar blijft. */}
+                  <div className="flex items-center gap-2">
                     {c.email ? (
                       <a
                         href={`mailto:${c.email}`}
                         title={c.email}
-                        className="inline-flex min-w-0 max-w-[10rem] items-center gap-1.5 text-ink-600 transition-colors hover:text-emerald-700"
+                        aria-label={`Mail ${c.firstName} ${c.lastName}`}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
                       >
-                        <Mail className="h-4 w-4 shrink-0 text-ink-400" />
-                        <span className="truncate">{c.email}</span>
+                        <Mail className="h-4 w-4" />
                       </a>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 text-ink-400">
+                      <span
+                        title="Geen e-mailadres bekend"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-ink-200 text-ink-300"
+                      >
                         <Mail className="h-4 w-4" />
                       </span>
                     )}

@@ -115,14 +115,14 @@ export async function profileFromCandidateCv(formData: FormData) {
 
   const candidate = await db.candidate.findUnique({ where: { id: candidateId } });
   if (!candidate?.cvFileName) {
-    redirect(`/kandidaten/${candidateId}?error=geen-cv`);
+    redirect(`/kandidaten/${candidateId}/cv?error=geen-cv`);
   }
 
   let bytes: Buffer;
   try {
     bytes = await getObject(cvKey(candidate.cvFileName));
   } catch {
-    redirect(`/kandidaten/${candidateId}?error=cv-bestand`);
+    redirect(`/kandidaten/${candidateId}/cv?error=cv-bestand`);
   }
 
   let data: CvProfileData;
@@ -133,7 +133,7 @@ export async function profileFromCandidateCv(formData: FormData) {
       candidate.cvMimeType ?? "",
     );
   } catch {
-    redirect(`/kandidaten/${candidateId}?error=uitlezen`);
+    redirect(`/kandidaten/${candidateId}/cv?error=uitlezen`);
   }
 
   const record = {
