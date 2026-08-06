@@ -100,8 +100,8 @@ export default async function WebsiteCvsPage({
         description="CV's vanuit de website én de cv@q4s.nl-mailbox — op één plek. Filter op discipline, bron of beschikbaarheid en zet een interessante kandidaat met één klik als lead in de CRM-pijplijn."
         actions={
           <>
-            <Link href="/website" className={buttonVariants({ variant: "outline" })}>
-              <ArrowLeft className="h-4 w-4" /> Website
+            <Link href="/cv" className={buttonVariants({ variant: "outline" })}>
+              <ArrowLeft className="h-4 w-4" /> CV-overzicht
             </Link>
             <Link href="/website/cv-inbox/matches" className={buttonVariants({ variant: "outline" })}>
               <Target className="h-4 w-4" /> CV-matches

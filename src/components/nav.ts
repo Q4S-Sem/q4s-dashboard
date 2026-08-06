@@ -257,12 +257,37 @@ export function itemIsActive(pathname: string, item: NavItem): boolean {
 
 /** The hub (app) that owns the current route, or null on the home/dashboard. */
 export function hubForPath(pathname: string): NavHub | null {
+  // De MEEST SPECIFIEKE match wint, niet de eerste in de lijst. Een hub mag
+  // namelijk een pagina bevatten die onder het pad van een andere hub ligt —
+  // /website/cv-inbox hoort bij CV's, niet bij Vacatures, ook al begint het met
+  // /website. Met "eerste match wint" belandde je dan in de verkeerde werkplek.
+  let beste: NavHub | null = null;
+  let score = -1;
+
   for (const hub of HUBS) {
-    // Match the hub's own landing path and any sub-route (covers detail/new
-    // pages like /agenda/123 that aren't explicit sidebar items)…
-    if (pathname === hub.href || pathname.startsWith(`${hub.href}/`)) return hub;
-    // …or any of its items.
-    if (hub.items.some((it) => itemIsActive(pathname, it))) return hub;
+    // Een expliciet menu-item weegt het zwaarst; hoe langer het pad, hoe
+    // specifieker. Bewust op padprefix en NIET via `itemIsActive`: `exact` is
+    // bedoeld om te bepalen welk item oplicht, niet in welke werkplek je zit.
+    // /website/cv-inbox/importeren hoort bij CV's, ook al is het item zelf exact.
+    for (const it of hub.items) {
+      const raakt = pathname === it.href || pathname.startsWith(`${it.href}/`);
+      if (!raakt) continue;
+      const s = it.href.length + 1000; // items gaan vóór het hub-pad zelf
+      if (s > score) {
+        score = s;
+        beste = hub;
+      }
+    }
+    // Anders het landingspad van de hub (dekt detail-/nieuw-pagina's zonder
+    // eigen menu-item, zoals /agenda/123).
+    if (pathname === hub.href || pathname.startsWith(`${hub.href}/`)) {
+      const s = hub.href.length;
+      if (s > score) {
+        score = s;
+        beste = hub;
+      }
+    }
   }
-  return null;
+
+  return beste;
 }

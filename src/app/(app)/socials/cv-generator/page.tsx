@@ -27,8 +27,8 @@ export default async function CvGeneratorPage() {
 
   return (
     <div className="space-y-6">
-      <BackLink href="/socials">
-        Terug naar Socials
+      <BackLink href="/cv">
+        Terug naar CV's
       </BackLink>
 
       <PageHeader
