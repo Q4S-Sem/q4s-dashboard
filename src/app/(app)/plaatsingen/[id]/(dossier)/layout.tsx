@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 /** Eén feitje in de rij onder de titel. */
 function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1 text-xs text-ink-600">
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-sm border border-ink-200 bg-white px-3 py-1 text-xs text-ink-600">
       {icon}
       <span className="truncate">{children}</span>
     </span>

@@ -290,7 +290,7 @@ export default async function VacaturehubOverzichtPage({
           <CardTitle className="flex items-center gap-2">
             <BellRing className="h-5 w-5 text-ink-500" /> Meldingen
             {unreadAlerts > 0 && (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-semibold text-white">
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-sm bg-red-600 px-1.5 text-[11px] font-semibold text-white">
                 {unreadAlerts}
               </span>
             )}
@@ -351,7 +351,7 @@ export default async function VacaturehubOverzichtPage({
               .map((s) => (
                 <span
                   key={s.key}
-                  className="inline-flex items-center gap-2 rounded-full border border-ink-200 px-3 py-1 text-xs text-ink-600"
+                  className="inline-flex items-center gap-2 rounded-sm border border-ink-200 px-3 py-1 text-xs text-ink-600"
                 >
                   {s.name}
                   <StatusBadge options={VMS_STATUSES} value={s.status} />

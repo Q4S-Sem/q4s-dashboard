@@ -214,7 +214,7 @@ export default async function RecruitmentDashboardPage() {
                 {ratingRows.map((r) => (
                   <span
                     key={r.value}
-                    className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3 py-1 text-sm"
+                    className="inline-flex items-center gap-2 rounded-sm border border-ink-200 bg-white px-3 py-1 text-sm"
                   >
                     <StatusBadge options={CANDIDATE_RATINGS} value={r.value} />
                     <span className="font-medium tabular-nums text-ink-900">

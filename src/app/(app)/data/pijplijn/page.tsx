@@ -59,7 +59,7 @@ function Stage({
       <div className="mt-3">
         <span
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+            "inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-semibold",
             active ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700",
           )}
         >

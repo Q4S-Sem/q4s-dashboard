@@ -41,7 +41,7 @@ export default async function NieuweConnectorPage() {
                   <span className="flex flex-1 flex-wrap items-center gap-1.5 font-semibold text-ink-900">
                     {p.name}
                     {p.recommended && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-200">
+                      <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-200">
                         <Star className="h-3 w-3" /> Start hier
                       </span>
                     )}

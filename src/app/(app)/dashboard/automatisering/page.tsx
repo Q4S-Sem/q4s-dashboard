@@ -124,8 +124,8 @@ export default async function AutomatiseringPage({
                     type="submit"
                     className={
                       r.active
-                        ? "rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-200"
-                        : "rounded-full bg-ink-100 px-3 py-1 text-xs font-semibold text-ink-500 hover:bg-ink-200"
+                        ? "rounded-sm bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-200"
+                        : "rounded-sm bg-ink-100 px-3 py-1 text-xs font-semibold text-ink-500 hover:bg-ink-200"
                     }
                   >
                     {r.active ? "Actief" : "Uit"}

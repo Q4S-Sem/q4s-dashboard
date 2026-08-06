@@ -257,7 +257,7 @@ export default async function TimesheetStatusPage({
                       >
                         <MailWarning className="h-3 w-3 shrink-0 text-amber-500" />
                         Geen e-mailadres
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-200/70 px-1.5 py-px text-[10px] text-amber-800 transition-colors group-hover:bg-amber-300/80">
+                        <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-200/70 px-1.5 py-px text-[10px] text-amber-800 transition-colors group-hover:bg-amber-300/80">
                           toevoegen
                         </span>
                       </Link>

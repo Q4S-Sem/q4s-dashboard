@@ -878,7 +878,7 @@ export function PlacementForm({
                   type="button"
                   onClick={() => setEndDate(computeEnd(startDate, d.kind))}
                   disabled={!startDate}
-                  className="rounded-full border border-ink-200 bg-white px-3 py-1 text-xs font-medium text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-sm border border-ink-200 bg-white px-3 py-1 text-xs font-medium text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
                   title={`Einddatum = startdatum + ${d.label.toLowerCase()}`}
                 >
                   {d.label}
@@ -888,7 +888,7 @@ export function PlacementForm({
                 <button
                   type="button"
                   onClick={() => setEndDate("")}
-                  className="rounded-full px-2 py-1 text-xs text-ink-400 hover:text-ink-700"
+                  className="rounded-sm px-2 py-1 text-xs text-ink-400 hover:text-ink-700"
                 >
                   wissen
                 </button>

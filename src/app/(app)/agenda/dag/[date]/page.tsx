@@ -276,7 +276,7 @@ export default async function DagPage({
                     />
                     <span className="text-sm text-ink-700">{dl.title}</span>
                     {dl.overdue && (
-                      <span className="ml-auto rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                      <span className="ml-auto rounded-sm bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                         te laat
                       </span>
                     )}
@@ -329,7 +329,7 @@ export default async function DagPage({
                     {t.title}
                   </span>
                   {t.priority === "HIGH" && !t.done && (
-                    <span className="rounded-full bg-red-100 px-1.5 text-[10px] font-medium text-red-700">
+                    <span className="rounded-sm bg-red-100 px-1.5 text-[10px] font-medium text-red-700">
                       {labelFor(TASK_PRIORITIES, t.priority)}
                     </span>
                   )}

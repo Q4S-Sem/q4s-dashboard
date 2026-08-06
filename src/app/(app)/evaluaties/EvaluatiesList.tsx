@@ -207,7 +207,7 @@ export async function EvaluatiesList({
                         {a !== null ? (
                           <span
                             className={cn(
-                              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset",
+                              "inline-flex items-center gap-1.5 rounded-sm px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset",
                               SCORE_BADGE[Math.round(a)],
                             )}
                           >

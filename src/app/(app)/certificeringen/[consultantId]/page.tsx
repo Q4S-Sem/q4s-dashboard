@@ -156,7 +156,7 @@ export default async function MedewerkerCertificatenPage({
                   : "AI automatisch uitlezen aan/uit (vereist ook GEMINI_API_KEY of ANTHROPIC_API_KEY)"
               }
               className={cn(
-                "inline-flex items-center gap-2.5 rounded-full border px-3 py-1.5 transition-colors",
+                "inline-flex items-center gap-2.5 rounded-sm border px-3 py-1.5 transition-colors",
                 aiEnabled
                   ? "border-brand-200 bg-brand-50 hover:bg-brand-100"
                   : "border-ink-200 bg-white hover:bg-ink-50",

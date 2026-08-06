@@ -245,7 +245,7 @@ export default async function VerwerkenPage({
                       {r.name}
                     </Link>
                     {r.needApproval > 0 && (
-                      <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                      <span className="ml-2 rounded-sm bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
                         {r.needApproval} ter goedkeuring
                       </span>
                     )}

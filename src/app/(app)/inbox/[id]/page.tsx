@@ -180,7 +180,7 @@ export default async function InboxDetailPage({
           >
             <AlertTriangle className="h-4 w-4" /> Even nakijken vóór je bevestigt
             {item.confidence && (
-              <span className="rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-medium">
+              <span className="rounded-sm bg-white/70 px-2 py-0.5 text-[11px] font-medium">
                 zekerheid: {CONF_LABEL[item.confidence] ?? item.confidence}
               </span>
             )}

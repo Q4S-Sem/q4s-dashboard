@@ -68,7 +68,7 @@ function TabInner({
       {count ? (
         <span
           className={cn(
-            "rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+            "rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
             active ? "bg-brand-50 text-brand-700" : "bg-ink-100 text-ink-500",
           )}
         >

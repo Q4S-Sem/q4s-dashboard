@@ -141,7 +141,7 @@ export default async function TakenPage({
 
   const chip = (active: boolean) =>
     cn(
-      "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+      "rounded-sm border px-3 py-1 text-xs font-medium transition-colors",
       active
         ? "border-brand-300 bg-brand-50 text-brand-700"
         : "border-ink-200 bg-white text-ink-600 hover:bg-ink-50",

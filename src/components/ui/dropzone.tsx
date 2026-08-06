@@ -108,7 +108,7 @@ export function Dropzone({
           {files.slice(0, 6).map((f, i) => (
             <span
               key={i}
-              className="inline-flex max-w-[16rem] items-center gap-1 truncate rounded-full bg-ink-100 px-2.5 py-1 text-xs text-ink-600"
+              className="inline-flex max-w-[16rem] items-center gap-1 truncate rounded-sm bg-ink-100 px-2.5 py-1 text-xs text-ink-600"
               title={f.name}
             >
               <FileText className="h-3 w-3 shrink-0 text-ink-400" />
@@ -121,7 +121,7 @@ export function Dropzone({
           <button
             type="button"
             onClick={clear}
-            className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-ink-400 hover:text-ink-700"
+            className="inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs text-ink-400 hover:text-ink-700"
           >
             <X className="h-3 w-3" /> wissen
           </button>

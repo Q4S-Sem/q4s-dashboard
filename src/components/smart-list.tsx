@@ -246,7 +246,7 @@ export function SmartList<T extends { id: string }>({
                             <ChevronDown className="h-4 w-4 text-ink-400" />
                           )}
                           {g.label}
-                          <span className="rounded-full bg-ink-200 px-2 py-0.5 text-xs font-medium text-ink-600">
+                          <span className="rounded-sm bg-ink-200 px-2 py-0.5 text-xs font-medium text-ink-600">
                             {g.rows.length}
                           </span>
                         </span>

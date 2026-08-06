@@ -143,7 +143,7 @@ export default async function WebsitePage() {
                       {v.title}
                     </Link>
                     {v.vmsConnector && (
-                      <span className="ml-2 inline-flex items-center rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-500">
+                      <span className="ml-2 inline-flex items-center rounded-sm bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-500">
                         via {v.vmsConnector.name}
                       </span>
                     )}

@@ -134,12 +134,12 @@ export default async function ApiSleutelsPage({
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-ink-900">{s.label}</span>
                       {s.configured ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                        <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                           <CheckCircle2 className="h-3 w-3" />
                           {s.source === "env" ? "Via .env" : "Ingesteld"}
                         </span>
                       ) : (
-                        <span className="rounded-full bg-ink-100 px-2 py-0.5 text-xs font-semibold text-ink-500">
+                        <span className="rounded-sm bg-ink-100 px-2 py-0.5 text-xs font-semibold text-ink-500">
                           Niet ingesteld
                         </span>
                       )}

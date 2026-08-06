@@ -193,7 +193,7 @@ export default async function EvaluatieDetailPage({
               {avg !== null ? (
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ring-1 ring-inset",
+                    "inline-flex items-center gap-1.5 rounded-sm px-3 py-1 text-sm font-semibold ring-1 ring-inset",
                     SCORE_BADGE[Math.round(avg)],
                   )}
                 >

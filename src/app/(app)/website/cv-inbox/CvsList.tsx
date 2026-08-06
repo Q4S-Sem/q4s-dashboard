@@ -108,7 +108,7 @@ export function CvsList({ rows }: { rows: CvRow[] }) {
         r.dealId ? (
           <Link
             href={`/crm/deals/${r.dealId}`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100"
+            className="inline-flex items-center gap-1.5 rounded-sm bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100"
           >
             <CheckCircle2 className="h-3.5 w-3.5" /> In CRM
           </Link>

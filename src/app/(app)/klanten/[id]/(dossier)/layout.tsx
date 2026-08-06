@@ -33,7 +33,7 @@ function Chip({ href, icon, children }: { href: string; icon: React.ReactNode; c
       href={href}
       target={href.startsWith("http") ? "_blank" : undefined}
       rel={href.startsWith("http") ? "noreferrer" : undefined}
-      className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1 text-xs text-ink-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+      className="inline-flex max-w-full items-center gap-1.5 rounded-sm border border-ink-200 bg-white px-3 py-1 text-xs text-ink-600 transition-colors hover:border-brand-300 hover:text-brand-700"
     >
       {icon}
       <span className="truncate">{children}</span>

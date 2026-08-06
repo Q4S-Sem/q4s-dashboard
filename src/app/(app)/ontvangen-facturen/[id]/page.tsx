@@ -130,11 +130,11 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
             </div>
             <div className="flex shrink-0 flex-col items-center gap-2">
               {inv.matched ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
+                <span className="inline-flex items-center gap-1.5 rounded-sm bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
                   <CheckCircle2 className="h-4 w-4" /> Klopt
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
+                <span className="inline-flex items-center gap-1.5 rounded-sm bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
                   <AlertTriangle className="h-4 w-4" /> Afwijking
                 </span>
               )}

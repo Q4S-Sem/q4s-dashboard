@@ -81,13 +81,13 @@ export default async function CloudPage({
               Niets gaat verloren — elk bestand wordt {copies}× bewaard.
             </p>
             <div className="mt-2 flex flex-wrap gap-2 text-sm">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200">
+              <span className="inline-flex items-center gap-1.5 rounded-sm bg-white px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" /> In het dashboard (bron)
               </span>
               {summary.targets.map((t) => (
                 <span
                   key={t.provider}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200"
+                  className="inline-flex items-center gap-1.5 rounded-sm bg-white px-2.5 py-1 font-medium text-emerald-800 ring-1 ring-emerald-200"
                 >
                   <CheckCircle2 className={`h-4 w-4 ${t.live ? "text-emerald-600" : "text-ink-300"}`} />
                   Op {PROVIDER_META[t.provider]?.label ?? t.provider}

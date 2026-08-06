@@ -80,7 +80,7 @@ export function WebsiteVacaturesList({ rows }: { rows: VacancyRow[] }) {
         r.sourcing ? (
           <Link
             href="/website/cv-inbox/matches"
-            className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100"
+            className="inline-flex items-center gap-1.5 rounded-sm bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100"
           >
             <Target className="h-3.5 w-3.5" /> Op matchpagina
           </Link>

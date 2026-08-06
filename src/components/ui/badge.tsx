@@ -27,7 +27,7 @@ export function Badge({
       className={cn(
         // Blijft bewust rond: de pillen houden de strakke, hoekige lay-out
         // vriendelijk en maken statussen in één oogopslag herkenbaar.
-        "inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-tight ring-1 ring-inset",
+        "inline-flex items-center whitespace-nowrap rounded-sm px-2.5 py-0.5 text-[11px] font-bold tracking-tight ring-1 ring-inset",
         colorMap[color],
         className,
       )}

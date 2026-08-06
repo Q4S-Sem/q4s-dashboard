@@ -167,7 +167,7 @@ export default async function UrenPage({
           {expected.length > 0 && (
             <span
               className={cn(
-                "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                "shrink-0 rounded-sm px-2.5 py-0.5 text-xs font-semibold",
                 missing.length === 0 ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700",
               )}
             >
@@ -272,7 +272,7 @@ export default async function UrenPage({
             <div className="mb-3 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               <span className="text-sm font-semibold text-amber-900">Nog niet ontvangen</span>
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+              <span className="rounded-sm bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
                 {missing.length} van {expected.length}
               </span>
             </div>

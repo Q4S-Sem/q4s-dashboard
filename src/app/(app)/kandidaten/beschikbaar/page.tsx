@@ -155,7 +155,7 @@ function Section({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500">
           {title}
         </h2>
-        <span className="rounded-full bg-ink-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-ink-600">
+        <span className="rounded-sm bg-ink-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-ink-600">
           {count}
         </span>
       </div>

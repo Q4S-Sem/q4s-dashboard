@@ -116,12 +116,12 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
         r.matched == null ? (
           <span className="text-xs text-ink-400">—</span>
         ) : r.matched ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+          <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
             <CheckCircle2 className="h-3 w-3" /> Klopt
           </span>
         ) : (
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700"
+            className="inline-flex items-center gap-1 rounded-sm bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700"
             title="Verschil t.o.v. de timesheet"
           >
             <AlertTriangle className="h-3 w-3" />

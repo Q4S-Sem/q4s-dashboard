@@ -245,7 +245,7 @@ export default async function CvMatchesPage({
                                 )}
                               </TD>
                               <TD className="text-right">
-                                <span className={cn("inline-block rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums", scoreClass(pct))}>
+                                <span className={cn("inline-block rounded-sm px-2 py-0.5 text-xs font-semibold tabular-nums", scoreClass(pct))}>
                                   {pct}%
                                 </span>
                               </TD>
@@ -259,7 +259,7 @@ export default async function CvMatchesPage({
                                 {dealId ? (
                                   <Link
                                     href={`/crm/deals/${dealId}`}
-                                    className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100"
+                                    className="inline-flex items-center gap-1.5 rounded-sm bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100"
                                   >
                                     <CheckCircle2 className="h-3.5 w-3.5" /> In CRM
                                   </Link>

@@ -299,7 +299,7 @@ export function EvaluationForm({
                 <div className="flex items-center gap-2 text-xs">
                   <span
                     className={cn(
-                      "rounded-full px-2 py-0.5 font-medium",
+                      "rounded-sm px-2 py-0.5 font-medium",
                       done === keys.length
                         ? "bg-emerald-50 text-emerald-700"
                         : "bg-ink-100 text-ink-500",
@@ -316,7 +316,7 @@ export function EvaluationForm({
                         return next;
                       })
                     }
-                    className="inline-flex items-center gap-1 rounded-full border border-ink-200 px-2 py-0.5 font-medium text-ink-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+                    className="inline-flex items-center gap-1 rounded-sm border border-ink-200 px-2 py-0.5 font-medium text-ink-500 transition-colors hover:border-emerald-300 hover:text-emerald-700"
                   >
                     <Check className="h-3 w-3" /> Alles goed
                   </button>
@@ -329,7 +329,7 @@ export function EvaluationForm({
                         return next;
                       })
                     }
-                    className="inline-flex items-center gap-1 rounded-full border border-ink-200 px-2 py-0.5 font-medium text-ink-500 transition-colors hover:border-ink-400 hover:text-ink-700"
+                    className="inline-flex items-center gap-1 rounded-sm border border-ink-200 px-2 py-0.5 font-medium text-ink-500 transition-colors hover:border-ink-400 hover:text-ink-700"
                   >
                     <Eraser className="h-3 w-3" /> Wissen
                   </button>
@@ -393,7 +393,7 @@ export function EvaluationForm({
         <div className="flex items-center gap-3 text-sm">
           <span
             className={cn(
-              "rounded-full px-2.5 py-1 text-xs font-medium",
+              "rounded-sm px-2.5 py-1 text-xs font-medium",
               complete ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700",
             )}
           >

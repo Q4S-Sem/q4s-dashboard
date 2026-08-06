@@ -212,7 +212,7 @@ function Pill({ n, label, tone }: { n: number; label: string; tone: "red" | "amb
         ? "bg-amber-50 text-amber-700 ring-amber-100"
         : "bg-ink-100 text-ink-500 ring-ink-200";
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset", cls)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-semibold ring-1 ring-inset", cls)}>
       <span className="tabular-nums">{n}</span>
       <span className="font-medium">{label}</span>
     </span>

@@ -181,7 +181,7 @@ export default async function BronPage({
             key={t.key}
             href={`/vacaturehub/instroom/${key}?tab=${t.key}`}
             className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              "rounded-sm px-3 py-1 text-xs font-medium transition-colors",
               tab === t.key
                 ? "bg-ink-900 text-white"
                 : "bg-ink-100 text-ink-600 hover:bg-ink-200",

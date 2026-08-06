@@ -117,7 +117,7 @@ export function DealBoard({
                 <span className="text-sm font-semibold text-ink-700">{col.label}</span>
                 <span className="text-[11px] text-ink-400">{col.probability}%</span>
               </div>
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-ink-200 px-1.5 text-xs font-semibold tabular-nums text-ink-600">
+              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-sm bg-ink-200 px-1.5 text-xs font-semibold tabular-nums text-ink-600">
                 {colCards.length}
               </span>
             </div>

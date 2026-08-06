@@ -153,7 +153,7 @@ export default async function AfwezigheidPage({
                         {fullName(lv.employee)}
                       </span>
                       {current && (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                        <span className="rounded-sm bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                           nu afwezig
                         </span>
                       )}

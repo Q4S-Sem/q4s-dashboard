@@ -349,11 +349,11 @@ export function LinkedInGenerator({
                           className="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-ink-50"
                         >
                           {v.status === "PUBLISHED" ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
+                            <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
                               live
                             </span>
                           ) : (
-                            <span className="rounded-full bg-ink-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-ink-500">
+                            <span className="rounded-sm bg-ink-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-ink-500">
                               concept
                             </span>
                           )}

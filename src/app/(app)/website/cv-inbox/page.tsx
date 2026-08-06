@@ -84,7 +84,7 @@ export default async function WebsiteCvsPage({
       {icon} {label}
       <span
         className={cn(
-          "rounded-full px-1.5 text-xs font-semibold tabular-nums",
+          "rounded-sm px-1.5 text-xs font-semibold tabular-nums",
           bron === t ? "bg-brand-100 text-brand-700" : "bg-ink-200 text-ink-600",
         )}
       >

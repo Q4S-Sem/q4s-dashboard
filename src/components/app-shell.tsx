@@ -111,7 +111,7 @@ function HubNav({
                   />
                   <span className="min-w-0 flex-1 truncate">{item.label}</span>
                   {count > 0 && (
-                    <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-600 px-1.5 text-[11px] font-bold tabular-nums text-white">
+                    <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-sm bg-brand-600 px-1.5 text-[11px] font-bold tabular-nums text-white">
                       {count}
                     </span>
                   )}

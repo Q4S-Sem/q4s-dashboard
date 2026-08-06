@@ -141,7 +141,7 @@ export function CrmNotesTimeline({
                 <div className="mt-2 flex items-center gap-2">
                   <span
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+                      "inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-medium",
                       n.followUpDone
                         ? "bg-ink-100 text-ink-400 line-through"
                         : "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",

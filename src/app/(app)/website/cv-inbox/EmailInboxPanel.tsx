@@ -24,7 +24,7 @@ function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+        "inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-semibold",
         ok ? "bg-emerald-100 text-emerald-700" : "bg-ink-100 text-ink-500",
       )}
     >

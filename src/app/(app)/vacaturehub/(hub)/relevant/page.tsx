@@ -62,8 +62,8 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
               href="/vacaturehub/relevant"
               className={
                 showLive
-                  ? "rounded-full bg-ink-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200"
-                  : "rounded-full bg-ink-900 px-3 py-1 text-xs font-medium text-white"
+                  ? "rounded-sm bg-ink-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200"
+                  : "rounded-sm bg-ink-900 px-3 py-1 text-xs font-medium text-white"
               }
             >
               Klaar voor maken ({c.toPublish})
@@ -72,8 +72,8 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
               href="/vacaturehub/relevant?tab=live"
               className={
                 showLive
-                  ? "rounded-full bg-ink-900 px-3 py-1 text-xs font-medium text-white"
-                  : "rounded-full bg-ink-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200"
+                  ? "rounded-sm bg-ink-900 px-3 py-1 text-xs font-medium text-white"
+                  : "rounded-sm bg-ink-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200"
               }
             >
               Live op de site ({c.published})

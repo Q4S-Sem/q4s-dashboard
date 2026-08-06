@@ -116,7 +116,7 @@ export function KanbanBoard({
                 <span className="truncate text-[13px] font-semibold">
                   {col.label}
                 </span>
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/70 px-1.5 text-[11px] font-bold tabular-nums">
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-sm bg-white/70 px-1.5 text-[11px] font-bold tabular-nums">
                   {colCards.length}
                 </span>
               </div>

@@ -17,11 +17,15 @@ export function AddStageForm({
   const e = state.fieldErrors ?? {};
 
   return (
-    <form action={formAction} className="flex flex-wrap items-end gap-3">
-      <Field label="Nieuwe fase" htmlFor="name" error={e.name} className="min-w-48 flex-1">
+    <form
+      action={formAction}
+      className="grid grid-cols-[1.25rem_minmax(0,1fr)_9rem_7rem_auto] items-end gap-2 border border-transparent px-2"
+    >
+      <span aria-hidden />
+      <Field label="Nieuwe fase" htmlFor="name" error={e.name}>
         <Input id="name" name="name" placeholder="Bijv. Onderhandeling" required />
       </Field>
-      <Field label="Kleur" htmlFor="color" className="w-36">
+      <Field label="Kleur" htmlFor="color">
         <Select id="color" name="color" defaultValue="slate">
           {BADGE_COLORS.map((c) => (
             <option key={c.value} value={c.value}>
@@ -30,10 +34,10 @@ export function AddStageForm({
           ))}
         </Select>
       </Field>
-      <Field label="Kans %" htmlFor="probability" className="w-24" error={e.probability}>
+      <Field label="Kans %" htmlFor="probability" error={e.probability}>
         <Input id="probability" name="probability" type="number" min={0} max={100} defaultValue={0} />
       </Field>
-      <div className="mb-0">
+      <div>
         <SubmitButton>
           <Plus className="h-4 w-4" /> Toevoegen
         </SubmitButton>

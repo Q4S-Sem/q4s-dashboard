@@ -35,7 +35,7 @@ function AppTile({
         {/* Cijfer-badge rechtsboven: hoeveel er nog openstaat aan acties/meldingen */}
         {count > 0 && (
           <span
-            className="absolute right-2.5 top-2.5 inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-brand-600 px-2 text-sm font-bold tabular-nums text-white ring-2 ring-white"
+            className="absolute right-2.5 top-2.5 inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-sm bg-brand-600 px-2 text-sm font-bold tabular-nums text-white ring-2 ring-white"
             title={`${count} openstaand${count === 1 ? "e melding" : "e meldingen"}`}
             aria-label={`${count} openstaande meldingen`}
           >

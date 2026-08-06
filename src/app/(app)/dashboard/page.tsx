@@ -430,7 +430,7 @@ export default async function DashboardPage({
                   <span className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "rounded-full px-2.5 py-0.5 text-xs font-bold",
+                        "rounded-sm px-2.5 py-0.5 text-xs font-bold",
                         s.tone === "red" && "bg-rose-100 text-rose-700",
                         s.tone === "amber" && "bg-amber-100 text-amber-700",
                         s.tone === "blue" && "bg-blue-100 text-blue-700",

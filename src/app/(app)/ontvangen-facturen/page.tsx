@@ -271,7 +271,7 @@ export default async function OntvangenFacturenPage({
       {/* Hoofdlijst (zonder de afwijkingen) */}
       {toon ? (
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700">
+          <span className="inline-flex items-center gap-2 rounded-sm bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700">
             {selectionLabel} · {shown.length} factu{shown.length === 1 ? "ur" : "ren"}
           </span>
           <Link href="/ontvangen-facturen" className={buttonVariants({ variant: "outline", size: "sm" })}>
@@ -347,7 +347,7 @@ export default async function OntvangenFacturenPage({
           automatisch uit je mailbox en zet ze hier klaar — net als de CV-inbox. Tot die tijd importeer je
           ze zelf.
         </span>
-        <span className="rounded-full bg-ink-200 px-2 py-0.5 text-xs font-semibold text-ink-500">
+        <span className="rounded-sm bg-ink-200 px-2 py-0.5 text-xs font-semibold text-ink-500">
           Gepland
         </span>
       </div>

@@ -57,7 +57,7 @@ export function CrmBoards({
               {t.label}
               <span
                 className={cn(
-                  "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums",
+                  "inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1.5 text-xs font-semibold tabular-nums",
                   active ? "bg-ink-100 text-ink-600" : "bg-ink-200 text-ink-500",
                 )}
               >

@@ -344,7 +344,7 @@ export default async function AgendaPage({
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <h2 className="text-sm font-semibold text-ink-900">Openstaande facturen</h2>
               {overdueCount > 0 && (
-                <span className="ml-auto rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                <span className="ml-auto rounded-sm bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                   {overdueCount} te laat
                 </span>
               )}
@@ -407,13 +407,13 @@ export default async function AgendaPage({
                         {t.assignee && (
                           <span
                             title={fullName(t.assignee)}
-                            className="shrink-0 rounded-full bg-ink-100 px-1.5 text-[10px] font-semibold text-ink-500"
+                            className="shrink-0 rounded-sm bg-ink-100 px-1.5 text-[10px] font-semibold text-ink-500"
                           >
                             {initials(fullName(t.assignee))}
                           </span>
                         )}
                         {t.priority === "HIGH" && (
-                          <span className="rounded-full bg-red-100 px-1.5 text-[10px] font-medium text-red-700">
+                          <span className="rounded-sm bg-red-100 px-1.5 text-[10px] font-medium text-red-700">
                             {labelFor(TASK_PRIORITIES, t.priority)}
                           </span>
                         )}

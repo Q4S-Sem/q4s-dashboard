@@ -404,7 +404,7 @@ function MonthGrid({
                         href={`/agenda/dag/${day}`}
                         aria-label={`Dagplanning ${day}`}
                         className={cn(
-                          "pointer-events-auto flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-medium transition-colors",
+                          "pointer-events-auto flex h-6 min-w-6 items-center justify-center rounded-sm px-1 text-xs font-medium transition-colors",
                           isToday
                             ? "bg-brand-600 text-white"
                             : inMonth

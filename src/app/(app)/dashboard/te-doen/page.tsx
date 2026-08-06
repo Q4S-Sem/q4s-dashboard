@@ -61,7 +61,7 @@ export default async function TeDoenPage() {
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-500">
           <Badge color={colorFor(CRM_NOTE_TYPES, t.type)}>{labelFor(CRM_NOTE_TYPES, t.type)}</Badge>
           {t.ruleGenerated && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 font-medium text-brand-700">
+            <span className="inline-flex items-center gap-1 rounded-sm bg-brand-50 px-2 py-0.5 font-medium text-brand-700">
               <Zap className="h-3 w-3" /> automatisch
             </span>
           )}
