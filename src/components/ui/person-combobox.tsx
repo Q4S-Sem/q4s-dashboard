@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useValueSignal } from "./value-signal";
 import { useDropDirection, dropClass } from "./use-drop-direction";
 import { Check, UserPlus, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -84,6 +85,13 @@ export function PersonCombobox({
   const up = useDropDirection(open, rootRef, 260);
 
 
+  const hiddenRef = useRef<HTMLInputElement>(null);
+
+
+  useValueSignal(hiddenRef, selectedId);
+
+
+
   return (
     <div ref={rootRef} className="relative">
       <input
@@ -112,7 +120,7 @@ export function PersonCombobox({
       <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
 
       {/* Submitted values: an existing id, OR (when allowed) a new name to create. */}
-      <input type="hidden" name={name} value={selectedId} />
+      <input ref={hiddenRef} type="hidden" name={name} value={selectedId} />
       {createName && <input type="hidden" name={createName} value={canCreate ? newName : ""} />}
 
       {open && (matches.length > 0 || showCreate || showNoMatch) && (

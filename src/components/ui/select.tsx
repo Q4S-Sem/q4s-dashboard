@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useValueSignal } from "./value-signal";
 import { useDropDirection, dropClass } from "./use-drop-direction";
 import { ChevronsUpDown, Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -189,9 +190,16 @@ export function Select({
   const up = useDropDirection(open, rootRef, 300);
 
 
+  const hiddenRef = React.useRef<HTMLInputElement>(null);
+
+
+  useValueSignal(hiddenRef, value);
+
+
+
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      <input type="hidden" name={name} value={value} />
+      <input ref={hiddenRef} type="hidden" name={name} value={value} />
       <button
         type="button"
         id={id}

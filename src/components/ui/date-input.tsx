@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useValueSignal } from "./value-signal";
 import { useDropDirection, dropClass } from "./use-drop-direction";
 import {
   Calendar as CalendarIcon,
@@ -367,11 +368,13 @@ export function DateInput({
 
   const [timeH, timeM] = time.split(":").map(Number);
 
+  const hiddenRef = React.useRef<HTMLInputElement>(null);
+  useValueSignal(hiddenRef, submitValue);
   const calUp = useDropDirection(open, rootRef, 380);
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      <input type="hidden" name={name} value={submitValue} />
+      <input ref={hiddenRef} type="hidden" name={name} value={submitValue} />
       {weekMode ? (
         <button
           type="button"
