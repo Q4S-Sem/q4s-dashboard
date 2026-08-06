@@ -5,7 +5,7 @@ export const metadata = { title: "Evaluaties inlener" };
 export default async function InlenerEvaluatiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; quarter?: string }>;
+  searchParams: Promise<{ year?: string; quarter?: string; opgeslagen?: string }>;
 }) {
   const sp = await searchParams;
   return (

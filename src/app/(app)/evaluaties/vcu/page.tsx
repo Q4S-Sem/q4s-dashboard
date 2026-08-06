@@ -5,7 +5,7 @@ export const metadata = { title: "VG-evaluaties" };
 export default async function VcuEvaluatiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; quarter?: string }>;
+  searchParams: Promise<{ year?: string; quarter?: string; opgeslagen?: string }>;
 }) {
   const sp = await searchParams;
   return (

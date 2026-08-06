@@ -11,6 +11,7 @@ import {
   EVALUATION_TYPES,
   labelFor,
 } from "@/lib/domain";
+import { getFormDef } from "@/lib/evaluation-forms";
 import { getCompanySettings } from "@/lib/settings";
 import { renderEvaluationPdf } from "@/lib/evaluation-pdf";
 import { saveUpload } from "@/lib/uploads";
@@ -104,6 +105,19 @@ async function resolveConsultantId(formData: FormData): Promise<string | null> {
   return null;
 }
 
+/**
+ * Waar je uitkomt na opslaan: de lijst van dít formuliertype, niet het
+ * detailscherm. Opslaan is het einde van de taak — dan wil je je nieuwe regel in
+ * het overzicht zien, niet nóg een scherm vol velden. Het detailscherm blijft
+ * één klik weg via de melding bovenaan de lijst.
+ *
+ * Het type komt uit de opgeslagen evaluatie en niet uit het formulier: wie
+ * halverwege van formuliertype wisselt, hoort in de andere lijst te landen.
+ */
+function naLijst(type: string, id: string): string {
+  return `${getFormDef(type).listPath}?opgeslagen=${id}`;
+}
+
 export async function createEvaluation(
   _prev: FormState,
   formData: FormData,
@@ -121,7 +135,7 @@ export async function createEvaluation(
   revalidatePath("/evaluaties");
   revalidatePath("/werknemers");
   revalidatePath("/", "layout");
-  redirect(`/evaluaties/${ev.id}`);
+  redirect(naLijst(ev.type, ev.id));
 }
 
 export async function updateEvaluation(
@@ -137,7 +151,7 @@ export async function updateEvaluation(
   const parsed = parseForm(EvaluationSchema, formData);
   if (!parsed.success) return parsed.state;
   const data = toData(parsed.data, formData);
-  await db.evaluation.update({
+  const ev = await db.evaluation.update({
     where: { id },
     data: { ...data, consultantId, clientId: await resolveClientId(data.clientName) },
   });
@@ -145,7 +159,7 @@ export async function updateEvaluation(
   revalidatePath(`/evaluaties/${id}`);
   revalidatePath("/werknemers");
   revalidatePath("/", "layout");
-  redirect(`/evaluaties/${id}`);
+  redirect(naLijst(ev.type, ev.id));
 }
 
 export async function deleteEvaluation(formData: FormData) {

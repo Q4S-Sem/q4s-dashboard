@@ -26,6 +26,8 @@ export type EvalFormDef = {
   subtitle: string;
   /** Who signs/fills it in. */
   evaluatorLabel: string;
+  /** De lijstpagina van dit type — waar je na opslaan weer uitkomt. */
+  listPath: string;
   headerFields: EvalHeaderField[];
   scoreSections: EvalScoreSection[];
   /** Closing block (e.g. "Werkzaamheden") with free-text + yes/no questions. */
@@ -41,6 +43,7 @@ const VCU: EvalFormDef = {
   title: "VG-evaluatieformulier (VCU)",
   subtitle: "Evaluatie door inleenbedrijf over uitzendkracht",
   evaluatorLabel: "Naam inlener",
+  listPath: "/evaluaties/vcu",
   headerFields: [
     { key: "clientName", label: "Naam inlenend bedrijf" },
     { key: "clientAddress", label: "Adres" },
@@ -74,6 +77,7 @@ const UITZENDKRACHT: EvalFormDef = {
   title: "Evaluatie inlener door uitzendkracht",
   subtitle: "Evaluatie door uitzendkracht over uitzending",
   evaluatorLabel: "Naam uitzendkracht",
+  listPath: "/evaluaties/inlener",
   headerFields: [
     { key: "clientName", label: "Naam inlenend bedrijf" },
     { key: "department", label: "Afdeling waar naar uitgezonden" },

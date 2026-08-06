@@ -13,10 +13,13 @@ import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 
-type SP = { year?: string; quarter?: string };
+type SP = { year?: string; quarter?: string; opgeslagen?: string };
 
 function hrefWith(basePath: string, sp: SP, patch: SP): string {
-  const merged = { ...sp, ...patch };
+  // `opgeslagen` bewust niet meenemen: die melding hoort bij één actie, niet bij
+  // elke filterklik daarna.
+  const { opgeslagen: _weg, ...rest } = sp;
+  const merged = { ...rest, ...patch };
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(merged)) if (v) qs.set(k, String(v));
   const s = qs.toString();
@@ -63,6 +66,7 @@ export async function EvaluatiesList({
   description: string;
   sp: SP;
 }) {
+  const bewaard = sp.opgeslagen?.trim() || null;
   const year = sp.year ? Number(sp.year) : undefined;
   const quarter = sp.quarter ? Number(sp.quarter) : undefined;
 
@@ -109,6 +113,21 @@ export async function EvaluatiesList({
           </Link>
         }
       />
+
+      {/* Na opslaan land je hier, niet op het detailscherm. Deze regel bevestigt
+          dat het gelukt is en houdt dat scherm één klik weg. */}
+      {bewaard && (
+        <p className="flex flex-wrap items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <CheckCircle2 className="h-4 w-4 shrink-0" /> Evaluatie opgeslagen.
+          <Link href={`/evaluaties/${bewaard}`} className="font-medium underline">
+            Openen
+          </Link>
+          <span className="text-emerald-700/70">of</span>
+          <Link href={`/evaluaties/${bewaard}/print`} className="font-medium underline">
+            printen / PDF
+          </Link>
+        </p>
+      )}
 
       {/* Filters: kwartaal + jaar (geen type-switch meer) */}
       <Card>

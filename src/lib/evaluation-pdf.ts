@@ -85,8 +85,17 @@ const H = 841.89;
 const M = 48;
 const RIGHT = W - M;
 const BOTTOM = 66; // ruimte voor de voettekst
-/** Middens van de vier scorekolommen. */
-const SCORE_CX = [352, 412, 472, 528];
+/**
+ * De scorekolommen. Berekend en niet met de hand ingetikt: de vorige waarden
+ * ([352, 412, 472, 528]) stonden 60, 60 en 56 punten uit elkaar, en die laatste
+ * vier punten zie je meteen als de kolom "Goed" scheef onder zijn kop staat.
+ */
+const SCORE_X0 = 330;
+const SCORE_W = (RIGHT - SCORE_X0) / 4;
+const SCORE_CX = [0, 1, 2, 3].map((i) => SCORE_X0 + (i + 0.5) * SCORE_W);
+
+/** Inspringing van tekst binnen een sectiebalk of tabelrij — overal dezelfde. */
+const PAD = 9;
 
 /** Render a filled-in evaluation as a Q4S PDF, driven by the form template. */
 export async function renderEvaluationPdf(
@@ -177,18 +186,21 @@ export async function renderEvaluationPdf(
     // nooit een losse sectiekop onderaan een pagina staan.
     ensure(96);
     page.drawRectangle({ x: M, y: y - 15, width: RIGHT - M, height: 20, color: DARK });
-    at(label.toUpperCase(), M + 9, y - 9, 8.5, bold, WHITE);
+    at(label.toUpperCase(), M + PAD, y - 9, 8.5, bold, WHITE);
     y -= 32;
   };
 
   /** Kolomkoppen van de scoretabel (herhaalt bij een paginawissel). */
   const scoreHeader = () => {
-    at("Beoordeeld op", M, y, 7.5, bold, MUTED);
+    at("Beoordeeld op", M + PAD, y, 7.5, bold, MUTED);
     EVAL_SCORES.forEach((s, i) => center(s.label.toUpperCase(), SCORE_CX[i], y, 7.5, bold, MUTED));
     y -= 7;
     rule(y);
     y -= 14;
   };
+
+  /** Linkerkant van een "vakje + label", zó dat het geheel op `cx` uitkomt. */
+  const hokX = (cx: number, label: string) => cx - (9 + 5 + bold.widthOfTextAtSize(label, 9)) / 2;
 
   /** Aankruisvakje (leeg of aangevinkt) met label ernaast. */
   const checkbox = (x: number, yy: number, checked: boolean, label: string, color: RGB) => {
@@ -294,10 +306,20 @@ export async function renderEvaluationPdf(
   at(formatDate(ev.evaluationDate), metaX + 88, y - 11, 9, font, INK);
   if (isConcept) {
     at("STATUS", metaX + 10, y - 28, 7, bold, MUTED);
-    at("CONCEPT — nog niet definitief", metaX + 10, y - 41, 8, bold, rgb(0.85, 0.5, 0.04));
+    at(
+      clip("CONCEPT — nog niet definitief", metaW - 20, 7.5, bold),
+      metaX + 10,
+      y - 41,
+      7.5,
+      bold,
+      rgb(0.85, 0.5, 0.04),
+    );
   }
 
-  y -= 52;
+  // Het metablok is hoger als er een conceptregel in staat. Die hoogte moet mee
+  // in de sprong naar het volgende blok, anders schuift het conceptvel zijn eigen
+  // infoblokken eroverheen — precies het geval dat je pas ziet bij een concept.
+  y -= Math.max(52, metaH + 8);
 
   // ---- Medewerker + gegevens van de uitzending ----
   const boxTop = y;
@@ -321,10 +343,18 @@ export async function renderEvaluationPdf(
     reference: "Referentie",
   };
   const rightKeys: HeaderKey[] = ["clientName", "clientAddress", "department", "reference"];
+  const LABEL_W = 62;
+  const waardeW = colW - 20 - LABEL_W;
+  // Een adres past zelden op één regel. Afkappen met "…" maakt van een
+  // vestigingsadres een raadsel, dus loopt het door op een tweede regel.
   const rightLines = def.headerFields
     .filter((h) => rightKeys.includes(h.key))
-    .map((h) => [SHORT_LABEL[h.key] ?? h.label, headerVal(h.key)] as [string, string])
-    .filter(([, v]) => v);
+    .flatMap((h) => {
+      const waarde = headerVal(h.key);
+      if (!waarde) return [];
+      const regels = wrap(waarde, waardeW, 8.5).slice(0, 2);
+      return regels.map((r, i) => [i === 0 ? (SHORT_LABEL[h.key] ?? h.label) : "", r] as [string, string]);
+    });
   const rightH = 30 + Math.max(1, rightLines.length) * 12;
 
   const boxH = Math.max(leftH, rightH, 78);
@@ -346,7 +376,7 @@ export async function renderEvaluationPdf(
   leftLines.forEach(([label, value], i) => {
     const yy = boxTop - 32 - i * 12;
     at(`${label}:`, M + 10, yy, 8, bold, MUTED);
-    at(clip(value, colW - 78, 8.5), M + 68, yy, 8.5, font, INK);
+    at(clip(value, waardeW, 8.5), M + 10 + LABEL_W, yy, 8.5, font, INK);
   });
 
   const rx = M + colW + gap;
@@ -356,8 +386,8 @@ export async function renderEvaluationPdf(
   }
   rightLines.forEach(([label, value], i) => {
     const yy = boxTop - 16 - i * 12;
-    at(`${label}:`, rx + 10, yy, 8, bold, MUTED);
-    at(clip(value, colW - 82, 8.5), rx + 72, yy, 8.5, font, INK);
+    if (label) at(`${label}:`, rx + 10, yy, 8, bold, MUTED);
+    at(clip(value, waardeW, 8.5), rx + 10 + LABEL_W, yy, 8.5, font, INK);
   });
 
   y = boxTop - boxH - 6;
@@ -380,7 +410,8 @@ export async function renderEvaluationPdf(
           color: ZEBRA,
         });
       }
-      at(clip(crit.label, 280, 9), M + 2, y, 9, font, INK);
+      // Klemt tegen de eerste scorekolom aan, niet tegen een vast getal.
+      at(clip(crit.label, SCORE_X0 - M - PAD - 10, 9), M + PAD, y, 9, font, INK);
       EVAL_SCORES.forEach((s, i) => {
         const on = val === Number(s.value);
         if (on) {
@@ -425,9 +456,9 @@ export async function renderEvaluationPdf(
     const note = String(answers[sec.noteKey] ?? "").trim();
     if (note) {
       ensure(20);
-      at("Toelichting", M, y, 7.5, bold, MUTED);
+      at("Toelichting", M + PAD, y, 7.5, bold, MUTED);
       y -= 13;
-      para(note, 9, INK);
+      para(note, 9, INK, PAD);
     }
     y -= 12;
   }
@@ -438,25 +469,27 @@ export async function renderEvaluationPdf(
     for (const t of def.textFields) {
       const v = String(answers[t.key] ?? "").trim();
       ensure(18);
-      at(t.label, M, y, 7.5, bold, MUTED);
+      at(t.label, M + PAD, y, 7.5, bold, MUTED);
       y -= 13;
-      para(v || "—", 9, v ? INK : FAINT);
+      para(v || "—", 9, v ? INK : FAINT, PAD);
       y -= 6;
     }
     for (const b of def.boolQuestions) {
       ensure(20);
       const v = String(answers[b.key] ?? "");
-      at(clip(b.label, 330, 9), M, y, 9, font, INK);
-      checkbox(RIGHT - 120, y, v === "ja", "Ja", GREEN);
-      checkbox(RIGHT - 58, y, v === "nee", "Nee", RED);
+      at(clip(b.label, SCORE_X0 - M - PAD - 10, 9), M + PAD, y, 9, font, INK);
+      // Gecentreerd onder de twee rechter scorekolommen: dan staat álles in dit
+      // formulier op hetzelfde stramien, ook de vragen zonder scoreschaal.
+      checkbox(hokX(SCORE_CX[2], "Ja"), y, v === "ja", "Ja", GREEN);
+      checkbox(hokX(SCORE_CX[3], "Nee"), y, v === "nee", "Nee", RED);
       y -= 20;
     }
     const note = String(answers[def.closingNoteKey] ?? "").trim();
     if (note) {
       ensure(20);
-      at("Toelichting", M, y, 7.5, bold, MUTED);
+      at("Toelichting", M + PAD, y, 7.5, bold, MUTED);
       y -= 13;
-      para(note, 9, INK);
+      para(note, 9, INK, PAD);
     }
     y -= 10;
   }
@@ -475,15 +508,15 @@ export async function renderEvaluationPdf(
       borderColor: LINE,
       borderWidth: 1,
     });
-    at("EINDSCORE", M + 12, y, 7, bold, MUTED);
+    at("EINDSCORE", M + PAD, y, 7, bold, MUTED);
     const rounded = Math.max(1, Math.min(4, Math.round(avg)));
     const label = EVAL_SCORES[rounded - 1]?.label ?? "";
-    at(`${avg.toFixed(1).replace(".", ",")} / 4`, M + 12, y - 18, 16, bold, INK);
-    at(label, M + 74, y - 17, 11, bold, SCORE_RGB[rounded - 1]);
+    at(`${avg.toFixed(1).replace(".", ",")} / 4`, M + PAD, y - 18, 16, bold, INK);
+    at(label, M + PAD + 62, y - 17, 11, bold, SCORE_RGB[rounded - 1]);
 
     // Vier segmenten; de behaalde segmenten kleuren mee.
     const segW = 46;
-    const barX = RIGHT - 12 - segW * 4 - 6;
+    const barX = RIGHT - PAD - (segW * 4 + 6);
     for (let i = 0; i < 4; i++) {
       page.drawRectangle({
         x: barX + i * (segW + 2),
@@ -497,7 +530,7 @@ export async function renderEvaluationPdf(
       `${Object.values(scores).filter((v) => Number(v) >= 1 && Number(v) <= 4).length} van ${
         def.scoreSections.reduce((n, s) => n + s.criteria.length, 0)
       } punten beoordeeld`,
-      RIGHT - 12,
+      RIGHT - PAD,
       y,
       7.5,
       font,
@@ -510,7 +543,9 @@ export async function renderEvaluationPdf(
   ensure(70);
   rule(y);
   y -= 20;
-  at("ONDERTEKENING", M, y, 7, bold, MUTED);
+  // Ook dit blok op het stramien: elke tekstregel in dit document begint op
+  // dezelfde x, of er nu een kader omheen staat of niet.
+  at("ONDERTEKENING", M + PAD, y, 7, bold, MUTED);
   y -= 20;
   const sigCol = (x: number, label: string, value: string, width: number) => {
     at(label, x, y, 7.5, bold, MUTED);
@@ -522,9 +557,9 @@ export async function renderEvaluationPdf(
       color: LINE,
     });
   };
-  sigCol(M, def.evaluatorLabel, ev.evaluatorName || "", 190);
-  sigCol(M + 210, "Datum", formatDate(ev.evaluationDate), 110);
-  sigCol(M + 340, "Handtekening", "", RIGHT - (M + 340));
+  sigCol(M + PAD, def.evaluatorLabel, ev.evaluatorName || "", 190);
+  sigCol(M + PAD + 210, "Datum", formatDate(ev.evaluationDate), 110);
+  sigCol(M + PAD + 340, "Handtekening", "", RIGHT - PAD - (M + PAD + 340));
 
   // ---- Voettekst op elke pagina ----
   const pages = pdf.getPages();
