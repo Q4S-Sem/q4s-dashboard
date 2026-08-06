@@ -1,0 +1,13 @@
+Logo voor het CV — apart van public/logo/, met opzet.
+
+q4s-logo.png      Wat de CV's gebruiken (PDF, printvel, Word). Bijgesneden tot
+                  precies de inkt: een opgegeven hoogte is ook de hoogte die je
+                  ziet. Doorzichtig, dus het hoort op een WIT vlak — de "witte"
+                  delen van het beeldmerk zijn gaten en laten anders de
+                  achtergrondkleur doorschijnen.
+q4s-logo-bron.png Het onbijgesneden origineel (2000x2000, ~23% lege rand).
+
+Waarom niet in public/logo/ zelf: alles daar wordt óók het logo op facturen,
+evaluaties en het inlogscherm (branding.ts pakt het eerste plaatje). De lege rand
+van het origineel maakt het daar ineens een stuk kleiner. Wil je het merk overal
+vervangen, doe dat dan bewust in public/logo/ — niet hier.

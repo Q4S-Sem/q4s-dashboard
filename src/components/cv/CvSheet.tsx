@@ -194,9 +194,10 @@ export function CvSheet({
       <style>{cvCss(A4_BREEDTE, A4_HOOGTE, MARGE)}</style>
 
       <article className="cv-vel" data-cv-sheet>
-        {/* Kopbalk in de accentkleur: naam, functietitel en het merk van de
-            afzender. Het logo staat op een wit vlak — het Q4S-logo is zwart op
-            wit en zou op een gekleurde balk verdwijnen. */}
+        {/* Kopbalk in de accentkleur. Linksboven de kandidaat (pasfoto), rechts
+            klein het merk van de afzender. Het logo staat op een wit vlak: het
+            bestand is doorzichtig en de "witte" delen van het beeldmerk zijn
+            gaten — direct op de balk zou het accent erdoorheen schijnen. */}
         <header className="cv-kop" style={{ background: accent, color: opAccent }}>
           {toonFoto && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -278,13 +279,14 @@ function cvCss(breedte: number, hoogte: number, marge: number): string {
   gap: 6mm;
   padding: ${marge - 1}mm ${marge}mm ${marge - 2}mm;
 }
+/* Vierkant, in lijn met de rechte hoeken van de huisstijl — en met de pasfoto
+   in de PDF-download, zodat beide documenten hetzelfde ogen. */
 .cv-foto {
-  width: 26mm;
-  height: 26mm;
-  border-radius: 50%;
+  width: 25mm;
+  height: 25mm;
   object-fit: cover;
   flex: 0 0 auto;
-  border: 1.2mm solid rgba(255, 255, 255, 0.9);
+  border: 1mm solid #ffffff;
 }
 .cv-kop-tekst { flex: 1 1 auto; min-width: 0; }
 .cv-naam {
@@ -305,15 +307,18 @@ function cvCss(breedte: number, hoogte: number, marge: number): string {
   font-size: 8.6pt;
   opacity: 0.85;
 }
+/* Klein en in de rechterbovenhoek: het merk hoort hier bij de afzender, niet bij
+   de kandidaat. De hoogte klopt één op één, want q4s-logo.png is op de inkt
+   bijgesneden (geen lege rand meer in het bestand). */
 .cv-logo-vlak {
   flex: 0 0 auto;
+  align-self: flex-start;
   background: #ffffff;
-  border-radius: 1mm;
-  padding: 2.4mm 3mm;
+  padding: 2mm 2.4mm;
   display: flex;
   align-items: center;
 }
-.cv-logo { height: 9mm; width: auto; display: block; }
+.cv-logo { height: 7mm; width: auto; display: block; }
 
 /* ---- Body ---- */
 .cv-body { flex: 1 1 auto; display: block; padding: ${marge - 2}mm ${marge}mm 0; }

@@ -1,5 +1,5 @@
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
-import { getLogoFile } from "./branding";
+import { getCvLogoFile } from "./branding";
 import { loadCvFonts } from "./cv-fonts";
 import { sanitizePdfText, truncateText, wrapText } from "./pdf-text";
 import type { CvDoc } from "./cv-doc";
@@ -13,10 +13,11 @@ import type { CvDoc } from "./cv-doc";
  *
  * DE VIER BESLISSINGEN DIE DE REST VERKLAREN
  *
- * 1. KOPBALK MET LOGO OP EEN WIT VLAK. Het Q4S-logo is een zwart blok op wit; op
- *    een donkere balk verdwijnt het en op een witte pagina is het net een postzegel.
- *    Op een wit vlak ín een zwarte balk is het meteen het merk van de afzender —
- *    en de witruimte die al in het logobestand zit, valt weg tegen dat vlak.
+ * 1. KOPBALK: FOTO LINKS, LOGO KLEIN RECHTSBOVEN. De linkerbovenhoek is de plek
+ *    waar een lezer een gezicht verwacht, dus die is van de kandidaat; het merk van
+ *    de afzender staat klein in de tegenoverliggende hoek. Het logo blijft op een
+ *    wit vlak staan: het bestand is doorzichtig en de "witte" delen van het
+ *    beeldmerk zijn gaten — direct op de accentbalk zou de balk erdoorheen schijnen.
  *
  * 2. VOLGORDE VOLGT DE BESLISBOOM VAN DE OPDRACHTGEVER, niet de CV-conventie. Hij
  *    stelt eerst een binaire vraag ("mag deze man überhaupt op mijn werk?" →
@@ -57,21 +58,27 @@ const CHIP_BG = rgb(0.937, 0.937, 0.941);
 const ON_BAND = rgb(1, 1, 1);
 const ON_BAND_SOFT = rgb(0.74, 0.74, 0.75);
 
-// Kopbalk: ~12,5% van de paginahoogte. Krap om het witte logovlak (80pt) heen —
-// genoeg voor een fors logo, weinig genoeg dat een printer er niet op leegloopt en
-// dat er onder de balk een volle pagina overblijft.
+// Kopbalk: ~12,5% van de paginahoogte. Krap om de pasfoto (70pt) heen — genoeg
+// voor een herkenbaar gezicht, weinig genoeg dat een printer er niet op leegloopt
+// en dat er onder de balk een volle pagina overblijft.
 const BAND_H = 106;
-const BAND2_H = 38;
+// Vervolgpagina's dragen nu ook het logo, dus iets hoger dan een pure tekstbalk.
+const BAND2_H = 46;
 
 /**
- * Logohoogte. De wordmark "PROJECT PARTNERS" is maar ~8% van de logohoogte en
- * wordt onder ~55pt onleesbaar — dat is de eis. Let op: het JPG-bestand heeft ~12%
- * witruimte ingebakken, dus de zwarte inkt is maar ~88% van de tekenhoogte. 64 x
- * 0,88 ≈ 56pt echte inkt: net boven de leesgrens. Meten met LOGO_H alleen is dus
- * misleidend; vandaar dit getal en niet 58.
+ * Logohoogte, klein in de rechterbovenhoek. Dit is een herkenningsmerk, geen
+ * leesbare wordmark: "PROJECT PARTNERS" is ~7% van de beeldhoogte en valt op deze
+ * maat weg. Dat is bewust — de afzender staat voluit in de voettekst en in het
+ * contactblok. Maten gelden hier één op één, want `public/logo/cv/q4s-logo.png` is
+ * op de inkt bijgesneden (zie getCvLogoFile).
  */
-const LOGO_H = 64;
-const BADGE_PAD = 8;
+const LOGO_H = 30;
+const LOGO2_H = 20;
+const BADGE_PAD = 7;
+
+/** Pasfoto linksboven: vierkant, in lijn met de rechte hoeken van de huisstijl. */
+const PHOTO = 70;
+const PHOTO_RAND = 3;
 
 // Ondergrens voor content; laat lucht boven de voetlijn (die ligt op M-5).
 const BOTTOM = M + 8;
@@ -113,12 +120,18 @@ type Pass = {
 
 type LayoutResult = { pageCount: number; endY: number; gapUnits: number };
 
-export async function renderCvPdf(
-  doc: CvDoc,
+/** Wat de CV-vormgeving en de kandidaat aan deze renderer meegeven. */
+export type CvPdfOpties = {
   /** Accentkleur uit de CV-vormgeving; standaard het Q4S-oranje. */
-  accentHex = "#e8430a",
-): Promise<Uint8Array> {
-  const BRAND = hexRgb(accentHex);
+  accent?: string;
+  showLogo?: boolean;
+  showPhoto?: boolean;
+  /** Pasfoto van de kandidaat (PNG of JPEG); wordt genegeerd bij een anoniem CV. */
+  photo?: { bytes: Uint8Array; mime: string } | null;
+};
+
+export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise<Uint8Array> {
+  const BRAND = hexRgb(opties.accent ?? "#e8430a");
   const pdf = await PDFDocument.create();
   const fonts = await loadCvFonts(pdf);
   const uni = fonts.embedded;
@@ -128,7 +141,10 @@ export async function renderCvPdf(
   pdf.setCreator(doc.companyName);
   pdf.setSubject(doc.headline || "CV");
 
-  const logoImg = await embedLogo(pdf);
+  const logoImg = opties.showLogo === false ? null : await embedLogo(pdf);
+  // Een pasfoto op een geanonimiseerd CV maakt het anonimiseren zinloos.
+  const photoImg =
+    opties.showPhoto === false || doc.anonymized ? null : await embedPhoto(pdf, opties.photo);
 
   const pages: PDFPage[] = [];
   let page: PDFPage | null = null;
@@ -224,9 +240,28 @@ export async function renderCvPdf(
   // ---- kopbalk --------------------------------------------------------------
 
   /**
-   * Pagina 1: zwarte balk met het logo op een wit vlak, daarnaast wie er wordt
-   * voorgedragen. Alles wat een opdrachtgever nodig heeft om te beslissen of hij
-   * verder leest, staat zo boven de vouw.
+   * Het logo klein op een wit vlak, met de rechterrand op `xRight` en de bovenkant
+   * op `yTop`. Geeft de breedte van het vlak terug, zodat de tekst ernaast weet
+   * waar hij moet stoppen. 0 als er geen logo is.
+   */
+  const drawLogoBadge = (xRight: number, yTop: number, h: number): number => {
+    if (!logoImg) return 0;
+    const logoW = (logoImg.width / logoImg.height) * h;
+    const badgeW = logoW + BADGE_PAD * 2;
+    const badgeH = h + BADGE_PAD * 2;
+    const badgeX = xRight - badgeW;
+    const badgeY = yTop - badgeH;
+    rect(badgeX, badgeY, badgeW, badgeH, ON_BAND);
+    if (!pass.dry && page) {
+      page.drawImage(logoImg, { x: badgeX + BADGE_PAD, y: badgeY + BADGE_PAD, width: logoW, height: h });
+    }
+    return badgeW;
+  };
+
+  /**
+   * Pagina 1: de accentbalk met linksboven de kandidaat (pasfoto + wie hij is) en
+   * rechtsboven klein het merk van de afzender. Alles wat een opdrachtgever nodig
+   * heeft om te beslissen of hij verder leest, staat zo boven de vouw.
    *
    * De contactgegevens staan bewust NIET hier maar in het blok onderaan: het label
    * "Contact via Q4S Project Partners" is zo breed dat de functietitel ernaast werd
@@ -235,27 +270,50 @@ export async function renderCvPdf(
   const drawBand = () => {
     rect(0, H - BAND_H, W, BAND_H, BRAND);
 
-    let textX = M;
-    if (logoImg) {
-      const logoW = (logoImg.width / logoImg.height) * LOGO_H;
-      const badgeW = logoW + BADGE_PAD * 2;
-      const badgeH = LOGO_H + BADGE_PAD * 2;
-      const badgeY = H - BAND_H + (BAND_H - badgeH) / 2;
-      rect(M, badgeY, badgeW, badgeH, ON_BAND);
-      if (!pass.dry && page) {
-        page.drawImage(logoImg, { x: M + BADGE_PAD, y: badgeY + BADGE_PAD, width: logoW, height: LOGO_H });
-      }
-      textX = M + badgeW + 22;
-    } else {
+    const badgeW = drawLogoBadge(RIGHT, H - 14, LOGO_H);
+    if (!logoImg) {
       // Geen (of een SVG-)logo: pdf-lib kan alleen PNG/JPG → tekst-wordmark, zodat
       // er nooit een CV zonder afzender uitgaat.
-      text(doc.companyName, M, H - 62, 16, fonts.bold, ON_BAND);
-      textTracked("PROJECT PARTNERS", M, H - 78, 7.5, fonts.semibold, ON_BAND_SOFT, 2);
-      textX = M;
+      textR(doc.companyName, RIGHT, H - 36, 12, fonts.bold, ON_BAND);
+      textR("PROJECT PARTNERS", RIGHT, H - 48, 6.5, fonts.semibold, ON_BAND_SOFT);
     }
 
-    // Naam / functietitel / meta, optisch gecentreerd in de balk.
-    const textW = RIGHT - textX;
+    let textX = M;
+    if (photoImg) {
+      const y0 = H - BAND_H + (BAND_H - PHOTO) / 2;
+      // Bijsnijden zonder vervorming. pdf-lib kent geen clip-pad, dus: de foto
+      // ruim genoeg tekenen om het vierkant te vullen, en wat erbuiten valt
+      // wegschilderen met de balkkleur. Kan alleen omdat de balk één vlakke kleur
+      // is — staat er ooit een verloop achter, dan moet dit anders.
+      const schaal = Math.max(PHOTO / photoImg.width, PHOTO / photoImg.height);
+      const dw = photoImg.width * schaal;
+      const dh = photoImg.height * schaal;
+      const dx = M + (PHOTO - dw) / 2;
+      const dy = y0 + (PHOTO - dh) / 2;
+      if (!pass.dry && page) {
+        page.drawImage(photoImg, { x: dx, y: dy, width: dw, height: dh });
+      }
+      const over = (x: number, yy: number, w: number, h: number) => {
+        if (w > 0.01 && h > 0.01) rect(x, yy, w, h, BRAND);
+      };
+      over(dx, y0 + PHOTO, dw, dy + dh - (y0 + PHOTO));
+      over(dx, dy, dw, y0 - dy);
+      over(dx, y0, M - dx, PHOTO);
+      over(M + PHOTO, y0, dx + dw - (M + PHOTO), PHOTO);
+
+      // Wit kadertje eromheen — nu pas, anders schildert het masker het weg.
+      const r = PHOTO_RAND;
+      rect(M - r, y0 + PHOTO, PHOTO + r * 2, r, ON_BAND);
+      rect(M - r, y0 - r, PHOTO + r * 2, r, ON_BAND);
+      rect(M - r, y0, r, PHOTO, ON_BAND);
+      rect(M + PHOTO, y0, r, PHOTO, ON_BAND);
+
+      textX = M + PHOTO + 20;
+    }
+
+    // Naam / functietitel / meta, optisch gecentreerd in de balk. De tekst stopt
+    // vóór het logovlak, anders schuift een lange functietitel eronder.
+    const textW = RIGHT - textX - (badgeW > 0 ? badgeW + 18 : 0);
     const capName = TYPE.name * 0.73;
     const capHead = TYPE.headline * 0.73;
     const capMeta = TYPE.bandMeta * 0.73;
@@ -281,24 +339,33 @@ export async function renderCvPdf(
   };
 
   /**
-   * Vervolgpagina's: dezelfde balk, maar plat. Het logo past hier niet leesbaar in
-   * (de wordmark zou ~3pt worden), dus een tekst-wordmark. De kandidaat moet er wél
-   * op — raakt pagina 2 los op het bureau van de klant, dan is het anders niet meer
-   * toe te wijzen.
+   * Vervolgpagina's: dezelfde balk, maar plat. Links de kandidaat — raakt pagina 2
+   * los op het bureau van de klant, dan is het vel anders niet meer toe te wijzen —
+   * en rechts hetzelfde kleine logo als op pagina 1, zodat elk vel apart nog van
+   * Q4S is. De wordmark eronder is op deze maat niet leesbaar; dat mag, de afzender
+   * staat voluit in de voettekst.
    */
   const drawBand2 = () => {
     rect(0, H - BAND2_H, W, BAND2_H, BRAND);
-    const baseline = H - BAND2_H + 14;
-    textTracked(doc.companyName.toUpperCase(), M, baseline, 8, fonts.bold, ON_BAND, 1.1);
-    const who = [doc.displayName, doc.headline].filter(Boolean).join("  ·  ");
-    textR(
-      truncateText(who, fonts.regular, TYPE.small, CONTENT_W - 200, uni),
-      RIGHT,
-      baseline,
-      TYPE.small,
-      fonts.regular,
-      ON_BAND_SOFT,
-    );
+    const badgeH = LOGO2_H + BADGE_PAD * 2;
+    const badgeW = drawLogoBadge(RIGHT, H - (BAND2_H - badgeH) / 2, LOGO2_H);
+    const baseline = H - BAND2_H / 2 - TYPE.small * 0.36;
+    const ruimte = CONTENT_W - (badgeW > 0 ? badgeW + 20 : 0);
+
+    const naam = truncateText(doc.displayName, fonts.bold, TYPE.small, ruimte, uni);
+    text(naam, M, baseline, TYPE.small, fonts.bold, ON_BAND);
+    if (doc.headline) {
+      const x = M + fonts.bold.widthOfTextAtSize(sanitizePdfText(naam, uni), TYPE.small);
+      const rest = `  ·  ${doc.headline}`;
+      text(
+        truncateText(rest, fonts.regular, TYPE.small, ruimte - (x - M), uni),
+        x,
+        baseline,
+        TYPE.small,
+        fonts.regular,
+        ON_BAND_SOFT,
+      );
+    }
   };
 
   // ---- pagina-mechaniek -----------------------------------------------------
@@ -657,7 +724,18 @@ export async function renderCvPdf(
     // 0,88x i.p.v. alles: het contactblok mag niet tegen de voetlijn plakken. De
     // bovengrens is een smaakgrens — meer dan ~46pt tussen twee secties leest niet
     // meer als ritme maar als een gat, en dan is wat leegte onderaan eerlijker.
-    gapExtra = Math.max(0, Math.min(46, (slack * 0.88) / base.gapUnits));
+    let wens = Math.max(0, Math.min(46, (slack * 0.88) / base.gapUnits));
+    // Opvullen mag nooit een pagina KOSTEN. Die 0,88 is niet veilig genoeg: `ensure()`
+    // kijkt een stukje conservatiever dan waar een blok echt eindigt, dus een CV dat
+    // op de millimeter paste, duwde het contactblok alsnog in z'n eentje naar pagina 2.
+    // Narekenen is de enige betrouwbare check — terugschalen tot het weer past.
+    for (let i = 0; i < 8 && wens > 0.5; i++) {
+      if (layout({ dry: true, gapExtra: wens, density: 1 }).pageCount === 1) {
+        gapExtra = wens;
+        break;
+      }
+      wens *= 0.7;
+    }
   }
   layout({ dry: false, gapExtra, density });
 
@@ -690,10 +768,25 @@ export async function renderCvPdf(
 
 /** Logo als PDF-image, of null als het ontbreekt/onleesbaar is (→ tekst-wordmark). */
 async function embedLogo(pdf: PDFDocument) {
-  const logo = getLogoFile();
+  const logo = getCvLogoFile();
   if (!logo || ![".png", ".jpg", ".jpeg"].includes(logo.ext)) return null;
   try {
     return logo.ext === ".png" ? await pdf.embedPng(logo.bytes) : await pdf.embedJpg(logo.bytes);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * De pasfoto. pdf-lib kent alleen PNG en JPEG; een webp of heic uit een telefoon
+ * levert geen fout op maar gewoon geen foto — de kopbalk valt dan terug op de
+ * variant zonder.
+ */
+async function embedPhoto(pdf: PDFDocument, photo: CvPdfOpties["photo"]) {
+  if (!photo?.bytes?.length) return null;
+  try {
+    const png = photo.mime.includes("png");
+    return png ? await pdf.embedPng(photo.bytes) : await pdf.embedJpg(photo.bytes);
   } catch {
     return null;
   }

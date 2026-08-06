@@ -37,3 +37,24 @@ export function getLogoFile(): { bytes: Buffer; ext: string } | null {
     return null;
   }
 }
+
+/**
+ * Het logo voor het CV: `public/logo/cv/q4s-logo.png`.
+ *
+ * Bewust een eigen bestand en niet {@link getLogoFile}. Op het CV staat het logo
+ * klein in de hoek, en de bronbestanden in `public/logo/` hebben ~23% lege rand
+ * ingebakken — op 20pt hoog blijft daar nog maar 11pt inkt van over. Dit bestand
+ * is exact op de inkt bijgesneden, zodat een opgegeven hoogte ook de hoogte is
+ * die je ziet. Het is doorzichtig: de "witte" delen van het beeldmerk zijn gaten,
+ * dus het moet op een wit vlak staan — nooit direct op de accentbalk.
+ *
+ * Valt terug op het algemene logo, zodat er nooit een CV zonder afzender uitgaat.
+ */
+export function getCvLogoFile(): { bytes: Buffer; ext: string } | null {
+  try {
+    const p = path.join(process.cwd(), "public", "logo", "cv", "q4s-logo.png");
+    return { bytes: fs.readFileSync(p), ext: ".png" };
+  } catch {
+    return getLogoFile();
+  }
+}

@@ -14,7 +14,7 @@ import {
   VerticalAlign,
   WidthType,
 } from "docx";
-import { getLogoFile } from "./branding";
+import { getCvLogoFile } from "./branding";
 import type { CvDoc } from "./cv-doc";
 
 /**
@@ -25,8 +25,8 @@ import type { CvDoc } from "./cv-doc";
  * cv-doc.ts), niet hier, anders lopen PDF en Word uit elkaar en verschilt wat de
  * klant krijgt van wat je in de app zag.
  *
- * De layout volgt de PDF zo dicht als Word toelaat: zwarte kopbalk met het logo op
- * een wit vlak, dikgedrukte sectietitels met een korte zware streep erboven,
+ * De layout volgt de PDF zo dicht als Word toelaat: kopbalk in de accentkleur met
+ * rechts klein het logo op wit, dikgedrukte sectietitels met een korte zware streep,
  * dezelfde vololgorde (certificaten vóór werkervaring) en hetzelfde afsluitende
  * contactblok. Verschillen die Word afdwingt staan per blok toegelicht.
  *
@@ -38,7 +38,8 @@ import type { CvDoc } from "./cv-doc";
 const PT = 2; // 1 punt = 2 half-points
 const TWIP = 20; // 1 punt = 20 twips
 
-const BRAND_HEX = "171717";
+/** Terugval-accent; de echte kleur komt uit de CV-vormgeving (zie renderCvDocx). */
+const BRAND_FALLBACK = "e8430a";
 const INK_HEX = "171717";
 const MUTED_HEX = "707073";
 const SOFT_HEX = "99999C";
@@ -99,7 +100,7 @@ function rowLeftRight(left: TextRun[], right: string, rightColor = MUTED_HEX): T
  * kent geen losse streepjes, dus de streep is een 1-cel-tabel met een dikke
  * bovenrand — dat is de enige manier om 'm op de juiste breedte te krijgen.
  */
-function heading(text: string): (Paragraph | Table)[] {
+function heading(text: string, brand: string): (Paragraph | Table)[] {
   return [
     new Paragraph({ spacing: { before: 260, after: 0 }, children: [] }),
     bareTable(
@@ -109,7 +110,7 @@ function heading(text: string): (Paragraph | Table)[] {
             new TableCell({
               width: { size: 100, type: WidthType.PERCENTAGE },
               margins: noMargins,
-              borders: { ...NO_BORDERS, top: { style: BorderStyle.SINGLE, size: 18, color: BRAND_HEX } },
+              borders: { ...NO_BORDERS, top: { style: BorderStyle.SINGLE, size: 18, color: brand } },
               children: [new Paragraph({ spacing: { after: 0 }, children: [] })],
             }),
           ],
@@ -124,7 +125,7 @@ function heading(text: string): (Paragraph | Table)[] {
           text: text.toUpperCase(),
           bold: true,
           size: 11 * PT,
-          color: BRAND_HEX,
+          color: brand,
           characterSpacing: 18,
         }),
       ],
@@ -132,13 +133,18 @@ function heading(text: string): (Paragraph | Table)[] {
   ];
 }
 
-export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
+export async function renderCvDocx(doc: CvDoc, accentHex?: string): Promise<Buffer> {
+  // Zelfde accent als de PDF en het printvel, anders krijgt de klant drie keer
+  // hetzelfde CV in drie kleuren. Word wil hex zonder '#'.
+  const brand = /^#?[0-9a-f]{6}$/i.test(accentHex ?? "")
+    ? (accentHex as string).replace("#", "").toLowerCase()
+    : BRAND_FALLBACK;
   const children: (Paragraph | Table)[] = [];
 
-  // ---- Kopbalk: zwart vlak met het logo op een wit vlak ----------------------
-  // Word kan geen vormen achter tekst tekenen; een tabelcel met zwarte shading is
-  // het equivalent van de zwarte balk uit de PDF.
-  const logo = getLogoFile();
+  // ---- Kopbalk: gekleurd vlak met rechts het logo op wit ---------------------
+  // Word kan geen vormen achter tekst tekenen; een tabelcel met shading is het
+  // equivalent van de accentbalk uit de PDF.
+  const logo = getCvLogoFile();
   const logoCellChildren: Paragraph[] = [];
   if (logo && [".png", ".jpg", ".jpeg"].includes(logo.ext)) {
     try {
@@ -148,9 +154,10 @@ export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
           children: [
             new ImageRun({
               data: logo.bytes,
-              // 150x111 px ≈ de 1,35:1 van het logo, en groot genoeg dat de wordmark
-              // "PROJECT PARTNERS" leesbaar blijft (zie cv-pdf.ts).
-              transformation: { width: 150, height: 111 },
+              // 104x75 px = de 1,381:1 van q4s-logo.png, klein in de hoek zoals in
+              // de PDF. Het bestand is op de inkt bijgesneden, dus deze maat is ook
+              // de maat die je ziet.
+              transformation: { width: 104, height: 75 },
               type: logo.ext === ".png" ? "png" : "jpg",
             }),
           ],
@@ -164,7 +171,7 @@ export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
     logoCellChildren.push(
       new Paragraph({
         spacing: { after: 0 },
-        children: [new TextRun({ text: doc.companyName, bold: true, size: 15 * PT, color: BRAND_HEX })],
+        children: [new TextRun({ text: doc.companyName, bold: true, size: 15 * PT, color: brand })],
       }),
     );
   }
@@ -176,19 +183,9 @@ export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
       rows: [
         new TableRow({
           children: [
-            // Wit vlak met het logo: het logo is zwart-op-wit en zou in de zwarte
-            // balk volledig verdwijnen.
             new TableCell({
-              width: { size: 30, type: WidthType.PERCENTAGE },
-              shading: { type: ShadingType.CLEAR, fill: WHITE_HEX },
-              margins: { top: 120, bottom: 120, left: 120, right: 120 },
-              borders: { ...NO_BORDERS, left: { style: BorderStyle.SINGLE, size: 24, color: BRAND_HEX } },
-              verticalAlign: VerticalAlign.CENTER,
-              children: logoCellChildren,
-            }),
-            new TableCell({
-              width: { size: 70, type: WidthType.PERCENTAGE },
-              shading: { type: ShadingType.CLEAR, fill: BRAND_HEX },
+              width: { size: 76, type: WidthType.PERCENTAGE },
+              shading: { type: ShadingType.CLEAR, fill: brand },
               margins: { top: 200, bottom: 200, left: 280, right: 200 },
               borders: NO_BORDERS,
               verticalAlign: VerticalAlign.CENTER,
@@ -211,6 +208,18 @@ export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
                   : []),
               ],
             }),
+            // Het logo klein in de rechterhoek, op wit: het bestand is doorzichtig
+            // en de "witte" delen van het beeldmerk zijn gaten — op de accentbalk
+            // zou die er dwars doorheen schijnen. Rechts, net als in de PDF en op
+            // het printvel, zodat de linkerhoek van de kandidaat blijft.
+            new TableCell({
+              width: { size: 24, type: WidthType.PERCENTAGE },
+              shading: { type: ShadingType.CLEAR, fill: WHITE_HEX },
+              margins: { top: 120, bottom: 120, left: 120, right: 120 },
+              borders: { ...NO_BORDERS, right: { style: BorderStyle.SINGLE, size: 24, color: brand } },
+              verticalAlign: VerticalAlign.CENTER,
+              children: logoCellChildren,
+            }),
           ],
         }),
       ],
@@ -231,7 +240,7 @@ export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
 
   // ---- Certificaten: het poort-filter, dus vóór werkervaring -----------------
   if (doc.certificates.length) {
-    children.push(...heading("Certificaten & kwalificaties"));
+    children.push(...heading("Certificaten & kwalificaties", brand));
     doc.certificates.forEach((c, i) => {
       if (i > 0) {
         children.push(
@@ -259,7 +268,7 @@ export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
 
   // ---- Vaktechnische skills -------------------------------------------------
   if (doc.skills.length) {
-    children.push(...heading("Vaktechnische skills"));
+    children.push(...heading("Vaktechnische skills", brand));
     // Word kan geen "chips" met afgeronde vlakken op tekstbreedte; één regel met
     // scheidingstekens is hier eerlijker dan een namaak-tabel die bij het bewerken
     // uit elkaar valt.
@@ -275,7 +284,7 @@ export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
 
   // ---- Werkervaring ---------------------------------------------------------
   if (doc.experience.length) {
-    children.push(...heading("Werkervaring"));
+    children.push(...heading("Werkervaring", brand));
     for (const job of doc.experience) {
       children.push(
         rowLeftRight([new TextRun({ text: job.role || "—", bold: true, size: 10.5 * PT, color: INK_HEX })], job.period),
@@ -304,7 +313,7 @@ export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
 
   // ---- Opleiding ------------------------------------------------------------
   if (doc.education.length) {
-    children.push(...heading("Opleiding"));
+    children.push(...heading("Opleiding", brand));
     for (const ed of doc.education) {
       children.push(
         rowLeftRight(
@@ -325,7 +334,7 @@ export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
 
   // ---- Talen ----------------------------------------------------------------
   if (doc.languages.length) {
-    children.push(...heading("Talen"));
+    children.push(...heading("Talen", brand));
     children.push(
       new Paragraph({
         spacing: { after: 60 },
@@ -378,7 +387,7 @@ export async function renderCvDocx(doc: CvDoc): Promise<Buffer> {
                 width: { size: 100, type: WidthType.PERCENTAGE },
                 shading: { type: ShadingType.CLEAR, fill: CHIP_HEX },
                 margins: { top: 200, bottom: 200, left: 240, right: 240 },
-                borders: { ...NO_BORDERS, left: { style: BorderStyle.SINGLE, size: 24, color: BRAND_HEX } },
+                borders: { ...NO_BORDERS, left: { style: BorderStyle.SINGLE, size: 24, color: brand } },
                 children: inner,
               }),
             ],

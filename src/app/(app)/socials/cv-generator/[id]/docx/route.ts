@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { buildCvDoc, cvFileName } from "@/lib/cv-doc";
 import { renderCvDocx } from "@/lib/cv-docx";
+import { cvTemplateFromSettings } from "@/lib/cv-template";
 
 /**
  * Hetzelfde Q4S-CV als bewerkbaar Word-document. `attachment` i.p.v. `inline`:
@@ -18,7 +19,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/socials/cv-generato
 
   const settings = await getCompanySettings();
   const doc = buildCvDoc(profile, settings, profile.candidate);
-  const docx = await renderCvDocx(doc);
+  const docx = await renderCvDocx(doc, cvTemplateFromSettings(settings).accent);
 
   // Buffer.from() → Buffer<ArrayBuffer>: Packer geeft Buffer<ArrayBufferLike>, en
   // dat accepteert Response niet als body.

@@ -1,7 +1,8 @@
 import "server-only";
 import { db } from "./db";
 import { getCompanySettings } from "./settings";
-import { getLogoFile } from "./branding";
+import { getCvLogoFile } from "./branding";
+import { readUpload, photoKey } from "./uploads";
 import { buildCvDoc } from "./cv-doc";
 import { cvTemplateFromSettings } from "./cv-template";
 
@@ -27,10 +28,26 @@ const MIME: Record<string, string> = {
  * er een CV zonder logo uit.
  */
 export function logoDataUri(): string | null {
-  const f = getLogoFile();
+  const f = getCvLogoFile();
   if (!f) return null;
   const mime = MIME[f.ext] ?? "application/octet-stream";
   return `data:${mime};base64,${f.bytes.toString("base64")}`;
+}
+
+/**
+ * De pasfoto als bytes, voor de PDF-download. Het vel in de browser laadt hem via
+ * /api/kandidaat-foto/…, maar pdf-lib heeft het bestand zelf nodig.
+ */
+export async function loadCvPhoto(
+  candidate: { photoFileName: string | null; photoMimeType: string | null } | null,
+): Promise<{ bytes: Uint8Array; mime: string } | null> {
+  if (!candidate?.photoFileName) return null;
+  try {
+    const buf = await readUpload(photoKey(candidate.photoFileName));
+    return { bytes: new Uint8Array(buf), mime: candidate.photoMimeType ?? "image/jpeg" };
+  } catch {
+    return null;
+  }
 }
 
 export async function loadCvSheet(profileId: string) {
