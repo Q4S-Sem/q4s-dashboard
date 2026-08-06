@@ -1234,6 +1234,7 @@ model AppUser {
   updatedAt    DateTime @updatedAt
 
   crmSettings   CrmSettings?
+  passwordChangeRequests PasswordChangeRequest[]
   ownedDeals    Deal[]
   ownedContacts CrmContact[]
   crmNotes      CrmNote[]
@@ -1256,6 +1257,29 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   user      AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Een aangevraagde wachtwoordwijziging vanuit Instellingen. Het nieuwe
+/// wachtwoord staat hier al gehasht klaar maar is nog NIET actief; pas als de
+/// 6-cijferige code uit de e-mail klopt, wordt het op de gebruiker gezet.
+/// Zo kan iemand die even bij een open scherm zit het wachtwoord niet wijzigen
+/// zonder ook bij de mailbox te kunnen.
+model PasswordChangeRequest {
+  id         String   @id @default(cuid())
+  userId     String
+  /// SHA-256 van de code (hex). Nooit de code zelf opslaan.
+  codeHash   String
+  /// Het nieuwe wachtwoord, al als scrypt-hash ("salt:hash").
+  newHash    String
+  /// Aantal mislukte pogingen; na 5 is het verzoek verbruikt.
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  user       AppUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
