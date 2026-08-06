@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { isOnlineNow } from "./online-status";
 
 // Globale "concept blijft bewaard": terwijl je in een formulier typt worden de
 // veldwaarden per pagina in sessionStorage opgeslagen, en bij terugkomst op die
@@ -10,9 +11,11 @@ import { usePathname } from "next/navigation";
 // het concept van dát formulier gewist. Werkt op ELK formulier, zonder per-form
 // code, omgekeerd luisterend op document-niveau.
 //
-// Privacy: sessionStorage is per-tabblad en wordt gewist zodra het tabblad sluit;
-// wachtwoord-, bestands- en verborgen velden worden nooit opgeslagen. Zet
-// `data-no-persist` op een veld of formulier om het uit te sluiten.
+// Privacy: het concept staat alleen op dit apparaat (localStorage) en wordt bij
+// een geslaagde verzending gewist; wachtwoord-, bestands- en verborgen velden
+// worden nooit opgeslagen. Zet `data-no-persist` op een veld of formulier om het
+// uit te sluiten. Bewust localStorage en niet sessionStorage: valt de verbinding
+// weg en sluit je het tabblad, dan moet je werk er de volgende keer nog staan.
 
 const PREFIX = "q4s-draft:";
 const SKIP_TYPES = new Set([
@@ -61,7 +64,7 @@ export function FormAutosave() {
   useEffect(() => {
     let store: Storage;
     try {
-      store = window.sessionStorage;
+      store = window.localStorage;
       const t = "__q4s_probe";
       store.setItem(t, "1");
       store.removeItem(t);
@@ -103,6 +106,9 @@ export function FormAutosave() {
     const onSubmit = (e: Event) => {
       const form = e.target;
       if (!(form instanceof HTMLFormElement)) return;
+      // Offline houdt OfflineGuard het verzenden tegen; het concept moet dan
+      // juist blijven staan, anders raak je het alsnog kwijt.
+      if (!isOnlineNow()) return;
       form.querySelectorAll<Field>("input, textarea, select").forEach((el) => {
         if (persistable(el)) store.removeItem(keyFor(pathname, el));
       });

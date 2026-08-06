@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import { db } from "@/lib/db";
+import { Avatar } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -30,11 +31,11 @@ function shiftWeek(monday: Date, deltaWeeks: number): string {
   d.setDate(d.getDate() + deltaWeeks * 7);
   return weekParam(d);
 }
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase() || "?";
+/** YYYY-MM-DD in de lokale tijdzone, voor de ?week= parameter. */
+function toDateParam(d: Date): string {
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
 export default async function UrenPage({
@@ -100,6 +101,7 @@ export default async function UrenPage({
   const missing = expected
     .filter((p) => !submitted.has(p.id))
     .map((p) => ({
+      id: p.id,
       name: `${p.consultant.firstName} ${p.consultant.lastName}`,
       client: p.client?.companyName ?? "— geen bedrijf",
     }));
@@ -277,14 +279,12 @@ export default async function UrenPage({
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {missing.map((m, mi) => (
                 <Link
-                  key={mi}
-                  href="/uren/nieuw"
-                  title={`Urenstaat invoeren voor ${m.name}`}
+                  key={m.id}
+                  href={`/uren/nieuw?placement=${m.id}&week=${toDateParam(monday)}`}
+                  title={`Urenstaat invoeren voor ${m.name} — plaatsing en week staan al ingevuld`}
                   className="group flex items-center gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2.5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
-                    {initials(m.name)}
-                  </span>
+                  <Avatar name={m.name} size="sm" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-ink-900">{m.name}</span>
                     <span className="block truncate text-xs text-ink-500">{m.client}</span>

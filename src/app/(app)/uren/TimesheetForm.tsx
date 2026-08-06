@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Card,
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Plus, Trash2, Receipt } from "lucide-react";
+import { Plus, Trash2, Receipt, TriangleAlert, ScanLine } from "lucide-react";
 import { Field, Select, Label, Input } from "@/components/ui/field";
 import { NumberInput } from "@/components/ui/number-input";
 import { DateInput } from "@/components/ui/date-input";
@@ -38,6 +38,19 @@ function toInput(d: Date) {
 function parseInput(s: string) {
   return new Date(`${s}T00:00:00`);
 }
+
+/** Uitkomst van de vooruit-check: bestaat deze urenstaat al, of ligt hij al
+ *  ingelezen in de inbox? */
+type Clash = {
+  existing: { id: string; status: string } | null;
+  inbox: {
+    id: string;
+    status: string;
+    confidence: string | null;
+    extractedTotalHours: number | null;
+    originalName: string;
+  } | null;
+};
 
 export type TimesheetFormEntry = {
   date: string;
@@ -76,6 +89,38 @@ export function TimesheetForm({
 
   const initialWeek = defaultWeek ?? toInput(startOfISOWeek(new Date()));
   const [week, setWeek] = useState(initialWeek);
+  // Alleen in aanmaak-modus kun je de plaatsing nog kiezen; bij bewerken ligt
+  // hij vast en is een dubbel-waarschuwing niet aan de orde.
+  const [placementId, setPlacementId] = useState(defaultPlacementId ?? "");
+  const [clash, setClash] = useState<Clash>({ existing: null, inbox: null });
+
+  // Zodra plaatsing én week bekend zijn: vooruit kijken of dit dubbel werk is.
+  // Alleen in aanmaak-modus (`placements` aanwezig) — bij bewerken hoort de
+  // bestaande staat er nu juist te zijn.
+  useEffect(() => {
+    if (!placements || !placementId || !week) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setClash({ existing: null, inbox: null });
+      return;
+    }
+    const ac = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/urenstaat-check?placement=${encodeURIComponent(placementId)}&week=${encodeURIComponent(week)}`,
+          { cache: "no-store", signal: ac.signal },
+        );
+        if (res.ok) setClash(await res.json());
+      } catch {
+        // Geen verbinding of afgebroken: geen waarschuwing tonen is hier veiliger
+        // dan een valse melding. De server weigert een duplicaat sowieso nog.
+      }
+    }, 250);
+    return () => {
+      clearTimeout(t);
+      ac.abort();
+    };
+  }, [placements, placementId, week]);
   const [hours, setHours] = useState<string[]>(() => {
     const arr = ["", "", "", "", "", "", ""];
     if (entries && entries.length) {
@@ -182,6 +227,7 @@ export function TimesheetForm({
                 id="placementId"
                 name="placementId"
                 defaultValue={defaultPlacementId ?? ""}
+                onValueChange={setPlacementId}
                 required
               >
                 <option value="" disabled>
@@ -216,6 +262,54 @@ export function TimesheetForm({
               onValueChange={setWeek}
             />
           </Field>
+
+          {/* Vooruit-waarschuwing: voorkomt dat je een hele staat invult die al
+              bestaat of al is uitgelezen. */}
+          {clash.existing && (
+            <div className="flex flex-wrap items-start gap-3 rounded-sm border border-amber-300 bg-amber-50 px-4 py-3.5">
+              <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-amber-900">
+                  Deze week is al ingevoerd
+                </p>
+                <p className="mt-0.5 text-[13px] leading-relaxed text-amber-800">
+                  Er staat al een urenstaat voor deze plaatsing in week van{" "}
+                  {dayFmt.format(monday)}. Opslaan lukt niet — open de bestaande
+                  staat om hem aan te passen.
+                </p>
+              </div>
+              <Link
+                href={`/uren/${clash.existing.id}`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Bestaande openen
+              </Link>
+            </div>
+          )}
+
+          {!clash.existing && clash.inbox && (
+            <div className="flex flex-wrap items-start gap-3 rounded-sm border border-blue-300 bg-blue-50 px-4 py-3.5">
+              <ScanLine className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-blue-900">
+                  Al ingelezen in de timesheet-inbox
+                </p>
+                <p className="mt-0.5 text-[13px] leading-relaxed text-blue-800">
+                  {clash.inbox.originalName} is al uitgelezen
+                  {clash.inbox.extractedTotalHours != null &&
+                    ` (${formatHours(clash.inbox.extractedTotalHours)} uur)`}
+                  . Bevestig die staat in de inbox in plaats van hier alles
+                  opnieuw in te typen.
+                </p>
+              </div>
+              <Link
+                href="/inbox"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Naar de inbox
+              </Link>
+            </div>
+          )}
 
           <div>
             <Label>Uren per dag</Label>

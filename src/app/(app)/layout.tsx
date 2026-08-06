@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { FormAutosave } from "@/components/form-autosave";
+import { OfflineGuard } from "@/components/offline-guard";
 import { getNavBadges } from "@/lib/facturatie";
 import { getNotifications } from "@/lib/notifications";
 import { currentUser, authRequired } from "@/lib/session";
@@ -28,6 +29,7 @@ export default async function AppLayout({
   return (
     <>
       <FormAutosave />
+      <OfflineGuard />
       <AppShell badges={badges} notifications={notifications} user={user}>
         {children}
       </AppShell>

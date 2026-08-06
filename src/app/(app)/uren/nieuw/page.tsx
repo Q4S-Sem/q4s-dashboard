@@ -20,9 +20,15 @@ function toInput(d: Date) {
 export default async function NieuweUrenstaatPage({
   searchParams,
 }: {
-  searchParams: Promise<{ placement?: string }>;
+  searchParams: Promise<{ placement?: string; week?: string }>;
 }) {
-  const { placement } = await searchParams;
+  const { placement, week } = await searchParams;
+
+  // Vanuit "Nog niet ontvangen" komen plaatsing én week mee, zodat het
+  // formulier meteen op de juiste persoon en week staat.
+  const weekParam = week && !Number.isNaN(new Date(`${week}T00:00:00`).getTime())
+    ? toInput(startOfISOWeek(new Date(`${week}T00:00:00`)))
+    : null;
 
   const placements = await db.placement.findMany({
     where: { status: "ACTIVE" },
@@ -63,7 +69,7 @@ export default async function NieuweUrenstaatPage({
           action={createTimesheet}
           placements={options}
           defaultPlacementId={placement}
-          defaultWeek={toInput(startOfISOWeek(new Date()))}
+          defaultWeek={weekParam ?? toInput(startOfISOWeek(new Date()))}
           submitLabel="Urenstaat opslaan"
           cancelHref="/uren"
         />
