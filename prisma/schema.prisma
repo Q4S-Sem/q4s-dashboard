@@ -395,6 +395,26 @@ model CompanySettings {
   /// Off by default — the user opts in per choice.
   aiAutoExtract        Boolean @default(true)
 
+  // ---- Vormgeving van het Q4S-CV ----
+  // Eén huisstijl voor elk CV dat naar een opdrachtgever gaat. Aanpasbaar, maar
+  // met een vaste standaard, zodat elk CV er hetzelfde uitziet ook als niemand
+  // eraan zit.
+  /// Accentkleur op het CV (hex). Standaard het Q4S-oranje.
+  cvAccent          String  @default("#e8430a")
+  /// TWEE_KOLOMS | EEN_KOLOM
+  cvLayout          String  @default("TWEE_KOLOMS")
+  /// Pasfoto van de kandidaat tonen (alleen als die er is én niet geanonimiseerd).
+  cvShowPhoto       Boolean @default(true)
+  /// Vaardigheden als balkjes i.p.v. compacte labels. Standaard uit: zonder
+  /// een niveau per vaardigheid zegt een volle balk niets.
+  cvShowSkillBars   Boolean @default(false)
+  /// Q4S-logo in de kopbalk van het CV.
+  cvShowLogo        Boolean @default(true)
+  /// Volgorde van de secties, als JSON-lijst met sectiesleutels.
+  cvSectionOrder    String  @default("[]")
+  /// Extra regel onderaan elk CV (bv. een vertrouwelijkheidsmelding).
+  cvFooterNote      String  @default("")
+
   // ---- Cloudopslag-koppeling (Microsoft 365: OneDrive of SharePoint) ----
   // Elke upload in het dashboard wordt (best-effort) naar deze drive gespiegeld,
   // gesorteerd in mappen. Env (MS_*) blijft als fallback werken; deze DB-config

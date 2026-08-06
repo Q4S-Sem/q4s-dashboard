@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { buildCvDoc, cvFileName } from "@/lib/cv-doc";
 import { renderCvPdf } from "@/lib/cv-pdf";
+import { cvTemplateFromSettings } from "@/lib/cv-template";
 
 /**
  * Het Q4S-CV als PDF. Wordt bij elk verzoek opnieuw gerenderd, dus wat je
@@ -19,7 +20,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/socials/cv-generato
 
   const settings = await getCompanySettings();
   const doc = buildCvDoc(profile, settings, profile.candidate);
-  const pdf = await renderCvPdf(doc);
+  const pdf = await renderCvPdf(doc, cvTemplateFromSettings(settings).accent);
 
   return new Response(Buffer.from(pdf), {
     headers: {

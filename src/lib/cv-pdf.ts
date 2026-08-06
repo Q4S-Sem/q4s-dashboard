@@ -42,8 +42,14 @@ const RIGHT = W - M;
 const CONTENT_W = RIGHT - M;
 
 // Alleen zwart/wit/grijs: het logo is zwart-wit, elke steunkleur vecht ermee.
-const BRAND = rgb(23 / 255, 23 / 255, 23 / 255);
-const INK = BRAND;
+const INK = rgb(23 / 255, 23 / 255, 23 / 255);
+
+/** #rrggbb → pdf-lib-kleur; valt terug op bijna-zwart bij onzin. */
+function hexRgb(hex: string) {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
+  if (!m) return INK;
+  return rgb(parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255);
+}
 const MUTED = rgb(0.44, 0.44, 0.45);
 const SOFT = rgb(0.6, 0.6, 0.62);
 const LINE = rgb(0.85, 0.85, 0.86);
@@ -107,7 +113,12 @@ type Pass = {
 
 type LayoutResult = { pageCount: number; endY: number; gapUnits: number };
 
-export async function renderCvPdf(doc: CvDoc): Promise<Uint8Array> {
+export async function renderCvPdf(
+  doc: CvDoc,
+  /** Accentkleur uit de CV-vormgeving; standaard het Q4S-oranje. */
+  accentHex = "#e8430a",
+): Promise<Uint8Array> {
+  const BRAND = hexRgb(accentHex);
   const pdf = await PDFDocument.create();
   const fonts = await loadCvFonts(pdf);
   const uni = fonts.embedded;

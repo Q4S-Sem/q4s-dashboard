@@ -1,15 +1,25 @@
 "use client";
 
 import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { Sparkles } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { emptyFormState, type FormState } from "@/lib/form";
+import { CvBuildingAnimation } from "@/components/cv/CvBuildingAnimation";
 
 /**
- * Start van de generator: een oud CV erin. De extractie duurt enkele seconden
- * (AI), dus SubmitButton toont zolang zijn pending-label.
+ * Start van de generator: een oud CV erin. Het uitlezen duurt makkelijk tien tot
+ * twintig seconden; zolang draait de animatie die laat zien wát er gebeurt in
+ * plaats van alleen een wachtende knop.
  */
+
+/** Toont de animatie zodra het formulier is verstuurd. */
+function BezigMelding() {
+  const { pending } = useFormStatus();
+  if (!pending) return null;
+  return <CvBuildingAnimation className="mt-2" />;
+}
 export function UploadCvForm({
   action,
   candidateId,
@@ -51,6 +61,8 @@ export function UploadCvForm({
           </SubmitButton>
         </div>
       </div>
+
+      <BezigMelding />
     </form>
   );
 }

@@ -46,6 +46,7 @@ import {
   Contact,
   Zap,
   KeyRound,
+  Palette,
   Workflow,
   Wallet,
   type LucideIcon,
@@ -217,6 +218,7 @@ const HUB_LIST: NavHub[] = [
     icon: Settings,
     items: [
       { href: "/gebruikers", label: "Gebruikers", icon: UserCog, exact: true, section: "Toegang" },
+      { href: "/gebruikers/cv-template", label: "CV-vormgeving", icon: Palette, section: "Vormgeving" },
       { href: "/gebruikers/api-sleutels", label: "API-sleutels", icon: KeyRound, section: "AI" },
       { href: "/gebruikers/tokenverbruik", label: "Tokenverbruik", icon: BarChart3, section: "AI" },
     ],
