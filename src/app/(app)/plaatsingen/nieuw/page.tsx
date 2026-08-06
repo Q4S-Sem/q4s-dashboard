@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -37,12 +38,9 @@ export default async function NieuwePlaatsingPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/plaatsingen"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar plaatsingen
-      </Link>
+      <BackLink href="/plaatsingen">
+        Terug naar plaatsingen
+      </BackLink>
       <PageHeader
         title={draftRow ? "Concept afmaken" : "Nieuwe plaatsing"}
         description="Koppel een bestaande werknemer aan een klant, of maak meteen een nieuwe werknemer aan (incl. CV, contract en diploma's)."

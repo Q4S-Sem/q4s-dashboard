@@ -39,7 +39,7 @@ export function ConfirmCancel({
 
   useEffect(() => {
     if (!open) return;
-    cancelRef.current?.focus();
+    cancelRef.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };

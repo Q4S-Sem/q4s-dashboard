@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -120,12 +121,9 @@ export default async function InboxDetailPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/inbox"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar inbox
-      </Link>
+      <BackLink href="/inbox">
+        Terug naar inbox
+      </BackLink>
 
       <PageHeader
         title={title}

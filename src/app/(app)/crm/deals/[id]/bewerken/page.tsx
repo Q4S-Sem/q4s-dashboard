@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
@@ -17,9 +18,9 @@ export default async function EditDealPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link href={`/crm/deals/${deal.id}`} className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
-        <ArrowLeft className="h-4 w-4" /> Terug naar deal
-      </Link>
+      <BackLink href={`/crm/deals/${deal.id}`}>
+        Terug naar deal
+      </BackLink>
       <PageHeader title="Deal bewerken" description={deal.title} />
       <DealForm
         action={updateDeal}

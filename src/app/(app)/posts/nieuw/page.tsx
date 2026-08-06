@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -15,12 +16,9 @@ export default async function NieuwePostPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link
-        href="/posts"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar social posts
-      </Link>
+      <BackLink href="/posts">
+        Terug naar social posts
+      </BackLink>
       <PageHeader
         title="Nieuwe post"
         description="Leg het onderwerp en platform vast; de AI schrijft daarna een concept."

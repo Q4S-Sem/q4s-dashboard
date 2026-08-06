@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import type { Candidate } from "@prisma/client";
 import {
   ArrowLeft,
@@ -197,12 +198,9 @@ export default async function BeschikbaarPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/kandidaten"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar talentpool
-      </Link>
+      <BackLink href="/kandidaten">
+        Terug naar talentpool
+      </BackLink>
 
       {/* Hero — eigen, herkenbare pagina voor beschikbare mensen */}
       <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6">

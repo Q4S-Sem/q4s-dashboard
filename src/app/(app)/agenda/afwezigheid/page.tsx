@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft, Plane, CheckCircle2, Trash2, CalendarRange } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,12 +50,9 @@ export default async function AfwezigheidPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/agenda"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar agenda
-      </Link>
+      <BackLink href="/agenda">
+        Terug naar agenda
+      </BackLink>
 
       <PageHeader
         title="Afwezigheid"

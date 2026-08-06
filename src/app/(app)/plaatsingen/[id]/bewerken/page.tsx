@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
@@ -31,12 +32,9 @@ export default async function PlaatsingBewerkenPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href={`/plaatsingen/${placement.id}`}
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar plaatsing
-      </Link>
+      <BackLink href={`/plaatsingen/${placement.id}`}>
+        Terug naar plaatsing
+      </BackLink>
       <PageHeader title="Plaatsing bewerken" description={placement.title} />
       <PlacementForm
         action={updatePlacement}

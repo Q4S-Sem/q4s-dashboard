@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft, Plus, Check, ExternalLink, Star } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -15,12 +16,9 @@ export default async function NieuweConnectorPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <Link
-        href="/connectors"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar koppelingen
-      </Link>
+      <BackLink href="/connectors">
+        Terug naar koppelingen
+      </BackLink>
       <PageHeader
         title="MSP-koppeling toevoegen"
         description="Kies een bekend MSP-/inhuurplatform voor een kant-en-klare koppeling — de automatische intake (filteren → website → matchen) staat meteen aan. Of voeg onderaan handmatig een eigen platform toe."

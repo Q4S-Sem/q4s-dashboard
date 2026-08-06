@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { db } from "@/lib/db";
@@ -42,12 +43,9 @@ export default async function MarktkansDetailPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/marktkansen"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar marktkansen
-      </Link>
+      <BackLink href="/marktkansen">
+        Terug naar marktkansen
+      </BackLink>
 
       {error === "ai" && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">

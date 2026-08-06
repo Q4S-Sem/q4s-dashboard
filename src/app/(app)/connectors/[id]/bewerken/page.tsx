@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
@@ -22,12 +23,9 @@ export default async function ConnectorBewerkenPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link
-        href={`/connectors/${connector.id}`}
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar connector
-      </Link>
+      <BackLink href={`/connectors/${connector.id}`}>
+        Terug naar connector
+      </BackLink>
       <PageHeader title="Connector bewerken" description={connector.name} />
       <ConnectorForm
         action={updateConnector}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { isAIConfigured } from "@/lib/ai";
@@ -22,12 +23,9 @@ export default async function NieuweVacaturePage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/vacatures"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar vacatures
-      </Link>
+      <BackLink href="/vacatures">
+        Terug naar vacatures
+      </BackLink>
       <PageHeader
         title="Nieuwe vacature"
         description="Voeg een binnengekomen vacature toe."

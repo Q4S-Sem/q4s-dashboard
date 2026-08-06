@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft, Upload, FileText, Files, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -31,12 +32,9 @@ export default async function CvImporterenPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link
-        href="/website/cv-inbox"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar CV's
-      </Link>
+      <BackLink href="/website/cv-inbox">
+        Terug naar CV's
+      </BackLink>
 
       <PageHeader
         title="CV's importeren"

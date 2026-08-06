@@ -132,12 +132,17 @@ function HeaderSelect({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
+  // De gekozen week/maand centreren in de lijst — maar alléén de lijst zelf
+  // verschuiven. `scrollIntoView` scrollt óók elke scrollbare voorouder mee,
+  // waardoor de pagina eronder een stukje wegsprong zodra je de datum aanklikte.
   React.useEffect(() => {
-    if (open && listRef.current) {
-      listRef.current
-        .querySelector<HTMLElement>('[data-sel="true"]')
-        ?.scrollIntoView({ block: "center" });
-    }
+    if (!open) return;
+    const box = listRef.current;
+    const sel = box?.querySelector<HTMLElement>('[data-sel="true"]');
+    if (!box || !sel) return;
+    const b = box.getBoundingClientRect();
+    const s = sel.getBoundingClientRect();
+    box.scrollTop += s.top - b.top - (b.height - s.height) / 2;
   }, [open]);
 
   const current = options.find((o) => o.value === value);

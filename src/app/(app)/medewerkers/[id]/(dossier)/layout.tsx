@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -51,12 +52,9 @@ export default async function MedewerkerDossierLayout({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/medewerkers"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar medewerkers
-      </Link>
+      <BackLink href="/medewerkers">
+        Terug naar medewerkers
+      </BackLink>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-4">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -93,12 +94,9 @@ export default async function VacatureDetailPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/vacatures"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar vacatures
-      </Link>
+      <BackLink href="/vacatures">
+        Terug naar vacatures
+      </BackLink>
 
       <PageHeader
         title={vacancy.title}

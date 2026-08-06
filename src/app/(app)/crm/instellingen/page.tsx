@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft, Settings, GripVertical, ChevronUp, ChevronDown, Trash2, Lock } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,9 +36,9 @@ export default async function CrmInstellingenPage({
 
   return (
     <div className="space-y-6">
-      <Link href="/crm" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
-        <ArrowLeft className="h-4 w-4" /> Terug naar CRM
-      </Link>
+      <BackLink href="/crm">
+        Terug naar CRM
+      </BackLink>
 
       <PageHeader
         title="CRM-instellingen"

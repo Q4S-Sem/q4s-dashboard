@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -19,7 +20,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Field, Input, Textarea } from "@/components/ui/field";
@@ -45,6 +45,7 @@ import {
   saveCandidateInterviewDetails,
 } from "../actions";
 import { profileFromCandidateCv } from "../../socials/cv-generator/actions";
+import { PhotoPicker } from "../PhotoPicker";
 import { NotesEditor } from "../NotesEditor";
 import { InterviewSelect } from "../InterviewSelect";
 import { CrmNotesTimeline, type TimelineNote } from "@/components/crm-notes-timeline";
@@ -148,16 +149,22 @@ export default async function KandidaatDetailPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/kandidaten"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar talentpool
-      </Link>
+      <BackLink href="/kandidaten">
+        Terug naar talentpool
+      </BackLink>
 
       <PageHeader
         title={`${candidate.firstName} ${candidate.lastName}`}
         description={candidate.headline ?? labelFor(DISCIPLINES, candidate.discipline)}
+        leading={
+          <PhotoPicker
+            candidateId={candidate.id}
+            name={`${candidate.firstName} ${candidate.lastName}`}
+            src={person(candidate).src}
+            uploadAction={uploadPhoto}
+            deleteAction={deletePhoto}
+          />
+        }
         actions={
           <>
             <Link
@@ -176,52 +183,6 @@ export default async function KandidaatDetailPage({
           </>
         }
       />
-
-      {/* Identiteitskaart: profielfoto + naam, zodat je meteen weet wie je voor
-          je hebt. Zonder foto verschijnen gekleurde initialen. */}
-      <Card>
-        <CardContent className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <Avatar {...person(candidate)} size="xl" className="ring-2 ring-ink-100" />
-          <div className="min-w-0 flex-1">
-            <p className="q4s-label">Profielfoto</p>
-            <p className="mt-2 text-sm text-ink-500">
-              {candidate.photoFileName
-                ? "Deze foto verschijnt in de talentpool, de pipeline en bij sollicitaties."
-                : "Nog geen foto. Voeg er een toe — kandidaten met foto vallen sneller op in de lijsten."}
-            </p>
-            <form
-              action={uploadPhoto}
-              className="mt-3 flex flex-wrap items-center gap-3"
-            >
-              <input type="hidden" name="candidateId" value={candidate.id} />
-              <input
-                id="foto-file"
-                name="file"
-                type="file"
-                required
-                accept="image/jpeg,image/png,image/webp"
-                aria-label="Profielfoto kiezen"
-                title="Profielfoto kiezen"
-                className="block max-w-full text-sm text-ink-600 file:mr-3 file:rounded-sm file:border-0 file:bg-ink-900 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white hover:file:bg-ink-700"
-              />
-              <SubmitButton size="sm" pendingLabel="Uploaden…">
-                <Upload className="h-4 w-4" />
-                {candidate.photoFileName ? "Vervangen" : "Foto uploaden"}
-              </SubmitButton>
-              {candidate.photoFileName && (
-                <ConfirmSubmit
-                  action={deletePhoto}
-                  id={candidate.id}
-                  message="Profielfoto verwijderen?"
-                  variant="ghost"
-                >
-                  Verwijderen
-                </ConfirmSubmit>
-              )}
-            </form>
-          </div>
-        </CardContent>
-      </Card>
 
       {error === "in-use" && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">

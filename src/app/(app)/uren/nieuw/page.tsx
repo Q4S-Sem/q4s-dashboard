@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -43,12 +44,9 @@ export default async function NieuweUrenstaatPage({
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <Link
-        href="/uren"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar urenregistratie
-      </Link>
+      <BackLink href="/uren">
+        Terug naar urenregistratie
+      </BackLink>
       <PageHeader
         title="Nieuwe urenstaat"
         description="Registreer de uren per dag voor een week."

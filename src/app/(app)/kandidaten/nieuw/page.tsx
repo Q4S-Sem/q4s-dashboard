@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CandidateForm } from "../CandidateForm";
@@ -9,12 +10,9 @@ export const metadata = { title: "Nieuwe kandidaat" };
 export default function NieuweKandidaatPage() {
   return (
     <div className="space-y-6">
-      <Link
-        href="/kandidaten"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar kandidaten
-      </Link>
+      <BackLink href="/kandidaten">
+        Terug naar kandidaten
+      </BackLink>
       <PageHeader title="Nieuwe kandidaat" description="Voeg een nieuwe kandidaat toe." />
       <CandidateForm
         action={createCandidate}

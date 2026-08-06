@@ -136,7 +136,11 @@ export function Select({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActive(idx >= 0 ? idx : 0);
     if (searchable) {
-      const t = requestAnimationFrame(() => searchRef.current?.focus());
+      // preventScroll: anders scrollt de browser de pagina naar het zoekveld toe
+      // en springt alles onder de keuzelijst een stukje weg.
+      const t = requestAnimationFrame(() =>
+        searchRef.current?.focus({ preventScroll: true }),
+      );
       return () => cancelAnimationFrame(t);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

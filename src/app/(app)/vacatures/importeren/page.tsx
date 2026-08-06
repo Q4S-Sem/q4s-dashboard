@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft, Upload } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -12,12 +13,9 @@ export const metadata = { title: "Vacatures importeren" };
 export default function VacaturesImporterenPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link
-        href="/vacatures"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar vacatures
-      </Link>
+      <BackLink href="/vacatures">
+        Terug naar vacatures
+      </BackLink>
       <PageHeader
         title="Vacatures importeren"
         description="Plak meerdere vacatures in één keer — één vacature per regel."

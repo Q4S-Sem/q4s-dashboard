@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil, Check, Download, Archive, CheckCircle2 } from "lucide-react";
 import { db } from "@/lib/db";
@@ -69,12 +70,9 @@ export default async function EvaluatieDetailPage({
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <Link
-          href="/evaluaties"
-          className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-        >
-          <ArrowLeft className="h-4 w-4" /> Terug naar evaluaties
-        </Link>
+        <BackLink href="/evaluaties">
+          Terug naar evaluaties
+        </BackLink>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold text-ink-900">{name}</h1>

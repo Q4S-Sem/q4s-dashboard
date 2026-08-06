@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { db } from "@/lib/db";
@@ -81,12 +82,9 @@ export default async function FactuurDetailPage({
     <div className="space-y-6">
       {/* Toolbar (hidden when printing) */}
       <div className="no-print space-y-4">
-        <Link
-          href="/facturen"
-          className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-        >
-          <ArrowLeft className="h-4 w-4" /> Terug naar facturen
-        </Link>
+        <BackLink href="/facturen">
+          Terug naar facturen
+        </BackLink>
 
         {error === "locked" && (
           <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">

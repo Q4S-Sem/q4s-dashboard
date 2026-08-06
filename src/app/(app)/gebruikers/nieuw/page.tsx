@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { GebruikerForm } from "../GebruikerForm";
@@ -9,12 +10,9 @@ export const metadata = { title: "Nieuwe gebruiker" };
 export default function NieuweGebruikerPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <Link
-        href="/gebruikers"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar gebruikers
-      </Link>
+      <BackLink href="/gebruikers">
+        Terug naar gebruikers
+      </BackLink>
       <PageHeader
         title="Nieuwe gebruiker"
         description="Voeg een medewerker toe die met het dashboard werkt."

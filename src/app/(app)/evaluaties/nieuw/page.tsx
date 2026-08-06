@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { quarterOf } from "@/lib/evaluaties";
@@ -63,12 +64,7 @@ export default async function NieuwEvaluatiePage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar evaluaties
-      </Link>
+      <BackLink href={backHref}>Terug naar evaluaties</BackLink>
       <PageHeader
         title="Nieuwe evaluatie"
         description="Kies het formuliertype en beoordeel een medewerker of inlener."

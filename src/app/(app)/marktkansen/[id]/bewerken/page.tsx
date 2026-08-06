@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
@@ -19,12 +20,9 @@ export default async function MarktkansBewerkenPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link
-        href={`/marktkansen/${opportunity.id}`}
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar kans
-      </Link>
+      <BackLink href={`/marktkansen/${opportunity.id}`}>
+        Terug naar kans
+      </BackLink>
       <PageHeader title="Marktkans bewerken" description={opportunity.title} />
       <OpportunityForm
         action={updateOpportunity}

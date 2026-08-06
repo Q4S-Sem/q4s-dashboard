@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
@@ -30,12 +31,9 @@ export default async function InkoopBewerkenPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link
-        href={`/inkoopfacturen/${id}`}
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar inkoopfactuur
-      </Link>
+      <BackLink href={`/inkoopfacturen/${id}`}>
+        Terug naar inkoopfactuur
+      </BackLink>
       <PageHeader
         title="Inkoopfactuur bewerken"
         description={`${invoice.number} — corrigeer waar nodig. Het factuurnummer blijft behouden.`}

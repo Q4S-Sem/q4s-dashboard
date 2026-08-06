@@ -42,7 +42,7 @@ export const NumberInput = React.forwardRef<
         // click behaviour (caret positioning) is kept.
         if (document.activeElement !== e.currentTarget) {
           e.preventDefault();
-          e.currentTarget.focus();
+          e.currentTarget.focus({ preventScroll: true });
           selectAll(e.currentTarget);
         }
         onMouseDown?.(e);

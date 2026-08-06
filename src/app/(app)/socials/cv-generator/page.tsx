@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft, EyeOff, FileDown, FileUser, Sparkles } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -26,12 +27,9 @@ export default async function CvGeneratorPage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/socials"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar Socials
-      </Link>
+      <BackLink href="/socials">
+        Terug naar Socials
+      </BackLink>
 
       <PageHeader
         title="CV-generator"

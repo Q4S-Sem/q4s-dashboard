@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil, MessageSquare, ExternalLink } from "lucide-react";
 import { db } from "@/lib/db";
@@ -63,9 +64,9 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
-      <Link href="/crm/contacten" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
-        <ArrowLeft className="h-4 w-4" /> Terug naar contacten
-      </Link>
+      <BackLink href="/crm/contacten">
+        Terug naar contacten
+      </BackLink>
 
       <PageHeader
         title={fullName}

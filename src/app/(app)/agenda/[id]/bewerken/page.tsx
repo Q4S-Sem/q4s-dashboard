@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
@@ -34,12 +35,9 @@ export default async function AfspraakBewerkenPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link
-        href={`/agenda/${event.id}`}
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar afspraak
-      </Link>
+      <BackLink href={`/agenda/${event.id}`}>
+        Terug naar afspraak
+      </BackLink>
       <PageHeader title="Afspraak bewerken" />
       <EventForm
         action={updateEvent}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -16,12 +17,9 @@ export default async function NieuweKlantPage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/klanten"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar klanten
-      </Link>
+      <BackLink href="/klanten">
+        Terug naar klanten
+      </BackLink>
       <PageHeader title="Nieuwe klant" description="Voeg een nieuwe klant toe." />
       <ClientForm
         action={createClient}

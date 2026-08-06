@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
@@ -19,12 +20,9 @@ export default async function VakproefBewerkenPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link
-        href={`/socials/vakproef/${challenge.id}`}
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar vakproef
-      </Link>
+      <BackLink href={`/socials/vakproef/${challenge.id}`}>
+        Terug naar vakproef
+      </BackLink>
       <PageHeader title="Vakproef bewerken" />
       <ChallengeForm
         action={updateChallenge}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
@@ -40,12 +41,9 @@ export default async function UrenstaatBewerkenPage({
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <Link
-        href={`/uren/${ts.id}`}
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
-      >
-        <ArrowLeft className="h-4 w-4" /> Terug naar urenstaat
-      </Link>
+      <BackLink href={`/uren/${ts.id}`}>
+        Terug naar urenstaat
+      </BackLink>
       <PageHeader title="Weekstaat bewerken" description={formatWeekLabel(ts.weekStart)} />
       {locked && (
         <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">

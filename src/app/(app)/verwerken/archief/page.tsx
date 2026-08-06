@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { ArrowLeft, Archive } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -14,9 +15,9 @@ export default async function FacturatieArchiefPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/verwerken" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900">
-        <ArrowLeft className="h-4 w-4" /> Terug naar verwerken
-      </Link>
+      <BackLink href="/verwerken">
+        Terug naar verwerken
+      </BackLink>
 
       <PageHeader
         title="Facturatie-archief"

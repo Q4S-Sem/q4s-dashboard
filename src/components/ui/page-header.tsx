@@ -9,6 +9,7 @@ export function PageHeader({
   title,
   description,
   eyebrow,
+  leading,
   actions,
   className,
 }: {
@@ -16,6 +17,8 @@ export function PageHeader({
   description?: string;
   /** Klein label boven de kop, bv. de hub- of sectienaam. */
   eyebrow?: string;
+  /** Element vóór de titel, bv. een profielfoto. */
+  leading?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
 }) {
@@ -26,14 +29,17 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="min-w-0">
-        {eyebrow && <p className="q4s-eyebrow mb-1">{eyebrow}</p>}
-        <h1 className="q4s-display text-[26px]">{title}</h1>
-        {description && (
-          <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-ink-500">
-            {description}
-          </p>
-        )}
+      <div className="flex min-w-0 items-center gap-4">
+        {leading}
+        <div className="min-w-0">
+          {eyebrow && <p className="q4s-eyebrow mb-1">{eyebrow}</p>}
+          <h1 className="q4s-display text-[26px]">{title}</h1>
+          {description && (
+            <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-ink-500">
+              {description}
+            </p>
+          )}
+        </div>
       </div>
       {actions && (
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
