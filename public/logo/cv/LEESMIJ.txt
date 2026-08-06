@@ -1,11 +1,21 @@
 Logo voor het CV — apart van public/logo/, met opzet.
 
-q4s-logo.png      Wat de CV's gebruiken (PDF, printvel, Word). Bijgesneden tot
-                  precies de inkt: een opgegeven hoogte is ook de hoogte die je
-                  ziet. Doorzichtig, dus het hoort op een WIT vlak — de "witte"
-                  delen van het beeldmerk zijn gaten en laten anders de
-                  achtergrondkleur doorschijnen.
+q4s-logo.png      Zwarte inkt. Voor op een LICHTE ondergrond.
+q4s-logo-wit.png  Dezelfde vorm in witte inkt. Voor op een DONKERE ondergrond —
+                  dit is wat de CV's normaal gebruiken, want de kopbalk staat in
+                  het Q4S-oranje.
 q4s-logo-bron.png Het onbijgesneden origineel (2000x2000, ~23% lege rand).
+
+Beide zijn bijgesneden tot precies de inkt: een opgegeven hoogte is ook de hoogte
+die je ziet. Het beeldmerk is één kleur inkt met GATEN — de "witte" delen zijn
+doorzichtig. Daarom twee bestanden en geen enkel wit vlak eromheen: op de balk
+zou het accent anders dwars door het hart van het merk schijnen. Welke van de
+twee gebruikt wordt, kiest de code op de accentkleur (readableOn in
+src/lib/cv-template.ts). Het printvel doet hetzelfde met een CSS-filter en heeft
+dus maar één bestand nodig.
+
+Het witte bestand is afgeleid van het zwarte. Opnieuw maken na een logowissel:
+  sharp(zwart).composite([{ input: {create:{...,background:"#ffffff"}}, blend:"in" }])
 
 Waarom niet in public/logo/ zelf: alles daar wordt óók het logo op facturen,
 evaluaties en het inlogscherm (branding.ts pakt het eerste plaatje). De lege rand

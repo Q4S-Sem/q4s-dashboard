@@ -195,9 +195,8 @@ export function CvSheet({
 
       <article className="cv-vel" data-cv-sheet>
         {/* Kopbalk in de accentkleur. Linksboven de kandidaat (pasfoto), rechts
-            klein het merk van de afzender. Het logo staat op een wit vlak: het
-            bestand is doorzichtig en de "witte" delen van het beeldmerk zijn
-            gaten — direct op de balk zou het accent erdoorheen schijnen. */}
+            klein het merk van de afzender — doorzichtig op de balk, zonder wit
+            vlak eromheen. */}
         <header className="cv-kop" style={{ background: accent, color: opAccent }}>
           {toonFoto && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -209,10 +208,17 @@ export function CvSheet({
             {doc.metaLine && <p className="cv-meta">{doc.metaLine}</p>}
           </div>
           {template.showLogo && logoSrc && (
-            <span className="cv-logo-vlak">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logoSrc} alt="Q4S Project Partners" className="cv-logo" />
-            </span>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoSrc}
+              alt="Q4S Project Partners"
+              className="cv-logo"
+              // Het bestand is zwarte inkt met doorzichtige gaten. `brightness(0)`
+              // maakt alles vlak zwart, `invert(1)` daarna vlak wit — de gaten
+              // blijven gaten. Zo hoeft er maar één logobestand te zijn en volgt de
+              // kleur automatisch het accent.
+              style={{ filter: opAccent === "#ffffff" ? "brightness(0) invert(1)" : "brightness(0)" }}
+            />
           )}
         </header>
 
@@ -310,15 +316,13 @@ function cvCss(breedte: number, hoogte: number, marge: number): string {
 /* Klein en in de rechterbovenhoek: het merk hoort hier bij de afzender, niet bij
    de kandidaat. De hoogte klopt één op één, want q4s-logo.png is op de inkt
    bijgesneden (geen lege rand meer in het bestand). */
-.cv-logo-vlak {
+.cv-logo {
   flex: 0 0 auto;
   align-self: flex-start;
-  background: #ffffff;
-  padding: 2mm 2.4mm;
-  display: flex;
-  align-items: center;
+  height: 8mm;
+  width: auto;
+  display: block;
 }
-.cv-logo { height: 7mm; width: auto; display: block; }
 
 /* ---- Body ---- */
 .cv-body { flex: 1 1 auto; display: block; padding: ${marge - 2}mm ${marge}mm 0; }

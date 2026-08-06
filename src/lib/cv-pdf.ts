@@ -2,6 +2,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { getCvLogoFile } from "./branding";
 import { loadCvFonts } from "./cv-fonts";
 import { sanitizePdfText, truncateText, wrapText } from "./pdf-text";
+import { readableOn } from "./cv-template";
 import type { CvDoc } from "./cv-doc";
 
 /**
@@ -15,9 +16,9 @@ import type { CvDoc } from "./cv-doc";
  *
  * 1. KOPBALK: FOTO LINKS, LOGO KLEIN RECHTSBOVEN. De linkerbovenhoek is de plek
  *    waar een lezer een gezicht verwacht, dus die is van de kandidaat; het merk van
- *    de afzender staat klein in de tegenoverliggende hoek. Het logo blijft op een
- *    wit vlak staan: het bestand is doorzichtig en de "witte" delen van het
- *    beeldmerk zijn gaten — direct op de accentbalk zou de balk erdoorheen schijnen.
+ *    de afzender staat klein in de tegenoverliggende hoek. Het logo staat direct op
+ *    de balk, zonder wit vlak: in de omgekeerde (witte) versie, want het beeldmerk
+ *    is één kleur inkt met gaten en het accent zou anders door het hart schijnen.
  *
  * 2. VOLGORDE VOLGT DE BESLISBOOM VAN DE OPDRACHTGEVER, niet de CV-conventie. Hij
  *    stelt eerst een binaire vraag ("mag deze man überhaupt op mijn werk?" →
@@ -55,15 +56,15 @@ const MUTED = rgb(0.44, 0.44, 0.45);
 const SOFT = rgb(0.6, 0.6, 0.62);
 const LINE = rgb(0.85, 0.85, 0.86);
 const CHIP_BG = rgb(0.937, 0.937, 0.941);
-const ON_BAND = rgb(1, 1, 1);
-const ON_BAND_SOFT = rgb(0.74, 0.74, 0.75);
+// ON_BAND / ON_BAND_SOFT staan niet hier maar in renderCvPdf: wat leesbaar is op
+// de kopbalk hangt af van de accentkleur uit de CV-vormgeving.
 
 // Kopbalk: ~12,5% van de paginahoogte. Krap om de pasfoto (70pt) heen — genoeg
 // voor een herkenbaar gezicht, weinig genoeg dat een printer er niet op leegloopt
 // en dat er onder de balk een volle pagina overblijft.
 const BAND_H = 106;
 // Vervolgpagina's dragen nu ook het logo, dus iets hoger dan een pure tekstbalk.
-const BAND2_H = 46;
+const BAND2_H = 40;
 
 /**
  * Logohoogte, klein in de rechterbovenhoek. Dit is een herkenningsmerk, geen
@@ -74,7 +75,6 @@ const BAND2_H = 46;
  */
 const LOGO_H = 30;
 const LOGO2_H = 20;
-const BADGE_PAD = 7;
 
 /** Pasfoto linksboven: vierkant, in lijn met de rechte hoeken van de huisstijl. */
 const PHOTO = 70;
@@ -141,7 +141,14 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
   pdf.setCreator(doc.companyName);
   pdf.setSubject(doc.headline || "CV");
 
-  const logoImg = opties.showLogo === false ? null : await embedLogo(pdf);
+  // Alles wat óp de kopbalk staat — tekst, logo, het kadertje om de pasfoto —
+  // volgt de accentkleur. Zonder dat verdwijnt de hele kop zodra iemand in de
+  // CV-vormgeving een lichte kleur kiest.
+  const bandWit = readableOn(opties.accent ?? "#e8430a") === "#ffffff";
+  const ON_BAND = bandWit ? rgb(1, 1, 1) : rgb(0.07, 0.07, 0.06);
+  const ON_BAND_SOFT = bandWit ? rgb(0.74, 0.74, 0.75) : rgb(0.36, 0.36, 0.35);
+
+  const logoImg = opties.showLogo === false ? null : await embedLogo(pdf, bandWit);
   // Een pasfoto op een geanonimiseerd CV maakt het anonimiseren zinloos.
   const photoImg =
     opties.showPhoto === false || doc.anonymized ? null : await embedPhoto(pdf, opties.photo);
@@ -240,22 +247,17 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
   // ---- kopbalk --------------------------------------------------------------
 
   /**
-   * Het logo klein op een wit vlak, met de rechterrand op `xRight` en de bovenkant
-   * op `yTop`. Geeft de breedte van het vlak terug, zodat de tekst ernaast weet
-   * waar hij moet stoppen. 0 als er geen logo is.
+   * Het logo klein rechtsboven, met de rechterrand op `xRight` en de bovenkant op
+   * `yTop`. Geeft de breedte terug, zodat de tekst ernaast weet waar hij moet
+   * stoppen. 0 als er geen logo is.
    */
   const drawLogoBadge = (xRight: number, yTop: number, h: number): number => {
     if (!logoImg) return 0;
     const logoW = (logoImg.width / logoImg.height) * h;
-    const badgeW = logoW + BADGE_PAD * 2;
-    const badgeH = h + BADGE_PAD * 2;
-    const badgeX = xRight - badgeW;
-    const badgeY = yTop - badgeH;
-    rect(badgeX, badgeY, badgeW, badgeH, ON_BAND);
     if (!pass.dry && page) {
-      page.drawImage(logoImg, { x: badgeX + BADGE_PAD, y: badgeY + BADGE_PAD, width: logoW, height: h });
+      page.drawImage(logoImg, { x: xRight - logoW, y: yTop - h, width: logoW, height: h });
     }
-    return badgeW;
+    return logoW;
   };
 
   /**
@@ -270,7 +272,8 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
   const drawBand = () => {
     rect(0, H - BAND_H, W, BAND_H, BRAND);
 
-    const badgeW = drawLogoBadge(RIGHT, H - 14, LOGO_H);
+    // Bovenkant gelijk met die van de pasfoto: de balk leest dan als één rij.
+    const badgeW = drawLogoBadge(RIGHT, H - (BAND_H - PHOTO) / 2, LOGO_H);
     if (!logoImg) {
       // Geen (of een SVG-)logo: pdf-lib kan alleen PNG/JPG → tekst-wordmark, zodat
       // er nooit een CV zonder afzender uitgaat.
@@ -347,8 +350,7 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
    */
   const drawBand2 = () => {
     rect(0, H - BAND2_H, W, BAND2_H, BRAND);
-    const badgeH = LOGO2_H + BADGE_PAD * 2;
-    const badgeW = drawLogoBadge(RIGHT, H - (BAND2_H - badgeH) / 2, LOGO2_H);
+    const badgeW = drawLogoBadge(RIGHT, H - (BAND2_H - LOGO2_H) / 2, LOGO2_H);
     const baseline = H - BAND2_H / 2 - TYPE.small * 0.36;
     const ruimte = CONTENT_W - (badgeW > 0 ? badgeW + 20 : 0);
 
@@ -767,8 +769,8 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
 }
 
 /** Logo als PDF-image, of null als het ontbreekt/onleesbaar is (→ tekst-wordmark). */
-async function embedLogo(pdf: PDFDocument) {
-  const logo = getCvLogoFile();
+async function embedLogo(pdf: PDFDocument, wit: boolean) {
+  const logo = getCvLogoFile(wit);
   if (!logo || ![".png", ".jpg", ".jpeg"].includes(logo.ext)) return null;
   try {
     return logo.ext === ".png" ? await pdf.embedPng(logo.bytes) : await pdf.embedJpg(logo.bytes);

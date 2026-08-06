@@ -15,6 +15,7 @@ import {
   WidthType,
 } from "docx";
 import { getCvLogoFile } from "./branding";
+import { readableOn } from "./cv-template";
 import type { CvDoc } from "./cv-doc";
 
 /**
@@ -26,7 +27,7 @@ import type { CvDoc } from "./cv-doc";
  * klant krijgt van wat je in de app zag.
  *
  * De layout volgt de PDF zo dicht als Word toelaat: kopbalk in de accentkleur met
- * rechts klein het logo op wit, dikgedrukte sectietitels met een korte zware streep,
+ * rechtsboven klein het doorzichtige logo, dikgedrukte sectietitels met een korte zware streep,
  * dezelfde vololgorde (certificaten vóór werkervaring) en hetzelfde afsluitende
  * contactblok. Verschillen die Word afdwingt staan per blok toegelicht.
  *
@@ -141,15 +142,18 @@ export async function renderCvDocx(doc: CvDoc, accentHex?: string): Promise<Buff
     : BRAND_FALLBACK;
   const children: (Paragraph | Table)[] = [];
 
-  // ---- Kopbalk: gekleurd vlak met rechts het logo op wit ---------------------
+  // ---- Kopbalk: gekleurd vlak met rechtsboven het logo ----------------------
   // Word kan geen vormen achter tekst tekenen; een tabelcel met shading is het
-  // equivalent van de accentbalk uit de PDF.
-  const logo = getCvLogoFile();
+  // equivalent van de accentbalk uit de PDF. Het logo staat er doorzichtig op, in
+  // de omgekeerde versie als het accent donker is (zie getCvLogoFile).
+  const opBalk = readableOn(`#${brand}`);
+  const logo = getCvLogoFile(opBalk === "#ffffff");
   const logoCellChildren: Paragraph[] = [];
   if (logo && [".png", ".jpg", ".jpeg"].includes(logo.ext)) {
     try {
       logoCellChildren.push(
         new Paragraph({
+          alignment: AlignmentType.RIGHT,
           spacing: { before: 0, after: 0 },
           children: [
             new ImageRun({
@@ -170,8 +174,11 @@ export async function renderCvDocx(doc: CvDoc, accentHex?: string): Promise<Buff
   if (!logoCellChildren.length) {
     logoCellChildren.push(
       new Paragraph({
+        alignment: AlignmentType.RIGHT,
         spacing: { after: 0 },
-        children: [new TextRun({ text: doc.companyName, bold: true, size: 15 * PT, color: brand })],
+        children: [
+          new TextRun({ text: doc.companyName, bold: true, size: 12 * PT, color: opBalk.replace("#", "") }),
+        ],
       }),
     );
   }
@@ -208,16 +215,14 @@ export async function renderCvDocx(doc: CvDoc, accentHex?: string): Promise<Buff
                   : []),
               ],
             }),
-            // Het logo klein in de rechterhoek, op wit: het bestand is doorzichtig
-            // en de "witte" delen van het beeldmerk zijn gaten — op de accentbalk
-            // zou die er dwars doorheen schijnen. Rechts, net als in de PDF en op
-            // het printvel, zodat de linkerhoek van de kandidaat blijft.
+            // Het logo klein in de rechterhoek, net als in de PDF en op het
+            // printvel — de linkerhoek blijft van de kandidaat.
             new TableCell({
               width: { size: 24, type: WidthType.PERCENTAGE },
-              shading: { type: ShadingType.CLEAR, fill: WHITE_HEX },
-              margins: { top: 120, bottom: 120, left: 120, right: 120 },
-              borders: { ...NO_BORDERS, right: { style: BorderStyle.SINGLE, size: 24, color: brand } },
-              verticalAlign: VerticalAlign.CENTER,
+              shading: { type: ShadingType.CLEAR, fill: brand },
+              margins: { top: 200, bottom: 200, left: 120, right: 280 },
+              borders: NO_BORDERS,
+              verticalAlign: VerticalAlign.TOP,
               children: logoCellChildren,
             }),
           ],
