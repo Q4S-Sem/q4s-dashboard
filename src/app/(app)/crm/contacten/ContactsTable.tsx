@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, Phone } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
 
 /** Diacritics-insensitive fold zodat "jose" ook "José" vindt. */
 function fold(s: string): string {
@@ -148,16 +148,11 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
             {filtered.map((c) => (
               <TR key={c.id}>
                 <TD>
-                  <Link
-                    href={`/crm/contacten/${c.id}`}
-                    className="font-medium text-ink-900 hover:text-brand-700"
-                  >
-                    {c.name}
-                  </Link>
+                  <RowLink href={`/crm/contacten/${c.id}`}>{c.name}</RowLink>
                 </TD>
                 <TD>{c.jobTitle ?? "—"}</TD>
                 <TD>{c.company ?? "—"}</TD>
-                <TD>
+                <TD className="relative z-10">
                   <PhoneCell phone={c.phone} name={c.name} />
                 </TD>
                 <TD>{c.ownerName ?? "—"}</TD>

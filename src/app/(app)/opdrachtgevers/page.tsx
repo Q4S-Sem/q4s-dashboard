@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
-import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
 import { TARGET_STATUSES } from "@/lib/domain";
 
 export const metadata = { title: "Opdrachtgevers" };
@@ -78,12 +78,7 @@ export default async function OpdrachtgeversPage({
               {targets.map((t) => (
                 <TR key={t.id}>
                   <TD>
-                    <Link
-                      href={`/opdrachtgevers/${t.id}`}
-                      className="font-medium text-ink-900 hover:text-brand-700"
-                    >
-                      {t.name}
-                    </Link>
+                    <RowLink href={`/opdrachtgevers/${t.id}`}>{t.name}</RowLink>
                   </TD>
                   <TD>
                     <Stars priority={t.priority} />

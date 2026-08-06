@@ -1,4 +1,5 @@
 import * as React from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export function Table({
@@ -42,11 +43,43 @@ export function TR({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableRowElement>) {
+  // `relative` + `group` staan er standaard op, zodat een <RowLink> in de rij
+  // zich over de héle rij kan uitrekken. Kost niets als je 'm niet gebruikt.
   return (
     <tr
-      className={cn("transition-colors hover:bg-brand-50/50", className)}
+      className={cn("group relative transition-colors hover:bg-brand-50/50", className)}
       {...props}
     />
+  );
+}
+
+/**
+ * De naam-link in de eerste cel, die de hele rij klikbaar maakt.
+ *
+ * Het blijft één echte link (dus middelklik, "openen in nieuw tabblad" en
+ * vooruitladen werken gewoon) — hij rekt alleen zijn klikvlak op tot de rand
+ * van de rij. Knoppen en keuzelijsten verderop in de rij zetten we met
+ * `relative z-10` erbovenop, zodat die hun eigen klik houden.
+ */
+export function RowLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "font-medium text-ink-900 after:absolute after:inset-0 after:content-[''] group-hover:text-brand-600",
+        className,
+      )}
+    >
+      {children}
+    </Link>
   );
 }
 

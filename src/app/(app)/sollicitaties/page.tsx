@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
 import { APPLICATION_STATUSES } from "@/lib/domain";
 import { person } from "@/lib/people";
 import { formatDate } from "@/lib/utils";
@@ -66,15 +66,15 @@ export default async function SollicitatiesPage() {
               {applications.map((a) => (
                 <TR key={a.id}>
                   <TD>
-                    <Link
+                    <RowLink
                       href={`/sollicitaties/${a.id}`}
-                      className="group flex items-center gap-2.5"
+                      className="flex items-center gap-2.5 font-semibold"
                     >
                       <Avatar {...person(a.candidate)} size="sm" />
-                      <span className="font-semibold text-ink-900 group-hover:text-brand-600">
+                      <span>
                         {a.candidate.firstName} {a.candidate.lastName}
                       </span>
-                    </Link>
+                    </RowLink>
                   </TD>
                   <TD>{a.vacancy?.title ?? "—"}</TD>
                   <TD>{formatDate(a.createdAt)}</TD>

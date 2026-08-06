@@ -17,7 +17,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Input, Select } from "@/components/ui/field";
-import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
 import { cn, formatDate } from "@/lib/utils";
 import { person } from "@/lib/people";
 import {
@@ -72,19 +72,16 @@ function CandidateTable({ candidates }: { candidates: Candidate[] }) {
                     <Avatar {...person(c)} size="sm" className={cn("ring-2", avatarTone)} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <Link
-                          href={`/kandidaten/${c.id}`}
-                          className="truncate font-medium text-ink-900 hover:text-emerald-700"
-                        >
+                        <RowLink href={`/kandidaten/${c.id}`} className="truncate">
                           {c.firstName} {c.lastName}
-                        </Link>
+                        </RowLink>
                         {c.discipline && <StatusBadge options={DISCIPLINES} value={c.discipline} />}
                       </div>
                       {sub && <p className="max-w-[17rem] truncate text-xs text-ink-400">{sub}</p>}
                     </div>
                   </div>
                 </TD>
-                <TD>
+                <TD className="relative z-10">
                   <AvailabilitySelect id={c.id} value={c.availability} className="w-40" />
                   {soon && c.availableFrom && (
                     <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-600">
@@ -92,7 +89,7 @@ function CandidateTable({ candidates }: { candidates: Candidate[] }) {
                     </p>
                   )}
                 </TD>
-                <TD>
+                <TD className="relative z-10">
                   {/* Alleen icoontjes: het adres zelf zit in de tooltip, zodat de
                       kolom smal en scanbaar blijft. */}
                   <div className="flex items-center gap-2">
@@ -116,10 +113,10 @@ function CandidateTable({ candidates }: { candidates: Candidate[] }) {
                     <PhoneReveal phone={c.phone} />
                   </div>
                 </TD>
-                <TD>
+                <TD className="relative z-10">
                   <RatingSelect id={c.id} value={c.rating} className="w-36" />
                 </TD>
-                <TD className="text-right">
+                <TD className="relative z-10 text-right">
                   <Link
                     href={`/kandidaten/${c.id}`}
                     className={buttonVariants({ variant: "outline", size: "sm" })}
