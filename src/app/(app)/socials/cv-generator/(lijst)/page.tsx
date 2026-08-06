@@ -1,16 +1,13 @@
 import Link from "next/link";
-import { BackLink } from "@/components/back-link";
-import { ArrowLeft, EyeOff, FileDown, FileUser, Sparkles } from "lucide-react";
+import { EyeOff, FileDown, FileUser, Sparkles } from "lucide-react";
 import { db } from "@/lib/db";
-import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { buttonVariants } from "@/components/ui/button";
-import { isVisionConfigured, readyPersonalDataTextProvider } from "@/lib/ai";
 import { formatDate } from "@/lib/utils";
-import { UploadCvForm } from "./UploadCvForm";
-import { startCvProfile } from "./actions";
+import { UploadCvForm } from "../UploadCvForm";
+import { startCvProfile } from "../actions";
 
 export const metadata = { title: "CV-generator" };
 
@@ -20,43 +17,8 @@ export default async function CvGeneratorPage() {
     orderBy: { updatedAt: "desc" },
   });
 
-  const visionOk = isVisionConfigured();
-  // Word-CV's mogen alleen naar een AVG-veilige provider (Anthropic/Ollama), nooit
-  // DeepSeek — dus die check bepaalt of tekst-CV's uitgelezen kunnen worden.
-  const textOk = readyPersonalDataTextProvider() !== null;
-
   return (
     <div className="space-y-6">
-      <BackLink href="/cv">
-        Terug naar CV's
-      </BackLink>
-
-      <PageHeader
-        title="CV-generator"
-        description="Zet een oud CV om naar een Q4S-CV met ons logo — klaar om naar een opdrachtgever te sturen."
-      />
-
-      {!visionOk && !textOk && (
-        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Er is nog geen AI-sleutel ingesteld, dus CV&apos;s kunnen niet uitgelezen worden. Zet er
-          een in bij{" "}
-          <Link href="/instellingen" className="font-medium underline">
-            Instellingen
-          </Link>
-          .
-        </p>
-      )}
-      {!visionOk && textOk && (
-        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Zonder Gemini- of Anthropic-sleutel kunnen alleen Word-bestanden (.docx) uitgelezen
-          worden — PDF&apos;s hebben vision nodig. Stel er een in bij{" "}
-          <Link href="/instellingen" className="font-medium underline">
-            Instellingen
-          </Link>
-          .
-        </p>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -86,7 +48,7 @@ export default async function CvGeneratorPage() {
             <EmptyState
               icon={<FileUser className="h-6 w-6" />}
               title="Nog geen Q4S-CV's"
-              description="Upload hierboven een CV, of start vanaf een kandidaat in de talentpool."
+              description="Upload hierboven een CV, of pak er een uit het mapje Kandidaten."
             />
           </CardContent>
         ) : (

@@ -108,21 +108,30 @@ export async function startCvProfile(
 /**
  * Maak een profiel uit het CV dat al bij de kandidaat staat — de recruiter hoeft
  * dan niets opnieuw te uploaden.
+ *
+ * `terug` bepaalt waar een mislukking landt. Vanuit het kandidaat-dossier is dat
+ * het dossier zelf; vanuit het mapje Kandidaten in de generator hoor je daar
+ * terug te komen, niet ergens anders in de app.
  */
 export async function profileFromCandidateCv(formData: FormData) {
   const candidateId = String(formData.get("candidateId") ?? "").trim();
   if (!candidateId) return;
+  const terug = String(formData.get("terug") ?? "").trim();
+  const mislukt = (code: string) =>
+    terug.startsWith("/")
+      ? `${terug}${terug.includes("?") ? "&" : "?"}fout=${code}`
+      : `/kandidaten/${candidateId}/cv?error=${code}`;
 
   const candidate = await db.candidate.findUnique({ where: { id: candidateId } });
   if (!candidate?.cvFileName) {
-    redirect(`/kandidaten/${candidateId}/cv?error=geen-cv`);
+    redirect(mislukt("geen-cv"));
   }
 
   let bytes: Buffer;
   try {
     bytes = await getObject(cvKey(candidate.cvFileName));
   } catch {
-    redirect(`/kandidaten/${candidateId}/cv?error=cv-bestand`);
+    redirect(mislukt("cv-bestand"));
   }
 
   let data: CvProfileData;
@@ -133,7 +142,7 @@ export async function profileFromCandidateCv(formData: FormData) {
       candidate.cvMimeType ?? "",
     );
   } catch {
-    redirect(`/kandidaten/${candidateId}/cv?error=uitlezen`);
+    redirect(mislukt("uitlezen"));
   }
 
   const record = {
@@ -151,6 +160,7 @@ export async function profileFromCandidateCv(formData: FormData) {
   });
 
   revalidatePath(`/kandidaten/${candidateId}`);
+  revalidatePath("/socials/cv-generator/kandidaten");
   redirect(`/socials/cv-generator/${profile.id}`);
 }
 
