@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Circle, Trash2, CalendarClock, Zap, ListTodo, ArrowRight } from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
@@ -87,10 +86,9 @@ export default async function TeDoenPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Te doen"
-        description="Alle openstaande taken en herinneringen uit de hele app — vastgelegd in de chatter of automatisch aangemaakt door je regels. Vink af zodra het klaar is."
-      />
+      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
+        Alle openstaande taken en herinneringen uit de hele app — vastgelegd in de chatter of automatisch aangemaakt door je regels. Vink af zodra het klaar is.
+      </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Open taken" value={tasks.length} icon={<ListTodo className="h-5 w-5" />} accent="brand" />

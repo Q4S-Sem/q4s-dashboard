@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ClipboardCheck, Star, CheckCircle2, FileText, BarChart3, PieChart } from "lucide-react";
 import { db } from "@/lib/db";
 import { CardContent } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/badge";
@@ -82,10 +81,9 @@ export default async function EvaluatiesDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Evaluaties — dashboard"
-        description="Inzicht in alle ingevulde evaluaties: scores, verdeling per kwartaal en per type, en de laatst ingevulde formulieren."
-      />
+      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
+        Inzicht in alle ingevulde evaluaties: scores, verdeling per kwartaal en per type, en de laatst ingevulde formulieren.
+      </p>
 
       {/* Kerncijfers */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

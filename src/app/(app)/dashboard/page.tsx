@@ -30,7 +30,6 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { cn, formatCurrency, round2 } from "@/lib/utils";
@@ -363,11 +362,6 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Analytics"
-        description="Hoe staat Q4S ervoor — omzet, marge, recruitment en dossiers. Filter op heel jaar of een kwartaal; alle cijfers passen zich aan."
-      />
-
       {/* Periodefilter — heel jaar of per kwartaal */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xs font-semibold uppercase tracking-wide text-ink-400">Periode</span>

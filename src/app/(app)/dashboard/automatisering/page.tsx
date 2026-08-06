@@ -1,6 +1,5 @@
 import { Zap, Plus, Trash2, RefreshCw, CheckCircle2, CircleDot } from "lucide-react";
 import { db } from "@/lib/db";
-import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
@@ -30,17 +29,18 @@ export default async function AutomatiseringPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Automatische acties"
-        description="Regels in de stijl van Odoo: 'als een situatie zich voordoet → maak automatisch een taak/herinnering'. Voer ze handmatig uit of laat de dagelijkse sync ze draaien."
-        actions={
-          <form action={runNow}>
-            <SubmitButton pendingLabel="Uitvoeren…">
-              <RefreshCw className="h-4 w-4" /> Regels nu uitvoeren
-            </SubmitButton>
-          </form>
-        }
-      />
+      <div className="-mt-2 flex flex-wrap items-start justify-between gap-4">
+        <p className="max-w-3xl text-[15px] leading-relaxed text-ink-500">
+          Regels in de stijl van Odoo: &lsquo;als een situatie zich voordoet →
+          maak automatisch een taak/herinnering&rsquo;. Voer ze handmatig uit of
+          laat de dagelijkse sync ze draaien.
+        </p>
+        <form action={runNow}>
+          <SubmitButton pendingLabel="Uitvoeren…">
+            <RefreshCw className="h-4 w-4" /> Regels nu uitvoeren
+          </SubmitButton>
+        </form>
+      </div>
 
       {sp.saved && (
         <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Regel opgeslagen.</p>

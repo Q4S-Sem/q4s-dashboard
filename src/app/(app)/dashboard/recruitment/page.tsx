@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { CardContent } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -108,10 +107,9 @@ export default async function RecruitmentDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Recruitment — dashboard"
-        description="Sollicitatie-funnel, kandidaten en best presterende vacatures. Alles gekoppeld aan de operationele pagina's."
-      />
+      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
+        Sollicitatie-funnel, kandidaten en best presterende vacatures. Alles gekoppeld aan de operationele pagina's.
+      </p>
 
       {/* Kerncijfers */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

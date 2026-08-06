@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { CardContent } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -122,10 +121,9 @@ export default async function FacturatieDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Facturatie — dashboard"
-        description="Financiële analyse: omzet, marge, openstaande facturen en je beste klanten. Klik door naar elke factuur of klant."
-      />
+      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
+        Financiële analyse: omzet, marge, openstaande facturen en je beste klanten. Klik door naar elke factuur of klant.
+      </p>
 
       {/* KPI's */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

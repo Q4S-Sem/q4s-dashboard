@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { CardContent } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -93,10 +92,9 @@ export default async function PlaatsingenMargesPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Plaatsingen & marges"
-        description="De marge per actieve plaatsing, per klant en per discipline — zo zie je in één oogopslag waar het geld verdiend wordt."
-      />
+      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
+        De marge per actieve plaatsing, per klant en per discipline — zo zie je in één oogopslag waar het geld verdiend wordt.
+      </p>
 
       {/* Kerncijfers */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

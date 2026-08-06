@@ -2,7 +2,6 @@ import Link from "next/link";
 import { BarChart3, ChevronLeft, ChevronRight, Building2, CalendarDays, HardHat } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { cn, formatCurrency, round2 } from "@/lib/utils";
 import { QUARTERS, DISCIPLINES, labelFor } from "@/lib/domain";
@@ -135,10 +134,9 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Rapportage"
-        description="Draai je omzet en marge uit per klant, maand of discipline — gescopet op de gekozen periode. Exporteren en meer dimensies volgen."
-      />
+      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
+        Draai je omzet en marge uit per klant, maand of discipline — gescopet op de gekozen periode. Exporteren en meer dimensies volgen.
+      </p>
 
       {/* Periode */}
       <div className="flex flex-wrap items-center gap-3">
