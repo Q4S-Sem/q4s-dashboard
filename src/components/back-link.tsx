@@ -38,7 +38,11 @@ export function BackLink({
 }: {
   /** Standaardbestemming als we niet weten waar je vandaan kwam. */
   href: string;
-  /** Standaardtekst, bv. "Terug naar talentpool". */
+  /**
+   * Waar de link standaard heen gaat, bv. "Terug naar talentpool". Staat niet
+   * meer in beeld — de knop toont altijd alleen "Terug" — maar wordt gebruikt
+   * als tooltip en voor schermlezers.
+   */
   children: React.ReactNode;
   className?: string;
 }) {
@@ -68,16 +72,26 @@ export function BackLink({
     setFrom({ href: prev, label });
   }, [pathname, href]);
 
+  // In beeld staat alleen "Terug" — kort en overal gelijk. Waar hij naartoe
+  // gaat lees je in de tooltip; dat scheelt een lange regel boven elke pagina.
+  const destination = from
+    ? `Terug naar ${from.label}`
+    : typeof children === "string"
+      ? children
+      : "Terug";
+
   return (
     <Link
       href={from?.href ?? href}
+      title={destination}
+      aria-label={destination}
       className={cn(
         "inline-flex items-center gap-1.5 text-sm text-ink-500 transition-colors hover:text-ink-900",
         className,
       )}
     >
       <ArrowLeft className="h-4 w-4" />
-      {from ? `Terug naar ${from.label}` : children}
+      Terug
     </Link>
   );
 }

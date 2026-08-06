@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDropDirection, dropClass } from "./use-drop-direction";
 import { ChevronsUpDown, Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -185,6 +186,9 @@ export function Select({
     if (!searchable) onListKeys(e);
   }
 
+  const up = useDropDirection(open, rootRef, 300);
+
+
   return (
     <div ref={rootRef} className={cn("relative", className)}>
       <input type="hidden" name={name} value={value} />
@@ -209,7 +213,12 @@ export function Select({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-sm border border-ink-900 bg-white shadow-[0_16px_36px_-22px_rgb(0_0_0/0.55)]">
+        <div
+          className={cn(
+            "absolute z-50 w-full overflow-hidden rounded-sm border border-ink-900 bg-white shadow-[0_16px_36px_-22px_rgb(0_0_0/0.55)]",
+            dropClass(up),
+          )}
+        >
           {searchable && (
             <div className="flex items-center gap-2 border-b border-ink-100 px-2.5 py-2">
               <Search className="h-4 w-4 shrink-0 text-ink-300" />

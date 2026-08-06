@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useDropDirection, dropClass } from "./use-drop-direction";
 import { Search, ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -93,6 +94,9 @@ export function SearchSelect({
     }
   }
 
+  const up = useDropDirection(open, rootRef, 260);
+
+
   return (
     <div ref={rootRef} className="relative">
       <input type="hidden" name={name} value={value} />
@@ -121,7 +125,12 @@ export function SearchSelect({
       </div>
 
       {open && (
-        <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 shadow-lg">
+        <ul
+          className={cn(
+            "absolute z-30 max-h-60 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 shadow-lg",
+            dropClass(up),
+          )}
+        >
           {filtered.length === 0 ? (
             <li className="px-3 py-2 text-sm text-ink-400">{emptyText}</li>
           ) : (

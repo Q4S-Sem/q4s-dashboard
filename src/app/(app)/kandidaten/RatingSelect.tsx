@@ -47,7 +47,19 @@ export function RatingSelect({
   useEffect(() => {
     if (!open) return;
     const r = btnRef.current?.getBoundingClientRect();
-    if (r) setPos({ top: r.bottom + 6, left: r.left, width: r.width });
+    if (r) {
+      // Past het menu niet meer onder de knop (laatste kaarten in de lijst),
+      // klap het dan omhoog — anders valt het onder de rand van het scherm en
+      // kun je de opties niet aanklikken.
+      const height = CANDIDATE_RATINGS.length * 36 + 16;
+      const below = window.innerHeight - r.bottom;
+      const up = below < height + 12 && r.top > below;
+      setPos({
+        top: up ? Math.max(8, r.top - 6 - height) : r.bottom + 6,
+        left: r.left,
+        width: r.width,
+      });
+    }
 
     const onDown = (e: MouseEvent) => {
       if (

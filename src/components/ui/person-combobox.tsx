@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useDropDirection, dropClass } from "./use-drop-direction";
 import { Check, UserPlus, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +81,9 @@ export function PersonCombobox({
 
   const newName = !selectedId && text.trim() ? text.trim() : "";
 
+  const up = useDropDirection(open, rootRef, 260);
+
+
   return (
     <div ref={rootRef} className="relative">
       <input
@@ -112,7 +116,12 @@ export function PersonCombobox({
       {createName && <input type="hidden" name={createName} value={canCreate ? newName : ""} />}
 
       {open && (matches.length > 0 || showCreate || showNoMatch) && (
-        <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 text-sm shadow-lg">
+        <ul
+          className={cn(
+            "absolute z-30 max-h-60 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 text-sm shadow-lg",
+            dropClass(up),
+          )}
+        >
           {matches.slice(0, 50).map((p) => (
             <li key={p.id}>
               <button

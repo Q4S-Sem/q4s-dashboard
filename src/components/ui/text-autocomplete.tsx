@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import { useDropDirection, dropClass } from "./use-drop-direction";
 
 const fieldBase =
   "block w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30";
@@ -45,6 +47,9 @@ export function TextAutocomplete({
       : suggestions
   ).slice(0, 50);
 
+  const up = useDropDirection(open, rootRef, 240);
+
+
   return (
     <div ref={rootRef} className="relative">
       <input
@@ -65,7 +70,12 @@ export function TextAutocomplete({
         className={fieldBase}
       />
       {open && matches.length > 0 && (
-        <ul className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 text-sm shadow-lg">
+        <ul
+          className={cn(
+            "absolute z-30 max-h-56 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 text-sm shadow-lg",
+            dropClass(up),
+          )}
+        >
           {matches.map((s) => (
             <li key={s}>
               <button

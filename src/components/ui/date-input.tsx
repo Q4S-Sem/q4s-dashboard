@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useDropDirection, dropClass } from "./use-drop-direction";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -146,6 +147,8 @@ function HeaderSelect({
   }, [open]);
 
   const current = options.find((o) => o.value === value);
+  const listUp = useDropDirection(open, ref, 220);
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -163,7 +166,10 @@ function HeaderSelect({
       {open && (
         <div
           ref={listRef}
-          className="absolute left-0 top-[calc(100%+0.25rem)] z-[60] max-h-52 w-full overflow-auto rounded-xl border border-ink-200 bg-white p-1 shadow-lg"
+          className={cn(
+            "absolute left-0 z-[60] max-h-52 w-full overflow-auto rounded-xl border border-ink-200 bg-white p-1 shadow-lg",
+            listUp ? "bottom-[calc(100%+0.25rem)]" : "top-[calc(100%+0.25rem)]",
+          )}
         >
           {options.map((o) => {
             const sel = o.value === value;
@@ -361,6 +367,8 @@ export function DateInput({
 
   const [timeH, timeM] = time.split(":").map(Number);
 
+  const calUp = useDropDirection(open, rootRef, 380);
+
   return (
     <div ref={rootRef} className={cn("relative", className)}>
       <input type="hidden" name={name} value={submitValue} />
@@ -422,7 +430,12 @@ export function DateInput({
       )}
 
       {open && (
-        <div className="absolute z-50 mt-1 w-[18rem] rounded-xl border border-ink-200 bg-white p-3 shadow-lg">
+        <div
+          className={cn(
+            "absolute z-50 w-[18rem] rounded-xl border border-ink-200 bg-white p-3 shadow-lg",
+            dropClass(calUp),
+          )}
+        >
           <div className="mb-2 flex items-center justify-between">
             <button
               type="button"

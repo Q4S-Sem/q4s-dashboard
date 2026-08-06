@@ -22,9 +22,10 @@ export function ForgotForm() {
         </div>
         <Link
           href="/login"
+          title="Terug naar inloggen"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600 hover:text-ink-900"
         >
-          <ArrowLeft className="h-4 w-4" /> Terug naar inloggen
+          <ArrowLeft className="h-4 w-4" /> Terug
         </Link>
       </div>
     );
@@ -53,7 +54,7 @@ export function ForgotForm() {
         href="/login"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600 hover:text-ink-900"
       >
-        <ArrowLeft className="h-4 w-4" /> Terug naar inloggen
+        <ArrowLeft className="h-4 w-4" /> Terug
       </Link>
     </form>
   );
