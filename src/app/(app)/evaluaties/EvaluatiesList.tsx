@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardCheck, Plus, Star, CheckCircle2, FileText } from "lucide-react";
+import { ClipboardCheck, Plus, Star, CheckCircle2, FileText, Printer } from "lucide-react";
 import { db } from "@/lib/db";
 import { cn } from "@/lib/utils";
 import { scoreLabel, SCORE_BADGE } from "@/lib/evaluaties";
@@ -105,12 +105,20 @@ export async function EvaluatiesList({
         title={title}
         description={description}
         actions={
-          <Link
-            href={`/evaluaties/nieuw?type=${type}`}
-            className={buttonVariants()}
-          >
-            <Plus className="h-4 w-4" /> Nieuwe evaluatie
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Het blanco formulier hoort hier: je hebt het nodig op het moment
+                dat je aan dit type evaluatie denkt, niet op een aparte
+                beheerpagina. */}
+            <Link
+              href={`/evaluaties/sjabloon/${type.toLowerCase()}`}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Printer className="h-4 w-4" /> Blanco formulier
+            </Link>
+            <Link href={`/evaluaties/nieuw?type=${type}`} className={buttonVariants()}>
+              <Plus className="h-4 w-4" /> Nieuwe evaluatie
+            </Link>
+          </div>
         }
       />
 

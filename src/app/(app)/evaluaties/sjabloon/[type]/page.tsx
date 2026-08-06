@@ -8,6 +8,9 @@ import { PrintBar } from "../../[id]/print/PrintBar";
  * Het blanco formulier om uit te printen of mee te sturen — hetzelfde vel als
  * een ingevulde evaluatie, alleen zonder inhoud. Vervangt de losse Word- en
  * Excel-sjablonen: die liepen uit de pas met wat de app zelf produceerde.
+ *
+ * Bereikbaar vanaf de lijst van het formuliertype zelf; de aparte
+ * Templates-beheerpagina is weg.
  */
 
 export const metadata = { title: "Blanco evaluatieformulier" };
@@ -27,7 +30,7 @@ export default async function EvaluatieSjabloonPage({
   return (
     <div className="ev-print-pagina">
       <PrintBar
-        terug="/evaluaties/templates"
+        terug={vel.def.listPath}
         uitleg="Blanco formulier — printen, of “Opslaan als PDF” om te mailen."
       />
 
