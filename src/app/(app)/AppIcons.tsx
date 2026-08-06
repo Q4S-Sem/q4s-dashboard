@@ -166,6 +166,27 @@ const Msp = svg(
 
 /** Custom icoon per hub-href. Ontbreekt er één, dan valt het startscherm terug
  *  op het lucide-icoon uit nav.ts. */
+// 12) CV's — documentblad met een persoon erop en een gevouwen hoek.
+const Cvs = svg(
+  <>
+    {/* Blad met omgevouwen hoek rechtsboven */}
+    <path
+      d="M11 8.5a3 3 0 0 1 3-3h14l9 9v25.5a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3z"
+      fill="#ffffff"
+      stroke="#c7d2fe"
+      strokeWidth="1.6"
+    />
+    <path d="M28 5.5l9 9h-6a3 3 0 0 1-3-3z" fill="#818cf8" />
+    {/* Pasfoto: hoofd + schouders */}
+    <circle cx="19.5" cy="21" r="4.2" fill="#7c3aed" />
+    <path d="M13.5 31.5a6 6 0 0 1 12 0z" fill="#a78bfa" />
+    {/* Regels tekst ernaast en eronder */}
+    <rect x="28" y="18.5" width="9" height="2.6" rx="1.3" fill="#10b981" />
+    <rect x="28" y="24" width="7" height="2.6" rx="1.3" fill="#34d399" />
+    <rect x="13.5" y="35.5" width="21" height="2.6" rx="1.3" fill="#e5e7eb" />
+  </>,
+);
+
 export const APP_ICONS: Record<string, React.FC<IconProps>> = {
   "/dashboard": Analytics,
   "/verwerken": Facturatie,
@@ -175,6 +196,7 @@ export const APP_ICONS: Record<string, React.FC<IconProps>> = {
   "/recruitment": Recruitment,
   "/socials": Socials,
   "/website": Vacatures,
+  "/cv": Cvs,
   "/data": Data,
   "/gebruikers": Instellingen,
 };

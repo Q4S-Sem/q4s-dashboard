@@ -164,8 +164,6 @@ const HUB_LIST: NavHub[] = [
       { href: "/kandidaten", label: "Talentpool", icon: Users, section: "Kandidaten" },
       { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, section: "Kandidaten" },
       { href: "/sollicitaties", label: "Sollicitaties", icon: ClipboardList, section: "Kandidaten" },
-      { href: "/website/cv-inbox", label: "Binnengekomen CV's", icon: Inbox, exact: true, section: "CV's" },
-      { href: "/website/cv-inbox/matches", label: "CV-matches", icon: Target, section: "CV's" },
     ],
   },
   {
@@ -174,7 +172,6 @@ const HUB_LIST: NavHub[] = [
     icon: Megaphone,
     items: [
       { href: "/socials", label: "LinkedIn-generator", icon: Sparkles, exact: true },
-      { href: "/socials/cv-generator", label: "CV-generator", icon: FileUser },
     ],
   },
   {
@@ -186,6 +183,17 @@ const HUB_LIST: NavHub[] = [
       { href: "/vacaturehub", label: "Vacaturehub", icon: Filter },
       { href: "/vacatures", label: "Maken", icon: PencilLine },
       { href: "/website/vacatures", label: "Op de website", icon: Globe },
+    ],
+  },
+  {
+    label: "CV's",
+    href: "/cv",
+    icon: FileUser,
+    items: [
+      { href: "/cv", label: "Overzicht", icon: FileText, exact: true },
+      { href: "/website/cv-inbox", label: "Binnengekomen CV's", icon: Inbox, exact: true },
+      { href: "/website/cv-inbox/matches", label: "CV-matches", icon: Target },
+      { href: "/socials/cv-generator", label: "CV-generator", icon: FileUser },
     ],
   },
   {
@@ -224,6 +232,7 @@ const HUB_ORDER = [
   "/recruitment",
   "/agenda",
   "/website",
+  "/cv",
   "/socials",
   "/evaluaties",
   "/dashboard", // Analytics
