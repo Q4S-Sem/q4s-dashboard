@@ -393,7 +393,7 @@ model CompanySettings {
   mailRedirectTo       String @default("")
   /// Master-switch for AI auto-reading of certificates (uses ANTHROPIC_API_KEY).
   /// Off by default — the user opts in per choice.
-  aiAutoExtract        Boolean @default(false)
+  aiAutoExtract        Boolean @default(true)
 
   // ---- Cloudopslag-koppeling (Microsoft 365: OneDrive of SharePoint) ----
   // Elke upload in het dashboard wordt (best-effort) naar deze drive gespiegeld,

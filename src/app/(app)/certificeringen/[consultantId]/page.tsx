@@ -17,6 +17,7 @@ import {
 import { db } from "@/lib/db";
 import { cn, formatDate } from "@/lib/utils";
 import { getCompanySettings } from "@/lib/settings";
+import { consultantEmail } from "@/lib/consultant-email";
 import { certStatus, CERT_STATUS_META, type CertStatus } from "@/lib/evaluaties";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,7 +69,7 @@ export default async function MedewerkerCertificatenPage({
   const aiConfigured = isVisionConfigured();
   const aiEnabled = settings.aiAutoExtract;
 
-  const email = c.email?.trim() || null;
+  const { email, bron: emailBron } = await consultantEmail(c.id);
   const certs = c.certificates
     .map((ct) => ({ ...ct, st: certStatus(ct.expiryDate, now) }))
     .sort((a, b) => {
@@ -119,6 +120,9 @@ export default async function MedewerkerCertificatenPage({
           >
             {email ? <Mail className="h-4 w-4" /> : <MailWarning className="h-4 w-4" />}
             {email ?? "geen e-mailadres"}
+            {emailBron === "medewerker" && (
+              <span className="text-ink-300">· uit Medewerkers</span>
+            )}
           </span>
         }
       />

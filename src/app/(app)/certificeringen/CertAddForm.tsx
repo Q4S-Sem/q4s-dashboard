@@ -14,6 +14,7 @@ import {
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { extractCertificateFile } from "./actions";
 import { type CertExtractResult } from "@/lib/cert-extract";
 
@@ -34,7 +35,7 @@ export function CertAddForm({
   const [hasFile, setHasFile] = useState(false);
   const [extracted, setExtracted] = useState<CertExtractResult["data"] | null>(null);
   const [remountKey, setRemountKey] = useState(0);
-  const [msg, setMsg] = useState<{ tone: "ok" | "warn"; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ tone: "ok" | "warn" | "bezig"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const [preview, setPreview] = useState<{ url: string; kind: "image" | "pdf" } | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -71,25 +72,54 @@ export function CertAddForm({
     } else {
       setPreview(null);
     }
+
+    // Meteen uitlezen: een bestand kiezen ís de opdracht om het te lezen. Een
+    // extra klik op "lees uit" voegde niets toe behalve een vergeten stap.
+    if (f && aiReady) readWithAI(f);
   }
 
-  function readWithAI() {
-    const f = fileRef.current?.files?.[0];
+  function readWithAI(file?: File) {
+    const f = file ?? fileRef.current?.files?.[0];
     if (!f) {
       setMsg({ tone: "warn", text: "Kies eerst een bestand." });
       return;
     }
     const fd = new FormData();
     fd.append("file", f);
+    setMsg({ tone: "bezig", text: "Bezig met uitlezen…" });
     startTransition(async () => {
       const res = await extractCertificateFile(fd);
       if (res.error || !res.data) {
-        setMsg({ tone: "warn", text: res.error ?? "Automatisch uitlezen mislukt." });
+        setMsg({
+          tone: "warn",
+          text: `${res.error ?? "Automatisch uitlezen mislukt."} Vul de velden zelf in.`,
+        });
         return;
       }
       setExtracted(res.data);
       setRemountKey((k) => k + 1);
-      setMsg({ tone: "ok", text: "Automatisch ingevuld — controleer en pas aan waar nodig." });
+      const gevonden = (
+        [
+          ["naam", res.data.name],
+          ["nummer", res.data.number],
+          ["uitgever", res.data.issuer],
+          ["afgiftedatum", res.data.issuedDate],
+          ["vervaldatum", res.data.expiryDate],
+        ] as const
+      )
+        .filter(([, v]) => v)
+        .map(([k]) => k);
+      setMsg(
+        gevonden.length
+          ? {
+              tone: "ok",
+              text: `Ingevuld: ${gevonden.join(", ")}. Controleer het even en pas aan waar nodig.`,
+            }
+          : {
+              tone: "warn",
+              text: "Er kwam niets bruikbaars uit dit bestand — vul de velden zelf in.",
+            },
+      );
     });
   }
 
@@ -163,12 +193,13 @@ export function CertAddForm({
             {aiReady && hasFile && (
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="sm"
-                onClick={readWithAI}
+                onClick={() => readWithAI()}
                 disabled={pending}
               >
-                <Sparkles className="h-4 w-4" /> {pending ? "Uitlezen…" : "Lees automatisch uit"}
+                <Sparkles className="h-4 w-4" />
+                {pending ? "Uitlezen…" : "Opnieuw uitlezen"}
               </Button>
             )}
           </div>
@@ -215,17 +246,16 @@ export function CertAddForm({
         )}
         {msg && (
           <p
-            className={
-              msg.tone === "ok"
-                ? "mt-2 inline-flex items-center gap-1.5 text-sm text-emerald-700"
-                : "mt-2 inline-flex items-center gap-1.5 text-sm text-amber-700"
-            }
-          >
-            {msg.tone === "ok" ? (
-              <CheckCircle2 className="h-4 w-4" />
-            ) : (
-              <AlertTriangle className="h-4 w-4" />
+            className={cn(
+              "mt-2 inline-flex items-center gap-1.5 text-sm",
+              msg.tone === "ok" && "text-emerald-700",
+              msg.tone === "warn" && "text-amber-700",
+              msg.tone === "bezig" && "text-ink-500",
             )}
+          >
+            {msg.tone === "ok" && <CheckCircle2 className="h-4 w-4" />}
+            {msg.tone === "warn" && <AlertTriangle className="h-4 w-4" />}
+            {msg.tone === "bezig" && <Sparkles className="h-4 w-4 animate-pulse" />}
             {msg.text}
           </p>
         )}

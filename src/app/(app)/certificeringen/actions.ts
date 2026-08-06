@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { consultantEmail } from "@/lib/consultant-email";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
@@ -239,7 +240,7 @@ export async function sendCertificateReminder(formData: FormData) {
   if (!cert) redirect("/certificeringen");
   const consultantId = cert.consultantId;
 
-  const to = cert.consultant.email?.trim();
+  const { email: to } = await consultantEmail(consultantId);
   if (!to) redirect(`/certificeringen/${consultantId}?error=noemail`);
 
   const content = reminderContent(cert, settings, new Date());
