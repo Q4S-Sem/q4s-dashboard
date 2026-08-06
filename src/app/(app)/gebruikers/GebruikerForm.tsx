@@ -13,11 +13,15 @@ import { APP_USER_ROLES } from "@/lib/domain";
 export function GebruikerForm({
   action,
   user,
+  isSelf,
   submitLabel,
   cancelHref,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   user?: AppUser;
+  /** Bewerk je je eigen account? Dan verdwijnt het directe wachtwoordveld:
+   *  je eigen wachtwoord loopt via de bevestiging per e-mail eronder. */
+  isSelf?: boolean;
   submitLabel: string;
   cancelHref: string;
 }) {
@@ -76,24 +80,26 @@ export function GebruikerForm({
                 ))}
               </Select>
             </Field>
-            <Field
-              label="Wachtwoord"
-              htmlFor="password"
-              hint={
-                user
-                  ? "Laat leeg om het huidige wachtwoord te behouden."
-                  : "Stel een inlogwachtwoord in."
-              }
-              error={e.password}
-            >
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                placeholder={user?.passwordHash ? "••••••••" : "Nieuw wachtwoord"}
-              />
-            </Field>
+            {!isSelf && (
+              <Field
+                label="Wachtwoord"
+                htmlFor="password"
+                hint={
+                  user
+                    ? "Laat leeg om het huidige wachtwoord te behouden."
+                    : "Stel een inlogwachtwoord in."
+                }
+                error={e.password}
+              >
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={user?.passwordHash ? "••••••••" : "Nieuw wachtwoord"}
+                />
+              </Field>
+            )}
           </div>
 
           <label className="flex items-center gap-2 text-sm text-ink-700">

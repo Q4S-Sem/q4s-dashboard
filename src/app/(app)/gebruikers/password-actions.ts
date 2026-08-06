@@ -50,7 +50,7 @@ export async function requestPasswordChange(
     return { error: "Je account is niet gevonden." };
   }
 
-  revalidatePath("/gebruikers/wachtwoord");
+  revalidatePath(`/gebruikers/${user.id}/bewerken`);
   return { sent: true, simulated: res.simulated };
 }
 
@@ -79,6 +79,6 @@ export async function confirmPasswordCode(
     return { sent: opnieuw, error: tekst[res.reason] };
   }
 
-  revalidatePath("/gebruikers/wachtwoord");
+  revalidatePath(`/gebruikers/${user.id}/bewerken`);
   return { done: true };
 }

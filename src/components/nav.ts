@@ -209,7 +209,6 @@ const HUB_LIST: NavHub[] = [
     icon: Settings,
     items: [
       { href: "/gebruikers", label: "Gebruikers", icon: UserCog, exact: true, section: "Toegang" },
-      { href: "/gebruikers/wachtwoord", label: "Mijn wachtwoord", icon: KeyRound, section: "Toegang" },
       { href: "/gebruikers/api-sleutels", label: "API-sleutels", icon: KeyRound, section: "AI" },
       { href: "/gebruikers/tokenverbruik", label: "Tokenverbruik", icon: BarChart3, section: "AI" },
     ],

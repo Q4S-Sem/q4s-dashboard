@@ -10,7 +10,7 @@ import {
   requestPasswordChange,
   confirmPasswordCode,
   type PwState,
-} from "./actions";
+} from "./password-actions";
 
 const leeg: PwState = {};
 
