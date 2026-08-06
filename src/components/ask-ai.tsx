@@ -87,7 +87,7 @@ export function AskAi() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Ask AI openen"
-          className="group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-sm bg-ink-900 py-2.5 pl-2.5 pr-4 text-sm font-semibold text-white shadow-[0_10px_28px_-12px_rgb(0_0_0/0.6)] transition-all hover:-translate-y-0.5 hover:bg-ink-800"
+          className="group fixed bottom-5 left-5 z-40 inline-flex items-center gap-2 rounded-sm lg:left-[16.25rem] bg-ink-900 py-2.5 pl-2.5 pr-4 text-sm font-semibold text-white shadow-[0_10px_28px_-12px_rgb(0_0_0/0.6)] transition-all hover:-translate-y-0.5 hover:bg-ink-800"
         >
           <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-brand-600 text-white transition-colors group-hover:bg-brand-500">
             <BotMessageSquare className="h-[17px] w-[17px]" />
@@ -98,7 +98,7 @@ export function AskAi() {
 
       {/* Chatpaneel */}
       {open && (
-        <div className="fixed bottom-5 right-5 z-40 flex h-[32rem] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-md border border-ink-200 bg-white shadow-[0_24px_60px_-24px_rgb(0_0_0/0.45)]">
+        <div className="fixed bottom-5 left-5 z-40 flex h-[32rem] w-[22rem] lg:left-[16.25rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-md border border-ink-200 bg-white shadow-[0_24px_60px_-24px_rgb(0_0_0/0.45)]">
           <div className="flex items-center justify-between border-b border-ink-200 bg-ink-50/60 px-4 py-3">
             <span className="inline-flex items-center gap-2 font-semibold text-ink-900">
               <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-brand-600 text-white">
