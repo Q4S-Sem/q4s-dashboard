@@ -40,13 +40,54 @@ export type CloudSummary = {
   targets: { provider: CloudProvider; live: boolean }[];
 };
 
-/** De vaste "mapjes" waarin data wordt gesorteerd (voor het overzicht + preview). */
+/**
+ * De mapjes die het dashboard zélf aanmaakt, allemaal ONDER de hoofdmap.
+ *
+ * Q4S heeft in OneDrive al een eigen mappenstructuur (Contracten Q4S, CV's,
+ * Klant gegevens …). Daar blijft het dashboard vanaf: het schrijft uitsluitend
+ * binnen `cloudRootFolder` en maakt daarin zijn eigen submappen aan. Er wordt
+ * nooit iets buiten die hoofdmap gelezen, gewijzigd of verwijderd, en binnen de
+ * hoofdmap wordt nooit overschreven (Graph krijgt conflictBehavior=rename mee).
+ *
+ * Deze lijst is de bron van waarheid: staat een categorie hier niet in, dan
+ * hoort hij ook niet in de cloud te belanden.
+ */
 export const CLOUD_FOLDERS: { category: string; description: string }[] = [
   { category: "Personeelsdossiers", description: "CV's, contracten, certificaten en documenten — submap per medewerker." },
   { category: "Timesheet-inbox", description: "Binnengekomen urenstaten (upload + admin@q4s.nl)." },
   { category: "Declaraties", description: "Bonnetjes en onkostendeclaraties." },
   { category: "Kandidaten-CV", description: "CV's uit de recruitment-/talentpool." },
+  { category: "Ontvangen facturen", description: "Facturen die binnenkomen van geplaatste ZZP'ers." },
 ];
+
+/** Standaardnaam van de eigen hoofdmap in OneDrive/SharePoint. */
+export const DEFAULT_ROOT_FOLDER = "Q4S Dashboard";
+
+/**
+ * Eén mapnaam schoonvegen tot iets waarmee niet buiten de eigen map te
+ * schrijven valt: geen slashes (dus geen extra padniveaus), geen punten (dus
+ * geen ".." of verborgen mappen) en geen tekens die Graph weigert.
+ *
+ * Zonder dit zou een naam als "/" of "../CV's" ertoe leiden dat het dashboard
+ * in de bestáánde Q4S-mappen gaat schrijven.
+ */
+function schoonSegment(raw: string | null | undefined): string {
+  return String(raw ?? "")
+    .replace(/[\\/:*?"<>|]/g, " ")
+    .replace(/\.+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Eén map-segment onder de hoofdmap (categorie of submap). */
+export function safeSegment(raw: string): string {
+  return schoonSegment(raw) || "Overig";
+}
+
+/** De eigen hoofdmap; valt terug op de standaardnaam als er niets overblijft. */
+export function safeRootFolder(raw: string | null | undefined): string {
+  return schoonSegment(raw) || DEFAULT_ROOT_FOLDER;
+}
 
 /** Heeft deze config genoeg gegevens om écht te kunnen uploaden? */
 export function hasCredentials(c: CloudConfig): boolean {
@@ -69,7 +110,7 @@ function envConfig(): CloudConfig | null {
     driveUser,
     siteId: "",
     driveId: "",
-    rootFolder: process.env.MS_ROOT_FOLDER || "Q4S Dashboard",
+    rootFolder: safeRootFolder(process.env.MS_ROOT_FOLDER),
   };
 }
 
@@ -81,7 +122,7 @@ async function buildTargets(): Promise<{
 }> {
   const s = await getCompanySettings();
   const choice = (s.cloudProvider as CloudProviderChoice) || "BOTH";
-  const root = s.cloudRootFolder || "Q4S Dashboard";
+  const root = safeRootFolder(s.cloudRootFolder);
   const wantOD = choice === "ONEDRIVE" || choice === "BOTH";
   const wantSP = choice === "SHAREPOINT" || choice === "BOTH";
 
@@ -135,7 +176,7 @@ export async function getCloudSummary(): Promise<CloudSummary> {
   const { targets, enabled, source } = await buildTargets();
   return {
     choice: (s.cloudProvider as CloudProviderChoice) || "BOTH",
-    rootFolder: s.cloudRootFolder || "Q4S Dashboard",
+    rootFolder: safeRootFolder(s.cloudRootFolder),
     enabled,
     source,
     live: targets.some((t) => t.live),
@@ -159,7 +200,11 @@ export async function mirrorToCloud(input: {
 }): Promise<void> {
   try {
     const { targets } = await buildTargets();
-    const folder = input.subfolder ? `${input.category}/${input.subfolder}` : input.category;
+    // Ook categorie en submap normaliseren: geen slashes of punten, zodat een
+    // aanroeper nooit met "../" buiten de eigen hoofdmap kan schrijven.
+    const cat = safeSegment(input.category);
+    const sub = input.subfolder ? safeSegment(input.subfolder) : "";
+    const folder = sub ? `${cat}/${sub}` : cat;
     const remotePath = remotePathFor(folder, input.storedFileName, input.originalName);
     let anySynced = false;
 

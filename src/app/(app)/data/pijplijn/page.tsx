@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { buttonVariants } from "@/components/ui/button";
 import { cn, formatDate } from "@/lib/utils";
-import { getCloudSummary, CLOUD_PROVIDER_LABEL } from "@/lib/cloud";
+import { getCloudSummary, CLOUD_PROVIDER_LABEL, CLOUD_FOLDERS } from "@/lib/cloud";
 import { getSupabaseStatus } from "@/lib/supabase";
 
 export const metadata = { title: "Data-pijplijn" };
@@ -216,6 +216,37 @@ export default async function DataPijplijnPage() {
               </TBody>
             </Table>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Wat het dashboard zélf aanmaakt in OneDrive/SharePoint. */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Mappen die het dashboard aanmaakt</CardTitle>
+          <span className="text-sm text-ink-400">
+            in &ldquo;{cloud.rootFolder}&rdquo;
+          </span>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="rounded-sm bg-emerald-50 px-4 py-3 text-sm leading-relaxed text-emerald-800">
+            Het dashboard schrijft <strong className="font-semibold">uitsluitend</strong> in de map{" "}
+            <strong className="font-semibold">{cloud.rootFolder}</strong> en maakt daarin zijn eigen
+            submappen aan. Mappen die al in OneDrive staan — Contracten Q4S, CV&rsquo;s, Klant
+            gegevens en de rest — worden niet gelezen, niet gewijzigd en niet verwijderd. Ook binnen
+            de eigen map wordt nooit een bestand overschreven: een gelijknamig bestand krijgt er een
+            volgnummer bij.
+          </p>
+
+          <ul className="divide-y divide-ink-100 rounded-sm border border-ink-100">
+            {CLOUD_FOLDERS.map((f) => (
+              <li key={f.category} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5">
+                <code className="rounded-sm bg-ink-100 px-1.5 py-0.5 text-[13px] text-ink-800">
+                  {cloud.rootFolder}/{f.category}
+                </code>
+                <span className="text-sm text-ink-500">{f.description}</span>
+              </li>
+            ))}
+          </ul>
         </CardContent>
       </Card>
 
