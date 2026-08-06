@@ -1,8 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
-import { FileText, Download, Info, FolderOpen } from "lucide-react";
+import Link from "next/link";
+import { FileText, Download, Info, FolderOpen, Printer, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { EVAL_FORM_LIST } from "@/lib/evaluation-forms";
 
 export const metadata = { title: "Templates" };
 export const dynamic = "force-dynamic"; // read the folder fresh each request
@@ -52,10 +55,46 @@ export default function TemplatesPage() {
         description="Blanco sjablonen om te downloaden — om in te vullen of naar de klant/inlener te sturen."
       />
 
+      {/* De formulieren die de app zelf tekent. Staan bovenaan en niet tussen de
+          losse bestanden: die laatste zijn statische kopieën die na een
+          huisstijlwijziging achterblijven, deze niet. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-brand-600" /> Q4S-formulieren
+          </CardTitle>
+          <span className="text-sm text-ink-400">
+            In onze eigen huisstijl, met logo. Printen of opslaan als PDF om mee te sturen —
+            wordt een evaluatie in het dashboard ingevuld, dan rolt hetzelfde vel eruit.
+          </span>
+        </CardHeader>
+        <CardContent className="p-0">
+          <ul className="divide-y divide-ink-100">
+            {EVAL_FORM_LIST.map((f) => (
+              <li
+                key={f.type}
+                className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-ink-900">{f.shortLabel}</p>
+                  <p className="text-sm text-ink-500">{f.subtitle}</p>
+                </div>
+                <Link
+                  href={`/evaluaties/sjabloon/${f.type.toLowerCase()}`}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  <Printer className="h-4 w-4" /> Blanco openen
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
       <p className="flex items-start gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3 text-sm text-ink-600">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
         <span>
-          Plaats je template-bestanden in de projectmap{" "}
+          Hieronder staan losse bestanden die je zelf neerzet. Plaats ze in de projectmap{" "}
           <code className="rounded bg-ink-100 px-1">public/templates/evaluaties/</code>{" "}
           (evaluatieformulieren) en{" "}
           <code className="rounded bg-ink-100 px-1">public/templates/certificeringen/</code>{" "}

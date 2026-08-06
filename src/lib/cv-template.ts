@@ -1,4 +1,9 @@
 import type { CompanySettings } from "./settings";
+import { documentAccent } from "./doc-style";
+
+// De accentkleur en de kleurhulpjes zijn niet van het CV alleen — ze staan in
+// doc-style.ts en worden hier doorgegeven, zodat bestaande imports blijven werken.
+export { shade, readableOn } from "./doc-style";
 
 /**
  * De vormgeving van het Q4S-CV, los van de inhoud.
@@ -50,8 +55,6 @@ export type CvTemplate = {
   footerNote: string;
 };
 
-const HEX = /^#[0-9a-f]{6}$/i;
-
 /** Lees de sectievolgorde uit de instellingen; vul ontbrekende secties aan. */
 function readOrder(raw: string): CvSectionKey[] {
   let uit: CvSectionKey[] = [];
@@ -71,9 +74,8 @@ function readOrder(raw: string): CvSectionKey[] {
 }
 
 export function cvTemplateFromSettings(s: CompanySettings): CvTemplate {
-  const accent = HEX.test(String(s.cvAccent ?? "")) ? s.cvAccent : "#e8430a";
   return {
-    accent,
+    accent: documentAccent(s),
     layout: s.cvLayout === "EEN_KOLOM" ? "EEN_KOLOM" : "TWEE_KOLOMS",
     showPhoto: s.cvShowPhoto !== false,
     showSkillBars: s.cvShowSkillBars === true,
@@ -81,28 +83,4 @@ export function cvTemplateFromSettings(s: CompanySettings): CvTemplate {
     sectionOrder: readOrder(s.cvSectionOrder ?? ""),
     footerNote: (s.cvFooterNote ?? "").trim(),
   };
-}
-
-/** Wat lichter/donkerder maken van een hexkleur, voor tinten uit één accent. */
-export function shade(hex: string, amount: number): string {
-  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
-  if (!m) return hex;
-  const kanaal = (v: string) => {
-    const n = parseInt(v, 16);
-    const uit = amount >= 0 ? n + (255 - n) * amount : n * (1 + amount);
-    return Math.max(0, Math.min(255, Math.round(uit)))
-      .toString(16)
-      .padStart(2, "0");
-  };
-  return `#${kanaal(m[1])}${kanaal(m[2])}${kanaal(m[3])}`;
-}
-
-/** Zwarte of witte tekst, afhankelijk van wat leesbaar is op deze kleur. */
-export function readableOn(hex: string): string {
-  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
-  if (!m) return "#ffffff";
-  const [r, g, b] = [m[1], m[2], m[3]].map((v) => parseInt(v, 16) / 255);
-  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-  return L > 0.45 ? "#111110" : "#ffffff";
 }

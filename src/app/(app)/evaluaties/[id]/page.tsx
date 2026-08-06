@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Pencil, Check, Download, Archive, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Pencil, Check, Download, Archive, CheckCircle2, Printer } from "lucide-react";
 import { db } from "@/lib/db";
 import { formatDate, cn } from "@/lib/utils";
 import { scoreLabel, SCORE_SOLID, SCORE_BADGE } from "@/lib/evaluaties";
@@ -81,6 +81,9 @@ export default async function EvaluatieDetailPage({
             <StatusBadge options={EVALUATION_STATUSES} value={e.status} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link href={`/evaluaties/${e.id}/print`} className={buttonVariants()}>
+              <Printer className="h-4 w-4" /> Printen / PDF
+            </Link>
             <a
               href={`/evaluaties/${e.id}/pdf`}
               target="_blank"
