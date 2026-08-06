@@ -15,10 +15,14 @@ import { cn } from "@/lib/utils";
  * te gaan naar Binnengekomen CV's — niet naar de Talentpool omdat dat toevallig
  * de standaardbestemming is.
  *
- * Bewust behoudend: we springen alléén terug naar een pagina die in de
- * navigatie staat (een echte overzichtspagina). Kwam je van een detailpagina,
- * een formulier of rechtstreeks binnen via een link, dan blijft de meegegeven
- * standaard staan. Zo kan de knop nooit ergens onverwachts heen wijzen.
+ * Bewust behoudend, op twee manieren:
+ *  1. We springen alléén terug naar een pagina die in de navigatie staat (een
+ *     echte overzichtspagina). Kwam je van een detailpagina, een formulier of
+ *     rechtstreeks binnen via een link, dan blijft de meegegeven standaard staan.
+ *  2. Sta je zélf op een zijmenu-pagina (Inzichten, CRM-instellingen …), dan
+ *     doet de geschiedenis niet mee. Zo'n pagina heeft een vaste plek in het
+ *     menu; daar hoort de terugknop naar de eigen bovenliggende pagina te gaan,
+ *     niet naar het vorige menu-item dat je toevallig open had.
  */
 
 /** Alle overzichtspagina's uit de navigatie: pad → naam. */
@@ -50,6 +54,11 @@ export function BackLink({
   const [from, setFrom] = useState<{ href: string; label: string } | null>(null);
 
   useEffect(() => {
+    const nav = navLabels();
+    // Zijmenu-pagina's houden hun vaste bestemming — anders stuurt "Terug" je
+    // naar het vorige menu-item in plaats van naar boven.
+    if (nav.has(pathname)) return;
+
     let prev: string | null = null;
     try {
       prev = window.sessionStorage.getItem(NAV_PREV);
@@ -65,7 +74,7 @@ export function BackLink({
     // De standaardbestemming is al goed — dan niets bijzonders tonen.
     if (path === href) return;
 
-    const label = navLabels().get(path);
+    const label = nav.get(path);
     if (!label) return; // geen bekende overzichtspagina → standaard aanhouden
 
     // eslint-disable-next-line react-hooks/set-state-in-effect

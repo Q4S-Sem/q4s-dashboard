@@ -87,10 +87,10 @@ export function AskAi() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Ask AI openen"
-          className="group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2.5 rounded-full bg-ink-900 py-2 pl-2 pr-4 text-sm font-semibold text-white shadow-lg ring-1 ring-white/10 transition-all hover:-translate-y-0.5 hover:bg-ink-800 hover:shadow-xl"
+          className="group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-sm bg-ink-900 py-2.5 pl-2.5 pr-4 text-sm font-semibold text-white shadow-[0_10px_28px_-12px_rgb(0_0_0/0.6)] transition-all hover:-translate-y-0.5 hover:bg-ink-800"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-500 text-white shadow-inner transition-transform group-hover:scale-105">
-            <BotMessageSquare className="h-[18px] w-[18px]" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-brand-600 text-white transition-colors group-hover:bg-brand-500">
+            <BotMessageSquare className="h-[17px] w-[17px]" />
           </span>
           Ask AI
         </button>
@@ -98,10 +98,10 @@ export function AskAi() {
 
       {/* Chatpaneel */}
       {open && (
-        <div className="fixed bottom-5 right-5 z-40 flex h-[32rem] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl ring-1 ring-black/5">
-          <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
+        <div className="fixed bottom-5 right-5 z-40 flex h-[32rem] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-md border border-ink-200 bg-white shadow-[0_24px_60px_-24px_rgb(0_0_0/0.45)]">
+          <div className="flex items-center justify-between border-b border-ink-200 bg-ink-50/60 px-4 py-3">
             <span className="inline-flex items-center gap-2 font-semibold text-ink-900">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white">
+              <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-brand-600 text-white">
                 <BotMessageSquare className="h-3.5 w-3.5" />
               </span>
               Ask AI
@@ -110,7 +110,7 @@ export function AskAi() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Sluiten"
-              className="rounded-lg p-1.5 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
+              className="rounded-sm p-1.5 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-900"
             >
               <X className="h-4 w-4" />
             </button>
@@ -128,7 +128,7 @@ export function AskAi() {
                       key={s}
                       type="button"
                       onClick={() => ask(s)}
-                      className="rounded-lg border border-ink-200 px-3 py-2 text-left text-sm text-ink-600 transition-colors hover:border-ink-300 hover:bg-ink-50"
+                      className="rounded-sm border border-ink-100 px-3 py-2 text-left text-sm text-ink-600 transition-colors hover:border-ink-900 hover:bg-ink-50 hover:text-ink-900"
                     >
                       {s}
                     </button>
@@ -142,8 +142,8 @@ export function AskAi() {
                 <div
                   className={
                     m.role === "user"
-                      ? "max-w-[85%] rounded-2xl rounded-br-sm bg-emerald-600 px-3 py-2 text-sm text-white"
-                      : "max-w-[85%] space-y-2 rounded-2xl rounded-bl-sm bg-ink-100 px-3 py-2 text-sm text-ink-800"
+                      ? "max-w-[85%] rounded-sm bg-brand-600 px-3 py-2 text-sm text-white"
+                      : "max-w-[85%] space-y-2 rounded-sm bg-ink-100 px-3 py-2 text-sm text-ink-800"
                   }
                 >
                   <p className="whitespace-pre-wrap">{m.text}</p>
@@ -154,7 +154,7 @@ export function AskAi() {
                           key={r.id}
                           href={`/kandidaten/${r.id}`}
                           onClick={() => setOpen(false)}
-                          className="block rounded-lg border border-ink-200 bg-white px-2.5 py-1.5 transition-colors hover:border-emerald-300 hover:bg-emerald-50"
+                          className="block rounded-sm border border-ink-200 bg-white px-2.5 py-1.5 transition-colors hover:border-brand-300 hover:bg-brand-50"
                         >
                           <div className="flex items-center gap-2">
                             <span
@@ -180,7 +180,7 @@ export function AskAi() {
                     <Link
                       href={m.route}
                       onClick={() => setOpen(false)}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-ink-900 px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-ink-800"
+                      className="inline-flex items-center gap-1.5 rounded-sm bg-ink-900 px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-600"
                     >
                       {m.routeLabel ?? "Ga naar pagina"}
                       <ArrowRight className="h-3.5 w-3.5" />
@@ -192,7 +192,7 @@ export function AskAi() {
 
             {pending && (
               <div className="flex justify-start">
-                <div className="rounded-2xl rounded-bl-sm bg-ink-100 px-3 py-2 text-sm text-ink-400">
+                <div className="rounded-sm bg-ink-100 px-3 py-2 text-sm text-ink-400">
                   Aan het denken…
                 </div>
               </div>
@@ -204,20 +204,20 @@ export function AskAi() {
               e.preventDefault();
               ask(input);
             }}
-            className="flex items-center gap-2 border-t border-ink-100 p-3"
+            className="flex items-center gap-2 border-t border-ink-200 bg-ink-50/60 p-3"
           >
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Stel een vraag…"
               aria-label="Bericht aan Ask AI"
-              className="min-w-0 flex-1 rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+              className="min-w-0 flex-1 rounded-sm border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
             />
             <button
               type="submit"
               disabled={pending || !input.trim()}
               aria-label="Versturen"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-900 text-white transition-colors hover:bg-ink-800 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-brand-600 text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Send className="h-4 w-4" />
             </button>
