@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutGrid, LogOut } from "lucide-react";
+import { Menu, X, LayoutGrid, LogOut, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hubForPath, itemIsActive, type NavHub, type NavItem } from "./nav";
 import { ConnectionStatus } from "./connection-status";
@@ -141,40 +141,52 @@ export function AppShell({
   const [open, setOpen] = useState(false);
   const hub = hubForPath(pathname);
   const isHome = pathname === "/";
+  const HubIcon = hub?.icon;
 
   return (
     <div className="min-h-screen">
       {/* Top bar — links waar je bent, rechts één rustige groep met status,
           meldingen en wie er is ingelogd. */}
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-ink-200 bg-white px-3 no-print sm:px-4">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-1 border-b border-ink-200 bg-white px-3 no-print sm:px-4">
         {hub && (
           <button
             type="button"
             aria-label="Menu openen"
             onClick={() => setOpen(true)}
-            className="rounded-sm p-2 text-ink-600 transition-colors hover:bg-ink-100 lg:hidden"
+            className="mr-0.5 rounded-sm p-2 text-ink-600 transition-colors hover:bg-ink-100 lg:hidden"
           >
             <Menu className="h-5 w-5" />
           </button>
         )}
+        {/* Broodkruimel: waar je vandaan komt in het grijs, waar je nú bent in
+            het zwart met het icoon van de werkplek. Vervangt het logo als
+            oriëntatiepunt. */}
         {!isHome && (
           <Link
             href="/"
-            title="Terug naar alle werkplekken"
-            className="inline-flex h-9 items-center gap-2 rounded-sm px-2.5 text-[13px] font-semibold text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900"
+            className="group inline-flex h-9 shrink-0 items-center gap-1.5 rounded-sm px-1.5 text-[13px] font-medium text-ink-400 transition-colors hover:text-ink-900"
           >
-            <LayoutGrid className="h-4 w-4" />
+            <LayoutGrid className="h-4 w-4 transition-colors group-hover:text-brand-600" />
             <span className="hidden sm:inline">Werkplekken</span>
           </Link>
         )}
-        {/* Waar je nu bent — vervangt het logo als oriëntatiepunt. */}
         {hub && (
           <>
-            <span aria-hidden className="hidden text-ink-200 sm:inline">
-              /
-            </span>
-            <span className="truncate text-[15px] font-semibold text-ink-900">
-              {hub.label}
+            {!isHome && (
+              <ChevronRight
+                aria-hidden
+                className="h-4 w-4 shrink-0 text-ink-200"
+              />
+            )}
+            <span className="flex min-w-0 items-center gap-2 pl-0.5">
+              {HubIcon && (
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-brand-50 text-brand-600">
+                  <HubIcon className="h-[15px] w-[15px]" />
+                </span>
+              )}
+              <span className="truncate text-[15px] font-semibold text-ink-900">
+                {hub.label}
+              </span>
             </span>
           </>
         )}
