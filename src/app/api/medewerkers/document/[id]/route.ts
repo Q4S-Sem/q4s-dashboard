@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { readUpload, uploadKey, fileResponseHeaders } from "@/lib/uploads";
-import { requireApiSession } from "@/lib/api-auth";
+import { requireAdminApiSession } from "@/lib/api-auth";
 
 // Streams a stored employee document (contract, ID, diploma, …) for preview/download.
 // NOTE: no auth yet — add an auth check here once authentication is in place.
@@ -8,7 +8,7 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireApiSession();
+  const gate = await requireAdminApiSession();
   if (gate) return gate;
 
   const { id } = await params;

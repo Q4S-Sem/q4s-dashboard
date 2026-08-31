@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { readUpload, expenseKey, fileResponseHeaders } from "@/lib/uploads";
-import { requireApiSession } from "@/lib/api-auth";
+import { requireAdminApiSession } from "@/lib/api-auth";
 
 // Streams an uploaded receipt (bonnetje). NOTE: no auth yet — add an auth check
 // once authentication is in place (private financial files).
@@ -8,7 +8,7 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireApiSession();
+  const gate = await requireAdminApiSession();
   if (gate) return gate;
 
   const { id } = await params;

@@ -1,11 +1,11 @@
 import { db } from "@/lib/db";
 import { readUpload, receivedKey, fileResponseHeaders } from "@/lib/uploads";
-import { requireApiSession } from "@/lib/api-auth";
+import { requireAdminApiSession } from "@/lib/api-auth";
 
 // Streamt de geüploade factuur van een ontvangen-factuur (van een ZZP'er).
 // NOTE: nog geen auth — toevoegen zodra authenticatie live is (privé financiële stukken).
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireApiSession();
+  const gate = await requireAdminApiSession();
   if (gate) return gate;
 
   const { id } = await params;

@@ -2,12 +2,26 @@
 // de CV-/sollicitatie-intake en de vacature-feed. Publiek = geen sessie; CORS
 // staat standaard de request-origin toe (of vastzetten met PUBLIC_SITE_ORIGIN).
 
+type PublicEnvironment = {
+  NODE_ENV?: string;
+  PUBLIC_SITE_ORIGIN?: string;
+};
+
+/** Return the explicitly trusted browser origin, never reflect arbitrary origins. */
+export function allowedCorsOrigin(
+  origin: string | null,
+  env: PublicEnvironment = process.env,
+): string | null {
+  const configured = env.PUBLIC_SITE_ORIGIN?.trim().replace(/\/+$/, "");
+  if (configured) return origin === configured ? configured : null;
+  return env.NODE_ENV === "production" ? null : "*";
+}
+
 /** CORS-headers voor de publieke endpoints. */
 export function corsHeaders(req: Request): Record<string, string> {
-  const configured = process.env.PUBLIC_SITE_ORIGIN?.trim();
-  const origin = req.headers.get("origin") ?? "";
+  const allowedOrigin = allowedCorsOrigin(req.headers.get("origin"));
   return {
-    "access-control-allow-origin": configured || origin || "*",
+    ...(allowedOrigin ? { "access-control-allow-origin": allowedOrigin } : {}),
     "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type",
     "access-control-max-age": "86400",

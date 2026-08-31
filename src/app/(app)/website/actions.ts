@@ -6,7 +6,8 @@ import { db } from "@/lib/db";
 import { currentRecruiterId, logNote } from "@/lib/crm";
 import { DISCIPLINES, labelFor, CANDIDATE_AVAILABILITY_VALUES } from "@/lib/domain";
 import { saveCvUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
-import { rematchCandidateSourcing, rematchVacancy } from "@/lib/matching";
+import { rematchVacancy } from "@/lib/matching";
+import { runCvIntakeShortlist } from "@/lib/cv-intake";
 import { aiRefineMatches } from "@/lib/msp";
 import { aiJSONFromFile, isAIConfigured, isVisionConfigured } from "@/lib/ai";
 
@@ -59,6 +60,17 @@ export async function convertCvToLead(formData: FormData) {
   revalidatePath("/website/cv-inbox");
   revalidatePath("/crm");
   redirect(`/crm/deals/${deal.id}`);
+}
+
+/** Run (or safely retry) CV intake for one inbox candidate. The result remains a
+ * recruiter-review suggestion; this action never creates a deal, application,
+ * placement, outreach or status transition. */
+export async function shortlistCv(formData: FormData) {
+  const candidateId = String(formData.get("candidateId") ?? "").trim();
+  if (!candidateId) return;
+  await runCvIntakeShortlist(candidateId);
+  revalidatePath("/website/cv-inbox");
+  revalidatePath(`/kandidaten/${candidateId}`);
 }
 
 // --- Handmatig CV's importeren -----------------------------------------------
@@ -168,9 +180,9 @@ export async function importCv(formData: FormData) {
   });
 
   try {
-    await rematchCandidateSourcing(cand.id);
+    await runCvIntakeShortlist(cand.id);
   } catch {
-    // matching is best-effort; het CV staat er nu al.
+    // Intake failures are persisted as an auditable ERROR run; importing the CV still succeeds.
   }
 
   revalidatePath("/website/cv-inbox");
@@ -232,9 +244,9 @@ export async function importCvsBulk(formData: FormData) {
 
   for (const id of ids) {
     try {
-      await rematchCandidateSourcing(id);
+      await runCvIntakeShortlist(id);
     } catch {
-      // best-effort
+      // Each failure is recorded on its own CvIntakeRun; keep processing the batch.
     }
   }
 

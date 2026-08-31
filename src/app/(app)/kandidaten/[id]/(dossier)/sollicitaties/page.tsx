@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { Sparkles, MessageSquarePlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import { APPLICATION_STATUSES, VACANCY_STATUSES } from "@/lib/domain";
 import { getCandidate, getMatches } from "../data";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { createCandidateLinkedOutreach } from "../../../../berichten/actions";
 
 export default async function SollicitatiesTab({
   params,
@@ -83,6 +85,7 @@ export default async function SollicitatiesTab({
                 <TH>Vacature</TH>
                 <TH>Locatie</TH>
                 <TH>Status</TH>
+                <TH className="text-right">Actie</TH>
               </TR>
             </THead>
             <TBody>
@@ -99,6 +102,20 @@ export default async function SollicitatiesTab({
                   <TD>{v.location ?? "—"}</TD>
                   <TD>
                     <StatusBadge options={VACANCY_STATUSES} value={v.status} />
+                  </TD>
+                  <TD className="text-right">
+                    <form action={createCandidateLinkedOutreach}>
+                      <input type="hidden" name="candidateId" value={candidate.id} />
+                      <input type="hidden" name="vacancyId" value={v.id} />
+                      <SubmitButton
+                        type="submit"
+                        variant="outline"
+                        size="sm"
+                        pendingLabel="Concept…"
+                      >
+                        <MessageSquarePlus className="h-4 w-4" /> Concept
+                      </SubmitButton>
+                    </form>
                   </TD>
                 </TR>
               ))}

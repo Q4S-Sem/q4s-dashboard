@@ -7,6 +7,12 @@ import { db } from "@/lib/db";
 import { parseForm, type FormState } from "@/lib/form";
 import { aiText } from "@/lib/ai";
 import {
+  canRegenerateOutreach,
+  canReopenOutreach,
+  canTransitionOutreach,
+  createCandidateOutreachDraft,
+} from "@/lib/candidate-outreach-draft";
+import {
   OUTREACH_CHANNEL_VALUES,
   OUTREACH_CHANNELS,
   DISCIPLINES,
@@ -49,6 +55,58 @@ export async function createOutreach(
   const created = await db.outreachMessage.create({ data: toData(parsed.data) });
   revalidatePath("/berichten");
   redirect(`/berichten/${created.id}`);
+}
+
+/**
+ * Explicit recruiter action from a candidate/vacancy match. It only creates (or
+ * returns) a reviewable DRAFT record; it does not call AI, send email, approve,
+ * or automate LinkedIn in any way.
+ */
+export async function createCandidateLinkedOutreach(formData: FormData) {
+  const candidateId = String(formData.get("candidateId") ?? "").trim();
+  const vacancyId = String(formData.get("vacancyId") ?? "").trim();
+  if (!candidateId || !vacancyId) return;
+
+  const [candidate, vacancy, match] = await Promise.all([
+    db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { id: true, firstName: true, lastName: true, headline: true, discipline: true },
+    }),
+    db.vacancy.findUnique({
+      where: { id: vacancyId },
+      select: { id: true, title: true, discipline: true, location: true },
+    }),
+    db.vacancyMatch.findUnique({
+      where: { vacancyId_candidateId: { vacancyId, candidateId } },
+      select: { reason: true },
+    }),
+  ]);
+  if (!candidate || !vacancy) return;
+
+  const result = await createCandidateOutreachDraft(
+    {
+      findExisting: ({ candidateId: existingCandidateId, vacancyId: existingVacancyId, contextKey }) =>
+        db.outreachMessage.findFirst({
+          where: { candidateId: existingCandidateId, vacancyId: existingVacancyId, contextKey },
+          orderBy: { createdAt: "asc" },
+        }),
+      create: async ({ automaticActions: _automaticActions, idempotencyKey: _idempotencyKey, ...data }) =>
+        db.outreachMessage.create({ data }),
+    },
+    {
+      candidate,
+      vacancy,
+      contextKey: `vacancy-match:${vacancy.id}`,
+      recruiterContext: match?.reason
+        ? `Handmatig geselecteerd vanuit deze vacaturematch: ${match.reason}`
+        : "Handmatig geselecteerd door een recruiter vanuit de vacature.",
+    },
+  );
+
+  revalidatePath("/berichten");
+  revalidatePath(`/kandidaten/${candidate.id}`);
+  revalidatePath(`/vacatures/${vacancy.id}`);
+  redirect(`/berichten/${result.message.id}`);
 }
 
 export async function updateOutreach(
@@ -114,6 +172,7 @@ export async function draftOutreach(formData: FormData) {
     include: { vacancy: true },
   });
   if (!message) redirect("/berichten");
+  if (!canRegenerateOutreach(message.status)) redirect(`/berichten/${id}`);
 
   try {
     const channelLabel = labelFor(OUTREACH_CHANNELS, message.channel);
@@ -145,8 +204,8 @@ export async function draftOutreach(formData: FormData) {
       effort: "medium",
     });
 
-    await db.outreachMessage.update({
-      where: { id },
+    await db.outreachMessage.updateMany({
+      where: { id, status: "DRAFT" },
       data: { draft, status: "DRAFT" },
     });
   } catch {
@@ -160,7 +219,16 @@ export async function draftOutreach(formData: FormData) {
 export async function approveOutreach(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
-  await db.outreachMessage.update({ where: { id }, data: { status: "APPROVED" } });
+  const message = await db.outreachMessage.findUnique({
+    where: { id },
+    select: { status: true, draft: true },
+  });
+  if (!message || !canTransitionOutreach({ ...message, target: "APPROVED" })) return;
+  // The conditional update is a race-safe server-side approval gate.
+  await db.outreachMessage.updateMany({
+    where: { id, status: "DRAFT", draft: { not: "" } },
+    data: { status: "APPROVED" },
+  });
   revalidatePath("/berichten");
   revalidatePath(`/berichten/${id}`);
   redirect(`/berichten/${id}`);
@@ -169,8 +237,14 @@ export async function approveOutreach(formData: FormData) {
 export async function markSent(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
-  await db.outreachMessage.update({
+  const message = await db.outreachMessage.findUnique({
     where: { id },
+    select: { status: true, draft: true },
+  });
+  if (!message || !canTransitionOutreach({ ...message, target: "SENT" })) return;
+  // Only a previously approved record can be marked sent; this action never sends a mail.
+  await db.outreachMessage.updateMany({
+    where: { id, status: "APPROVED" },
     data: { status: "SENT", sentAt: new Date() },
   });
   revalidatePath("/berichten");
@@ -181,7 +255,9 @@ export async function markSent(formData: FormData) {
 export async function reopenOutreach(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
-  await db.outreachMessage.update({ where: { id }, data: { status: "DRAFT" } });
+  const message = await db.outreachMessage.findUnique({ where: { id }, select: { status: true } });
+  if (!message || !canReopenOutreach(message.status)) return;
+  await db.outreachMessage.updateMany({ where: { id, status: "APPROVED" }, data: { status: "DRAFT" } });
   revalidatePath("/berichten");
   revalidatePath(`/berichten/${id}`);
   redirect(`/berichten/${id}`);

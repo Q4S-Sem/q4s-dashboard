@@ -46,7 +46,7 @@ export default async function BerichtDetailPage({
 
   const message = await db.outreachMessage.findUnique({
     where: { id },
-    include: { vacancy: true },
+    include: { vacancy: true, candidate: true },
   });
   if (!message) notFound();
 
@@ -107,7 +107,7 @@ export default async function BerichtDetailPage({
           )}
 
           <div className="flex flex-wrap items-center gap-2">
-            {aiReady && (
+            {aiReady && message.status === "DRAFT" && (
               <form action={draftOutreach}>
                 <input type="hidden" name="id" value={message.id} />
                 <SubmitButton pendingLabel="AI is bezig…">
@@ -171,6 +171,19 @@ export default async function BerichtDetailPage({
                     className="text-brand-700 hover:underline"
                   >
                     {message.vacancy.title}
+                  </Link>
+                ) : null
+              }
+            />
+            <Detail
+              label="Gekoppelde kandidaat"
+              value={
+                message.candidate ? (
+                  <Link
+                    href={`/kandidaten/${message.candidate.id}`}
+                    className="text-brand-700 hover:underline"
+                  >
+                    {message.candidate.firstName} {message.candidate.lastName}
                   </Link>
                 ) : null
               }

@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate, cn } from "@/lib/utils";
 import { CANDIDATE_SOURCES, CANDIDATE_AVAILABILITY } from "@/lib/domain";
-import { convertCvToLead } from "../actions";
+import { convertCvToLead, shortlistCv } from "../actions";
 
 export type CvRow = {
   id: string;
@@ -102,24 +102,33 @@ export function CvsList({ rows }: { rows: CvRow[] }) {
     },
     {
       key: "actie",
-      header: "Naar CRM",
+      header: "Acties",
       align: "right",
-      render: (r) =>
-        r.dealId ? (
-          <Link
-            href={`/crm/deals/${r.dealId}`}
-            className="inline-flex items-center gap-1.5 rounded-sm bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" /> In CRM
-          </Link>
-        ) : (
-          <form action={convertCvToLead}>
+      render: (r) => (
+        <div className="flex justify-end gap-2">
+          <form action={shortlistCv}>
             <input type="hidden" name="candidateId" value={r.id} />
             <button type="submit" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-              Als lead <ArrowRight className="h-4 w-4" />
+              <FileText className="h-4 w-4" /> Shortlist
             </button>
           </form>
-        ),
+          {r.dealId ? (
+            <Link
+              href={`/crm/deals/${r.dealId}`}
+              className="inline-flex items-center gap-1.5 rounded-sm bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-100"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" /> In CRM
+            </Link>
+          ) : (
+            <form action={convertCvToLead}>
+              <input type="hidden" name="candidateId" value={r.id} />
+              <button type="submit" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                Als lead <ArrowRight className="h-4 w-4" />
+              </button>
+            </form>
+          )}
+        </div>
+      ),
     },
   ];
 

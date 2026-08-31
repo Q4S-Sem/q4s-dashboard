@@ -92,6 +92,7 @@ const HUB_LIST: NavHub[] = [
       { href: "/dashboard/te-doen", label: "Te doen", icon: ListTodo, badge: "teDoen" },
       { href: "/dashboard/facturatie", label: "Facturatie", icon: PieChart },
       { href: "/dashboard/recruitment", label: "Recruitment", icon: Sparkles },
+      { href: "/dashboard/kpi", label: "Recruitment-KPI's", icon: Target },
       { href: "/dashboard/plaatsingen", label: "Plaatsingen & marges", icon: Briefcase },
       { href: "/dashboard/evaluaties", label: "Evaluaties", icon: ClipboardCheck },
       { href: "/dashboard/rapportage", label: "Rapportage", icon: BarChart3 },

@@ -529,6 +529,7 @@ export const TIMESHEET_PRESENCE_VALUES = TIMESHEET_PRESENCE.map((d) => d.value) 
 
 /** Soorten meldingen uit de MSP/vacature-intake-pijplijn. */
 export const ALERT_TYPES: Option[] = [
+  { value: "CV_SHORTLIST", label: "CV-shortlist", color: "violet" },
   { value: "VACANCY_RELEVANT", label: "Relevante vacature", color: "green" },
   { value: "MATCHES_FOUND", label: "Kandidaat-matches", color: "violet" },
   { value: "PUBLISHED", label: "Live op website", color: "blue" },
