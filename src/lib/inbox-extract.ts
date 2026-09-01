@@ -38,13 +38,13 @@ const EXTRACT_SCHEMA = {
     year: { type: "string", description: "Jaartal (4 cijfers) indien afleidbaar; anders lege string." },
     days: {
       type: "array",
-      description: "Eén entry per weekdag met de datum en het OPGETELDE dagtotaal aan gewerkte uren: tel alle reguliere uren-regels (verschillende projecten/uurcodes) van die dag bij elkaar op, ZONDER overuren. Geef bij voorkeur alle 7 dagen (ma t/m zo), met 0 als er niet gewerkt is.",
+      description: "Eén entry per weekdag met de datum en het OPGETELDE dagtotaal aan gewerkte uren: tel alle reguliere uren-regels (verschillende projecten/uurcodes) van die dag bij elkaar op, ZONDER overuren uit een aparte overuren-sectie. Lees elk getal onder ZIJN EIGEN dag/datum-kolomkop (kolom voor kolom, links naar rechts); een lege dagkolom blijft 0 — schuif de ingevulde getallen NOOIT naar links naar eerdere dagen. Uren op zaterdag/zondag horen gewoon in de entry van die dag. Geef bij voorkeur alle 7 dagen (ma t/m zo), met 0 als er niet gewerkt is.",
       items: {
         type: "object",
         additionalProperties: false,
         properties: {
           date: { type: "string", description: "Datum YYYY-MM-DD (of weekdagnaam ma/di/... als er geen datum bij de kolom staat)." },
-          hours: { type: "number", description: "Totaal gewerkte uren die dag = som van alle reguliere regels, exclusief overuren." },
+          hours: { type: "number", description: "Totaal gewerkte uren die dag = som van alle regels die ONDER de kolomkop van déze dag staan, exclusief overuren uit een aparte overuren-sectie. Staat er onder deze dag niets, dan 0 (niet opvullen met uren van een andere kolom). Zaterdag-/zondaguren horen hier gewoon bij." },
         },
         required: ["date", "hours"],
       },
@@ -53,7 +53,7 @@ const EXTRACT_SCHEMA = {
     reportedTotalHours: { type: "number", description: "Het totaal aan gewerkte uren zoals de staat het ZELF vermeldt (bv. 'Hours worked Total: 40'). 0 als niet vermeld. Gebruik dit om je optelling te controleren." },
     kilometers: { type: "number", description: "Weektotaal aan gereden kilometers (reiskosten). Bij een From/To/Km-reisblok: neem het weektotaal (of tel de per-dag km op). 0 als er geen km op de staat staan." },
     reportedTotalKm: { type: "number", description: "Het kilometer-totaal zoals de staat het ZELF vermeldt (bv. 'Total Kilometers: 220'). 0 als niet vermeld." },
-    overtimeHours: { type: "number", description: "Weektotaal aan OVERUREN/meeruren uit de aparte overuren-sectie (bv. 'Overtime Hrs. Total'). 0 als er geen overuren zijn." },
+    overtimeHours: { type: "number", description: "Weektotaal aan OVERUREN/meeruren UITSLUITEND uit een apart als zodanig gelabelde overuren-sectie/kolom ('Overtime', 'Overuren', bv. 'Overtime Hrs. Total'). Uren op zaterdag/zondag zijn GEEN overuren — die horen in days bij die dag. Geen expliciete overuren-sectie → 0." },
     project: { type: "string", description: "Project, opdrachtgever, locatie of uurcode indien vermeld (bv. 'HSM Stormpolder', 'Mistras'); anders lege string." },
     notes: { type: "string", description: "Onzekerheden of opvallende zaken, ALTIJD in het Nederlands (ook bij een Engelstalige staat); anders lege string." },
     confidence: { type: "string", enum: ["high", "medium", "low"], description: "Hoe zeker ben je over deze uitlezing? 'low' als de opmaak onduidelijk was, cijfers slecht leesbaar zijn, of je moest gokken; 'high' als alles helder en eenduidig was; anders 'medium'." },
@@ -73,13 +73,20 @@ Zo lees je de onderdelen:
 
 UREN (per dag OPTELLEN):
 - De staat heeft meestal een raster met één kolom per weekdag (Ma/Di/Wo/Do/Vr/Za/Zo of Mo/Tu/We/Th/Fr/Sa/Su) en per kolom een datum.
+- ⚠️ KOLOM-UITLIJNING — DIT IS DE BELANGRIJKSTE REGEL: elk getal hoort bij de dag/datum-kolom waar het ONDER staat. Lees kolom voor kolom van LINKS naar RECHTS en koppel elke cel aan de weekdag waarvan de kop er PRECIES BOVEN staat. Volg de kolomkop, niet de volgorde waarin de getallen toevallig in beeld komen.
+- Is een dagkolom LEEG (of bevat hij een streepje/0), dan is die dag 0. Schuif NOOIT de ingevulde getallen naar links om ze bij maandag te laten beginnen ('left-packen'): een lege dag blijft 0, ook als de ingevulde getallen daardoor pas LATER in de week staan.
+- Voorbeeld (verplicht zo doen): 'Ma leeg, Di t/m Vr = 8, Za = 3' → Ma=0, Di=8, Wo=8, Do=8, Vr=8, Za=3, Zo=0. NIET Ma=8, Di=8, Wo=8, Do=8, Vr=0, Za=0.
+- Controleer per ingevulde cel: welke dagkop/datum staat hier exact boven? Twijfel je over de uitlijning van de kolommen, zet confidence dan op 'low' en meld het in notes.
 - Er kunnen MEERDERE uren-regels per dag zijn (verschillende projecten/uurcodes, bv. een regel 'Intern' én een regel 'UT 2'). TEL die per dag OP tot één dagtotaal aan gewerkte uren.
 - Voorbeeld: staat er onder maandag een 0 (Intern) en een 8 (UT 2), dan is het dagtotaal 8. Staat er donderdag een 2 en een 6, dan is dat 8.
-- Overuren horen NIET bij de dag-uren (zie hieronder).
+- Uren op ZATERDAG of ZONDAG zijn gewone dag-uren van die weekenddag: zet ze in de entry van die dag (Za/Zo), NOOIT in overtimeHours.
+- Overuren uit een aparte overuren-sectie horen NIET bij de dag-uren (zie hieronder).
 - Vul voor elke dag (ma t/m zo) een entry met datum en dagtotaal (0 als niet gewerkt).
 
 OVERUREN:
-- Er is vaak een aparte 'Overtime'/'Overuren'-sectie met eigen regel(s) en een totaal (bv. 'Overtime Hrs. Total'). Zet het WEEKtotaal aan overuren in overtimeHours. Geen overuren → 0.
+- overtimeHours is UITSLUITEND het totaal uit een duidelijk APARTE sectie/kolom die zelf als overuren is gelabeld ('Overtime', 'Overuren', 'Meeruren', bv. 'Overtime Hrs. Total'). Alleen dát telt als overuren.
+- Uren gewerkt op ZATERDAG of ZONDAG zijn GEEN overuren. Het zijn normale dag-uren van die weekenddag (wij rekenen daar zelf een weekendtoeslag over) en horen in de entry van die dag in days. Zet weekenduren dus NOOIT in overtimeHours.
+- Heeft de staat geen expliciete overuren-sectie, dan is overtimeHours = 0 — ook als er wel op zaterdag/zondag is gewerkt.
 
 KILOMETERS / reiskosten:
 - Dit kan een apart blok zijn (vaak aan de rechterkant) met per dag From/To/Km-regels en een 'Total Kilometers'. Of een enkele km-kolom of -totaal.
