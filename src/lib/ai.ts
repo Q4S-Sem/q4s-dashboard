@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { recordAiUsage, ensureAiKeysLoaded } from "./ai-keys";
+import { isPdfMediaType, renderPdfFirstPageToPng } from "./pdf-render";
 
 // ---------------------------------------------------------------------------
 // Provider switch: each AI tier can run on DeepSeek (cloud, OpenAI-compatible,
@@ -518,6 +519,42 @@ type FileExtractOpts = {
 };
 
 /**
+ * Moet dit bestand eerst zelf naar een scherpe PNG gerasterd worden vóór het naar
+ * het vision-model gaat? PDF → ja (de modellen renderen die intern op te lage
+ * resolutie en lezen tabelkolommen dan fout); een afbeelding gaat ongewijzigd door.
+ * Zet PDF_VISION_RASTER=0 om terug te vallen op het oude gedrag (ruwe PDF sturen).
+ * Puur (geen fetch/IO) zodat het te testen is.
+ */
+export function shouldRasterizePdf(mediaType: string): boolean {
+  if (process.env.PDF_VISION_RASTER === "0") return false;
+  return isPdfMediaType(mediaType);
+}
+
+/**
+ * Vervang een PDF door een hoge-resolutie PNG van de eerste pagina. Lukt dat niet,
+ * dan gaat het originele bestand alsnog mee (oud gedrag) — nooit crashen op het
+ * rasteren zelf.
+ */
+async function visionFile(file: {
+  base64: string;
+  mediaType: string;
+}): Promise<{ base64: string; mediaType: string }> {
+  if (!shouldRasterizePdf(file.mediaType)) return file;
+  try {
+    const png = await renderPdfFirstPageToPng(Buffer.from(file.base64, "base64"));
+    console.info(
+      `[vision] PDF zelf gerasterd naar PNG ${png.width}×${png.height} (pdfjs) — scherper dan de interne render van het model.`,
+    );
+    return { base64: png.base64, mediaType: png.mediaType };
+  } catch (e) {
+    console.warn(
+      `[vision] PDF rasteren mislukt (${e instanceof Error ? e.message : String(e)}) — de ruwe PDF gaat naar het model.`,
+    );
+    return file;
+  }
+}
+
+/**
  * Extract structured JSON from a DOCUMENT (PDF) or image via de vision-provider
  * ({@link AI_VISION_PROVIDER}): Google Gemini Flash (goedkoop, leest PDF's én
  * afbeeldingen native), Anthropic (Claude) of OpenRouter (zelfde Gemini Flash, maar
@@ -532,6 +569,8 @@ export async function aiJSONFromFile<T>(opts: FileExtractOpts): Promise<T> {
   // Feitelijke waarden (namen/nummers/codes) blijven letterlijk.
   const dutch: FileExtractOpts = {
     ...opts,
+    // Gescande PDF eerst zelf naar een scherpe PNG; valt terug op het origineel.
+    file: await visionFile(opts.file),
     system: `${opts.system}\n\nTAAL: geef alle vrije tekst (opmerkingen, notities, samenvattingen, toelichtingen) ALTIJD in het NEDERLANDS terug, ook als het brondocument in een andere taal is. Feitelijke waarden (namen, nummers, codes) neem je letterlijk over.`,
   };
   const p = visionProvider();
