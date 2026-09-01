@@ -64,20 +64,30 @@ const OLLAMA_MODEL_FAST = process.env.OLLAMA_MODEL_FAST ?? OLLAMA_MODEL;
 
 // Vision-provider voor het uitlezen van PDF's/afbeeldingen (aiJSONFromFile).
 // DeepSeek kan dit niet; Google Gemini Flash wél en is zeer goedkoop + leest
-// PDF's én afbeeldingen native. Anthropic (Claude) kan het ook. Standaard: Gemini
-// als er een GEMINI_API_KEY is, anders Anthropic.
-export type VisionProvider = "gemini" | "anthropic";
+// PDF's én afbeeldingen native. Anthropic (Claude) kan het ook, en OpenRouter
+// draait hetzelfde Gemini Flash op je bestaande OpenRouter-tegoed (zelfde sleutel
+// als Hermes). Standaard: Gemini als er een GEMINI_API_KEY is, anders Anthropic,
+// anders OpenRouter als alleen die sleutel er ligt.
+export type VisionProvider = "gemini" | "anthropic" | "openrouter";
 function pickVision(value: string | undefined, fallback: VisionProvider): VisionProvider {
-  return value === "gemini" || value === "anthropic" ? value : fallback;
+  return value === "gemini" || value === "anthropic" || value === "openrouter" ? value : fallback;
 }
 /**
  * Kies de vision-provider bij ELKE aanroep (niet bevroren bij opstart), zodat een
  * later toegevoegde Gemini-sleutel (via de Instellingen-hub) meteen de PDF/beeld-
  * features activeert zonder herstart. Expliciete AI_VISION_PROVIDER wint; anders
- * Gemini als er een sleutel is, anders Anthropic.
+ * Gemini als er een sleutel is, anders Anthropic — en alleen als géén van beide
+ * een sleutel heeft maar HERMES_API_KEY wél, OpenRouter.
  */
 export function visionProvider(): VisionProvider {
-  return pickVision(process.env.AI_VISION_PROVIDER, process.env.GEMINI_API_KEY ? "gemini" : "anthropic");
+  const fallback: VisionProvider = process.env.GEMINI_API_KEY
+    ? "gemini"
+    : process.env.ANTHROPIC_API_KEY
+      ? "anthropic"
+      : process.env.HERMES_API_KEY
+        ? "openrouter"
+        : "anthropic";
+  return pickVision(process.env.AI_VISION_PROVIDER, fallback);
 }
 const GEMINI_BASE_URL = (
   process.env.GEMINI_BASE_URL ?? "https://generativelanguage.googleapis.com"
@@ -87,6 +97,12 @@ const GEMINI_BASE_URL = (
 // dan plots 404. De alias wijst altijd naar de actuele flash. Overschrijf met
 // GEMINI_MODEL als je bewust een vaste versie wilt vastzetten.
 export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
+
+// Vision via OpenRouter: OpenAI-compatibel, dus endpoint + sleutel van Hermes
+// (HERMES_BASE_URL/HERMES_API_KEY) worden hergebruikt — alleen het model verschilt.
+// Standaard Gemini 2.0 Flash: goedkoop en leest PDF's én afbeeldingen.
+export const OPENROUTER_VISION_MODEL =
+  process.env.OPENROUTER_VISION_MODEL ?? "google/gemini-2.0-flash-001";
 
 type Tier = "main" | "fast";
 
@@ -150,12 +166,13 @@ export function readyPersonalDataTextProvider(): AiProvider | null {
   return null;
 }
 
-/** True wanneer PDF's/afbeeldingen uitgelezen kunnen worden (Gemini of Anthropic).
- *  Los van de tekst-AI: gebruik dit om document-extractie-features te gaten. */
+/** True wanneer PDF's/afbeeldingen uitgelezen kunnen worden (Gemini, Anthropic of
+ *  OpenRouter). Los van de tekst-AI: gebruik dit om document-extractie-features te gaten. */
 export function isVisionConfigured(): boolean {
-  return visionProvider() === "gemini"
-    ? Boolean(process.env.GEMINI_API_KEY)
-    : Boolean(process.env.ANTHROPIC_API_KEY);
+  const p = visionProvider();
+  if (p === "gemini") return Boolean(process.env.GEMINI_API_KEY);
+  if (p === "openrouter") return Boolean(process.env.HERMES_API_KEY);
+  return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
 /** Short human label of the active providers (for settings/UI). */
@@ -503,7 +520,8 @@ type FileExtractOpts = {
 /**
  * Extract structured JSON from a DOCUMENT (PDF) or image via de vision-provider
  * ({@link AI_VISION_PROVIDER}): Google Gemini Flash (goedkoop, leest PDF's én
- * afbeeldingen native) of Anthropic (Claude). DeepSeek/Ollama kunnen dit niet.
+ * afbeeldingen native), Anthropic (Claude) of OpenRouter (zelfde Gemini Flash, maar
+ * afgerekend van je OpenRouter-tegoed). DeepSeek/Ollama kunnen dit niet.
  * Zonder vision-sleutel gooit dit; de aanroepers vangen dat op (handmatig invullen).
  * Gebruikt door: timesheet-inbox, declaraties, certificaten en CV-import.
  */
@@ -516,7 +534,9 @@ export async function aiJSONFromFile<T>(opts: FileExtractOpts): Promise<T> {
     ...opts,
     system: `${opts.system}\n\nTAAL: geef alle vrije tekst (opmerkingen, notities, samenvattingen, toelichtingen) ALTIJD in het NEDERLANDS terug, ook als het brondocument in een andere taal is. Feitelijke waarden (namen, nummers, codes) neem je letterlijk over.`,
   };
-  if (visionProvider() === "gemini") return geminiExtractFile<T>(dutch);
+  const p = visionProvider();
+  if (p === "gemini") return geminiExtractFile<T>(dutch);
+  if (p === "openrouter") return openrouterExtractFile<T>(dutch);
   return anthropicExtractFile<T>(dutch);
 }
 
@@ -573,6 +593,112 @@ async function geminiExtractFile<T>(opts: FileExtractOpts): Promise<T> {
     .join("")
     .trim();
   return parseJson<T>(text);
+}
+
+// Niet elk OpenRouter-vision-model slikt elk bestandstype: veel modellen lezen
+// alleen afbeeldingen, geen application/pdf. Die afwijzing komt als een 400/404/415
+// met "no endpoints found that support…"/"does not support image input"-achtige
+// tekst terug — dan wijzen we de gebruiker naar OPENROUTER_VISION_MODEL i.p.v. een
+// kale statuscode. Puur (geen env/fetch) zodat het te testen is.
+const OPENROUTER_MEDIA_ERROR =
+  /unsupported|not support|no endpoints found|unable to (read|process)|modality|image input|file input/i;
+
+export function openrouterVisionErrorMessage(
+  status: number,
+  body: string,
+  mediaType: string,
+  model: string,
+): string {
+  const snippet = body ? `: ${body.slice(0, 200)}` : "";
+  if ((status === 400 || status === 404 || status === 415) && OPENROUTER_MEDIA_ERROR.test(body)) {
+    const soort = mediaType === "application/pdf" ? "PDF's" : `bestanden van het type ${mediaType}`;
+    return `OpenRouter-model '${model}' kan ${soort} niet lezen (${status}). Kies een vision-model dat dit wél ondersteunt via OPENROUTER_VISION_MODEL (bijv. google/gemini-2.0-flash-001)${snippet}.`;
+  }
+  return `OpenRouter-fout (${status})${snippet}.`;
+}
+
+/**
+ * OpenRouter — vision via de OpenAI-compatibele chat-completions API, zodat het
+ * scannen van je bestaande OpenRouter-tegoed gaat. Hergebruikt bewust het Hermes-
+ * endpoint + dezelfde HERMES_API_KEY (één sleutel voor tekst én beeld); alleen het
+ * model staat apart in OPENROUTER_VISION_MODEL. Bestand gaat als data-URL mee in een
+ * image_url-blok — ook een PDF (google/gemini-2.0-flash-001 leest die).
+ */
+async function openrouterExtractFile<T>(opts: FileExtractOpts): Promise<T> {
+  const key = process.env.HERMES_API_KEY;
+  if (!key) {
+    throw new Error(
+      "OpenRouter is niet geconfigureerd. Zet de Hermes-sleutel in Instellingen of HERMES_API_KEY in je .env.",
+    );
+  }
+  const system = `${opts.system}\n\nAntwoord UITSLUITEND met geldige JSON die exact voldoet aan dit JSON-schema (geen tekst eromheen, geen uitleg, geen markdown):\n${JSON.stringify(opts.schema)}`;
+  const base = hermesBaseUrl();
+  let res: Response;
+  try {
+    res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${key}`,
+        // OpenRouter-attributie (optioneel, schaadt niet bij een eigen server).
+        "x-title": "Q4S Dashboard",
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_VISION_MODEL,
+        stream: false,
+        temperature: 0.1,
+        max_tokens: opts.maxTokens ?? 4000,
+        // Wordt door modellen die het niet kennen genegeerd; parseJson tolereert
+        // hoe dan ook fences/omringende tekst.
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: opts.prompt },
+              {
+                type: "image_url",
+                image_url: { url: `data:${opts.file.mediaType};base64,${opts.file.base64}` },
+              },
+            ],
+          },
+        ],
+      }),
+    });
+  } catch {
+    throw new Error(`OpenRouter niet bereikbaar op ${base}.`);
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      openrouterVisionErrorMessage(res.status, body, opts.file.mediaType, OPENROUTER_VISION_MODEL),
+    );
+  }
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    error?: { code?: number; message?: string };
+  };
+  // OpenRouter geeft een geweigerd bestandstype soms als 200 met een error-object.
+  if (data.error) {
+    throw new Error(
+      openrouterVisionErrorMessage(
+        data.error.code ?? 400,
+        data.error.message ?? "",
+        opts.file.mediaType,
+        OPENROUTER_VISION_MODEL,
+      ),
+    );
+  }
+  await recordAiUsage({
+    provider: "hermes",
+    model: OPENROUTER_VISION_MODEL,
+    kind: "vision",
+    promptTokens: data.usage?.prompt_tokens,
+    completionTokens: data.usage?.completion_tokens,
+  });
+  return parseJson<T>((data.choices?.[0]?.message?.content ?? "").trim());
 }
 
 /** Anthropic (Claude) — PDF via document-block, afbeeldingen via image-block. */
