@@ -206,3 +206,77 @@ export async function processAllAutoApproved(_formData: FormData) {
     `/verwerken/controle?goedgekeurd=${approved}&facturen=${invoicesCreated}&overgeslagen=${skipped}&mislukt=${errors.length}`,
   );
 }
+
+// ---------------------------------------------------------------------------
+// De wachtkamer — een weekstaat die niet klopt even parkeren.
+//
+// Parkeren verandert NIETS aan de weekstaat zelf: de status blijft EXTRACTED en
+// er wordt niets goedgekeurd, afgewezen, gefactureerd of verstuurd. Het enige
+// wat er gebeurt is dat de week van het weekoverzicht verdwijnt en in de
+// wachtkamer komt te staan, tot de freelancer een gecorrigeerde staat of factuur
+// stuurt. Dat nieuwe document is een nieuw inbox-item en komt dus vanzelf weer op
+// het overzicht; deze geparkeerde week blijft staan tot iemand hem bevestigt,
+// afwijst of hier terugzet.
+// ---------------------------------------------------------------------------
+
+/** Zo lang mag de bewaarde reden zijn — het is een regeltje, geen verhaal. */
+const MAX_REASON = 300;
+
+/** Alle schermen die een geparkeerde week laten zien, in één keer bijwerken. */
+function revalidateWachtkamer(id: string) {
+  revalidatePath("/verwerken/wachtkamer");
+  revalidatePath("/verwerken/week");
+  revalidatePath("/verwerken/controle");
+  revalidatePath(`/inbox/${id}`);
+  revalidatePath("/inbox");
+}
+
+/**
+ * Parkeer één uitgelezen weekstaat in de wachtkamer, met de controlereden erbij.
+ *
+ * Bewust `updateMany` met een voorwaarde: alleen wat nog écht openstaat
+ * (EXTRACTED, nog geen urenstaat) wordt geparkeerd. Is het item intussen
+ * bevestigd, afgewezen of weg, dan gebeurt er simpelweg niets — geen fout, geen
+ * halve wijziging.
+ */
+export async function parkeerInWachtkamer(inboxId: string, reason: string) {
+  const id = String(inboxId ?? "").trim();
+  if (!id) return;
+
+  const reden = String(reason ?? "")
+    .trim()
+    .slice(0, MAX_REASON);
+
+  await db.timesheetInbox.updateMany({
+    where: { id, status: "EXTRACTED", timesheetId: null },
+    data: { wachtkamerSince: new Date(), wachtkamerReason: reden || null },
+  });
+
+  revalidateWachtkamer(id);
+}
+
+/** Knop-variant: parkeren vanaf het weekoverzicht en meteen naar de wachtkamer. */
+export async function naarWachtkamer(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+
+  await parkeerInWachtkamer(id, String(formData.get("reason") ?? ""));
+  redirect("/verwerken/wachtkamer");
+}
+
+/**
+ * Haal een week weer uit de wachtkamer: hij staat daarna gewoon weer tussen de te
+ * controleren weken. Ook dit raakt de status niet aan.
+ */
+export async function uitWachtkamer(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+
+  await db.timesheetInbox.updateMany({
+    where: { id },
+    data: { wachtkamerSince: null, wachtkamerReason: null },
+  });
+
+  revalidateWachtkamer(id);
+  redirect("/verwerken/week");
+}

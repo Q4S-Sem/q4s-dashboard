@@ -11,6 +11,7 @@ import {
   summarizeRecentWeeks,
   type WeeklyTotal,
 } from "./timesheet-gate-history";
+import { splitWachtkamer, type GeparkeerdeRij } from "./wachtkamer";
 
 // ---------------------------------------------------------------------------
 // Urencontrole — de data-laag onder /verwerken/controle.
@@ -79,6 +80,11 @@ export type GateReviewRow = {
   recentWeeks: number;
   duplicateExists: boolean;
 
+  /** In de wachtkamer sinds (null = staat gewoon op het weekoverzicht). */
+  wachtkamerSince: Date | null;
+  /** Waarom deze week geparkeerd is. */
+  wachtkamerReason: string | null;
+
   /** Verkoop/inkoop/marge voor deze week (ex BTW, incl. toeslagen + km). */
   charge: number;
   cost: number;
@@ -97,10 +103,13 @@ export type GateReviewTotals = {
 };
 
 export type TimesheetGateReview = {
-  /** Twijfelgevallen — bovenaan het scherm, mét concrete redenen. */
+  /** Twijfelgevallen — bovenaan het scherm, mét concrete redenen. Zonder de
+   *  geparkeerde weken: die staan alleen in de wachtkamer. */
   needsReview: GateReviewRow[];
   /** Schone staten die automatisch door mogen (samengevat onderaan). */
   autoApprove: GateReviewRow[];
+  /** Geparkeerd bij /verwerken/wachtkamer — langst wachtende bovenaan. */
+  wachtkamer: GeparkeerdeRij<GateReviewRow>[];
   totals: { needsReview: GateReviewTotals; autoApprove: GateReviewTotals };
   /** Inbox-items die nog uitgelezen moeten worden (status NEW). */
   notExtracted: number;
@@ -164,9 +173,11 @@ const EMPTY_TOTALS: GateReviewTotals = { count: 0, hours: 0, charge: 0, cost: 0,
  * door mag. Puur lezend — er wordt niets goedgekeurd of verstuurd.
  */
 export async function timesheetGateReview(
-  options: { historyWeeks?: number } = {},
+  options: { historyWeeks?: number; now?: Date } = {},
 ): Promise<TimesheetGateReview> {
   const historyWeeks = options.historyWeeks ?? GATE_HISTORY_WEEKS;
+  // Het "nu" komt hier één keer binnen en gaat door naar de pure wachtkamer-helper.
+  const now = options.now ?? new Date();
 
   const [items, notExtracted] = await Promise.all([
     db.timesheetInbox.findMany({
@@ -185,6 +196,7 @@ export async function timesheetGateReview(
     return {
       needsReview: [],
       autoApprove: [],
+      wachtkamer: [],
       totals: { needsReview: EMPTY_TOTALS, autoApprove: EMPTY_TOTALS },
       notExtracted,
     };
@@ -321,6 +333,9 @@ export async function timesheetGateReview(
       recentWeeks,
       duplicateExists,
 
+      wachtkamerSince: item.wachtkamerSince,
+      wachtkamerReason: item.wachtkamerReason,
+
       charge: money?.sell.total ?? 0,
       cost: money?.buy.total ?? 0,
       margin: money?.margin ?? 0,
@@ -335,14 +350,27 @@ export async function timesheetGateReview(
     a.name.localeCompare(b.name, "nl");
 
   // Harde fouten eerst: die kosten de meeste aandacht.
-  const needsReview = rows
+  const teBeoordelen = rows
     .filter((r) => r.decision === "NEEDS_REVIEW")
     .sort((a, b) => Number(hasError(b)) - Number(hasError(a)) || byWeekThenName(a, b));
   const autoApprove = rows.filter((r) => r.decision === "AUTO_APPROVE").sort(byWeekThenName);
 
+  // Geparkeerde weken horen niet meer op het weekoverzicht: die staan (mét
+  // wachttijd) alleen nog in de wachtkamer, tot ze terugkomen of afgehandeld zijn.
+  const { teControleren: needsReview, inWachtkamer: wachtkamer } = splitWachtkamer({
+    rows: teBeoordelen,
+    parked: teBeoordelen.map((r) => ({
+      id: r.id,
+      since: r.wachtkamerSince,
+      reason: r.wachtkamerReason,
+    })),
+    now,
+  });
+
   return {
     needsReview,
     autoApprove,
+    wachtkamer,
     totals: { needsReview: totalsOf(needsReview), autoApprove: totalsOf(autoApprove) },
     notExtracted,
   };

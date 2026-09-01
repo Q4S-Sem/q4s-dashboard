@@ -142,9 +142,14 @@ export async function confirmInbox(formData: FormData) {
 export async function rejectInbox(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
-  await db.timesheetInbox.update({ where: { id }, data: { status: "REJECTED" } });
+  // Afgewezen = niet meer aan het wachten: ook uit de wachtkamer halen.
+  await db.timesheetInbox.update({
+    where: { id },
+    data: { status: "REJECTED", wachtkamerSince: null, wachtkamerReason: null },
+  });
   revalidatePath("/inbox");
   revalidatePath(`/inbox/${id}`);
+  revalidatePath("/verwerken/wachtkamer");
   redirect(`/inbox/${id}`);
 }
 

@@ -165,6 +165,9 @@ export async function confirmInboxItem(
       placementId,
       timesheetId,
       extractedWeekStart: monday,
+      // Afgehandeld = niet meer aan het wachten: uit de wachtkamer halen.
+      wachtkamerSince: null,
+      wachtkamerReason: null,
     },
   });
 

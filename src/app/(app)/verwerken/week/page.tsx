@@ -1,10 +1,13 @@
 import Link from "next/link";
 import {
   AlertTriangle,
+  BellRing,
   CheckCircle2,
   Coins,
   CopyCheck,
+  Mail,
   Mailbox,
+  PauseCircle,
   PencilLine,
   Repeat2,
   Send,
@@ -19,7 +22,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Field, Textarea } from "@/components/ui/field";
+import { buttonVariants } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { db } from "@/lib/db";
@@ -29,16 +34,16 @@ import type { GateFlag } from "@/lib/timesheet-auto-gate";
 import {
   detectDuplicates,
   evaluateMargin,
-  findMissingTimesheets,
   summarizeRecurringFaults,
-  type ActivePlacementRef,
   type DetectieFlag,
   type PastFault,
   type PriorInvoiceRef,
 } from "@/lib/facturatie-detecties";
+import { focusWeekVan, ontbrekendeWeekstaten } from "@/lib/herinnering";
 import { controleLabel, initialen, namenLijst, telWeekBedragen } from "@/lib/weekverwerking";
 import { ApproveInboxButton } from "../controle/ApproveInboxButton";
-import { approveAllAutoApproved, processAllAutoApproved } from "../controle/actions";
+import { approveAllAutoApproved, naarWachtkamer, processAllAutoApproved } from "../controle/actions";
+import { herinnerOntbrekende } from "./actions";
 
 // ---------------------------------------------------------------------------
 // Weekverwerking — de wekelijkse cockpit voor HR.
@@ -63,6 +68,17 @@ const CONF_LABEL: Record<string, string> = { high: "hoog", medium: "gemiddeld", 
 /** Kort regeltje onder de naam: plaatsing · klant (of duidelijk: nog niet gekoppeld). */
 function rolRegel(row: GateReviewRow): string {
   return [row.placementTitle, row.clientName].filter(Boolean).join(" · ") || "— nog niet gekoppeld aan een klant";
+}
+
+/**
+ * De standaardreden waarmee een week de wachtkamer in gaat: precies de melding
+ * die de badge boven de week ook koos (harde fout wint van een waarschuwing), en
+ * anders het korte fouttype. Zo staat er in de wachtkamer nooit "geparkeerd"
+ * zonder te vertellen waarom.
+ */
+function wachtkamerReden(row: GateReviewRow, kop: ReturnType<typeof controleLabel>): string {
+  const vlag = row.flags.find((f) => f.level === "error") ?? row.flags[0];
+  return vlag?.message ?? kop?.label ?? "wacht op een gecorrigeerde weekstaat";
 }
 
 /** De bewaarde AI-controlevlaggen (JSON) veilig inlezen. */
@@ -105,80 +121,72 @@ function DetailItem({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-export default async function WeekverwerkingPage() {
+export default async function WeekverwerkingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    verstuurd?: string;
+    klaargezet?: string;
+    overgeslagen?: string;
+    mislukt?: string;
+  }>;
+}) {
+  const sp = await searchParams;
   const review = await timesheetGateReview();
-  const { needsReview, autoApprove, totals, notExtracted } = review;
+  const { needsReview, autoApprove, wachtkamer, totals, notExtracted } = review;
 
   // De week waar dit scherm over gaat: de nieuwste week die nog openstaat, en
   // anders gewoon de lopende week. Zo klopt de "ontbreekt nog"-strip ook in een
-  // demo-database waarin de laatste weekstaten van vorige maand zijn.
-  const weekTijden = [...needsReview, ...autoApprove]
-    .map((r) => r.weekStart?.getTime())
-    .filter((t): t is number => typeof t === "number" && Number.isFinite(t));
-  const focusWeek = weekTijden.length > 0 ? new Date(Math.max(...weekTijden)) : startOfISOWeek(new Date());
+  // demo-database waarin de laatste weekstaten van vorige maand zijn. De
+  // herinnerknop rekent met exact dezelfde functie, zodat hij nooit een andere
+  // week (of een ander lijstje) te pakken heeft dan wat hier staat.
+  const focusWeek = focusWeekVan(review, new Date());
 
   const consultantIds = [
     ...new Set(needsReview.map((r) => r.consultantId).filter((id): id is string => !!id)),
   ];
 
-  const [actievePlaatsingen, inboxDezeWeek, urenDezeWeek, eerdereItems, ontvangen, concepten] =
-    await Promise.all([
-      db.placement.findMany({
-        where: { status: "ACTIVE" },
-        select: { consultantId: true, consultant: { select: { firstName: true, lastName: true } } },
-        orderBy: [{ startDate: "asc" }],
-      }),
-      // Ingeleverd = een inbox-item voor deze week dat niet is afgewezen…
-      db.timesheetInbox.findMany({
-        where: { extractedWeekStart: focusWeek, status: { not: "REJECTED" } },
-        select: { consultantId: true },
-      }),
-      // …of een urenstaat die er voor die week al staat.
-      db.timesheet.findMany({
-        where: { weekStart: focusWeek },
-        select: { placement: { select: { consultantId: true } } },
-      }),
-      // Voor #1: de bewaarde controlevlaggen van eerdere weekstaten van dezelfde mensen.
-      consultantIds.length > 0
-        ? db.timesheetInbox.findMany({
-            where: { consultantId: { in: consultantIds }, reviewFlags: { not: null } },
-            select: {
-              id: true,
-              consultantId: true,
-              reviewFlags: true,
-              extractedWeekStart: true,
-            },
-          })
-        : Promise.resolve([]),
-      // Voor #8: de facturen die deze mensen zelf stuurden.
-      consultantIds.length > 0
-        ? db.receivedInvoice.findMany({
-            where: { consultantId: { in: consultantIds } },
-            select: {
-              id: true,
-              consultantId: true,
-              number: true,
-              amount: true,
-              periodStart: true,
-            },
-            orderBy: [{ createdAt: "asc" }],
-          })
-        : Promise.resolve([]),
-      db.invoice.count({ where: { status: "DRAFT" } }),
-    ]);
+  const [ontbrekend, eerdereItems, ontvangen, concepten] = await Promise.all([
+    // #3 Wie moet er nog inleveren? Zelfde data-laag als de herinnerknop.
+    ontbrekendeWeekstaten(focusWeek),
+    // Voor #1: de bewaarde controlevlaggen van eerdere weekstaten van dezelfde mensen.
+    consultantIds.length > 0
+      ? db.timesheetInbox.findMany({
+          where: { consultantId: { in: consultantIds }, reviewFlags: { not: null } },
+          select: {
+            id: true,
+            consultantId: true,
+            reviewFlags: true,
+            extractedWeekStart: true,
+          },
+        })
+      : Promise.resolve([]),
+    // Voor #8: de facturen die deze mensen zelf stuurden.
+    consultantIds.length > 0
+      ? db.receivedInvoice.findMany({
+          where: { consultantId: { in: consultantIds } },
+          select: {
+            id: true,
+            consultantId: true,
+            number: true,
+            amount: true,
+            periodStart: true,
+          },
+          orderBy: [{ createdAt: "asc" }],
+        })
+      : Promise.resolve([]),
+    db.invoice.count({ where: { status: "DRAFT" } }),
+  ]);
 
   // --- #3 Wie moet er nog inleveren? --------------------------------------
-  const plaatsingRefs: ActivePlacementRef[] = actievePlaatsingen.map((p) => ({
-    consultantId: p.consultantId,
-    consultantName: `${p.consultant.firstName} ${p.consultant.lastName}`,
-  }));
-  const ontbreekt = findMissingTimesheets({
-    activePlacements: plaatsingRefs,
-    submittedConsultantIds: [
-      ...inboxDezeWeek.map((i) => i.consultantId ?? ""),
-      ...urenDezeWeek.map((t) => t.placement.consultantId),
-    ],
-  });
+  const { ontbreekt } = ontbrekend;
+
+  // Uitkomst van een eerdere herinnerronde (komt terug via de redirect).
+  const herinnerd = sp.verstuurd !== undefined || sp.klaargezet !== undefined;
+  const nVerstuurd = Number(sp.verstuurd ?? 0) || 0;
+  const nKlaargezet = Number(sp.klaargezet ?? 0) || 0;
+  const nOvergeslagen = Number(sp.overgeslagen ?? 0) || 0;
+  const nMislukt = Number(sp.mislukt ?? 0) || 0;
 
   // --- Kopcijfers ----------------------------------------------------------
   const week = telWeekBedragen([totals.needsReview, totals.autoApprove]);
@@ -260,6 +268,10 @@ export default async function WeekverwerkingPage() {
         description={`${formatWeekLabel(focusWeek)} — controleer de afwijkingen, de rest is al automatisch afgehandeld.`}
         actions={
           <>
+            <Link href="/verwerken/wachtkamer" className={buttonVariants({ variant: "outline" })}>
+              <PauseCircle className="h-4 w-4" /> Wachtkamer
+              {wachtkamer.length > 0 && ` (${wachtkamer.length})`}
+            </Link>
             <Link href="/verwerken/controle" className={buttonVariants({ variant: "outline" })}>
               <ShieldCheck className="h-4 w-4" /> Urencontrole
             </Link>
@@ -356,8 +368,60 @@ export default async function WeekverwerkingPage() {
           >
             Timesheet-status
           </Link>
+          {ontbreekt.missing.length > 0 && (
+            <ConfirmSubmit
+              action={herinnerOntbrekende}
+              variant="outline"
+              size="sm"
+              trigger="button"
+              message={`Herinner alle ${ontbreekt.missing.length} ${
+                ontbreekt.missing.length === 1 ? "freelancer" : "freelancers"
+              }?`}
+              description="Iedereen die voor deze week nog geen timesheet instuurde krijgt een eigen, vriendelijke herinnering om zijn timesheet én factuur te sturen. Wie geen e-mailadres heeft wordt overgeslagen. Er wordt niets goedgekeurd, gefactureerd of betaald — en je mag dit gerust nog eens doen."
+              confirmLabel="Herinnering sturen"
+              confirmVariant="success"
+            >
+              <BellRing className="h-4 w-4" /> Herinner alle {ontbreekt.missing.length}
+            </ConfirmSubmit>
+          )}
         </CardContent>
       </Card>
+
+      {herinnerd && (
+        <p
+          className={cn(
+            "flex items-start gap-2 rounded-md px-4 py-3 text-sm",
+            nMislukt > 0 ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800",
+          )}
+        >
+          <BellRing className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            {nVerstuurd > 0 && (
+              <>
+                <strong>{nVerstuurd}</strong> herinnering{nVerstuurd === 1 ? "" : "en"} verstuurd
+              </>
+            )}
+            {nVerstuurd > 0 && nKlaargezet > 0 && " · "}
+            {nKlaargezet > 0 && (
+              <>
+                <strong>{nKlaargezet}</strong> herinnering{nKlaargezet === 1 ? "" : "en"} klaargezet
+                (klaarzet-modus — geen SMTP ingesteld, dus nog niet echt verzonden)
+              </>
+            )}
+            {nVerstuurd === 0 && nKlaargezet === 0 && "Er is niemand gemaild"}
+            {nOvergeslagen > 0 && (
+              <> · {nOvergeslagen} overgeslagen zonder e-mailadres bij de medewerker</>
+            )}
+            {nMislukt > 0 && (
+              <>
+                {" "}
+                · <strong>{nMislukt}</strong> niet gelukt — controleer de SMTP-instellingen
+              </>
+            )}
+            . Er is alleen herinnerd: niets goedgekeurd, gefactureerd of betaald.
+          </span>
+        </p>
+      )}
 
       {/* --- 3) Te controleren --- */}
       <section className="space-y-3">
@@ -518,6 +582,37 @@ export default async function WeekverwerkingPage() {
                       </div>
                     )}
 
+                    {/* Eigen bevinding + mail. Bewust een GET-formulier: de knop
+                        brengt je naar de controlestap met het volledige
+                        mailvoorbeeld — er gaat hier nog niets weg. */}
+                    <form
+                      method="get"
+                      action={`/verwerken/week/${row.id}/mail`}
+                      className="rounded-md border border-ink-200 bg-white p-3"
+                    >
+                      <Field
+                        label="Eigen bevinding"
+                        hint="Wat wil je de freelancer er zelf bij zeggen? Dit komt als citaat in de mail. Je ziet de hele mail eerst in een voorbeeld."
+                      >
+                        <Textarea
+                          name="notitie"
+                          rows={3}
+                          maxLength={2000}
+                          placeholder="Bijv.: je hebt zaterdag 8 uur geschreven, maar er stond geen weekenddienst gepland."
+                        />
+                      </Field>
+                      <div className="mt-2 flex justify-end">
+                        <SubmitButton
+                          variant="outline"
+                          size="sm"
+                          pendingLabel="Openen…"
+                          title="Stel de mail aan de freelancer op — je ziet 'm eerst in een voorbeeld."
+                        >
+                          <Mail className="h-4 w-4" /> Mail freelancer
+                        </SubmitButton>
+                      </div>
+                    </form>
+
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       {row.confidence && (
                         <Badge
@@ -539,15 +634,20 @@ export default async function WeekverwerkingPage() {
                       >
                         <PencilLine className="h-4 w-4" /> Bekijk &amp; corrigeer
                       </Link>
-                      {/* De wachtkamer bestaat nog niet in de app — knop staat klaar. */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled
-                        title="De wachtkamer is nog niet gebouwd — een week parkeren tot de medewerker corrigeert."
-                      >
-                        Naar wachtkamer
-                      </Button>
+                      {/* Parkeren tot de medewerker een gecorrigeerde staat stuurt.
+                          De controlereden gaat als standaardreden mee. */}
+                      <form action={naarWachtkamer} className="contents">
+                        <input type="hidden" name="id" value={row.id} />
+                        <input type="hidden" name="reason" value={wachtkamerReden(row, kop)} />
+                        <SubmitButton
+                          variant="outline"
+                          size="sm"
+                          pendingLabel="Parkeren…"
+                          title="Parkeer deze week tot de medewerker een gecorrigeerde staat of factuur stuurt."
+                        >
+                          <PauseCircle className="h-4 w-4" /> Naar wachtkamer
+                        </SubmitButton>
+                      </form>
                       {row.canApprove ? (
                         <ApproveInboxButton row={row} confirmFirst />
                       ) : (

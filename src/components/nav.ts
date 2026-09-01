@@ -45,6 +45,7 @@ import {
   UserCheck,
   Kanban,
   Contact,
+  PauseCircle,
   Zap,
   KeyRound,
   Palette,
@@ -107,6 +108,7 @@ const HUB_LIST: NavHub[] = [
     items: [
       // Wat HR wekelijks doet — bovenaan.
       { href: "/verwerken/week", label: "Weekverwerking", icon: CalendarDays, section: "Deze week" },
+      { href: "/verwerken/wachtkamer", label: "Wachtkamer", icon: PauseCircle, section: "Deze week" },
       { href: "/verwerken/controle", label: "Urencontrole", icon: ShieldCheck, section: "Deze week" },
       { href: "/verwerken", label: "Verwerken", icon: ListChecks, badge: "verwerken", section: "Deze week" },
       { href: "/inbox", label: "Timesheet-inbox", icon: Inbox, section: "Uren & documenten" },

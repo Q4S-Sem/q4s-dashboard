@@ -693,6 +693,13 @@ model TimesheetInbox {
   /// Controlevlaggen als JSON: [{ level: 'error'|'warn', message }].
   reviewFlags         String?
 
+  // Wachtkamer: geparkeerd tot de freelancer een gecorrigeerde staat/factuur stuurt.
+  // De status blijft gewoon EXTRACTED — dit is alleen "even niet op het overzicht".
+  /// Sinds wanneer geparkeerd; null = niet in de wachtkamer.
+  wachtkamerSince   DateTime?
+  /// Waarom geparkeerd (de controlereden op het moment van parkeren).
+  wachtkamerReason  String?
+
   // Matching + result.
   consultantId  String?
   placementId   String?
@@ -707,6 +714,7 @@ model TimesheetInbox {
 
   @@index([status])
   @@index([extractedWeekStart])
+  @@index([wachtkamerSince])
 }
 
 /// Leer-lus: per afzender onthouden waar het uitlezen eerder misging, zodat de AI
