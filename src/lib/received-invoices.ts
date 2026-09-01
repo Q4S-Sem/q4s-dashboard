@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { round2, formatCurrency, formatDate, formatWeekLabel } from "./utils";
+import { round2, formatCurrency, formatDate, formatWeekLabel, startOfISOWeek } from "./utils";
 import { computeTimesheetMoney } from "./toeslag";
 import { getCompanySettings } from "./settings";
 import { sendMail, renderQ4sEmail, renderQ4sEmailText, type EmailContent } from "./email";
@@ -87,6 +87,79 @@ export async function timesheetWeeksForPeriod(
       buyTotal: m.buy.total,
     };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Kilometers van de factuur → de urenstaat van diezelfde week
+// ---------------------------------------------------------------------------
+
+/** De km van een ontvangen factuur, toegerekend aan één week. */
+export type InvoiceKilometers = {
+  invoiceId: string;
+  number: string | null;
+  periodStart: Date;
+  periodEnd: Date;
+  /** Km-totaal zoals op hun factuur vermeld (over de HELE periode). */
+  totalKm: number;
+  /** Aantal weken (maandagen) dat de factuurperiode beslaat. */
+  weeks: number;
+  /** Km die aan déze week toevallen: totaal ÷ weken (bij een weekfactuur = totaal). */
+  weekKm: number;
+};
+
+/** Aantal maandagen in [start, end] — hetzelfde week-in-periode-criterium als
+ *  {@link expectedForConsultantPeriod} (een week telt mee o.b.v. zijn maandag). */
+function mondaysInPeriod(start: Date, end: Date): number {
+  const from = new Date(start);
+  from.setHours(0, 0, 0, 0);
+  const to = new Date(end);
+  to.setHours(0, 0, 0, 0);
+  // Begin bij de eerste maandag ≥ start.
+  const cursor = startOfISOWeek(from);
+  if (cursor.getTime() < from.getTime()) cursor.setDate(cursor.getDate() + 7);
+  let n = 0;
+  while (cursor.getTime() <= to.getTime()) {
+    n++;
+    cursor.setDate(cursor.getDate() + 7);
+  }
+  return n;
+}
+
+/**
+ * De kilometers van de factuur die de medewerker zélf stuurde, voor de week die
+ * op `weekStart` (maandag) begint. Zelfde koppeling als de bedrag-controle: een
+ * week hoort bij een factuur als zijn MAANDAG binnen de factuurperiode valt.
+ *
+ * Beslaat de factuurperiode meerdere weken (bv. een maandfactuur), dan worden de
+ * km gelijk over die weken verdeeld — zo blijft het totaal 1-op-1 gelijk aan wat
+ * de medewerker factureerde in plaats van per week te verdubbelen.
+ */
+export async function invoiceKilometersForWeek(
+  consultantId: string,
+  weekStart: Date,
+): Promise<InvoiceKilometers | null> {
+  const monday = startOfISOWeek(weekStart);
+  const inv = await db.receivedInvoice.findFirst({
+    where: {
+      consultantId,
+      kilometers: { gt: 0 },
+      periodStart: { lte: monday },
+      periodEnd: { gte: monday },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, number: true, periodStart: true, periodEnd: true, kilometers: true },
+  });
+  if (!inv?.kilometers || !inv.periodStart || !inv.periodEnd) return null;
+  const weeks = Math.max(1, mondaysInPeriod(inv.periodStart, inv.periodEnd));
+  return {
+    invoiceId: inv.id,
+    number: inv.number,
+    periodStart: inv.periodStart,
+    periodEnd: inv.periodEnd,
+    totalKm: round2(inv.kilometers),
+    weeks,
+    weekKm: round2(inv.kilometers / weeks),
+  };
 }
 
 export type ReceivedRow = {
@@ -269,6 +342,8 @@ export type ActivePlacementRef = {
 
 export type ReceivedDetail = ReceivedRow & {
   vatAmount: number | null;
+  /** Km zoals op hun factuur vermeld (terugval voor een urenstaat zonder km). */
+  kilometers: number | null;
   countForVat: boolean;
   notes: string | null;
   originalName: string | null;
@@ -332,6 +407,7 @@ export async function getReceivedDetail(id: string): Promise<ReceivedDetail | nu
     diff,
     matched,
     vatAmount: inv.vatAmount,
+    kilometers: inv.kilometers,
     countForVat: inv.countForVat,
     notes: inv.notes,
     originalName: inv.originalName,

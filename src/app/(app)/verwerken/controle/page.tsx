@@ -49,7 +49,6 @@ export default async function UrencontrolePage({
   searchParams: Promise<{
     goedgekeurd?: string;
     facturen?: string;
-    inkoop?: string;
     overgeslagen?: string;
     mislukt?: string;
   }>;
@@ -69,10 +68,9 @@ export default async function UrencontrolePage({
   const skippedCount = Number(sp.overgeslagen ?? 0) || 0;
   const failedCount = Number(sp.mislukt ?? 0) || 0;
   // Alleen gevuld door "Verwerk alles groen" (goedkeuren + conceptfacturen):
-  // verkoop per klant en inkoop per medewerker (loondienst krijgt geen inkoop).
+  // uitsluitend de VERKOOP per klant. De inkoop maken we niet zelf — dat is de
+  // factuur die de ZZP'er zelf stuurt (Ontvangen facturen).
   const invoiceCount = Number(sp.facturen ?? 0) || 0;
-  const inkoopCount = Number(sp.inkoop ?? 0) || 0;
-  const conceptCount = invoiceCount + inkoopCount;
 
   return (
     <div className="space-y-6">
@@ -97,9 +95,14 @@ export default async function UrencontrolePage({
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
         <span>
           Hier wordt <strong>niets verstuurd</strong>. Je keurt weekstaten goed; kies je ervoor om ze
-          meteen door te zetten, dan komen de <strong>inkoop- én verkoopfactuur als concept</strong>{" "}
-          klaar te staan — inkoop per medewerker (loondienst niet, dat is salaris), verkoop per klant.
-          Versturen doe je later bij{" "}
+          meteen door te zetten, dan staan de uren geaccepteerd en komt de{" "}
+          <strong>verkoopfactuur als concept</strong> klaar te staan (per klant). De{" "}
+          <strong>inkoop is de factuur die de ZZP&apos;er zelf stuurt</strong> — die controleer en
+          match je bij{" "}
+          <Link href="/ontvangen-facturen" className="font-medium text-brand-700 hover:underline">
+            Ontvangen facturen
+          </Link>
+          . Versturen doe je later bij{" "}
           <Link href="/verzenden" className="font-medium text-brand-700 hover:underline">
             Verzenden
           </Link>
@@ -120,16 +123,10 @@ export default async function UrencontrolePage({
             {invoiceCount > 0 && (
               <>
                 {" "}
-                · <strong>{invoiceCount}</strong> verkoopfactu{invoiceCount === 1 ? "ur" : "ren"}
+                · <strong>{invoiceCount}</strong> verkoopfactu{invoiceCount === 1 ? "ur" : "ren"} als
+                concept aangemaakt
               </>
             )}
-            {inkoopCount > 0 && (
-              <>
-                {" "}
-                · <strong>{inkoopCount}</strong> inkoopfactu{inkoopCount === 1 ? "ur" : "ren"}
-              </>
-            )}
-            {conceptCount > 0 && <> als concept aangemaakt</>}
             {skippedCount > 0 && (
               <> · {skippedCount} overgeslagen (al verwerkt of niet compleet)</>
             )}
@@ -140,9 +137,15 @@ export default async function UrencontrolePage({
               </>
             )}
             . Er is niets verstuurd
-            {conceptCount > 0
-              ? " — de facturen staan als concept klaar."
-              : " en er zijn geen facturen gemaakt."}
+            {invoiceCount > 0
+              ? " — de verkoopfactu" + (invoiceCount === 1 ? "ur staat" : "ren staan") + " als concept klaar."
+              : " en er zijn geen facturen gemaakt."}{" "}
+            Er is <strong>geen inkoopfactuur</strong> gemaakt: de inkoop is de factuur die de
+            ZZP&apos;er zelf stuurt — die controleer en match je bij{" "}
+            <Link href="/ontvangen-facturen" className="font-medium underline">
+              Ontvangen facturen
+            </Link>
+            .
           </span>
         </p>
       )}
@@ -340,7 +343,7 @@ export default async function UrencontrolePage({
               </p>
               <p className="mt-0.5 text-sm text-ink-600">
                 {formatHours(batchHours)} u · {formatCurrency(batchCharge)} te factureren — kies of je
-                alleen goedkeurt, of meteen doorzet naar concept inkoop- én verkoopfacturen.
+                alleen goedkeurt, of meteen doorzet naar een concept verkoopfactuur per klant.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -359,12 +362,12 @@ export default async function UrencontrolePage({
                 action={processAllAutoApproved}
                 variant="success"
                 trigger="button"
-                message={`Alle ${batch.length} groene weeksta${batch.length === 1 ? "at" : "ten"} verwerken tot conceptfacturen?`}
-                description="Uren geaccepteerd + inkoop- én verkoopfactuur als concept: inkoop per medewerker (loondienst niet — dat is salaris), verkoop per klant. Alles blijft CONCEPT: er gaat niets de deur uit en er wordt niets betaald. Versturen doe je zelf bij Verzenden."
+                message={`Alle ${batch.length} groene weeksta${batch.length === 1 ? "at" : "ten"} verwerken tot een conceptfactuur?`}
+                description="Uren geaccepteerd + verkoopfactuur als concept (per klant). De inkoop is de factuur die de ZZP'er zelf stuurt (Ontvangen facturen) — die controleer/match je daar; er wordt hier géén inkoopfactuur gemaakt. De verkoopfactuur blijft CONCEPT: er gaat niets de deur uit en er wordt niets betaald. Versturen doe je zelf bij Verzenden."
                 confirmLabel="Verwerken tot concept"
                 confirmVariant="success"
               >
-                <Sparkles className="h-4 w-4" /> Verwerk alles groen → inkoop + verkoop concept
+                <Sparkles className="h-4 w-4" /> Verwerk alles groen → verkoopfactuur concept
               </ConfirmSubmit>
             </div>
           </div>

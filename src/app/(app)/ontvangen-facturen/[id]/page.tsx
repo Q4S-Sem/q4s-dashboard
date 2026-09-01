@@ -351,6 +351,9 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
               <Row label="Periode" value={period} />
               <Row label="Gefactureerd (incl. btw)" value={formatCurrency(inv.amount)} />
               {inv.vatAmount != null && <Row label="Waarvan btw" value={formatCurrency(inv.vatAmount)} />}
+              {inv.kilometers != null && (
+                <Row label="Kilometers op factuur" value={`${formatHours(inv.kilometers)} km`} />
+              )}
               {inv.notes && <Row label="Notitie" value={inv.notes} />}
             </dl>
           </CardContent>

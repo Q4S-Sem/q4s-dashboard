@@ -5,6 +5,8 @@ import {
   type ConfirmInboxRaw,
   type ConfirmInputError,
 } from "./inbox-confirm-input";
+import { invoiceKilometersForWeek } from "./received-invoices";
+import { resolveKilometers, resolveKilometersSource, type KilometerSource } from "./kilometers";
 
 // ---------------------------------------------------------------------------
 // De kern van "inbox-item bevestigen": van een uitgelezen weekstaat een échte
@@ -44,7 +46,12 @@ export type ConfirmInboxError =
   | "exists";
 
 export type ConfirmInboxItemResult =
-  | { ok: true; timesheetId: string }
+  | {
+      ok: true;
+      timesheetId: string;
+      /** Waar de vastgezette kilometers vandaan komen (urenstaat, factuur of nergens). */
+      kmSource: KilometerSource;
+    }
   | { ok: false; error: ConfirmInboxError };
 
 /**
@@ -138,6 +145,29 @@ export async function confirmInboxItem(
   const placement = await db.placement.findUnique({ where: { id: placementId } });
   if (!placement) return { ok: false, error: "match" };
 
+  // Km-terugval: niet iedere freelancer zet km op de urenstaat — sommigen melden ze
+  // alleen op hun eigen factuur. Staat er niets op de staat, dan nemen we de km van
+  // de factuur over die deze week beslaat (1-op-1, geen marge).
+  const fromInvoice =
+    (kilometers ?? 0) > 0
+      ? null
+      : await invoiceKilometersForWeek(placement.consultantId, monday).catch(() => null);
+  const resolvedKm = resolveKilometers({ timesheetKm: kilometers, invoiceKm: fromInvoice?.weekKm ?? null });
+  const kmSource = resolveKilometersSource({
+    timesheetKm: kilometers,
+    invoiceKm: fromInvoice?.weekKm ?? null,
+  });
+  // 0 km blijft null: "niet gemeld" i.p.v. "nul gereden" (zelfde afspraak als de invoer).
+  const finalKm = resolvedKm > 0 ? resolvedKm : null;
+  const note =
+    kmSource === "factuur" && fromInvoice
+      ? `Kilometers (${formatHours(resolvedKm)} km) overgenomen van de ontvangen factuur${
+          fromInvoice.number ? ` ${fromInvoice.number}` : ""
+        } van de medewerker (${formatDate(fromInvoice.periodStart)} – ${formatDate(fromInvoice.periodEnd)}${
+          fromInvoice.weeks > 1 ? `, ${formatHours(fromInvoice.totalKm)} km over ${fromInvoice.weeks} weken` : ""
+        }) — er stonden geen km op de urenstaat.`
+      : null;
+
   let timesheetId: string;
   try {
     const ts = await db.timesheet.create({
@@ -145,8 +175,8 @@ export async function confirmInboxItem(
         placementId,
         weekStart: monday,
         status: "APPROVED",
-        note: null,
-        kilometers,
+        note,
+        kilometers: finalKm,
         overtimeHours,
         entries: { create: entries },
       },
@@ -172,6 +202,8 @@ export async function confirmInboxItem(
   });
 
   // Leer-lus: onthoud wat de AI anders had dan de bevestigde waarden (per afzender).
+  // Bewust met de km VAN DE STAAT (kilometers), niet met de factuur-terugval: de AI
+  // heeft niets gemist als er simpelweg geen km op de urenstaat stonden.
   await recordCorrection(item, {
     hours: totalHours,
     km: kilometers,
@@ -179,5 +211,5 @@ export async function confirmInboxItem(
     monday,
   }).catch(() => {});
 
-  return { ok: true, timesheetId };
+  return { ok: true, timesheetId, kmSource };
 }

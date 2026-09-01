@@ -18,8 +18,9 @@ import { Field, Input } from "@/components/ui/field";
 import { SearchSelect } from "@/components/ui/search-select";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
-import { formatHours, cn, distributeDayHours, type DayHours } from "@/lib/utils";
+import { formatDate, formatHours, cn, distributeDayHours, type DayHours } from "@/lib/utils";
 import { isAIConfigured } from "@/lib/ai";
+import { invoiceKilometersForWeek } from "@/lib/received-invoices";
 import { INBOX_SOURCES, INBOX_STATUSES } from "@/lib/domain";
 import { extractInbox, confirmInbox, rejectInbox, deleteInbox } from "../actions";
 
@@ -106,6 +107,17 @@ export default async function InboxDetailPage({
   const flags = parseFlags(item.reviewFlags);
   const hasError = flags.some((f) => f.level === "error");
   const isDone = item.status === "CONFIRMED";
+
+  // Km-terugval: staan er geen km op de staat, kijk dan of de medewerker ze op zijn
+  // eigen factuur zette voor deze week. Bij bevestigen worden die automatisch
+  // overgenomen (1-op-1, geen marge) — hier laten we HR zien waar ze vandaan komen.
+  const consultantId =
+    item.consultantId ?? placements.find((p) => p.id === item.placementId)?.consultantId ?? null;
+  const invoiceKm =
+    !isDone && consultantId && monday && (item.extractedKilometers ?? 0) <= 0
+      ? await invoiceKilometersForWeek(consultantId, monday).catch(() => null)
+      : null;
+
   const title = item.consultant
     ? `${item.consultant.firstName} ${item.consultant.lastName}`
     : item.extractedName ?? item.originalName;
@@ -381,7 +393,21 @@ export default async function InboxDetailPage({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="Kilometers (week)" htmlFor="kilometers">
+                  <Field
+                    label="Kilometers (week)"
+                    htmlFor="kilometers"
+                    hint={
+                      invoiceKm
+                        ? `Leeg laten? Dan nemen we ${formatHours(invoiceKm.weekKm)} km over van de factuur${
+                            invoiceKm.number ? ` ${invoiceKm.number}` : ""
+                          } van deze medewerker (${formatDate(invoiceKm.periodStart)} – ${formatDate(invoiceKm.periodEnd)}${
+                            invoiceKm.weeks > 1
+                              ? `, ${formatHours(invoiceKm.totalKm)} km over ${invoiceKm.weeks} weken`
+                              : ""
+                          }).`
+                        : undefined
+                    }
+                  >
                     <Input
                       id="kilometers"
                       name="kilometers"
