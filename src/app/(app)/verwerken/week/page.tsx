@@ -272,9 +272,6 @@ export default async function WeekverwerkingPage({
               <PauseCircle className="h-4 w-4" /> Wachtkamer
               {wachtkamer.length > 0 && ` (${wachtkamer.length})`}
             </Link>
-            <Link href="/verwerken/controle" className={buttonVariants({ variant: "outline" })}>
-              <ShieldCheck className="h-4 w-4" /> Urencontrole
-            </Link>
             <Link href="/verzenden" className={buttonVariants({ variant: "outline" })}>
               <Send className="h-4 w-4" /> Verzendmap
             </Link>
@@ -677,8 +674,8 @@ export default async function WeekverwerkingPage({
               Weekstaat én tarieven klopten, dus deze weken kunnen in één keer door:{" "}
               <span className="tabular-nums">{formatHours(batchBedragen.hours)} u</span> ·{" "}
               <span className="tabular-nums">{formatCurrency(batchBedragen.charge)}</span> te
-              factureren. Kies of je alleen goedkeurt, of meteen doorzet naar een{" "}
-              <strong>conceptfactuur</strong>.
+              factureren. Kies of je alleen goedkeurt, of meteen doorzet naar de{" "}
+              <strong>inkoop- én verkoopfactuur als concept</strong>.
             </p>
           </div>
           {batch.length > 0 && (
@@ -698,12 +695,12 @@ export default async function WeekverwerkingPage({
                 action={processAllAutoApproved}
                 variant="success"
                 trigger="button"
-                message={`Alle ${batch.length} groene weeksta${batch.length === 1 ? "at" : "ten"} verwerken tot conceptfactuur?`}
-                description="Goedkeuren én meteen de verkoopfactuur per klant aanmaken — als CONCEPT. Er gaat niets de deur uit: versturen doe je zelf bij Verzenden. De inkoopkant blijft ongewijzigd bij Verwerken. De uitkomst zie je op de urencontrole."
+                message={`Alle ${batch.length} groene weeksta${batch.length === 1 ? "at" : "ten"} verwerken tot conceptfacturen?`}
+                description="Uren geaccepteerd + inkoop- én verkoopfactuur als concept: inkoop per medewerker (loondienst niet — dat is salaris), verkoop per klant. Alles blijft CONCEPT: er gaat niets de deur uit en er wordt niets betaald. Versturen doe je zelf bij Verzenden. De uitkomst zie je op de urencontrole."
                 confirmLabel="Verwerken tot concept"
                 confirmVariant="success"
               >
-                <Sparkles className="h-4 w-4" /> Verwerk alles groen → conceptfactuur
+                <Sparkles className="h-4 w-4" /> Verwerk alles groen → inkoop + verkoop concept
               </ConfirmSubmit>
             </div>
           )}

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { confirmInboxItem } from "@/lib/inbox-confirm";
-import { createSalesInvoice } from "@/lib/invoicing";
+import { groupInkoopByConsultant, type InkoopbareWeek } from "@/lib/inkoop-groepering";
+import { createPurchaseInvoice, createSalesInvoice } from "@/lib/invoicing";
 import { timesheetGateReview } from "@/lib/timesheet-gate-review";
 import { weekParam } from "@/lib/timesheets";
 import { groupVerkoopByClient, type VerkoopbareWeek } from "@/lib/verkoop-groepering";
@@ -69,29 +70,35 @@ export async function approveAllAutoApproved(_formData: FormData) {
 // ---------------------------------------------------------------------------
 // "Verwerk alles groen" — dezelfde goedkeuring als hierboven, maar dan helemaal
 // doorgetrokken: elke weekstaat die de auto-gate schoon doorkomt wordt een echte
-// urenstaat én belandt meteen op een CONCEPT-verkoopfactuur per klant.
+// urenstaat én belandt meteen op een CONCEPT-inkoopfactuur per medewerker én een
+// CONCEPT-verkoopfactuur per klant.
 //
 // Wat hier bewust NIET gebeurt:
-// - niets versturen: de factuur blijft DRAFT, verzenden doet een mens (/verzenden);
+// - niets versturen: beide facturen blijven DRAFT, verzenden doet een mens
+//   (/verzenden);
 // - nooit op betaald zetten of betalen;
-// - de INKOOP-kant blijft ongemoeid — die loopt gewoon via /verwerken.
+// - loondienst/eigen personeel krijgt GÉÉN inkoopfactuur — dat is salaris
+//   (zelfde regel als facturatie.ts; createPurchaseInvoice weigert het ook zelf).
 //
 // Veiligheid: de lijst met groene weken wordt HIER opnieuw op de server bepaald
 // (het scherm telt niet mee), er wordt alleen bevestigd wat nog écht openstaat
 // (requirePending) en er wordt alleen gefactureerd wat we in deze ronde zelf
-// hebben aangemaakt én wat nog op geen enkele verkoopfactuur staat. Twee keer
-// klikken maakt dus geen tweede factuur.
+// hebben aangemaakt én wat nog op geen enkele verkoop-/inkoopfactuur staat. Twee
+// keer klikken maakt dus geen tweede factuur.
 //
-// Het factuurrekenwerk zit volledig in createSalesInvoice (src/lib/invoicing.ts);
-// hier wordt alleen bepaald welke urenstaten samen op één factuur horen
-// (src/lib/verkoop-groepering.ts).
+// Het factuurrekenwerk zit volledig in createSalesInvoice / createPurchaseInvoice
+// (src/lib/invoicing.ts) — hier wordt geen cent gerekend; alleen bepaald welke
+// urenstaten samen op één factuur horen (src/lib/verkoop-groepering.ts voor de
+// verkoop, src/lib/inkoop-groepering.ts voor de inkoop).
 // ---------------------------------------------------------------------------
 
 export type AutoProcessSummary = {
   /** Inbox-items die een echte (goedgekeurde) urenstaat zijn geworden. */
   approved: number;
   /** Aangemaakte CONCEPT-verkoopfacturen (één per klant). */
-  invoicesCreated: number;
+  verkoopInvoices: number;
+  /** Aangemaakte CONCEPT-inkoopfacturen (één per medewerker; loondienst niet). */
+  inkoopInvoices: number;
   /** Overgeslagen: intussen al verwerkt, niet compleet, of niet te factureren. */
   skipped: number;
   errors: string[];
@@ -137,8 +144,9 @@ export async function processAutoApprovedToConcept(): Promise<AutoProcessSummary
   }
 
   // 3) Factureren: alleen de urenstaten die we zojuist zelf hebben aangemaakt, en
-  //    dan nog eens uit de DB gecontroleerd op status en bestaande factuurregel.
-  let invoicesCreated = 0;
+  //    dan nog eens uit de DB gecontroleerd op status en bestaande factuurregels.
+  let verkoopInvoices = 0;
+  let inkoopInvoices = 0;
   if (timesheetIds.length > 0) {
     const fresh = await db.timesheet.findMany({
       where: { id: { in: timesheetIds } },
@@ -146,12 +154,61 @@ export async function processAutoApprovedToConcept(): Promise<AutoProcessSummary
         id: true,
         status: true,
         invoiceLine: { select: { id: true } },
+        purchaseLine: { select: { id: true } },
         placement: {
-          select: { clientId: true, client: { select: { companyName: true } } },
+          select: {
+            clientId: true,
+            client: { select: { companyName: true } },
+            consultantId: true,
+            consultant: {
+              select: { firstName: true, lastName: true, employmentType: true },
+            },
+          },
         },
       },
     });
 
+    // 3a) Inkoop eerst — dat verandert de status niet, verkoop zet 'm op INVOICED.
+    //     Zelfde volgorde als processConsultant() in src/lib/facturatie.ts.
+    const inkoopWeeks: InkoopbareWeek[] = fresh.map((t) => ({
+      timesheetId: t.id,
+      status: t.status,
+      hasPurchase: !!t.purchaseLine,
+      consultantId: t.placement.consultantId,
+      consultantName: t.placement.consultant
+        ? `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`
+        : null,
+      // Loondienst/eigen personeel → salaris, geen inkoopfactuur.
+      loondienst: t.placement.consultant?.employmentType === "LOONDIENST",
+    }));
+
+    const inkoop = groupInkoopByConsultant(inkoopWeeks);
+    // Loondienst telt hier bewust NIET als "overgeslagen": daar hoort per definitie
+    // geen inkoopfactuur bij. Wat wél overgeslagen is (al ingekocht, verkeerde
+    // status) telt mee; dubbel tellen met de verkoopkant kan niet, want een week
+    // die verkoop-technisch afvalt (geen bedrijf) kan inkoop gewoon door.
+    skipped += inkoop.skipped;
+
+    for (const group of inkoop.groups) {
+      // Eén factuur die faalt mag de rest niet wegvagen (elke factuur is atomair
+      // in invoicing.ts), maar een echte DB-fout WERPT — vang die af en ga door.
+      try {
+        const res = await createPurchaseInvoice({
+          consultantId: group.consultantId,
+          timesheetIds: group.timesheetIds,
+          issueDate: new Date(),
+          notes: null,
+        });
+        if (res.ok) inkoopInvoices++;
+        else errors.push(`Inkoopfactuur → ${group.consultantName}: ${res.error}`);
+      } catch (e) {
+        errors.push(
+          `Inkoopfactuur → ${group.consultantName}: ${e instanceof Error ? e.message : "onbekende fout"}`,
+        );
+      }
+    }
+
+    // 3b) Verkoop per klant — ongewijzigd.
     const weeks: VerkoopbareWeek[] = fresh.map((t) => ({
       timesheetId: t.id,
       status: t.status,
@@ -166,8 +223,6 @@ export async function processAutoApprovedToConcept(): Promise<AutoProcessSummary
     skipped += notInvoiceable;
 
     for (const group of groups) {
-      // Eén factuur die faalt mag de rest niet wegvagen (elke factuur is atomair
-      // in invoicing.ts), maar een echte DB-fout WERPT — vang die af en ga door.
       try {
         const res = await createSalesInvoice({
           clientId: group.clientId,
@@ -175,7 +230,7 @@ export async function processAutoApprovedToConcept(): Promise<AutoProcessSummary
           issueDate: new Date(),
           notes: null,
         });
-        if (res.ok) invoicesCreated++;
+        if (res.ok) verkoopInvoices++;
         else errors.push(`Verkoopfactuur → ${group.clientName}: ${res.error}`);
       } catch (e) {
         errors.push(
@@ -190,10 +245,11 @@ export async function processAutoApprovedToConcept(): Promise<AutoProcessSummary
   revalidatePath("/inbox");
   revalidatePath("/uren");
   revalidatePath("/facturen");
+  revalidatePath("/inkoopfacturen");
   revalidatePath("/verzenden");
   revalidatePath("/", "layout");
 
-  return { approved, invoicesCreated, skipped, errors };
+  return { approved, verkoopInvoices, inkoopInvoices, skipped, errors };
 }
 
 /**
@@ -201,9 +257,10 @@ export async function processAutoApprovedToConcept(): Promise<AutoProcessSummary
  * en stuurt de teller-uitkomst terug naar het controlescherm.
  */
 export async function processAllAutoApproved(_formData: FormData) {
-  const { approved, invoicesCreated, skipped, errors } = await processAutoApprovedToConcept();
+  const { approved, verkoopInvoices, inkoopInvoices, skipped, errors } =
+    await processAutoApprovedToConcept();
   redirect(
-    `/verwerken/controle?goedgekeurd=${approved}&facturen=${invoicesCreated}&overgeslagen=${skipped}&mislukt=${errors.length}`,
+    `/verwerken/controle?goedgekeurd=${approved}&facturen=${verkoopInvoices}&inkoop=${inkoopInvoices}&overgeslagen=${skipped}&mislukt=${errors.length}`,
   );
 }
 
