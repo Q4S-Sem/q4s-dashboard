@@ -34,6 +34,8 @@ function parseAmount(v: FormDataEntryValue | null): number {
 
 function revalidate() {
   revalidatePath("/ontvangen-facturen");
+  // De inbox toont de km van de factuur als terugval bij een staat zonder km.
+  revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/facturatie");
   revalidatePath("/", "layout");
@@ -49,6 +51,12 @@ export async function createReceivedInvoice(formData: FormData) {
   if (!Number.isFinite(amount) || amount <= 0) redirect(`${IMPORT}?error=bedrag`);
 
   const vatAmount = String(formData.get("vatAmount") ?? "").trim() ? parseAmount(formData.get("vatAmount")) : null;
+
+  // Kilometers zoals op HÚN factuur vermeld. Sommige freelancers zetten km niet op
+  // de urenstaat maar alleen op de factuur; die vullen we hiermee alsnog aan in de
+  // urenregistratie (zie src/lib/kilometers.ts).
+  const kmRaw = String(formData.get("kilometers") ?? "").trim() ? parseAmount(formData.get("kilometers")) : null;
+  const kilometers = kmRaw != null && Number.isFinite(kmRaw) && kmRaw > 0 ? kmRaw : null;
 
   // Optionele PDF/afbeelding van de factuur.
   let fileName: string | null = null;
@@ -74,6 +82,7 @@ export async function createReceivedInvoice(formData: FormData) {
       periodEnd: parseDate(formData.get("periodEnd")),
       amount,
       vatAmount: vatAmount != null && Number.isFinite(vatAmount) ? vatAmount : null,
+      kilometers,
       notes: String(formData.get("notes") ?? "").trim() || null,
       fileName,
       originalName,

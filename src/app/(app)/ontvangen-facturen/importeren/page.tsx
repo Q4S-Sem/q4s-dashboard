@@ -89,6 +89,13 @@ export default async function ImporterenPage({
               <Field label="Waarvan btw (€)" htmlFor="vatAmount" hint="Optioneel — leeg bij btw verlegd">
                 <Input id="vatAmount" name="vatAmount" inputMode="decimal" placeholder="Optioneel" />
               </Field>
+              <Field
+                label="Kilometers op factuur"
+                htmlFor="kilometers"
+                hint="Optioneel — staan de km alleen op de factuur, dan vullen we de urenstaat hiermee aan"
+              >
+                <Input id="kilometers" name="kilometers" inputMode="decimal" placeholder="Bijv. 220" />
+              </Field>
             </div>
 
             <Field label="Notitie" htmlFor="notes">

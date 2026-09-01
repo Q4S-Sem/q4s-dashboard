@@ -1919,6 +1919,10 @@ model ReceivedInvoice {
   amount       Float     @default(0)
   /// BTW-bedrag als apart vermeld op hun factuur (optioneel).
   vatAmount    Float?
+  /// Kilometers zoals op HÚN factuur vermeld (optioneel). Niet iedere freelancer
+  /// zet km op de urenstaat; staan ze alleen hier, dan vult de urenstaat van die
+  /// week ze hiermee aan (zie src/lib/kilometers.ts — km gaan 1-op-1, geen marge).
+  kilometers   Float?
   /// BTW-tarief (21 | 9 | 0), hulpmiddel om vatAmount uit `amount` te berekenen.
   vatRate      Float?
   /// Meetellen als voorbelasting in de BTW-aangifte? Standaard NEE, omdat Q4's
