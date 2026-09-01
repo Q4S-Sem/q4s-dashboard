@@ -26,12 +26,25 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-export type RenderedPng = {
+/** Een PNG in base64, met zijn afmetingen in pixels. */
+export type PngImage = {
   base64: string;
   mediaType: "image/png";
   width: number;
   height: number;
 };
+
+export type RenderedPng = PngImage & {
+  /** Totaal toegepaste draaiing in graden: `pageRotate` + `extraRotation`. */
+  rotation: QuarterTurn;
+  /** Wat de PDF zelf verklaarde (`/Rotate`); pdfjs past dit toe bij het renderen. */
+  pageRotate: QuarterTurn;
+  /** Wat de heuristiek (of een opgelegde `forceExtraRotation`) er bovenop deed. */
+  extraRotation: QuarterTurn;
+};
+
+/** Een kwartslag; iets anders draaien we bewust niet (geen deskew). */
+export type QuarterTurn = 0 | 90 | 180 | 270;
 
 export const DEFAULT_PDF_RENDER_DPI = 300;
 const MIN_DPI = 72;
@@ -66,6 +79,159 @@ export function renderScale(widthPt: number, heightPt: number, dpi?: number | nu
 /** Dpi uit de omgeving (PDF_RENDER_DPI), zodat je zonder code-wijziging kunt bijstellen. */
 export function envRenderDpi(): number {
   return clampDpi(Number(process.env.PDF_RENDER_DPI));
+}
+
+// --- oriëntatie ------------------------------------------------------------
+//
+// Een scheve scan (landscape / op z'n kop) laat het vision-model de tabel fout
+// lezen: kolommen worden rijen. Twee bronnen van waarheid, in deze volgorde:
+//
+//  1. De PDF zelf. `/Rotate` op de pagina zegt hoe hij bekeken hoort te worden;
+//     pdfjs verwerkt dat in de viewport. Dat dekt de meeste "zijwaartse" scans,
+//     want scanners/telefoons zetten de draaiing in de metadata i.p.v. in de
+//     pixels. We geven `page.rotate` expliciet mee — pdfjs doet dat standaard
+//     ook, maar zo staat de aanname in de code i.p.v. in een default.
+//  2. De vorm van het resultaat. Zegt de PDF niets (`/Rotate 0`) maar is de
+//     pagina duidelijk liggend, dan is het vrijwel zeker een staande urenstaat
+//     die zijwaarts gefotografeerd/gescand is → een kwartslag erbij.
+//
+// Bewust NIET: deskew over willekeurige kleine hoeken. Alleen kwartslagen.
+
+/** Vanaf deze breedte/hoogte-verhouding noemen we een pagina "liggend". */
+export const LANDSCAPE_RATIO = 1.3;
+
+/** Elke hoek terug naar 0/90/180/270; onzin (45°, NaN, leeg) → 0. */
+export function normalizeRotation(deg: number | null | undefined): QuarterTurn {
+  if (typeof deg !== "number" || !Number.isFinite(deg) || deg % 90 !== 0) return 0;
+  return (((deg % 360) + 360) % 360) as QuarterTurn;
+}
+
+/**
+ * Hoeveel we ná pdfjs' eigen `/Rotate`-afhandeling nog moeten bijdraaien.
+ * Puur — testbaar zonder PDF.
+ *
+ * Conservatief: alleen als de PDF géén draaiing verklaart én de gerenderde
+ * pagina duidelijk liggend is. Een normale staande A4 blijft dus onaangeroerd,
+ * en een pagina die zelf al 90/180/270 zegt vertrouwen we (die is door pdfjs al
+ * rechtgezet — er nóg een kwartslag bovenop zou hem juist scheef zetten).
+ *
+ * @param width  breedte van de gerenderde pagina in pixels (ná `/Rotate`)
+ * @param height hoogte van de gerenderde pagina in pixels (ná `/Rotate`)
+ * @param pageRotate de `/Rotate` van de pagina zelf
+ */
+export function decideExtraRotation({
+  width,
+  height,
+  pageRotate,
+}: {
+  width: number;
+  height: number;
+  pageRotate?: number | null;
+}): QuarterTurn {
+  if (normalizeRotation(pageRotate) !== 0) return 0;
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return 0;
+  if (!(width > 0) || !(height > 0)) return 0;
+  // Met de klok mee. Of het 90 of 270 moet zijn is uit de pixels niet te zien;
+  // rechtsom is de afspraak, en staand-maar-ondersteboven leest het model nog
+  // altijd beter dan zijwaarts.
+  return width / height > LANDSCAPE_RATIO ? 90 : 0;
+}
+
+/**
+ * Twee kwartslagen achter elkaar → één kwartslag. Beide termen worden apart
+ * genormaliseerd (45° telt dus als 0, niet als een halve slag die het totaal
+ * onbruikbaar maakt). Puur.
+ *
+ * Gebruikt om de draaiing die de render al deed te combineren met wat de
+ * AI-oriëntatieprobe er nog bovenop wil (zie `orientationRotation` in ai.ts).
+ */
+export function combineRotation(
+  a: number | null | undefined,
+  b: number | null | undefined,
+): QuarterTurn {
+  return normalizeRotation(normalizeRotation(a) + normalizeRotation(b));
+}
+
+/**
+ * Canvas-matrix `[a, b, c, d, e, f]` die een bron van `width × height` een
+ * kwartslag gedraaid in het doelcanvas zet (bij 90/270 zijn de doelafmetingen
+ * verwisseld). Een punt (x, y) gaat naar (a·x + c·y + e, b·x + d·y + f).
+ */
+export function rotationTransform(
+  rotation: QuarterTurn,
+  width: number,
+  height: number,
+): [number, number, number, number, number, number] {
+  switch (rotation) {
+    case 90: // (x, y) → (height − y, x)
+      return [0, 1, -1, 0, height, 0];
+    case 180: // (x, y) → (width − x, height − y)
+      return [-1, 0, 0, -1, width, height];
+    case 270: // (x, y) → (y, width − x)
+      return [0, -1, 1, 0, 0, width];
+    default:
+      return [1, 0, 0, 1, 0, 0];
+  }
+}
+
+// --- verkleinen voor de oriëntatieprobe -------------------------------------
+//
+// De vorm-heuristiek hierboven ziet niets als de PAGINA staand is maar de INHOUD
+// dwars staat (bewezen geval: een gescande urenstaat die staand 2481×3507 rendert
+// terwijl de tekst zijwaarts loopt). Daarvoor vragen we het vision-model zelf om
+// de oriëntatie (zie `probePageOrientation` in ai.ts). Die vraag hoeft niet op
+// 300dpi: een miniatuur is genoeg om te zien welke kant de tekst op loopt, en
+// scheelt een veelvoud aan beeld-tokens.
+
+/** Lange zijde (px) van het miniatuur dat naar de oriëntatieprobe gaat. */
+export const ORIENTATION_PROBE_LONG_EDGE = 1000;
+
+/**
+ * Schaalfactor die de lange zijde terugbrengt naar `maxLongEdge`. Nooit groter
+ * dan 1 (vergroten voegt geen informatie toe, alleen bytes); onbruikbare invoer
+ * → 1 (ongewijzigd doorgeven). Puur.
+ */
+export function probeScale(
+  width: number,
+  height: number,
+  maxLongEdge: number = ORIENTATION_PROBE_LONG_EDGE,
+): number {
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return 1;
+  if (!(width > 0) || !(height > 0)) return 1;
+  if (!Number.isFinite(maxLongEdge) || !(maxLongEdge > 0)) return 1;
+  const long = Math.max(width, height);
+  return long <= maxLongEdge ? 1 : maxLongEdge / long;
+}
+
+/**
+ * Verklein een PNG (base64) tot `maxLongEdge` op de lange zijde. Is hij al klein
+ * genoeg, dan komt hij ongewijzigd terug (geen her-encoding).
+ */
+export async function downscalePngBase64(
+  base64: string,
+  maxLongEdge: number = ORIENTATION_PROBE_LONG_EDGE,
+): Promise<PngImage> {
+  const canvasLib = await import("@napi-rs/canvas");
+  const img = await canvasLib.loadImage(Buffer.from(base64, "base64"));
+  const scale = probeScale(img.width, img.height, maxLongEdge);
+  if (scale >= 1) {
+    return { base64, mediaType: "image/png", width: img.width, height: img.height };
+  }
+  const width = Math.max(1, Math.round(img.width * scale));
+  const height = Math.max(1, Math.round(img.height * scale));
+  const canvas = canvasLib.createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+  const png = canvas.toBuffer("image/png");
+  if (!png?.length) throw new Error("Verkleinen gaf een lege PNG terug.");
+  return {
+    base64: Buffer.from(png).toString("base64"),
+    mediaType: "image/png",
+    width,
+    height,
+  };
 }
 
 // --- pdfjs in Node ---------------------------------------------------------
@@ -146,10 +312,15 @@ function makeCanvasFactory(createCanvas: (w: number, h: number) => unknown) {
 /**
  * Render de EERSTE pagina van een PDF naar een PNG (base64), standaard op 300dpi.
  * Gooit als de PDF onleesbaar/leeg is — de aanroeper valt dan terug op de ruwe PDF.
+ *
+ * @param opts.forceExtraRotation Legt de extra draaiing vást i.p.v. hem door
+ *   {@link decideExtraRotation} te laten bepalen (0 zet de heuristiek dus uit).
+ *   Hiermee kan ai.ts opnieuw renderen op de stand die de AI-oriëntatieprobe
+ *   vaststelde — scherper dan de PNG achteraf roteren.
  */
 export async function renderPdfFirstPageToPng(
   bytes: Buffer | Uint8Array,
-  opts?: { dpi?: number },
+  opts?: { dpi?: number; forceExtraRotation?: QuarterTurn },
 ): Promise<RenderedPng> {
   // Dynamische imports: pdfjs (~4MB) en de native canvas-addon worden pas geladen
   // als er écht een PDF binnenkomt, en blijven zo buiten het opstartpad van elke
@@ -203,11 +374,23 @@ export async function renderPdfFirstPageToPng(
     if (doc.numPages < 1) throw new Error("PDF bevat geen pagina's.");
     const page = await doc.getPage(1);
     try {
-      const unscaled = page.getViewport({ scale: 1 });
+      // Expliciet: de pagina bekijken zoals de PDF hem bedoeld heeft.
+      const pageRotate = normalizeRotation(page.rotate);
+      const unscaled = page.getViewport({ scale: 1, rotation: pageRotate });
       const scale = renderScale(unscaled.width, unscaled.height, opts?.dpi ?? envRenderDpi());
-      const viewport = page.getViewport({ scale });
-      const width = Math.max(1, Math.ceil(viewport.width));
-      const height = Math.max(1, Math.ceil(viewport.height));
+      const viewport = page.getViewport({ scale, rotation: pageRotate });
+      const pageWidth = Math.max(1, Math.ceil(viewport.width));
+      const pageHeight = Math.max(1, Math.ceil(viewport.height));
+
+      // Staat hij ondanks (of bij gebrek aan) /Rotate nog steeds dwars? Kwartslag erbij.
+      // Een opgelegde rotatie (van de AI-oriëntatieprobe) wint van de heuristiek.
+      const extraRotation =
+        opts?.forceExtraRotation === undefined
+          ? decideExtraRotation({ width: pageWidth, height: pageHeight, pageRotate })
+          : normalizeRotation(opts.forceExtraRotation);
+      const quarter = extraRotation === 90 || extraRotation === 270;
+      const width = quarter ? pageHeight : pageWidth;
+      const height = quarter ? pageWidth : pageHeight;
 
       const canvas = canvasLib.createCanvas(width, height);
       const ctx = canvas.getContext("2d");
@@ -220,17 +403,33 @@ export async function renderPdfFirstPageToPng(
         canvas: canvas as unknown as HTMLCanvasElement,
         canvasContext: ctx as unknown as CanvasRenderingContext2D,
         viewport,
+        // Vóór de viewport-transform, dus de pagina wordt meteen gedraaid het
+        // (al verwisselde) canvas in — geen tweede canvas van 12MP nodig.
+        transform:
+          extraRotation === 0
+            ? undefined
+            : rotationTransform(extraRotation, pageWidth, pageHeight),
         background: "#ffffff",
       });
       await task.promise;
 
       const png = canvas.toBuffer("image/png");
       if (!png?.length) throw new Error("Rasteren gaf een lege PNG terug.");
+      const rotation = combineRotation(pageRotate, extraRotation);
+      if (rotation !== 0) {
+        const bron = opts?.forceExtraRotation === undefined ? "heuristiek" : "opgelegd";
+        console.info(
+          `[pdf-render] pagina rechtgezet: ${rotation}° (/Rotate ${pageRotate}° + ${bron} ${extraRotation}°) → PNG ${width}×${height}.`,
+        );
+      }
       return {
         base64: Buffer.from(png).toString("base64"),
         mediaType: "image/png",
         width,
         height,
+        rotation,
+        pageRotate,
+        extraRotation,
       };
     } finally {
       page.cleanup();
