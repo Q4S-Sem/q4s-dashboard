@@ -1,6 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { recordAiUsage, ensureAiKeysLoaded } from "./ai-keys";
-import { isPdfMediaType, renderPdfFirstPageToPng } from "./pdf-render";
+import {
+  combineRotation,
+  downscalePngBase64,
+  isPdfMediaType,
+  renderPdfFirstPageToPng,
+  type PngImage,
+  type QuarterTurn,
+  type RenderedPng,
+} from "./pdf-render";
 
 // ---------------------------------------------------------------------------
 // Provider switch: each AI tier can run on DeepSeek (cloud, OpenAI-compatible,
@@ -530,28 +538,265 @@ export function shouldRasterizePdf(mediaType: string): boolean {
   return isPdfMediaType(mediaType);
 }
 
+// --- oriëntatie van een gescande pagina ------------------------------------
+//
+// De vorm-heuristiek in pdf-render.ts ziet alleen een LIGGENDE pagina. Bij scans
+// waarvan de pagina staand is maar de INHOUD dwars staat (bewezen geval: 2481×3507
+// staand, tekst gekanteld) helpt die niet — en een dwars gelezen urenstaat levert
+// verschoven kolommen op. De enige betrouwbare bron is dan het vision-model zelf:
+// één goedkope vraag op een miniatuur ("welke kant staat de tekst op?"), daarna
+// opnieuw renderen op de juiste stand en pas dán extraheren.
+
+export const PAGE_ORIENTATIONS = [
+  "UPRIGHT",
+  "ROTATE_CW_90",
+  "ROTATE_CCW_90",
+  "UPSIDE_DOWN",
+] as const;
+export type PageOrientation = (typeof PAGE_ORIENTATIONS)[number];
+
 /**
- * Vervang een PDF door een hoge-resolutie PNG van de eerste pagina. Lukt dat niet,
- * dan gaat het originele bestand alsnog mee (oud gedrag) — nooit crashen op het
- * rasteren zelf.
+ * Lees het antwoord van de oriëntatieprobe. Tolerant voor kleine letters, quotes,
+ * fences, een JSON-omhulsel of een zinnetje eromheen. **Dubbelzinnig (meerdere
+ * codes, bv. omdat het model de keuzelijst herhaalt) of onherkenbaar → null**, en
+ * de aanroeper draait dan niets: niets doen is veiliger dan verkeerd draaien.
+ * Puur (geen fetch/env) zodat het te testen is.
+ */
+export function parsePageOrientation(text: string | null | undefined): PageOrientation | null {
+  const t = (text ?? "").toUpperCase();
+  const found = PAGE_ORIENTATIONS.filter((o) => new RegExp(`\\b${o}\\b`).test(t));
+  return found.length === 1 ? found[0] : null;
+}
+
+/**
+ * Antwoord → graden MET DE KLOK MEE (de richting van `rotationTransform`).
+ * Onbekend/UPRIGHT → 0. Puur.
+ */
+export function orientationRotation(o: PageOrientation | null | undefined): QuarterTurn {
+  if (o === "ROTATE_CW_90") return 90;
+  if (o === "UPSIDE_DOWN") return 180;
+  if (o === "ROTATE_CCW_90") return 270;
+  return 0;
+}
+
+/** Oriëntatieprobe aan? Zet PDF_VISION_AUTOROTATE=0 om hem uit te schakelen. */
+export function pdfAutoRotateEnabled(): boolean {
+  return process.env.PDF_VISION_AUTOROTATE !== "0";
+}
+
+const ORIENTATION_PROMPT = `Kijk naar de LEESRICHTING VAN DE TEKST op deze gescande pagina (niet naar de vorm van het papier).
+Antwoord met exact één code, zonder uitleg of leestekens:
+UPRIGHT — de tekst staat rechtop en leest normaal
+ROTATE_CW_90 — de tekst leest van onder naar boven; de afbeelding moet een kwartslag MET de klok mee
+ROTATE_CCW_90 — de tekst leest van boven naar beneden; de afbeelding moet een kwartslag TEGEN de klok in
+UPSIDE_DOWN — de tekst staat op zijn kop; de afbeelding moet 180 graden`;
+
+// Ruim genoeg voor een denkstap van een flash-model plus het ene woord; krap
+// genoeg om verwaarloosbaar te zijn naast het (al verkleinde) beeld. Kapt het
+// antwoord toch af, dan herkent parsePageOrientation niets → geen draaiing.
+const ORIENTATION_MAX_TOKENS = 1000;
+
+/**
+ * Vraag de ACTIEVE vision-provider welke kant de tekst op staat. Best effort:
+ * geeft null bij een ontbrekende sleutel, netwerkfout of onbruikbaar antwoord.
+ * Eén aanroep per document, op een miniatuur (zie ORIENTATION_PROBE_LONG_EDGE).
+ */
+async function probePageOrientation(image: PngImage): Promise<PageOrientation | null> {
+  const p = visionProvider();
+  const text =
+    p === "gemini"
+      ? await geminiOrientation(image)
+      : p === "openrouter"
+        ? await openrouterOrientation(image)
+        : await anthropicOrientation(image);
+  return parsePageOrientation(text);
+}
+
+async function geminiOrientation(image: PngImage): Promise<string> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("Gemini is niet geconfigureerd.");
+  const res = await fetch(`${GEMINI_BASE_URL}/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-goog-api-key": key },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { inline_data: { mime_type: image.mediaType, data: image.base64 } },
+            { text: ORIENTATION_PROMPT },
+          ],
+        },
+      ],
+      generationConfig: { temperature: 0, maxOutputTokens: ORIENTATION_MAX_TOKENS },
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Gemini-fout (${res.status})${body ? `: ${body.slice(0, 200)}` : ""}.`);
+  }
+  const data = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+  };
+  await recordAiUsage({
+    provider: "gemini",
+    model: GEMINI_MODEL,
+    kind: "vision",
+    feature: "orientatie-probe",
+    promptTokens: data.usageMetadata?.promptTokenCount,
+    completionTokens: data.usageMetadata?.candidatesTokenCount,
+  });
+  return (data.candidates?.[0]?.content?.parts ?? [])
+    .map((part) => part.text ?? "")
+    .join("")
+    .trim();
+}
+
+async function openrouterOrientation(image: PngImage): Promise<string> {
+  const key = process.env.HERMES_API_KEY;
+  if (!key) throw new Error("OpenRouter is niet geconfigureerd.");
+  const base = hermesBaseUrl();
+  const res = await fetch(`${base}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${key}`,
+      "x-title": "Q4S Dashboard",
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_VISION_MODEL,
+      stream: false,
+      temperature: 0,
+      max_tokens: ORIENTATION_MAX_TOKENS,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: ORIENTATION_PROMPT },
+            // Altijd een PNG (onze eigen render), dus nooit het PDF-'file'-blok.
+            {
+              type: "image_url",
+              image_url: { url: `data:${image.mediaType};base64,${image.base64}` },
+            },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      openrouterVisionErrorMessage(res.status, body, image.mediaType, OPENROUTER_VISION_MODEL),
+    );
+  }
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    error?: { code?: number; message?: string };
+  };
+  if (data.error) throw new Error(data.error.message ?? "OpenRouter-fout.");
+  await recordAiUsage({
+    provider: "hermes",
+    model: OPENROUTER_VISION_MODEL,
+    kind: "vision",
+    feature: "orientatie-probe",
+    promptTokens: data.usage?.prompt_tokens,
+    completionTokens: data.usage?.completion_tokens,
+  });
+  return (data.choices?.[0]?.message?.content ?? "").trim();
+}
+
+async function anthropicOrientation(image: PngImage): Promise<string> {
+  const c = getClient();
+  const params = {
+    model: AI_MODEL_FAST,
+    max_tokens: ORIENTATION_MAX_TOKENS,
+    temperature: 0,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "image",
+            source: { type: "base64", media_type: image.mediaType, data: image.base64 },
+          },
+          { type: "text", text: ORIENTATION_PROMPT },
+        ],
+      },
+    ],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
+  const res = await c.messages.create(params);
+  const usage = (res as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
+  await recordAiUsage({
+    provider: "anthropic",
+    model: AI_MODEL_FAST,
+    kind: "vision",
+    feature: "orientatie-probe",
+    promptTokens: usage?.input_tokens,
+    completionTokens: usage?.output_tokens,
+  });
+  return extractText(res.content);
+}
+
+/**
+ * Zet een gerenderde pagina rechtop volgens de AI-oriëntatieprobe. Best effort:
+ * bij een uitgeschakelde probe, een mislukte aanroep of een onbruikbaar antwoord
+ * komt de oorspronkelijke render terug. Bij een échte draaiing renderen we de PDF
+ * opnieuw op die stand (scherper dan een gedraaide PNG naschalen).
+ */
+async function uprightRender(bytes: Buffer, png: RenderedPng): Promise<RenderedPng> {
+  if (!pdfAutoRotateEnabled()) return png;
+  try {
+    // Miniatuur: de leesrichting is op ~1000px net zo goed te zien, tegen een
+    // fractie van de beeld-tokens van een 300dpi-pagina.
+    const thumb = await downscalePngBase64(png.base64);
+    const orientation = await probePageOrientation(thumb);
+    const extra = orientationRotation(orientation);
+    console.info(
+      `[vision] oriëntatieprobe (${thumb.width}×${thumb.height}): ${orientation ?? "onbekend"} → ${extra}° bijdraaien (render stond al op ${png.rotation}°).`,
+    );
+    if (extra === 0) return png;
+    const forced = combineRotation(png.extraRotation, extra);
+    const rotated = await renderPdfFirstPageToPng(bytes, { forceExtraRotation: forced });
+    console.info(
+      `[vision] pagina rechtgezet volgens de probe: opnieuw gerenderd op ${rotated.rotation}° → PNG ${rotated.width}×${rotated.height}.`,
+    );
+    return rotated;
+  } catch (e) {
+    console.warn(
+      `[vision] oriëntatieprobe mislukt (${e instanceof Error ? e.message : String(e)}) — de ongedraaide render gaat naar het model.`,
+    );
+    return png;
+  }
+}
+
+/**
+ * Vervang een PDF door een hoge-resolutie PNG van de eerste pagina, rechtgezet
+ * volgens de oriëntatieprobe. Lukt het rasteren niet, dan gaat het originele
+ * bestand alsnog mee (oud gedrag) — nooit crashen op het rasteren zelf.
  */
 async function visionFile(file: {
   base64: string;
   mediaType: string;
 }): Promise<{ base64: string; mediaType: string }> {
   if (!shouldRasterizePdf(file.mediaType)) return file;
+  const bytes = Buffer.from(file.base64, "base64");
+  let png: RenderedPng;
   try {
-    const png = await renderPdfFirstPageToPng(Buffer.from(file.base64, "base64"));
-    console.info(
-      `[vision] PDF zelf gerasterd naar PNG ${png.width}×${png.height} (pdfjs) — scherper dan de interne render van het model.`,
-    );
-    return { base64: png.base64, mediaType: png.mediaType };
+    png = await renderPdfFirstPageToPng(bytes);
   } catch (e) {
     console.warn(
       `[vision] PDF rasteren mislukt (${e instanceof Error ? e.message : String(e)}) — de ruwe PDF gaat naar het model.`,
     );
     return file;
   }
+  console.info(
+    `[vision] PDF zelf gerasterd naar PNG ${png.width}×${png.height} (pdfjs, rotatie ${png.rotation}°) — scherper dan de interne render van het model.`,
+  );
+  const upright = await uprightRender(bytes, png);
+  return { base64: upright.base64, mediaType: upright.mediaType };
 }
 
 /**
