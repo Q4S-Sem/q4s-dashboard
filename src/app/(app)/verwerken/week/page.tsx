@@ -675,7 +675,12 @@ export default async function WeekverwerkingPage({
               <span className="tabular-nums">{formatHours(batchBedragen.hours)} u</span> ·{" "}
               <span className="tabular-nums">{formatCurrency(batchBedragen.charge)}</span> te
               factureren. Kies of je alleen goedkeurt, of meteen doorzet naar de{" "}
-              <strong>inkoop- én verkoopfactuur als concept</strong>.
+              <strong>verkoopfactuur als concept</strong>. De inkoop is de factuur die de
+              ZZP&apos;er zelf stuurt — die controleer je bij{" "}
+              <Link href="/ontvangen-facturen" className="font-medium text-brand-700 hover:underline">
+                Ontvangen facturen
+              </Link>
+              .
             </p>
           </div>
           {batch.length > 0 && (
@@ -695,12 +700,12 @@ export default async function WeekverwerkingPage({
                 action={processAllAutoApproved}
                 variant="success"
                 trigger="button"
-                message={`Alle ${batch.length} groene weeksta${batch.length === 1 ? "at" : "ten"} verwerken tot conceptfacturen?`}
-                description="Uren geaccepteerd + inkoop- én verkoopfactuur als concept: inkoop per medewerker (loondienst niet — dat is salaris), verkoop per klant. Alles blijft CONCEPT: er gaat niets de deur uit en er wordt niets betaald. Versturen doe je zelf bij Verzenden. De uitkomst zie je op de urencontrole."
+                message={`Alle ${batch.length} groene weeksta${batch.length === 1 ? "at" : "ten"} verwerken tot een conceptfactuur?`}
+                description="Uren geaccepteerd + verkoopfactuur als concept (per klant). De inkoop is de factuur die de ZZP'er zelf stuurt (Ontvangen facturen) — die controleer/match je daar; er wordt hier géén inkoopfactuur gemaakt. De verkoopfactuur blijft CONCEPT: er gaat niets de deur uit en er wordt niets betaald. Versturen doe je zelf bij Verzenden. De uitkomst zie je op de urencontrole."
                 confirmLabel="Verwerken tot concept"
                 confirmVariant="success"
               >
-                <Sparkles className="h-4 w-4" /> Verwerk alles groen → inkoop + verkoop concept
+                <Sparkles className="h-4 w-4" /> Verwerk alles groen → verkoopfactuur concept
               </ConfirmSubmit>
             </div>
           )}
@@ -780,7 +785,9 @@ export default async function WeekverwerkingPage({
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
           <span>
             <strong>Alleen groene weken lopen automatisch door</strong> — uren goedgekeurd en de
-            verkoopfactuur als concept. Er wordt <strong>niets automatisch verzonden</strong> en{" "}
+            verkoopfactuur als concept. Er wordt <strong>geen inkoopfactuur gemaakt</strong>: de
+            inkoop is de factuur die de ZZP&apos;er zelf stuurt, die controleer je bij Ontvangen
+            facturen. Er wordt <strong>niets automatisch verzonden</strong> en{" "}
             <strong>niets betaald</strong>: dat doe je zelf bij Verzenden en Betalingen.
           </span>
         </p>
