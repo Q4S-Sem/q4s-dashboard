@@ -102,7 +102,7 @@ export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
 // (HERMES_BASE_URL/HERMES_API_KEY) worden hergebruikt — alleen het model verschilt.
 // Standaard Gemini 2.0 Flash: goedkoop en leest PDF's én afbeeldingen.
 export const OPENROUTER_VISION_MODEL =
-  process.env.OPENROUTER_VISION_MODEL ?? "google/gemini-2.0-flash-001";
+  process.env.OPENROUTER_VISION_MODEL ?? "google/gemini-2.5-flash";
 
 type Tier = "main" | "fast";
 
@@ -612,7 +612,7 @@ export function openrouterVisionErrorMessage(
   const snippet = body ? `: ${body.slice(0, 200)}` : "";
   if ((status === 400 || status === 404 || status === 415) && OPENROUTER_MEDIA_ERROR.test(body)) {
     const soort = mediaType === "application/pdf" ? "PDF's" : `bestanden van het type ${mediaType}`;
-    return `OpenRouter-model '${model}' kan ${soort} niet lezen (${status}). Kies een vision-model dat dit wél ondersteunt via OPENROUTER_VISION_MODEL (bijv. google/gemini-2.0-flash-001)${snippet}.`;
+    return `OpenRouter-model '${model}' kan ${soort} niet lezen (${status}). Kies een vision-model dat dit wél ondersteunt via OPENROUTER_VISION_MODEL (bijv. google/gemini-2.5-flash)${snippet}.`;
   }
   return `OpenRouter-fout (${status})${snippet}.`;
 }
@@ -657,10 +657,21 @@ async function openrouterExtractFile<T>(opts: FileExtractOpts): Promise<T> {
             role: "user",
             content: [
               { type: "text", text: opts.prompt },
-              {
-                type: "image_url",
-                image_url: { url: `data:${opts.file.mediaType};base64,${opts.file.base64}` },
-              },
+              // PDF's gaan via een 'file'-blok (OpenRouter/Gemini leest die zo);
+              // afbeeldingen via 'image_url'. Een PDF als image_url geeft 404/geen
+              // endpoint bij Gemini-modellen — vandaar het onderscheid.
+              opts.file.mediaType === "application/pdf"
+                ? {
+                    type: "file",
+                    file: {
+                      filename: "document.pdf",
+                      file_data: `data:application/pdf;base64,${opts.file.base64}`,
+                    },
+                  }
+                : {
+                    type: "image_url",
+                    image_url: { url: `data:${opts.file.mediaType};base64,${opts.file.base64}` },
+                  },
             ],
           },
         ],
