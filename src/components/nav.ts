@@ -105,14 +105,12 @@ const HUB_LIST: NavHub[] = [
   },
   {
     label: "Facturatie",
-    href: "/verwerken",
+    href: "/verwerken/week",
     icon: Receipt,
     items: [
       // Wat HR wekelijks doet — bovenaan.
       { href: "/verwerken/week", label: "Weekverwerking", icon: CalendarDays, section: "Deze week" },
       { href: "/verwerken/wachtkamer", label: "Wachtkamer", icon: PauseCircle, section: "Deze week" },
-      { href: "/verwerken/controle", label: "Urencontrole", icon: ShieldCheck, section: "Deze week" },
-      { href: "/verwerken", label: "Verwerken", icon: ListChecks, badge: "verwerken", section: "Deze week" },
       { href: "/inbox", label: "Timesheet-inbox", icon: Inbox, section: "Uren & documenten" },
       { href: "/inbox/status", label: "Timesheet-status", icon: ClipboardCheck, section: "Uren & documenten" },
       { href: "/uren", label: "Urenregistratie", icon: CalendarClock, section: "Uren & documenten" },
@@ -241,7 +239,7 @@ const HUB_LIST: NavHub[] = [
 // tegels als de app-switcher volgen deze volgorde.
 const HUB_ORDER = [
   "/klanten", // Personeelsgegevens
-  "/verwerken", // Facturatie
+  "/verwerken/week", // Facturatie
   "/recruitment",
   "/agenda",
   "/website",
