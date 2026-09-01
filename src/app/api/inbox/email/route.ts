@@ -1,6 +1,8 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { saveInboxBytes, MAX_UPLOAD_BYTES } from "@/lib/uploads";
+import { saveInboxBytes } from "@/lib/uploads";
+import { isUploadWithinLimit } from "@/lib/upload-policy";
+import { isWebhookRequestAuthorized } from "@/lib/webhook-auth";
 import { expandFiles } from "@/lib/file-intake";
 import { isSpreadsheet } from "@/lib/excel";
 import { ensureAiKeysLoaded } from "@/lib/ai-keys";
@@ -12,15 +14,15 @@ import { runInboxExtraction } from "@/lib/inbox-extract";
  *
  * Point an inbound-email service (Mailgun Routes, SendGrid Inbound Parse,
  * Postmark, Cloudflare Email Workers, …) at:
- *     POST /api/inbox/email?token=<INBOX_WEBHOOK_SECRET>
+ *     POST /api/inbox/email
  * configured to forward mail sent to admin@q4s.nl as multipart/form-data with
  * the timesheet(s) as attachment(s). ELKE bijlage wordt een eigen TimesheetInbox-
  * rij en wordt METEEN uitgelezen — zo sorteert een mail met meerdere staten (bv.
  * week 29 én 30 in één mail) elke bijlage automatisch op zijn EIGEN week (de week
  * komt uit de staat zelf, niet uit de datum van de mail).
  *
- * Security: set INBOX_WEBHOOK_SECRET in .env and pass it as the `token` query
- * param (or `x-inbox-token` header). Without the secret the endpoint is closed.
+ * Security: set INBOX_WEBHOOK_SECRET in .env and pass it exclusively in the
+ * `x-inbox-token` header. Without the secret the endpoint is closed.
  * NOTE: add real signature verification per provider before production.
  */
 
@@ -42,9 +44,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "INBOX_WEBHOOK_SECRET niet ingesteld" }, { status: 503 });
   }
 
-  const url = new URL(req.url);
-  const token = url.searchParams.get("token") ?? req.headers.get("x-inbox-token");
-  if (token !== secret) {
+  if (!isWebhookRequestAuthorized(req, secret, "x-inbox-token")) {
     return Response.json({ ok: false, error: "Ongeldige token" }, { status: 401 });
   }
 
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     (v): v is File => v instanceof File && v.size > 0,
   );
   const files = (await expandFiles(attachments)).filter(
-    (c) => c.bytes.length <= MAX_UPLOAD_BYTES && isTimesheetFile(c.name, c.mime),
+    (c) => isUploadWithinLimit(c.bytes.length) && isTimesheetFile(c.name, c.mime),
   );
   if (files.length === 0) {
     return Response.json(

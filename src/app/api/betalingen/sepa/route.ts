@@ -1,9 +1,9 @@
-import { requireApiSession } from "@/lib/api-auth";
+import { requireAdminApiSession } from "@/lib/api-auth";
 import { buildSepaForPayables } from "@/lib/betalingen";
 
 /** Download het SEPA-betaalbestand (pain.001) voor alle openstaande inkoopfacturen. */
 export async function GET() {
-  const gate = await requireApiSession();
+  const gate = await requireAdminApiSession();
   if (gate) return gate;
 
   const res = await buildSepaForPayables();

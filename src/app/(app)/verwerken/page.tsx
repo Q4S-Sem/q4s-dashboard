@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Inbox, ArrowRight, Receipt, Coins, Users, Sparkles, Send, Archive, ClipboardList, Banknote, BellRing } from "lucide-react";
+import { Inbox, ArrowRight, Receipt, Coins, Users, Sparkles, Send, Archive, ClipboardList, Banknote, BellRing, CalendarCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -108,6 +108,27 @@ export default async function VerwerkenPage({
           )}
         </p>
       )}
+
+      {/* De wekelijkse cockpit: begin hier, en zak daarna door naar de details. */}
+      <Link href="/verwerken/week" className="block transition-transform hover:-translate-y-0.5">
+        <Card className="border-brand-200 bg-brand-50/40 transition-shadow hover:shadow-md">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 font-semibold text-ink-900">
+                <CalendarCheck className="h-4 w-4 text-brand-600" /> Weekverwerking — begin hier
+              </p>
+              <p className="mt-1 max-w-2xl text-sm text-ink-600">
+                De week in één scherm: wie leverde nog geen uren in, wat wijkt af en waarom, en wat er
+                al automatisch is afgehandeld. Deze pagina blijft de plek voor het factureren per
+                medewerker.
+              </p>
+            </div>
+            <span className={buttonVariants({ variant: "outline" })}>
+              Naar weekverwerking <ArrowRight className="h-4 w-4" />
+            </span>
+          </CardContent>
+        </Card>
+      </Link>
 
       <p className="rounded-lg bg-ink-50 px-4 py-3 text-sm text-ink-600">
         Timesheets komen binnen via <strong>admin@q4s.nl</strong> of upload je zelf in de{" "}

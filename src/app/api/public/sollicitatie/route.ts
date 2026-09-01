@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { saveCvUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
+import { saveCvUpload } from "@/lib/uploads";
+import { isMultipartUploadWithinLimit, isUploadWithinLimit } from "@/lib/upload-policy";
 import { DISCIPLINES, CANDIDATE_AVAILABILITY } from "@/lib/domain";
 import { corsHeaders } from "@/lib/public-api";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 
 /**
  * Publiek sollicitatie-/CV-endpoint voor de website (q4s.nl).
@@ -67,6 +69,20 @@ function isAllowedCv(name: string, type: string): boolean {
 export async function POST(req: Request) {
   const headers = { "content-type": "application/json", ...corsHeaders(req) };
 
+  // Public intake is deliberately unauthenticated. Keep it inexpensive and
+  // bounded so a spam burst cannot flood the candidate database or object store.
+  const ip = await clientIp();
+  if (rateLimited(`public-application:${ip}`, 5, 60_000)) {
+    return Response.json(
+      { ok: false, error: "Te veel inzendingen. Probeer het over een minuut opnieuw." },
+      { status: 429, headers: { ...headers, "retry-after": "60" } },
+    );
+  }
+  const contentLength = Number(req.headers.get("content-length") ?? "0");
+  if (!isMultipartUploadWithinLimit(contentLength)) {
+    return Response.json({ ok: false, error: "Inzending is te groot." }, { status: 413, headers });
+  }
+
   let fd: FormData;
   try {
     fd = await req.formData();
@@ -106,7 +122,7 @@ export async function POST(req: Request) {
   let cvMimeType: string | null = null;
   let cvSize: number | null = null;
   if (file instanceof File && file.size > 0) {
-    if (file.size > MAX_UPLOAD_BYTES) {
+    if (!isUploadWithinLimit(file.size)) {
       return Response.json({ ok: false, error: "CV is te groot." }, { status: 413, headers });
     }
     if (!isAllowedCv(file.name, file.type)) {

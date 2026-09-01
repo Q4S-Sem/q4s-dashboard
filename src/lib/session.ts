@@ -2,13 +2,13 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
+import { isAuthRequired, sessionSigningSecret } from "@/lib/auth-policy";
 
 // Cookie-based sessions for app-gebruikers. The cookie holds "<userId>.<hmac>";
 // the HMAC (secret = AUTH_SECRET) makes it tamper-proof. The actual user is
 // looked up from the DB on every request (so deactivating a user logs them out).
 // Route protection happens in src/app/(app)/layout.tsx (server, Node runtime).
 
-const SECRET = process.env.AUTH_SECRET || "q4s-dev-secret-change-in-production";
 const COOKIE = "q4s_session";
 
 /**
@@ -17,20 +17,22 @@ const COOKIE = "q4s_session";
  * in de omgeving om de inlog-verplichting aan te zetten.
  */
 export function authRequired(): boolean {
-  return process.env.AUTH_REQUIRED === "true";
+  return isAuthRequired();
 }
 
-function sign(value: string): string {
-  return createHmac("sha256", SECRET).update(value).digest("base64url");
+function sign(value: string, secret: string): string {
+  return createHmac("sha256", secret).update(value).digest("base64url");
 }
 
 function readToken(token: string | undefined): string | null {
+  const secret = sessionSigningSecret();
+  if (!secret) return null;
   if (!token) return null;
   const i = token.lastIndexOf(".");
   if (i < 0) return null;
   const userId = token.slice(0, i);
   const sig = token.slice(i + 1);
-  const expected = sign(userId);
+  const expected = sign(userId, secret);
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
@@ -38,7 +40,11 @@ function readToken(token: string | undefined): string | null {
 }
 
 export async function setSession(userId: string): Promise<void> {
-  (await cookies()).set(COOKIE, `${userId}.${sign(userId)}`, {
+  const secret = sessionSigningSecret();
+  if (!secret) {
+    throw new Error("AUTH_SECRET is niet veilig geconfigureerd.");
+  }
+  (await cookies()).set(COOKIE, `${userId}.${sign(userId, secret)}`, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

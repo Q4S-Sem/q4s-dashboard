@@ -56,7 +56,7 @@ export async function getOpenTasks(): Promise<OpenTask[]> {
   });
 
   const ids = (t: string) => rows.filter((r) => r.entityType === t).map((r) => r.entityId);
-  const [placements, clients, consultants, employees, targets] = await Promise.all([
+  const [placements, clients, consultants, employees, targets, candidates, applications] = await Promise.all([
     ids("placement").length
       ? db.placement.findMany({ where: { id: { in: ids("placement") } }, select: { id: true, title: true, client: { select: { companyName: true } } } })
       : [],
@@ -72,12 +72,28 @@ export async function getOpenTasks(): Promise<OpenTask[]> {
     ids("target").length
       ? db.targetClient.findMany({ where: { id: { in: ids("target") } }, select: { id: true, name: true } })
       : [],
+    ids("candidate").length
+      ? db.candidate.findMany({ where: { id: { in: ids("candidate") } }, select: { id: true, firstName: true, lastName: true } })
+      : [],
+    ids("application").length
+      ? db.application.findMany({
+          where: { id: { in: ids("application") } },
+          select: { id: true, candidate: { select: { firstName: true, lastName: true } }, vacancy: { select: { title: true } } },
+        })
+      : [],
   ]);
   const plMap = new Map(placements.map((p) => [p.id, `${p.title} · ${p.client?.companyName ?? "— geen bedrijf"}`]));
   const clMap = new Map(clients.map((c) => [c.id, c.companyName]));
   const coMap = new Map(consultants.map((c) => [c.id, `${c.firstName} ${c.lastName}`]));
   const emMap = new Map(employees.map((e) => [e.id, `${e.firstName} ${e.lastName}`]));
   const taMap = new Map(targets.map((t) => [t.id, t.name]));
+  const caMap = new Map(candidates.map((c) => [c.id, `${c.firstName} ${c.lastName}`]));
+  const apMap = new Map(
+    applications.map((a) => [
+      a.id,
+      `${a.candidate.firstName} ${a.candidate.lastName} · ${a.vacancy?.title ?? "geen vacature gekoppeld"}`,
+    ]),
+  );
 
   return rows.map((r) => {
     let entityLabel = "Onbekend record";
@@ -97,6 +113,12 @@ export async function getOpenTasks(): Promise<OpenTask[]> {
     } else if (r.entityType === "target") {
       entityLabel = taMap.get(r.entityId) ?? "Opdrachtgever";
       href = `/opdrachtgevers/${r.entityId}`;
+    } else if (r.entityType === "candidate") {
+      entityLabel = caMap.get(r.entityId) ?? "Kandidaat";
+      href = `/kandidaten/${r.entityId}`;
+    } else if (r.entityType === "application") {
+      entityLabel = apMap.get(r.entityId) ?? "Sollicitatie";
+      href = `/sollicitaties/${r.entityId}`;
     }
     return {
       id: r.id,

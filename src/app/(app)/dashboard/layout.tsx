@@ -6,6 +6,7 @@ import {
   Briefcase,
   ClipboardCheck,
   BarChart3,
+  Target,
   Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -39,6 +40,7 @@ export default function AnalyticsLayout({
           { seg: "te-doen", label: "Te doen", icon: <ListTodo className="h-4 w-4" /> },
           { seg: "facturatie", label: "Facturatie", icon: <PieChart className="h-4 w-4" /> },
           { seg: "recruitment", label: "Recruitment", icon: <Sparkles className="h-4 w-4" /> },
+          { seg: "kpi", label: "Recruitment-KPI's", icon: <Target className="h-4 w-4" /> },
           { seg: "plaatsingen", label: "Plaatsingen & marges", icon: <Briefcase className="h-4 w-4" /> },
           { seg: "evaluaties", label: "Evaluaties", icon: <ClipboardCheck className="h-4 w-4" /> },
           { seg: "rapportage", label: "Rapportage", icon: <BarChart3 className="h-4 w-4" /> },

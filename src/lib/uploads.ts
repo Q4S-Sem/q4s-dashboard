@@ -10,8 +10,10 @@ import { getObject, putObject, deleteObject } from "./storage";
 //
 // Een "key" is de opslag-key: "<consultantId>/<file>", "_inbox/<file>", enz.
 
+import { assertUploadWithinLimit } from "./upload-policy";
+
 /** Max accepted size for an uploaded/intake file (bytes). */
-export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+export { MAX_UPLOAD_BYTES } from "./upload-policy";
 
 // Content types we trust to render inline. Anything else is streamed as an
 // opaque download so a user-supplied file (e.g. HTML named ".pdf") can never
@@ -59,6 +61,7 @@ export function uploadKey(ownerId: string, fileName: string): string {
 
 /** Persist an uploaded File; returns the stored (random) file name. */
 export async function saveUpload(ownerId: string, file: File): Promise<string> {
+  assertUploadWithinLimit(file.size);
   const bytes = Buffer.from(await file.arrayBuffer());
   const ext = path.extname(file.name) || "";
   const fileName = `${randomUUID()}${ext}`;
@@ -89,6 +92,7 @@ export function inboxKey(fileName: string): string {
 
 /** Persist an incoming timesheet file; returns the stored (random) file name. */
 export async function saveInboxUpload(file: File): Promise<string> {
+  assertUploadWithinLimit(file.size);
   const bytes = Buffer.from(await file.arrayBuffer());
   const ext = path.extname(file.name) || "";
   const fileName = `${randomUUID()}${ext}`;
@@ -108,6 +112,7 @@ export async function saveInboxBytes(
   bytes: Uint8Array,
   originalName: string,
 ): Promise<string> {
+  assertUploadWithinLimit(bytes.length);
   const ext = path.extname(originalName) || "";
   const fileName = `${randomUUID()}${ext}`;
   await putObject(inboxKey(fileName), bytes);
@@ -141,6 +146,7 @@ export async function saveExpenseBytes(
   bytes: Uint8Array,
   originalName: string,
 ): Promise<string> {
+  assertUploadWithinLimit(bytes.length);
   const ext = path.extname(originalName) || "";
   const fileName = `${randomUUID()}${ext}`;
   await putObject(expenseKey(fileName), bytes);
@@ -165,6 +171,7 @@ export function receivedKey(fileName: string): string {
 
 /** Bewaar een ontvangen-factuur-PDF + spiegel 'm naar de Data-map/cloud. */
 export async function saveReceivedBytes(bytes: Uint8Array, originalName: string): Promise<string> {
+  assertUploadWithinLimit(bytes.length);
   const ext = path.extname(originalName) || "";
   const fileName = `${randomUUID()}${ext}`;
   await putObject(receivedKey(fileName), bytes);
@@ -184,6 +191,7 @@ export function cvKey(fileName: string): string {
 
 /** Persist a candidate CV; returns the stored (random) file name. */
 export async function saveCvUpload(file: File): Promise<string> {
+  assertUploadWithinLimit(file.size);
   const bytes = Buffer.from(await file.arrayBuffer());
   const ext = path.extname(file.name) || "";
   const fileName = `${randomUUID()}${ext}`;

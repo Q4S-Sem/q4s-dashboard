@@ -3,13 +3,13 @@ import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { renderInvoicePdf } from "@/lib/invoice-pdf";
 import { salesSendData, purchaseSendData } from "@/lib/verzenden";
-import { requireApiSession } from "@/lib/api-auth";
+import { requireAdminApiSession } from "@/lib/api-auth";
 
 // Bundelt alle factuur-PDF's (verkoop + inkoop) in één ZIP om door te sturen
 // naar de boekhouder. Optioneel filteren op ?year=YYYY.
 // NOTE: no auth yet — add an auth check here once authentication is in place.
 export async function GET(req: Request) {
-  const gate = await requireApiSession();
+  const gate = await requireAdminApiSession();
   if (gate) return gate;
 
   const url = new URL(req.url);

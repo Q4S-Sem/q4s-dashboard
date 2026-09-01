@@ -1,4 +1,5 @@
 import { currentUser, authRequired } from "@/lib/session";
+import { isAdminRole } from "@/lib/auth-policy";
 
 /**
  * Toegangscontrole voor data-/bestand-API-routes (CV's, ID-documenten, loonstroken,
@@ -24,6 +25,25 @@ export async function requireApiSession(): Promise<Response | null> {
   if (!user) {
     return new Response("Niet ingelogd", {
       status: 401,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+  return null;
+}
+
+/** Require an administrator for financial exports and personnel administration. */
+export async function requireAdminApiSession(): Promise<Response | null> {
+  if (!authRequired()) return null;
+  const user = await currentUser();
+  if (!user) {
+    return new Response("Niet ingelogd", {
+      status: 401,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+  if (!isAdminRole(user.role)) {
+    return new Response("Geen toegang", {
+      status: 403,
       headers: { "Cache-Control": "no-store" },
     });
   }

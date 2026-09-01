@@ -1,5 +1,5 @@
-import { timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
+import { isWebhookRequestAuthorized } from "@/lib/webhook-auth";
 import {
   intakeVacancies,
   runIntakePipeline,
@@ -21,17 +21,11 @@ import {
  *
  * Elke vacature doorloopt direct de intake-pijplijn: AI-filter → website-format
  * → LinkedIn-concept → kandidaat-matches → melding voor de recruiter.
- * Token = JOB_SECRET (valt terug op INBOX_WEBHOOK_SECRET). Zonder secret dicht.
+ * Token = JOB_SECRET (valt terug op INBOX_WEBHOOK_SECRET) in header
+ * `x-job-token`; URL-querytokens worden niet geaccepteerd. Zonder secret dicht.
  */
 const MAX_ITEMS = 25;
 const MAX_BODY_BYTES = 1_000_000; // 1 MB — ruim genoeg voor 25 vacatures
-
-/** Constant-time vergelijking van twee geheimen (voorkomt timing-lek). */
-function secretEquals(a: string, b: string): boolean {
-  const ba = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ba.length === bb.length && timingSafeEqual(ba, bb);
-}
 
 export async function POST(req: Request) {
   const secret = process.env.JOB_SECRET ?? process.env.INBOX_WEBHOOK_SECRET;
@@ -42,10 +36,7 @@ export async function POST(req: Request) {
     );
   }
   const url = new URL(req.url);
-  // Bij voorkeur via de header; de query-variant blijft toegestaan voor
-  // eenvoudige integraties maar wordt constant-time vergeleken.
-  const token = req.headers.get("x-job-token") ?? url.searchParams.get("token");
-  if (!token || !secretEquals(token, secret)) {
+  if (!isWebhookRequestAuthorized(req, secret, "x-job-token")) {
     return Response.json({ ok: false, error: "Ongeldige token" }, { status: 401 });
   }
 

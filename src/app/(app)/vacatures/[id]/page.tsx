@@ -9,6 +9,7 @@ import {
   Filter,
   Users,
   Target,
+  MessageSquarePlus,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,7 @@ import {
   rematchVacancyMatches,
 } from "../actions";
 import { startSourcing } from "../../website/actions";
+import { createCandidateLinkedOutreach } from "../../berichten/actions";
 
 export const metadata = { title: "Vacature" };
 
@@ -386,7 +388,7 @@ export default async function VacatureDetailPage({
                         .join(" · ")}
                     </p>
                   </div>
-                  <span className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
                     <span className="h-1.5 w-20 overflow-hidden rounded-full bg-ink-100">
                       <span
                         className="block h-full rounded-full bg-emerald-500"
@@ -396,7 +398,20 @@ export default async function VacatureDetailPage({
                     <span className="w-9 text-right text-xs font-semibold tabular-nums text-ink-700">
                       {pct}%
                     </span>
-                  </span>
+                    <form action={createCandidateLinkedOutreach}>
+                      <input type="hidden" name="candidateId" value={m.candidate.id} />
+                      <input type="hidden" name="vacancyId" value={vacancy.id} />
+                      <SubmitButton
+                        type="submit"
+                        variant="outline"
+                        size="sm"
+                        title={`Maak een goed te keuren outreachconcept voor ${m.candidate.firstName} ${m.candidate.lastName}`}
+                        pendingLabel="Concept…"
+                      >
+                        <MessageSquarePlus className="h-4 w-4" /> Concept
+                      </SubmitButton>
+                    </form>
+                  </div>
                 </div>
               );
             })}

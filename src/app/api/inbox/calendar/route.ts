@@ -1,19 +1,20 @@
 import { db } from "@/lib/db";
 import { parseIcs, icsStorageUid } from "@/lib/ics";
-import { MAX_UPLOAD_BYTES } from "@/lib/uploads";
+import { isUploadWithinLimit } from "@/lib/upload-policy";
+import { isWebhookRequestAuthorized } from "@/lib/webhook-auth";
 
 /**
  * Inbound-email webhook for calendar invites (.ics) sent to the Q4S mailbox.
  *
  * Point an inbound-email service (Mailgun Routes, SendGrid Inbound Parse,
  * Postmark, Cloudflare Email Workers, …) at:
- *     POST /api/inbox/calendar?token=<INBOX_WEBHOOK_SECRET>
+ *     POST /api/inbox/calendar
  * forwarded as multipart/form-data. Every .ics attachment (or text/calendar
  * part, or a form field containing a VCALENDAR body) is parsed and each VEVENT
  * becomes a CalendarEvent (source EMAIL), de-duplicated on the iCalendar UID.
  *
- * Security: set INBOX_WEBHOOK_SECRET in .env and pass it as `token` (or the
- * `x-inbox-token` header). Add real per-provider signature verification before
+ * Security: set INBOX_WEBHOOK_SECRET in .env and pass it in the
+ * `x-inbox-token` header. Add real per-provider signature verification before
  * production.
  */
 export async function POST(req: Request) {
@@ -25,9 +26,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const url = new URL(req.url);
-  const token = url.searchParams.get("token") ?? req.headers.get("x-inbox-token");
-  if (token !== secret) {
+  if (!isWebhookRequestAuthorized(req, secret, "x-inbox-token")) {
     return Response.json({ ok: false, error: "Ongeldige token" }, { status: 401 });
   }
 
@@ -45,7 +44,7 @@ export async function POST(req: Request) {
   const blobs: string[] = [];
   for (const [, value] of form.entries()) {
     if (value instanceof File) {
-      if (value.size === 0 || value.size > MAX_UPLOAD_BYTES) continue;
+      if (value.size === 0 || !isUploadWithinLimit(value.size)) continue;
       const isIcs =
         value.type.includes("calendar") ||
         value.name.toLowerCase().endsWith(".ics");
