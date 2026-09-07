@@ -22,6 +22,8 @@ import { formatDate, formatHours, cn, distributeDayHours, type DayHours } from "
 import { isAIConfigured } from "@/lib/ai";
 import { invoiceKilometersForWeek } from "@/lib/received-invoices";
 import { INBOX_SOURCES, INBOX_STATUSES } from "@/lib/domain";
+import { gereedMelding } from "@/lib/urenstaat-gereed";
+import { canonicalWeekFromDates } from "@/lib/week-koppeling";
 import { extractInbox, confirmInbox, rejectInbox, deleteInbox } from "../actions";
 
 export const metadata = { title: "Timesheet" };
@@ -122,6 +124,24 @@ export default async function InboxDetailPage({
     ? `${item.consultant.firstName} ${item.consultant.lastName}`
     : item.extractedName ?? item.originalName;
 
+  // Staat de urenstaat van deze plaatsing + week er AL? Dan hoeft deze scan niet
+  // nog eens bevestigd te worden: confirmInboxItem zou hem toch weigeren (de
+  // @@unique op plaatsing + week). Dat vooraf melden — mét een link erheen —
+  // scheelt dat rondje. De week komt uit de gewerkte dagen, net als overal
+  // (canonicalWeekFromDates); er wordt hier niets gewijzigd of overgeslagen.
+  const canoniekeWeek = canonicalWeekFromDates(item.extractedWeekStart);
+  const gereedeUrenstaat =
+    !isDone && item.placementId && canoniekeWeek
+      ? await db.timesheet.findFirst({
+          where: {
+            placementId: item.placementId,
+            weekStart: canoniekeWeek.monday,
+            status: { in: ["APPROVED", "INVOICED"] },
+          },
+          select: { id: true },
+        })
+      : null;
+
   const errorMessages: Record<string, string> = {
     ai: "Uitlezen mislukt. Controleer of GEMINI_API_KEY (PDF/scan) of DEEPSEEK_API_KEY (Excel) is ingesteld en probeer opnieuw.",
     match: "Kies een geldige plaatsing om aan te koppelen.",
@@ -172,6 +192,24 @@ export default async function InboxDetailPage({
             className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             Naar urenstaat &amp; facturen
+          </Link>
+        </div>
+      )}
+
+      {gereedeUrenstaat && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span className="inline-flex items-start gap-2">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              <strong>{gereedMelding(title, canoniekeWeek)}</strong> Deze week is al verwerkt —
+              bevestigen hoeft niet nog een keer.
+            </span>
+          </span>
+          <Link
+            href={`/uren/${gereedeUrenstaat.id}`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Bekijk de urenstaat
           </Link>
         </div>
       )}

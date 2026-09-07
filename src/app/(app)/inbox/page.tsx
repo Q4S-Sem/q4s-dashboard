@@ -6,8 +6,6 @@ import {
   Copy,
   FileText,
   Upload,
-  RefreshCw,
-  MailCheck,
   Trash2,
 } from "lucide-react";
 import { db } from "@/lib/db";
@@ -16,12 +14,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatHours, formatDate, formatWeekLabel } from "@/lib/utils";
 import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
-import { isMailIntakeConnected } from "@/lib/graph-mail";
 import { INBOX_SOURCES, INBOX_STATUSES } from "@/lib/domain";
 import { parseWeekParam, weekParam, currentWeekMonday } from "@/lib/timesheets";
 import { magScanVerwijderen } from "@/lib/week-detail";
@@ -29,7 +25,7 @@ import { ymd } from "@/lib/week-nav";
 import { dubbelePersoonWeken } from "@/lib/wizard-dubbelen";
 import { WeekBalk } from "@/components/week-balk";
 import { TimesheetDropzone } from "./TimesheetDropzone";
-import { pullMailNow, verwijderInboxScan } from "./actions";
+import { verwijderInboxScan } from "./actions";
 
 export const metadata = { title: "Timesheet-inbox" };
 export const dynamic = "force-dynamic";
@@ -55,11 +51,6 @@ export default async function InboxPage({
     error?: string;
     week?: string;
     voor?: string;
-    pull?: string;
-    mails?: string;
-    ts?: string;
-    inv?: string;
-    skip?: string;
     verwijderd?: string;
   }>;
 }) {
@@ -69,7 +60,6 @@ export default async function InboxPage({
   const wp = weekParam(monday);
   const nextMonday = new Date(monday.getTime() + 7 * 86_400_000);
   const currentWeek = weekParam(currentWeekMonday());
-  const mailConnected = isMailIntakeConnected();
 
   // Kwam je hier via "Importeren" bij een ontbrekende urenstaat? Toon voor wie/
   // welke week, zodat je meteen het juiste bestand erbij sleept.
@@ -119,63 +109,19 @@ export default async function InboxPage({
 
   return (
     <div className="space-y-6">
+      {/* HANDMATIG, bewust: de mail-intake (Postvak ophalen, doorsturen naar
+          /api/inbox/email) blijft bestaan, maar staat niet op dit scherm — de
+          eigenaar zet de urenstaten er zelf in. Alleen de UI is weg; de route
+          en de actie (pullMailNow) zijn ongemoeid gelaten. */}
       <PageHeader
         title="Timesheet-inbox"
-        description="Binnengekomen urenstaten (via admin@q4s.nl, los bestand of een ZIP). AI leest naam, week en uren uit; bekijk ze per week."
+        description="Binnengekomen urenstaten (los bestand of ZIP). Sleep ze hierin; bekijk ze per week."
         actions={
-          <>
-            {mailConnected && (
-              <form action={pullMailNow}>
-                <SubmitButton variant="outline" pendingLabel="Ophalen…">
-                  <RefreshCw className="h-4 w-4" /> Postvak ophalen
-                </SubmitButton>
-              </form>
-            )}
-            <Link href="/inbox/status" className={buttonVariants({ variant: "outline" })}>
-              <ClipboardCheck className="h-4 w-4" /> Timesheet-status
-            </Link>
-          </>
+          <Link href="/inbox/status" className={buttonVariants({ variant: "outline" })}>
+            <ClipboardCheck className="h-4 w-4" /> Timesheet-status
+          </Link>
         }
       />
-
-      {sp.pull === "ok" && (
-        <p className="flex items-start gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          <MailCheck className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            Postvak opgehaald: <strong>{sp.mails ?? 0}</strong> nieuw
-            {Number(sp.mails) === 1 ? " bericht" : "e berichten"}, <strong>{sp.ts ?? 0}</strong> urensta
-            {Number(sp.ts) === 1 ? "at" : "ten"} geïmporteerd
-            {Number(sp.inv) > 0 && (
-              <>
-                {" "}
-                · <strong>{sp.inv}</strong> factu{Number(sp.inv) === 1 ? "ur" : "ren"} apart gezet (nog
-                handmatig)
-              </>
-            )}
-            {Number(sp.skip) > 0 && <> · {sp.skip} al eerder verwerkt</>}.
-          </span>
-        </p>
-      )}
-      {sp.pull === "off" && (
-        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Postvak nog niet gekoppeld — zet de <code>MS_*</code>-gegevens (Microsoft 365, Mail.Read) in de omgeving.
-        </p>
-      )}
-      {sp.pull === "err" && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          Postvak ophalen mislukt — controleer de M365-koppeling en probeer opnieuw.
-        </p>
-      )}
-      {!mailConnected && (
-        <p className="flex items-start gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3 text-sm text-ink-600">
-          <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
-          <span>
-            <strong className="text-ink-700">Automatisch ophalen uit admin@q4s.nl</strong> staat klaar, maar is nog
-            niet gekoppeld. Zodra de Microsoft 365-koppeling (MS-gegevens) live staat, verschijnt hier de knop
-            “Postvak ophalen” en worden urenstaten vanzelf binnengehaald en uitgelezen.
-          </span>
-        </p>
-      )}
 
       {sp.verwijderd === "1" && (
         <p className="flex items-start gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">

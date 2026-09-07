@@ -1,5 +1,6 @@
 import { distributeDayHours, formatHours, type DayHours } from "@/lib/utils";
 import type { SurchargeConfig } from "@/lib/toeslag";
+import type { GereedPerPlaatsing } from "@/lib/urenstaat-gereed";
 import type { WeekSlot } from "@/lib/week-koppeling";
 import type { PersonenOverzicht, PersoonRij } from "@/lib/wizard-personen";
 import type { WeekKeuze } from "@/lib/wizard-weekfilter";
@@ -66,6 +67,14 @@ export type WizardWeekstrook = {
   weken: WeekSlot[];
   /** placementId → weeksleutels ("2026-W34") die al verwerkt zijn. */
   verwerktPerPlaatsing: Record<string, string[]>;
+  /**
+   * Dezelfde weken, maar mét de urenstaat die er al gereed staat: placementId →
+   * weeksleutel → {@link GereedPerPlaatsing}. Daarmee kan het scherm vóór het
+   * akkoord melden "Er staat al een urenstaat gereed voor … — week …" en er
+   * meteen naartoe linken, in plaats van de week nog eens te verwerken.
+   * Samengesteld door `bouwGereedPerPlaatsing` (src/lib/urenstaat-gereed.ts).
+   */
+  gereedPerPlaatsing: GereedPerPlaatsing;
 };
 
 /**

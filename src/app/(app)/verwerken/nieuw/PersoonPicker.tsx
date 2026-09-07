@@ -19,6 +19,10 @@ import { Input, Select } from "@/components/ui/field";
 import { formatCurrency } from "@/lib/utils";
 import { initialen } from "@/lib/weekverwerking";
 import {
+  gereedeUrenstaatVanPlaatsingen,
+  type GereedPerPlaatsing,
+} from "@/lib/urenstaat-gereed";
+import {
   filterPersonen,
   laatsteVerwerktLabel,
   openstaandLabel,
@@ -81,11 +85,14 @@ function Tarief({ label, waarde }: { label: string; waarde: number }) {
 function PersoonKaart({
   persoon,
   weekStatus,
+  gereed,
   onKies,
 }: {
   persoon: WizardPersoon;
   /** Wat deze persoon in de GEKOZEN week te doen heeft. */
   weekStatus: PersoonWeekStatus;
+  /** Ligt er voor de gekozen week al een urenstaat klaar? Dan is die week af. */
+  gereed: boolean;
   onKies: (persoon: WizardPersoon, placementId: string) => void;
 }) {
   const open = persoon.openstaand.length;
@@ -103,7 +110,9 @@ function PersoonKaart({
           </span>
         </span>
         {/* De badge gaat over de GEKOZEN week; het totaal aantal open weken
-            staat onderaan de kaart. */}
+            staat onderaan de kaart. Ligt de urenstaat van die week er al, dan
+            staat dat er los bij — ook als er nog een scan open staat. */}
+        {gereed && <Badge color="green">urenstaat gereed</Badge>}
         <Badge color={weekStatusKleur(weekStatus)}>{weekStatusLabel(weekStatus)}</Badge>
       </div>
 
@@ -175,6 +184,7 @@ export function PersoonPicker({
   week,
   onWeek,
   verwerktPerPlaatsing,
+  gereedPerPlaatsing,
   onKies,
   onLosseStaat,
 }: {
@@ -190,6 +200,8 @@ export function PersoonPicker({
   onWeek: (week: string) => void;
   /** placementId → al verwerkte weeksleutels (dezelfde map als de weekstrook). */
   verwerktPerPlaatsing: Record<string, string[]>;
+  /** Dezelfde weken, mét de urenstaat die er al gereed staat (om te melden). */
+  gereedPerPlaatsing: GereedPerPlaatsing;
   /** Gekozen: deze persoon, deze plaatsing ("" = straks zelf kiezen). */
   onKies: (persoon: WizardPersoon, placementId: string) => void;
   /** Zonder persoon verder: uploaden (null) of een niet-herkende staat openen. */
@@ -313,6 +325,13 @@ export function PersoonPicker({
                 key={p.consultantId}
                 persoon={p}
                 weekStatus={p.weekStatus}
+                gereed={
+                  gereedeUrenstaatVanPlaatsingen(
+                    gereedPerPlaatsing,
+                    p.plaatsingen.map((rij) => rij.plaatsing.id),
+                    week,
+                  ) !== null
+                }
                 onKies={onKies}
               />
             ))}

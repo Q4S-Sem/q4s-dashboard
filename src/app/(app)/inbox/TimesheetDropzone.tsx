@@ -26,8 +26,7 @@ export function TimesheetDropzone() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-ink-500">
-          Alles wordt automatisch uitgelezen en per week gesorteerd. Of laat admin@q4s.nl doorsturen
-          naar <code>/api/inbox/email</code>.
+          Alles wordt automatisch uitgelezen en per week gesorteerd.
         </p>
         <SubmitButton disabled={count === 0} pendingLabel="Uploaden…">
           <UploadCloud className="h-4 w-4" /> Upload &amp; uitlezen

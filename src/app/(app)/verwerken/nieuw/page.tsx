@@ -8,9 +8,11 @@ import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { ensureAiKeysLoaded } from "@/lib/ai-keys";
 import { parseWeekNumber } from "@/lib/invoice-extract";
 import {
-  canonicalWeekFromDates,
+  bouwGereedPerPlaatsing,
+  verwerkteWekenPerPlaatsing,
+} from "@/lib/urenstaat-gereed";
+import {
   recenteWeken,
-  weekKey,
   weekNummerUitTekst,
   STROOK_WEKEN,
 } from "@/lib/week-koppeling";
@@ -69,22 +71,23 @@ export default async function WeekVerwerkenPage() {
     }),
     // Wat er per plaatsing al VERWERKT is: een goedgekeurde urenstaat. INVOICED
     // telt mee — dat is een goedgekeurde staat waar de verkoopfactuur al uit
-    // gemaakt is, dus zeker niet "ontbreekt".
+    // gemaakt is, dus zeker niet "ontbreekt". Het id komt mee: daarmee kan het
+    // scherm vóór het akkoord naar de urenstaat linken die er al gereed staat.
     db.timesheet.findMany({
       where: { status: { in: ["APPROVED", "INVOICED"] }, weekStart: { gte: eersteMaandag } },
-      select: { placementId: true, weekStart: true },
+      select: { id: true, placementId: true, weekStart: true },
     }),
   ]);
 
-  const verwerktPerPlaatsing: Record<string, string[]> = {};
-  for (const staat of verwerkteStaten) {
-    const week = canonicalWeekFromDates(staat.weekStart);
-    if (!week) continue;
-    const sleutels = (verwerktPerPlaatsing[staat.placementId] ??= []);
-    const sleutel = weekKey(week);
-    if (!sleutels.includes(sleutel)) sleutels.push(sleutel);
-  }
-  const weekstrook: WizardWeekstrook = { weken, verwerktPerPlaatsing };
+  // Eén opzoeklijst voor allebei: de weekstrook wil alleen wéten welke weken
+  // verwerkt zijn, de melding "er staat al een urenstaat gereed" wil er ook
+  // naartoe kunnen linken. Puur en getest — src/lib/urenstaat-gereed.ts.
+  const gereedPerPlaatsing = bouwGereedPerPlaatsing(verwerkteStaten);
+  const weekstrook: WizardWeekstrook = {
+    weken,
+    verwerktPerPlaatsing: verwerkteWekenPerPlaatsing(gereedPerPlaatsing),
+    gereedPerPlaatsing,
+  };
 
   // De openstaande weekstaten in de vorm die het scherm toont. Ook de weekfilter
   // hieronder telt hierop door, zodat "3 open in week 35" precies over dezelfde

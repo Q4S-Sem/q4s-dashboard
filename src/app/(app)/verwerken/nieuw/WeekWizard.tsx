@@ -45,6 +45,11 @@ import {
 } from "@/lib/utils";
 import { initialen } from "@/lib/weekverwerking";
 import {
+  gereedMelding,
+  gereedeUrenstaat,
+  type GereedeUrenstaat,
+} from "@/lib/urenstaat-gereed";
+import {
   buildWeekStrip,
   canonicalWeekFromDates,
   weekKey,
@@ -261,6 +266,65 @@ function DubbeleUploadNote({ dubbelen }: { dubbelen: WizardTimesheet[] }) {
         </Link>
       ))}
     </p>
+  );
+}
+
+/**
+ * "Er staat al een urenstaat gereed voor <naam> — week <N>."
+ *
+ * Deze persoon-week is al verwerkt: er ligt een goedgekeurde (of al
+ * gefactureerde) urenstaat. Bewust VOORAF — niet pas als het akkoord op de
+ * @@unique stuit: de eigenaar ziet meteen dat er niets meer te doen is en klikt
+ * door naar de urenstaat die er al ligt.
+ *
+ * Er wordt hier niets gewijzigd, niets verwijderd en niets automatisch
+ * overgeslagen: alleen het akkoord vervalt, zodat dezelfde week niet nog een
+ * keer verwerkt wordt.
+ */
+function GereedNote({
+  naam,
+  gereed,
+  klein = false,
+}: {
+  naam: string;
+  gereed: GereedeUrenstaat;
+  /** Compacte variant voor onder een regel in de weekenlijst van stap 1. */
+  klein?: boolean;
+}) {
+  if (klein) {
+    return (
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+        <span>{gereedMelding(naam, gereed)} Je hoeft deze week niet nog eens te verwerken —</span>
+        <Link
+          href={`/uren/${gereed.id}`}
+          className="font-semibold underline underline-offset-2 hover:text-amber-900"
+        >
+          bekijk de urenstaat
+        </Link>
+      </p>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
+      <p className="flex items-start gap-2 text-sm font-semibold text-amber-900">
+        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+        {gereedMelding(naam, gereed)}
+      </p>
+      <p className="mt-1.5 text-sm text-amber-800">
+        Deze week is al verwerkt — je hoeft hem niet nog een keer te doen. Klopt er iets niet, pas
+        het dan aan bij de urenstaat zelf.
+      </p>
+      <div className="mt-3">
+        <Link
+          href={`/uren/${gereed.id}`}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          <FileText className="h-4 w-4" /> Bekijk de urenstaat
+        </Link>
+      </div>
+    </div>
   );
 }
 
@@ -504,6 +568,7 @@ export function WeekWizard(props: {
           week={week}
           onWeek={setWeek}
           verwerktPerPlaatsing={props.weekstrook.verwerktPerPlaatsing}
+          gereedPerPlaatsing={props.weekstrook.gereedPerPlaatsing}
           onKies={(persoon, placementId) =>
             setKeuze({
               consultantId: persoon.consultantId,
@@ -699,6 +764,13 @@ function WizardRonde({
   // de stukken niet klopte.
   const bezigWeek = canoniek ? weekKey(canoniek) : null;
   const heeftWeekAfwijking = staatAfwijking !== null || factuurAfwijking !== null;
+  // Ligt er voor deze plaatsing + week AL een goedgekeurde urenstaat? Dan is
+  // deze week klaar: het scherm meldt dat (met een link erheen) en het akkoord
+  // maakt plaats voor "Al verwerkt — bekijk urenstaat". Zolang er nog geen
+  // weekstaat gekozen is telt de week uit de filter, zodat de melding er al
+  // staat vóór je hem opent. Opzoeken is puur en getest (urenstaat-gereed.ts);
+  // de echte blokkade blijft de @@unique op de server.
+  const gereed = gereedeUrenstaat(weekstrook.gereedPerPlaatsing, placementId, bezigWeek);
   // Tien hokjes samenstellen is verwaarloosbaar werk — geen useMemo nodig.
   const stripCellen = placementId
     ? buildWeekStrip({
@@ -938,6 +1010,7 @@ function WizardRonde({
             {heeftWeekAfwijking && canoniek && (
               <Badge color="orange">week {canoniek.isoWeek} volgens de dagen</Badge>
             )}
+            {gereed && <Badge color="green">urenstaat gereed</Badge>}
             <Badge color={gekozen ? "blue" : "slate"}>
               {gekozen ? "in behandeling" : "nog niet begonnen"}
             </Badge>
@@ -1009,6 +1082,9 @@ function WizardRonde({
               </p>
             </div>
 
+            {/* Deze week ligt er al: melden en doorlinken, niet nog eens doen. */}
+            {gereed && <GereedNote naam={persoonNaam} gereed={gereed} />}
+
             {!gekozen ? (
               // ZIJN weken links (de gewone route), uploaden rechts (de
               // uitzondering) — twee kolommen met hun kopjes op één lijn.
@@ -1059,6 +1135,13 @@ function WizardRonde({
                         // Dezelfde week twee keer aangeleverd? Dan staat hier de
                         // bewaarde staat, met eronder de melding wat er verborgen is.
                         const dubbel = dubbelen[item.id] ?? [];
+                        // Ligt de urenstaat van déze week er al? Dan zegt de regel
+                        // dat meteen, zodat je hem niet opnieuw oppakt.
+                        const alGereed = gereedeUrenstaat(
+                          weekstrook.gereedPerPlaatsing,
+                          placementId,
+                          week ? weekKey(week) : null,
+                        );
                         return (
                           <div key={item.id} className="border-b border-ink-100 last:border-b-0">
                             <button
@@ -1078,7 +1161,9 @@ function WizardRonde({
                                 </span>
                               </span>
                               {isFilterWeek && <Badge color="blue">gekozen week</Badge>}
-                              {item.status === "NEW" ? (
+                              {alGereed ? (
+                                <Badge color="green">urenstaat gereed</Badge>
+                              ) : item.status === "NEW" ? (
                                 <Badge color="amber">nog niet uitgelezen</Badge>
                               ) : item.needsReview ? (
                                 <Badge color="amber">nakijken</Badge>
@@ -1086,6 +1171,13 @@ function WizardRonde({
                                 <Badge color="green">uitgelezen</Badge>
                               )}
                             </button>
+                            {alGereed && (
+                              <GereedNote
+                                naam={persoon?.naam ?? item.naam}
+                                gereed={alGereed}
+                                klein
+                              />
+                            )}
                             {dubbel.length > 0 && <DubbeleUploadNote dubbelen={dubbel} />}
                           </div>
                         );
@@ -1639,6 +1731,10 @@ function WizardRonde({
 
             {verwerkState.bestaand && <BestaandeWeekPaneel bestaand={verwerkState.bestaand} />}
 
+            {/* Deze week is al verwerkt: hieronder vervalt het akkoord en wijst
+                de knop naar de urenstaat die er al gereed staat. */}
+            {gereed && <GereedNote naam={persoonNaam} gereed={gereed} />}
+
             <form action={verwerkAction}>
               {/* Alles wat de mens hierboven heeft goedgekeurd, mee de server op. */}
               <input type="hidden" name="inboxId" value={gekozen?.id ?? ""} />
@@ -1691,14 +1787,24 @@ function WizardRonde({
                 <Button type="button" variant="outline" onClick={() => ga(2)}>
                   <ArrowLeft className="h-4 w-4" /> Terug
                 </Button>
-                <SubmitButton
-                  variant="success"
-                  size="lg"
-                  disabled={!klaarVoorAkkoord}
-                  pendingLabel="Verwerken…"
-                >
-                  <CheckCircle2 className="h-4 w-4" /> Akkoord — verwerk deze week
-                </SubmitButton>
+                {gereed ? (
+                  // Al gedaan: geen tweede akkoord, alleen de weg ernaartoe.
+                  <Link
+                    href={`/uren/${gereed.id}`}
+                    className={buttonVariants({ variant: "outline", size: "lg" })}
+                  >
+                    <FileText className="h-4 w-4" /> Al verwerkt — bekijk urenstaat
+                  </Link>
+                ) : (
+                  <SubmitButton
+                    variant="success"
+                    size="lg"
+                    disabled={!klaarVoorAkkoord}
+                    pendingLabel="Verwerken…"
+                  >
+                    <CheckCircle2 className="h-4 w-4" /> Akkoord — verwerk deze week
+                  </SubmitButton>
+                )}
               </div>
             </form>
 
