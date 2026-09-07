@@ -6,8 +6,21 @@ import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { ensureAiKeysLoaded } from "@/lib/ai-keys";
+import { parseWeekNumber } from "@/lib/invoice-extract";
+import {
+  canonicalWeekFromDates,
+  recenteWeken,
+  weekKey,
+  weekNummerUitTekst,
+  STROOK_WEKEN,
+} from "@/lib/week-koppeling";
 import { WeekWizard } from "./WeekWizard";
-import { naarWizardTimesheet, type WizardPlaatsing } from "./wizard-data";
+import {
+  getypteWeekVeld,
+  naarWizardTimesheet,
+  type WizardPlaatsing,
+  type WizardWeekstrook,
+} from "./wizard-data";
 
 // ---------------------------------------------------------------------------
 // "Week verwerken" — de begeleide route door de facturatie, per persoon per week.
@@ -28,7 +41,13 @@ export default async function WeekVerwerkenPage() {
   // Serverless: de AI-sleutels staan in de DB — laden vóór we melden of er AI is.
   await ensureAiKeysLoaded();
 
-  const [items, placements] = await Promise.all([
+  // De weekstrook kijkt tien weken terug t/m de lopende week. "Nu" wordt hier
+  // (server) bepaald en als platte weeksleutels doorgegeven, zodat het scherm er
+  // geen eigen datum voor nodig heeft.
+  const weken = recenteWeken(new Date(), STROOK_WEKEN);
+  const eersteMaandag = new Date(`${weken[0].monday}T00:00:00`);
+
+  const [items, placements, verwerkteStaten] = await Promise.all([
     // Wat nog écht openstaat: uitgelezen of nog te lezen, nog geen urenstaat en
     // niet geparkeerd in de wachtkamer.
     db.timesheetInbox.findMany({
@@ -45,7 +64,24 @@ export default async function WeekVerwerkenPage() {
       },
       orderBy: { startDate: "desc" },
     }),
+    // Wat er per plaatsing al VERWERKT is: een goedgekeurde urenstaat. INVOICED
+    // telt mee — dat is een goedgekeurde staat waar de verkoopfactuur al uit
+    // gemaakt is, dus zeker niet "ontbreekt".
+    db.timesheet.findMany({
+      where: { status: { in: ["APPROVED", "INVOICED"] }, weekStart: { gte: eersteMaandag } },
+      select: { placementId: true, weekStart: true },
+    }),
   ]);
+
+  const verwerktPerPlaatsing: Record<string, string[]> = {};
+  for (const staat of verwerkteStaten) {
+    const week = canonicalWeekFromDates(staat.weekStart);
+    if (!week) continue;
+    const sleutels = (verwerktPerPlaatsing[staat.placementId] ??= []);
+    const sleutel = weekKey(week);
+    if (!sleutels.includes(sleutel)) sleutels.push(sleutel);
+  }
+  const weekstrook: WizardWeekstrook = { weken, verwerktPerPlaatsing };
 
   const plaatsingen: WizardPlaatsing[] = placements.map((p) => ({
     id: p.id,
@@ -91,8 +127,16 @@ export default async function WeekVerwerkenPage() {
       />
 
       <WeekWizard
-        items={items.map(naarWizardTimesheet)}
+        items={items.map((item) =>
+          naarWizardTimesheet(
+            item,
+            // Wat er op de stukken getypt staat — puur om een afwijking te
+            // kunnen melden; de week zelf volgt uit de gewerkte dagen.
+            parseWeekNumber(getypteWeekVeld(item)) ?? weekNummerUitTekst(item.originalName),
+          ),
+        )}
         plaatsingen={plaatsingen}
+        weekstrook={weekstrook}
         aiKlaar={isAIConfigured() || isVisionConfigured()}
       />
     </div>

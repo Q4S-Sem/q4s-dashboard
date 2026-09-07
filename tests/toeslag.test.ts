@@ -1,0 +1,215 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  buildTimesheetLines,
+  computeTimesheetMoney,
+  surchargeUnit,
+  upliftedRate,
+  weekendHoursOf,
+  type SurchargeConfig,
+} from "../src/lib/toeslag";
+import { round2 } from "../src/lib/utils";
+
+// ---------------------------------------------------------------------------
+// Het rekenmodel achter iedere factuur:
+//   • WEEKEND-uren zitten al in de dagregels → alleen het toeslagdeel erbovenop.
+//   • OVERUREN staan NIET in de dagregels → volledige uren × opgehoogd tarief,
+//     precies zoals de freelancer ze zelf factureert.
+// De regels van buildTimesheetLines moeten tot op de cent optellen tot het
+// totaal van computeTimesheetMoney, anders wijkt de wizard af van de factuur.
+// ---------------------------------------------------------------------------
+
+/** Maandag 6 januari 2025 (ISO-week 2) + n dagen. */
+function dag(n: number): Date {
+  return new Date(2025, 0, 6 + n);
+}
+
+const NUL: SurchargeConfig = {
+  costRate: 0,
+  chargeRate: 0,
+  weekendSurchargeBuy: 0,
+  weekendSurchargeSell: 0,
+  overtimeSurchargeBuy: 0,
+  overtimeSurchargeSell: 0,
+  kmRateBuy: 0,
+  kmRateSell: 0,
+};
+
+function config(over: Partial<SurchargeConfig>): SurchargeConfig {
+  return { ...NUL, ...over };
+}
+
+/** Dezelfde invoer als computeTimesheetMoney, maar dan als factuurregels (inkoop). */
+function inkoopRegels(
+  entries: { date: Date; hours: number }[],
+  t: { overtimeHours: number | null; kilometers: number | null },
+  p: SurchargeConfig,
+) {
+  return buildTimesheetLines({
+    timesheetId: "ts-1",
+    placementId: "pl-1",
+    weekNumber: 2,
+    location: null,
+    baseDescription: "Totaal uren",
+    entries,
+    overtimeHours: t.overtimeHours,
+    kilometers: t.kilometers,
+    rate: p.costRate,
+    weekendPct: p.weekendSurchargeBuy,
+    overtimePct: p.overtimeSurchargeBuy,
+    kmRate: p.kmRateBuy,
+  });
+}
+
+function regelTotaal(regels: { amount: number }[]): number {
+  return round2(regels.reduce((s, r) => s + r.amount, 0));
+}
+
+// ---------------------------------------------------------------------------
+// surchargeUnit / upliftedRate
+// ---------------------------------------------------------------------------
+
+test("het opgehoogde uurtarief is tarief + toeslag, op centen afgerond", () => {
+  assert.equal(surchargeUnit(77, 10), 7.7);
+  assert.equal(upliftedRate(77, 10), 84.7);
+  assert.equal(upliftedRate(77, 0), 77);
+  assert.equal(upliftedRate(66.67, 12.5), round2(66.67 + surchargeUnit(66.67, 12.5)));
+});
+
+// ---------------------------------------------------------------------------
+// Overuren = EXTRA uren tegen het volle opgehoogde tarief (de bug-case)
+// ---------------------------------------------------------------------------
+
+test("Jordy: 32 reguliere uren + 3 overuren à €77 +10% = €2.718,10 inkoop", () => {
+  // Dinsdag t/m vrijdag 8 uur; maandag niet gewerkt, geen weekend.
+  const entries = [1, 2, 3, 4].map((i) => ({ date: dag(i), hours: 8 }));
+  const p = config({ costRate: 77, overtimeSurchargeBuy: 10 });
+  const geld = computeTimesheetMoney(
+    { entries, overtimeHours: 3, kilometers: null },
+    p,
+  );
+
+  assert.equal(geld.hours, 32);
+  assert.equal(geld.workedHours, 35);
+  assert.equal(geld.weekendHours, 0);
+  assert.equal(geld.buy.base, 2464); // 32 × 77
+  assert.equal(geld.buy.weekend, 0);
+  assert.equal(geld.buy.overtime, 254.1); // 3 × 84,70 — inclusief basistarief
+  assert.equal(geld.buy.km, 0);
+  assert.equal(geld.buy.total, 2718.1);
+
+  // Precies wat de freelancer factureert → de wizard mag dit niet als afwijking
+  // markeren, want zijn factuurbedrag is exact buy.total.
+  const regels = inkoopRegels(entries, { overtimeHours: 3, kilometers: null }, p);
+  assert.equal(regels.length, 2);
+  assert.equal(regels[1].description, "Overuren +10%");
+  assert.equal(regels[1].quantity, 3);
+  assert.equal(regels[1].unitPrice, 84.7);
+  assert.equal(regels[1].amount, 254.1);
+  assert.equal(regelTotaal(regels), 2718.1);
+});
+
+test("zonder overurentoeslag worden overuren nog steeds tegen het basistarief betaald", () => {
+  const entries = [{ date: dag(0), hours: 8 }];
+  const p = config({ costRate: 50, chargeRate: 70 });
+  const geld = computeTimesheetMoney(
+    { entries, overtimeHours: 4, kilometers: null },
+    p,
+  );
+
+  assert.equal(geld.buy.overtime, 200); // 4 × 50, niet 0
+  assert.equal(geld.buy.total, 600); // 400 basis + 200 overuren
+  assert.equal(geld.sell.overtime, 280); // 4 × 70
+  assert.equal(geld.sell.total, 840);
+
+  const regels = inkoopRegels(entries, { overtimeHours: 4, kilometers: null }, p);
+  assert.equal(regels[1].description, "Overuren");
+  assert.equal(regels[1].unitPrice, 50);
+  assert.equal(regelTotaal(regels), geld.buy.total);
+});
+
+test("geen overuren → geen overurenregel en geen overurenbedrag", () => {
+  const entries = [{ date: dag(0), hours: 8 }];
+  const p = config({ costRate: 60, overtimeSurchargeBuy: 25 });
+  const geld = computeTimesheetMoney(
+    { entries, overtimeHours: null, kilometers: null },
+    p,
+  );
+
+  assert.equal(geld.buy.overtime, 0);
+  assert.equal(geld.buy.total, 480);
+  assert.equal(inkoopRegels(entries, { overtimeHours: null, kilometers: null }, p).length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// Weekend blijft toeslag-only (de uren zitten al in de dagregels)
+// ---------------------------------------------------------------------------
+
+test("weekenduren tellen mee in de basis en krijgen alléén de toeslag erbovenop", () => {
+  // Maandag t/m vrijdag 8 u + zaterdag 4 u = 44 u, waarvan 4 weekenduren.
+  const entries = [
+    ...[0, 1, 2, 3, 4].map((i) => ({ date: dag(i), hours: 8 })),
+    { date: dag(5), hours: 4 },
+  ];
+  const p = config({ costRate: 50, weekendSurchargeBuy: 50 });
+  const geld = computeTimesheetMoney(
+    { entries, overtimeHours: null, kilometers: null },
+    p,
+  );
+
+  assert.equal(weekendHoursOf(entries), 4);
+  assert.equal(geld.hours, 44);
+  assert.equal(geld.weekendHours, 4);
+  assert.equal(geld.buy.base, 2200); // 44 × 50, inclusief de zaterdaguren
+  assert.equal(geld.buy.weekend, 100); // 4 × 25 toeslag, géén tweede basis
+  assert.equal(geld.buy.total, 2300);
+
+  const regels = inkoopRegels(entries, { overtimeHours: null, kilometers: null }, p);
+  assert.equal(regels[1].description, "Weekendtoeslag 50%");
+  assert.equal(regels[1].unitPrice, 25);
+  assert.equal(regelTotaal(regels), 2300);
+});
+
+// ---------------------------------------------------------------------------
+// De harde garantie: regels === totaal, altijd
+// ---------------------------------------------------------------------------
+
+test("de som van de factuurregels is exact gelijk aan het zijtotaal", () => {
+  const entries = [
+    ...[0, 1, 2, 3, 4].map((i) => ({ date: dag(i), hours: 7.5 })),
+    { date: dag(6), hours: 5.25 }, // zondag
+  ];
+  const p = config({
+    costRate: 77,
+    chargeRate: 92.5,
+    weekendSurchargeBuy: 50,
+    weekendSurchargeSell: 50,
+    overtimeSurchargeBuy: 10,
+    overtimeSurchargeSell: 15,
+    kmRateBuy: 0.23,
+    kmRateSell: 0.23,
+  });
+  const t = { overtimeHours: 3.25, kilometers: 187 };
+  const geld = computeTimesheetMoney({ entries, ...t }, p);
+
+  const inkoop = inkoopRegels(entries, t, p);
+  assert.equal(inkoop.length, 4); // uren + weekend + overuren + km
+  assert.equal(regelTotaal(inkoop), geld.buy.total);
+
+  const verkoop = buildTimesheetLines({
+    timesheetId: "ts-1",
+    placementId: "pl-1",
+    weekNumber: 2,
+    location: null,
+    baseDescription: "Total hours",
+    entries,
+    overtimeHours: t.overtimeHours,
+    kilometers: t.kilometers,
+    rate: p.chargeRate,
+    weekendPct: p.weekendSurchargeSell,
+    overtimePct: p.overtimeSurchargeSell,
+    kmRate: p.kmRateSell,
+  });
+  assert.equal(regelTotaal(verkoop), geld.sell.total);
+  assert.equal(round2(regelTotaal(verkoop) - regelTotaal(inkoop)), geld.margin);
+});

@@ -263,7 +263,7 @@ export default async function UrenstaatDetailPage({
                   {(money.sell.overtime > 0 || money.buy.overtime > 0) && (
                     <tr className="border-t border-ink-100">
                       <td className="px-4 py-2 text-ink-700">
-                        Overurentoeslag ({formatHours(placement.overtimeSurchargeSell)}% verkoop / {formatHours(placement.overtimeSurchargeBuy)}% inkoop)
+                        Overuren ({formatHours(placement.overtimeSurchargeSell)}% verkoop / {formatHours(placement.overtimeSurchargeBuy)}% inkoop toeslag)
                       </td>
                       <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(money.sell.overtime)}</td>
                       <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(money.buy.overtime)}</td>

@@ -6,14 +6,16 @@ import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { ensureAiKeysLoaded } from "@/lib/ai-keys";
 import { confirmInboxItem, type ConfirmInboxError } from "@/lib/inbox-confirm";
 import { runInboxExtraction } from "@/lib/inbox-extract";
-import { extractReceivedInvoiceFromFile } from "@/lib/invoice-extract";
+import { extractReceivedInvoiceFromFile, parseWeekNumber } from "@/lib/invoice-extract";
 import { createSalesInvoice } from "@/lib/invoicing";
 import { computeTimesheetMoney } from "@/lib/toeslag";
 import { MAX_UPLOAD_BYTES, saveInboxBytes, saveReceivedBytes } from "@/lib/uploads";
 import { formatWeekLabel, round2 } from "@/lib/utils";
+import { weekNummerUitTekst } from "@/lib/week-koppeling";
 import { parseBedrag } from "@/lib/week-wizard";
 import {
   LEGE_FACTUUR,
+  getypteWeekVeld,
   naarWizardTimesheet,
   type FactuurLeesState,
   type TimesheetLeesState,
@@ -111,7 +113,16 @@ export async function leesTimesheet(
 
   revalidatePath("/inbox");
   revalidatePath("/verwerken/nieuw");
-  return { item: naarWizardTimesheet(item), waarschuwing };
+  return { item: naarWizardTimesheet(item, getypteWeekVanStaat(item)), waarschuwing };
+}
+
+/**
+ * Het weeknummer zoals de freelancer het OPSCHREEF: eerst het weekveld uit de
+ * AI-uitlezing, anders de bestandsnaam ("Urenstaat week 35.pdf"). Alleen om een
+ * afwijking te kunnen melden — de week zelf komt uit de gewerkte dagen.
+ */
+function getypteWeekVanStaat(item: { extractedJson: string | null; originalName: string }): number | null {
+  return parseWeekNumber(getypteWeekVeld(item)) ?? weekNummerUitTekst(item.originalName);
 }
 
 // ===========================================================================
@@ -153,6 +164,7 @@ export async function leesFactuur(
     return {
       bestand,
       values: { ...LEGE_FACTUUR },
+      getypteWeek: weekNummerUitTekst(file.name),
       waarschuwing: `${gelezen.message} Vul de factuurgegevens hieronder zelf in.`,
     };
   }
@@ -160,6 +172,9 @@ export async function leesFactuur(
   const v = gelezen.values;
   return {
     bestand,
+    // Wat hij BOVEN de factuur zette; de wizard vergelijkt dat met de week uit
+    // de gewerkte dagen en meldt een verschil (zonder iets te blokkeren).
+    getypteWeek: parseWeekNumber(gelezen.data.weekNumber) ?? weekNummerUitTekst(file.name),
     values: {
       number: v.number,
       issueDate: v.issueDate,

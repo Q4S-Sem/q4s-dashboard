@@ -59,7 +59,7 @@ export async function createSalesInvoice(opts: {
       // Verkoopfactuur is Engels → Engelse regelomschrijvingen.
       labels: {
         weekend: (p) => `Weekend surcharge ${p}%`,
-        overtime: (p) => `Overtime surcharge ${p}%`,
+        overtime: (p) => (p > 0 ? `Overtime +${p}%` : "Overtime"),
         km: "Kilometres",
       },
     });

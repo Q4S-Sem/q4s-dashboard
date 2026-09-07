@@ -6,10 +6,16 @@ import { round2 } from "./utils";
 // aggregations (src/lib/facturatie.ts) and the urenstaat detail all compute the
 // same amounts here, so the wizard preview always equals the generated invoice.
 //
-// Model: surcharges are EXTRA amounts ON TOP of the base (hours × rate), never a
-// re-rate of the base, so nothing is double-counted. "Buy" = inkoop (what we pay
-// the consultant), "Sell" = verkoop (what we charge the client). All config
-// defaults to 0 → identical to the old hours×rate behaviour.
+// Model:
+//  - WEEKEND-uren zitten al ín de dagregels (dus in de basis). De weekendtoeslag
+//    is daarom een EXTRA bedrag BOVENOP de basis — alleen het toeslagdeel.
+//  - OVERUREN staan NIET in de dagregels; ze worden apart opgegeven. Het zijn
+//    dus EXTRA uren die volledig betaald/gefactureerd worden tegen het opgehoogde
+//    uurtarief (tarief + toeslag), precies zoals de freelancer ze factureert
+//    (3 u × €84,70 bij €77 + 10%). Bij 0% toeslag blijft dat uren × tarief.
+// "Buy" = inkoop (what we pay the consultant), "Sell" = verkoop (what we charge
+// the client). Zonder overuren en met alle percentages op 0 is dit identiek aan
+// het oude uren×tarief-gedrag.
 // ---------------------------------------------------------------------------
 
 /** The per-placement surcharge configuration (+ the base hourly rates). */
@@ -18,8 +24,8 @@ export type SurchargeConfig = {
   chargeRate: number;
   weekendSurchargeBuy: number; // % uplift on cost rate for weekend hours
   weekendSurchargeSell: number; // % uplift on charge rate for weekend hours
-  overtimeSurchargeBuy: number; // % uplift on cost rate for overtime hours
-  overtimeSurchargeSell: number; // % uplift on charge rate for overtime hours
+  overtimeSurchargeBuy: number; // % uplift on cost rate for overtime hours (extra uren)
+  overtimeSurchargeSell: number; // % uplift on charge rate for overtime hours (extra uren)
   kmRateBuy: number; // €/km reimbursed to the consultant
   kmRateSell: number; // €/km charged to the client
 };
@@ -48,7 +54,10 @@ export function surchargeUnit(rate: number, pct: number): number {
   return round2((rate * pct) / 100);
 }
 
-/** One side's (buy or sell) cost broken into its components. */
+/** One side's (buy or sell) cost broken into its components.
+ *  `weekend` = alléén het toeslagdeel (de uren zitten al in `base`).
+ *  `overtime` = de VOLLEDIGE overurenbeloning (uren × opgehoogd tarief), want
+ *  overuren staan niet in de dagregels en dus niet in `base`. */
 export type SideBreakdown = {
   base: number;
   weekend: number;
@@ -56,6 +65,12 @@ export type SideBreakdown = {
   km: number;
   total: number;
 };
+
+/** Het uurtarief inclusief toeslag, bijv. €77 + 10% → €84,70. Op centen
+ *  afgerond zodat regel (aantal × stukprijs) en totaal gelijk blijven. */
+export function upliftedRate(rate: number, pct: number): number {
+  return round2(rate + surchargeUnit(rate, pct));
+}
 
 function computeSide(
   hours: number,
@@ -72,10 +87,9 @@ function computeSide(
     weekendPct > 0 && weekendHours > 0
       ? round2(weekendHours * surchargeUnit(rate, weekendPct))
       : 0;
+  // Overuren zijn EXTRA uren (niet in `hours`), dus inclusief het basistarief.
   const overtime =
-    overtimePct > 0 && overtimeHours > 0
-      ? round2(overtimeHours * surchargeUnit(rate, overtimePct))
-      : 0;
+    overtimeHours > 0 ? round2(overtimeHours * upliftedRate(rate, overtimePct)) : 0;
   const km = kmRate > 0 && kilometers > 0 ? round2(kilometers * kmRate) : 0;
   return { base, weekend, overtime, km, total: round2(base + weekend + overtime + km) };
 }
@@ -163,7 +177,8 @@ export function buildTimesheetLines(opts: {
   };
 }): BuiltLine[] {
   const wkLabel = opts.labels?.weekend ?? ((p: number) => `Weekendtoeslag ${p}%`);
-  const otLabel = opts.labels?.overtime ?? ((p: number) => `Overurentoeslag ${p}%`);
+  const otLabel =
+    opts.labels?.overtime ?? ((p: number) => (p > 0 ? `Overuren +${p}%` : "Overuren"));
   const kmLabel = opts.labels?.km ?? "Kilometers";
   const hours = round2(opts.entries.reduce((s, e) => s + e.hours, 0));
   const weekendHours = weekendHoursOf(opts.entries);
@@ -200,8 +215,10 @@ export function buildTimesheetLines(opts: {
     });
   }
 
-  if (opts.overtimePct > 0 && ot > 0) {
-    const unit = surchargeUnit(opts.rate, opts.overtimePct);
+  // Overuren als eigen regel tegen het volle opgehoogde tarief — zo leest de
+  // factuur hetzelfde als die van de freelancer ("Overuren 3,00 × €84,70").
+  if (ot > 0) {
+    const unit = upliftedRate(opts.rate, opts.overtimePct);
     lines.push({
       timesheetId: null,
       placementId: opts.placementId,
