@@ -1,6 +1,7 @@
 import { distributeDayHours, formatHours, type DayHours } from "@/lib/utils";
 import type { SurchargeConfig } from "@/lib/toeslag";
 import type { WeekSlot } from "@/lib/week-koppeling";
+import type { PersonenOverzicht, PersoonRij } from "@/lib/wizard-personen";
 
 // ---------------------------------------------------------------------------
 // De platte vorm waarin de wizard "Week verwerken" zijn gegevens rondstuurt:
@@ -77,6 +78,15 @@ export type WizardPlaatsing = {
   /** Exact de config waarmee invoicing.ts de echte factuur rekent. */
   config: SurchargeConfig;
 };
+
+/**
+ * Eén persoon in de keuzelijst van stap "Kies de persoon": zijn plaatsing(en) en
+ * zijn openstaande weken bij elkaar. Het groeperen zelf is puur en getest —
+ * `bouwPersoonRijen` in src/lib/wizard-personen.ts; dit zijn alleen de namen
+ * waarmee de wizard eraan refereert.
+ */
+export type WizardPersoon = PersoonRij<WizardPlaatsing, WizardTimesheet>;
+export type WizardPersonen = PersonenOverzicht<WizardPlaatsing, WizardTimesheet>;
 
 /** Een opgeslagen upload, doorgegeven tot aan het akkoord. */
 export type WizardBestand = {

@@ -113,7 +113,7 @@ export default async function WeekVerwerkenPage() {
       <PageHeader
         eyebrow="Facturatie"
         title="Week verwerken"
-        description="Eén persoon, één week — in drie stappen door de hele facturatie. Jij hoeft alleen te controleren."
+        description="Kies eerst de persoon, dan zijn week — daarna in drie stappen door de hele facturatie. Jij hoeft alleen te controleren."
         actions={
           <>
             <Link href="/verwerken/week" className={buttonVariants({ variant: "outline" })}>
