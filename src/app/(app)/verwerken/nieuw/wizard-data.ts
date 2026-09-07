@@ -1,5 +1,6 @@
 import { distributeDayHours, formatHours, type DayHours } from "@/lib/utils";
 import type { SurchargeConfig } from "@/lib/toeslag";
+import type { WeekSlot } from "@/lib/week-koppeling";
 
 // ---------------------------------------------------------------------------
 // De platte vorm waarin de wizard "Week verwerken" zijn gegevens rondstuurt:
@@ -37,10 +38,32 @@ export type WizardTimesheet = {
   placementId: string;
   /** Maandag als "YYYY-MM-DD" (leeg = niet gevonden). */
   weekStart: string;
+  /**
+   * Het weeknummer zoals het op de STUKKEN getypt staat (koptekst of
+   * bestandsnaam), of null als er geen staat. Dit is nadrukkelijk NIET de
+   * waarheid — die volgt uit `weekStart`/de gewerkte dagen (zie
+   * src/lib/week-koppeling.ts). Alleen om een afwijking te kunnen melden.
+   */
+  getypteWeek: number | null;
   /** Uren per dag Ma..Zo als tekst ("" = die dag niets). */
   dagUren: string[];
   overuren: string;
   kilometers: string;
+};
+
+/**
+ * De weekstrook per persoon: welke weken tonen we, en welke daarvan zijn voor
+ * een plaatsing al verwerkt (er ligt een goedgekeurde/gefactureerde urenstaat).
+ *
+ * Bewust op de SERVER gevuld en als platte sleutels doorgegeven: zo hangt de
+ * strook niet aan een `new Date()` in de browser (dat zou client en server uit
+ * elkaar laten lopen) en blijft het één query voor alle plaatsingen samen.
+ */
+export type WizardWeekstrook = {
+  /** De weken van de strook, oudste eerst. */
+  weken: WeekSlot[];
+  /** placementId → weeksleutels ("2026-W34") die al verwerkt zijn. */
+  verwerktPerPlaatsing: Record<string, string[]>;
 };
 
 /** Eén actieve plaatsing + alles wat er aan tarieven/toeslagen bij hoort. */
@@ -104,6 +127,8 @@ export type FactuurLeesState = {
   /** Uren/tarief zoals ZIJN factuur ze noemt (alleen ter informatie). */
   factuurUren?: number;
   factuurTarief?: number;
+  /** Weeknummer zoals op zijn factuur/bestandsnaam getypt; null = niet vermeld. */
+  getypteWeek?: number | null;
 };
 
 export type VerwerkResultaat = {
@@ -177,8 +202,35 @@ function getalVeld(value: number | null | undefined): string {
   return typeof value === "number" && value > 0 ? String(value) : "";
 }
 
-/** Eén inbox-item naar de vorm die het wizard-scherm toont en bewerkt. */
-export function naarWizardTimesheet(item: InboxRij): WizardTimesheet {
+/**
+ * Het RUWE weeknummer-veld uit de AI-uitlezing ("35", "week 35"), of "" als de
+ * staat er geen noemde. Bewust alleen uitpakken, niet parsen: het parsen gebeurt
+ * server-side met `parseWeekNumber` (src/lib/invoice-extract.ts) — die module
+ * trekt Prisma en de AI-clients mee en hoort dus niet in de wizard-bundel.
+ */
+export function getypteWeekVeld(item: { extractedJson: string | null }): string {
+  if (!item.extractedJson) return "";
+  try {
+    const week = (JSON.parse(item.extractedJson) as { weekNumber?: unknown }).weekNumber;
+    if (typeof week === "string") return week.trim();
+    if (typeof week === "number") return String(week);
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Eén inbox-item naar de vorm die het wizard-scherm toont en bewerkt.
+ *
+ * @param getypteWeek Het weeknummer zoals op de stukken getypt (kop of
+ *   bestandsnaam), door de server-aanroeper bepaald. Puur informatief — de week
+ *   zelf blijft uit `weekStart` (de gewerkte dagen) komen.
+ */
+export function naarWizardTimesheet(
+  item: InboxRij,
+  getypteWeek: number | null = null,
+): WizardTimesheet {
   const maandag = item.extractedWeekStart ? new Date(item.extractedWeekStart) : null;
   return {
     id: item.id,
@@ -195,6 +247,7 @@ export function naarWizardTimesheet(item: InboxRij): WizardTimesheet {
     consultantId: item.consultantId,
     placementId: item.placementId ?? "",
     weekStart: toDateInput(maandag),
+    getypteWeek,
     dagUren: dagUrenVan(item.extractedJson, maandag),
     overuren: getalVeld(item.extractedOvertimeHours),
     kilometers: getalVeld(item.extractedKilometers),

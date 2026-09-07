@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  CalendarDays,
   Check,
   CheckCircle2,
   FileText,
@@ -39,6 +40,13 @@ import {
 } from "@/lib/utils";
 import { initialen } from "@/lib/weekverwerking";
 import {
+  buildWeekStrip,
+  canonicalWeekFromDates,
+  weekKey,
+  weekMismatch,
+  weekMismatchLabel,
+} from "@/lib/week-koppeling";
+import {
   STANDAARD_MARGENORM,
   margeGezondheid,
   matchFactuurBedrag,
@@ -47,15 +55,18 @@ import {
 } from "@/lib/week-wizard";
 import { leesFactuur, leesTimesheet, verwerkWeek } from "./actions";
 import { DocumentViewer } from "./DocumentViewer";
+import { WeekStrip } from "./WeekStrip";
 import {
   LEGE_DAGUREN,
   inboxSamenvatting,
+  toDateInput,
   type FactuurLeesState,
   type FactuurVelden,
   type TimesheetLeesState,
   type VerwerkState,
   type WizardPlaatsing,
   type WizardTimesheet,
+  type WizardWeekstrook,
 } from "./wizard-data";
 
 // ---------------------------------------------------------------------------
@@ -108,13 +119,6 @@ function eenPlaatsingVoor(plaatsingen: WizardPlaatsing[], consultantId: string |
   if (!consultantId) return "";
   const eigen = plaatsingen.filter((p) => p.consultantId === consultantId);
   return eigen.length === 1 ? eigen[0].id : "";
-}
-
-/** "YYYY-MM-DD" → Date (lokale middernacht), of null. */
-function alsDatum(iso: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
-  const d = new Date(`${iso}T00:00:00`);
-  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 /** De velden zoals de AI-uitlezing ze aanreikt — de basis onder de correcties. */
@@ -184,6 +188,25 @@ function Paneel({
       </h3>
       {children}
     </div>
+  );
+}
+
+/**
+ * De week-afwijking: op de stukken staat een ander weeknummer dan de gewerkte
+ * dagen aangeven. Bewust een MELDING en geen keuze — de wizard rekent gewoon
+ * door met de week uit de dagen en het akkoord blijft gewoon mogelijk.
+ */
+function WeekAfwijkingNote({ melding }: { melding: string }) {
+  return (
+    <p className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" />
+      <span>
+        {melding}{" "}
+        <span className="text-amber-700">
+          Je hoeft niets te kiezen — de gewerkte dagen zijn leidend.
+        </span>
+      </span>
+    </p>
   );
 }
 
@@ -259,6 +282,7 @@ function Stepper({
 export function WeekWizard(props: {
   items: WizardTimesheet[];
   plaatsingen: WizardPlaatsing[];
+  weekstrook: WizardWeekstrook;
   aiKlaar: boolean;
 }) {
   const router = useRouter();
@@ -283,11 +307,13 @@ export function WeekWizard(props: {
 function WizardRonde({
   items,
   plaatsingen,
+  weekstrook,
   aiKlaar,
   opnieuw,
 }: {
   items: WizardTimesheet[];
   plaatsingen: WizardPlaatsing[];
+  weekstrook: WizardWeekstrook;
   aiKlaar: boolean;
   opnieuw: () => void;
 }) {
@@ -338,17 +364,56 @@ function WizardRonde({
     setFactuurCorrectie({ voor: factuurSleutel, velden });
   }
 
+  // --- DE WEEK: altijd uit de gewerkte dagen -------------------------------
+  // canonicalWeekFromDates (src/lib/week-koppeling.ts) is de bron van waarheid:
+  // de ingevulde datum wordt naar zijn ISO-maandag getrokken, en dát is de week
+  // die het scherm toont én die straks meegaat naar confirmInboxItem (en dus in
+  // de urenstaat waar createSalesInvoice mee factureert). Wat er op de stukken
+  // getypt staat telt nooit mee — hooguit als melding, zie hieronder.
+  const canoniek = canonicalWeekFromDates(weekStart);
+  const maandag = canoniek?.monday ?? null;
+  const canoniekeWeekStart = maandag ? toDateInput(maandag) : "";
+
+  // De afwijking tussen het getypte weeknummer (staat én factuur) en de echte
+  // week. Blokkeert nooit iets; het is puur een melding in stap 1 en stap 2.
+  const staatAfwijking = weekMismatch({
+    canonicalWeek: canoniek,
+    typedWeek: gekozen?.getypteWeek ?? null,
+  });
+  const factuurAfwijking = weekMismatch({
+    canonicalWeek: canoniek,
+    typedWeek: invState.getypteWeek ?? null,
+  });
+
   // --- afgeleide bedragen (geen eigen rekenwerk: alles via toeslag.ts) -----
   const plaatsing = plaatsingen.find((p) => p.id === placementId) ?? null;
-  const maandag = alsDatum(weekStart);
 
   const entries = useMemo(() => {
-    const ma = alsDatum(weekStart);
+    // Ook hier de canonieke maandag: de dagregels moeten op dezelfde week landen
+    // als het scherm toont en als straks in de urenstaat komt.
+    const ma = canonicalWeekFromDates(weekStart)?.monday ?? null;
     if (!ma) return [];
     return dagUren
       .map((h, i) => ({ date: new Date(ma.getTime() + i * DAG_MS), hours: parseHours(h) }))
       .filter((e) => e.hours > 0);
   }, [dagUren, weekStart]);
+
+  // --- de weekstrook van deze persoon -------------------------------------
+  // Welke weken zijn al verwerkt en welke ontbreken er nog? De verwerkte weken
+  // komen van de server (goedgekeurde urenstaten van deze plaatsing); de week
+  // die nu op tafel ligt kleurt "bezig" — of "afwijking" als het weeknummer op
+  // de stukken niet klopte.
+  const bezigWeek = canoniek ? weekKey(canoniek) : null;
+  const heeftWeekAfwijking = staatAfwijking !== null || factuurAfwijking !== null;
+  // Tien hokjes samenstellen is verwaarloosbaar werk — geen useMemo nodig.
+  const stripCellen = placementId
+    ? buildWeekStrip({
+        weken: weekstrook.weken,
+        verwerkt: weekstrook.verwerktPerPlaatsing[placementId] ?? [],
+        afwijkend: heeftWeekAfwijking && bezigWeek ? [bezigWeek] : [],
+        bezig: bezigWeek,
+      })
+    : [];
 
   const geld =
     plaatsing && entries.length > 0
@@ -508,32 +573,44 @@ function WizardRonde({
 
   return (
     <div className="space-y-4">
-      {/* --- wie & welke week --- */}
+      {/* --- wie & welke week (+ de weekstrook van deze persoon) --- */}
       <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 p-3.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-brand-600 text-[13px] font-bold text-white">
-            {initialen(plaatsing?.consultantNaam ?? gekozen?.naam ?? "")}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-bold text-ink-900">
-              {plaatsing?.consultantNaam ?? gekozen?.naam ?? "Nog geen persoon gekozen"}
+        <CardContent className="p-0">
+          <div className="flex flex-wrap items-center gap-3 p-3.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-brand-600 text-[13px] font-bold text-white">
+              {initialen(plaatsing?.consultantNaam ?? gekozen?.naam ?? "")}
             </span>
-            <span className="block truncate text-xs text-ink-400">
-              {[
-                plaatsing ? (plaatsing.klantNaam ?? "— geen bedrijf") : null,
-                maandag
-                  ? `${formatWeekLabel(maandag)} (${formatDate(maandag)} – ${formatDate(new Date(maandag.getTime() + 6 * DAG_MS))})`
-                  : null,
-                plaatsing ? `inkoop ${formatCurrency(plaatsing.config.costRate)}/u` : null,
-                plaatsing ? `verkoop ${formatCurrency(plaatsing.config.chargeRate)}/u` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ") || "Kies hieronder een timesheet — de rest vult zich vanzelf."}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-bold text-ink-900">
+                {plaatsing?.consultantNaam ?? gekozen?.naam ?? "Nog geen persoon gekozen"}
+              </span>
+              <span className="block truncate text-xs text-ink-400">
+                {[
+                  plaatsing ? (plaatsing.klantNaam ?? "— geen bedrijf") : null,
+                  // De week uit de gewerkte dagen — niet het nummer van de staat.
+                  maandag
+                    ? `${formatWeekLabel(maandag)} (${formatDate(maandag)} – ${formatDate(new Date(maandag.getTime() + 6 * DAG_MS))})`
+                    : null,
+                  plaatsing ? `inkoop ${formatCurrency(plaatsing.config.costRate)}/u` : null,
+                  plaatsing ? `verkoop ${formatCurrency(plaatsing.config.chargeRate)}/u` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "Kies hieronder een timesheet — de rest vult zich vanzelf."}
+              </span>
             </span>
-          </span>
-          <Badge color={gekozen ? "blue" : "slate"}>
-            {gekozen ? "in behandeling" : "nog niet begonnen"}
-          </Badge>
+            {heeftWeekAfwijking && canoniek && (
+              <Badge color="orange">week {canoniek.isoWeek} volgens de dagen</Badge>
+            )}
+            <Badge color={gekozen ? "blue" : "slate"}>
+              {gekozen ? "in behandeling" : "nog niet begonnen"}
+            </Badge>
+          </div>
+
+          {stripCellen.length > 0 && (
+            <div className="border-t border-ink-100 px-3.5 py-2.5">
+              <WeekStrip cellen={stripCellen} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -639,6 +716,10 @@ function WizardRonde({
                   </p>
                 )}
 
+                {staatAfwijking && (
+                  <WeekAfwijkingNote melding={weekMismatchLabel(staatAfwijking)} />
+                )}
+
                 {/* Document links, uitgelezen velden rechts — op één regel te
                     vergelijken; op smalle schermen staat het document bovenaan. */}
                 <div className={SPLIT}>
@@ -680,10 +761,16 @@ function WizardRonde({
                           ))}
                         </Select>
                       </Field>
-                      <Field label="Week (maandag)" htmlFor="weekStart" required>
+                      <Field
+                        label="Week (uit de gewerkte dagen)"
+                        htmlFor="weekStart"
+                        hint="Kies een dag uit de week — wij houden altijd de maandag van die ISO-week aan."
+                        required
+                      >
                         <DateInput
                           id="weekStart"
-                          value={weekStart}
+                          weekMode
+                          value={canoniekeWeekStart || weekStart}
                           onValueChange={(v) => corrigeer({ weekStart: v })}
                         />
                       </Field>
@@ -843,6 +930,10 @@ function WizardRonde({
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{invState.waarschuwing}</span>
               </p>
+            )}
+
+            {factuurAfwijking && (
+              <WeekAfwijkingNote melding={weekMismatchLabel(factuurAfwijking)} />
             )}
 
             {factuur && (
@@ -1123,7 +1214,10 @@ function WizardRonde({
               {/* Alles wat de mens hierboven heeft goedgekeurd, mee de server op. */}
               <input type="hidden" name="inboxId" value={gekozen?.id ?? ""} />
               <input type="hidden" name="placementId" value={placementId} />
-              <input type="hidden" name="weekStart" value={weekStart} />
+              {/* De canonieke maandag — wat het scherm toont, gaat ook de urenstaat
+                  in (parseConfirmInput trekt 'm nog eens naar de maandag; dat mag
+                  hier geen verschil meer maken). */}
+              <input type="hidden" name="weekStart" value={canoniekeWeekStart} />
               {dagUren.map((h, i) => (
                 <input key={i} type="hidden" name={`hours_${i}`} value={h} />
               ))}
