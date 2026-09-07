@@ -5,20 +5,47 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
+import { WeekBalk } from "@/components/week-balk";
 import { PURCHASE_INVOICE_STATUSES } from "@/lib/domain";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, formatWeekLabel, startOfISOWeek } from "@/lib/utils";
+import { parseWeek, ymd } from "@/lib/week-nav";
 import { payablePurchaseInvoices } from "@/lib/betalingen";
 import { getCompanySettings } from "@/lib/settings";
 
 export const metadata = { title: "Betalingen" };
 
-export default async function BetalingenPage() {
-  const [rows, settings] = await Promise.all([payablePurchaseInvoices(), getCompanySettings()]);
+export default async function BetalingenPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ week?: string }>;
+}) {
+  const { week } = await searchParams;
+  const [alleRows, settings] = await Promise.all([
+    payablePurchaseInvoices(),
+    getCompanySettings(),
+  ]);
+
+  // Week-filter op FACTUURDATUM. Standaard "alle weken": een openstaande betaling
+  // mag je niet missen doordat er toevallig een week aan stond.
+  const monday = parseWeek(week);
+  const wp = monday ? ymd(monday) : "";
+  const currentWeek = ymd(startOfISOWeek(new Date()));
+  const volgendeMaandag = monday ? new Date(monday) : null;
+  volgendeMaandag?.setDate(volgendeMaandag.getDate() + 7);
+
+  const rows =
+    monday && volgendeMaandag
+      ? alleRows.filter((r) => r.issueDate >= monday && r.issueDate < volgendeMaandag)
+      : alleRows;
+
   const eligible = rows.filter((r) => r.hasIban && r.total > 0);
   const missing = rows.filter((r) => !r.hasIban);
   const total = eligible.reduce((s, r) => s + r.total, 0);
   const hasQ4sIban = Boolean(settings.iban?.trim());
-  const canDownload = eligible.length > 0 && hasQ4sIban;
+  // Het SEPA-bestand gaat ALTIJD over alle openstaande betalingen — de knop
+  // hangt dus aan de volledige lijst, niet aan wat de week-balk laat zien.
+  const alleEligible = alleRows.filter((r) => r.hasIban && r.total > 0);
+  const canDownload = alleEligible.length > 0 && hasQ4sIban;
 
   return (
     <div className="space-y-6">
@@ -33,6 +60,21 @@ export default async function BetalingenPage() {
           ) : null
         }
       />
+
+      {/* Week-balk — dezelfde als op alle andere facturatiepagina's */}
+      <WeekBalk basePath="/betalingen" week={wp} currentWeek={currentWeek} allWeeks />
+
+      {monday && (
+        <p className="flex items-start gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3 text-sm text-ink-600">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
+          <span>
+            Je ziet de inkoopfacturen met een <strong>factuurdatum in {formatWeekLabel(monday)}</strong> —{" "}
+            {rows.length} van {alleRows.length} openstaand. Het{" "}
+            <strong>SEPA-bestand bevat altijd álle</strong> openstaande betalingen, niet alleen deze
+            week.
+          </span>
+        </p>
+      )}
 
       {!hasQ4sIban && (
         <p className="flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -56,8 +98,12 @@ export default async function BetalingenPage() {
       {rows.length === 0 ? (
         <EmptyState
           icon={<Banknote className="h-6 w-6" />}
-          title="Geen openstaande betalingen"
-          description="Er zijn geen inkoopfacturen die nog betaald moeten worden."
+          title={monday ? "Geen openstaande betalingen in deze week" : "Geen openstaande betalingen"}
+          description={
+            monday
+              ? `Er staat geen inkoopfactuur open met een factuurdatum in ${formatWeekLabel(monday).toLowerCase()}. Blader met de week-balk hierboven of kies "Alle weken".`
+              : "Er zijn geen inkoopfacturen die nog betaald moeten worden."
+          }
         />
       ) : (
         <Card>

@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import {
-  ArrowLeft,
   ArrowRight,
-  ChevronLeft,
-  ChevronRight,
   Users,
   CheckCircle2,
   Inbox as InboxIcon,
@@ -34,17 +31,11 @@ import {
   currentWeekMonday,
   unlinkedInboxItems,
 } from "@/lib/timesheets";
-import { WeekPicker } from "@/components/week-picker";
+import { WeekBalk } from "@/components/week-balk";
 import { remindOne, remindAllMissing } from "./actions";
 
 export const metadata = { title: "Timesheet-status" };
 export const dynamic = "force-dynamic";
-
-function shiftWeek(monday: Date, deltaWeeks: number): string {
-  const d = new Date(monday);
-  d.setDate(d.getDate() + deltaWeeks * 7);
-  return weekParam(d);
-}
 
 export default async function TimesheetStatusPage({
   searchParams,
@@ -85,28 +76,12 @@ export default async function TimesheetStatusPage({
         }
       />
 
-      {/* Week navigator */}
-      <div className="flex items-center justify-between gap-2">
-        <Link
-          href={`/inbox/status?week=${shiftWeek(monday, -1)}`}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
-        >
-          <ChevronLeft className="h-4 w-4" /> Vorige week
-        </Link>
-        <div className="flex flex-col items-center">
-          <WeekPicker value={wp} basePath="/inbox/status" className="w-72" />
-          <p className="mt-1 text-xs text-ink-400">
-            week van {formatDate(monday)}
-            {weekParam(currentWeekMonday()) === wp ? " · huidige week" : ""}
-          </p>
-        </div>
-        <Link
-          href={`/inbox/status?week=${shiftWeek(monday, 1)}`}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
-        >
-          Volgende week <ChevronRight className="h-4 w-4" />
-        </Link>
-      </div>
+      {/* Week-balk — dezelfde als op alle andere facturatiepagina's */}
+      <WeekBalk
+        basePath="/inbox/status"
+        week={wp}
+        currentWeek={weekParam(currentWeekMonday())}
+      />
 
       {/* Result banners */}
       {sp.r === "reminded" && (

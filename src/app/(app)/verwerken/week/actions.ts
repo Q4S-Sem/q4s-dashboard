@@ -13,6 +13,7 @@ import {
   type HerinneringOntvanger,
 } from "@/lib/herinnering";
 import { timesheetGateReview } from "@/lib/timesheet-gate-review";
+import { parseWeek, ymd } from "@/lib/week-nav";
 
 // ---------------------------------------------------------------------------
 // "Herinner iedereen die nog niets stuurde" — de herinnerknop van de
@@ -93,10 +94,14 @@ function uitkomstParams(u: HerinnerUitkomst): string {
  * persoonlijke mail per persoon, opgebouwd met de pure tekstbouwer
  * (src/lib/herinner-mail.ts) en verstuurd via het bestaande mailpad.
  */
-export async function herinnerOntbrekende(_formData: FormData) {
+export async function herinnerOntbrekende(formData: FormData) {
   // 1) Vers op de server bepalen om welke week het gaat en wie er ontbreekt.
+  //    De week-balk stuurt mee welke week er in beeld stond, zodat de knop nooit
+  //    een ándere week herinnert dan wat de gebruiker zag. Alleen de WEEK komt
+  //    van het scherm; WIE er ontbreekt wordt hier opnieuw opgezocht.
   const review = await timesheetGateReview();
-  const focusWeek = focusWeekVan(review, new Date());
+  const gekozenWeek = parseWeek(formData.get("week")?.toString());
+  const focusWeek = gekozenWeek ?? focusWeekVan(review, new Date());
   const { weekLabel, ontbreekt } = await ontbrekendeWeekstaten(focusWeek);
 
   // 2) Per persoon een eigen mail klaarzetten…
@@ -108,8 +113,11 @@ export async function herinnerOntbrekende(_formData: FormData) {
   // 3) …en die door de bestaande uitgang sturen.
   const uitkomst = await verstuurHerinneringen(ontvangers);
 
+  // Terug naar dezelfde week als waar de knop stond (stond er geen week in de
+  // URL, dan blijft die er ook uit — het scherm kiest zelf weer de focusweek).
+  const terug = gekozenWeek ? `week=${ymd(gekozenWeek)}&` : "";
   revalidatePath("/verwerken/week");
-  redirect(`/verwerken/week?${uitkomstParams(uitkomst)}`);
+  redirect(`/verwerken/week?${terug}${uitkomstParams(uitkomst)}`);
 }
 
 /**

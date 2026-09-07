@@ -4,8 +4,6 @@ import {
   AlertTriangle,
   Wallet,
   Upload,
-  ChevronLeft,
-  ChevronRight,
   CheckCircle2,
   Mail,
   Inbox,
@@ -17,8 +15,9 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
-import { WeekPicker } from "@/components/week-picker";
+import { WeekBalk } from "@/components/week-balk";
 import { cn, formatCurrency, formatWeekLabel, startOfISOWeek } from "@/lib/utils";
+import { parseWeek, ymd } from "@/lib/week-nav";
 import {
   listReceivedInvoices,
   receivedInvoicesSummary,
@@ -30,17 +29,6 @@ import { DiscrepancyMailButton } from "./DiscrepancyMailButton";
 export const metadata = { title: "Ontvangen facturen" };
 export const dynamic = "force-dynamic";
 
-function ymd(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-function shiftWeek(monday: Date, delta: number): string {
-  const d = new Date(monday);
-  d.setDate(d.getDate() + delta * 7);
-  return ymd(d);
-}
 function daysSince(d: Date): number {
   return Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000));
 }
@@ -62,8 +50,8 @@ export default async function OntvangenFacturenPage({
     sp.toon === "tebetalen" || sp.toon === "controleren" || sp.toon === "betaald" ? sp.toon : null;
 
   // Week-filter op factuurdatum ("wat is er die week binnengekomen"); leeg = alle weken.
-  const hasWeek = !toon && !!sp.week && /^\d{4}-\d{2}-\d{2}$/.test(sp.week);
-  const monday = hasWeek ? new Date(`${sp.week}T00:00:00`) : null;
+  const monday = toon ? null : parseWeek(sp.week);
+  const hasWeek = monday !== null;
   const anchor = monday ?? startOfISOWeek(new Date());
   const weekEnd = monday ? new Date(monday.getTime() + 7 * 86_400_000) : null;
 
@@ -280,32 +268,13 @@ export default async function OntvangenFacturenPage({
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Link
-              href={`/ontvangen-facturen?week=${shiftWeek(anchor, -1)}`}
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-            >
-              <ChevronLeft className="h-4 w-4" /> Vorige week
-            </Link>
-            <WeekPicker value={ymd(anchor)} basePath="/ontvangen-facturen" className="w-64" />
-            <Link
-              href={`/ontvangen-facturen?week=${shiftWeek(anchor, 1)}`}
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-            >
-              Volgende week <ChevronRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/ontvangen-facturen"
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                hasWeek
-                  ? "border border-ink-200 text-ink-600 hover:bg-ink-50"
-                  : "bg-brand-600 text-white shadow-sm",
-              )}
-            >
-              Alle weken
-            </Link>
-          </div>
+          {/* Week-balk — dezelfde als op alle andere facturatiepagina's */}
+          <WeekBalk
+            basePath="/ontvangen-facturen"
+            week={hasWeek ? ymd(anchor) : ""}
+            currentWeek={ymd(startOfISOWeek(new Date()))}
+            allWeeks
+          />
 
           <p className="text-center text-xs text-ink-400">
             {hasWeek ? formatWeekLabel(anchor) : "Alle weken"} · {shown.length} factu

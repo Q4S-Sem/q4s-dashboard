@@ -2,8 +2,6 @@ import Link from "next/link";
 import {
   CalendarClock,
   Plus,
-  ChevronLeft,
-  ChevronRight,
   AlertTriangle,
   Pencil,
   ClipboardCheck,
@@ -14,29 +12,15 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
-import { cn, round2, formatHours, formatWeekLabel, formatDate } from "@/lib/utils";
+import { cn, round2, formatHours, formatWeekLabel } from "@/lib/utils";
 import { TIMESHEET_STATUSES } from "@/lib/domain";
 import { parseWeekParam, weekParam, currentWeekMonday } from "@/lib/timesheets";
-import { WeekPicker } from "@/components/week-picker";
+import { WeekBalk } from "@/components/week-balk";
 
 export const metadata = { title: "Urenregistratie" };
 export const dynamic = "force-dynamic";
 
 const DAY_LABELS = ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"];
-const dayFmt = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short" });
-const dayYearFmt = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "short", year: "numeric" });
-
-function shiftWeek(monday: Date, deltaWeeks: number): string {
-  const d = new Date(monday);
-  d.setDate(d.getDate() + deltaWeeks * 7);
-  return weekParam(d);
-}
-/** YYYY-MM-DD in de lokale tijdzone, voor de ?week= parameter. */
-function toDateParam(d: Date): string {
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
 
 export default async function UrenPage({
   searchParams,
@@ -46,10 +30,10 @@ export default async function UrenPage({
   const { week } = await searchParams;
   const monday = parseWeekParam(week);
   const wp = weekParam(monday);
+  const currentWeek = weekParam(currentWeekMonday());
   const nextMonday = new Date(monday.getTime() + 7 * 86_400_000);
   const sunday = new Date(monday.getTime() + 6 * 86_400_000);
   sunday.setHours(23, 59, 59, 999);
-  const isCurrentWeek = weekParam(currentWeekMonday()) === wp;
 
   const [timesheets, activePlacements, pending] = await Promise.all([
     db.timesheet.findMany({
@@ -112,8 +96,6 @@ export default async function UrenPage({
   const dayTotals = [0, 0, 0, 0, 0, 0, 0];
   for (const r of rows) r.days.forEach((h, di) => (dayTotals[di] += h));
 
-  const weekRange = `${dayFmt.format(monday)} – ${dayYearFmt.format(new Date(monday.getTime() + 6 * 86_400_000))}`;
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -137,22 +119,7 @@ export default async function UrenPage({
         </p>
       )}
 
-      {/* Week-navigator — het week-label is een klikbare kalender */}
-      <div className="flex items-center justify-between gap-2">
-        <Link href={`/uren?week=${shiftWeek(monday, -1)}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-          <ChevronLeft className="h-4 w-4" /> Vorige week
-        </Link>
-        <div className="flex flex-col items-center">
-          <WeekPicker value={wp} basePath="/uren" className="w-72" />
-          <p className="mt-1 text-xs text-ink-400">
-            maandag t/m zondag · {weekRange}
-            {isCurrentWeek ? " · huidige week" : ""}
-          </p>
-        </div>
-        <Link href={`/uren?week=${shiftWeek(monday, 1)}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-          Volgende week <ChevronRight className="h-4 w-4" />
-        </Link>
-      </div>
+      <WeekBalk basePath="/uren" week={wp} currentWeek={currentWeek} />
 
       <div className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm">
         {/* Kop met week-status */}
@@ -280,7 +247,7 @@ export default async function UrenPage({
               {missing.map((m, mi) => (
                 <Link
                   key={m.id}
-                  href={`/uren/nieuw?placement=${m.id}&week=${toDateParam(monday)}`}
+                  href={`/uren/nieuw?placement=${m.id}&week=${wp}`}
                   title={`Urenstaat invoeren voor ${m.name} — plaatsing en week staan al ingevuld`}
                   className="group flex items-center gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2.5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
                 >

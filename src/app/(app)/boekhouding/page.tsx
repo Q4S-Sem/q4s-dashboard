@@ -14,7 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { cn, formatCurrency } from "@/lib/utils";
+import { WeekBalk } from "@/components/week-balk";
+import { cn, formatCurrency, startOfISOWeek } from "@/lib/utils";
+import { parseWeek, ymd } from "@/lib/week-nav";
 import { btwOverview } from "@/lib/boekhouding";
 import { QUARTERS } from "@/lib/domain";
 
@@ -24,19 +26,47 @@ export const dynamic = "force-dynamic";
 const START_YEAR = 2024;
 const quarterOf = (d: Date) => Math.floor(d.getMonth() / 3) + 1;
 
-type SP = { q?: string; year?: string };
+type SP = { q?: string; year?: string; week?: string };
 
 export default async function BoekhoudingPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const now = new Date();
   const maxYear = now.getFullYear();
 
-  let year = sp.year && /^\d{4}$/.test(sp.year) ? Number(sp.year) : now.getFullYear();
+  // De week-balk is hier een SPRINGER, geen filter: de BTW loopt per kwartaal
+  // (of jaar), dus een week-totaal bestaat niet. Kies je een week, dan springen
+  // we naar het kwartaal waar die week in valt — er verdwijnt dus niets uit
+  // beeld, je verplaatst alleen het venster. Een expliciete periode-keuze in de
+  // URL (de knoppen hieronder) blijft altijd voorgaan.
+  const weekMaandag = parseWeek(sp.week);
+  const springtViaWeek = weekMaandag !== null && !sp.q && !sp.year;
+  // Het ISO-week-JAAR/kwartaal is dat van de DONDERDAG in die week, zodat een
+  // week rond de jaarwisseling in de periode valt waar hij administratief hoort.
+  const weekDonderdag = weekMaandag ? new Date(weekMaandag) : null;
+  weekDonderdag?.setDate(weekDonderdag.getDate() + 3);
+
+  let year = springtViaWeek
+    ? weekDonderdag!.getFullYear()
+    : sp.year && /^\d{4}$/.test(sp.year)
+      ? Number(sp.year)
+      : now.getFullYear();
   year = Math.min(Math.max(year, START_YEAR), maxYear);
-  const isYear = sp.q === "jaar";
-  const qNum = isYear ? null : sp.q && /^[1-4]$/.test(sp.q) ? Number(sp.q) : quarterOf(now);
+  const isYear = !springtViaWeek && sp.q === "jaar";
+  const qNum = springtViaWeek
+    ? quarterOf(weekDonderdag!)
+    : isYear
+      ? null
+      : sp.q && /^[1-4]$/.test(sp.q)
+        ? Number(sp.q)
+        : quarterOf(now);
 
   const o = await btwOverview({ year, quarter: qNum });
+
+  // Welke week zet de balk in beeld? De gekozen week, anders de huidige week als
+  // die in de getoonde periode valt, en anders de eerste week van die periode.
+  const anchorWeek = springtViaWeek
+    ? ymd(weekMaandag!)
+    : ymd(startOfISOWeek(now >= o.period.start && now < o.period.end ? now : o.period.start));
 
   const teBetalen = o.saldo >= 0;
   const qParam = isYear ? "jaar" : String(qNum);
@@ -59,6 +89,21 @@ export default async function BoekhoudingPage({ searchParams }: { searchParams: 
         title="Boekhouding & BTW"
         description="Wat er in- en uitgaat, en hoeveel BTW je kunt terugvorderen — per kwartaal of jaar."
       />
+
+      {/* Week-balk — dezelfde als op alle andere facturatiepagina's. Hier een
+          springer: hij zet het kwartaal waarin die week valt in beeld. */}
+      <div>
+        <WeekBalk
+          basePath="/boekhouding"
+          week={anchorWeek}
+          currentWeek={ymd(startOfISOWeek(now))}
+        />
+        <p className="mt-1 text-center text-xs text-ink-400">
+          BTW gaat per kwartaal, niet per week — de week-balk springt naar het kwartaal waarin die
+          week valt. Je ziet hieronder{" "}
+          <strong className="font-semibold text-ink-500">{o.period.label}</strong>, compleet.
+        </p>
+      </div>
 
       {/* Periode-filter */}
       <div className="flex flex-wrap items-center justify-between gap-3">

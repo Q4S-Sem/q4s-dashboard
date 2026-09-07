@@ -3,8 +3,6 @@ import type { Prisma } from "@prisma/client";
 import {
   Inbox as InboxIcon,
   CalendarDays,
-  ChevronLeft,
-  ChevronRight,
   ClipboardCheck,
   FileText,
   Upload,
@@ -24,7 +22,7 @@ import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { isMailIntakeConnected } from "@/lib/graph-mail";
 import { INBOX_SOURCES, INBOX_STATUSES } from "@/lib/domain";
 import { parseWeekParam, weekParam, currentWeekMonday } from "@/lib/timesheets";
-import { WeekPicker } from "@/components/week-picker";
+import { WeekBalk } from "@/components/week-balk";
 import { TimesheetDropzone } from "./TimesheetDropzone";
 import { pullMailNow } from "./actions";
 
@@ -38,12 +36,6 @@ function personName(it: InboxItem): string {
   return it.consultant
     ? `${it.consultant.firstName} ${it.consultant.lastName}`
     : it.extractedName ?? it.originalName;
-}
-
-function shiftWeek(monday: Date, deltaWeeks: number): string {
-  const d = new Date(monday);
-  d.setDate(d.getDate() + deltaWeeks * 7);
-  return weekParam(d);
 }
 
 export default async function InboxPage({
@@ -65,7 +57,7 @@ export default async function InboxPage({
   const monday = parseWeekParam(week);
   const wp = weekParam(monday);
   const nextMonday = new Date(monday.getTime() + 7 * 86_400_000);
-  const isCurrentWeek = weekParam(currentWeekMonday()) === wp;
+  const currentWeek = weekParam(currentWeekMonday());
   const mailConnected = isMailIntakeConnected();
 
   // Kwam je hier via "Importeren" bij een ontbrekende urenstaat? Toon voor wie/
@@ -252,28 +244,8 @@ export default async function InboxPage({
         )}
       </Card>
 
-      {/* Week-navigator */}
-      <div className="flex items-center justify-between gap-2">
-        <Link
-          href={`/inbox?week=${shiftWeek(monday, -1)}`}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
-        >
-          <ChevronLeft className="h-4 w-4" /> Vorige week
-        </Link>
-        <div className="flex flex-col items-center">
-          <WeekPicker value={wp} basePath="/inbox" className="w-72" />
-          <p className="mt-1 text-xs text-ink-400">
-            week van {formatDate(monday)}
-            {isCurrentWeek ? " · huidige week" : ""}
-          </p>
-        </div>
-        <Link
-          href={`/inbox?week=${shiftWeek(monday, 1)}`}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
-        >
-          Volgende week <ChevronRight className="h-4 w-4" />
-        </Link>
-      </div>
+      {/* Week-balk — dezelfde als op alle andere facturatiepagina's */}
+      <WeekBalk basePath="/inbox" week={wp} currentWeek={currentWeek} extraParams={{ voor }} />
 
       {/* Uitgelezen urenstaten van de gekozen week */}
       <Card>

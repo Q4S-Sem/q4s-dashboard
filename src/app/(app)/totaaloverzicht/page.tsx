@@ -1,9 +1,11 @@
 import { TrendingUp, ArrowDownCircle, ArrowUpCircle, Scale, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency, formatPercent } from "@/lib/utils";
+import { formatCurrency, formatPercent, startOfISOWeek } from "@/lib/utils";
+import { parseWeek, ymd } from "@/lib/week-nav";
 import { invoicingOverview, companyCostsThisYear } from "@/lib/facturatie";
 import { btwOverview, periodToRange } from "@/lib/boekhouding";
+import { WeekBalk } from "@/components/week-balk";
 import { PrintButton } from "../facturen/PrintButton";
 import { Select } from "@/components/ui/field";
 
@@ -48,14 +50,38 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
 export default async function TotaaloverzichtPage({
   searchParams,
 }: {
-  searchParams: Promise<{ jaar?: string; kwartaal?: string }>;
+  searchParams: Promise<{ jaar?: string; kwartaal?: string; week?: string }>;
 }) {
   const sp = await searchParams;
   const now = new Date();
-  const year = Number(sp.jaar) || now.getFullYear();
-  const quarter = sp.kwartaal ? Number(sp.kwartaal) : null;
+
+  // De week-balk is hier een SPRINGER, geen filter: dit scherm telt een hele
+  // periode op (jaar of kwartaal), dus een week-totaal bestaat niet. Kies je een
+  // week, dan springen we naar het kwartaal waarin die week valt — er verdwijnt
+  // niets, je verplaatst alleen het venster. Het formulier hieronder (jaar +
+  // periode) blijft altijd voorgaan.
+  const weekMaandag = parseWeek(sp.week);
+  const springtViaWeek = weekMaandag !== null && !sp.jaar && !sp.kwartaal;
+  // ISO-week-jaar/kwartaal = dat van de DONDERDAG in die week.
+  const weekDonderdag = weekMaandag ? new Date(weekMaandag) : null;
+  weekDonderdag?.setDate(weekDonderdag.getDate() + 3);
+
+  const year = springtViaWeek
+    ? weekDonderdag!.getFullYear()
+    : Number(sp.jaar) || now.getFullYear();
+  const quarter = springtViaWeek
+    ? Math.floor(weekDonderdag!.getMonth() / 3) + 1
+    : sp.kwartaal
+      ? Number(sp.kwartaal)
+      : null;
   const period = { year, quarter };
   const range = periodToRange(period);
+
+  // Welke week zet de balk in beeld? De gekozen week, anders de huidige week als
+  // die in de getoonde periode valt, en anders de eerste week van die periode.
+  const anchorWeek = springtViaWeek
+    ? ymd(weekMaandag!)
+    : ymd(startOfISOWeek(now >= range.start && now < range.end ? now : range.start));
 
   const [inv, costs, btw] = await Promise.all([
     invoicingOverview(range),
@@ -74,6 +100,22 @@ export default async function TotaaloverzichtPage({
           description={`Compleet financieel overzicht — ${range.label}.`}
           actions={<PrintButton />}
         />
+
+        {/* Week-balk — dezelfde als op alle andere facturatiepagina's. Hier een
+            springer: hij zet de periode waarin die week valt in beeld. */}
+        <div className="mt-4">
+          <WeekBalk
+            basePath="/totaaloverzicht"
+            week={anchorWeek}
+            currentWeek={ymd(startOfISOWeek(now))}
+          />
+          <p className="mt-1 text-center text-xs text-ink-400">
+            Dit overzicht telt een hele periode op, niet één week — de week-balk springt naar het
+            kwartaal waarin die week valt. Je ziet nu{" "}
+            <strong className="font-semibold text-ink-500">{range.label}</strong>, compleet.
+          </p>
+        </div>
+
         <Card className="mt-4">
           <CardContent>
             <form method="get" className="flex flex-wrap items-end gap-3">

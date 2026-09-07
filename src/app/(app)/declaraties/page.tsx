@@ -22,7 +22,9 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { Dropzone } from "@/components/ui/dropzone";
 import { Input, Select } from "@/components/ui/field";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { formatCurrency, formatDate, round2 } from "@/lib/utils";
+import { WeekBalk } from "@/components/week-balk";
+import { formatCurrency, formatDate, formatWeekLabel, round2, startOfISOWeek } from "@/lib/utils";
+import { parseWeek, ymd } from "@/lib/week-nav";
 import { isVisionConfigured } from "@/lib/ai";
 import { EXPENSE_CATEGORIES, EXPENSE_STATUSES } from "@/lib/domain";
 import { uploadExpenses, deleteExpense, createManualExpense } from "./actions";
@@ -36,6 +38,7 @@ type SP = {
   status?: string;
   category?: string;
   consultant?: string;
+  week?: string;
   error?: string;
 };
 
@@ -50,10 +53,19 @@ export default async function DeclaratiesPage({
   const category = sp.category || "";
   const consultant = sp.consultant || "";
 
+  // Week-filter op BONDATUM. Standaard "alle weken", zodat het overzicht compleet
+  // blijft en de balk pas filtert als je een week aanklikt.
+  const monday = parseWeek(sp.week);
+  const wp = monday ? ymd(monday) : "";
+  const currentWeek = ymd(startOfISOWeek(new Date()));
+  const volgendeMaandag = monday ? new Date(monday) : null;
+  volgendeMaandag?.setDate(volgendeMaandag.getDate() + 7);
+
   const where = {
     ...(status ? { status } : {}),
     ...(category ? { category } : {}),
     ...(consultant ? { consultantId: consultant } : {}),
+    ...(monday && volgendeMaandag ? { date: { gte: monday, lt: volgendeMaandag } } : {}),
     ...(q
       ? {
           OR: [
@@ -86,13 +98,22 @@ export default async function DeclaratiesPage({
   const totalCount = statusGroups.reduce((n, g) => n + g._count._all, 0);
   const openstaand = round2((sumBy("NEW") ?? 0) + (sumBy("APPROVED") ?? 0));
   const paid = round2(sumBy("PAID") ?? 0);
-  const hasFilter = Boolean(q || status || category || consultant);
+  const hasFilter = Boolean(q || status || category || consultant || monday);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Declaraties"
         description="Scan of upload bonnetjes — AI leest datum, leverancier en bedrag uit. Beoordeel, keur goed en betaal uit."
+      />
+
+      {/* Week-balk — dezelfde als op alle andere facturatiepagina's */}
+      <WeekBalk
+        basePath="/declaraties"
+        week={wp}
+        currentWeek={currentWeek}
+        extraParams={{ q, status, category, consultant }}
+        allWeeks
       />
 
       {sp.error === "upload" && (
@@ -222,6 +243,8 @@ export default async function DeclaratiesPage({
             method="get"
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_180px_180px_180px_auto]"
           >
+            {/* De gekozen week blijft staan als je hier filtert. */}
+            {wp && <input type="hidden" name="week" value={wp} />}
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
               <Input name="q" defaultValue={q} placeholder="Zoek op leverancier of omschrijving…" className="pl-9" aria-label="Zoeken" />
@@ -261,11 +284,19 @@ export default async function DeclaratiesPage({
       {expenses.length === 0 ? (
         <EmptyState
           icon={<Receipt className="h-6 w-6" />}
-          title={hasFilter ? "Geen declaraties gevonden" : "Nog geen declaraties"}
+          title={
+            monday
+              ? "Geen declaraties in deze week"
+              : hasFilter
+                ? "Geen declaraties gevonden"
+                : "Nog geen declaraties"
+          }
           description={
-            hasFilter
-              ? "Pas je zoekopdracht of filters aan."
-              : "Upload het eerste bonnetje hierboven om te beginnen."
+            monday
+              ? `Geen bonnetje met een datum in ${formatWeekLabel(monday).toLowerCase()}. Blader met de week-balk hierboven of kies "Alle weken".`
+              : hasFilter
+                ? "Pas je zoekopdracht of filters aan."
+                : "Upload het eerste bonnetje hierboven om te beginnen."
           }
         />
       ) : (

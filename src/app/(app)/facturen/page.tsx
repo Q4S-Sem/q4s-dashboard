@@ -4,6 +4,9 @@ import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
+import { WeekBalk } from "@/components/week-balk";
+import { formatWeekLabel, startOfISOWeek } from "@/lib/utils";
+import { parseWeek, ymd } from "@/lib/week-nav";
 import { FacturenOverzicht, type FactuurRow } from "./FacturenOverzicht";
 
 export const metadata = { title: "Facturen" };
@@ -11,9 +14,9 @@ export const metadata = { title: "Facturen" };
 export default async function FacturenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ client?: string }>;
+  searchParams: Promise<{ client?: string; week?: string }>;
 }) {
-  const { client: clientId } = await searchParams;
+  const { client: clientId, week } = await searchParams;
   const filterClient = clientId
     ? await db.client.findUnique({
         where: { id: clientId },
@@ -21,8 +24,21 @@ export default async function FacturenPage({
       })
     : null;
 
+  // Week-filter op FACTUURDATUM. Standaard "alle weken": zo blijft het overzicht
+  // compleet en filtert de balk pas als je een week aanklikt.
+  const monday = parseWeek(week);
+  const wp = monday ? ymd(monday) : "";
+  const currentWeek = ymd(startOfISOWeek(new Date()));
+  const volgendeMaandag = monday ? new Date(monday) : null;
+  volgendeMaandag?.setDate(volgendeMaandag.getDate() + 7);
+
   const invoices = await db.invoice.findMany({
-    where: filterClient ? { clientId: filterClient.id } : {},
+    where: {
+      ...(filterClient ? { clientId: filterClient.id } : {}),
+      ...(monday && volgendeMaandag
+        ? { issueDate: { gte: monday, lt: volgendeMaandag } }
+        : {}),
+    },
     orderBy: [{ issueDate: "desc" }, { number: "desc" }],
     include: { client: { select: { companyName: true } } },
   });
@@ -59,13 +75,22 @@ export default async function FacturenPage({
         }
       />
 
+      {/* Week-balk — dezelfde als op alle andere facturatiepagina's */}
+      <WeekBalk
+        basePath="/facturen"
+        week={wp}
+        currentWeek={currentWeek}
+        extraParams={{ client: clientId }}
+        allWeeks
+      />
+
       {filterClient && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-brand-100 bg-brand-50 px-4 py-2.5 text-sm">
           <span className="text-brand-900">
             Facturen voor <strong>{filterClient.companyName}</strong>
           </span>
           <Link
-            href="/facturen"
+            href={wp ? `/facturen?week=${wp}` : "/facturen"}
             className="font-medium text-brand-700 hover:text-brand-800"
           >
             Alle facturen ✕
@@ -76,8 +101,12 @@ export default async function FacturenPage({
       {rows.length === 0 ? (
         <EmptyState
           icon={<Receipt className="h-6 w-6" />}
-          title="Nog geen facturen"
-          description="Keur eerst urenstaten goed en genereer daarna een factuur."
+          title={monday ? "Geen facturen in deze week" : "Nog geen facturen"}
+          description={
+            monday
+              ? `Er staat geen enkele factuur met een factuurdatum in ${formatWeekLabel(monday).toLowerCase()}. Blader met de week-balk hierboven of kies "Alle weken".`
+              : "Keur eerst urenstaten goed en genereer daarna een factuur."
+          }
           action={
             <Link href="/facturen/nieuw" className={buttonVariants()}>
               <Plus className="h-4 w-4" /> Nieuwe factuur

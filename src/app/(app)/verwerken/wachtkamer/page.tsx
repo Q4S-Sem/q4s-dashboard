@@ -17,7 +17,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
+import { WeekBalk } from "@/components/week-balk";
+import { cn, formatCurrency, formatDate, formatHours, startOfISOWeek } from "@/lib/utils";
+import { parseWeek, ymd } from "@/lib/week-nav";
 import { timesheetGateReview } from "@/lib/timesheet-gate-review";
 import { controleLabel, initialen } from "@/lib/weekverwerking";
 import { uitWachtkamer } from "../controle/actions";
@@ -51,6 +53,7 @@ export default async function WachtkamerPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    week?: string;
     verstuurd?: string;
     klaargezet?: string;
     overgeslagen?: string;
@@ -58,7 +61,27 @@ export default async function WachtkamerPage({
   }>;
 }) {
   const sp = await searchParams;
-  const { wachtkamer, needsReview } = await timesheetGateReview();
+  const { wachtkamer: alleGeparkeerd, needsReview } = await timesheetGateReview();
+
+  // De week-balk staat hier standaard op ALLE WEKEN: een week die drie weken
+  // geleden geparkeerd is, is nu juist wat je niet mag vergeten. Kies je een
+  // week, dan filtert hij daarop — een geparkeerde staat zónder uitgelezen week
+  // hoort bij géén week en blijft altijd staan.
+  const gekozenWeek = parseWeek(sp.week);
+  const wp = gekozenWeek ? ymd(gekozenWeek) : "";
+  const currentWeek = ymd(startOfISOWeek(new Date()));
+  const volgendeMaandag = gekozenWeek ? new Date(gekozenWeek) : null;
+  volgendeMaandag?.setDate(volgendeMaandag.getDate() + 7);
+
+  const wachtkamer =
+    gekozenWeek && volgendeMaandag
+      ? alleGeparkeerd.filter(
+          ({ row }) =>
+            row.weekStart == null ||
+            (row.weekStart >= gekozenWeek && row.weekStart < volgendeMaandag),
+        )
+      : alleGeparkeerd;
+  const buitenWeek = alleGeparkeerd.length - wachtkamer.length;
 
   const teLang = wachtkamer.filter((w) => w.dagen >= LANG_WACHTEN_DAGEN);
   const langst = wachtkamer[0] ?? null;
@@ -85,6 +108,9 @@ export default async function WachtkamerPage({
           </Link>
         }
       />
+
+      {/* Week-balk — dezelfde als op alle andere facturatiepagina's */}
+      <WeekBalk basePath="/verwerken/wachtkamer" week={wp} currentWeek={currentWeek} allWeeks />
 
       {herinnerd && (
         <p
@@ -114,9 +140,11 @@ export default async function WachtkamerPage({
           label="In de wachtkamer"
           value={wachtkamer.length}
           sub={
-            wachtkamer.length > 0
-              ? `${wachtkamer.length === 1 ? "één week" : `${wachtkamer.length} weken`} van het overzicht gehaald`
-              : "niets geparkeerd"
+            buitenWeek > 0
+              ? `van ${alleGeparkeerd.length} geparkeerd · ${buitenWeek} in een andere week`
+              : wachtkamer.length > 0
+                ? `${wachtkamer.length === 1 ? "één week" : `${wachtkamer.length} weken`} van het overzicht gehaald`
+                : "niets geparkeerd"
           }
           icon={<PauseCircle className="h-5 w-5" />}
           accent={wachtkamer.length > 0 ? "amber" : "green"}
@@ -144,12 +172,25 @@ export default async function WachtkamerPage({
       {wachtkamer.length === 0 ? (
         <EmptyState
           icon={<CheckCircle2 className="h-6 w-6" />}
-          title="De wachtkamer is leeg"
-          description="Er staat geen enkele week geparkeerd. Klopt een weekstaat niet, dan zet je hem bij Weekverwerking op 'Naar wachtkamer' — hij verdwijnt dan van het overzicht tot de medewerker corrigeert."
+          title={buitenWeek > 0 ? "Niets geparkeerd in deze week" : "De wachtkamer is leeg"}
+          description={
+            buitenWeek > 0
+              ? `Er staan wél ${buitenWeek} geparkeerde ${buitenWeek === 1 ? "week" : "weken"} in een andere week — kies "Alle weken" in de balk hierboven om ze allemaal te zien.`
+              : "Er staat geen enkele week geparkeerd. Klopt een weekstaat niet, dan zet je hem bij Weekverwerking op 'Naar wachtkamer' — hij verdwijnt dan van het overzicht tot de medewerker corrigeert."
+          }
           action={
-            <Link href="/verwerken/week" className={buttonVariants({ variant: "outline" })}>
-              <CalendarDays className="h-4 w-4" /> Naar weekverwerking
-            </Link>
+            buitenWeek > 0 ? (
+              <Link
+                href="/verwerken/wachtkamer"
+                className={buttonVariants({ variant: "outline" })}
+              >
+                <PauseCircle className="h-4 w-4" /> Toon alle weken
+              </Link>
+            ) : (
+              <Link href="/verwerken/week" className={buttonVariants({ variant: "outline" })}>
+                <CalendarDays className="h-4 w-4" /> Naar weekverwerking
+              </Link>
+            )
           }
         />
       ) : (

@@ -22,8 +22,10 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { WeekBalk } from "@/components/week-balk";
 import { db } from "@/lib/db";
-import { cn, formatCurrency, formatHours, formatWeekLabel } from "@/lib/utils";
+import { cn, formatCurrency, formatHours, formatWeekLabel, startOfISOWeek } from "@/lib/utils";
+import { parseWeek, ymd } from "@/lib/week-nav";
 import { timesheetGateReview } from "@/lib/timesheet-gate-review";
 import { weekControleDetails } from "@/lib/week-controle";
 import { bouwControleRegel } from "@/lib/week-detail";
@@ -60,6 +62,7 @@ export default async function WeekverwerkingPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    week?: string;
     verstuurd?: string;
     klaargezet?: string;
     overgeslagen?: string;
@@ -69,14 +72,30 @@ export default async function WeekverwerkingPage({
 }) {
   const sp = await searchParams;
   const review = await timesheetGateReview();
-  const { needsReview, autoApprove, wachtkamer, totals, notExtracted } = review;
+  const { autoApprove, wachtkamer, totals, notExtracted } = review;
+  const nu = new Date();
 
-  // De week waar dit scherm over gaat: de nieuwste week die nog openstaat, en
-  // anders gewoon de lopende week. Zo klopt de "ontbreekt nog"-strip ook in een
-  // demo-database waarin de laatste weekstaten van vorige maand zijn. De
-  // herinnerknop rekent met exact dezelfde functie, zodat hij nooit een andere
-  // week (of een ander lijstje) te pakken heeft dan wat hier staat.
-  const focusWeek = focusWeekVan(review, new Date());
+  // De week waar dit scherm over gaat. Zonder `?week=` is dat — net als
+  // voorheen — de nieuwste week die nog openstaat, en anders de lopende week.
+  // Zo klopt de "ontbreekt nog"-strip ook in een demo-database waarin de
+  // laatste weekstaten van vorige maand zijn. Met de week-balk blader je daar
+  // vervolgens omheen.
+  const focusWeek = parseWeek(sp.week) ?? focusWeekVan(review, nu);
+  const wp = ymd(focusWeek);
+  const currentWeek = ymd(startOfISOWeek(nu));
+  const volgendeMaandag = new Date(focusWeek);
+  volgendeMaandag.setDate(volgendeMaandag.getDate() + 7);
+
+  /**
+   * Hoort deze regel bij de gekozen week? Een staat waar de AI GEEN week uit
+   * kreeg hoort bij géén enkele week — die blijft altijd staan, want anders
+   * verdwijnt er werk uit beeld zodra je een week aanklikt.
+   */
+  const inWeek = (weekStart: Date | null) =>
+    weekStart == null || (weekStart >= focusWeek && weekStart < volgendeMaandag);
+
+  const needsReview = review.needsReview.filter((r) => inWeek(r.weekStart));
+  const weekAutoApprove = autoApprove.filter((r) => inWeek(r.weekStart));
 
   const [ontbrekend, controleRijen, concepten] = await Promise.all([
     // #3 Wie moet er nog inleveren? Zelfde data-laag als de herinnerknop.
@@ -98,9 +117,25 @@ export default async function WeekverwerkingPage({
   const nMislukt = Number(sp.mislukt ?? 0) || 0;
 
   // --- Kopcijfers ----------------------------------------------------------
-  const week = telWeekBedragen([totals.needsReview, totals.autoApprove]);
+  // De vier tegels gaan over de GEKOZEN week, dus tellen we hier alleen wat er
+  // in die week valt (telWeekBedragen blijft de enige die optelt).
+  const bedragenVan = (rijen: typeof needsReview) =>
+    telWeekBedragen(
+      rijen.map((r) => ({
+        hours: r.totalHours ?? 0,
+        charge: r.charge,
+        cost: r.cost,
+        margin: r.margin,
+      })),
+    );
+  const controleBedragen = bedragenVan(needsReview);
+  const autoBedragen = bedragenVan(weekAutoApprove);
+  const week = telWeekBedragen([controleBedragen, autoBedragen]);
 
   // Wat er nú in één klik door kan: alleen groene staten die compleet genoeg zijn.
+  // BEWUST over ALLE weken: de twee knoppen hieronder bepalen hun lijst zelf
+  // opnieuw op de server (approveAllAutoApproved / processAllAutoApproved) en
+  // kennen geen week — dan moet het getal op de knop dat ook niet doen.
   const batch = autoApprove.filter((r) => r.canApprove);
   const batchBedragen = telWeekBedragen(
     batch.map((r) => ({ hours: r.totalHours ?? 0, charge: r.charge, cost: r.cost, margin: r.margin })),
@@ -138,6 +173,9 @@ export default async function WeekverwerkingPage({
         }
       />
 
+      {/* Week-balk — dezelfde als op alle andere facturatiepagina's */}
+      <WeekBalk basePath="/verwerken/week" week={wp} currentWeek={currentWeek} />
+
       {notExtracted > 0 && (
         <p className="flex items-start gap-2 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
@@ -163,8 +201,8 @@ export default async function WeekverwerkingPage({
         />
         <StatCard
           label="Automatisch afgehandeld"
-          value={autoApprove.length}
-          sub={`${formatHours(totals.autoApprove.hours)} u schoon uitgelezen`}
+          value={weekAutoApprove.length}
+          sub={`${formatHours(autoBedragen.hours)} u schoon uitgelezen`}
           icon={<CheckCircle2 className="h-5 w-5" />}
           accent="green"
         />
@@ -173,7 +211,7 @@ export default async function WeekverwerkingPage({
           value={needsReview.length}
           sub={
             needsReview.length > 0
-              ? `${formatHours(totals.needsReview.hours)} u wacht op een mens`
+              ? `${formatHours(controleBedragen.hours)} u wacht op een mens`
               : "niets blijft hangen"
           }
           icon={<AlertTriangle className="h-5 w-5" />}
@@ -219,7 +257,7 @@ export default async function WeekverwerkingPage({
             </p>
           )}
           <Link
-            href="/inbox/status"
+            href={`/inbox/status?week=${wp}`}
             className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             Timesheet-status
@@ -230,6 +268,7 @@ export default async function WeekverwerkingPage({
               variant="outline"
               size="sm"
               trigger="button"
+              hidden={{ week: wp }}
               message={`Herinner alle ${ontbreekt.missing.length} ${
                 ontbreekt.missing.length === 1 ? "freelancer" : "freelancers"
               }?`}
@@ -306,7 +345,7 @@ export default async function WeekverwerkingPage({
           <EmptyState
             icon={<CheckCircle2 className="h-6 w-6" />}
             title="Niets om na te kijken"
-            description="Alle uitgelezen weekstaten kwamen schoon door de controles. Ze staan hieronder samengevat."
+            description={`Alle uitgelezen weekstaten van ${formatWeekLabel(focusWeek).toLowerCase()} kwamen schoon door de controles. Blader met de week-balk hierboven, of bekijk hieronder wat er al is afgehandeld.`}
           />
         ) : (
           <Card className="overflow-hidden">
@@ -386,13 +425,15 @@ export default async function WeekverwerkingPage({
             <p className="flex items-center gap-2 text-[15px] font-bold text-emerald-700">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
               {autoApprove.length} freelancer{autoApprove.length === 1 ? "" : "s"} — automatisch
-              afgehandeld
+              afgehandeld <span className="font-semibold text-ink-500">(alle weken)</span>
             </p>
             <p className="mt-1 max-w-2xl text-sm text-ink-600">
               Weekstaat én tarieven klopten, dus deze weken kunnen in één keer door:{" "}
               <span className="tabular-nums">{formatHours(batchBedragen.hours)} u</span> ·{" "}
               <span className="tabular-nums">{formatCurrency(batchBedragen.charge)}</span> te
-              factureren. Kies of je alleen goedkeurt, of meteen doorzet naar de{" "}
+              factureren. Dit blok telt <strong>alle weken</strong> mee, niet alleen de week uit de
+              balk hierboven — de knoppen hiernaast pakken namelijk alles wat groen staat. Kies of
+              je alleen goedkeurt, of meteen doorzet naar de{" "}
               <strong>verkoopfactuur als concept</strong>. De inkoop is de factuur die de
               ZZP&apos;er zelf stuurt — die controleer je bij{" "}
               <Link href="/ontvangen-facturen" className="font-medium text-brand-700 hover:underline">
@@ -431,7 +472,7 @@ export default async function WeekverwerkingPage({
 
         <details>
           <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-5 py-3.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50/40">
-            <span>Toon de {autoApprove.length} afgehandelde weken</span>
+            <span>Toon de {autoApprove.length} afgehandelde weken (alle weken)</span>
             <span className="font-normal text-ink-500 tabular-nums">
               {formatHours(totals.autoApprove.hours)} u · {formatCurrency(totals.autoApprove.charge)}{" "}
               te factureren

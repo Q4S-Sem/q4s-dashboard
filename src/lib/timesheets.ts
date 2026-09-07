@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { startOfISOWeek, formatWeekLabel } from "./utils";
+import { ymd } from "./week-nav";
 import { getCompanySettings } from "./settings";
 import { sendMail, renderQ4sEmail, renderQ4sEmailText, type EmailContent } from "./email";
 
@@ -32,10 +33,7 @@ export function parseWeekParam(raw: string | undefined): Date {
 
 /** `YYYY-MM-DD` van een maandag, voor gebruik in links. */
 export function weekParam(monday: Date): string {
-  const y = monday.getFullYear();
-  const m = String(monday.getMonth() + 1).padStart(2, "0");
-  const d = String(monday.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return ymd(monday);
 }
 
 export type Presence = "RECEIVED" | "IN_INBOX" | "REMINDED" | "MISSING";

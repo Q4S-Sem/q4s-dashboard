@@ -14,6 +14,7 @@ import {
 import { getOutbox, matchOutbox, type OutboxRow } from "@/lib/verzenden";
 import { isEmailConfigured, getMailRedirect } from "@/lib/email";
 import { formatCurrency, formatWeekLabel, getISOWeek, startOfISOWeek } from "@/lib/utils";
+import { ymd } from "@/lib/week-nav";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -22,8 +23,8 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
+import { WeekBalk } from "@/components/week-balk";
 import { SearchFilter } from "./SearchFilter";
-import { WeekNav } from "./WeekNav";
 import { sendSalesInvoice, sendPurchaseInvoice, sendScope } from "./actions";
 
 export const metadata = { title: "Verzendmap" };
@@ -133,9 +134,8 @@ export default async function VerzendmapPage({
   const allRows = [...sales, ...purchase];
   const sendable = allRows.filter((r) => r.email);
 
-  // Instappunt voor de week-navigator: maandag van de huidige week (lokaal).
-  const cw = startOfISOWeek(new Date());
-  const currentWeek = `${cw.getFullYear()}-${String(cw.getMonth() + 1).padStart(2, "0")}-${String(cw.getDate()).padStart(2, "0")}`;
+  // Instappunt voor de week-balk: maandag van de huidige week (lokaal).
+  const currentWeek = ymd(startOfISOWeek(new Date()));
 
   const baseRows = tab === "inkoop" ? purchase : sales;
   // Zelfde predicaat als sendScope → wat je ziet is exact wat de bulk-knop verstuurt.
@@ -322,8 +322,14 @@ export default async function VerzendmapPage({
             <SearchFilter tab={tab} week={week} value={q} />
           </div>
 
-          {/* Week-navigator — standaard: alle weken */}
-          <WeekNav tab={tab} q={q} week={week} currentWeek={currentWeek} />
+          {/* Week-balk — standaard: alle weken, zodat je geen openstaande factuur mist */}
+          <WeekBalk
+            basePath="/verzenden"
+            week={week}
+            currentWeek={currentWeek}
+            extraParams={{ tab, q }}
+            allWeeks
+          />
 
           {/* Overzicht van de huidige selectie */}
           <p className="text-sm text-ink-500">
