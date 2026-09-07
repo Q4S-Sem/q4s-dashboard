@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { aiJSON, aiJSONFromFile } from "@/lib/ai";
 import { readInboxBase64, readInboxBuffer } from "@/lib/uploads";
 import { excelToText, isSpreadsheet } from "@/lib/excel";
+import { matchByName } from "@/lib/name-match";
 import { resolveWeekStart, round2, formatHours } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -125,27 +126,6 @@ function parseMonthDay(s?: string | null): { month: number; day: number } | null
   return { month: Number(m[2]), day: Number(m[3]) };
 }
 
-/** Loosely compare an extracted name to a consultant's first + last name. */
-function nameMatches(
-  c: { firstName: string; lastName: string },
-  extracted: string,
-): boolean {
-  const norm = (s: string) =>
-    s
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "")
-      .replace(/[^a-z ]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  const tokens = new Set(norm(extracted).split(" ").filter(Boolean));
-  if (tokens.size === 0) return false;
-  // Require every part of the first AND last name to appear as a whole token,
-  // so "An Berg" does not match "Johanna van den Berg".
-  const parts = [...norm(c.firstName).split(" "), ...norm(c.lastName).split(" ")].filter(Boolean);
-  return parts.length > 0 && parts.every((p) => tokens.has(p));
-}
-
 /**
  * Core AI extraction for ONE inbox item (name/week/hours/km/overtime + best-effort
  * consultant match). Throws on any failure (no redirect) so it's reusable by the
@@ -253,10 +233,10 @@ export async function runInboxExtraction(id: string): Promise<void> {
     const consultants = await db.consultant.findMany({
       include: { placements: { where: { status: "ACTIVE" } } },
     });
-    const matches = consultants.filter((c) => nameMatches(c, data.name));
-    if (matches.length === 1) {
-      consultantId = matches[0].id;
-      if (matches[0].placements.length === 1) placementId = matches[0].placements[0].id;
+    const { match } = matchByName(consultants, data.name);
+    if (match) {
+      consultantId = match.id;
+      if (match.placements.length === 1) placementId = match.placements[0].id;
     }
   }
 
