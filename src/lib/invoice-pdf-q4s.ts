@@ -329,19 +329,19 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
   // Kolomankers.
   const COL = {
     ref: M, // links
-    amount: 118, // rechts
+    amount: 88, // links (aantal onder de kop)
     desc: 128, // links
     descMaxW: 168,
     week: 322, // center
     loc: 350, // links
     locMaxW: 96,
-    price: 508, // rechts
+    price: 483, // rechts
     total: right, // rechts
   };
 
   const tableHead = () => {
     text(L.ref, COL.ref, y, 7.5, bold, MUTED);
-    textR(L.amount, COL.amount, y, 7.5, bold, MUTED);
+    text(L.amount, COL.amount, y, 7.5, bold, MUTED);
     text(L.description, COL.desc, y, 7.5, bold, MUTED);
     textC(L.week, COL.week, y, 7.5, bold, MUTED);
     text(L.location, COL.loc, y, 7.5, bold, MUTED);
@@ -368,7 +368,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
       page.drawRectangle({ x: M, y: y - 4, width: right - M, height: 15, color: ZEBRA });
     }
     text(l.ref, COL.ref, y, 9, font, MUTED);
-    textR(formatHours(l.amount), COL.amount, y, 9, font, INK);
+    text(formatHours(l.amount), COL.amount, y, 9, font, INK);
     // Zonder WEEK én LOCATION mag de omschrijving de volle breedte gebruiken
     // (voorkomt lelijk afkappen bij oudere/lange regels); mét die kolommen de
     // smalle Q4S-kolom.
