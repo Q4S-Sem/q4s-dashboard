@@ -196,6 +196,25 @@ export function SettingsForm({
 
             <div className="grid gap-5 sm:grid-cols-2">
               <Field
+                label="BIC"
+                htmlFor="bic"
+                hint="Bankidentificatie, staat op de factuur."
+                error={e.bic}
+              >
+                <Input id="bic" name="bic" defaultValue={settings.bic ?? ""} />
+              </Field>
+              <Field
+                label="G-rekening"
+                htmlFor="gAccount"
+                hint="G-rekeningnummer, indien van toepassing — staat op de factuur."
+                error={e.gAccount}
+              >
+                <Input id="gAccount" name="gAccount" defaultValue={settings.gAccount ?? ""} />
+              </Field>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field
                 label="BTW-nummer (VAT no)"
                 htmlFor="vatNumber"
                 hint="Twee keer op de factuur: “VAT” in het bankblok en “VAT no” in het kopblok rechts."
