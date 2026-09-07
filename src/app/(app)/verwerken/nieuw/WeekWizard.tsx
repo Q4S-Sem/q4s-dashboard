@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  FileDown,
   FileText,
   Inbox,
   Receipt,
@@ -474,6 +475,13 @@ function WizardRonde({
 
   // --- klaar: het succesbeeld ---------------------------------------------
   if (resultaat) {
+    // De échte Q4S-factuur-PDF: dezelfde route die /verzenden gebruikt om de
+    // bijlage te maken (src/app/(app)/verzenden/[type]/[id]/pdf/route.ts), dus
+    // exact het document dat de klant straks in de mail krijgt.
+    const verkoopPdfHref = resultaat.verkoopFactuurId
+      ? `/verzenden/verkoop/${resultaat.verkoopFactuurId}/pdf`
+      : null;
+
     return (
       <Card className="border-emerald-200">
         <CardContent className="space-y-5">
@@ -520,6 +528,16 @@ function WizardRonde({
                   <Badge color="amber">geen verkoopfactuur gemaakt</Badge>
                 )}
               </div>
+              {verkoopPdfHref && (
+                <a
+                  href={verkoopPdfHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
+                >
+                  <FileDown className="h-3.5 w-3.5" /> Open de PDF
+                </a>
+              )}
             </Paneel>
             <Paneel titel="Jouw marge" accent>
               <KV
@@ -547,7 +565,17 @@ function WizardRonde({
           )}
 
           <div className="flex flex-wrap items-center gap-2 border-t border-ink-100 pt-4">
-            <Button type="button" onClick={opnieuw}>
+            {verkoopPdfHref && (
+              <a
+                href={verkoopPdfHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants()}
+              >
+                <FileDown className="h-4 w-4" /> Verkoopfactuur (PDF)
+              </a>
+            )}
+            <Button type="button" variant="outline" onClick={opnieuw}>
               <RotateCcw className="h-4 w-4" /> Volgende week verwerken
             </Button>
             {resultaat.verkoopFactuurId && (
@@ -1176,6 +1204,14 @@ function WizardRonde({
                           : "geen klant gekoppeld — geen factuur"}
                       </Badge>
                     </div>
+                    {/* Vóór het akkoord bestaat de factuurrij nog niet, dus er valt
+                        ook nog geen PDF te tonen — wél alvast zeggen dat hij komt. */}
+                    {plaatsing.klantId && (
+                      <p className="mt-2 flex items-start gap-1.5 text-xs text-ink-500">
+                        <FileDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-400" />
+                        <span>Na akkoord krijg je de Q4S-verkoopfactuur als PDF.</span>
+                      </p>
+                    )}
                   </>
                 ) : (
                   <p className="text-sm text-ink-500">
