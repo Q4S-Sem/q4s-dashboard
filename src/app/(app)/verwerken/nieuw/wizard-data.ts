@@ -19,6 +19,8 @@ export type WizardTimesheet = {
   /** TimesheetInbox.id — waar confirmInboxItem straks mee werkt. */
   id: string;
   originalName: string;
+  /** Content-type zoals opgeslagen — bepaalt hoe het voorbeeld getoond wordt. */
+  mimeType: string;
   /** "Upload" of het e-mailadres van de afzender. */
   bron: string;
   /** Wanneer binnengekomen, als "YYYY-MM-DD" (leeg = onbekend). */
@@ -132,6 +134,7 @@ export type VerwerkState = {
 export type InboxRij = {
   id: string;
   originalName: string;
+  mimeType: string;
   source: string;
   senderEmail: string | null;
   receivedAt: Date | null;
@@ -180,6 +183,7 @@ export function naarWizardTimesheet(item: InboxRij): WizardTimesheet {
   return {
     id: item.id,
     originalName: item.originalName,
+    mimeType: item.mimeType,
     bron: item.source === "EMAIL" ? (item.senderEmail ?? "e-mail") : "upload",
     ontvangen: toDateInput(item.receivedAt ?? item.createdAt),
     status: item.status,

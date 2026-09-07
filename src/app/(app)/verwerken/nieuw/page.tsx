@@ -67,7 +67,11 @@ export default async function WeekVerwerkenPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    // Volle werkbreedte — zoals /verwerken en de andere overzichtsschermen: geen
+    // eigen max-w, de AppShell levert de paginamarge (px-4 sm:px-6 lg:px-8) al.
+    // De wizard zet het document náást de uitgelezen velden; in de smalle kolom
+    // van een formulierpagina (max-w-4xl) hield geen van beide genoeg ruimte over.
+    <div className="space-y-6">
       <BackLink href="/verwerken">Terug naar facturatie</BackLink>
 
       <PageHeader

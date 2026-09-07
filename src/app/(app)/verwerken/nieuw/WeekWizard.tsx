@@ -24,6 +24,7 @@ import { Dropzone } from "@/components/ui/dropzone";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { wizardBestandUrl } from "@/lib/document-viewer";
 import { evaluateMargin } from "@/lib/facturatie-detecties";
 import { computeTimesheetMoney } from "@/lib/toeslag";
 import {
@@ -45,6 +46,7 @@ import {
   wizardVoortgang,
 } from "@/lib/week-wizard";
 import { leesFactuur, leesTimesheet, verwerkWeek } from "./actions";
+import { DocumentViewer } from "./DocumentViewer";
 import {
   LEGE_DAGUREN,
   inboxSamenvatting,
@@ -80,6 +82,26 @@ const DAG_MS = 86400000;
 const TIMESHEET_ACCEPT =
   ".pdf,.png,.jpg,.jpeg,.webp,.gif,.xlsx,.xls,.csv,application/pdf,image/*";
 const FACTUUR_ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.xls,.csv,application/pdf,image/*";
+
+// --- de brede indeling -----------------------------------------------------
+// De wizard vult de hele werkbreedte (zie page.tsx), zodat het document en de
+// uitgelezen velden naast elkaar passen. Die tweedeling zit hieronder in één
+// paar klassen, zodat stap 1 en stap 2 gegarandeerd dezelfde kolommen hebben.
+
+/**
+ * Document | velden: twee gelijke kolommen met hun bovenkant op één lijn. Pas
+ * vanaf xl — daaronder is een halve kolom te smal voor allebei en zetten we ze
+ * onder elkaar (document eerst, want daar controleer je aan).
+ */
+const SPLIT = "grid gap-5 xl:grid-cols-2 xl:items-start";
+/** Kopje boven een kolom of paneel — overal hetzelfde grijze kapitaaltje. */
+const KOPJE = "text-[11px] font-bold uppercase tracking-wide text-ink-400";
+/** Breder scherm mag het document ook hóger tonen: beter te lezen. */
+const DOC_HOOGTE = "h-[420px] sm:h-[520px] xl:h-[600px] 2xl:h-[680px]";
+/** Velden in de halve kolom: één op een rij, twee zodra er ruimte voor is. */
+const VELD_GRID = "grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2";
+/** Inleidende tekst blijft leesbaar smal, ook al is de pagina breed. */
+const INTRO = "mt-1 max-w-3xl text-sm text-ink-500";
 
 /** Heeft deze medewerker precies één actieve plaatsing? Dan alvast invullen. */
 function eenPlaatsingVoor(plaatsingen: WizardPlaatsing[], consultantId: string | null): string {
@@ -304,6 +326,9 @@ function WizardRonde({
   // binnen, dan tellen de oude wijzigingen niet meer mee.
   const factuurBestand = invState.bestand ?? null;
   const factuurSleutel = factuurBestand?.fileName ?? "";
+  // Het bestand is wél opgeslagen maar heeft nog geen ReceivedInvoice-rij, dus
+  // het voorbeeld komt van de opslagnaam-route (null = sleutel niet vertrouwd).
+  const factuurSrc = factuurBestand ? wizardBestandUrl(factuurBestand) : null;
   const factuur =
     factuurCorrectie && factuurCorrectie.voor === factuurSleutel
       ? factuurCorrectie.velden
@@ -401,7 +426,7 @@ function WizardRonde({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Paneel titel="Uren">
               <KV k="Geaccepteerd" v={`${formatHours(resultaat.uren)} u`} />
               <div className="mt-2">
@@ -526,103 +551,87 @@ function WizardRonde({
           <CardContent className="space-y-5">
             <div>
               <h2 className="text-[15px] font-bold text-ink-900">Stap 1 · Timesheet erin</h2>
-              <p className="mt-1 text-sm text-ink-500">
+              <p className={INTRO}>
                 Sleep de urenstaat hierin, of kies er één uit de inbox. De AI leest de uren
                 automatisch uit — jij controleert.
               </p>
             </div>
 
             {!gekozen ? (
-              <>
-                <form action={tsAction} className="space-y-3">
-                  <Dropzone
-                    name="file"
-                    accept={TIMESHEET_ACCEPT}
-                    label="Sleep de timesheet hierheen"
-                    hint="PDF, foto/scan of Excel — gedraaide scans worden automatisch rechtgezet"
-                  />
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-ink-400">
-                      {aiKlaar
-                        ? "Het bestand komt ook gewoon in de timesheet-inbox te staan."
-                        : "Er is geen AI ingesteld — je vult de uren straks zelf in."}
+              // Uploaden links, de inbox rechts — dezelfde tweedeling als
+              // hieronder, met beide kopjes op dezelfde hoogte.
+              <div className={SPLIT}>
+                <div className="space-y-3">
+                  <h3 className={KOPJE}>Nieuwe urenstaat uploaden</h3>
+                  <form action={tsAction} className="space-y-3">
+                    <Dropzone
+                      name="file"
+                      accept={TIMESHEET_ACCEPT}
+                      label="Sleep de timesheet hierheen"
+                      hint="PDF, foto/scan of Excel — gedraaide scans worden automatisch rechtgezet"
+                    />
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs text-ink-400">
+                        {aiKlaar
+                          ? "Het bestand komt ook gewoon in de timesheet-inbox te staan."
+                          : "Er is geen AI ingesteld — je vult de uren straks zelf in."}
+                      </p>
+                      <SubmitButton pendingLabel="AI leest…">
+                        <Sparkles className="h-4 w-4" /> Upload &amp; uitlezen
+                      </SubmitButton>
+                    </div>
+                  </form>
+
+                  {tsState.error && (
+                    <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {tsState.error}
                     </p>
-                    <SubmitButton pendingLabel="AI leest…">
-                      <Sparkles className="h-4 w-4" /> Upload &amp; uitlezen
-                    </SubmitButton>
-                  </div>
-                </form>
-
-                {tsState.error && (
-                  <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {tsState.error}
-                  </p>
-                )}
-
-                <p className="text-center text-xs text-ink-400">
-                  — of kies uit de timesheet-inbox —
-                </p>
-
-                {items.length === 0 ? (
-                  <EmptyState
-                    icon={<Inbox className="h-6 w-6" />}
-                    title="Niets in de inbox"
-                    description="Er staan geen openstaande weekstaten klaar. Sleep er hierboven één in, of laat ze binnenkomen via de mail."
-                  />
-                ) : (
-                  <div className="overflow-hidden rounded-md border border-ink-100">
-                    {items.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => kies(item)}
-                        className="flex w-full items-center gap-3 border-b border-ink-100 px-4 py-3 text-left last:border-b-0 hover:bg-ink-50"
-                      >
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-ink-100 text-ink-500">
-                          <FileText className="h-4 w-4" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-semibold text-ink-900">
-                            {item.naam}
-                          </span>
-                          <span className="block truncate text-xs text-ink-400">
-                            {inboxSamenvatting(item)}
-                          </span>
-                        </span>
-                        {item.status === "NEW" ? (
-                          <Badge color="amber">nog niet uitgelezen</Badge>
-                        ) : item.needsReview ? (
-                          <Badge color="amber">nakijken</Badge>
-                        ) : (
-                          <Badge color="green">uitgelezen</Badge>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="flex flex-wrap items-center gap-3 rounded-md border border-ink-100 bg-ink-50/60 px-4 py-2.5">
-                  <FileText className="h-4 w-4 shrink-0 text-ink-400" />
-                  <span className="min-w-0 flex-1 truncate text-sm text-ink-600">
-                    {gekozen.originalName}
-                  </span>
-                  <Link
-                    href={`/inbox/${gekozen.id}`}
-                    className="text-xs font-semibold text-ink-500 underline underline-offset-2 hover:text-ink-900"
-                  >
-                    bekijk bestand
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={opnieuw}
-                    className="text-xs font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
-                  >
-                    andere kiezen
-                  </button>
+                  )}
                 </div>
 
+                <div className="space-y-3">
+                  <h3 className={KOPJE}>Of kies uit de timesheet-inbox</h3>
+                  {items.length === 0 ? (
+                    <EmptyState
+                      icon={<Inbox className="h-6 w-6" />}
+                      title="Niets in de inbox"
+                      description="Er staan geen openstaande weekstaten klaar. Sleep er hiernaast één in, of laat ze binnenkomen via de mail."
+                    />
+                  ) : (
+                    <div className="overflow-hidden rounded-md border border-ink-100">
+                      {items.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => kies(item)}
+                          className="flex w-full items-center gap-3 border-b border-ink-100 px-4 py-3 text-left last:border-b-0 hover:bg-ink-50"
+                        >
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-ink-100 text-ink-500">
+                            <FileText className="h-4 w-4" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold text-ink-900">
+                              {item.naam}
+                            </span>
+                            <span className="block truncate text-xs text-ink-400">
+                              {inboxSamenvatting(item)}
+                            </span>
+                          </span>
+                          {item.status === "NEW" ? (
+                            <Badge color="amber">nog niet uitgelezen</Badge>
+                          ) : item.needsReview ? (
+                            <Badge color="amber">nakijken</Badge>
+                          ) : (
+                            <Badge color="green">uitgelezen</Badge>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <>
                 {(tsState.waarschuwing || gekozen.aiNotes) && (
                   <p className="flex items-start gap-2 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -630,131 +639,150 @@ function WizardRonde({
                   </p>
                 )}
 
-                <div className="rounded-md border border-ink-100 p-4">
-                  <h3 className="mb-3 text-[11px] font-bold uppercase tracking-wide text-ink-400">
-                    Uitgelezen door AI — controleer de uren
-                  </h3>
+                {/* Document links, uitgelezen velden rechts — op één regel te
+                    vergelijken; op smalle schermen staat het document bovenaan. */}
+                <div className={SPLIT}>
+                  <DocumentViewer
+                    src={`/api/inbox/${gekozen.id}`}
+                    mimeType={gekozen.mimeType}
+                    originalName={gekozen.originalName}
+                    titel="Timesheet"
+                    hoogte={DOC_HOOGTE}
+                  />
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Plaatsing (werknemer · klant)" htmlFor="placementId" required>
-                      <Select
-                        id="placementId"
-                        defaultValue={placementId}
-                        onValueChange={(v) => corrigeer({ placementId: v })}
-                        aria-label="Plaatsing"
+                  <div className="rounded-md border border-ink-100 p-4">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <h3 className={KOPJE}>Uitgelezen door AI — controleer de uren</h3>
+                      <button
+                        type="button"
+                        onClick={opnieuw}
+                        className="shrink-0 text-xs font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
                       >
-                        <option value="" disabled>
-                          Kies een plaatsing…
-                        </option>
-                        {plaatsingen.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {`${p.consultantNaam} — ${p.klantNaam ?? "— geen bedrijf"} · ${p.functie}`}
-                          </option>
-                        ))}
-                      </Select>
-                    </Field>
-                    <Field label="Week (maandag)" htmlFor="weekStart" required>
-                      <DateInput
-                        id="weekStart"
-                        value={weekStart}
-                        onValueChange={(v) => corrigeer({ weekStart: v })}
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="mt-4">
-                    <span className="mb-1.5 block text-[13px] font-medium text-ink-600">
-                      Uren per dag
-                    </span>
-                    <div className="grid grid-cols-7 gap-1.5">
-                      {DAG_LABELS.map((label, i) => {
-                        const weekend = i >= 5;
-                        const dag = maandag ? new Date(maandag.getTime() + i * DAG_MS) : null;
-                        return (
-                          <div key={label}>
-                            <label
-                              htmlFor={`dag_${i}`}
-                              className={cn(
-                                "mb-1 block text-center text-[11px]",
-                                weekend ? "font-semibold text-brand-600" : "text-ink-400",
-                              )}
-                            >
-                              {label}
-                              {dag ? ` ${dag.getDate()}` : ""}
-                            </label>
-                            <Input
-                              id={`dag_${i}`}
-                              type="number"
-                              step="0.25"
-                              min="0"
-                              className={cn(
-                                "px-1.5 text-center tabular-nums",
-                                weekend && "bg-brand-50",
-                              )}
-                              value={dagUren[i] ?? ""}
-                              onChange={(e) =>
-                                corrigeer({
-                                  dagUren: dagUren.map((h, j) => (j === i ? e.target.value : h)),
-                                })
-                              }
-                            />
-                          </div>
-                        );
-                      })}
+                        andere kiezen
+                      </button>
                     </div>
-                  </div>
 
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <Field label="Overuren (apart vermeld)" htmlFor="overuren">
-                      <Input
-                        id="overuren"
-                        type="number"
-                        step="0.25"
-                        min="0"
-                        className="tabular-nums"
-                        value={overuren}
-                        onChange={(e) => corrigeer({ overuren: e.target.value })}
-                      />
-                    </Field>
-                    <Field label="Kilometers" htmlFor="kilometers">
-                      <Input
-                        id="kilometers"
-                        type="number"
-                        step="1"
-                        min="0"
-                        className="tabular-nums"
-                        value={kilometers}
-                        onChange={(e) => corrigeer({ kilometers: e.target.value })}
-                      />
-                    </Field>
-                  </div>
+                    <div className={VELD_GRID}>
+                      <Field label="Plaatsing (werknemer · klant)" htmlFor="placementId" required>
+                        <Select
+                          id="placementId"
+                          defaultValue={placementId}
+                          onValueChange={(v) => corrigeer({ placementId: v })}
+                          aria-label="Plaatsing"
+                        >
+                          <option value="" disabled>
+                            Kies een plaatsing…
+                          </option>
+                          {plaatsingen.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {`${p.consultantNaam} — ${p.klantNaam ?? "— geen bedrijf"} · ${p.functie}`}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                      <Field label="Week (maandag)" htmlFor="weekStart" required>
+                        <DateInput
+                          id="weekStart"
+                          value={weekStart}
+                          onValueChange={(v) => corrigeer({ weekStart: v })}
+                        />
+                      </Field>
+                    </div>
 
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <Badge color={totaalUren > 0 ? "green" : "amber"}>
-                      {formatHours(totaalUren)} reguliere uren
-                    </Badge>
-                    {parseHours(overuren) > 0 && (
-                      <Badge color="green">{formatHours(parseHours(overuren))} overuren</Badge>
-                    )}
-                    <Badge color="blue">{formatHours(parseHours(kilometers))} km</Badge>
-                    {geld && geld.weekendHours > 0 && (
-                      <Badge color="orange">{formatHours(geld.weekendHours)} weekenduren</Badge>
-                    )}
-                  </div>
+                    <div className="mt-4">
+                      <span className="mb-1.5 block text-[13px] font-medium text-ink-600">
+                        Uren per dag
+                      </span>
+                      <div className="grid grid-cols-7 gap-1.5">
+                        {DAG_LABELS.map((label, i) => {
+                          const weekend = i >= 5;
+                          const dag = maandag ? new Date(maandag.getTime() + i * DAG_MS) : null;
+                          return (
+                            <div key={label}>
+                              <label
+                                htmlFor={`dag_${i}`}
+                                className={cn(
+                                  "mb-1 block text-center text-[11px]",
+                                  weekend ? "font-semibold text-brand-600" : "text-ink-400",
+                                )}
+                              >
+                                {label}
+                                {dag ? ` ${dag.getDate()}` : ""}
+                              </label>
+                              <Input
+                                id={`dag_${i}`}
+                                type="number"
+                                step="0.25"
+                                min="0"
+                                className={cn(
+                                  "px-1.5 text-center tabular-nums",
+                                  weekend && "bg-brand-50",
+                                )}
+                                value={dagUren[i] ?? ""}
+                                onChange={(e) =>
+                                  corrigeer({
+                                    dagUren: dagUren.map((h, j) => (j === i ? e.target.value : h)),
+                                  })
+                                }
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                  <p className="mt-3 flex items-start gap-1.5 text-[13px] text-ink-500">
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                    <span>
-                      Kloppen de uren? Pas ze hierboven aan als iets niet klopt, of{" "}
-                      <Link
-                        href={`/verwerken/week/${gekozen.id}/mail`}
-                        className="font-semibold text-brand-700 underline underline-offset-2"
-                      >
-                        meld een fout bij de freelancer
-                      </Link>
-                      .
-                    </span>
-                  </p>
+                    <div className={cn("mt-4", VELD_GRID)}>
+                      <Field label="Overuren (apart vermeld)" htmlFor="overuren">
+                        <Input
+                          id="overuren"
+                          type="number"
+                          step="0.25"
+                          min="0"
+                          className="tabular-nums"
+                          value={overuren}
+                          onChange={(e) => corrigeer({ overuren: e.target.value })}
+                        />
+                      </Field>
+                      <Field label="Kilometers" htmlFor="kilometers">
+                        <Input
+                          id="kilometers"
+                          type="number"
+                          step="1"
+                          min="0"
+                          className="tabular-nums"
+                          value={kilometers}
+                          onChange={(e) => corrigeer({ kilometers: e.target.value })}
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <Badge color={totaalUren > 0 ? "green" : "amber"}>
+                        {formatHours(totaalUren)} reguliere uren
+                      </Badge>
+                      {parseHours(overuren) > 0 && (
+                        <Badge color="green">{formatHours(parseHours(overuren))} overuren</Badge>
+                      )}
+                      <Badge color="blue">{formatHours(parseHours(kilometers))} km</Badge>
+                      {geld && geld.weekendHours > 0 && (
+                        <Badge color="orange">{formatHours(geld.weekendHours)} weekenduren</Badge>
+                      )}
+                    </div>
+
+                    <p className="mt-3 flex items-start gap-1.5 text-[13px] text-ink-500">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                      <span>
+                        Kloppen de uren? Pas ze hierboven aan als iets niet klopt, of{" "}
+                        <Link
+                          href={`/verwerken/week/${gekozen.id}/mail`}
+                          className="font-semibold text-brand-700 underline underline-offset-2"
+                        >
+                          meld een fout bij de freelancer
+                        </Link>
+                        .
+                      </span>
+                    </p>
+                  </div>
                 </div>
               </>
             )}
@@ -784,7 +812,7 @@ function WizardRonde({
               <h2 className="text-[15px] font-bold text-ink-900">
                 Stap 2 · Factuur van de freelancer erin
               </h2>
-              <p className="mt-1 text-sm text-ink-500">
+              <p className={INTRO}>
                 Dit is <strong className="font-semibold text-ink-700">zijn eigen factuur</strong> =
                 jullie inkoop. Sleep &apos;m erin; de AI leest factuurnummer, bedrag en periode uit
                 en controleert of het klopt met de uren. Nog niet binnen? Dan sla je deze stap over.
@@ -818,119 +846,137 @@ function WizardRonde({
             )}
 
             {factuur && (
-              <div className="rounded-md border border-ink-100 p-4">
-                <h3 className="mb-3 text-[11px] font-bold uppercase tracking-wide text-ink-400">
-                  Uitgelezen door AI — controleer de factuur
-                </h3>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Factuurnummer" htmlFor="nummerVeld">
-                    <Input
-                      id="nummerVeld"
-                      value={factuur.number}
-                      onChange={(e) => zetFactuur({ ...factuur, number: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Factuurdatum" htmlFor="datumVeld">
-                    <DateInput
-                      id="datumVeld"
-                      value={factuur.issueDate}
-                      onValueChange={(v) => zetFactuur({ ...factuur, issueDate: v })}
-                    />
-                  </Field>
-                  <Field label="Periode van" htmlFor="periodeStartVeld">
-                    <DateInput
-                      id="periodeStartVeld"
-                      value={factuur.periodStart}
-                      onValueChange={(v) => zetFactuur({ ...factuur, periodStart: v })}
-                    />
-                  </Field>
-                  <Field label="Periode t/m" htmlFor="periodeEindVeld">
-                    <DateInput
-                      id="periodeEindVeld"
-                      value={factuur.periodEnd}
-                      onValueChange={(v) => zetFactuur({ ...factuur, periodEnd: v })}
-                    />
-                  </Field>
-                  <Field
-                    label="Totaalbedrag"
-                    htmlFor="bedragVeld"
-                    hint="Zoals op zijn factuur — inclusief btw als die berekend is."
-                    required
-                  >
-                    <Input
-                      id="bedragVeld"
-                      inputMode="decimal"
-                      className="tabular-nums"
-                      placeholder="0,00"
-                      value={factuur.amount}
-                      onChange={(e) => zetFactuur({ ...factuur, amount: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Btw-bedrag" htmlFor="btwVeld" hint="Leeg laten bij verlegde btw.">
-                    <Input
-                      id="btwVeld"
-                      inputMode="decimal"
-                      className="tabular-nums"
-                      value={factuur.vatAmount}
-                      onChange={(e) => zetFactuur({ ...factuur, vatAmount: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Kilometers op de factuur" htmlFor="factuurKmVeld">
-                    <Input
-                      id="factuurKmVeld"
-                      inputMode="decimal"
-                      className="tabular-nums"
-                      value={factuur.kilometers}
-                      onChange={(e) => zetFactuur({ ...factuur, kilometers: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Notitie" htmlFor="notitieVeld" className="sm:col-span-2">
-                    <Textarea
-                      id="notitieVeld"
-                      rows={2}
-                      value={factuur.notes}
-                      onChange={(e) => zetFactuur({ ...factuur, notes: e.target.value })}
-                    />
-                  </Field>
-                </div>
-
-                <div className="mt-4">
-                  <KV
-                    k={`${formatHours(totaalUren)} uur × ${formatCurrency(plaatsing?.config.costRate ?? 0)} inkoop (verwacht)`}
-                    v={geld ? formatCurrency(geld.buy.total) : "—"}
+              // Zijn factuur links, de uitgelezen bedragen rechts — zo liggen de
+              // getallen en het document naast elkaar. Zonder voorbeeld (bestand
+              // niet leesbaar) blijft het paneel gewoon over de volle breedte.
+              <div className={factuurSrc ? SPLIT : "grid gap-5"}>
+                {factuurSrc && factuurBestand && (
+                  <DocumentViewer
+                    src={factuurSrc}
+                    mimeType={factuurBestand.mimeType}
+                    originalName={factuurBestand.originalName}
+                    titel="Zijn factuur"
+                    hoogte={DOC_HOOGTE}
                   />
-                  <KV
-                    k="Zijn factuur (excl. btw)"
-                    v={factuurExcl != null ? formatCurrency(factuurExcl) : "—"}
-                    sterk
-                  />
-                </div>
-
-                <div
-                  className={cn(
-                    "mt-3 flex items-start gap-2 rounded-md border p-3 text-sm font-medium",
-                    match.status === "klopt"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : match.status === "afwijking"
-                        ? "border-amber-200 bg-amber-50 text-amber-800"
-                        : "border-ink-200 bg-ink-50 text-ink-600",
-                  )}
-                >
-                  {match.status === "klopt" ? (
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  ) : (
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  )}
-                  <span>{match.message}</span>
-                </div>
-
-                {parseHours(factuur.kilometers) > 0 && parseHours(kilometers) <= 0 && (
-                  <p className="mt-2 text-xs text-ink-500">
-                    Er staan {formatHours(parseHours(factuur.kilometers))} km op zijn factuur, maar
-                    niet op de urenstaat. Vul ze in stap 1 in als ze doorbelast moeten worden.
-                  </p>
                 )}
+
+                <div className="rounded-md border border-ink-100 p-4">
+                  <h3 className={cn("mb-3", KOPJE)}>Uitgelezen door AI — controleer de factuur</h3>
+
+                  <div className={VELD_GRID}>
+                    <Field label="Factuurnummer" htmlFor="nummerVeld">
+                      <Input
+                        id="nummerVeld"
+                        value={factuur.number}
+                        onChange={(e) => zetFactuur({ ...factuur, number: e.target.value })}
+                      />
+                    </Field>
+                    <Field label="Factuurdatum" htmlFor="datumVeld">
+                      <DateInput
+                        id="datumVeld"
+                        value={factuur.issueDate}
+                        onValueChange={(v) => zetFactuur({ ...factuur, issueDate: v })}
+                      />
+                    </Field>
+                    <Field label="Periode van" htmlFor="periodeStartVeld">
+                      <DateInput
+                        id="periodeStartVeld"
+                        value={factuur.periodStart}
+                        onValueChange={(v) => zetFactuur({ ...factuur, periodStart: v })}
+                      />
+                    </Field>
+                    <Field label="Periode t/m" htmlFor="periodeEindVeld">
+                      <DateInput
+                        id="periodeEindVeld"
+                        value={factuur.periodEnd}
+                        onValueChange={(v) => zetFactuur({ ...factuur, periodEnd: v })}
+                      />
+                    </Field>
+                    <Field
+                      label="Totaalbedrag"
+                      htmlFor="bedragVeld"
+                      hint="Zoals op zijn factuur — inclusief btw als die berekend is."
+                      required
+                    >
+                      <Input
+                        id="bedragVeld"
+                        inputMode="decimal"
+                        className="tabular-nums"
+                        placeholder="0,00"
+                        value={factuur.amount}
+                        onChange={(e) => zetFactuur({ ...factuur, amount: e.target.value })}
+                      />
+                    </Field>
+                    <Field label="Btw-bedrag" htmlFor="btwVeld" hint="Leeg laten bij verlegde btw.">
+                      <Input
+                        id="btwVeld"
+                        inputMode="decimal"
+                        className="tabular-nums"
+                        value={factuur.vatAmount}
+                        onChange={(e) => zetFactuur({ ...factuur, vatAmount: e.target.value })}
+                      />
+                    </Field>
+                    <Field label="Kilometers op de factuur" htmlFor="factuurKmVeld">
+                      <Input
+                        id="factuurKmVeld"
+                        inputMode="decimal"
+                        className="tabular-nums"
+                        value={factuur.kilometers}
+                        onChange={(e) => zetFactuur({ ...factuur, kilometers: e.target.value })}
+                      />
+                    </Field>
+                    <Field
+                      label="Notitie"
+                      htmlFor="notitieVeld"
+                      className="sm:col-span-2 xl:col-span-1 2xl:col-span-2"
+                    >
+                      <Textarea
+                        id="notitieVeld"
+                        rows={2}
+                        value={factuur.notes}
+                        onChange={(e) => zetFactuur({ ...factuur, notes: e.target.value })}
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="mt-4">
+                    <KV
+                      k={`${formatHours(totaalUren)} uur × ${formatCurrency(plaatsing?.config.costRate ?? 0)} inkoop (verwacht)`}
+                      v={geld ? formatCurrency(geld.buy.total) : "—"}
+                    />
+                    <KV
+                      k="Zijn factuur (excl. btw)"
+                      v={factuurExcl != null ? formatCurrency(factuurExcl) : "—"}
+                      sterk
+                    />
+                  </div>
+
+                  <div
+                    className={cn(
+                      "mt-3 flex items-start gap-2 rounded-md border p-3 text-sm font-medium",
+                      match.status === "klopt"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                        : match.status === "afwijking"
+                          ? "border-amber-200 bg-amber-50 text-amber-800"
+                          : "border-ink-200 bg-ink-50 text-ink-600",
+                    )}
+                  >
+                    {match.status === "klopt" ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    )}
+                    <span>{match.message}</span>
+                  </div>
+
+                  {parseHours(factuur.kilometers) > 0 && parseHours(kilometers) <= 0 && (
+                    <p className="mt-2 text-xs text-ink-500">
+                      Er staan {formatHours(parseHours(factuur.kilometers))} km op zijn factuur,
+                      maar niet op de urenstaat. Vul ze in stap 1 in als ze doorbelast moeten
+                      worden.
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -959,13 +1005,14 @@ function WizardRonde({
           <CardContent className="space-y-5">
             <div>
               <h2 className="text-[15px] font-bold text-ink-900">Stap 3 · Controle &amp; akkoord</h2>
-              <p className="mt-1 text-sm text-ink-500">
+              <p className={INTRO}>
                 Alles op een rij. Klopt het? Eén klik legt de uren vast, registreert zijn factuur als
                 inkoop én maakt de verkoopfactuur naar de klant klaar.
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            {/* Vier panelen: 2×2 op een gewoon scherm, in één rij als het past. */}
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <Paneel titel="Uren">
                 <KV k="Reguliere uren" v={formatHours(totaalUren)} />
                 <KV k="Overuren" v={formatHours(parseHours(overuren))} />
