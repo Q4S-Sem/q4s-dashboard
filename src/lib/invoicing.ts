@@ -82,7 +82,11 @@ export async function createSalesInvoice(opts: {
   const year = issueDate.getFullYear();
 
   const invoice = await db.$transaction(async (tx) => {
-    const number = await nextInvoiceNumber(tx, { year, prefix: settings.invoicePrefix || "" });
+    const number = await nextInvoiceNumber(tx, {
+      year,
+      prefix: settings.invoicePrefix || "",
+      startNumber: settings.invoiceStartNumber ?? 1,
+    });
     const inv = await tx.invoice.create({
       data: {
         number, clientId, issueDate, dueDate, status: "DRAFT", vatRate, subtotal, vatAmount, total, notes,

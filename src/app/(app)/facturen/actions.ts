@@ -5,7 +5,18 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { createSalesInvoice } from "@/lib/invoicing";
-import { reconcileInvoiceSequence } from "@/lib/numbering";
+import {
+  DUPLICAAT_FACTUURNUMMER,
+  parseManualInvoiceNumber,
+  reconcileInvoiceSequence,
+} from "@/lib/numbering";
+import {
+  isDeletableInvoice,
+  isSendableInvoice,
+  parseBulkIds,
+  partitionBulk,
+} from "@/lib/factuur-bulk";
+import { sendSalesInvoiceById, type SendOutcome } from "@/lib/send-invoice";
 import { parseForm, type FormState } from "@/lib/form";
 import { round2 } from "@/lib/utils";
 
@@ -32,7 +43,9 @@ export async function updateInvoice(
   const parsed = parseForm(EditInvoiceSchema, formData);
   if (!parsed.success) return parsed.state;
   const d = parsed.data;
-  const number = d.number.trim();
+  const cleaned = parseManualInvoiceNumber(d.number);
+  if (!cleaned.ok) return { fieldErrors: { number: cleaned.error } };
+  const number = cleaned.number;
 
   const invoice = await db.invoice.findUnique({
     where: { id },
@@ -96,39 +109,50 @@ export async function updateInvoice(
     return { error: "Het totaalbedrag is te groot om te verwerken." };
   }
 
+  // Dubbel nummer? Eerst netjes controleren (leesbare melding), en daarna nóg een
+  // keer opvangen op de unieke index — die is het echte slot, ook als iemand er
+  // tussendoor dezelfde nummer opslaat.
   const clash = await db.invoice.findFirst({
     where: { number, id: { not: id } },
     select: { id: true },
   });
-  if (clash) return { fieldErrors: { number: "Dit factuurnummer is al in gebruik." } };
+  if (clash) return { fieldErrors: { number: DUPLICAAT_FACTUURNUMMER } };
 
-  await db.$transaction(async (tx) => {
-    for (const l of updates) {
-      await tx.invoiceLine.update({
-        where: { id: l.id },
+  try {
+    await db.$transaction(async (tx) => {
+      for (const l of updates) {
+        await tx.invoiceLine.update({
+          where: { id: l.id },
+          data: {
+            description: l.description,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+            amount: l.amount,
+          },
+        });
+      }
+      await tx.invoice.update({
+        where: { id },
         data: {
-          description: l.description,
-          quantity: l.quantity,
-          unitPrice: l.unitPrice,
-          amount: l.amount,
+          number,
+          issueDate: d.issueDate,
+          dueDate: d.dueDate,
+          vatRate: d.vatRate,
+          subtotal,
+          vatAmount,
+          total,
+          notes: d.notes?.trim() || null,
         },
       });
-    }
-    await tx.invoice.update({
-      where: { id },
-      data: {
-        number,
-        issueDate: d.issueDate,
-        dueDate: d.dueDate,
-        vatRate: d.vatRate,
-        subtotal,
-        vatAmount,
-        total,
-        notes: d.notes?.trim() || null,
-      },
+      // Handmatig nummer → de jaarteller meetrekken, zodat de automatische
+      // nummering hierna verdergaat NA dit nummer (nooit er weer overheen).
+      await reconcileInvoiceSequence(tx, number);
     });
-    await reconcileInvoiceSequence(tx, number);
-  });
+  } catch (cause) {
+    if ((cause as { code?: string }).code === "P2002")
+      return { fieldErrors: { number: DUPLICAAT_FACTUURNUMMER } };
+    throw cause;
+  }
 
   revalidatePath("/facturen");
   revalidatePath(`/facturen/${id}`);
@@ -220,22 +244,27 @@ export async function setInvoiceStatus(formData: FormData) {
   redirect(`/facturen/${id}`);
 }
 
-/**
- * Delete a DRAFT/CANCELLED invoice and release its timesheets back to
- * APPROVED so they can be re-invoiced. Sent/paid invoices are protected.
- */
-export async function deleteInvoice(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  if (!id) return;
+function revalidateFacturen() {
+  revalidatePath("/facturen");
+  revalidatePath("/verzenden");
+  revalidatePath("/", "layout");
+  revalidatePath("/uren");
+}
 
+/**
+ * Verwijder één factuur en zet haar urenstaten terug op APPROVED, zodat de uren
+ * opnieuw gefactureerd kunnen worden. Alleen concept/geannuleerd mag weg
+ * (`isDeletableInvoice`) — verstuurd/betaald is administratie. Deze kern draait
+ * onder zowel de losse verwijderknop als de bulkactie, zodat de grens overal
+ * dezelfde is.
+ */
+async function removeInvoice(id: string): Promise<"deleted" | "locked" | "missing"> {
   const inv = await db.invoice.findUnique({
     where: { id },
     include: { lines: true },
   });
-  if (!inv) return;
-  if (inv.status === "SENT" || inv.status === "PAID") {
-    redirect(`/facturen/${id}?error=locked`);
-  }
+  if (!inv) return "missing";
+  if (!isDeletableInvoice(inv.status)) return "locked";
 
   const tsIds = inv.lines
     .map((l) => l.timesheetId)
@@ -248,9 +277,88 @@ export async function deleteInvoice(formData: FormData) {
     }),
     db.invoice.delete({ where: { id } }),
   ]);
+  return "deleted";
+}
 
-  revalidatePath("/facturen");
-  revalidatePath("/", "layout");
-  revalidatePath("/uren");
+/**
+ * Delete a DRAFT/CANCELLED invoice and release its timesheets back to
+ * APPROVED so they can be re-invoiced. Sent/paid invoices are protected.
+ */
+export async function deleteInvoice(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const res = await removeInvoice(id);
+  if (res === "missing") return;
+  if (res === "locked") redirect(`/facturen/${id}?error=locked`);
+
+  revalidateFacturen();
   redirect("/facturen");
+}
+
+/**
+ * Bulk: verwijder de aangevinkte facturen op /facturen. Loopt dezelfde bewaakte
+ * `removeInvoice` af, dus verstuurde/betaalde facturen worden overgeslagen (en
+ * geteld) in plaats van verwijderd. De bevestiging staat in de UI (ConfirmSubmit).
+ */
+export async function bulkDeleteInvoices(formData: FormData) {
+  const requested = parseBulkIds(formData.get("ids"));
+  if (requested.length === 0) redirect("/facturen");
+
+  const rows = await db.invoice.findMany({
+    where: { id: { in: requested } },
+    select: { id: true, status: true },
+  });
+  const { ids, skipped } = partitionBulk(requested, rows, isDeletableInvoice);
+
+  let deleted = 0;
+  for (const id of ids) {
+    if ((await removeInvoice(id)) === "deleted") deleted++;
+  }
+
+  revalidateFacturen();
+  const p = new URLSearchParams({ verwijderd: String(deleted) });
+  if (skipped + (ids.length - deleted) > 0)
+    p.set("overgeslagen", String(skipped + (ids.length - deleted)));
+  redirect(`/facturen?${p.toString()}`);
+}
+
+/**
+ * Bulk: verstuur de aangevinkte CONCEPT-facturen. Gebruikt exact de bestaande
+ * verzendweg van de verzendmap (`sendSalesInvoiceById`: PDF + mail + atomair
+ * claimen van DRAFT → SENT) — geen tweede verzendmechanisme. Alleen concepten
+ * gaan mee; al verstuurde/betaalde facturen worden geteld als overgeslagen.
+ * Menselijke goedkeuring: dit draait alleen na een expliciete klik + bevestiging.
+ */
+export async function bulkSendInvoices(formData: FormData) {
+  const requested = parseBulkIds(formData.get("ids"));
+  if (requested.length === 0) redirect("/facturen");
+
+  const rows = await db.invoice.findMany({
+    where: { id: { in: requested } },
+    select: { id: true, status: true },
+  });
+  const { ids, skipped } = partitionBulk(requested, rows, isSendableInvoice);
+
+  let live = 0;
+  let simulated = 0;
+  let noEmail = 0;
+  let failed = 0;
+  for (const id of ids) {
+    const outcome: SendOutcome = await sendSalesInvoiceById(id);
+    if (outcome === "sent") live++;
+    else if (outcome === "simulated") simulated++;
+    else if (outcome === "no-email") noEmail++;
+    else if (outcome === "error") failed++;
+    // "already" → een gelijktijdige verzending was ons voor; stil overslaan.
+  }
+
+  revalidateFacturen();
+  const verstuurd = live + simulated;
+  const p = new URLSearchParams({ verzonden: String(verstuurd) });
+  p.set("modus", verstuurd > 0 && live === 0 ? "sim" : "live");
+  if (skipped > 0) p.set("overgeslagen", String(skipped));
+  if (noEmail > 0) p.set("geenmail", String(noEmail));
+  if (failed > 0) p.set("mislukt", String(failed));
+  redirect(`/facturen?${p.toString()}`);
 }

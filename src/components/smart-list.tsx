@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Search, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, ChevronRight, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -38,6 +38,23 @@ export type SmartGroup<T> = {
 };
 
 /**
+ * Optionele aanvink-kolom. De selectie volgt de weergave: verdwijnt een rij door
+ * zoeken/filteren, dan verdwijnt hij ook uit de selectie. Zo is "wat je ziet"
+ * altijd "wat je aanvinkt" — geen onzichtbare rijen in een bulkactie.
+ */
+export type SmartSelection<T> = {
+  selected: ReadonlySet<string>;
+  onChange: (ids: Set<string>) => void;
+  /** Rijen die je niet kunt aanvinken (bijv. al verstuurd). Standaard: alles mag. */
+  isSelectable?: (row: T) => boolean;
+  /** Toegankelijk label per checkbox, bijv. "Factuur Q4S-2026-0001 selecteren". */
+  rowLabel?: (row: T) => string;
+};
+
+const checkboxClass =
+  "h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-40";
+
+/**
  * Odoo-achtige lijstweergave: zoeken, filteren (dropdowns), groeperen (inklapbaar)
  * en sorteren op kolom — allemaal client-side, herbruikbaar. De pagina levert
  * platte rijen aan + een kolom-/filter-/groep-config (met render-functies).
@@ -51,6 +68,8 @@ export function SmartList<T extends { id: string }>({
   groups = [],
   initialSort,
   emptyLabel = "Geen resultaten.",
+  selection,
+  toolbarExtra,
 }: {
   rows: T[];
   columns: SmartColumn<T>[];
@@ -60,6 +79,10 @@ export function SmartList<T extends { id: string }>({
   groups?: SmartGroup<T>[];
   initialSort?: { key: string; dir: "asc" | "desc" };
   emptyLabel?: string;
+  /** Zet een aanvink-kolom + "alles selecteren" aan. */
+  selection?: SmartSelection<T>;
+  /** Balk direct boven de tabel — bedoeld voor bulkacties op de selectie. */
+  toolbarExtra?: ReactNode;
 }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<Record<string, string>>({});
@@ -124,17 +147,77 @@ export function SmartList<T extends { id: string }>({
     });
   }
 
-  const colCount = columns.length;
+  // --- Aanvinken -----------------------------------------------------------
+  const selectableRows = selection
+    ? filtered.filter((r) => selection.isSelectable?.(r) ?? true)
+    : [];
+  const visibleIds = selectableRows.map((r) => r.id);
+  const selectedVisible = selection
+    ? visibleIds.filter((id) => selection.selected.has(id))
+    : [];
+  const allChecked = visibleIds.length > 0 && selectedVisible.length === visibleIds.length;
+  const someChecked = selectedVisible.length > 0 && !allChecked;
+  const headRef = useRef<HTMLInputElement>(null);
+  const onChange = selection?.onChange;
+  const selectedKey = selection ? [...selection.selected].sort().join(",") : "";
+  const visibleKey = visibleIds.join(",");
 
-  const renderRow = (row: T) => (
-    <TR key={row.id}>
-      {columns.map((c) => (
-        <TD key={c.key} className={cn(c.align === "right" && "text-right", c.cellClassName)}>
-          {c.render(row)}
-        </TD>
-      ))}
-    </TR>
-  );
+  useEffect(() => {
+    if (headRef.current) headRef.current.indeterminate = someChecked;
+  }, [someChecked]);
+
+  // Snoei de selectie zodra een aangevinkte rij uit beeld filtert — anders zou een
+  // bulkactie rijen raken die de gebruiker niet meer ziet.
+  useEffect(() => {
+    if (!onChange) return;
+    const visible = new Set(visibleKey ? visibleKey.split(",") : []);
+    const kept = (selectedKey ? selectedKey.split(",") : []).filter((id) => visible.has(id));
+    if (kept.length !== (selectedKey ? selectedKey.split(",").length : 0)) {
+      onChange(new Set(kept));
+    }
+  }, [onChange, selectedKey, visibleKey]);
+
+  function toggleRow(id: string) {
+    if (!selection) return;
+    const next = new Set(selection.selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    selection.onChange(next);
+  }
+  function toggleAllVisible() {
+    if (!selection) return;
+    const next = new Set(selection.selected);
+    if (allChecked) for (const id of visibleIds) next.delete(id);
+    else for (const id of visibleIds) next.add(id);
+    selection.onChange(next);
+  }
+
+  const colCount = columns.length + (selection ? 1 : 0);
+
+  const renderRow = (row: T) => {
+    const selectable = selection ? selection.isSelectable?.(row) ?? true : false;
+    return (
+      <TR key={row.id}>
+        {selection && (
+          <TD className="w-10 pr-0">
+            <input
+              type="checkbox"
+              className={checkboxClass}
+              checked={selection.selected.has(row.id)}
+              disabled={!selectable}
+              onChange={() => toggleRow(row.id)}
+              aria-label={selection.rowLabel?.(row) ?? "Rij selecteren"}
+            />
+          </TD>
+        )}
+        {columns.map((c) => (
+          <TD key={c.key} className={cn(c.align === "right" && "text-right", c.cellClassName)}>
+            {c.render(row)}
+          </TD>
+        ))}
+      </TR>
+    );
+  };
 
   return (
     <div className="space-y-3">
@@ -189,10 +272,26 @@ export function SmartList<T extends { id: string }>({
         )}
       </div>
 
+      {toolbarExtra}
+
       <div className="overflow-hidden rounded-xl border border-ink-200 bg-white">
         <Table>
           <THead>
             <TR className="hover:bg-transparent">
+              {selection && (
+                <TH className="w-10 pr-0">
+                  <input
+                    ref={headRef}
+                    type="checkbox"
+                    className={checkboxClass}
+                    checked={allChecked}
+                    disabled={visibleIds.length === 0}
+                    onChange={toggleAllVisible}
+                    aria-label="Alles in deze weergave selecteren"
+                    title="Alles in deze weergave selecteren"
+                  />
+                </TH>
+              )}
               {columns.map((c) => (
                 <TH key={c.key} className={cn(c.align === "right" && "text-right", c.headerClassName)}>
                   {c.sortValue ? (
@@ -266,6 +365,7 @@ export function SmartList<T extends { id: string }>({
       <p className="text-xs text-ink-400">
         {filtered.length} van {rows.length}
         {grouped ? ` · ${grouped.length} groep${grouped.length === 1 ? "" : "en"}` : ""}
+        {selectedVisible.length > 0 ? ` · ${selectedVisible.length} geselecteerd` : ""}
       </p>
     </div>
   );

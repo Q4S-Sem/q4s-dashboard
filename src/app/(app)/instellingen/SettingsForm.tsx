@@ -84,14 +84,32 @@ export function SettingsForm({
             <Input id="iban" name="iban" defaultValue={settings.iban ?? ""} />
           </Field>
 
-          <Field
-            label="Factuurvoorvoegsel"
-            htmlFor="invoicePrefix"
-            hint="Voorvoegsel voor factuurnummers, bijv. Q4S-"
-            error={e.invoicePrefix}
-          >
-            <Input id="invoicePrefix" name="invoicePrefix" placeholder="Q4S-" defaultValue={settings.invoicePrefix ?? ""} />
-          </Field>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field
+              label="Factuurvoorvoegsel"
+              htmlFor="invoicePrefix"
+              hint="Voorvoegsel voor factuurnummers, bijv. Q4S-"
+              error={e.invoicePrefix}
+            >
+              <Input id="invoicePrefix" name="invoicePrefix" placeholder="Q4S-" defaultValue={settings.invoicePrefix ?? ""} />
+            </Field>
+            <Field
+              label="Facturen doorlopend nummeren vanaf"
+              htmlFor="invoiceStartNumber"
+              hint="Het volgnummer waarmee een jaar begint, bijv. 100 → Q4S-2026-0100. Is dit jaar al verder, dan blijft die stand staan — nummers lopen nooit terug en worden nooit hergebruikt."
+              error={e.invoiceStartNumber}
+            >
+              <Input
+                id="invoiceStartNumber"
+                name="invoiceStartNumber"
+                type="number"
+                min={1}
+                max={9999}
+                step={1}
+                defaultValue={settings.invoiceStartNumber ?? 1}
+              />
+            </Field>
+          </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field

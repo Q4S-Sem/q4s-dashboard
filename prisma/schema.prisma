@@ -383,6 +383,10 @@ model CompanySettings {
   website              String @default("")
   /// Optional prefix before the year-number, e.g. "Q4S-".
   invoicePrefix        String @default("")
+  /// Vanaf welk volgnummer de automatische factuurnummering van een jaar begint.
+  /// Staat de jaarteller al hoger, dan blijft die staan — nummers worden nooit
+  /// hergebruikt en de nummering loopt nooit terug.
+  invoiceStartNumber   Int    @default(1)
   defaultVatRate       Float  @default(21)
   defaultPaymentTermDays Int  @default(30)
   invoiceFooter        String @default("")

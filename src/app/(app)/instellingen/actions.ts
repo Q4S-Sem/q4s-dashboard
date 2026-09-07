@@ -19,6 +19,12 @@ const SettingsSchema = z.object({
   phone: z.string().optional(),
   website: z.string().optional(),
   invoicePrefix: z.string().optional(),
+  invoiceStartNumber: z.coerce
+    .number()
+    .int("Vul een heel nummer in")
+    .min(1, "Het startnummer is minimaal 1")
+    .max(9999, "Het startnummer past in vier cijfers (maximaal 9999)")
+    .default(1),
   defaultVatRate: z.coerce.number().min(0).max(100).default(21),
   defaultPaymentTermDays: z.coerce.number().int().min(0).max(365).default(30),
   invoiceFooter: z.string().optional(),
@@ -46,6 +52,7 @@ function toData(data: z.infer<typeof SettingsSchema>) {
     phone: data.phone ?? "",
     website: data.website ?? "",
     invoicePrefix: data.invoicePrefix ?? "",
+    invoiceStartNumber: data.invoiceStartNumber,
     defaultVatRate: data.defaultVatRate,
     defaultPaymentTermDays: data.defaultPaymentTermDays,
     invoiceFooter: data.invoiceFooter ?? "",

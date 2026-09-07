@@ -11,12 +11,68 @@ import { FacturenOverzicht, type FactuurRow } from "./FacturenOverzicht";
 
 export const metadata = { title: "Facturen" };
 
+/** Nederlandse samenvatting van een bulkactie (verwijderen/verzenden). */
+function bulkMelding(p: {
+  verwijderd?: string;
+  verzonden?: string;
+  modus?: string;
+  overgeslagen?: string;
+  geenmail?: string;
+  mislukt?: string;
+}): string | null {
+  const n = (v?: string) => {
+    const x = Number(v);
+    return Number.isFinite(x) && x > 0 ? x : 0;
+  };
+  const overgeslagen = n(p.overgeslagen);
+  const delen: string[] = [];
+
+  if (p.verwijderd !== undefined) {
+    const d = n(p.verwijderd);
+    delen.push(d === 1 ? "1 factuur verwijderd." : `${d} facturen verwijderd.`);
+    if (overgeslagen > 0)
+      delen.push(
+        `${overgeslagen} overgeslagen — verstuurde of betaalde facturen blijven staan.`,
+      );
+    return delen.join(" ");
+  }
+
+  if (p.verzonden !== undefined) {
+    const v = n(p.verzonden);
+    delen.push(v === 1 ? "1 factuur verstuurd." : `${v} facturen verstuurd.`);
+    if (v > 0 && p.modus === "sim")
+      delen.push("Testmodus: er is niets echt gemaild (mail wordt gesimuleerd).");
+    if (overgeslagen > 0)
+      delen.push(`${overgeslagen} overgeslagen — alleen concepten worden verstuurd.`);
+    const geenmail = n(p.geenmail);
+    if (geenmail > 0)
+      delen.push(`${geenmail} zonder e-mailadres bij de klant — die staan nog klaar.`);
+    const mislukt = n(p.mislukt);
+    if (mislukt > 0) delen.push(`${mislukt} mislukt en teruggezet naar concept.`);
+    return delen.join(" ");
+  }
+
+  return null;
+}
+
 export default async function FacturenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ client?: string; week?: string }>;
+  searchParams: Promise<{
+    client?: string;
+    week?: string;
+    verwijderd?: string;
+    verzonden?: string;
+    modus?: string;
+    overgeslagen?: string;
+    geenmail?: string;
+    mislukt?: string;
+  }>;
 }) {
-  const { client: clientId, week } = await searchParams;
+  const sp = await searchParams;
+  const { client: clientId, week } = sp;
+  const melding = bulkMelding(sp);
+  const meldingIsFout = Number(sp.mislukt) > 0;
   const filterClient = clientId
     ? await db.client.findUnique({
         where: { id: clientId },
@@ -83,6 +139,18 @@ export default async function FacturenPage({
         extraParams={{ client: clientId }}
         allWeeks
       />
+
+      {melding && (
+        <p
+          className={
+            meldingIsFout
+              ? "rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800"
+              : "rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          }
+        >
+          {melding}
+        </p>
+      )}
 
       {filterClient && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-brand-100 bg-brand-50 px-4 py-2.5 text-sm">

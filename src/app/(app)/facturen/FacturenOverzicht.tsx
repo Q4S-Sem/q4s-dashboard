@@ -2,14 +2,23 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Pencil } from "lucide-react";
+import { ExternalLink, Pencil, Send, Trash2 } from "lucide-react";
 import { formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { INVOICE_STATUSES, labelFor } from "@/lib/domain";
 import { SmartList, type SmartColumn, type SmartFilter, type SmartGroup } from "@/components/smart-list";
 import { PeriodFilter, periodRange, type Gran } from "@/components/period-filter";
+import {
+  MAX_OPEN_TABS,
+  capOpen,
+  invoicePdfHref,
+  isDeletableInvoice,
+  isSendableInvoice,
+} from "@/lib/factuur-bulk";
+import { bulkDeleteInvoices, bulkSendInvoices } from "./actions";
 
 export type FactuurRow = {
   id: string;
@@ -26,6 +35,8 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
   const [gran, setGran] = useState<Gran>("all");
   const [anchor, setAnchor] = useState(() => new Date());
   const [now] = useState(() => Date.now());
+  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
+  const [capped, setCapped] = useState(0);
 
   const range = periodRange(gran, anchor);
 
@@ -108,6 +119,100 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
     { key: "client", label: "Klant", value: (r) => r.clientName, display: (r) => r.clientName },
   ];
 
+  // --- Selectie + bulkacties ------------------------------------------------
+  // De guards zijn dezelfde als op de server (src/lib/factuur-bulk.ts), dus de
+  // knoppen tellen exact wat de actie straks doet. Let op: de RUWE status telt,
+  // niet de "Te laat"-weergave.
+  const selectedRows = rows.filter((r) => selected.has(r.id));
+  const ids = selectedRows.map((r) => r.id).join(",");
+  const deletable = selectedRows.filter((r) => isDeletableInvoice(r.status));
+  const sendable = selectedRows.filter((r) => isSendableInvoice(r.status));
+  const clearSelection = () => {
+    setSelected(new Set());
+    setCapped(0);
+  };
+
+  function openSelected() {
+    const res = capOpen(selectedRows.map((r) => r.id));
+    for (const id of res.open) window.open(invoicePdfHref(id), "_blank", "noopener");
+    setCapped(res.capped);
+  }
+
+  const bulkBar =
+    selectedRows.length === 0 ? null : (
+      <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-brand-900">
+            {selectedRows.length} geselecteerd
+          </span>
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="text-sm font-medium text-brand-700 underline-offset-2 hover:underline"
+          >
+            Selectie wissen
+          </button>
+
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={openSelected}>
+              <ExternalLink className="h-4 w-4" /> Openen ({selectedRows.length})
+            </Button>
+
+            {sendable.length > 0 && (
+              <ConfirmSubmit
+                action={bulkSendInvoices}
+                hidden={{ ids }}
+                trigger="button"
+                variant="primary"
+                size="sm"
+                confirmVariant="primary"
+                confirmLabel="Versturen"
+                message={`${sendable.length} factu${sendable.length === 1 ? "ur" : "ren"} versturen naar de klant?`}
+                description="De facturen gaan als PDF per e-mail naar het factuuradres van de klant en komen op 'Verzonden' te staan — net als vanuit de verzendmap."
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Send className="h-4 w-4" /> Verzend geselecteerde ({sendable.length})
+                </span>
+              </ConfirmSubmit>
+            )}
+
+            {deletable.length > 0 && (
+              <ConfirmSubmit
+                action={bulkDeleteInvoices}
+                hidden={{ ids }}
+                trigger="button"
+                variant="danger"
+                size="sm"
+                message={`${deletable.length} factu${deletable.length === 1 ? "ur" : "ren"} verwijderen?`}
+                description="Alleen concepten en geannuleerde facturen gaan weg; hun urenstaten komen weer vrij om te factureren."
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" /> Verwijderen ({deletable.length})
+                </span>
+              </ConfirmSubmit>
+            )}
+          </div>
+        </div>
+
+        {(sendable.length < selectedRows.length || capped > 0) && (
+          <p className="mt-2 text-xs text-brand-800">
+            {sendable.length < selectedRows.length && (
+              <>
+                {selectedRows.length - sendable.length} van de selectie {selectedRows.length - sendable.length === 1 ? "is" : "zijn"} geen concept
+                meer — die {selectedRows.length - sendable.length === 1 ? "wordt" : "worden"} niet verstuurd.{" "}
+              </>
+            )}
+            {capped > 0 && (
+              <>
+                Er {capped === 1 ? "is 1 PDF" : `zijn ${capped} PDF's`} niet geopend: browsers blokkeren meer dan{" "}
+                {MAX_OPEN_TABS} tabbladen tegelijk.
+              </>
+            )}
+          </p>
+        )}
+      </div>
+    );
+
   return (
     <div className="space-y-4">
       {/* Period filter (gedeeld; week-stand toont de klikbare week-box) */}
@@ -135,6 +240,12 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
           filters={filters}
           groups={groups}
           initialSort={{ key: "datum", dir: "desc" }}
+          selection={{
+            selected,
+            onChange: setSelected,
+            rowLabel: (r) => `Factuur ${r.number} selecteren`,
+          }}
+          toolbarExtra={bulkBar}
         />
       )}
     </div>

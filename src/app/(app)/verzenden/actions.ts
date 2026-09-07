@@ -2,93 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { getCompanySettings } from "@/lib/settings";
-import { sendMail } from "@/lib/email";
-import { renderInvoicePdf } from "@/lib/invoice-pdf";
+import { getOutbox, matchOutbox } from "@/lib/verzenden";
 import {
-  salesSendData,
-  purchaseSendData,
-  getOutbox,
-  matchOutbox,
-  type SendData,
-} from "@/lib/verzenden";
+  sendSalesInvoiceById,
+  sendPurchaseInvoiceById,
+  type SendOutcome,
+} from "@/lib/send-invoice";
 
-const salesInclude = { client: true, lines: true } as const;
-const purchaseInclude = { consultant: true, lines: true } as const;
-
-type Outcome = "sent" | "simulated" | "no-email" | "error" | "already";
-
-/** Compose the PDF + mail and hand it to the transport (real send or simulated). */
-async function dispatch(data: SendData): Promise<Outcome> {
-  if (!data.to) return "no-email";
-  const pdf = await renderInvoicePdf(data.pdfDoc);
-  const res = await sendMail({
-    to: data.to,
-    subject: data.subject,
-    html: data.html,
-    text: data.text,
-    attachments: [
-      { filename: data.pdfName, content: Buffer.from(pdf), contentType: "application/pdf" },
-    ],
-  });
-  if (!res.ok) return "error";
-  return res.simulated ? "simulated" : "sent";
-}
-
-async function runSales(id: string): Promise<Outcome> {
-  const [inv, settings] = await Promise.all([
-    db.invoice.findUnique({ where: { id }, include: salesInclude }),
-    getCompanySettings(),
-  ]);
-  if (!inv) return "error";
-  const data = salesSendData(inv, settings);
-  if (!data.to) return "no-email";
-
-  // Atomically claim the row BEFORE dispatching: only one request can flip
-  // DRAFT -> SENT, so a concurrent double-send (double-click, or a single
-  // "Versturen" overlapping with "Verstuur alles") can't e-mail twice.
-  const claimed = await db.invoice.updateMany({
-    where: { id, status: "DRAFT" },
-    data: { status: "SENT", sentAt: new Date(), sentTo: data.to },
-  });
-  if (claimed.count === 0) return "already";
-
-  const outcome = await dispatch(data);
-  if (outcome === "error") {
-    // Real send failed → release the claim so it returns to the verzendmap.
-    await db.invoice.updateMany({
-      where: { id, status: "SENT", sentTo: data.to },
-      data: { status: "DRAFT", sentAt: null, sentTo: null },
-    });
-  }
-  return outcome;
-}
-
-async function runPurchase(id: string): Promise<Outcome> {
-  const [inv, settings] = await Promise.all([
-    db.purchaseInvoice.findUnique({ where: { id }, include: purchaseInclude }),
-    getCompanySettings(),
-  ]);
-  if (!inv) return "error";
-  const data = purchaseSendData(inv, settings);
-  if (!data.to) return "no-email";
-
-  const claimed = await db.purchaseInvoice.updateMany({
-    where: { id, sentAt: null, status: { notIn: ["CANCELLED", "PAID"] } },
-    data: { sentAt: new Date(), sentTo: data.to },
-  });
-  if (claimed.count === 0) return "already";
-
-  const outcome = await dispatch(data);
-  if (outcome === "error") {
-    await db.purchaseInvoice.updateMany({
-      where: { id, sentTo: data.to },
-      data: { sentAt: null, sentTo: null },
-    });
-  }
-  return outcome;
-}
+// De verzendkern (PDF + mail + atomair claimen) staat in @/lib/send-invoice,
+// zodat de bulkknoppen op /facturen exact hetzelfde doen als de verzendmap.
+type Outcome = SendOutcome;
+const runSales = sendSalesInvoiceById;
+const runPurchase = sendPurchaseInvoiceById;
 
 function revalidate() {
   revalidatePath("/verzenden");
