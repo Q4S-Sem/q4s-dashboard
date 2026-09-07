@@ -53,9 +53,12 @@ function HubNav({
     null,
   );
 
-  // Group consecutive items by their optional section heading.
+  // Group consecutive items by their optional section heading. `hidden` items
+  // horen wel bij de hub (zijbalk + BackLink-label) maar niet in het menu; ze
+  // vallen hier weg, vóór het groeperen, zodat een lege sectie ook geen kopje
+  // achterlaat.
   const groups: { section?: string; items: NavItem[] }[] = [];
-  for (const item of hub.items) {
+  for (const item of hub.items.filter((it) => !it.hidden)) {
     const last = groups[groups.length - 1];
     if (last && last.section === item.section) last.items.push(item);
     else groups.push({ section: item.section, items: [item] });

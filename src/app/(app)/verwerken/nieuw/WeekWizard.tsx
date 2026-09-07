@@ -13,6 +13,7 @@ import {
   Copy,
   FileDown,
   FileText,
+  FolderPlus,
   Inbox,
   Receipt,
   RotateCcw,
@@ -1187,7 +1188,17 @@ function WizardRonde({
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className={KOPJE}>Of upload een nieuwe urenstaat</h3>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className={KOPJE}>Of upload een nieuwe urenstaat</h3>
+                    {/* Eén bestand gaat hieronder; een stapel of een ZIP hoort in
+                        de uploadbak. Verwerken blijft hier gebeuren. */}
+                    <Link
+                      href="/inbox"
+                      className={buttonVariants({ variant: "outline", size: "sm" })}
+                    >
+                      <FolderPlus className="h-4 w-4" /> Bestanden toevoegen (meerdere)
+                    </Link>
+                  </div>
                   <form action={tsAction} className="space-y-3">
                     <Dropzone
                       name="file"

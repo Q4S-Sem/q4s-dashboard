@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
   FileText,
+  FolderPlus,
   ListFilter,
   Search,
   Upload,
@@ -12,7 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Select } from "@/components/ui/field";
@@ -347,10 +349,25 @@ export function PersoonPicker({
                 ? `Nog niet herkend (${ongekoppeld.length})`
                 : "Zonder persoon beginnen"}
             </h3>
-            <Button type="button" variant="outline" size="sm" onClick={() => onLosseStaat(null)}>
-              <Upload className="h-4 w-4" /> Losse urenstaat uploaden
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* De uploadbak (/inbox) staat niet meer in het menu: dit is de weg
+                  ernaartoe. Verwerken doe je hier, in de wizard. */}
+              <Link
+                href="/inbox"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                <FolderPlus className="h-4 w-4" /> Bestanden toevoegen (meerdere)
+              </Link>
+              <Button type="button" variant="outline" size="sm" onClick={() => onLosseStaat(null)}>
+                <Upload className="h-4 w-4" /> Losse urenstaat uploaden
+              </Button>
+            </div>
           </div>
+
+          <p className="text-xs text-ink-400">
+            Meerdere urenstaten of een ZIP in één keer? Zet ze in de uploadbak — daarna verwerk je ze
+            hier, persoon voor persoon.
+          </p>
 
           {ongekoppeld.length > 0 && (
             <div className="overflow-hidden rounded-md border border-ink-100">

@@ -115,7 +115,10 @@ export async function getNotifications(): Promise<Notifications> {
     { key: "sollicitaties", label: "Sollicitaties", href: "/sollicitaties", late: solLate, today: solToday, future: 0 },
     { key: "certificeringen", label: "Certificaten", href: "/certificeringen", late: certLate, today: certToday, future: certFuture },
     { key: "facturen", label: "Facturen", href: "/facturen", late: facLate, today: facToday, future: facFuture },
-    { key: "inbox", label: "Timesheet-inbox", href: "/inbox", late: 0, today: inboxCount, future: 0 },
+    // De teller gaat over urenstaten die nog VERWERKT moeten worden — dus door
+    // naar de wizard, niet naar de uploadbak (/inbox). Sleutel blijft "inbox":
+    // hij telt nog steeds de TimesheetInbox-regels (zie ook regel 169).
+    { key: "inbox", label: "Urenstaten verwerken", href: "/verwerken/nieuw", late: 0, today: inboxCount, future: 0 },
     { key: "msp", label: "Vacature-intake", href: "/vacaturehub", late: 0, today: mspUnread, future: 0 },
     {
       key: "factuur-afwijking",

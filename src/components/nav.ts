@@ -69,6 +69,10 @@ export type NavItem = {
   /** Optional sub-group heading; consecutive items with the same section are
    *  grouped together and separated from other groups by a divider. */
   section?: string;
+  /** Wél onderdeel van deze hub (zodat de route zijn zijbalk houdt en een
+   *  BackLink zijn label vindt), maar NIET in het menu zelf. Voor schermen die
+   *  je alleen vanuit een ander scherm opent, zoals de uploadbak /inbox. */
+  hidden?: boolean;
 };
 
 // A hub = an "app" on the launcher. `href` is its landing page; `items` are its
@@ -113,7 +117,12 @@ const HUB_LIST: NavHub[] = [
       { href: "/verwerken/nieuw", label: "Week verwerken", icon: Wand2, section: "Deze week" },
       { href: "/verwerken/week", label: "Te controleren", icon: CalendarDays, section: "Deze week" },
       { href: "/verwerken/wachtkamer", label: "Wachtkamer", icon: PauseCircle, section: "Deze week" },
-      { href: "/inbox", label: "Timesheet-inbox", icon: Inbox, section: "Uren & documenten" },
+      // De timesheet-inbox staat bewust NIET meer in het menu (hidden): "Week
+      // verwerken" is de werkplek, /inbox is alleen nog de uploadbak voor een
+      // stapel bestanden of een ZIP. Je komt er via "Bestanden toevoegen" in de
+      // wizard. Hij blijft hier staan zodat de route wél de facturatie-zijbalk
+      // houdt (hubForPath) en een BackLink zijn label vindt.
+      { href: "/inbox", label: "Timesheet-inbox", icon: Inbox, section: "Uren & documenten", hidden: true },
       { href: "/uren", label: "Urenregistratie", icon: CalendarClock, section: "Uren & documenten" },
       { href: "/declaraties", label: "Declaraties", icon: ReceiptText, section: "Uren & documenten" },
       { href: "/facturen", label: "Verkoopfacturen", icon: Receipt, badge: "facturen", section: "Facturen & betalingen" },

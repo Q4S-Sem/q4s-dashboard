@@ -7,6 +7,7 @@ import {
   FileText,
   Upload,
   Trash2,
+  Wand2,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,13 +114,22 @@ export default async function InboxPage({
           /api/inbox/email) blijft bestaan, maar staat niet op dit scherm — de
           eigenaar zet de urenstaten er zelf in. Alleen de UI is weg; de route
           en de actie (pullMailNow) zijn ongemoeid gelaten. */}
+      {/* Deze pagina is de UPLOADBAK, niet de werkplek: hier zet je een stapel
+          urenstaten of een ZIP neer en laat je ze uitlezen. Verwerken (koppelen,
+          controleren, akkoord) gebeurt in de wizard "Week verwerken" — vandaar
+          dat die knop bovenaan staat. */}
       <PageHeader
         title="Timesheet-inbox"
-        description="Binnengekomen urenstaten (los bestand of ZIP). Sleep ze hierin; bekijk ze per week."
+        description="De uploadbak: zet hier een stapel urenstaten of een ZIP neer en laat ze uitlezen. Verwerken doe je bij ‘Week verwerken’."
         actions={
-          <Link href="/inbox/status" className={buttonVariants({ variant: "outline" })}>
-            <ClipboardCheck className="h-4 w-4" /> Timesheet-status
-          </Link>
+          <>
+            <Link href="/verwerken/nieuw" className={buttonVariants({ variant: "outline" })}>
+              <Wand2 className="h-4 w-4" /> Naar Week verwerken
+            </Link>
+            <Link href="/inbox/status" className={buttonVariants({ variant: "outline" })}>
+              <ClipboardCheck className="h-4 w-4" /> Timesheet-status
+            </Link>
+          </>
         }
       />
 
