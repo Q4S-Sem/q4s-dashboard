@@ -176,9 +176,43 @@ export type VerwerkResultaat = {
   waarschuwingen: string[];
 };
 
+/**
+ * Er lag al een urenstaat voor deze plaatsing + week (de @@unique sloeg toe).
+ *
+ * De wizard liep hier vroeger dood op een rode regel. Nu komt dit blokje mee
+ * terug, zodat het scherm kan laten zien WELKE week er al lag en de eigenaar de
+ * keuze kan geven: die bestaande urenstaat gebruiken, of hem weggooien en de
+ * week opnieuw doen. Het oordeel zelf is puur en getest —
+ * `beoordeelBestaandeUrenstaat` in src/lib/urenstaat-hergebruik.ts.
+ */
+export type BestaandeUrenstaat = {
+  /** Timesheet.id van de urenstaat die er al lag. */
+  id: string;
+  weekLabel: string;
+  consultantNaam: string;
+  klantNaam: string | null;
+  /** Reguliere uren van die bestaande week. */
+  uren: number;
+  /** DRAFT | SUBMITTED | APPROVED | INVOICED. */
+  status: string;
+  /** Staat hij al op een verkoopfactuur? Dan gebeurt er niets meer. */
+  alGefactureerd: boolean;
+  /** Nog op concept/ingediend — dan komt er nog geen verkoopfactuur uit. */
+  eerstGoedkeuren: boolean;
+  /** Mag de mens hem verwijderen (guard van deleteTimesheet)? */
+  magVerwijderen: boolean;
+  /** De verkoopfactuur waar deze week al op staat, om naartoe te linken. */
+  factuurId: string | null;
+  factuurNummer: string | null;
+  /** De Nederlandse uitleg bij deze situatie. */
+  reden: string;
+};
+
 export type VerwerkState = {
   error?: string;
   resultaat?: VerwerkResultaat;
+  /** Gevuld zodra de week al een urenstaat had — zie {@link BestaandeUrenstaat}. */
+  bestaand?: BestaandeUrenstaat;
 };
 
 // --- Mappers ---------------------------------------------------------------

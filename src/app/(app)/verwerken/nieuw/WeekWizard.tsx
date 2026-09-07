@@ -17,12 +17,14 @@ import {
   Receipt,
   RotateCcw,
   Sparkles,
+  Trash2,
   Users,
   Wallet,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { DateInput } from "@/components/ui/date-input";
 import { Dropzone } from "@/components/ui/dropzone";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -59,6 +61,7 @@ import {
 import { bouwPersoonRijen } from "@/lib/wizard-personen";
 import { dubbeleUploadLabel } from "@/lib/wizard-dubbelen";
 import { weekLabel, weekstatenVoorWeek } from "@/lib/wizard-weekfilter";
+import { deleteTimesheet } from "../../uren/actions";
 import { leesFactuur, leesTimesheet, verwerkWeek } from "./actions";
 import { DocumentViewer } from "./DocumentViewer";
 import { PersoonPicker } from "./PersoonPicker";
@@ -67,6 +70,7 @@ import {
   LEGE_DAGUREN,
   inboxSamenvatting,
   toDateInput,
+  type BestaandeUrenstaat,
   type FactuurLeesState,
   type FactuurVelden,
   type TimesheetLeesState,
@@ -257,6 +261,81 @@ function DubbeleUploadNote({ dubbelen }: { dubbelen: WizardTimesheet[] }) {
         </Link>
       ))}
     </p>
+  );
+}
+
+/**
+ * "Er bestaat al een urenstaat voor deze week."
+ *
+ * De week lag er al (de @@unique op plaatsing + week sloeg toe). Het akkoord
+ * loopt daar niet meer op stuk: is die bestaande urenstaat nog niet gefactureerd,
+ * dan is hij gewoon gebruikt en staat dit paneel bij de uitkomst als uitleg. Is
+ * hij al wél gefactureerd, dan is dit de uitweg — met de factuur erbij.
+ *
+ * De twee keuzes staan hier naast elkaar: de bestaande urenstaat erbij pakken,
+ * of hem weggooien en de week opnieuw doen. Verwijderen gaat via de BESTAANDE
+ * deleteTimesheet-actie, met dezelfde guard (nooit een gefactureerde week) en
+ * altijd met een bevestiging — er wordt hier nooit iets vanzelf verwijderd.
+ */
+function BestaandeWeekPaneel({ bestaand }: { bestaand: BestaandeUrenstaat }) {
+  return (
+    <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
+      <p className="flex items-start gap-2 text-sm font-semibold text-amber-900">
+        <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" />
+        Er bestaat al een urenstaat voor deze week
+      </p>
+      <p className="mt-1.5 text-sm text-amber-800">
+        {[
+          bestaand.consultantNaam,
+          bestaand.klantNaam,
+          bestaand.weekLabel,
+          `${formatHours(bestaand.uren)} u`,
+        ]
+          .filter(Boolean)
+          .join(" · ")}{" "}
+        — {bestaand.reden}.
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Link
+          href={`/uren/${bestaand.id}`}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          <FileText className="h-4 w-4" /> Bekijk de bestaande urenstaat
+        </Link>
+
+        {bestaand.alGefactureerd && bestaand.factuurId && (
+          <Link
+            href={`/facturen/${bestaand.factuurId}`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            <Receipt className="h-4 w-4" /> Bekijk factuur{" "}
+            {bestaand.factuurNummer ?? "(zonder nummer)"}
+          </Link>
+        )}
+
+        {bestaand.magVerwijderen && (
+          <ConfirmSubmit
+            action={deleteTimesheet}
+            id={bestaand.id}
+            hidden={{ terug: "/verwerken/nieuw" }}
+            trigger="button"
+            size="sm"
+            message={`De bestaande urenstaat van ${bestaand.weekLabel.toLowerCase()} verwijderen?`}
+            description="De urenstaat en zijn dagregels verdwijnen; er wordt geen factuur aangeraakt (een week die al op een factuur staat kan sowieso niet weg). Daarna kun je deze week in de wizard opnieuw verwerken."
+            confirmLabel="Urenstaat verwijderen"
+          >
+            <Trash2 className="h-4 w-4" /> Verwijder de bestaande urenstaat
+          </ConfirmSubmit>
+        )}
+      </div>
+
+      <p className="mt-2.5 text-xs text-amber-700">
+        {bestaand.alGefactureerd
+          ? "Deze week is al gefactureerd, dus er is niets veranderd. Wil je 'm toch opnieuw doen, draai dan eerst de factuur terug bij Facturen."
+          : "Verwijderen brengt je naar de wizard terug; kies daar deze persoon en week opnieuw."}
+      </p>
+    </div>
   );
 }
 
@@ -771,6 +850,11 @@ function WizardRonde({
               />
             </Paneel>
           </div>
+
+          {/* Werd de week tegen een AL BESTAANDE urenstaat afgemaakt? Dan staat
+              hier welke dat was — en, zolang er nog niets gefactureerd is, de
+              knop om hem alsnog weg te gooien en opnieuw te beginnen. */}
+          {verwerkState.bestaand && <BestaandeWeekPaneel bestaand={verwerkState.bestaand} />}
 
           {resultaat.waarschuwingen.length > 0 && (
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
@@ -1552,6 +1636,8 @@ function WizardRonde({
                 {verwerkState.error}
               </p>
             )}
+
+            {verwerkState.bestaand && <BestaandeWeekPaneel bestaand={verwerkState.bestaand} />}
 
             <form action={verwerkAction}>
               {/* Alles wat de mens hierboven heeft goedgekeurd, mee de server op. */}

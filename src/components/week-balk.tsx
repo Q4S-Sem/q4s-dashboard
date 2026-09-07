@@ -19,6 +19,13 @@ import { parseWeek, shiftWeek, weekHref } from "@/lib/week-nav";
 //
 // De balk NAVIGEERT alleen — hij zet `?week=` in de URL. Wat er met die week
 // gebeurt bepaalt de pagina zelf; de balk filtert niets en verandert niets.
+//
+// BLIJF WAAR JE BENT: elke link hieronder gaat met `scroll={false}` de deur uit,
+// en de week-kiezer navigeert met `router.push(..., { scroll: false })`. Van week
+// wisselen is BLADEREN binnen hetzelfde scherm, geen nieuwe pagina — sprong de
+// pagina naar boven, dan was je de tabel kwijt waar je net naar keek en moest je
+// elke keer terugscrollen. Nu blijft het beeld staan en verandert alleen de
+// inhoud eronder.
 // ---------------------------------------------------------------------------
 
 export function WeekBalk({
@@ -54,6 +61,7 @@ export function WeekBalk({
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Link
           href={weekHref(basePath, shiftWeek(anchor, -1), extraParams)}
+          scroll={false}
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
           <ChevronLeft className="h-4 w-4" /> Vorige week
@@ -63,6 +71,7 @@ export function WeekBalk({
 
         <Link
           href={weekHref(basePath, shiftWeek(anchor, 1), extraParams)}
+          scroll={false}
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
           Volgende week <ChevronRight className="h-4 w-4" />
@@ -71,6 +80,7 @@ export function WeekBalk({
         {allWeeks && (
           <Link
             href={weekHref(basePath, null, extraParams)}
+            scroll={false}
             aria-current={isAlleWeken ? "page" : undefined}
             className={cn(
               "inline-flex h-8 items-center rounded-sm border px-3 text-sm font-semibold transition-all active:translate-y-px",

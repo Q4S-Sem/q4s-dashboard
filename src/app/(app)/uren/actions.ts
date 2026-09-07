@@ -8,6 +8,7 @@ import { parseForm, type FormState } from "@/lib/form";
 import { parseHours, startOfISOWeek, round2 } from "@/lib/utils";
 import { createSalesInvoice, createPurchaseInvoice } from "@/lib/invoicing";
 import { EXPENSE_CATEGORY_VALUES } from "@/lib/domain";
+import { veiligTerugPad } from "@/lib/week-detail";
 
 const BaseSchema = z.object({
   placementId: z.string().min(1, "Kies een plaatsing"),
@@ -238,6 +239,12 @@ export async function deleteTimesheet(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
+  // Waar je hierna terechtkomt. Standaard de urenregistratie; een ander scherm
+  // dat een urenstaat laat verwijderen (de wizard, wanneer de week er al bleek
+  // te liggen) mag zijn eigen bestemming meegeven — maar alleen een pad BINNEN
+  // de app, zie veiligTerugPad. De GUARD hieronder blijft ongewijzigd.
+  const terug = veiligTerugPad(formData.get("terug"), "/uren");
+
   const ts = await db.timesheet.findUnique({
     where: { id },
     include: {
@@ -252,8 +259,9 @@ export async function deleteTimesheet(formData: FormData) {
 
   await db.timesheet.delete({ where: { id } });
   revalidatePath("/uren");
+  revalidatePath("/verwerken/nieuw");
   revalidatePath("/", "layout");
-  redirect("/uren");
+  redirect(terug);
 }
 
 // ---------- Invoice generation from a single timesheet ----------

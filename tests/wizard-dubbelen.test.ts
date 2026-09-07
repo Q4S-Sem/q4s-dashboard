@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   dedupeTimesheetsPerPersonWeek,
+  dubbelePersoonWeken,
   dubbeleUploadLabel,
   persoonWeekSleutel,
   type DubbelBasis,
@@ -219,7 +220,69 @@ test("lege of ontbrekende invoer geeft een lege uitkomst", () => {
 });
 
 // ===========================================================================
-// 6) HET LABEL bij de melding in stap 1
+// 6) DUBBELEN AANWIJZEN — de lijst blijft heel, de dubbelen krijgen een badge
+// ===========================================================================
+//
+// De timesheet-inbox (/inbox) verbergt bewust NIETS: daar zie je alle
+// binnengekomen scans van een week. Om de twee identieke regels van dezelfde
+// persoon-week toch te herkennen wijst deze functie ze allemaal aan, zodat het
+// scherm er "dubbel" bij kan zetten en je er één kunt weggooien.
+
+test("beide regels van dezelfde persoon-week worden aangewezen", () => {
+  const dubbel = dubbelePersoonWeken([staat({ id: "a" }), staat({ id: "b" })]);
+  assert.deepEqual([...dubbel].sort(), ["a", "b"]);
+});
+
+test("een week die maar één keer voorkomt is geen dubbele", () => {
+  const dubbel = dubbelePersoonWeken([
+    staat({ id: "week35", weekStart: "2026-08-24" }),
+    staat({ id: "week36", weekStart: "2026-08-31" }),
+  ]);
+  assert.equal(dubbel.size, 0);
+});
+
+test("drie keer dezelfde week wijst alle drie de regels aan", () => {
+  const dubbel = dubbelePersoonWeken([
+    staat({ id: "a" }),
+    staat({ id: "b" }),
+    staat({ id: "c" }),
+    staat({ id: "andere-week", weekStart: "2026-08-31" }),
+  ]);
+  assert.deepEqual([...dubbel].sort(), ["a", "b", "c"]);
+});
+
+test("dezelfde week van verschillende personen is geen dubbele", () => {
+  const dubbel = dubbelePersoonWeken([
+    staat({ id: "jan", consultantId: "c1" }),
+    staat({ id: "piet", consultantId: "c2", naam: "Piet Peters" }),
+  ]);
+  assert.equal(dubbel.size, 0);
+});
+
+test("staten zonder bekende week worden nooit als dubbel aangewezen", () => {
+  const dubbel = dubbelePersoonWeken([
+    staat({ id: "leeg1", weekStart: "" }),
+    staat({ id: "leeg2", weekStart: null }),
+  ]);
+  assert.equal(dubbel.size, 0);
+});
+
+test("de dagen midden in dezelfde ISO-week tellen als dezelfde week", () => {
+  const dubbel = dubbelePersoonWeken([
+    staat({ id: "maandag", weekStart: "2026-08-24" }),
+    staat({ id: "woensdag", weekStart: "2026-08-26" }),
+  ]);
+  assert.deepEqual([...dubbel].sort(), ["maandag", "woensdag"]);
+});
+
+test("lege of ontbrekende invoer geeft geen dubbelen", () => {
+  for (const invoer of [[], null, undefined]) {
+    assert.equal(dubbelePersoonWeken(invoer).size, 0);
+  }
+});
+
+// ===========================================================================
+// 7) HET LABEL bij de melding in stap 1
 // ===========================================================================
 
 test("het label telt de verborgen uploads mee", () => {

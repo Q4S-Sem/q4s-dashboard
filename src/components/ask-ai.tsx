@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BotMessageSquare, X, Send, ArrowRight } from "lucide-react";
+import { BotMessageSquare, EyeOff, X, Send, ArrowRight } from "lucide-react";
 import { askAssistant, type AssistantReply, type AssistantCandidate } from "@/lib/assistant";
 import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { cn } from "@/lib/utils";
@@ -30,8 +30,44 @@ const AVAIL_DOT: Record<string, string> = {
 };
 
 /**
+ * Sleutel in localStorage waarmee de eigenaar de zwevende knop wegzet. Blijft
+ * staan tot hij hem zelf terughaalt — de assistent zit dan niet meer in de weg.
+ */
+const VERBERG_SLEUTEL = "askai-hidden";
+/** Eigen signaal: localStorage stuurt binnen hetzelfde tabblad geen "storage". */
+const VERBERG_EVENT = "askai-hidden-changed";
+
+/** Meelezen met de vlag — ook als een ander tabblad hem omzet. */
+function abonneerOpVerbergen(bijWijziging: () => void) {
+  window.addEventListener("storage", bijWijziging);
+  window.addEventListener(VERBERG_EVENT, bijWijziging);
+  return () => {
+    window.removeEventListener("storage", bijWijziging);
+    window.removeEventListener(VERBERG_EVENT, bijWijziging);
+  };
+}
+
+/** Geblokkeerde opslag (privémodus) telt als "gewoon zichtbaar". */
+function leesVerborgen(): boolean {
+  try {
+    return window.localStorage.getItem(VERBERG_SLEUTEL) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Op de server bestaat localStorage niet — daar geldt hij dus als niet verborgen. */
+const VERBORGEN_OP_SERVER = false;
+
+/**
  * Globale AI-assistent (rechtsonder). Beantwoordt vragen over het dashboard en
  * brengt je met één klik naar de juiste pagina. Werkt op elke pagina.
+ *
+ * UIT DE WEG: de knop stond permanent over de rechteronderhoek en dekte daar
+ * soms een tabelregel of een knop af. Hij is nu kleiner, staat lager in de hoek
+ * en is standaard gedimd (pas bij aanwijzen volledig zichtbaar). Met het kruisje
+ * ernaast zet je hem helemaal weg; wat overblijft is een klein, onopvallend
+ * handvat waarmee je hem terughaalt. De functie zelf verandert niet.
  */
 export function AskAi() {
   const [open, setOpen] = useState(false);
@@ -40,16 +76,53 @@ export function AskAi() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  // De vlag komt rechtstreeks uit localStorage (geen kopie in state): zo staat
+  // hij bij de eerste render al goed en volgen andere tabbladen vanzelf.
+  const verborgen = useSyncExternalStore(
+    abonneerOpVerbergen,
+    leesVerborgen,
+    () => VERBORGEN_OP_SERVER,
+  );
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, pending]);
+
+  /** Wegzetten of terughalen — en onthouden voor de volgende keer. */
+  function zetVerborgen(waarde: boolean) {
+    if (waarde) setOpen(false);
+    try {
+      if (waarde) window.localStorage.setItem(VERBERG_SLEUTEL, "1");
+      else window.localStorage.removeItem(VERBERG_SLEUTEL);
+    } catch {
+      // Niet kunnen onthouden is geen fout — dan blijft de keuze hieronder wel
+      // zichtbaar zolang de pagina open staat.
+    }
+    window.dispatchEvent(new Event(VERBERG_EVENT));
+  }
 
   // Verberg de zwevende knop op formulier-/bewerk-pagina's (nieuw, bewerken,
   // importeren, instellingen) — daar botst hij met de "Opslaan"-knop rechtsonder.
   const isFormPage =
     /\/(nieuw|bewerken|importeren)(\/|$)/.test(pathname) || pathname.endsWith("/instellingen");
   if (isFormPage) return null;
+
+  // Weggezet: alleen een klein, gedimd handvat om hem terug te halen.
+  if (verborgen) {
+    return (
+      <div className="no-print">
+        <button
+          type="button"
+          onClick={() => zetVerborgen(false)}
+          aria-label="Ask AI terughalen"
+          title="Ask AI terughalen"
+          className="fixed bottom-3 right-3 z-40 flex h-7 w-7 items-center justify-center rounded-sm text-ink-300 opacity-40 transition-all hover:bg-ink-100 hover:text-ink-700 hover:opacity-100 focus-visible:opacity-100"
+        >
+          <BotMessageSquare className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
 
   async function ask(question: string) {
     const q = question.trim();
@@ -81,24 +154,36 @@ export function AskAi() {
 
   return (
     <div className="no-print">
-      {/* Zwevende knop */}
+      {/* Zwevende knop — klein, laag in de hoek en gedimd tot je hem aanwijst,
+          met het kruisje ernaast om hem helemaal weg te zetten. */}
       {!open && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Ask AI openen"
-          className="group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-sm bg-ink-900 py-2.5 pl-2.5 pr-4 text-sm font-semibold text-white shadow-[0_10px_28px_-12px_rgb(0_0_0/0.6)] transition-all hover:-translate-y-0.5 hover:bg-ink-800"
-        >
-          <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-brand-600 text-white transition-colors group-hover:bg-brand-500">
-            <BotMessageSquare className="h-[17px] w-[17px]" />
-          </span>
-          Ask AI
-        </button>
+        <div className="group fixed bottom-3 right-3 z-40 flex items-center gap-1 opacity-60 transition-opacity hover:opacity-100 focus-within:opacity-100">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Ask AI openen"
+            className="inline-flex items-center gap-2 rounded-sm bg-ink-900 py-1.5 pl-1.5 pr-3 text-[13px] font-semibold text-white shadow-[0_8px_22px_-14px_rgb(0_0_0/0.6)] transition-colors hover:bg-ink-800"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-brand-600 text-white transition-colors group-hover:bg-brand-500">
+              <BotMessageSquare className="h-[15px] w-[15px]" />
+            </span>
+            Ask AI
+          </button>
+          <button
+            type="button"
+            onClick={() => zetVerborgen(true)}
+            aria-label="Ask AI verbergen"
+            title="Verbergen — het puntje rechtsonder haalt hem terug"
+            className="flex h-6 w-6 items-center justify-center rounded-sm border border-ink-200 bg-white text-ink-400 transition-colors hover:border-ink-900 hover:bg-ink-50 hover:text-ink-900"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       )}
 
       {/* Chatpaneel */}
       {open && (
-        <div className="fixed bottom-5 right-5 z-40 flex h-[32rem] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-md border border-ink-200 bg-white shadow-[0_24px_60px_-24px_rgb(0_0_0/0.45)]">
+        <div className="fixed bottom-3 right-3 z-40 flex h-[32rem] w-[22rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-md border border-ink-200 bg-white shadow-[0_24px_60px_-24px_rgb(0_0_0/0.45)]">
           <div className="flex items-center justify-between border-b border-ink-200 bg-ink-50/60 px-4 py-3">
             <span className="inline-flex items-center gap-2 font-semibold text-ink-900">
               <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-brand-600 text-white">
@@ -106,14 +191,25 @@ export function AskAi() {
               </span>
               Ask AI
             </span>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Sluiten"
-              className="rounded-sm p-1.5 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-900"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <span className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => zetVerborgen(true)}
+                aria-label="Ask AI verbergen"
+                title="Verbergen — het puntje rechtsonder haalt hem terug"
+                className="rounded-sm p-1.5 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-900"
+              >
+                <EyeOff className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Sluiten"
+                className="rounded-sm p-1.5 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-900"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </span>
           </div>
 
           <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">

@@ -1,13 +1,14 @@
 import Link from "next/link";
-import type { Prisma } from "@prisma/client";
 import {
   Inbox as InboxIcon,
   CalendarDays,
   ClipboardCheck,
+  Copy,
   FileText,
   Upload,
   RefreshCw,
   MailCheck,
+  Trash2,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,22 +18,31 @@ import { StatusBadge, Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatHours, formatDate, formatWeekLabel } from "@/lib/utils";
 import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { isMailIntakeConnected } from "@/lib/graph-mail";
 import { INBOX_SOURCES, INBOX_STATUSES } from "@/lib/domain";
 import { parseWeekParam, weekParam, currentWeekMonday } from "@/lib/timesheets";
+import { magScanVerwijderen } from "@/lib/week-detail";
+import { ymd } from "@/lib/week-nav";
+import { dubbelePersoonWeken } from "@/lib/wizard-dubbelen";
 import { WeekBalk } from "@/components/week-balk";
 import { TimesheetDropzone } from "./TimesheetDropzone";
-import { pullMailNow } from "./actions";
+import { pullMailNow, verwijderInboxScan } from "./actions";
 
 export const metadata = { title: "Timesheet-inbox" };
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-type InboxItem = Prisma.TimesheetInboxGetPayload<{ include: { consultant: true } }>;
+/** Precies de velden waar de naam op de regel uit volgt. */
+type NaamBron = {
+  consultant: { firstName: string; lastName: string } | null;
+  extractedName: string | null;
+  originalName: string;
+};
 
-function personName(it: InboxItem): string {
+function personName(it: NaamBron): string {
   return it.consultant
     ? `${it.consultant.firstName} ${it.consultant.lastName}`
     : it.extractedName ?? it.originalName;
@@ -50,6 +60,7 @@ export default async function InboxPage({
     ts?: string;
     inv?: string;
     skip?: string;
+    verwijderd?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -76,11 +87,13 @@ export default async function InboxPage({
       orderBy: { createdAt: "desc" },
       include: { consultant: true },
     }),
-    // Uitgelezen/bevestigd voor de gekozen week.
+    // Uitgelezen/bevestigd voor de gekozen week. De status van de eventueel
+    // gekoppelde urenstaat komt mee, zodat de verwijderknop hieronder alleen
+    // verschijnt waar hij ook echt mag (magScanVerwijderen).
     db.timesheetInbox.findMany({
       where: { extractedWeekStart: { gte: monday, lt: nextMonday } },
       orderBy: [{ status: "asc" }],
-      include: { consultant: true },
+      include: { consultant: true, timesheet: { select: { status: true } } },
     }),
     db.timesheetInbox.count({ where: { status: { in: ["NEW", "EXTRACTED"] } } }),
     Promise.resolve(isAIConfigured() || isVisionConfigured()),
@@ -88,6 +101,21 @@ export default async function InboxPage({
 
   weekItems.sort((a, b) => personName(a).localeCompare(personName(b), "nl"));
   const weekHours = weekItems.reduce((s, it) => s + (it.extractedTotalHours ?? 0), 0);
+
+  // Welke regels zijn van dezelfde persoon én dezelfde week? Die krijgen een
+  // "dubbel"-badge, zodat je ziet welke twee bij elkaar horen. Bewust NIETS
+  // verbergen: hier hoort alles te staan wat binnenkwam — je moet juist zien dát
+  // er twee zijn om er één te kunnen weggooien. Zelfde weekbepaling als de
+  // wizard (canonieke ISO-week uit de gewerkte dagen).
+  const dubbel = dubbelePersoonWeken(
+    weekItems.map((it) => ({
+      id: it.id,
+      naam: personName(it),
+      consultantId: it.consultantId,
+      weekStart: it.extractedWeekStart ? ymd(it.extractedWeekStart) : null,
+      status: it.status,
+    })),
+  );
 
   return (
     <div className="space-y-6">
@@ -145,6 +173,31 @@ export default async function InboxPage({
             <strong className="text-ink-700">Automatisch ophalen uit admin@q4s.nl</strong> staat klaar, maar is nog
             niet gekoppeld. Zodra de Microsoft 365-koppeling (MS-gegevens) live staat, verschijnt hier de knop
             “Postvak ophalen” en worden urenstaten vanzelf binnengehaald en uitgelezen.
+          </span>
+        </p>
+      )}
+
+      {sp.verwijderd === "1" && (
+        <p className="flex items-start gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <Trash2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            <strong>Scan verwijderd.</strong> Alleen het binnengekomen bestand is weg — er is geen
+            urenstaat en geen factuur aangeraakt.
+          </span>
+        </p>
+      )}
+      {sp.verwijderd === "weg" && (
+        <p className="flex items-start gap-2 rounded-lg bg-ink-50 px-4 py-3 text-sm text-ink-600">
+          <Trash2 className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
+          <span>Die scan stond er al niet meer — er is niets veranderd.</span>
+        </p>
+      )}
+      {sp.verwijderd === "vast" && (
+        <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <Trash2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Deze scan kan niet meer weg: er hangt al een urenstaat of factuur aan. Wil je die
+            terugdraaien, dan doe je dat bij Urenregistratie.
           </span>
         </p>
       )}
@@ -258,6 +311,17 @@ export default async function InboxPage({
             {weekHours > 0 ? ` · ${formatHours(weekHours)} u` : ""}
           </span>
         </CardHeader>
+        {dubbel.size > 0 && (
+          <p className="flex items-start gap-2 border-t border-amber-100 bg-amber-50 px-6 py-3 text-sm text-amber-800">
+            <Copy className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              <strong>{dubbel.size} regels horen bij dezelfde persoon én week.</strong> Dezelfde
+              urenstaat is dus meer dan eens aangeleverd. Kijk welke de goede is en verwijder de
+              andere met &ldquo;Scan verwijderen&rdquo; — er verdwijnt alleen het binnengekomen
+              bestand.
+            </span>
+          </p>
+        )}
         {weekItems.length === 0 ? (
           <CardContent>
             <EmptyState
@@ -274,32 +338,81 @@ export default async function InboxPage({
                 <TH className="text-right">Uren</TH>
                 <TH>Bron</TH>
                 <TH>Status</TH>
+                <TH></TH>
               </TR>
             </THead>
             <TBody>
-              {weekItems.map((it) => (
-                <TR key={it.id}>
-                  <TD>
-                    <Link href={`/inbox/${it.id}`} className="font-medium text-ink-900 hover:text-brand-700">
-                      {personName(it)}
-                    </Link>
-                  </TD>
-                  <TD className="text-right tabular-nums">
-                    {it.extractedTotalHours != null ? `${formatHours(it.extractedTotalHours)} u` : "—"}
-                  </TD>
-                  <TD>
-                    <StatusBadge options={INBOX_SOURCES} value={it.source} />
-                  </TD>
-                  <TD>
-                    <div className="flex items-center gap-1.5">
-                      <StatusBadge options={INBOX_STATUSES} value={it.status} />
-                      {it.needsReview && it.status === "EXTRACTED" && (
-                        <Badge color="amber">Nakijken</Badge>
+              {weekItems.map((it) => {
+                const isDubbel = dubbel.has(it.id);
+                // Alleen een RUWE scan zonder urenstaat mag weg — dezelfde guard
+                // als op de weekverwerking, en hij staat ook nog eens op de
+                // server in verwijderInboxScan.
+                const oordeel = magScanVerwijderen({
+                  status: it.status,
+                  timesheetId: it.timesheetId,
+                  timesheetStatus: it.timesheet?.status ?? null,
+                });
+                return (
+                  <TR key={it.id}>
+                    <TD>
+                      <Link
+                        href={`/inbox/${it.id}`}
+                        className="font-medium text-ink-900 hover:text-brand-700"
+                      >
+                        {personName(it)}
+                      </Link>
+                      {isDubbel && (
+                        <Badge
+                          color="amber"
+                          className="ml-2 gap-1 align-middle"
+                        >
+                          <Copy className="h-3 w-3" /> dubbel
+                        </Badge>
                       )}
-                    </div>
-                  </TD>
-                </TR>
-              ))}
+                    </TD>
+                    <TD className="text-right tabular-nums">
+                      {it.extractedTotalHours != null
+                        ? `${formatHours(it.extractedTotalHours)} u`
+                        : "—"}
+                    </TD>
+                    <TD>
+                      <StatusBadge options={INBOX_SOURCES} value={it.source} />
+                    </TD>
+                    <TD>
+                      <div className="flex items-center gap-1.5">
+                        <StatusBadge options={INBOX_STATUSES} value={it.status} />
+                        {it.needsReview && it.status === "EXTRACTED" && (
+                          <Badge color="amber">Nakijken</Badge>
+                        )}
+                      </div>
+                    </TD>
+                    <TD className="text-right">
+                      {oordeel.mag ? (
+                        <div className="flex justify-end">
+                          <ConfirmSubmit
+                            action={verwijderInboxScan}
+                            id={it.id}
+                            hidden={{ week: wp }}
+                            message={`Scan van ${personName(it)} verwijderen?`}
+                            description={`Alleen het binnengekomen bestand verdwijnt — ${oordeel.reden}.${
+                              isDubbel
+                                ? " Deze week staat er meer dan één keer in; de andere scan blijft gewoon staan."
+                                : ""
+                            }`}
+                            confirmLabel="Scan verwijderen"
+                          >
+                            Scan verwijderen
+                          </ConfirmSubmit>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-ink-400" title={oordeel.reden}>
+                          —
+                        </span>
+                      )}
+                    </TD>
+                  </TR>
+                );
+              })}
             </TBody>
           </Table>
         )}

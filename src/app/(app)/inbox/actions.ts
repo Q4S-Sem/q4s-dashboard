@@ -11,7 +11,8 @@ import { isSpreadsheet } from "@/lib/excel";
 import { confirmInboxItem } from "@/lib/inbox-confirm";
 import { runInboxExtraction } from "@/lib/inbox-extract";
 import { pullInboxMail } from "@/lib/mail-intake";
-import { veiligTerugPad } from "@/lib/week-detail";
+import { magScanVerwijderen, veiligTerugPad } from "@/lib/week-detail";
+import { parseWeek, weekHref, ymd } from "@/lib/week-nav";
 
 // ---------- Upload (single, multiple, or a ZIP of timesheets) ----------
 
@@ -152,6 +153,66 @@ export async function rejectInbox(formData: FormData) {
   revalidatePath(`/inbox/${id}`);
   revalidatePath("/verwerken/wachtkamer");
   redirect(`/inbox/${id}`);
+}
+
+// ---------------------------------------------------------------------------
+// "Scan verwijderen" vanaf de weeklijst in de inbox.
+//
+// De lijst "Uitgelezen — week N" laat bewust ÉLKE binnengekomen scan van die
+// week zien, dus staat een twee keer aangeleverde week er ook twee keer in. Tot
+// nu toe kon je die alleen op de detailpagina opruimen; deze knop doet het waar
+// je het dubbele ziet.
+//
+// Het is exact dezelfde weg als op de weekverwerking (verwerken/week/actions.ts):
+// dezelfde guard (magScanVerwijderen — alleen een RUWE scan zonder urenstaat) en
+// hetzelfde verwijderen (deleteInbox, dus inclusief het opruimen/archiveren van
+// het bestand). Alleen de bestemming ná afloop is anders, en die wordt HIER op
+// de server bepaald: de week uit het formulier gaat eerst door parseWeek, zodat
+// er nooit iets anders dan een weekdatum in de URL belandt.
+//
+// Er verdwijnt alleen het binnengekomen bestand. Nooit een urenstaat, nooit een
+// factuur — dat de knop op het scherm verborgen is telt niet mee; de controle
+// staat hier.
+// ---------------------------------------------------------------------------
+
+export async function verwijderInboxScan(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  const week = parseWeek(formData.get("week")?.toString());
+  const terug = (uitkomst: string) =>
+    weekHref("/inbox", week ? ymd(week) : null, { verwijderd: uitkomst });
+
+  if (!id) redirect(weekHref("/inbox", week ? ymd(week) : null));
+
+  const item = await db.timesheetInbox.findUnique({
+    where: { id },
+    select: {
+      status: true,
+      timesheetId: true,
+      timesheet: { select: { status: true } },
+    },
+  });
+  // Intussen al weg (bijvoorbeeld twee keer geklikt): dan is het doel bereikt.
+  if (!item) redirect(terug("weg"));
+
+  const oordeel = magScanVerwijderen({
+    status: item.status,
+    timesheetId: item.timesheetId,
+    timesheetStatus: item.timesheet?.status ?? null,
+  });
+  if (!oordeel.mag) redirect(terug("vast"));
+
+  // deleteInbox sluit af met een redirect, dus na de aanroep hieronder komen we
+  // niet meer terug: de schermen die deze scan tonen worden daarom vooraf als
+  // verouderd gemarkeerd (Next verwerkt dat aan het eind van de actie).
+  revalidatePath("/inbox");
+  revalidatePath("/verwerken/week");
+  revalidatePath("/verwerken/nieuw");
+  revalidatePath("/", "layout");
+
+  const door = new FormData();
+  door.set("id", id);
+  door.set("terug", terug("1"));
+  await deleteInbox(door);
 }
 
 export async function deleteInbox(formData: FormData) {

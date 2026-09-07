@@ -5,18 +5,24 @@ import { db } from "@/lib/db";
 import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { ensureAiKeysLoaded } from "@/lib/ai-keys";
 import { confirmInboxItem, type ConfirmInboxError } from "@/lib/inbox-confirm";
+import { parseConfirmInput, type ConfirmInboxRaw } from "@/lib/inbox-confirm-input";
 import { runInboxExtraction } from "@/lib/inbox-extract";
 import { extractReceivedInvoiceFromFile, parseWeekNumber } from "@/lib/invoice-extract";
 import { createSalesInvoice } from "@/lib/invoicing";
 import { computeTimesheetMoney } from "@/lib/toeslag";
 import { MAX_UPLOAD_BYTES, saveInboxBytes, saveReceivedBytes } from "@/lib/uploads";
-import { formatWeekLabel, round2 } from "@/lib/utils";
+import { formatHours, formatWeekLabel, round2 } from "@/lib/utils";
+import {
+  BESTAANDE_URENSTAAT_NOTITIE,
+  beoordeelBestaandeUrenstaat,
+} from "@/lib/urenstaat-hergebruik";
 import { weekNummerUitTekst, weekSlotVanDatum } from "@/lib/week-koppeling";
 import { parseBedrag } from "@/lib/week-wizard";
 import {
   LEGE_FACTUUR,
   getypteWeekVeld,
   naarWizardTimesheet,
+  type BestaandeUrenstaat,
   type FactuurLeesState,
   type TimesheetLeesState,
   type VerwerkState,
@@ -244,6 +250,158 @@ const CONFIRM_FOUT: Record<ConfirmInboxError, string> = {
   hours: "Vul voor minimaal één dag uren in.",
 };
 
+/** De plaatsing zoals het akkoord hem al opgehaald heeft. */
+type AkkoordPlaatsing = {
+  consultantId: string;
+  consultant: { firstName: string; lastName: string };
+  client: { companyName: string } | null;
+};
+
+type HergebruikUitkomst =
+  | { ok: true; timesheetId: string; waarschuwingen: string[] }
+  | { ok: false; state: VerwerkState };
+
+// ---------------------------------------------------------------------------
+// "Er lag al een urenstaat voor deze week" — niet meer doodlopen.
+//
+// De @@unique(placementId, weekStart) op Timesheet laat er maar één per week
+// bestaan; confirmInboxItem geeft dan "exists" terug. Vroeger stopte het akkoord
+// daar met een rode regel: de inkoop bleef liggen en de verkoopfactuur kwam er
+// niet, terwijl de week zelf gewoon klaar lag om afgemaakt te worden.
+//
+// Wat er nu gebeurt hangt af van de BESTAANDE urenstaat — het oordeel is puur en
+// getest (beoordeelBestaandeUrenstaat, src/lib/urenstaat-hergebruik.ts):
+//
+//   • staat hij al op een VERKOOPFACTUUR → er gebeurt niets. Dubbel factureren
+//     is het enige wat écht niet mag; het scherm krijgt de factuur mee om
+//     naartoe te linken, plus de keuze om de week te verwijderen (als dat mag).
+//   • anders → de rest van het akkoord loopt gewoon door TEGEN DIE URENSTAAT:
+//     zijn factuur wordt als inkoop geregistreerd en de verkoopfactuur wordt
+//     alsnog klaargezet.
+//
+// De uren van de bestaande staat blijven leidend — die worden hier NOOIT
+// overschreven. Wijken ze af van wat er in de wizard stond, dan is dat een
+// waarschuwing, geen stille correctie.
+// ---------------------------------------------------------------------------
+
+/**
+ * Eén bestaande urenstaat beschrijven zoals het scherm hem toont, mét het
+ * oordeel erover. Bewust ELKE keer vers uit de database: na het akkoord staat er
+ * een verkoopfactuur aan vast en dán mag hij niet meer weg — het paneel moet
+ * geen verwijderknop tonen die de guard van deleteTimesheet toch weigert.
+ */
+async function beschrijfBestaandeUrenstaat(
+  timesheetId: string,
+  placement: AkkoordPlaatsing,
+): Promise<BestaandeUrenstaat | null> {
+  const ts = await db.timesheet.findUnique({
+    where: { id: timesheetId },
+    include: {
+      entries: { select: { hours: true } },
+      invoiceLine: { select: { id: true, invoice: { select: { id: true, number: true } } } },
+      purchaseLine: { select: { id: true } },
+    },
+  });
+  if (!ts) return null;
+
+  const oordeel = beoordeelBestaandeUrenstaat({
+    status: ts.status,
+    verkoopRegelId: ts.invoiceLine?.id ?? null,
+    inkoopRegelId: ts.purchaseLine?.id ?? null,
+  });
+
+  return {
+    id: ts.id,
+    weekLabel: formatWeekLabel(ts.weekStart),
+    consultantNaam: `${placement.consultant.firstName} ${placement.consultant.lastName}`,
+    klantNaam: placement.client?.companyName ?? null,
+    uren: round2(ts.entries.reduce((som, e) => som + e.hours, 0)),
+    status: ts.status,
+    alGefactureerd: oordeel.alGefactureerd,
+    eerstGoedkeuren: oordeel.eerstGoedkeuren,
+    magVerwijderen: oordeel.magVerwijderen,
+    factuurId: ts.invoiceLine?.invoice?.id ?? null,
+    factuurNummer: ts.invoiceLine?.invoice?.number ?? null,
+    reden: oordeel.reden,
+  };
+}
+
+async function hergebruikBestaandeUrenstaat(opts: {
+  inboxId: string;
+  raw: ConfirmInboxRaw;
+  placement: AkkoordPlaatsing;
+}): Promise<HergebruikUitkomst> {
+  const { inboxId, raw, placement } = opts;
+
+  // Dezelfde lezing als confirmInboxItem deed — dus exact dezelfde maandag.
+  const parsed = parseConfirmInput(raw);
+  if (!parsed.ok) return { ok: false, state: { error: CONFIRM_FOUT.exists } };
+  const { placementId, monday, totalHours } = parsed.fields;
+
+  const gevonden = await db.timesheet.findUnique({
+    where: { placementId_weekStart: { placementId, weekStart: monday } },
+    select: { id: true },
+  });
+  // Net weggehaald door iemand anders: dan blijft de oude melding staan en
+  // probeert de eigenaar het gewoon opnieuw.
+  if (!gevonden) return { ok: false, state: { error: CONFIRM_FOUT.exists } };
+
+  const info = await beschrijfBestaandeUrenstaat(gevonden.id, placement);
+  if (!info) return { ok: false, state: { error: CONFIRM_FOUT.exists } };
+
+  // Al gefactureerd: hier stopt het. Het scherm krijgt de factuur mee om
+  // naartoe te linken — er wordt niets dubbel gefactureerd.
+  if (info.alGefactureerd) {
+    return {
+      ok: false,
+      state: {
+        error: `Er staat al een urenstaat voor ${info.weekLabel.toLowerCase()}, en die is al gefactureerd${
+          info.factuurNummer ? ` op verkoopfactuur ${info.factuurNummer}` : ""
+        }. Er wordt niets dubbel gefactureerd.`,
+        bestaand: info,
+      },
+    };
+  }
+
+  const waarschuwingen: string[] = [BESTAANDE_URENSTAAT_NOTITIE];
+
+  if (Math.abs(info.uren - totalHours) > 0.01) {
+    waarschuwingen.push(
+      `De bestaande urenstaat staat op ${formatHours(info.uren)} u; in de wizard stond ${formatHours(totalHours)} u. De bestaande uren zijn aangehouden — pas ze zo nodig aan bij Urenregistratie.`,
+    );
+  }
+  if (info.eerstGoedkeuren) {
+    waarschuwingen.push(
+      "De bestaande urenstaat is nog niet goedgekeurd, dus er komt nog geen verkoopfactuur uit. Keur 'm goed bij Urenregistratie en maak de factuur daar alsnog.",
+    );
+  }
+
+  // De scan hoort voortaan bij die bestaande urenstaat — anders blijft hij als
+  // openstaande week in de inbox en de wizard staan. Er hangt al een scan aan
+  // (TimesheetInbox.timesheetId is @unique)? Dan blijft deze gewoon staan en
+  // zeggen we dat eerlijk; opruimen is mensenwerk.
+  try {
+    await db.timesheetInbox.update({
+      where: { id: inboxId },
+      data: {
+        status: "CONFIRMED",
+        consultantId: placement.consultantId,
+        placementId,
+        timesheetId: info.id,
+        extractedWeekStart: monday,
+        wachtkamerSince: null,
+        wachtkamerReason: null,
+      },
+    });
+  } catch {
+    waarschuwingen.push(
+      "Deze scan is niet aan de bestaande urenstaat gekoppeld — er hing er al één aan. Hij blijft in de timesheet-inbox staan; ruim 'm daar op als hij dubbel is.",
+    );
+  }
+
+  return { ok: true, timesheetId: info.id, waarschuwingen };
+}
+
 /**
  * Het akkoord. Drie stappen, in deze volgorde, elk alleen als de vorige lukte:
  *
@@ -253,6 +411,11 @@ const CONFIRM_FOUT: Record<ConfirmInboxError, string> = {
  *                          Alleen als er in stap 2 een factuur is aangeleverd
  *                          (optie A: Q4S maakt géén eigen inkoopfactuur).
  *   c) createSalesInvoice→ de VERKOOPfactuur naar de klant, als CONCEPT (DRAFT).
+ *
+ * Lag er al een urenstaat voor deze plaatsing + week, dan stopt (a) — maar het
+ * akkoord niet: zolang die week nog niet gefactureerd is lopen (b) en (c) gewoon
+ * door tegen de BESTAANDE urenstaat, met een melding erbij. Zie
+ * {@link hergebruikBestaandeUrenstaat}.
  *
  * Elke stap is op zichzelf atomair (createSalesInvoice draait in één Prisma-
  * transactie), maar ze delen er bewust geen: confirmInboxItem en createSalesInvoice
@@ -294,22 +457,44 @@ export async function verwerkWeek(
   if (!placement) return { error: CONFIRM_FOUT.match };
 
   // --- a) uren vastleggen ------------------------------------------------
-  const bevestigd = await confirmInboxItem({
-    id: inboxId,
+  const invoer: ConfirmInboxRaw = {
     placementId,
     weekStart,
     kilometers: tekst(formData, "kilometers"),
     overtimeHours: tekst(formData, "overtimeHours"),
     hours: [0, 1, 2, 3, 4, 5, 6].map((i) => tekst(formData, `hours_${i}`)),
-  });
-  if (!bevestigd.ok) return { error: CONFIRM_FOUT[bevestigd.error] };
+  };
+  const bevestigd = await confirmInboxItem({ id: inboxId, ...invoer });
 
   const waarschuwingen: string[] = [];
+  let timesheetId: string;
+  /** Is er tegen een AL BESTAANDE urenstaat doorgewerkt? Dan meldt het scherm dat. */
+  let hergebruikt = false;
+
+  if (bevestigd.ok) {
+    timesheetId = bevestigd.timesheetId;
+    if (bevestigd.kmSource === "factuur") {
+      waarschuwingen.push(
+        "De kilometers stonden niet op de urenstaat en zijn overgenomen van zijn eigen factuur.",
+      );
+    }
+  } else if (bevestigd.error === "exists") {
+    // Er lag al een urenstaat voor deze plaatsing + week. Niet doodlopen: als er
+    // nog niets gefactureerd is loopt de rest van het akkoord gewoon door tegen
+    // die bestaande urenstaat.
+    const hergebruik = await hergebruikBestaandeUrenstaat({ inboxId, raw: invoer, placement });
+    if (!hergebruik.ok) return hergebruik.state;
+    timesheetId = hergebruik.timesheetId;
+    hergebruikt = true;
+    waarschuwingen.push(...hergebruik.waarschuwingen);
+  } else {
+    return { error: CONFIRM_FOUT[bevestigd.error] };
+  }
 
   // De bedragen komen uit de vastgelegde urenstaat — dezelfde functie waarmee
   // invoicing.ts de factuurregels bouwt, dus het scherm en de factuur kloppen.
   const urenstaat = await db.timesheet.findUnique({
-    where: { id: bevestigd.timesheetId },
+    where: { id: timesheetId },
     include: { entries: true },
   });
   const geld = urenstaat
@@ -322,11 +507,6 @@ export async function verwerkWeek(
         placement,
       )
     : null;
-  if (bevestigd.kmSource === "factuur") {
-    waarschuwingen.push(
-      "De kilometers stonden niet op de urenstaat en zijn overgenomen van zijn eigen factuur.",
-    );
-  }
 
   // --- b) zijn factuur als inkoop registreren ----------------------------
   let ontvangenFactuurId: string | null = null;
@@ -385,7 +565,7 @@ export async function verwerkWeek(
     try {
       const res = await createSalesInvoice({
         clientId: placement.clientId,
-        timesheetIds: [bevestigd.timesheetId],
+        timesheetIds: [timesheetId],
         issueDate: new Date(),
         notes: null,
       });
@@ -416,8 +596,15 @@ export async function verwerkWeek(
   revalidatePath("/verzenden");
   revalidatePath("/", "layout");
 
+  // Werd er tegen een bestaande urenstaat doorgewerkt, dan komt hij hier VERS
+  // terug — inclusief of hij nu (na het factureren hierboven) nog weg mag.
+  const bestaand = hergebruikt
+    ? ((await beschrijfBestaandeUrenstaat(timesheetId, placement)) ?? undefined)
+    : undefined;
+
   const inkoop = parseBedrag(tekst(formData, "inkoopBedrag"));
   return {
+    bestaand,
     resultaat: {
       consultantNaam: `${placement.consultant.firstName} ${placement.consultant.lastName}`,
       klantNaam: placement.client?.companyName ?? null,
@@ -426,7 +613,7 @@ export async function verwerkWeek(
       verkoop: geld?.sell.total ?? 0,
       inkoop: inkoop ?? geld?.buy.total ?? null,
       marge: geld === null ? null : round2(geld.sell.total - (inkoop ?? geld.buy.total)),
-      urenstaatId: bevestigd.timesheetId,
+      urenstaatId: timesheetId,
       verkoopFactuurNummer,
       verkoopFactuurId,
       ontvangenFactuurId,

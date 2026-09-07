@@ -157,6 +157,40 @@ export function dedupeTimesheetsPerPersonWeek<T extends DubbelBasis>(
   return { items: zichtbaar, dubbelen, verborgen };
 }
 
+/**
+ * Welke regels delen hun persoon-week met een ándere regel uit dezelfde lijst?
+ *
+ * De tegenhanger van {@link dedupeTimesheetsPerPersonWeek}: die verbergt de
+ * dubbelen, deze WIJST ZE AAN. Voor een lijst die bewust alles laat zien — de
+ * timesheet-inbox (/inbox) toont elke binnengekomen scan van een week — is
+ * verbergen namelijk verkeerd: juist door beide regels naast elkaar te zien met
+ * een "dubbel"-badge erbij kan de eigenaar er één weggooien.
+ *
+ * Dezelfde sleutel als hierboven (persoon + canonieke week), dus dezelfde
+ * terughoudendheid: zonder bekende week of zonder herkenbare persoon wordt er
+ * niets aangewezen.
+ */
+export function dubbelePersoonWeken(
+  items: readonly DubbelBasis[] | null | undefined,
+): Set<string> {
+  const perSleutel = new Map<string, string[]>();
+  for (const item of items ?? []) {
+    if (!item) continue;
+    const sleutel = persoonWeekSleutel(item);
+    if (!sleutel) continue;
+    const groep = perSleutel.get(sleutel);
+    if (groep) groep.push(item.id);
+    else perSleutel.set(sleutel, [item.id]);
+  }
+
+  const dubbel = new Set<string>();
+  for (const groep of perSleutel.values()) {
+    if (groep.length < 2) continue;
+    for (const id of groep) dubbel.add(id);
+  }
+  return dubbel;
+}
+
 /** "1 dubbele upload verborgen" — de melding bij de week in stap 1. */
 export function dubbeleUploadLabel(aantal: number): string {
   const n = Number.isFinite(aantal) && aantal > 0 ? Math.trunc(aantal) : 0;
