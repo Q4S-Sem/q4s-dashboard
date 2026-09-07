@@ -16,6 +16,7 @@ import {
   Receipt,
   RotateCcw,
   Sparkles,
+  Users,
   Wallet,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -54,8 +55,10 @@ import {
   parseBedrag,
   wizardVoortgang,
 } from "@/lib/week-wizard";
+import { bouwPersoonRijen } from "@/lib/wizard-personen";
 import { leesFactuur, leesTimesheet, verwerkWeek } from "./actions";
 import { DocumentViewer } from "./DocumentViewer";
+import { PersoonPicker } from "./PersoonPicker";
 import { WeekStrip } from "./WeekStrip";
 import {
   LEGE_DAGUREN,
@@ -65,6 +68,7 @@ import {
   type FactuurVelden,
   type TimesheetLeesState,
   type VerwerkState,
+  type WizardPersoon,
   type WizardPlaatsing,
   type WizardTimesheet,
   type WizardWeekstrook,
@@ -72,6 +76,12 @@ import {
 
 // ---------------------------------------------------------------------------
 // Het scherm van de wizard "Week verwerken": één persoon, één week, drie stappen.
+//
+// PERSOON EERST: de wizard begint niet bij een stapel bestanden maar bij de
+// MENS. Zolang er niemand gekozen is toont dit scherm de personenkaart-lijst
+// (PersoonPicker); daarna draait de hele ronde op die ene persoon — zijn
+// plaatsing is voorgevuld, en stap 1 laat alleen ZIJN openstaande weken zien.
+// Het groeperen/ontdubbelen zelf zit in src/lib/wizard-personen.ts.
 //
 // Alle bedragen die hier staan komen uit computeTimesheetMoney (src/lib/toeslag.ts)
 // — dezelfde functie waarmee createSalesInvoice de échte factuurregels bouwt — en
@@ -211,21 +221,37 @@ function WeekAfwijkingNote({ melding }: { melding: string }) {
   );
 }
 
-/** De drie stappen bovenaan; afgeronde stappen krijgen een vinkje. */
+/** De stappen van de wizard; 0 = de persoon kiezen, daarna de drie bekende. */
+type WizardStap = 0 | 1 | 2 | 3;
+
+/**
+ * De vier stappen bovenaan; afgeronde stappen krijgen een vinkje. De eerste
+ * stap is de PERSOON — die houdt geen nummer maar een poppetje, zodat de drie
+ * vertrouwde stappen 1/2/3 blijven heten.
+ */
 function Stepper({
   stap,
+  persoonLabel,
   timesheetKlaar,
   factuurKlaar,
   maxStap,
   ga,
 }: {
-  stap: number;
+  stap: WizardStap;
+  /** De gekozen persoon, of null zolang er nog niemand gekozen is. */
+  persoonLabel: string | null;
   timesheetKlaar: boolean;
   factuurKlaar: boolean;
-  maxStap: number;
-  ga: (n: 1 | 2 | 3) => void;
+  maxStap: WizardStap;
+  ga: (n: WizardStap) => void;
 }) {
   const stappen = [
+    {
+      n: 0 as const,
+      label: "Persoon",
+      cap: persoonLabel ?? "wie werkt er",
+      klaar: persoonLabel !== null,
+    },
     { n: 1 as const, label: "Timesheet", cap: "uren", klaar: timesheetKlaar },
     { n: 2 as const, label: "Factuur", cap: "inkoop", klaar: factuurKlaar },
     { n: 3 as const, label: "Controle", cap: "akkoord", klaar: false },
@@ -258,7 +284,13 @@ function Stepper({
                     : "border-ink-200 bg-ink-50 text-ink-400",
               )}
             >
-              {s.klaar && !actief ? <Check className="h-3.5 w-3.5" /> : s.n}
+              {s.klaar && !actief ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : s.n === 0 ? (
+                <Users className="h-3.5 w-3.5" />
+              ) : (
+                s.n
+              )}
             </span>
             <span className="min-w-0">
               <span
@@ -280,6 +312,22 @@ function Stepper({
 
 // --- de wizard -------------------------------------------------------------
 
+/**
+ * Wie er gekozen is. Bewust alleen ID's + een naam: de rijen zelf worden elke
+ * render opnieuw uit de (ververste) serverlijst gehaald, zodat een verwerkte
+ * week meteen uit het overzicht verdwijnt.
+ */
+type Keuze = {
+  /** null = zonder persoon begonnen (losse upload of niet-herkende weekstaat). */
+  consultantId: string | null;
+  /** Naam voor de kop, ook als de persoon straks uit de lijst valt. */
+  naam: string;
+  /** De gekozen plaatsing ("" = de mens kiest 'm in stap 1 zelf). */
+  placementId: string;
+  /** Meteen deze weekstaat openen (uit de niet-herkende lijst). */
+  itemId: string | null;
+};
+
 export function WeekWizard(props: {
   items: WizardTimesheet[];
   plaatsingen: WizardPlaatsing[];
@@ -288,17 +336,85 @@ export function WeekWizard(props: {
 }) {
   const router = useRouter();
   const [ronde, setRonde] = useState(0);
+  const [keuze, setKeuze] = useState<Keuze | null>(null);
+
+  // Eén rij per persoon: zijn plaatsing(en) en zijn openstaande weken bij
+  // elkaar. Puur en getest (src/lib/wizard-personen.ts) — hier alleen tonen.
+  const overzicht = useMemo(
+    () =>
+      bouwPersoonRijen<WizardPlaatsing, WizardTimesheet>({
+        plaatsingen: props.plaatsingen,
+        weekstaten: props.items,
+        weekstrook: props.weekstrook,
+      }),
+    [props.plaatsingen, props.items, props.weekstrook],
+  );
+
+  // STAP 0 — nog niemand gekozen: de personenlijst is de voordeur.
+  if (!keuze) {
+    return (
+      <div className="space-y-4">
+        <Stepper
+          stap={0}
+          persoonLabel={null}
+          timesheetKlaar={false}
+          factuurKlaar={false}
+          maxStap={0}
+          ga={() => {}}
+        />
+        <PersoonPicker
+          personen={overzicht.personen}
+          ongekoppeld={overzicht.ongekoppeld}
+          onKies={(persoon, placementId) =>
+            setKeuze({
+              consultantId: persoon.consultantId,
+              naam: persoon.naam,
+              placementId,
+              itemId: null,
+            })
+          }
+          onLosseStaat={(item) =>
+            setKeuze({
+              consultantId: null,
+              naam: item?.naam ?? "Losse urenstaat",
+              placementId: item?.placementId ?? "",
+              itemId: item?.id ?? null,
+            })
+          }
+        />
+      </div>
+    );
+  }
+
+  // De rij van de gekozen persoon, elke render vers uit het overzicht: na een
+  // verwerkte week ververst de server de lijst en klopt de teller weer.
+  const persoon = keuze.consultantId
+    ? (overzicht.personen.find((p) => p.consultantId === keuze.consultantId) ?? null)
+    : null;
 
   // Eén ronde = één persoon-week. Opnieuw beginnen is bewust een verse mount:
   // dan zijn ook de uitlees-uitkomsten (useActionState) weer leeg, zonder dat we
   // ergens een "al gezien"-vlag hoeven bij te houden.
   return (
     <WizardRonde
-      key={ronde}
+      key={`${keuze.consultantId ?? "los"}:${keuze.placementId}:${ronde}`}
       {...props}
+      // Alleen ZIJN openstaande weken — zonder persoon: wat nog niet herkend is.
+      items={persoon ? persoon.openstaand : overzicht.ongekoppeld}
+      keuze={keuze}
+      persoon={persoon}
+      startItem={keuze.itemId ? (props.items.find((i) => i.id === keuze.itemId) ?? null) : null}
       opnieuw={() => {
+        // Volgende week van dezelfde persoon: verse ronde, maar niet nog eens
+        // dezelfde weekstaat openen — die is net verwerkt.
+        setKeuze((k) => (k?.itemId ? { ...k, itemId: null } : k));
         setRonde((r) => r + 1);
         // De verwerkte week is uit de inbox verdwenen — verse lijst ophalen.
+        router.refresh();
+      }}
+      wisselPersoon={() => {
+        setKeuze(null);
+        setRonde((r) => r + 1);
         router.refresh();
       }}
     />
@@ -310,17 +426,32 @@ function WizardRonde({
   plaatsingen,
   weekstrook,
   aiKlaar,
+  keuze,
+  persoon,
+  startItem,
   opnieuw,
+  wisselPersoon,
 }: {
+  /** De openstaande weken van de gekozen persoon (of: wat niet herkend is). */
   items: WizardTimesheet[];
   plaatsingen: WizardPlaatsing[];
   weekstrook: WizardWeekstrook;
   aiKlaar: boolean;
+  keuze: Keuze;
+  /** De rij van de gekozen persoon; null = zonder persoon begonnen. */
+  persoon: WizardPersoon | null;
+  /** Meteen te openen weekstaat (uit de niet-herkende lijst). */
+  startItem: WizardTimesheet | null;
   opnieuw: () => void;
+  wisselPersoon: () => void;
 }) {
   const [stap, setStap] = useState<1 | 2 | 3>(1);
-  const [gekozenItem, setGekozenItem] = useState<WizardTimesheet | null>(null);
-  const [correcties, setCorrecties] = useState<Correcties>({});
+  const [gekozenItem, setGekozenItem] = useState<WizardTimesheet | null>(startItem);
+  // De gekozen persoon dríjft de rest: zijn plaatsing staat meteen goed, dus de
+  // tarieven, de weekstrook en straks de verkoopfactuur kloppen vanaf stap 1.
+  const [correcties, setCorrecties] = useState<Correcties>(
+    keuze.placementId ? { placementId: keuze.placementId } : {},
+  );
   const [factuurCorrectie, setFactuurCorrectie] = useState<{
     voor: string;
     velden: FactuurVelden;
@@ -345,7 +476,9 @@ function WizardRonde({
 
   function kies(item: WizardTimesheet) {
     setGekozenItem(item);
-    setCorrecties({});
+    // De plaatsing van de gekozen persoon blijft staan; de rest van de
+    // correcties hoorde bij de vorige weekstaat en vervalt.
+    setCorrecties(placementId ? { placementId } : {});
   }
 
   // --- stap 2: zijn eigen factuur -----------------------------------------
@@ -467,7 +600,17 @@ function WizardRonde({
   const totaalUren = geld?.hours ?? 0;
   const resultaat = verwerkState.resultaat;
 
-  function ga(n: 1 | 2 | 3) {
+  // De naam in de kop: de plaatsing is het meest exact, daarna de gekozen
+  // persoon, dan wat er op de weekstaat stond.
+  const persoonNaam =
+    plaatsing?.consultantNaam ?? persoon?.naam ?? gekozen?.naam ?? keuze.naam;
+
+  function ga(n: WizardStap) {
+    // Stap 0 is de personenlijst: terug naar de voordeur.
+    if (n === 0) {
+      wisselPersoon();
+      return;
+    }
     if (n > voortgang.maxStap) return;
     setStap(n);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
@@ -576,7 +719,10 @@ function WizardRonde({
               </a>
             )}
             <Button type="button" variant="outline" onClick={opnieuw}>
-              <RotateCcw className="h-4 w-4" /> Volgende week verwerken
+              <RotateCcw className="h-4 w-4" /> Volgende week van {persoonNaam}
+            </Button>
+            <Button type="button" variant="outline" onClick={wisselPersoon}>
+              <Users className="h-4 w-4" /> Andere persoon
             </Button>
             {resultaat.verkoopFactuurId && (
               <Link
@@ -606,12 +752,10 @@ function WizardRonde({
         <CardContent className="p-0">
           <div className="flex flex-wrap items-center gap-3 p-3.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-brand-600 text-[13px] font-bold text-white">
-              {initialen(plaatsing?.consultantNaam ?? gekozen?.naam ?? "")}
+              {initialen(persoonNaam)}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-bold text-ink-900">
-                {plaatsing?.consultantNaam ?? gekozen?.naam ?? "Nog geen persoon gekozen"}
-              </span>
+              <span className="block truncate text-sm font-bold text-ink-900">{persoonNaam}</span>
               <span className="block truncate text-xs text-ink-400">
                 {[
                   plaatsing ? (plaatsing.klantNaam ?? "— geen bedrijf") : null,
@@ -623,7 +767,7 @@ function WizardRonde({
                   plaatsing ? `verkoop ${formatCurrency(plaatsing.config.chargeRate)}/u` : null,
                 ]
                   .filter(Boolean)
-                  .join(" · ") || "Kies hieronder een timesheet — de rest vult zich vanzelf."}
+                  .join(" · ") || "Kies hieronder een week — de rest vult zich vanzelf."}
               </span>
             </span>
             {heeftWeekAfwijking && canoniek && (
@@ -632,7 +776,42 @@ function WizardRonde({
             <Badge color={gekozen ? "blue" : "slate"}>
               {gekozen ? "in behandeling" : "nog niet begonnen"}
             </Badge>
+            <button
+              type="button"
+              onClick={wisselPersoon}
+              className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border border-ink-200 px-2.5 py-1 text-xs font-semibold text-ink-600 transition-colors hover:border-ink-900 hover:bg-ink-50"
+            >
+              <Users className="h-3.5 w-3.5" /> Wissel van persoon
+            </button>
           </div>
+
+          {/* Werkt hij op meer plaatsen? Dan kies je hier voor welke klant deze
+              week is — dezelfde keuze als op zijn kaart, altijd bij de hand. */}
+          {persoon && persoon.plaatsingen.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-ink-100 px-3.5 py-2.5">
+              <span className={KOPJE}>Plaatsing</span>
+              {persoon.plaatsingen.map((rij) => {
+                const actief = rij.plaatsing.id === placementId;
+                return (
+                  <button
+                    key={rij.plaatsing.id}
+                    type="button"
+                    onClick={() => corrigeer({ placementId: rij.plaatsing.id })}
+                    aria-pressed={actief}
+                    className={cn(
+                      "cursor-pointer rounded-sm border px-2.5 py-1 text-xs font-semibold transition-colors",
+                      actief
+                        ? "border-brand-600 bg-brand-50 text-brand-700"
+                        : "border-ink-200 bg-white text-ink-500 hover:border-ink-900 hover:bg-ink-50",
+                    )}
+                  >
+                    {rij.plaatsing.klantNaam ?? "— geen bedrijf"}
+                    <span className="ml-1.5 font-normal text-ink-400">{rij.plaatsing.functie}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {stripCellen.length > 0 && (
             <div className="border-t border-ink-100 px-3.5 py-2.5">
@@ -644,6 +823,7 @@ function WizardRonde({
 
       <Stepper
         stap={stap}
+        persoonLabel={persoonNaam}
         timesheetKlaar={voortgang.timesheet === "done"}
         factuurKlaar={voortgang.factuur === "done"}
         maxStap={voortgang.maxStap}
@@ -657,17 +837,83 @@ function WizardRonde({
             <div>
               <h2 className="text-[15px] font-bold text-ink-900">Stap 1 · Timesheet erin</h2>
               <p className={INTRO}>
-                Sleep de urenstaat hierin, of kies er één uit de inbox. De AI leest de uren
-                automatisch uit — jij controleert.
+                {persoon
+                  ? `Kies hiernaast de week van ${persoonNaam} die je wilt verwerken, of sleep een nieuwe urenstaat erin. `
+                  : "Sleep de urenstaat hierin, of kies er één uit de lijst. "}
+                De AI leest de uren automatisch uit — jij controleert.
               </p>
             </div>
 
             {!gekozen ? (
-              // Uploaden links, de inbox rechts — dezelfde tweedeling als
-              // hieronder, met beide kopjes op dezelfde hoogte.
+              // ZIJN weken links (de gewone route), uploaden rechts (de
+              // uitzondering) — twee kolommen met hun kopjes op één lijn.
               <div className={SPLIT}>
                 <div className="space-y-3">
-                  <h3 className={KOPJE}>Nieuwe urenstaat uploaden</h3>
+                  <h3 className={KOPJE}>
+                    {persoon
+                      ? `Openstaande weken van ${persoonNaam}`
+                      : "Nog niet herkende weekstaten"}
+                  </h3>
+                  {items.length === 0 ? (
+                    <EmptyState
+                      icon={<Inbox className="h-6 w-6" />}
+                      title={persoon ? "Geen openstaande weken" : "Niets in de inbox"}
+                      description={
+                        persoon
+                          ? `Er staat geen weekstaat van ${persoonNaam} klaar. Sleep er hiernaast één in, of pak een andere persoon op.`
+                          : "Er staan geen weekstaten zonder persoon klaar. Sleep er hiernaast één in, of kies een persoon uit de lijst."
+                      }
+                      action={
+                        <Button type="button" variant="outline" size="sm" onClick={wisselPersoon}>
+                          <Users className="h-4 w-4" /> Wissel van persoon
+                        </Button>
+                      }
+                    />
+                  ) : (
+                    <div className="overflow-hidden rounded-md border border-ink-100">
+                      {items.map((item) => {
+                        // Onder een persoon is de WEEK de kop (zijn naam staat al
+                        // bovenaan); zonder persoon blijft dat de naam op de staat.
+                        const week = canonicalWeekFromDates(item.weekStart);
+                        const kop = persoon
+                          ? week
+                            ? `Week ${week.isoWeek} · ${week.year}`
+                            : item.originalName
+                          : item.naam;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => kies(item)}
+                            className="flex w-full items-center gap-3 border-b border-ink-100 px-4 py-3 text-left last:border-b-0 hover:bg-ink-50"
+                          >
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-ink-100 text-ink-500">
+                              <FileText className="h-4 w-4" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-semibold text-ink-900">
+                                {kop}
+                              </span>
+                              <span className="block truncate text-xs text-ink-400">
+                                {inboxSamenvatting(item)}
+                              </span>
+                            </span>
+                            {item.status === "NEW" ? (
+                              <Badge color="amber">nog niet uitgelezen</Badge>
+                            ) : item.needsReview ? (
+                              <Badge color="amber">nakijken</Badge>
+                            ) : (
+                              <Badge color="green">uitgelezen</Badge>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className={KOPJE}>Of upload een nieuwe urenstaat</h3>
                   <form action={tsAction} className="space-y-3">
                     <Dropzone
                       name="file"
@@ -691,47 +937,6 @@ function WizardRonde({
                     <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
                       {tsState.error}
                     </p>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <h3 className={KOPJE}>Of kies uit de timesheet-inbox</h3>
-                  {items.length === 0 ? (
-                    <EmptyState
-                      icon={<Inbox className="h-6 w-6" />}
-                      title="Niets in de inbox"
-                      description="Er staan geen openstaande weekstaten klaar. Sleep er hiernaast één in, of laat ze binnenkomen via de mail."
-                    />
-                  ) : (
-                    <div className="overflow-hidden rounded-md border border-ink-100">
-                      {items.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => kies(item)}
-                          className="flex w-full items-center gap-3 border-b border-ink-100 px-4 py-3 text-left last:border-b-0 hover:bg-ink-50"
-                        >
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-ink-100 text-ink-500">
-                            <FileText className="h-4 w-4" />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-semibold text-ink-900">
-                              {item.naam}
-                            </span>
-                            <span className="block truncate text-xs text-ink-400">
-                              {inboxSamenvatting(item)}
-                            </span>
-                          </span>
-                          {item.status === "NEW" ? (
-                            <Badge color="amber">nog niet uitgelezen</Badge>
-                          ) : item.needsReview ? (
-                            <Badge color="amber">nakijken</Badge>
-                          ) : (
-                            <Badge color="green">uitgelezen</Badge>
-                          )}
-                        </button>
-                      ))}
-                    </div>
                   )}
                 </div>
               </div>
