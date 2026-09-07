@@ -1,9 +1,9 @@
-import { distributeDayHours, formatHours, type DayHours } from "@/lib/utils";
+import { distributeDayHours, formatHours, parseHours, type DayHours } from "@/lib/utils";
 import type { SurchargeConfig } from "@/lib/toeslag";
 import type { GereedPerPlaatsing } from "@/lib/urenstaat-gereed";
 import type { WeekSlot } from "@/lib/week-koppeling";
 import type { PersonenOverzicht, PersoonRij } from "@/lib/wizard-personen";
-import type { WeekKeuze } from "@/lib/wizard-weekfilter";
+import { weekstaatWeekKey, type WeekKeuze } from "@/lib/wizard-weekfilter";
 
 // ---------------------------------------------------------------------------
 // De platte vorm waarin de wizard "Week verwerken" zijn gegevens rondstuurt:
@@ -323,6 +323,52 @@ export function naarWizardTimesheet(
     overuren: getalVeld(item.extractedOvertimeHours),
     kilometers: getalVeld(item.extractedKilometers),
   };
+}
+
+// --- vanzelf openzetten ----------------------------------------------------
+
+/**
+ * Het minimum dat {@link autoSelectTimesheet} van een weekstaat nodig heeft:
+ * welke week het is, of hij al uitgelezen is, en of er uren in staan.
+ */
+export type AutoKiesBasis = {
+  /** NEW = nog niet uitgelezen; al het andere is door de AI gelezen. */
+  status: string;
+  /** Maandag als "YYYY-MM-DD" (leeg = geen week bekend). */
+  weekStart?: string | null;
+  /** Uren per dag Ma..Zo als tekst ("" = die dag niets). */
+  dagUren?: readonly string[] | null;
+};
+
+/** Is deze staat uitgelezen én staan er ook echt uren in? */
+function isUitgelezen(item: AutoKiesBasis): boolean {
+  if (item.status === "NEW") return false;
+  return (item.dagUren ?? []).some((uren) => parseHours(uren) > 0);
+}
+
+/**
+ * De weekstaat die stap 1 vanzelf mag openzetten. Ligt er voor de week die de
+ * eigenaar bovenaan koos precies ÉÉN staat klaar en is die al uitgelezen, dan
+ * hoeft hij die regel niet eerst nog eens aan te klikken: de uren staan er al,
+ * dus hij kan meteen door naar de factuur.
+ *
+ * Bewust terughoudend — vanzelf openen mag nooit een keuze wegnemen:
+ * - geen gekozen week, of niets in die week → null;
+ * - MEER dan één staat in die week → null (welke zou het moeten zijn?);
+ * - nog niet uitgelezen (NEW) of zonder uren → null (daar moet de mens bij).
+ *
+ * De week wordt hier alleen AFGELEZEN (weekstaatWeekKey → weekSlotVanDatum);
+ * wat er vastgelegd wordt blijft uit de gewerkte dagen komen. Puur en getest:
+ * tests/wizard-autokies.test.ts.
+ */
+export function autoSelectTimesheet<T extends AutoKiesBasis>(
+  items: readonly T[] | null | undefined,
+  week: string | null | undefined,
+): T | null {
+  if (!week) return null;
+  const vanDeWeek = (items ?? []).filter((item) => item && weekstaatWeekKey(item) === week);
+  if (vanDeWeek.length !== 1) return null;
+  return isUitgelezen(vanDeWeek[0]) ? vanDeWeek[0] : null;
 }
 
 /** Korte samenvatting onder een inbox-regel: "32 u · week van 24-08-2026". */

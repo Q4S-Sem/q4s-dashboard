@@ -74,6 +74,7 @@ import { PersoonPicker } from "./PersoonPicker";
 import { WeekStrip } from "./WeekStrip";
 import {
   LEGE_DAGUREN,
+  autoSelectTimesheet,
   inboxSamenvatting,
   toDateInput,
   type BestaandeUrenstaat,
@@ -515,6 +516,13 @@ type Keuze = {
    * uit de gewerkte dagen (canonicalWeekFromDates).
    */
   week: string;
+  /**
+   * Mag stap 1 de enige uitgelezen week van die gekozen week vanzelf
+   * openzetten? Staat aan zodra je een persoon oppakt, en gaat uit zodra je met
+   * "andere kiezen" juist naar de lijst terug wilt — anders zou hij diezelfde
+   * week meteen weer voor je openen. Zie `autoSelectTimesheet` (wizard-data.ts).
+   */
+  autoWeek: boolean;
 };
 
 export function WeekWizard(props: {
@@ -577,6 +585,9 @@ export function WeekWizard(props: {
               placementId,
               itemId: null,
               week,
+              // Ligt zijn week van deze filterweek al uitgelezen klaar? Dan
+              // hoeft hij hem straks niet nog eens aan te klikken.
+              autoWeek: true,
             })
           }
           onLosseStaat={(item) =>
@@ -586,6 +597,9 @@ export function WeekWizard(props: {
               placementId: item?.placementId ?? "",
               itemId: item?.id ?? null,
               week,
+              // Hier kiest hij zelf: deze staat (itemId) of uploaden — dan mag
+              // er niets anders vanzelf voor in de plaats komen.
+              autoWeek: false,
             })
           }
         />
@@ -613,8 +627,9 @@ export function WeekWizard(props: {
       startItem={keuze.itemId ? (props.items.find((i) => i.id === keuze.itemId) ?? null) : null}
       opnieuw={() => {
         // Volgende week van dezelfde persoon: verse ronde, maar niet nog eens
-        // dezelfde weekstaat openen — die is net verwerkt.
-        setKeuze((k) => (k?.itemId ? { ...k, itemId: null } : k));
+        // dezelfde weekstaat openen — die is net verwerkt. Ook het vanzelf
+        // openzetten gaat uit: wie "andere kiezen" doet, wil de lijst zien.
+        setKeuze((k) => (k ? { ...k, itemId: null, autoWeek: false } : k));
         setRonde((r) => r + 1);
         // De verwerkte week is uit de inbox verdwenen — verse lijst ophalen.
         router.refresh();
@@ -685,7 +700,15 @@ function WizardRonde({
   const eigenWeken = weekstatenVoorWeek(items, keuze.week);
 
   // --- stap 1: de weekstaat, met de correcties van de mens erbovenop -------
-  const gekozen = gekozenItem ?? tsState.item ?? null;
+  // Ligt er voor de gekozen week precies ÉÉN weekstaat en is die al uitgelezen,
+  // dan staat hij meteen open — dat scheelde een klik die niets toevoegde: de
+  // uren stonden er al. Afgeleid, dus geen useEffect en niets in state; wie zelf
+  // een regel aanklikt (of "andere kiezen" doet) wint hier gewoon van. Het
+  // oordeel zelf is puur en getest: autoSelectTimesheet in ./wizard-data.
+  const vanzelfItem = keuze.autoWeek ? autoSelectTimesheet(items, keuze.week) : null;
+  const gekozen = gekozenItem ?? tsState.item ?? vanzelfItem;
+  // Stond deze week er vanzelf open? Dan zegt stap 1 dat er ook bij.
+  const vanzelfOpen = gekozenItem === null && !tsState.item && vanzelfItem !== null;
   const basis = gekozen ? beginWaarden(gekozen, plaatsingen) : null;
   const placementId = correcties.placementId ?? basis?.placementId ?? "";
   // Noemt de weekstaat zelf geen week (niets uitgelezen), dan begint hij op de
@@ -1251,7 +1274,17 @@ function WizardRonde({
 
                   <div className="rounded-md border border-ink-100 p-4">
                     <div className="mb-3 flex items-start justify-between gap-3">
-                      <h3 className={KOPJE}>Uitgelezen door AI — controleer de uren</h3>
+                      <div className="min-w-0">
+                        <h3 className={KOPJE}>Uitgelezen door AI — controleer de uren</h3>
+                        {/* Niet stiekem: als deze week vanzelf openging, staat
+                            hier waarom — en "andere kiezen" ligt ernaast. */}
+                        {vanzelfOpen && (
+                          <p className="mt-1 text-[11px] text-ink-400">
+                            {filterWeekLabel !== "" ? `${filterWeekLabel} lag` : "Deze week lag"} als
+                            enige uitgelezen klaar — alvast opengezet.
+                          </p>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={opnieuw}
