@@ -10,7 +10,7 @@ export { shade, readableOn } from "./doc-style";
  *
  * Eén huisstijl voor elk CV dat de deur uit gaat, maar wél instelbaar: de
  * accentkleur, de indeling en welke onderdelen meedoen. De standaard is het
- * Q4S-oranje in twee kolommen — zet niemand er iets aan, dan ziet elk CV er
+ * Q4S-zwart in twee kolommen — zet niemand er iets aan, dan ziet elk CV er
  * hetzelfde uit.
  */
 

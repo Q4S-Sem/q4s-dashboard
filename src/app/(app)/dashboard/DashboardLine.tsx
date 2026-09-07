@@ -47,7 +47,7 @@ export function DashboardLine({
         <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} stroke="#898781" minTickGap={16} />
         <YAxis tickLine={false} axisLine={false} fontSize={12} stroke="#898781" width={40} />
         <Tooltip
-          cursor={{ stroke: "#e8430a", strokeOpacity: 0.4 }}
+          cursor={{ stroke: "#1c1c1e", strokeOpacity: 0.4 }}
           formatter={(value) => fmt(Number(value))}
           contentStyle={{ borderRadius: 2, border: "1px solid #111110", fontSize: 13 }}
         />

@@ -105,7 +105,7 @@ export function CvBuildingAnimation({ className }: { className?: string }) {
           display: block;
           height: 16px;
           margin: -8px -8px 8px;
-          background: var(--color-brand-600, #e8430a);
+          background: var(--color-brand-600, #1c1c1e);
         }
         .cv-anim-regel {
           display: block;
@@ -134,7 +134,7 @@ export function CvBuildingAnimation({ className }: { className?: string }) {
           background: linear-gradient(
             to bottom,
             transparent,
-            color-mix(in srgb, var(--color-brand-600, #e8430a) 22%, transparent),
+            color-mix(in srgb, var(--color-brand-600, #1c1c1e) 22%, transparent),
             transparent
           );
           animation: cvScan 2.2s linear infinite;

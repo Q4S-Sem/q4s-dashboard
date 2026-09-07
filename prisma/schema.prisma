@@ -403,8 +403,8 @@ model CompanySettings {
   // Eén huisstijl voor elk CV dat naar een opdrachtgever gaat. Aanpasbaar, maar
   // met een vaste standaard, zodat elk CV er hetzelfde uitziet ook als niemand
   // eraan zit.
-  /// Accentkleur op het CV (hex). Standaard het Q4S-oranje.
-  cvAccent          String  @default("#e8430a")
+  /// Accentkleur op het CV (hex). Standaard het Q4S-zwart.
+  cvAccent          String  @default("#1c1c1e")
   /// TWEE_KOLOMS | EEN_KOLOM
   cvLayout          String  @default("TWEE_KOLOMS")
   /// Pasfoto van de kandidaat tonen (alleen als die er is én niet geanonimiseerd).

@@ -5,19 +5,20 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   /* ---------------------------------------------------------------------
-     Merkkleur = het oranje van q4s.nl (#e8430a, hover #c73508).
-     De hele app tekent hierop via `bg-brand-600`, `text-brand-700`, enz.
+     Merkkleur = zwart/antraciet (#1c1c1e, hover #000000) — hetzelfde
+     zwart-wit als het logo en de factuur. De hele app tekent hierop via
+     `bg-brand-600`, `text-brand-700`, enz.
      --------------------------------------------------------------------- */
-  --color-brand-50: #fff4ef;
-  --color-brand-100: #ffe3d6;
-  --color-brand-200: #ffc7ae;
-  --color-brand-300: #ffa17b;
-  --color-brand-400: #fb7440;
-  --color-brand-500: #f6551c;
-  --color-brand-600: #e8430a; /* q4s.nl primair */
-  --color-brand-700: #c73508; /* q4s.nl hover */
-  --color-brand-800: #9e2a08;
-  --color-brand-900: #7f240b;
+  --color-brand-50: #f6f6f7;
+  --color-brand-100: #e7e7e9;
+  --color-brand-200: #c9c9cd;
+  --color-brand-300: #a3a3a9;
+  --color-brand-400: #6f6f77;
+  --color-brand-500: #45454b;
+  --color-brand-600: #1c1c1e; /* primair — inktzwart, als het logo */
+  --color-brand-700: #000000; /* hover */
+  --color-brand-800: #000000;
+  --color-brand-900: #000000;
 
   /* Zwart/antraciet van de site — voor koppen, knoppen en randen. */
   --color-ink-50: #f6f6f5;
@@ -66,8 +67,8 @@ body {
 
 /* Selectie in merkkleur */
 ::selection {
-  background: #ffd9c7;
-  color: #7f240b;
+  background: #c9c9cd;
+  color: #000000;
 }
 
 /* Subtle, modern scrollbars */
@@ -96,7 +97,7 @@ body {
    koppen (dat werkt op een website, niet in een scherm vol data).
    --------------------------------------------------------------------------- */
 
-/* Klein oranje label boven een kop */
+/* Klein label in merkkleur boven een kop */
 @utility q4s-eyebrow {
   font-size: 13px;
   line-height: 1.2;

@@ -3,6 +3,7 @@ import { getCvLogoFile } from "./branding";
 import { loadCvFonts } from "./cv-fonts";
 import { sanitizePdfText, truncateText, wrapText } from "./pdf-text";
 import { readableOn } from "./cv-template";
+import { DEFAULT_ACCENT } from "./doc-style";
 import type { CvDoc } from "./cv-doc";
 
 /**
@@ -122,7 +123,7 @@ type LayoutResult = { pageCount: number; endY: number; gapUnits: number };
 
 /** Wat de CV-vormgeving en de kandidaat aan deze renderer meegeven. */
 export type CvPdfOpties = {
-  /** Accentkleur uit de CV-vormgeving; standaard het Q4S-oranje. */
+  /** Accentkleur uit de CV-vormgeving; standaard het Q4S-zwart. */
   accent?: string;
   showLogo?: boolean;
   showPhoto?: boolean;
@@ -131,7 +132,7 @@ export type CvPdfOpties = {
 };
 
 export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise<Uint8Array> {
-  const BRAND = hexRgb(opties.accent ?? "#e8430a");
+  const BRAND = hexRgb(opties.accent ?? DEFAULT_ACCENT);
   const pdf = await PDFDocument.create();
   const fonts = await loadCvFonts(pdf);
   const uni = fonts.embedded;
@@ -144,7 +145,7 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
   // Alles wat óp de kopbalk staat — tekst, logo, het kadertje om de pasfoto —
   // volgt de accentkleur. Zonder dat verdwijnt de hele kop zodra iemand in de
   // CV-vormgeving een lichte kleur kiest.
-  const bandWit = readableOn(opties.accent ?? "#e8430a") === "#ffffff";
+  const bandWit = readableOn(opties.accent ?? DEFAULT_ACCENT) === "#ffffff";
   const ON_BAND = bandWit ? rgb(1, 1, 1) : rgb(0.07, 0.07, 0.06);
   const ON_BAND_SOFT = bandWit ? rgb(0.74, 0.74, 0.75) : rgb(0.36, 0.36, 0.35);
 

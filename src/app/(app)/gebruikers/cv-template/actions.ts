@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { CV_SECTIONS, DEFAULT_SECTION_ORDER } from "@/lib/cv-template";
+import { DEFAULT_ACCENT } from "@/lib/doc-style";
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -16,7 +17,7 @@ export async function saveCvTemplate(formData: FormData): Promise<void> {
     where: { id: "default" },
     select: { cvAccent: true },
   });
-  const accent = HEX.test(ingevoerd) ? ingevoerd : (huidig?.cvAccent ?? "#e8430a");
+  const accent = HEX.test(ingevoerd) ? ingevoerd : (huidig?.cvAccent ?? DEFAULT_ACCENT);
 
   // De volgorde komt als "sectie:positie"-paren uit de nummervelden.
   const geldig = new Set<string>(CV_SECTIONS.map((s) => s.key));

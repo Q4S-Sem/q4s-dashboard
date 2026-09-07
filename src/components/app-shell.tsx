@@ -92,7 +92,7 @@ function HubNav({
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    // Actief item krijgt een oranje balk aan de linkerkant —
+                    // Actief item krijgt een zwarte balk aan de linkerkant —
                     // hetzelfde accentgebaar als de navigatie op q4s.nl.
                     "relative flex items-center gap-2.5 rounded-sm py-2.5 pl-4 pr-3 text-[13px] font-bold tracking-tight transition-colors",
                     active

@@ -10,8 +10,8 @@
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
-/** Het Q4S-oranje. Wordt gebruikt als er niets (geldigs) is ingesteld. */
-export const DEFAULT_ACCENT = "#e8430a";
+/** Het Q4S-zwart. Wordt gebruikt als er niets (geldigs) is ingesteld. */
+export const DEFAULT_ACCENT = "#1c1c1e";
 
 export function documentAccent(s: { cvAccent?: string | null } | null | undefined): string {
   const v = String(s?.cvAccent ?? "");

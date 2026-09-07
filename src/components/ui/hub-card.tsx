@@ -8,7 +8,7 @@ import { buttonVariants } from "./button";
  * A clickable hub tile used on the hub overview pages: an icon, a title,
  * a short description, a primary "open" link and an optional "Nieuw" link.
  *
- * Vormgeving volgt de expertise-blokken van q4s.nl: oranje icoon dat opschaalt
+ * Vormgeving volgt de expertise-blokken van q4s.nl: zwart icoon dat opschaalt
  * bij hover, rand die zwart wordt.
  */
 export function HubCard({

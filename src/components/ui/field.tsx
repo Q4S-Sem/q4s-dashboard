@@ -7,7 +7,7 @@ import { NumberInput } from "./number-input";
 // be styled). Same import path + API, so every form keeps working.
 export { Select } from "./select";
 
-// Strak invoerveld: rechte hoeken, dunne rand, oranje focus — zoals de
+// Strak invoerveld: rechte hoeken, dunne rand, antraciete focus — zoals de
 // formulieren op q4s.nl.
 const fieldBase =
   "block w-full rounded-sm border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/25 disabled:cursor-not-allowed disabled:bg-ink-50";

@@ -25,8 +25,8 @@ export function AuthShell({
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       {/* LINKS — gebrand paneel */}
       <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[#242320] to-[#0a0a0a] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
-        {/* Industriële textuur: fijne raster-lijnen + een oranje gloed, zoals de
-            hero-foto op q4s.nl. */}
+        {/* Industriële textuur: fijne raster-lijnen + een gloed in merkkleur,
+            zoals de hero-foto op q4s.nl. */}
         <div aria-hidden className="pointer-events-none absolute inset-0">
           <div
             className="absolute inset-0 opacity-[0.07]"

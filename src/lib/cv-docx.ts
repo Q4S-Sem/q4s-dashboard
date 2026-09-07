@@ -40,7 +40,7 @@ const PT = 2; // 1 punt = 2 half-points
 const TWIP = 20; // 1 punt = 20 twips
 
 /** Terugval-accent; de echte kleur komt uit de CV-vormgeving (zie renderCvDocx). */
-const BRAND_FALLBACK = "e8430a";
+const BRAND_FALLBACK = "1c1c1e";
 const INK_HEX = "171717";
 const MUTED_HEX = "707073";
 const SOFT_HEX = "99999C";
