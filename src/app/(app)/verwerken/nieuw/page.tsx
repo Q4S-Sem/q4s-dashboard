@@ -14,11 +14,13 @@ import {
   weekNummerUitTekst,
   STROOK_WEKEN,
 } from "@/lib/week-koppeling";
+import { bouwWeekKeuzes, standaardWeek } from "@/lib/wizard-weekfilter";
 import { WeekWizard } from "./WeekWizard";
 import {
   getypteWeekVeld,
   naarWizardTimesheet,
   type WizardPlaatsing,
+  type WizardWeekkeuze,
   type WizardWeekstrook,
 } from "./wizard-data";
 
@@ -83,6 +85,29 @@ export default async function WeekVerwerkenPage() {
   }
   const weekstrook: WizardWeekstrook = { weken, verwerktPerPlaatsing };
 
+  // De openstaande weekstaten in de vorm die het scherm toont. Ook de weekfilter
+  // hieronder telt hierop door, zodat "3 open in week 35" precies over dezelfde
+  // staten gaat als de lijst zelf.
+  const wizardItems = items.map((item) =>
+    naarWizardTimesheet(
+      item,
+      // Wat er op de stukken getypt staat — puur om een afwijking te kunnen
+      // melden; de week zelf volgt uit de gewerkte dagen.
+      parseWeekNumber(getypteWeekVeld(item)) ?? weekNummerUitTekst(item.originalName),
+    ),
+  );
+
+  // De weekfilter boven de personenlijst: dezelfde weken als de strook (plus een
+  // oudere week waar nog iets van openstaat), en de week waar de eigenaar
+  // standaard begint. Server-side bepaald, net als de strook — het scherm heeft
+  // dus geen eigen datum nodig.
+  const keuzeWeken = bouwWeekKeuzes({ weken, weekstaten: wizardItems });
+  const weekkeuze: WizardWeekkeuze = {
+    weken: keuzeWeken,
+    huidig: weken[weken.length - 1]?.key ?? "",
+    standaard: standaardWeek(keuzeWeken),
+  };
+
   const plaatsingen: WizardPlaatsing[] = placements.map((p) => ({
     id: p.id,
     consultantId: p.consultantId,
@@ -127,16 +152,10 @@ export default async function WeekVerwerkenPage() {
       />
 
       <WeekWizard
-        items={items.map((item) =>
-          naarWizardTimesheet(
-            item,
-            // Wat er op de stukken getypt staat — puur om een afwijking te
-            // kunnen melden; de week zelf volgt uit de gewerkte dagen.
-            parseWeekNumber(getypteWeekVeld(item)) ?? weekNummerUitTekst(item.originalName),
-          ),
-        )}
+        items={wizardItems}
         plaatsingen={plaatsingen}
         weekstrook={weekstrook}
+        weekkeuze={weekkeuze}
         aiKlaar={isAIConfigured() || isVisionConfigured()}
       />
     </div>

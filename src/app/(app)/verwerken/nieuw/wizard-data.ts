@@ -2,6 +2,7 @@ import { distributeDayHours, formatHours, type DayHours } from "@/lib/utils";
 import type { SurchargeConfig } from "@/lib/toeslag";
 import type { WeekSlot } from "@/lib/week-koppeling";
 import type { PersonenOverzicht, PersoonRij } from "@/lib/wizard-personen";
+import type { WeekKeuze } from "@/lib/wizard-weekfilter";
 
 // ---------------------------------------------------------------------------
 // De platte vorm waarin de wizard "Week verwerken" zijn gegevens rondstuurt:
@@ -65,6 +66,23 @@ export type WizardWeekstrook = {
   weken: WeekSlot[];
   /** placementId → weeksleutels ("2026-W34") die al verwerkt zijn. */
   verwerktPerPlaatsing: Record<string, string[]>;
+};
+
+/**
+ * De weekfilter boven de personenlijst: uit welke weken kies je, welke loopt er
+ * nu, en met welke week begint de eigenaar?
+ *
+ * Net als de weekstrook op de SERVER bepaald en als platte sleutels doorgegeven
+ * — het scherm heeft dus geen eigen `new Date()` nodig. Het samenstellen zelf is
+ * puur en getest: `bouwWeekKeuzes`/`standaardWeek` in src/lib/wizard-weekfilter.ts.
+ */
+export type WizardWeekkeuze = {
+  /** De kiesbare weken, nieuwste eerst, met het aantal open staten per week. */
+  weken: WeekKeuze[];
+  /** De lopende week ("2026-W37"); "" als er geen weken zijn. */
+  huidig: string;
+  /** Voorgeselecteerd: de recentste week met open staten, anders de lopende. */
+  standaard: string;
 };
 
 /** Eén actieve plaatsing + alles wat er aan tarieven/toeslagen bij hoort. */

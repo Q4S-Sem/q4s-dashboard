@@ -56,6 +56,7 @@ import {
   wizardVoortgang,
 } from "@/lib/week-wizard";
 import { bouwPersoonRijen } from "@/lib/wizard-personen";
+import { weekLabel, weekstatenVoorWeek } from "@/lib/wizard-weekfilter";
 import { leesFactuur, leesTimesheet, verwerkWeek } from "./actions";
 import { DocumentViewer } from "./DocumentViewer";
 import { PersoonPicker } from "./PersoonPicker";
@@ -71,6 +72,7 @@ import {
   type WizardPersoon,
   type WizardPlaatsing,
   type WizardTimesheet,
+  type WizardWeekkeuze,
   type WizardWeekstrook,
 } from "./wizard-data";
 
@@ -326,17 +328,29 @@ type Keuze = {
   placementId: string;
   /** Meteen deze weekstaat openen (uit de niet-herkende lijst). */
   itemId: string | null;
+  /**
+   * De week uit de weekfilter waarin hij gekozen heeft ("" = geen). Puur om
+   * stap 1 naar die week te leiden — de week die vastgelegd wordt komt en blijft
+   * uit de gewerkte dagen (canonicalWeekFromDates).
+   */
+  week: string;
 };
 
 export function WeekWizard(props: {
   items: WizardTimesheet[];
   plaatsingen: WizardPlaatsing[];
   weekstrook: WizardWeekstrook;
+  weekkeuze: WizardWeekkeuze;
   aiKlaar: boolean;
 }) {
   const router = useRouter();
   const [ronde, setRonde] = useState(0);
   const [keuze, setKeuze] = useState<Keuze | null>(null);
+  // De week waarin de eigenaar werkt. De startwaarde komt van de server (de
+  // recentste week met openstaande staten, anders de lopende week), zodat het
+  // scherm er geen eigen `new Date()` voor nodig heeft. Blijft staan als hij van
+  // persoon wisselt — daar is de filter juist voor.
+  const [week, setWeek] = useState(props.weekkeuze.standaard);
 
   // Eén rij per persoon: zijn plaatsing(en) en zijn openstaande weken bij
   // elkaar. Puur en getest (src/lib/wizard-personen.ts) — hier alleen tonen.
@@ -365,12 +379,17 @@ export function WeekWizard(props: {
         <PersoonPicker
           personen={overzicht.personen}
           ongekoppeld={overzicht.ongekoppeld}
+          weekkeuze={props.weekkeuze}
+          week={week}
+          onWeek={setWeek}
+          verwerktPerPlaatsing={props.weekstrook.verwerktPerPlaatsing}
           onKies={(persoon, placementId) =>
             setKeuze({
               consultantId: persoon.consultantId,
               naam: persoon.naam,
               placementId,
               itemId: null,
+              week,
             })
           }
           onLosseStaat={(item) =>
@@ -379,6 +398,7 @@ export function WeekWizard(props: {
               naam: item?.naam ?? "Losse urenstaat",
               placementId: item?.placementId ?? "",
               itemId: item?.id ?? null,
+              week,
             })
           }
         />
@@ -425,6 +445,7 @@ function WizardRonde({
   items,
   plaatsingen,
   weekstrook,
+  weekkeuze,
   aiKlaar,
   keuze,
   persoon,
@@ -436,6 +457,7 @@ function WizardRonde({
   items: WizardTimesheet[];
   plaatsingen: WizardPlaatsing[];
   weekstrook: WizardWeekstrook;
+  weekkeuze: WizardWeekkeuze;
   aiKlaar: boolean;
   keuze: Keuze;
   /** De rij van de gekozen persoon; null = zonder persoon begonnen. */
@@ -461,11 +483,25 @@ function WizardRonde({
   const [invState, invAction] = useActionState<FactuurLeesState, FormData>(leesFactuur, {});
   const [verwerkState, verwerkAction] = useActionState<VerwerkState, FormData>(verwerkWeek, {});
 
+  // De week uit de weekfilter: alleen om stap 1 naar die week te leiden. Wat er
+  // straks vastgelegd wordt komt uit de gewerkte dagen, niet hieruit. Meteen
+  // uitgepakt tot platte waarden — verderop hangt er dus geen object meer aan.
+  const filterWeek = weekkeuze.weken.find((w) => w.key === keuze.week) ?? null;
+  const filterWeekMaandag = filterWeek?.monday ?? "";
+  const filterWeekLabel = filterWeek
+    ? weekLabel({ isoWeek: filterWeek.isoWeek, year: filterWeek.year })
+    : "";
+  // Zijn openstaande weken met die van de gekozen week vooraan — niets verdwijnt.
+  const eigenWeken = weekstatenVoorWeek(items, keuze.week);
+
   // --- stap 1: de weekstaat, met de correcties van de mens erbovenop -------
   const gekozen = gekozenItem ?? tsState.item ?? null;
   const basis = gekozen ? beginWaarden(gekozen, plaatsingen) : null;
   const placementId = correcties.placementId ?? basis?.placementId ?? "";
-  const weekStart = correcties.weekStart ?? basis?.weekStart ?? "";
+  // Noemt de weekstaat zelf geen week (niets uitgelezen), dan begint hij op de
+  // week die hij in de filter koos — te overschrijven met het datumveld.
+  const weekStart = correcties.weekStart ?? (basis?.weekStart || filterWeekMaandag);
+  const weekUitFilter = weekStart !== "" && !correcties.weekStart && !basis?.weekStart;
   const dagUren = correcties.dagUren ?? basis?.dagUren ?? LEGE_DAGUREN;
   const overuren = correcties.overuren ?? basis?.overuren ?? "";
   const kilometers = correcties.kilometers ?? basis?.kilometers ?? "";
@@ -849,12 +885,21 @@ function WizardRonde({
               // uitzondering) — twee kolommen met hun kopjes op één lijn.
               <div className={SPLIT}>
                 <div className="space-y-3">
-                  <h3 className={KOPJE}>
-                    {persoon
-                      ? `Openstaande weken van ${persoonNaam}`
-                      : "Nog niet herkende weekstaten"}
-                  </h3>
-                  {items.length === 0 ? (
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className={KOPJE}>
+                      {persoon
+                        ? `Openstaande weken van ${persoonNaam}`
+                        : "Nog niet herkende weekstaten"}
+                    </h3>
+                    {/* De week uit de filter staat bovenaan — de rest blijft
+                        gewoon staan, je kunt altijd een andere week pakken. */}
+                    {filterWeekLabel !== "" && (
+                      <span className="text-[11px] text-ink-400">
+                        {filterWeekLabel} staat bovenaan
+                      </span>
+                    )}
+                  </div>
+                  {eigenWeken.length === 0 ? (
                     <EmptyState
                       icon={<Inbox className="h-6 w-6" />}
                       title={persoon ? "Geen openstaande weken" : "Niets in de inbox"}
@@ -871,15 +916,17 @@ function WizardRonde({
                     />
                   ) : (
                     <div className="overflow-hidden rounded-md border border-ink-100">
-                      {items.map((item) => {
+                      {eigenWeken.map((item) => {
                         // Onder een persoon is de WEEK de kop (zijn naam staat al
                         // bovenaan); zonder persoon blijft dat de naam op de staat.
                         const week = canonicalWeekFromDates(item.weekStart);
                         const kop = persoon
                           ? week
-                            ? `Week ${week.isoWeek} · ${week.year}`
+                            ? weekLabel(week)
                             : item.originalName
                           : item.naam;
+                        const isFilterWeek =
+                          week !== null && keuze.week !== "" && weekKey(week) === keuze.week;
                         return (
                           <button
                             key={item.id}
@@ -898,6 +945,7 @@ function WizardRonde({
                                 {inboxSamenvatting(item)}
                               </span>
                             </span>
+                            {isFilterWeek && <Badge color="blue">gekozen week</Badge>}
                             {item.status === "NEW" ? (
                               <Badge color="amber">nog niet uitgelezen</Badge>
                             ) : item.needsReview ? (
@@ -997,7 +1045,11 @@ function WizardRonde({
                       <Field
                         label="Week (uit de gewerkte dagen)"
                         htmlFor="weekStart"
-                        hint="Kies een dag uit de week — wij houden altijd de maandag van die ISO-week aan."
+                        hint={
+                          weekUitFilter
+                            ? "Deze staat noemt zelf geen week; we beginnen bij de week die je bovenaan koos. Klopt dat niet, kies dan een dag uit de juiste week."
+                            : "Kies een dag uit de week — wij houden altijd de maandag van die ISO-week aan."
+                        }
                         required
                       >
                         <DateInput
