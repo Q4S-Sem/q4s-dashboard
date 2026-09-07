@@ -146,6 +146,22 @@ export type WeekSlot = {
 export const STROOK_WEKEN = 10;
 
 /**
+ * Een willekeurige dag → het hokje van de week waar hij in valt. Loopt via
+ * `canonicalWeekFromDates`, dus ook hier geldt: de week volgt uit de datum, niet
+ * uit een getypt nummer. Onleesbare of ontbrekende datum → null.
+ */
+export function weekSlotVanDatum(date: Date | string | null | undefined): WeekSlot | null {
+  const week = canonicalWeekFromDates(date);
+  if (!week) return null;
+  return {
+    key: weekKey(week),
+    isoWeek: week.isoWeek,
+    year: week.year,
+    monday: alsIsoDatum(week.monday),
+  };
+}
+
+/**
  * De laatste `aantal` ISO-weken t/m de week waarin `tot` valt — oudste eerst,
  * zodat de strook links→rechts naar nu toe loopt. `tot` komt van buiten (de
  * server-pagina), zodat client en server niet uit elkaar kunnen lopen.
@@ -157,14 +173,8 @@ export function recenteWeken(tot: Date, aantal: number = STROOK_WEKEN): WeekSlot
   for (let i = n - 1; i >= 0; i--) {
     const maandag = new Date(laatste);
     maandag.setDate(maandag.getDate() - i * 7);
-    const week = canonicalWeekFromDates(maandag);
-    if (!week) continue;
-    slots.push({
-      key: weekKey(week),
-      isoWeek: week.isoWeek,
-      year: week.year,
-      monday: alsIsoDatum(week.monday),
-    });
+    const slot = weekSlotVanDatum(maandag);
+    if (slot) slots.push(slot);
   }
   return slots;
 }

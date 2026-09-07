@@ -339,7 +339,7 @@ export default async function DashboardPage({
 
   const signals: { label: string; value: string; href: string; tone: "red" | "amber" | "blue" | "slate" }[] = [
     { label: "Facturen te laat (over vervaldatum)", value: overdueInvoices.length ? `${overdueInvoices.length} · ${formatCurrency(overdueAmount)}` : "0", href: "/facturen", tone: overdueInvoices.length ? "red" : "slate" },
-    { label: "Klaar om te verwerken", value: String(pendingConsultants.length), href: "/verwerken", tone: pendingConsultants.length ? "blue" : "slate" },
+    { label: "Klaar om te verwerken", value: String(pendingConsultants.length), href: "/verwerken/nieuw", tone: pendingConsultants.length ? "blue" : "slate" },
     { label: "Urenstaten ter goedkeuring", value: String(submittedCount), href: "/uren", tone: submittedCount ? "amber" : "slate" },
     { label: "Certificaten (bijna) verlopen", value: String(certAlerts), href: "/certificeringen", tone: expiredCerts ? "red" : certAlerts ? "amber" : "slate" },
     { label: "Plaatsingen met lage marge (<15%)", value: String(lowMarginPlacements.length), href: "/plaatsingen", tone: lowMarginPlacements.length ? "amber" : "slate" },
@@ -773,7 +773,7 @@ export default async function DashboardPage({
       <div>
         <SectionHeading title="Alle onderdelen" color="violet" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <HubTile color="blue" icon={<ListChecks className="h-5 w-5" />} title="Facturatie" href="/verwerken"
+          <HubTile color="blue" icon={<ListChecks className="h-5 w-5" />} title="Facturatie" href="/verwerken/nieuw"
             rows={[["Te verwerken", String(pendingConsultants.length)], ["Openstaand", formatCurrency(overview.openstaand)], ["Te betalen", formatCurrency(overview.teBetalen)]]} />
           <HubTile color="violet" icon={<Sparkles className="h-5 w-5" />} title="Recruitment" href="/recruitment"
             rows={[["Open sollicitaties", String(openApplications)], ["Kandidaten", String(candidatesCount)], ["Vacatures (live/concept)", `${vacPublished} / ${vacConcept}`]]} />

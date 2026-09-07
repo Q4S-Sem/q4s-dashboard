@@ -153,7 +153,7 @@ export function AppShell({
             type="button"
             aria-label="Menu openen"
             onClick={() => setOpen(true)}
-            className="mr-0.5 rounded-sm p-2 text-ink-600 transition-colors hover:bg-ink-100 lg:hidden"
+            className="mr-0.5 rounded-sm p-2 text-ink-600 transition-colors hover:bg-ink-100 min-[900px]:hidden"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -223,14 +223,14 @@ export function AppShell({
 
       {/* Contextual sidebar — only inside an app */}
       {hub && (
-        <aside className="hidden border-r border-ink-200 bg-white no-print lg:fixed lg:bottom-0 lg:top-14 lg:flex lg:w-60 lg:flex-col">
+        <aside className="hidden border-r border-ink-200 bg-white no-print min-[900px]:fixed min-[900px]:bottom-0 min-[900px]:top-14 min-[900px]:flex min-[900px]:w-60 min-[900px]:flex-col">
           <HubNav hub={hub} badges={badges} />
         </aside>
       )}
 
       {/* Mobile drawer */}
       {hub && open && (
-        <div className="fixed inset-0 z-40 lg:hidden no-print">
+        <div className="fixed inset-0 z-40 min-[900px]:hidden no-print">
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
           <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white">
             <div className="flex items-center justify-between border-b border-ink-200 px-5 py-3">
@@ -250,7 +250,7 @@ export function AppShell({
       )}
 
       {/* Content */}
-      <div className={cn(hub && "lg:pl-60")}>
+      <div className={cn(hub && "min-[900px]:pl-60")}>
         <main className="w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {children}
         </main>
