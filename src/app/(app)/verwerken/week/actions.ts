@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
 import { renderQ4sEmail, renderQ4sEmailText, sendMail } from "@/lib/email";
+import { magScanVerwijderen } from "@/lib/week-detail";
+import { deleteInbox } from "../../inbox/actions";
 import {
   focusWeekVan,
   herinneringenVoor,
@@ -142,4 +145,55 @@ export async function herinnerEen(formData: FormData) {
 
   revalidatePath("/verwerken/wachtkamer");
   redirect(`/verwerken/wachtkamer?${uitkomstParams(uitkomst)}`);
+}
+
+// ---------------------------------------------------------------------------
+// "Scan verwijderen" — de verkeerde of dubbel geüploade weekstaat weggooien.
+//
+// Dit haalt uitsluitend de RUWE scan weg: het inbox-item en het opgeslagen
+// bestand. Er wordt nooit een urenstaat of een (geboekte) factuur verwijderd —
+// de guard hieronder (magScanVerwijderen, src/lib/week-detail.ts) laat alleen
+// een scan door waar nog niets aan hangt, en die controle staat HIER op de
+// server: dat de knop op het scherm verborgen is telt niet mee.
+//
+// Het verwijderen zelf blijft de bestaande deleteInbox-actie (inbox/actions.ts),
+// zodat het bestand op precies dezelfde manier opgeruimd (en gearchiveerd) wordt
+// als in de inbox. Alleen de bestemming ná afloop is anders, en die wordt hier
+// op de server bepaald — niet door het formulier.
+// ---------------------------------------------------------------------------
+
+export async function verwijderScan(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) redirect("/verwerken/week");
+
+  const item = await db.timesheetInbox.findUnique({
+    where: { id },
+    select: {
+      status: true,
+      timesheetId: true,
+      timesheet: { select: { status: true } },
+    },
+  });
+  // Intussen al weg (bijvoorbeeld twee keer geklikt): dan is het doel bereikt.
+  if (!item) redirect("/verwerken/week?verwijderd=weg");
+
+  const oordeel = magScanVerwijderen({
+    status: item.status,
+    timesheetId: item.timesheetId,
+    timesheetStatus: item.timesheet?.status ?? null,
+  });
+  if (!oordeel.mag) redirect(`/verwerken/week/${id}?fout=vast`);
+
+  // deleteInbox sluit af met een redirect, dus na de aanroep hieronder komen we
+  // niet meer terug: de schermen die deze scan tonen worden daarom vooraf als
+  // verouderd gemarkeerd (Next verwerkt dat aan het eind van de actie).
+  revalidatePath("/verwerken/week");
+  revalidatePath("/verwerken/controle");
+  revalidatePath("/verwerken/wachtkamer");
+  revalidatePath("/", "layout");
+
+  const door = new FormData();
+  door.set("id", id);
+  door.set("terug", "/verwerken/week?verwijderd=1");
+  await deleteInbox(door);
 }

@@ -11,6 +11,7 @@ import { isSpreadsheet } from "@/lib/excel";
 import { confirmInboxItem } from "@/lib/inbox-confirm";
 import { runInboxExtraction } from "@/lib/inbox-extract";
 import { pullInboxMail } from "@/lib/mail-intake";
+import { veiligTerugPad } from "@/lib/week-detail";
 
 // ---------- Upload (single, multiple, or a ZIP of timesheets) ----------
 
@@ -158,9 +159,13 @@ export async function deleteInbox(formData: FormData) {
   if (!id) return;
   const item = await db.timesheetInbox.findUnique({ where: { id } });
   if (!item) return;
+  // Waar je hierna terechtkomt. Standaard de inbox; een ander scherm dat een scan
+  // laat verwijderen (bv. de weekverwerking) mag zijn eigen bestemming meegeven —
+  // maar alleen een pad BINNEN de app, zie veiligTerugPad.
+  const terug = veiligTerugPad(formData.get("terug"), "/inbox");
   // Delete first so the archive hook can copy the file, then remove the original.
   await db.timesheetInbox.delete({ where: { id } });
   await deleteInboxUpload(item.fileName);
   revalidatePath("/inbox");
-  redirect("/inbox");
+  redirect(terug);
 }

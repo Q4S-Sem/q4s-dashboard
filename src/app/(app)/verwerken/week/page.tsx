@@ -3,17 +3,14 @@ import {
   AlertTriangle,
   BellRing,
   CheckCircle2,
+  ChevronRight,
   Coins,
-  CopyCheck,
-  Mail,
   Mailbox,
   PauseCircle,
-  PencilLine,
-  Repeat2,
   Send,
   ShieldCheck,
   Sparkles,
-  TrendingDown,
+  Trash2,
   Users,
 } from "lucide-react";
 import { BackLink } from "@/components/back-link";
@@ -22,27 +19,18 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
-import { Field, Textarea } from "@/components/ui/field";
 import { buttonVariants } from "@/components/ui/button";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { db } from "@/lib/db";
-import { cn, formatCurrency, formatHours, formatWeekLabel, startOfISOWeek } from "@/lib/utils";
-import { timesheetGateReview, type GateReviewRow } from "@/lib/timesheet-gate-review";
-import type { GateFlag } from "@/lib/timesheet-auto-gate";
-import {
-  detectDuplicates,
-  evaluateMargin,
-  summarizeRecurringFaults,
-  type DetectieFlag,
-  type PastFault,
-  type PriorInvoiceRef,
-} from "@/lib/facturatie-detecties";
+import { cn, formatCurrency, formatHours, formatWeekLabel } from "@/lib/utils";
+import { timesheetGateReview } from "@/lib/timesheet-gate-review";
+import { weekControleDetails } from "@/lib/week-controle";
+import { bouwControleRegel } from "@/lib/week-detail";
 import { focusWeekVan, ontbrekendeWeekstaten } from "@/lib/herinnering";
-import { controleLabel, initialen, namenLijst, telWeekBedragen } from "@/lib/weekverwerking";
+import { namenLijst, telWeekBedragen } from "@/lib/weekverwerking";
 import { ApproveInboxButton } from "../controle/ApproveInboxButton";
-import { approveAllAutoApproved, naarWachtkamer, processAllAutoApproved } from "../controle/actions";
+import { approveAllAutoApproved, processAllAutoApproved } from "../controle/actions";
 import { herinnerOntbrekende } from "./actions";
 
 // ---------------------------------------------------------------------------
@@ -51,6 +39,11 @@ import { herinnerOntbrekende } from "./actions";
 // Eén scherm dat de week samenvat: wie leverde nog niets in (#3), wat wijkt af en
 // waarom (auto-gate + margebewaking #2, terugkerende fout #1, dubbele factuur #8),
 // en wat er al automatisch is afgehandeld.
+//
+// De te controleren weken staan hier als KORTE LIJST: één regel per persoon, met
+// de badges die vertellen wat eraan schort. Het nakijken zelf gebeurt op de
+// detailpagina per persoon (/verwerken/week/[id]) — daar staat de scan naast de
+// uitgelezen uren en staan de knoppen. Zo blijft dit overzicht een overzicht.
 //
 // ALLEEN LEZEN. Alles wat hier gebeurt is ophalen, doorgeven aan de bestaande
 // PURE functies en tonen. De enige knoppen die iets veranderen zijn de al
@@ -63,64 +56,6 @@ import { herinnerOntbrekende } from "./actions";
 export const metadata = { title: "Weekverwerking" };
 export const dynamic = "force-dynamic";
 
-const CONF_LABEL: Record<string, string> = { high: "hoog", medium: "gemiddeld", low: "laag" };
-
-/** Kort regeltje onder de naam: plaatsing · klant (of duidelijk: nog niet gekoppeld). */
-function rolRegel(row: GateReviewRow): string {
-  return [row.placementTitle, row.clientName].filter(Boolean).join(" · ") || "— nog niet gekoppeld aan een klant";
-}
-
-/**
- * De standaardreden waarmee een week de wachtkamer in gaat: precies de melding
- * die de badge boven de week ook koos (harde fout wint van een waarschuwing), en
- * anders het korte fouttype. Zo staat er in de wachtkamer nooit "geparkeerd"
- * zonder te vertellen waarom.
- */
-function wachtkamerReden(row: GateReviewRow, kop: ReturnType<typeof controleLabel>): string {
-  const vlag = row.flags.find((f) => f.level === "error") ?? row.flags[0];
-  return vlag?.message ?? kop?.label ?? "wacht op een gecorrigeerde weekstaat";
-}
-
-/** De bewaarde AI-controlevlaggen (JSON) veilig inlezen. */
-function parseFlags(reviewFlags: string | null): GateFlag[] {
-  if (!reviewFlags) return [];
-  try {
-    const parsed = JSON.parse(reviewFlags);
-    return Array.isArray(parsed) ? (parsed as GateFlag[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-/** Vlaggen als opsomming; rood bij een harde fout, amber bij een waarschuwing. */
-function FlagList({ flags }: { flags: DetectieFlag[] }) {
-  return (
-    <ul className="mt-1.5 space-y-1 text-sm">
-      {flags.map((flag, i) => (
-        <li
-          key={i}
-          className={cn(
-            "flex items-start gap-1.5",
-            flag.level === "error" ? "text-red-700" : "text-amber-800",
-          )}
-        >
-          <span aria-hidden>•</span>
-          <span>{flag.message}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function DetailItem({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs uppercase tracking-wide text-ink-400">{label}</dt>
-      <dd className="text-ink-900">{children}</dd>
-    </div>
-  );
-}
-
 export default async function WeekverwerkingPage({
   searchParams,
 }: {
@@ -129,6 +64,7 @@ export default async function WeekverwerkingPage({
     klaargezet?: string;
     overgeslagen?: string;
     mislukt?: string;
+    verwijderd?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -142,39 +78,12 @@ export default async function WeekverwerkingPage({
   // week (of een ander lijstje) te pakken heeft dan wat hier staat.
   const focusWeek = focusWeekVan(review, new Date());
 
-  const consultantIds = [
-    ...new Set(needsReview.map((r) => r.consultantId).filter((id): id is string => !!id)),
-  ];
-
-  const [ontbrekend, eerdereItems, ontvangen, concepten] = await Promise.all([
+  const [ontbrekend, controleRijen, concepten] = await Promise.all([
     // #3 Wie moet er nog inleveren? Zelfde data-laag als de herinnerknop.
     ontbrekendeWeekstaten(focusWeek),
-    // Voor #1: de bewaarde controlevlaggen van eerdere weekstaten van dezelfde mensen.
-    consultantIds.length > 0
-      ? db.timesheetInbox.findMany({
-          where: { consultantId: { in: consultantIds }, reviewFlags: { not: null } },
-          select: {
-            id: true,
-            consultantId: true,
-            reviewFlags: true,
-            extractedWeekStart: true,
-          },
-        })
-      : Promise.resolve([]),
-    // Voor #8: de facturen die deze mensen zelf stuurden.
-    consultantIds.length > 0
-      ? db.receivedInvoice.findMany({
-          where: { consultantId: { in: consultantIds } },
-          select: {
-            id: true,
-            consultantId: true,
-            number: true,
-            amount: true,
-            periodStart: true,
-          },
-          orderBy: [{ createdAt: "asc" }],
-        })
-      : Promise.resolve([]),
+    // De drie extra detecties per te controleren week (#1, #2, #8) — dezelfde
+    // data-laag die de detailpagina per persoon gebruikt.
+    weekControleDetails(needsReview),
     db.invoice.count({ where: { status: "DRAFT" } }),
   ]);
 
@@ -197,66 +106,16 @@ export default async function WeekverwerkingPage({
     batch.map((r) => ({ hours: r.totalHours ?? 0, charge: r.charge, cost: r.cost, margin: r.margin })),
   );
 
-  // --- Per te controleren week de drie extra detecties ---------------------
-  const weekOf = (d: Date | null) => (d ? startOfISOWeek(d) : null);
-
-  const controleRijen = needsReview.map((row) => {
-    const kop = controleLabel(row.flags);
-
-    // #2 Margebewaking. Zonder uren/bedrag op de factuur valt evaluateMargin terug
-    // op het afgesproken inkooptarief en zegt dat er zelf bij — er wordt hier dus
-    // niets aan de factuur gerekend wat er niet staat.
-    const marge = evaluateMargin({
-      hoursOnInvoice: null,
-      invoiceAmount: null,
-      costRate: row.costRate,
-      chargeRate: row.chargeRate,
-      expectedMarginPerHour: null,
-    });
-
-    // #1 Terugkerende fout — geteld over de BEWAARDE vlaggen van eerdere weken.
-    const huidigType = controleLabel(row.aiFlags)?.label ?? "";
-    const eerder: PastFault[] = eerdereItems
-      .filter(
-        (i) =>
-          i.consultantId === row.consultantId &&
-          i.id !== row.id &&
-          !!i.extractedWeekStart &&
-          !!row.weekStart &&
-          i.extractedWeekStart.getTime() < row.weekStart.getTime(),
-      )
-      .flatMap((i) => {
-        const type = controleLabel(parseFlags(i.reviewFlags))?.label;
-        return type ? [{ type }] : [];
-      });
-    const herhaling = summarizeRecurringFaults(eerder, huidigType);
-
-    // #8 Dubbele factuur — de factuur die deze week beslaat, tegen alle eerdere.
-    const vanPersoon = ontvangen.filter((inv) => inv.consultantId === row.consultantId);
-    const huidigeFactuur = row.weekStart
-      ? (vanPersoon.find((inv) => weekOf(inv.periodStart)?.getTime() === row.weekStart!.getTime()) ??
-        null)
-      : null;
-    const eerdereFacturen: PriorInvoiceRef[] = huidigeFactuur
-      ? vanPersoon
-          .filter((inv) => inv.id !== huidigeFactuur.id)
-          .map((inv) => ({
-            number: inv.number,
-            amount: inv.amount,
-            weekStart: weekOf(inv.periodStart),
-          }))
-      : [];
-    const dubbel = huidigeFactuur
-      ? detectDuplicates({
-          invoiceNumber: huidigeFactuur.number,
-          invoiceAmount: huidigeFactuur.amount,
-          weekStart: row.weekStart,
-          priorInvoices: eerdereFacturen,
-        })
-      : { flags: [] as DetectieFlag[] };
-
-    return { row, kop, marge, herhaling, dubbel, factuurNummer: huidigeFactuur?.number ?? null };
-  });
+  // --- De te controleren weken als korte regels ----------------------------
+  // Eén regel per persoon/week: naam, plaatsing, week, uren, verkoop en de
+  // badges. Wat er precies aan de hand is (de scan, de uitgelezen uren, de
+  // redenen en de knoppen) staat op de detailpagina achter de regel.
+  const regels = controleRijen.map(({ row, herhaling, dubbel }) =>
+    bouwControleRegel(row, {
+      herhalingLabel: herhaling.label,
+      dubbeleFactuur: dubbel.flags.length > 0,
+    }),
+  );
 
   return (
     <div className="space-y-6">
@@ -420,244 +279,103 @@ export default async function WeekverwerkingPage({
         </p>
       )}
 
-      {/* --- 3) Te controleren --- */}
+      {sp.verwijderd && (
+        <p className="flex items-start gap-2 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <Trash2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            {sp.verwijderd === "weg"
+              ? "Die scan stond er al niet meer — er is niets veranderd."
+              : "De scan is verwijderd: alleen het binnengekomen bestand is weg. Er is geen urenstaat en geen factuur aangeraakt."}
+          </span>
+        </p>
+      )}
+
+      {/* --- 3) Te controleren — één korte regel per persoon --- */}
       <section className="space-y-3">
         <h2 className="flex items-baseline gap-2 text-[15px] font-semibold text-ink-900">
           <AlertTriangle className="h-4 w-4 shrink-0 translate-y-0.5 text-amber-600" /> Te
           controleren
           <span className="text-sm font-normal text-ink-500">
-            {needsReview.length > 0 ? `— alleen deze wijken af (${needsReview.length})` : ""}
+            {regels.length > 0
+              ? `— alleen deze wijken af (${regels.length}); klik een regel aan om na te kijken`
+              : ""}
           </span>
         </h2>
 
-        {controleRijen.length === 0 ? (
+        {regels.length === 0 ? (
           <EmptyState
             icon={<CheckCircle2 className="h-6 w-6" />}
             title="Niets om na te kijken"
             description="Alle uitgelezen weekstaten kwamen schoon door de controles. Ze staan hieronder samengevat."
           />
         ) : (
-          controleRijen.map(({ row, kop, marge, herhaling, dubbel, factuurNummer }) => {
-            const hardeFout = row.flags.some((f) => f.level === "error");
-            return (
-              <Card
-                key={row.id}
-                className={cn(
-                  "overflow-hidden border-l-[3px]",
-                  hardeFout ? "border-l-red-500" : "border-l-amber-500",
-                )}
-              >
-                <details open>
-                  <summary className="grid cursor-pointer list-none grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-4 px-5 py-3.5 hover:bg-ink-50/60 sm:grid-cols-[40px_minmax(0,1fr)_88px_112px_170px]">
+          <Card className="overflow-hidden">
+            <ul className="divide-y divide-ink-100">
+              {regels.map((regel) => (
+                <li key={regel.id}>
+                  {/* De hele regel is de link naar de detailpagina: daar staat de
+                      scan naast de uitgelezen uren, mét de knoppen. */}
+                  <Link
+                    href={regel.href}
+                    title={`De week van ${regel.naam} nakijken`}
+                    className={cn(
+                      "grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-4 border-l-[3px] px-5 py-3.5 transition-colors hover:bg-ink-50/60",
+                      "sm:grid-cols-[40px_minmax(0,1fr)_128px_84px_104px_minmax(0,auto)_16px]",
+                      regel.hardeFout ? "border-l-red-500" : "border-l-amber-500",
+                    )}
+                  >
                     <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ink-100 text-[13px] font-bold text-ink-500">
-                      {initialen(row.name)}
+                      {regel.initialen}
                     </span>
+
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-bold text-ink-900">
-                        {row.name}
+                        {regel.naam}
                       </span>
-                      <span className="block truncate text-xs text-ink-400">{rolRegel(row)}</span>
-                      {herhaling.label && (
-                        <span className="mt-1 inline-flex items-center gap-1 rounded-sm bg-red-50 px-1.5 py-0.5 text-[11px] font-bold text-red-700 ring-1 ring-inset ring-red-200">
-                          <Repeat2 className="h-3 w-3" /> {herhaling.label}
-                        </span>
-                      )}
+                      <span className="block truncate text-xs text-ink-400">{regel.rol}</span>
+                      <span className="mt-0.5 block truncate text-xs text-ink-400 sm:hidden">
+                        {regel.weekLabel}
+                        {regel.uren != null && ` · ${formatHours(regel.uren)} u`}
+                      </span>
                     </span>
+
+                    <span className="hidden truncate text-sm text-ink-500 sm:block">
+                      {regel.weekLabel}
+                    </span>
+
                     <span className="hidden text-right sm:block">
                       <span className="block text-sm font-bold tabular-nums text-ink-900">
-                        {row.totalHours != null ? `${formatHours(row.totalHours)} u` : "—"}
+                        {regel.uren != null ? `${formatHours(regel.uren)} u` : "—"}
                       </span>
                       <span className="block text-[11px] text-ink-400">weekstaat</span>
                     </span>
+
                     <span className="hidden text-right sm:block">
                       <span className="block text-sm font-bold tabular-nums text-ink-900">
-                        {row.placementId ? formatCurrency(row.charge) : "—"}
+                        {regel.verkoop != null ? formatCurrency(regel.verkoop) : "—"}
                       </span>
                       <span className="block text-[11px] text-ink-400">
-                        {row.placementId ? "verkoop" : "geen tarief"}
+                        {regel.verkoop != null ? "verkoop" : "geen tarief"}
                       </span>
                     </span>
-                    <span className="flex justify-end">
-                      {kop && (
-                        <Badge color={kop.level === "error" ? "red" : "amber"}>{kop.label}</Badge>
-                      )}
-                    </span>
-                  </summary>
 
-                  <CardContent className="space-y-3 border-t border-ink-100 bg-ink-50/40">
-                    <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                      <DetailItem label="Week">{row.weekLabel ?? "—"}</DetailItem>
-                      <DetailItem label="Eigen gemiddelde">
-                        {row.recentAvgHours != null ? `${formatHours(row.recentAvgHours)} u` : "geen historie"}
-                        {row.recentWeeks > 0 && (
-                          <span className="ml-1 text-xs text-ink-400">
-                            (laatste {row.recentWeeks} {row.recentWeeks === 1 ? "week" : "weken"})
-                          </span>
-                        )}
-                      </DetailItem>
-                      <DetailItem label="Tarieven (verkoop / inkoop)">
-                        {row.chargeRate != null && row.costRate != null
-                          ? `${formatCurrency(row.chargeRate)} / ${formatCurrency(row.costRate)} p/u`
-                          : "onbekend"}
-                      </DetailItem>
-                      <DetailItem label="Marge (week)">
-                        {row.placementId ? formatCurrency(row.margin) : "—"}
-                      </DetailItem>
-                    </dl>
-
-                    {/* Waarom deze week niet automatisch doorgaat (auto-gate). */}
-                    <div
-                      className={cn(
-                        "rounded-md border p-3",
-                        hardeFout ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50",
-                      )}
-                    >
-                      <p
-                        className={cn(
-                          "text-sm font-semibold",
-                          hardeFout ? "text-red-800" : "text-amber-900",
-                        )}
-                      >
-                        Waarom dit niet automatisch doorgaat
-                      </p>
-                      <FlagList flags={row.flags} />
-                    </div>
-
-                    {/* #2 Margebewaking — wat houden we hier per uur aan over? */}
-                    <div
-                      className={cn(
-                        "flex items-start gap-2 rounded-md border p-3 text-sm",
-                        marge.belowNorm
-                          ? "border-amber-200 bg-amber-50 text-amber-800"
-                          : "border-ink-200 bg-white text-ink-600",
-                      )}
-                    >
-                      <TrendingDown className="mt-0.5 h-4 w-4 shrink-0" />
-                      <span>
-                        <strong>Marge per uur.</strong>{" "}
-                        {marge.marginPerHour != null ? (
-                          <>
-                            <span className="tabular-nums">
-                              {formatCurrency(marge.marginPerHour)}
-                            </span>{" "}
-                            per gewerkt uur op deze plaatsing
-                            {marge.reason ? ` — ${marge.reason}` : "."}
-                          </>
-                        ) : (
-                          (marge.reason ?? "niet te bepalen.")
-                        )}
-                      </span>
-                    </div>
-
-                    {/* #8 Dubbele factuur van de medewerker zelf. */}
-                    {dubbel.flags.length > 0 && (
-                      <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-                        <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
-                          <CopyCheck className="h-4 w-4" /> Mogelijk dubbele factuur
-                          {factuurNummer && (
-                            <span className="font-normal text-amber-700">({factuurNummer})</span>
-                          )}
-                        </p>
-                        <FlagList flags={dubbel.flags} />
-                      </div>
-                    )}
-
-                    {/* Wat de AI zelf al opviel bij het uitlezen. */}
-                    {row.aiFlags.length > 0 && (
-                      <div className="rounded-md border border-ink-200 bg-white p-3">
-                        <p className="text-sm font-semibold text-ink-700">
-                          Opmerkingen bij het uitlezen
-                        </p>
-                        <ul className="mt-1.5 space-y-1 text-sm text-ink-600">
-                          {row.aiFlags.map((flag, i) => (
-                            <li key={i} className="flex items-start gap-1.5">
-                              <span aria-hidden>•</span>
-                              <span>{flag.message}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Eigen bevinding + mail. Bewust een GET-formulier: de knop
-                        brengt je naar de controlestap met het volledige
-                        mailvoorbeeld — er gaat hier nog niets weg. */}
-                    <form
-                      method="get"
-                      action={`/verwerken/week/${row.id}/mail`}
-                      className="rounded-md border border-ink-200 bg-white p-3"
-                    >
-                      <Field
-                        label="Eigen bevinding"
-                        hint="Wat wil je de freelancer er zelf bij zeggen? Dit komt als citaat in de mail. Je ziet de hele mail eerst in een voorbeeld."
-                      >
-                        <Textarea
-                          name="notitie"
-                          rows={3}
-                          maxLength={2000}
-                          placeholder="Bijv.: je hebt zaterdag 8 uur geschreven, maar er stond geen weekenddienst gepland."
-                        />
-                      </Field>
-                      <div className="mt-2 flex justify-end">
-                        <SubmitButton
-                          variant="outline"
-                          size="sm"
-                          pendingLabel="Openen…"
-                          title="Stel de mail aan de freelancer op — je ziet 'm eerst in een voorbeeld."
-                        >
-                          <Mail className="h-4 w-4" /> Mail freelancer
-                        </SubmitButton>
-                      </div>
-                    </form>
-
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      {row.confidence && (
-                        <Badge
-                          color={
-                            row.confidence === "high"
-                              ? "green"
-                              : row.confidence === "low"
-                                ? "red"
-                                : "amber"
-                          }
-                        >
-                          zekerheid {CONF_LABEL[row.confidence] ?? row.confidence}
+                    <span className="flex flex-wrap items-center justify-end gap-1.5">
+                      {regel.badges.map((badge) => (
+                        <Badge key={badge.label} color={badge.level === "error" ? "red" : "amber"}>
+                          {badge.label}
                         </Badge>
-                      )}
-                      <span className="flex-1" />
-                      <Link
-                        href={`/inbox/${row.id}`}
-                        className={buttonVariants({ variant: "outline", size: "sm" })}
-                      >
-                        <PencilLine className="h-4 w-4" /> Bekijk &amp; corrigeer
-                      </Link>
-                      {/* Parkeren tot de medewerker een gecorrigeerde staat stuurt.
-                          De controlereden gaat als standaardreden mee. */}
-                      <form action={naarWachtkamer} className="contents">
-                        <input type="hidden" name="id" value={row.id} />
-                        <input type="hidden" name="reason" value={wachtkamerReden(row, kop)} />
-                        <SubmitButton
-                          variant="outline"
-                          size="sm"
-                          pendingLabel="Parkeren…"
-                          title="Parkeer deze week tot de medewerker een gecorrigeerde staat of factuur stuurt."
-                        >
-                          <PauseCircle className="h-4 w-4" /> Naar wachtkamer
-                        </SubmitButton>
-                      </form>
-                      {row.canApprove ? (
-                        <ApproveInboxButton row={row} confirmFirst />
-                      ) : (
-                        <span className="text-xs text-ink-400">
-                          Eerst corrigeren — plaatsing, week of dag-uren ontbreken.
-                        </span>
-                      )}
-                    </div>
-                  </CardContent>
-                </details>
-              </Card>
-            );
-          })
+                      ))}
+                    </span>
+
+                    <ChevronRight
+                      className="hidden h-4 w-4 shrink-0 text-ink-300 sm:block"
+                      aria-hidden
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
         )}
       </section>
 
