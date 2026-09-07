@@ -53,6 +53,7 @@ import {
   Palette,
   Workflow,
   Wallet,
+  Wand2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -109,6 +110,7 @@ const HUB_LIST: NavHub[] = [
     icon: Receipt,
     items: [
       // Wat HR wekelijks doet — bovenaan.
+      { href: "/verwerken/nieuw", label: "Week verwerken", icon: Wand2, section: "Deze week" },
       { href: "/verwerken/week", label: "Weekverwerking", icon: CalendarDays, section: "Deze week" },
       { href: "/verwerken/wachtkamer", label: "Wachtkamer", icon: PauseCircle, section: "Deze week" },
       { href: "/inbox", label: "Timesheet-inbox", icon: Inbox, section: "Uren & documenten" },
