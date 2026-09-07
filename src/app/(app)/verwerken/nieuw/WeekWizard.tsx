@@ -1067,7 +1067,7 @@ function WizardRonde({
                     )}
                     {geld.sell.overtime > 0 && (
                       <KV
-                        k={`Overurentoeslag ${formatPercent(plaatsing.config.overtimeSurchargeSell)}`}
+                        k={`Overuren (${formatPercent(plaatsing.config.overtimeSurchargeSell)} toeslag)`}
                         v={formatCurrency(geld.sell.overtime)}
                       />
                     )}
