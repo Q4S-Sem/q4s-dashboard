@@ -14,6 +14,7 @@ import {
   weekNummerUitTekst,
   STROOK_WEKEN,
 } from "@/lib/week-koppeling";
+import { dedupeTimesheetsPerPersonWeek } from "@/lib/wizard-dubbelen";
 import { bouwWeekKeuzes, standaardWeek } from "@/lib/wizard-weekfilter";
 import { WeekWizard } from "./WeekWizard";
 import {
@@ -88,7 +89,7 @@ export default async function WeekVerwerkenPage() {
   // De openstaande weekstaten in de vorm die het scherm toont. Ook de weekfilter
   // hieronder telt hierop door, zodat "3 open in week 35" precies over dezelfde
   // staten gaat als de lijst zelf.
-  const wizardItems = items.map((item) =>
+  const alleItems = items.map((item) =>
     naarWizardTimesheet(
       item,
       // Wat er op de stukken getypt staat — puur om een afwijking te kunnen
@@ -96,6 +97,15 @@ export default async function WeekVerwerkenPage() {
       parseWeekNumber(getypteWeekVeld(item)) ?? weekNummerUitTekst(item.originalName),
     ),
   );
+
+  // Dezelfde persoon-week hoort ÉÉN keer in de wizard te staan; is een urenstaat
+  // twee keer aangeleverd, dan blijft de uitgelezen/nieuwste staan en gaat de
+  // rest als "verborgen dubbele" mee naar het scherm. HIER, op de server, zodat
+  // de personenkaarten, de weekfilter én stap 1 allemaal dezelfde (ontdubbelde)
+  // lijst tellen — een dubbele upload maakt "2 weken te verwerken" dus niet meer
+  // van één week. Verwijderen doet de mens zelf; zie de melding in stap 1.
+  const ontdubbeld = dedupeTimesheetsPerPersonWeek(alleItems);
+  const wizardItems = ontdubbeld.items;
 
   // De weekfilter boven de personenlijst: dezelfde weken als de strook (plus een
   // oudere week waar nog iets van openstaat), en de week waar de eigenaar
@@ -153,6 +163,7 @@ export default async function WeekVerwerkenPage() {
 
       <WeekWizard
         items={wizardItems}
+        dubbelen={ontdubbeld.dubbelen}
         plaatsingen={plaatsingen}
         weekstrook={weekstrook}
         weekkeuze={weekkeuze}

@@ -11,7 +11,7 @@ import { createSalesInvoice } from "@/lib/invoicing";
 import { computeTimesheetMoney } from "@/lib/toeslag";
 import { MAX_UPLOAD_BYTES, saveInboxBytes, saveReceivedBytes } from "@/lib/uploads";
 import { formatWeekLabel, round2 } from "@/lib/utils";
-import { weekNummerUitTekst } from "@/lib/week-koppeling";
+import { weekNummerUitTekst, weekSlotVanDatum } from "@/lib/week-koppeling";
 import { parseBedrag } from "@/lib/week-wizard";
 import {
   LEGE_FACTUUR,
@@ -111,9 +111,48 @@ export async function leesTimesheet(
   });
   if (!item) return { error: "Het bestand is opgeslagen maar niet meer terug te vinden." };
 
+  // Pas NA het uitlezen is de week bekend — en dus pas nu is te zien of deze
+  // staat er al lag. Bewust alleen MELDEN: soms is de tweede scan juist de
+  // gecorrigeerde versie, dus de mens kiest zelf welke weg mag.
+  const alAanwezig = await dubbeleWeekstaten(item);
+  if (alAanwezig > 0) {
+    const melding = `Let op: er ${alAanwezig === 1 ? "stond al een openstaande urenstaat" : `stonden al ${alAanwezig} openstaande urenstaten`} van deze persoon voor deze week klaar. De wizard toont er één — ruim de dubbele op via de melding bij die week.`;
+    waarschuwing = waarschuwing ? `${waarschuwing} ${melding}` : melding;
+  }
+
   revalidatePath("/inbox");
   revalidatePath("/verwerken/nieuw");
   return { item: naarWizardTimesheet(item, getypteWeekVanStaat(item)), waarschuwing };
+}
+
+/**
+ * Hoeveel ANDERE openstaande weekstaten van deze persoon vallen in dezelfde
+ * week? Vergelijken gebeurt op de canonieke weeksleutel (weekSlotVanDatum, dus
+ * de gewerkte dagen) — niet op de opgeslagen datum zelf, want die kan bij de één
+ * op de maandag en bij de ander midden in de week staan.
+ *
+ * Nooit blokkerend: zonder gematchte persoon of zonder uitgelezen week is er
+ * niets te vergelijken, en dan is het antwoord gewoon 0.
+ */
+async function dubbeleWeekstaten(item: {
+  id: string;
+  consultantId: string | null;
+  extractedWeekStart: Date | null;
+}): Promise<number> {
+  const week = weekSlotVanDatum(item.extractedWeekStart)?.key ?? null;
+  if (!week || !item.consultantId) return 0;
+
+  const anderen = await db.timesheetInbox.findMany({
+    where: {
+      id: { not: item.id },
+      consultantId: item.consultantId,
+      status: { in: ["NEW", "EXTRACTED"] },
+      timesheetId: null,
+      wachtkamerSince: null,
+    },
+    select: { extractedWeekStart: true },
+  });
+  return anderen.filter((a) => weekSlotVanDatum(a.extractedWeekStart)?.key === week).length;
 }
 
 /**

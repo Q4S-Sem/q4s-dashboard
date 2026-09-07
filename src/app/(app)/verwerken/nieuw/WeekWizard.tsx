@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  Copy,
   FileDown,
   FileText,
   Inbox,
@@ -56,6 +57,7 @@ import {
   wizardVoortgang,
 } from "@/lib/week-wizard";
 import { bouwPersoonRijen } from "@/lib/wizard-personen";
+import { dubbeleUploadLabel } from "@/lib/wizard-dubbelen";
 import { weekLabel, weekstatenVoorWeek } from "@/lib/wizard-weekfilter";
 import { leesFactuur, leesTimesheet, verwerkWeek } from "./actions";
 import { DocumentViewer } from "./DocumentViewer";
@@ -223,6 +225,41 @@ function WeekAfwijkingNote({ melding }: { melding: string }) {
   );
 }
 
+/**
+ * Waar je een dubbele scan opruimt. De weekcontrole is de nette plek — daar zit
+ * de bestaande verwijderknop mét guard (verwijderScan → deleteInbox) — maar die
+ * pagina kent alleen UITGELEZEN staten; een nog niet uitgelezen dubbele ruim je
+ * op zijn inbox-regel op, waar dezelfde deleteInbox onder de knop zit.
+ */
+function opruimHref(item: WizardTimesheet): string {
+  return item.status === "EXTRACTED" ? `/verwerken/week/${item.id}` : `/inbox/${item.id}`;
+}
+
+/**
+ * Dezelfde persoon-week is meer dan eens aangeleverd. De wizard toont er één (de
+ * uitgelezen/nieuwste) en meldt hier wat er verborgen is, met een link naar de
+ * plek waar de extra scan weg kan. Bewust een MELDING: er wordt nooit iets
+ * automatisch verwijderd — dat blijft mensenwerk.
+ */
+function DubbeleUploadNote({ dubbelen }: { dubbelen: WizardTimesheet[] }) {
+  return (
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+      <Copy className="h-3.5 w-3.5 shrink-0" />
+      <span>{dubbeleUploadLabel(dubbelen.length)} —</span>
+      {dubbelen.map((dubbel, i) => (
+        <Link
+          key={dubbel.id}
+          href={opruimHref(dubbel)}
+          title={`${dubbel.originalName} · ${inboxSamenvatting(dubbel)}`}
+          className="font-semibold underline underline-offset-2 hover:text-amber-900"
+        >
+          {dubbelen.length > 1 ? `opruimen (${i + 1})` : "opruimen"}
+        </Link>
+      ))}
+    </p>
+  );
+}
+
 /** De stappen van de wizard; 0 = de persoon kiezen, daarna de drie bekende. */
 type WizardStap = 0 | 1 | 2 | 3;
 
@@ -338,6 +375,11 @@ type Keuze = {
 
 export function WeekWizard(props: {
   items: WizardTimesheet[];
+  /**
+   * Per getoonde weekstaat (zijn id) de dubbele uploads die de server eronder
+   * verborgen heeft — zie src/lib/wizard-dubbelen.ts. Alleen om te melden.
+   */
+  dubbelen: Record<string, WizardTimesheet[]>;
   plaatsingen: WizardPlaatsing[];
   weekstrook: WizardWeekstrook;
   weekkeuze: WizardWeekkeuze;
@@ -443,6 +485,7 @@ export function WeekWizard(props: {
 
 function WizardRonde({
   items,
+  dubbelen,
   plaatsingen,
   weekstrook,
   weekkeuze,
@@ -455,6 +498,8 @@ function WizardRonde({
 }: {
   /** De openstaande weken van de gekozen persoon (of: wat niet herkend is). */
   items: WizardTimesheet[];
+  /** Per weekstaat de dubbele uploads die eronder verborgen zijn. */
+  dubbelen: Record<string, WizardTimesheet[]>;
   plaatsingen: WizardPlaatsing[];
   weekstrook: WizardWeekstrook;
   weekkeuze: WizardWeekkeuze;
@@ -927,33 +972,38 @@ function WizardRonde({
                           : item.naam;
                         const isFilterWeek =
                           week !== null && keuze.week !== "" && weekKey(week) === keuze.week;
+                        // Dezelfde week twee keer aangeleverd? Dan staat hier de
+                        // bewaarde staat, met eronder de melding wat er verborgen is.
+                        const dubbel = dubbelen[item.id] ?? [];
                         return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => kies(item)}
-                            className="flex w-full items-center gap-3 border-b border-ink-100 px-4 py-3 text-left last:border-b-0 hover:bg-ink-50"
-                          >
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-ink-100 text-ink-500">
-                              <FileText className="h-4 w-4" />
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-semibold text-ink-900">
-                                {kop}
+                          <div key={item.id} className="border-b border-ink-100 last:border-b-0">
+                            <button
+                              type="button"
+                              onClick={() => kies(item)}
+                              className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-ink-50"
+                            >
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-ink-100 text-ink-500">
+                                <FileText className="h-4 w-4" />
                               </span>
-                              <span className="block truncate text-xs text-ink-400">
-                                {inboxSamenvatting(item)}
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-semibold text-ink-900">
+                                  {kop}
+                                </span>
+                                <span className="block truncate text-xs text-ink-400">
+                                  {inboxSamenvatting(item)}
+                                </span>
                               </span>
-                            </span>
-                            {isFilterWeek && <Badge color="blue">gekozen week</Badge>}
-                            {item.status === "NEW" ? (
-                              <Badge color="amber">nog niet uitgelezen</Badge>
-                            ) : item.needsReview ? (
-                              <Badge color="amber">nakijken</Badge>
-                            ) : (
-                              <Badge color="green">uitgelezen</Badge>
-                            )}
-                          </button>
+                              {isFilterWeek && <Badge color="blue">gekozen week</Badge>}
+                              {item.status === "NEW" ? (
+                                <Badge color="amber">nog niet uitgelezen</Badge>
+                              ) : item.needsReview ? (
+                                <Badge color="amber">nakijken</Badge>
+                              ) : (
+                                <Badge color="green">uitgelezen</Badge>
+                              )}
+                            </button>
+                            {dubbel.length > 0 && <DubbeleUploadNote dubbelen={dubbel} />}
+                          </div>
                         );
                       })}
                     </div>
