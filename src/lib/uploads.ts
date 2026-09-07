@@ -179,6 +179,17 @@ export async function saveReceivedBytes(bytes: Uint8Array, originalName: string)
   return fileName;
 }
 
+/** Lees een opgeslagen ontvangen factuur als base64 (voor de AI-uitlezing). */
+export async function readReceivedBase64(fileName: string): Promise<string> {
+  const buf = await getObject(receivedKey(fileName));
+  return buf.toString("base64");
+}
+
+/** Lees een opgeslagen ontvangen factuur als ruwe Buffer (bv. voor Excel-parsing). */
+export async function readReceivedBuffer(fileName: string): Promise<Buffer> {
+  return getObject(receivedKey(fileName));
+}
+
 export async function deleteReceivedUpload(fileName: string): Promise<void> {
   await deleteObject(receivedKey(fileName));
 }
