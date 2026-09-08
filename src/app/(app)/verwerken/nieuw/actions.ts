@@ -24,6 +24,7 @@ import {
   naarWizardTimesheet,
   type BestaandeUrenstaat,
   type FactuurLeesState,
+  type FactuurVelden,
   type TimesheetLeesState,
   type VerwerkState,
   type WizardBestand,
@@ -204,12 +205,49 @@ export async function leesFactuur(
     mimeType,
   });
 
+  // De persoon van deze wizard-ronde (leeg = losse start). Nodig om zijn factuur
+  // meteen als ontvangen factuur klaar te zetten, zodat 'ie DIRECT in "Ontvangen
+  // facturen" staat — ook als de rest van de week nog niet verwerkt is.
+  const consultantId = tekst(formData, "consultantId") || null;
+  // Bij "Opnieuw uitlezen" hangt er al een rij: die werken we bij i.p.v. dubbel.
+  const bestaandOntvangenId = tekst(formData, "ontvangenIdBestaand") || null;
+
+  const velden: FactuurVelden = gelezen.ok
+    ? {
+        number: gelezen.values.number,
+        issueDate: gelezen.values.issueDate,
+        periodStart: gelezen.values.periodStart,
+        periodEnd: gelezen.values.periodEnd,
+        amount: gelezen.values.amount,
+        vatAmount: gelezen.values.vatAmount ?? "",
+        kilometers: gelezen.values.kilometers,
+        notes: gelezen.values.notes,
+      }
+    : { ...LEGE_FACTUUR };
+
+  // De factuur meteen registreren (status NEW = nog niet akkoord). Zo verschijnt
+  // hij direct in "Ontvangen facturen" en wordt hij tegen de urenstaat gemeten;
+  // het akkoord in stap 3 werkt DEZELFDE rij bij (idempotent, geen dubbele).
+  const ontvangenId = consultantId
+    ? await registreerOntvangenFactuur({
+        bestaandId: bestaandOntvangenId,
+        consultantId,
+        velden,
+        bestand,
+      })
+    : undefined;
+  if (ontvangenId) {
+    revalidatePath("/ontvangen-facturen");
+    revalidatePath("/", "layout");
+  }
+
   if (!gelezen.ok) {
     // Niet fataal: de factuur is bewaard, de mens vult 'm zelf in.
     return {
       bestand,
       values: { ...LEGE_FACTUUR },
       getypteWeek: weekNummerUitTekst(file.name),
+      ontvangenId,
       waarschuwing: `${gelezen.message} Vul de factuurgegevens hieronder zelf in.`,
     };
   }
@@ -220,19 +258,71 @@ export async function leesFactuur(
     // Wat hij BOVEN de factuur zette; de wizard vergelijkt dat met de week uit
     // de gewerkte dagen en meldt een verschil (zonder iets te blokkeren).
     getypteWeek: parseWeekNumber(gelezen.data.weekNumber) ?? weekNummerUitTekst(file.name),
-    values: {
-      number: v.number,
-      issueDate: v.issueDate,
-      periodStart: v.periodStart,
-      periodEnd: v.periodEnd,
-      amount: v.amount,
-      vatAmount: v.vatAmount ?? "",
-      kilometers: v.kilometers,
-      notes: v.notes,
-    },
+    values: velden,
+    ontvangenId,
     factuurUren: gelezen.data.hours > 0 ? gelezen.data.hours : undefined,
     factuurTarief: gelezen.data.hourlyRate > 0 ? gelezen.data.hourlyRate : undefined,
   };
+}
+
+/**
+ * Zet de factuur van de freelancer klaar als {@link ReceivedInvoice} (Optie A:
+ * zijn eigen factuur is de inkoop — Q4S maakt géén aparte inkoopfactuur). Bestaat
+ * er al een rij voor deze upload (re-read of het latere akkoord), dan wordt die
+ * bijgewerkt i.p.v. een dubbele te maken.
+ *
+ * `status` wordt hier NOOIT verlaagd: een al goedgekeurde/betaalde factuur blijft
+ * staan; alleen een NEW-rij blijft NEW. Het akkoord in stap 3 zet 'm op APPROVED.
+ * Geeft het id terug, of undefined als er (nog) geen leesbaar bedrag én geen
+ * bestaande rij is (dan is er niets zinnigs te registreren).
+ */
+async function registreerOntvangenFactuur(args: {
+  bestaandId: string | null;
+  consultantId: string;
+  velden: FactuurVelden;
+  bestand: WizardBestand;
+}): Promise<string | undefined> {
+  const { bestaandId, consultantId, velden, bestand } = args;
+  const bedrag = parseBedrag(velden.amount);
+  const btw = parseBedrag(velden.vatAmount);
+  const km = parseBedrag(velden.kilometers);
+
+  const data = {
+    consultantId,
+    number: velden.number || null,
+    issueDate: parseDatum(velden.issueDate),
+    periodStart: parseDatum(velden.periodStart),
+    periodEnd: parseDatum(velden.periodEnd),
+    amount: bedrag ?? 0,
+    countForVat: true,
+    vatAmount: btw !== null && btw > 0 ? btw : null,
+    kilometers: km !== null && km > 0 ? km : null,
+    notes: velden.notes || null,
+    fileName: bestand.fileName,
+    originalName: bestand.originalName,
+    mimeType: bestand.mimeType,
+    size: bestand.size,
+  };
+
+  try {
+    if (bestaandId) {
+      const bestaand = await db.receivedInvoice.findUnique({
+        where: { id: bestaandId },
+        select: { id: true, status: true },
+      });
+      if (bestaand) {
+        await db.receivedInvoice.update({ where: { id: bestaandId }, data });
+        return bestaand.id;
+      }
+    }
+    // Geen bestaande rij én geen leesbaar bedrag → nog niets te registreren.
+    if (bedrag === null || bedrag <= 0) return undefined;
+    const created = await db.receivedInvoice.create({ data: { ...data, status: "NEW" } });
+    return created.id;
+  } catch {
+    // Niet fataal: het bestand is bewaard, de mens kan bij het akkoord opnieuw.
+    return undefined;
+  }
 }
 
 // ===========================================================================
@@ -509,7 +599,11 @@ export async function verwerkWeek(
     : null;
 
   // --- b) zijn factuur als inkoop registreren ----------------------------
+  // Optie A: zijn eigen factuur ÍS de inkoop → als ReceivedInvoice. Bij het
+  // uitlezen (stap 2) is er meestal al een NEW-rij klaargezet; die werken we hier
+  // bij naar APPROVED i.p.v. een dubbele te maken (idempotent).
   let ontvangenFactuurId: string | null = null;
+  const bestaandOntvangenId = tekst(formData, "ontvangenIdBestaand") || null;
   if (formData.get("factuurAanwezig") === "on") {
     const bedrag = parseBedrag(tekst(formData, "factuurBedrag"));
     if (bedrag === null || bedrag <= 0) {
@@ -520,27 +614,42 @@ export async function verwerkWeek(
       try {
         const btw = parseBedrag(tekst(formData, "factuurBtw"));
         const km = parseBedrag(tekst(formData, "factuurKilometers"));
-        const created = await db.receivedInvoice.create({
-          data: {
-            consultantId: placement.consultantId,
-            number: tekst(formData, "factuurNummer") || null,
-            issueDate: parseDatum(tekst(formData, "factuurDatum")),
-            periodStart: parseDatum(tekst(formData, "factuurPeriodeStart")),
-            periodEnd: parseDatum(tekst(formData, "factuurPeriodeEind")),
-            amount: bedrag,
-            countForVat: true,
-            vatAmount: btw !== null && btw > 0 ? btw : null,
-            kilometers: km !== null && km > 0 ? km : null,
-            notes: tekst(formData, "factuurNotities") || null,
-            // Een mens heeft hem hierboven naast de uren gelegd en akkoord gegeven.
-            status: "APPROVED",
-            fileName: tekst(formData, "factuurBestand") || null,
-            originalName: tekst(formData, "factuurBestandsnaam") || null,
-            mimeType: tekst(formData, "factuurMime") || null,
-            size: Number(tekst(formData, "factuurGrootte")) || null,
-          },
-        });
-        ontvangenFactuurId = created.id;
+        const data = {
+          consultantId: placement.consultantId,
+          number: tekst(formData, "factuurNummer") || null,
+          issueDate: parseDatum(tekst(formData, "factuurDatum")),
+          periodStart: parseDatum(tekst(formData, "factuurPeriodeStart")),
+          periodEnd: parseDatum(tekst(formData, "factuurPeriodeEind")),
+          amount: bedrag,
+          countForVat: true,
+          vatAmount: btw !== null && btw > 0 ? btw : null,
+          kilometers: km !== null && km > 0 ? km : null,
+          notes: tekst(formData, "factuurNotities") || null,
+          // Een mens heeft hem hierboven naast de uren gelegd en akkoord gegeven.
+          status: "APPROVED",
+          fileName: tekst(formData, "factuurBestand") || null,
+          originalName: tekst(formData, "factuurBestandsnaam") || null,
+          mimeType: tekst(formData, "factuurMime") || null,
+          size: Number(tekst(formData, "factuurGrootte")) || null,
+        };
+        // Al klaargezet in stap 2? Werk DIE rij bij (geen betaalde weer openen).
+        const bestaand = bestaandOntvangenId
+          ? await db.receivedInvoice.findUnique({
+              where: { id: bestaandOntvangenId },
+              select: { id: true, status: true },
+            })
+          : null;
+        if (bestaand) {
+          const upd = await db.receivedInvoice.update({
+            where: { id: bestaand.id },
+            // Een al betaalde factuur niet terugzetten naar APPROVED.
+            data: bestaand.status === "PAID" ? { ...data, status: "PAID" } : data,
+          });
+          ontvangenFactuurId = upd.id;
+        } else {
+          const created = await db.receivedInvoice.create({ data });
+          ontvangenFactuurId = created.id;
+        }
       } catch (e) {
         waarschuwingen.push(
           `Zijn factuur kon niet geregistreerd worden (${

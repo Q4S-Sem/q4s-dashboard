@@ -166,6 +166,10 @@ export type FactuurLeesState = {
   factuurTarief?: number;
   /** Weeknummer zoals op zijn factuur/bestandsnaam getypt; null = niet vermeld. */
   getypteWeek?: number | null;
+  /** Id van de ReceivedInvoice die bij het uitlezen al is klaargezet (status NEW),
+   *  zodat hij meteen in "Ontvangen facturen" staat en het akkoord dezelfde rij
+   *  bijwerkt i.p.v. een dubbele te maken. Leeg = (nog) niet geregistreerd. */
+  ontvangenId?: string;
 };
 
 export type VerwerkResultaat = {

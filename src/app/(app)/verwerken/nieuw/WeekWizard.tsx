@@ -1541,6 +1541,15 @@ function WizardRonde({
             </div>
 
             <form ref={invFormRef} action={invAction} className="space-y-3">
+              {/* Wie werkt er — zodat zijn factuur METEEN als ontvangen factuur
+                  wordt klaargezet (en niet pas na het akkoord). */}
+              <input
+                type="hidden"
+                name="consultantId"
+                value={plaatsing?.consultantId ?? keuze.consultantId ?? ""}
+              />
+              {/* Al eens uitgelezen? Dan dezelfde ontvangen-factuur-rij bijwerken. */}
+              <input type="hidden" name="ontvangenIdBestaand" value={invState.ontvangenId ?? ""} />
               <Dropzone
                 name="file"
                 accept={FACTUUR_ACCEPT}
@@ -1911,6 +1920,8 @@ function WizardRonde({
               {factuur && factuurBedrag !== null && (
                 <>
                   <input type="hidden" name="factuurAanwezig" value="on" />
+                  {/* De rij die stap 2 al klaarzette → bijwerken i.p.v. dubbel. */}
+                  <input type="hidden" name="ontvangenIdBestaand" value={invState.ontvangenId ?? ""} />
                   <input type="hidden" name="factuurNummer" value={factuur.number} />
                   <input type="hidden" name="factuurDatum" value={factuur.issueDate} />
                   <input type="hidden" name="factuurPeriodeStart" value={factuur.periodStart} />
