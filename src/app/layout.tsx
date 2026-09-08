@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// Plus Jakarta Sans: open letters en een grote x-hoogte, dus prettig leesbaar
-// in dichte tabellen en op kleine formaten. Vriendelijker dan een strak
-// zakelijk schreefloos, zonder speels te worden.
-const sans = Plus_Jakarta_Sans({
+// Geist Sans — hetzelfde strakke, moderne schreefloos als het Studio Admin
+// dashboard: neutrale lettervormen, uitstekend leesbaar in dichte tabellen.
+const sans = Geist({
   variable: "--font-sans-family",
   subsets: ["latin"],
 });

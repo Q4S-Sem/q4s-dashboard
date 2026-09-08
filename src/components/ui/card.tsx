@@ -8,9 +8,8 @@ export function Card({
   return (
     <div
       className={cn(
-        // Strak blok met dunne rand — zoals de expertise-blokken op q4s.nl.
-        // Bijna geen schaduw; de rand doet het werk.
-        "rounded-md border border-ink-100 bg-white shadow-[0_1px_2px_0_rgb(0_0_0/0.04)]",
+        // Zacht zwevende kaart met dunne rand — zoals het Studio Admin-dashboard.
+        "rounded-lg border border-ink-200 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_1px_2px_-1px_rgb(0_0_0/0.06)]",
         className,
       )}
       {...props}

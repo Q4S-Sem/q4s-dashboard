@@ -39,14 +39,19 @@
      `rounded-full` blijft rond — dat houdt pillen, badges en profielfoto's
      speels.
      --------------------------------------------------------------------- */
-  --radius-xs: 1px;
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
-  --radius-xl: 6px;
-  --radius-2xl: 8px;
-  --radius-3xl: 12px;
-  --radius-4xl: 16px;
+  /* ---------------------------------------------------------------------
+     Zacht afgeronde hoeken (~6px) — de tussenweg tussen de strakke Q4S-
+     signatuur en het rondere Studio Admin-dashboard. Elke bestaande
+     `rounded-*` schaalt hierop mee. `rounded-full` blijft rond.
+     --------------------------------------------------------------------- */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
+  --radius-4xl: 20px;
 
   /* Snappier UI — speeds up every `transition-*` utility (buttons, hovers,
      nav, pills) that doesn't set its own duration. Default is 150ms. */
@@ -98,7 +103,7 @@ body {
 }
 
 body {
-  background: #f4f4f2; /* warm, papierachtig grijs — zoals de site */
+  background: #f7f7f8; /* koel, licht neutraal — als het Studio Admin-dashboard */
   color: #111110;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

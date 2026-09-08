@@ -13,22 +13,6 @@ import { Avatar } from "./ui/avatar";
 import type { Notifications } from "@/lib/notifications";
 import { logout } from "@/app/login/actions";
 
-// Kleurrijk icoon-palet voor de zijmenu-items — cyclisch toegekend per hub, in
-// vaste volgorde, zodat de kleuren stabiel zijn en het menu kleur krijgt i.p.v.
-// grijs.
-const NAV_ICON_COLORS = [
-  "text-blue-600",
-  "text-violet-600",
-  "text-emerald-600",
-  "text-amber-600",
-  "text-rose-600",
-  "text-cyan-600",
-  "text-indigo-600",
-  "text-orange-600",
-  "text-teal-600",
-  "text-fuchsia-600",
-];
-
 function HubNav({
   hub,
   onNavigate,
@@ -40,9 +24,9 @@ function HubNav({
 }) {
   const pathname = usePathname();
 
-  // Vaste icoonkleur per item (op volgorde binnen de hub).
+  // Vaste icoonkleur per item — nu monochrome/rustig (Studio Admin-stijl).
   const colorByHref = new Map<string, string>();
-  hub.items.forEach((it, i) => colorByHref.set(it.href, NAV_ICON_COLORS[i % NAV_ICON_COLORS.length]));
+  hub.items.forEach((it) => colorByHref.set(it.href, "text-ink-400"));
 
   // Only the most specific matching item lights up, so a nested route like
   // /kandidaten/beschikbaar highlights "Beschikbaar" and not its parent
@@ -65,22 +49,16 @@ function HubNav({
   }
 
   return (
-    <nav className="flex-1 overflow-y-auto px-2 py-4">
-      {/* Eén doorlopende lijst: een streepje tussen elk item én tussen de secties. */}
-      <div className="divide-y divide-ink-100">
+    <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <div className="space-y-5">
         {groups.map((group, gi) => (
           <div key={gi}>
             {group.section && (
-              <div
-                className={cn(
-                  "px-3 pb-2 text-[12px] font-semibold text-ink-400",
-                  gi > 0 && "pt-4",
-                )}
-              >
+              <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-400">
                 {group.section}
               </div>
             )}
-            <div className="divide-y divide-ink-100">
+            <div className="space-y-0.5">
               {group.items.map((item) => {
               const active = item.href === activeHref;
               const Icon = item.icon;
@@ -92,29 +70,27 @@ function HubNav({
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    // Actief item krijgt een zwarte balk aan de linkerkant —
-                    // hetzelfde accentgebaar als de navigatie op q4s.nl.
-                    "relative flex items-center gap-2.5 rounded-sm py-2.5 pl-4 pr-3 text-[13px] font-bold tracking-tight transition-colors",
+                    // Actief item: subtiel gevuld afgerond blok (Studio Admin-stijl).
+                    "relative flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
                     active
-                      ? "bg-brand-50 text-brand-700"
-                      : "text-ink-800 hover:bg-ink-50",
+                      ? "bg-brand-600 text-white"
+                      : "text-ink-600 hover:bg-ink-100 hover:text-ink-900",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "absolute inset-y-1 left-0 w-[3px] rounded-full transition-colors",
-                      active ? "bg-brand-600" : "bg-transparent",
-                    )}
-                  />
                   <Icon
                     className={cn(
                       "h-[18px] w-[18px] shrink-0",
-                      active ? "text-brand-600" : iconColor,
+                      active ? "text-white" : iconColor,
                     )}
                   />
                   <span className="min-w-0 flex-1 truncate">{item.label}</span>
                   {count > 0 && (
-                    <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-sm bg-brand-600 px-1.5 text-[11px] font-bold tabular-nums text-white">
+                    <span
+                      className={cn(
+                        "inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums",
+                        active ? "bg-white/20 text-white" : "bg-ink-200 text-ink-700",
+                      )}
+                    >
                       {count}
                     </span>
                   )}

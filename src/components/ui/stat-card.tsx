@@ -13,16 +13,6 @@ const accentMap: Record<Accent, string> = {
   violet: "bg-violet-50 text-violet-600",
 };
 
-// Het gekleurde streepje bovenaan de kaart — houdt het speels én rustig.
-const barMap: Record<Accent, string> = {
-  brand: "bg-brand-600",
-  green: "bg-emerald-500",
-  amber: "bg-amber-500",
-  red: "bg-red-500",
-  slate: "bg-ink-900",
-  violet: "bg-violet-500",
-};
-
 export function StatCard({
   label,
   value,
@@ -39,24 +29,19 @@ export function StatCard({
   className?: string;
 }) {
   return (
-    <Card className={cn("group relative overflow-hidden", className)}>
-      {/* Kleuraccent bovenaan; groeit bij hover over de volle breedte. */}
-      <span
-        className={cn(
-          "absolute inset-x-0 top-0 h-[3px] w-10 transition-all duration-200 group-hover:w-full",
-          barMap[accent],
-        )}
-      />
-      <div className="flex items-start justify-between gap-3 p-5 pt-6">
+    <Card className={cn("group relative overflow-hidden transition-shadow hover:shadow-md", className)}>
+      <div className="flex items-start justify-between gap-3 p-5">
         <div className="min-w-0">
-          <p className="q4s-label truncate">{label}</p>
-          <p className="q4s-display mt-2.5 text-[28px] tabular-nums">{value}</p>
-          {sub && <p className="mt-2 text-xs text-ink-400">{sub}</p>}
+          <p className="text-[13px] font-medium text-ink-500">{label}</p>
+          <p className="mt-2 text-[30px] font-semibold tracking-[-0.02em] tabular-nums text-ink-900">
+            {value}
+          </p>
+          {sub && <p className="mt-1.5 text-xs text-ink-400">{sub}</p>}
         </div>
         {icon && (
           <div
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-sm",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
               accentMap[accent],
             )}
           >
