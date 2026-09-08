@@ -4,7 +4,6 @@ import {
   TrendingUp,
   Coins,
   Briefcase,
-  HardHat,
   ArrowRight,
   Banknote,
   Percent,
@@ -44,7 +43,7 @@ import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { DashboardChart } from "./DashboardChart";
 import { DashboardPie } from "./DashboardPie";
 import { DashboardLine } from "./DashboardLine";
-import { KpiTile, SectionHeading, HubTile, MiniBar, ResultRow, type DashColor } from "./_kpi";
+import { KpiTile, SectionCard, SectionHeading, HubTile, MiniBar, ResultRow, type DashColor } from "./_kpi";
 import { invoicingOverview, pendingWorkByConsultant, companyCostsThisYear } from "@/lib/facturatie";
 import { dashboardComposition } from "@/lib/dashboard-analytics";
 import type { ReactNode } from "react";
@@ -191,6 +190,24 @@ export default async function DashboardPage({
     periodPlacements.map((p) => p.clientId).filter((id): id is string => id !== null),
   ).size;
 
+  // ---- Vorige periode: voor de echte delta-percentages op de bovenste kaarten.
+  // Even lang venster, direct ervóór (kwartaal → vorig kwartaal, jaar → vorig jaar).
+  const prevStart = isYear
+    ? new Date(year - 1, 0, 1)
+    : new Date(periodStart.getFullYear(), periodStart.getMonth() - 3, 1);
+  const prevEnd = periodStart;
+  const [prevOverview, prevBillable] = await Promise.all([
+    invoicingOverview({ start: prevStart, end: prevEnd }),
+    db.timesheet.findMany({
+      where: { status: { in: ["APPROVED", "INVOICED"] }, weekStart: { gte: prevStart, lt: prevEnd } },
+      include: { entries: true, placement: { include: { consultant: { select: { employmentType: true } } } } },
+    }),
+  ]);
+  // Delta-helper: procentueel verschil t.o.v. vorige periode; null als er niets
+  // was om mee te vergelijken (dan tonen we geen badge i.p.v. een nep-100%).
+  const deltaPct = (current: number, previous: number): number | null =>
+    previous > 0 ? round2(((current - previous) / previous) * 100) : null;
+
   // ---- Nettowinst: brutomarge (omzet − inkoop) minus onze EIGEN kosten ----
   const brutomarge = overview.marge;
   const nettoWinst = round2(overview.marge - costs.totaal);
@@ -295,6 +312,20 @@ export default async function DashboardPage({
   periodOmzet = round2(periodOmzet);
   periodMarge = round2(periodMarge);
   const periodMargePct = periodOmzet > 0 ? Math.round((periodMarge / periodOmzet) * 100) : 0;
+
+  // Vorige-periode omzet/marge (zelfde rekenwijze) voor de delta-badges.
+  let prevOmzet = 0;
+  let prevMarge = 0;
+  for (const t of prevBillable) {
+    const hours = t.entries.reduce((s, e) => s + e.hours, 0);
+    const omzet = hours * t.placement.chargeRate;
+    const inkoop = t.placement.consultant.employmentType === "LOONDIENST" ? 0 : hours * t.placement.costRate;
+    prevOmzet += omzet;
+    prevMarge += omzet - inkoop;
+  }
+  prevOmzet = round2(prevOmzet);
+  prevMarge = round2(prevMarge);
+  const prevPlacementsCount = prevOverview.perConsultant.length;
   const chartData = months.map((m) => ({
     month: m.label,
     omzet: round2(m.omzet),
@@ -388,12 +419,36 @@ export default async function DashboardPage({
         </div>
       </div>
 
-      {/* Kerncijfers (periode) — kleurrijke KPI-tegels */}
+      {/* Kerncijfers (periode) — Studio Admin-stijl statuskaarten met delta t.o.v.
+          de vorige periode. */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile color="blue" label={`Omzet ${shortLabel}`} value={formatCurrency(periodOmzet)} sub={periodLabel} icon={<TrendingUp className="h-5 w-5" />} />
-        <KpiTile color="emerald" label={`Marge ${shortLabel}`} value={formatCurrency(periodMarge)} sub={`${periodMargePct}% marge`} icon={<Percent className="h-5 w-5" />} />
-        <KpiTile color="violet" label={`Plaatsingen ${shortLabel}`} value={periodPlacements.length} sub="actief in periode" icon={<Briefcase className="h-5 w-5" />} />
-        <KpiTile color="cyan" label={`Werknemers ${shortLabel}`} value={periodConsultants} sub={`${periodClients} klanten`} icon={<HardHat className="h-5 w-5" />} />
+        <SectionCard
+          label={`Omzet ${shortLabel}`}
+          value={formatCurrency(periodOmzet)}
+          deltaPct={deltaPct(periodOmzet, prevOmzet)}
+          hint={`t.o.v. vorige periode · ${periodLabel}`}
+          href="/totaaloverzicht"
+        />
+        <SectionCard
+          label={`Marge ${shortLabel}`}
+          value={formatCurrency(periodMarge)}
+          deltaPct={deltaPct(periodMarge, prevMarge)}
+          hint={`${periodMargePct}% marge`}
+          href="/totaaloverzicht"
+        />
+        <SectionCard
+          label={`Plaatsingen ${shortLabel}`}
+          value={periodPlacements.length}
+          deltaPct={deltaPct(periodPlacements.length, prevPlacementsCount)}
+          hint="actief in periode"
+          href="/plaatsingen"
+        />
+        <SectionCard
+          label={`Werknemers ${shortLabel}`}
+          value={periodConsultants}
+          hint={`${periodClients} klanten`}
+          href="/medewerkers"
+        />
       </div>
 
       {/* Chart + Verbeterpunten */}

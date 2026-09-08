@@ -1,6 +1,6 @@
 import Link from "next/link";
 import * as React from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 
 // Kleurrijke, Odoo-achtige dashboard-bouwstenen. BEWUST alleen op /dashboard —
@@ -83,6 +83,66 @@ export function KpiTile({
     </Link>
   ) : (
     inner
+  );
+}
+
+/** Studio Admin-stijl statuskaart: label, groot getal, delta-badge (met
+ *  trend-pijl) en een korte toelichting. Delta is een ECHT berekend percentage
+ *  t.o.v. de vorige periode (of null als er geen vergelijking is). */
+export function SectionCard({
+  label,
+  value,
+  deltaPct,
+  hint,
+  href,
+}: {
+  label: string;
+  value: React.ReactNode;
+  deltaPct?: number | null;
+  hint?: React.ReactNode;
+  href?: string;
+}) {
+  const up = (deltaPct ?? 0) >= 0;
+  const inner = (
+    <div className="h-full">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[13px] font-medium text-ink-500">{label}</p>
+        {deltaPct != null && (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+              up
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-rose-200 bg-rose-50 text-rose-700",
+            )}
+          >
+            {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {up ? "+" : ""}
+            {deltaPct.toLocaleString("nl-NL", { maximumFractionDigits: 1 })}%
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-[30px] font-semibold tracking-[-0.02em] tabular-nums text-ink-900">
+        {value}
+      </p>
+      {hint && <p className="mt-1.5 text-[13px] text-ink-400">{hint}</p>}
+    </div>
+  );
+  return (
+    <div
+      className={cn(
+        "rounded-lg border border-ink-200 bg-white p-5 shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_1px_2px_-1px_rgb(0_0_0/0.06)]",
+        href && "transition-shadow hover:shadow-md",
+      )}
+    >
+      {href ? (
+        <Link href={href} className="block">
+          {inner}
+        </Link>
+      ) : (
+        inner
+      )}
+    </div>
   );
 }
 
