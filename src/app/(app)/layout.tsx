@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { FormAutosave } from "@/components/form-autosave";
 import { OfflineGuard } from "@/components/offline-guard";
 import { NavHistory } from "@/components/nav-history";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { UnsavedGuard } from "@/components/unsaved-guard";
 import { getNavBadges } from "@/lib/facturatie";
 import { getNotifications } from "@/lib/notifications";
@@ -33,6 +34,7 @@ export default async function AppLayout({
       <FormAutosave />
       <OfflineGuard />
       <NavHistory />
+      <ScrollToTop />
       <UnsavedGuard />
       <AppShell badges={badges} notifications={notifications} user={user}>
         {children}
