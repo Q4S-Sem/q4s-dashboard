@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Pencil, Send, Trash2 } from "lucide-react";
+import { Eye, ExternalLink, Pencil, Send, Trash2, X } from "lucide-react";
 import { formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import {
   MAX_OPEN_TABS,
   capOpen,
   invoicePdfHref,
+  invoicePdfPreviewHref,
   isDeletableInvoice,
   isSendableInvoice,
 } from "@/lib/factuur-bulk";
@@ -37,6 +38,16 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
   const [now] = useState(() => Date.now());
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
   const [capped, setCapped] = useState(0);
+  // De factuur die in het volledige-schermvoorbeeld staat (null = dicht).
+  const [preview, setPreview] = useState<{ id: string; number: string } | null>(null);
+
+  // Escape sluit het voorbeeld.
+  useEffect(() => {
+    if (!preview) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setPreview(null);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [preview]);
 
   const range = periodRange(gran, anchor);
 
@@ -98,7 +109,16 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
       header: "Acties",
       align: "right",
       render: (r) => (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-1">
+          <button
+            type="button"
+            onClick={() => setPreview({ id: r.id, number: r.number })}
+            className={buttonVariants({ variant: "ghost", size: "icon" })}
+            title="Bekijken"
+            aria-label={`Factuur ${r.number} bekijken`}
+          >
+            <Eye className="h-4 w-4" />
+          </button>
           <Link
             href={`/facturen/${r.id}/bewerken`}
             className={buttonVariants({ variant: "ghost", size: "icon" })}
@@ -247,6 +267,50 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
           }}
           toolbarExtra={bulkBar}
         />
+      )}
+
+      {/* Volledig-scherm factuurvoorbeeld — dezelfde echte PDF als de detailpagina,
+          zodat je 'm hier direct kunt bekijken zonder weg te navigeren. */}
+      {preview && (
+        <div
+          className="fixed inset-0 z-[80] flex flex-col bg-black/70 p-3 sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Factuur ${preview.number}`}
+          onClick={() => setPreview(null)}
+        >
+          <div
+            className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-ink-200 bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3">
+              <h2 className="text-sm font-semibold text-ink-900">Factuur {preview.number}</h2>
+              <div className="flex items-center gap-2">
+                <a
+                  href={invoicePdfHref(preview.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  <ExternalLink className="h-4 w-4" /> Openen / printen
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreview(null)}
+                  className={buttonVariants({ variant: "ghost", size: "icon" })}
+                  aria-label="Sluiten"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <iframe
+              title={`Factuur ${preview.number}`}
+              src={invoicePdfPreviewHref(preview.id)}
+              className="min-h-0 w-full flex-1 border-0 bg-ink-100"
+            />
+          </div>
+        </div>
       )}
     </div>
   );
