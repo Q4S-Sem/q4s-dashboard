@@ -25,8 +25,8 @@ export function AuthShell({
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       {/* LINKS — gebrand paneel */}
       <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[#242320] to-[#0a0a0a] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
-        {/* Industriële textuur: fijne raster-lijnen + een gloed in merkkleur,
-            zoals de hero-foto op q4s.nl. */}
+        {/* Industriële textuur: fijne raster-lijnen + drijvende witte gloed,
+            zoals de hero-foto op q4s.nl — nu zacht bewegend en pulserend. */}
         <div aria-hidden className="pointer-events-none absolute inset-0">
           <div
             className="absolute inset-0 opacity-[0.07]"
@@ -36,25 +36,28 @@ export function AuthShell({
               backgroundSize: "56px 56px",
             }}
           />
-          <div className="absolute -bottom-40 -right-32 h-[34rem] w-[34rem] rounded-full bg-brand-600/20 blur-3xl" />
-          <div className="absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-brand-600/10 blur-3xl" />
+          {/* Grote, langzaam drijvende witte gloed */}
+          <div className="animate-aurora absolute -top-48 -left-32 h-[42rem] w-[42rem] rounded-full bg-white/20 blur-[120px]" />
+          {/* Tweede, tegengesteld pulserende gloed voor diepte */}
+          <div className="animate-glow-pulse absolute -bottom-40 -right-24 h-[34rem] w-[34rem] rounded-full bg-white/10 blur-[100px]" />
+          <div className="animate-glow-pulse absolute left-1/3 top-1/2 h-72 w-72 rounded-full bg-white/[0.06] blur-3xl [animation-delay:2s]" />
         </div>
 
         <div className="relative">
           {logoSrc ? (
-            <span className="inline-flex items-center justify-center rounded-sm bg-white px-4 py-3">
+            <span className="inline-flex items-center justify-center rounded-sm bg-white px-6 py-5 shadow-[0_0_60px_-12px_rgba(255,255,255,0.5)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logoSrc} alt="Q4S Project Partners" className="h-9 w-auto object-contain" />
+              <img src={logoSrc} alt="Q4S Project Partners" className="h-16 w-auto object-contain xl:h-20" />
             </span>
           ) : (
-            <span className="inline-flex h-14 w-14 items-center justify-center rounded-sm bg-brand-600 text-lg font-bold text-white">
+            <span className="inline-flex h-20 w-20 items-center justify-center rounded-sm bg-brand-600 text-2xl font-bold text-white">
               Q4S
             </span>
           )}
         </div>
 
-        <div className="relative max-w-md">
-          <p className="mb-4 text-sm font-semibold text-brand-500">
+        <div className="animate-fade-up relative max-w-md">
+          <p className="mb-4 text-sm font-semibold text-white/70">
             Q4S Project Partners
           </p>
           <h2 className="text-[2.3rem] font-bold leading-[1.15] tracking-[-0.01em] text-white xl:text-[2.7rem]">
@@ -71,17 +74,17 @@ export function AuthShell({
 
       {/* RECHTS — inhoud */}
       <main className="flex items-center justify-center bg-white px-6 py-12 sm:px-10">
-        <div className="w-full max-w-sm">
+        <div className="animate-fade-up w-full max-w-md">
           {logoSrc && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logoSrc}
               alt="Q4S Project Partners"
-              className="mb-8 h-11 w-auto object-contain lg:hidden"
+              className="mb-8 h-14 w-auto object-contain lg:hidden"
             />
           )}
 
-          <h1 className="text-[26px] font-semibold text-ink-900">{title}</h1>
+          <h1 className="text-[30px] font-semibold tracking-[-0.01em] text-ink-900">{title}</h1>
           <p className="mt-2 text-[15px] text-ink-500">{subtitle}</p>
 
           <div className="mt-8">{children}</div>

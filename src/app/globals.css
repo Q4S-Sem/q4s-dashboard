@@ -51,6 +51,66 @@
   /* Snappier UI — speeds up every `transition-*` utility (buttons, hovers,
      nav, pills) that doesn't set its own duration. Default is 150ms. */
   --default-transition-duration: 75ms;
+
+  /* Auth-scherm (login) — trage witte gloed die drijft + pulseert, en een
+     zachte entrance voor de inhoud. Gebruikt via `animate-*` utilities. */
+  --animate-aurora: aurora 18s ease-in-out infinite;
+  --animate-glow-pulse: glow-pulse 7s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-sheen: sheen 6s ease-in-out 1.2s infinite;
+}
+
+@keyframes aurora {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(5%, -4%, 0) scale(1.18);
+    opacity: 0.85;
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheen {
+  0% {
+    transform: translateX(-140%) skewX(-14deg);
+  }
+  55%,
+  100% {
+    transform: translateX(240%) skewX(-14deg);
+  }
+}
+
+/* Respecteer de systeemvoorkeur: geen beweging voor wie dat uitzet. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-aurora,
+  .animate-glow-pulse,
+  .animate-fade-up,
+  .animate-sheen {
+    animation: none !important;
+  }
 }
 
 html,

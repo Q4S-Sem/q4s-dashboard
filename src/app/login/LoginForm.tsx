@@ -11,7 +11,7 @@ export function LoginForm() {
   const [state, action] = useActionState(login, emptyFormState);
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-5">
       {state.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
       )}
@@ -24,6 +24,7 @@ export function LoginForm() {
           placeholder="naam@q4s.nl"
           required
           autoFocus
+          className="h-13 px-4 text-base"
         />
       </Field>
       <Field label="Wachtwoord" htmlFor="password">
@@ -33,10 +34,15 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
+          className="h-13 px-4 text-base"
         />
       </Field>
-      <SubmitButton className="w-full" pendingLabel="Bezig met inloggen…">
-        <LogIn className="h-4 w-4" /> Inloggen
+      <SubmitButton
+        size="lg"
+        className="h-13 w-full text-base"
+        pendingLabel="Bezig met inloggen…"
+      >
+        <LogIn className="h-5 w-5" /> Inloggen
       </SubmitButton>
     </form>
   );
