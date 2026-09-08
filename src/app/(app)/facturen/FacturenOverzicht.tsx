@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Eye, ExternalLink, Pencil, Send, Trash2, X } from "lucide-react";
+import { Eye, ExternalLink, Pencil, Send, X } from "lucide-react";
 import { formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/badge";
@@ -200,15 +200,12 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
               <ConfirmSubmit
                 action={bulkDeleteInvoices}
                 hidden={{ ids }}
-                trigger="button"
+                trigger="icon"
                 variant="danger"
-                size="sm"
                 message={`${deletable.length} factu${deletable.length === 1 ? "ur" : "ren"} verwijderen?`}
                 description="Alleen concepten en geannuleerde facturen gaan weg; hun urenstaten komen weer vrij om te factureren."
               >
-                <span className="inline-flex items-center gap-2">
-                  <Trash2 className="h-4 w-4" /> Verwijderen ({deletable.length})
-                </span>
+                {`Verwijderen (${deletable.length})`}
               </ConfirmSubmit>
             )}
           </div>
