@@ -86,15 +86,16 @@ function initialsOf(name: string): string {
   return `${pick[0]?.[0] ?? ""}${pick.length > 1 ? pick[pick.length - 1][0] : ""}`.toUpperCase();
 }
 
-const CHIP: Record<BadgeColor, string> = {
-  slate: "bg-ink-100 text-ink-700 hover:bg-ink-200",
-  blue: "bg-blue-100 text-blue-800 hover:bg-blue-200",
-  green: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
-  amber: "bg-amber-100 text-amber-800 hover:bg-amber-200",
-  red: "bg-red-100 text-red-800 hover:bg-red-200",
-  violet: "bg-violet-100 text-violet-800 hover:bg-violet-200",
-  cyan: "bg-cyan-100 text-cyan-800 hover:bg-cyan-200",
-  orange: "bg-orange-100 text-orange-800 hover:bg-orange-200",
+/** Kalenderbalk zoals de referentie: bleke vulling met een gekleurde linkerrand. */
+const BAR: Record<BadgeColor, string> = {
+  slate: "bg-ink-50 text-ink-700 border-ink-400 hover:bg-ink-100",
+  blue: "bg-blue-50 text-blue-800 border-blue-500 hover:bg-blue-100",
+  green: "bg-emerald-50 text-emerald-800 border-emerald-500 hover:bg-emerald-100",
+  amber: "bg-amber-50 text-amber-800 border-amber-500 hover:bg-amber-100",
+  red: "bg-red-50 text-red-800 border-red-500 hover:bg-red-100",
+  violet: "bg-violet-50 text-violet-800 border-violet-500 hover:bg-violet-100",
+  cyan: "bg-cyan-50 text-cyan-800 border-cyan-500 hover:bg-cyan-100",
+  orange: "bg-orange-50 text-orange-800 border-orange-500 hover:bg-orange-100",
 };
 const DOT: Record<BadgeColor, string> = {
   slate: "bg-ink-400",
@@ -390,23 +391,25 @@ function MonthGrid({
                 shownTasks.length;
 
               return (
-                <div key={day} className={cn("group relative min-h-[116px]", inMonth ? "bg-white" : "bg-ink-50/60")}>
+                <div key={day} className={cn("group relative min-h-[132px]", inMonth ? "bg-white" : "bg-ink-50/60")}>
                   {/* Klik op lege ruimte → snel toevoegen */}
                   <button
                     type="button"
                     aria-label={`Snel afspraak toevoegen op ${day}`}
                     onClick={(e) => onOpenAdd(day, e.currentTarget)}
-                    className="absolute inset-0 z-0 transition-colors hover:bg-brand-50/40"
+                    className="absolute inset-0 z-0 transition-colors hover:bg-ink-50"
                   />
                   <div className="pointer-events-none relative z-10 p-1.5">
+                    {/* Referentie: dagnummer rechtsboven; + verschijnt links bij hover. */}
                     <div className="flex items-center justify-between px-1">
+                      <Plus className="h-3.5 w-3.5 text-ink-300 opacity-0 transition-opacity group-hover:opacity-100" />
                       <Link
                         href={`/agenda/dag/${day}`}
                         aria-label={`Dagplanning ${day}`}
                         className={cn(
-                          "pointer-events-auto flex h-6 min-w-6 items-center justify-center rounded-sm px-1 text-xs font-medium transition-colors",
+                          "pointer-events-auto flex h-6 min-w-6 items-center justify-center rounded-md px-1 text-xs font-semibold tabular-nums transition-colors",
                           isToday
-                            ? "bg-brand-600 text-white"
+                            ? "bg-ink-900 text-white"
                             : inMonth
                               ? "text-ink-700 hover:bg-ink-100"
                               : "text-ink-400 hover:bg-ink-100",
@@ -414,7 +417,6 @@ function MonthGrid({
                       >
                         {dd}
                       </Link>
-                      <Plus className="h-3.5 w-3.5 text-ink-300 opacity-0 transition-opacity group-hover:opacity-100" />
                     </div>
 
                     <div className="mt-1 space-y-1">
@@ -423,8 +425,8 @@ function MonthGrid({
                           key={`abs-${i}`}
                           title={`${a.name} — afwezig`}
                           className={cn(
-                            "flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[11px] font-medium",
-                            CHIP[a.color],
+                            "flex items-center gap-1 truncate rounded-sm border-l-2 px-1.5 py-0.5 text-[11px] font-medium",
+                            BAR[a.color],
                           )}
                         >
                           <Plane className="h-3 w-3 shrink-0" />
@@ -440,8 +442,8 @@ function MonthGrid({
                             title={ev.assignee ? `${ev.title} · ${ev.assignee}` : ev.title}
                             onClick={(e) => onOpenEvent(ev, e.currentTarget)}
                             className={cn(
-                              "pointer-events-auto block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium transition-colors",
-                              CHIP[color],
+                              "pointer-events-auto block w-full truncate rounded-sm border-l-2 px-1.5 py-0.5 text-left text-[11px] font-medium transition-colors",
+                              BAR[color],
                               ev.status === "CANCELLED" && "line-through opacity-60",
                             )}
                           >
@@ -457,8 +459,8 @@ function MonthGrid({
                           href={dl.href}
                           title={dl.title}
                           className={cn(
-                            "pointer-events-auto flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[11px] font-medium transition-colors",
-                            dl.overdue ? CHIP.red : CHIP.amber,
+                            "pointer-events-auto flex items-center gap-1 truncate rounded-sm border-l-2 px-1.5 py-0.5 text-[11px] font-medium transition-colors",
+                            dl.overdue ? BAR.red : BAR.amber,
                           )}
                         >
                           <AlertTriangle className="h-3 w-3 shrink-0" />
@@ -471,8 +473,8 @@ function MonthGrid({
                           href="/agenda/taken"
                           title={t.assignee ? `Taak: ${t.title} · ${t.assignee}` : `Taak: ${t.title}`}
                           className={cn(
-                            "pointer-events-auto flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[11px] font-medium transition-colors",
-                            t.overdue ? CHIP.red : "bg-brand-50 text-brand-700 hover:bg-brand-100",
+                            "pointer-events-auto flex items-center gap-1 truncate rounded-sm border-l-2 px-1.5 py-0.5 text-[11px] font-medium transition-colors",
+                            t.overdue ? BAR.red : BAR.slate,
                           )}
                         >
                           <ListTodo className="h-3 w-3 shrink-0" />

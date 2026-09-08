@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Field, Input, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { StatusBadge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { buttonVariants } from "@/components/ui/button";
@@ -147,6 +148,7 @@ export default async function AfwezigheidPage({
                 startOfDay(new Date(lv.endDate)) >= today0;
               return (
                 <li key={lv.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                  <Avatar name={fullName(lv.employee)} size="sm" />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
                       <span className="truncate text-sm font-medium text-ink-800">

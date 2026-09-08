@@ -18,6 +18,7 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { cn, formatDate } from "@/lib/utils";
 import { startOfDay } from "@/lib/agenda";
 import { TASK_PRIORITIES } from "@/lib/domain";
+import { Avatar } from "@/components/ui/avatar";
 import { createTask, toggleTask, deleteTask } from "./actions";
 import { AssigneeSelect, type Person } from "./AssigneeSelect";
 import type { Task, Employee } from "@prisma/client";
@@ -75,7 +76,10 @@ function TaskRow({
 
       {done ? (
         task.assignee && (
-          <span className="shrink-0 text-xs text-ink-400">{fullName(task.assignee)}</span>
+          <span className="flex shrink-0 items-center gap-2 text-xs text-ink-400">
+            <Avatar name={fullName(task.assignee)} size="xs" />
+            {fullName(task.assignee)}
+          </span>
         )
       ) : (
         <AssigneeSelect taskId={task.id} value={task.assigneeId} people={people} />
