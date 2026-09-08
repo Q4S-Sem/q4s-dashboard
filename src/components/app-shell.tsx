@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutGrid, LogOut, ChevronRight, Plus, UserPlus, Briefcase, CalendarClock } from "lucide-react";
+import { Menu, X, LayoutGrid, LogOut, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hubForPath, itemIsActive, type NavHub, type NavItem } from "./nav";
 import { ConnectionStatus } from "./connection-status";
@@ -12,39 +12,6 @@ import { AskAi } from "./ask-ai";
 import { Avatar } from "./ui/avatar";
 import type { Notifications } from "@/lib/notifications";
 import { logout } from "@/app/login/actions";
-
-/** Studio Admin-stijl "Snel aanmaken"-knop met een klein keuzemenu naar de
- *  meest gebruikte aanmaak-acties. Native <details> zodat het zonder extra
- *  state werkt en met toetsenbord/klik-buiten dichtklapt. */
-function QuickCreate({ onNavigate }: { onNavigate?: () => void }) {
-  const items = [
-    { href: "/verwerken/nieuw", label: "Week verwerken", icon: CalendarClock },
-    { href: "/crm/contacten/nieuw", label: "Nieuw contact", icon: UserPlus },
-    { href: "/crm/deals/nieuw", label: "Nieuwe deal", icon: Briefcase },
-  ];
-  return (
-    <details className="group relative mb-4 px-1">
-      <summary className="flex cursor-pointer list-none items-center justify-center gap-2 rounded-md bg-brand-600 px-3 py-2 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 [&::-webkit-details-marker]:hidden">
-        <Plus className="h-4 w-4" /> Snel aanmaken
-      </summary>
-      <div className="absolute left-1 right-1 z-20 mt-1 overflow-hidden rounded-md border border-ink-200 bg-white py-1 shadow-lg">
-        {items.map((it) => {
-          const Icon = it.icon;
-          return (
-            <Link
-              key={it.href}
-              href={it.href}
-              onClick={onNavigate}
-              className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-ink-900"
-            >
-              <Icon className="h-4 w-4 text-ink-400" /> {it.label}
-            </Link>
-          );
-        })}
-      </div>
-    </details>
-  );
-}
 
 function HubNav({
   hub,
@@ -83,7 +50,6 @@ function HubNav({
 
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4">
-      <QuickCreate onNavigate={onNavigate} />
       <div className="space-y-5">
         {groups.map((group, gi) => (
           <div key={gi}>
