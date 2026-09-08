@@ -52,33 +52,24 @@
      nav, pills) that doesn't set its own duration. Default is 150ms. */
   --default-transition-duration: 75ms;
 
-  /* Auth-scherm (login) — trage witte gloed die drijft + pulseert, en een
-     zachte entrance voor de inhoud. Gebruikt via `animate-*` utilities. */
-  --animate-aurora: aurora 18s ease-in-out infinite;
-  --animate-glow-pulse: glow-pulse 7s ease-in-out infinite;
+  /* Auth-scherm (login) — een gloed die schuin van links-boven naar
+     rechts-onder door het zwarte vak drijft, plus een zachte entrance. */
+  --animate-diagonal-glow: diagonal-glow 14s ease-in-out infinite;
   --animate-fade-up: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-  --animate-sheen: sheen 6s ease-in-out 1.2s infinite;
 }
 
-@keyframes aurora {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 0.55;
+@keyframes diagonal-glow {
+  0% {
+    transform: translate3d(-30%, -30%, 0) scale(0.9);
+    opacity: 0.35;
   }
   50% {
-    transform: translate3d(5%, -4%, 0) scale(1.18);
-    opacity: 0.85;
+    transform: translate3d(60%, 55%, 0) scale(1.25);
+    opacity: 0.75;
   }
-}
-
-@keyframes glow-pulse {
-  0%,
   100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.7;
+    transform: translate3d(-30%, -30%, 0) scale(0.9);
+    opacity: 0.35;
   }
 }
 
@@ -93,22 +84,10 @@
   }
 }
 
-@keyframes sheen {
-  0% {
-    transform: translateX(-140%) skewX(-14deg);
-  }
-  55%,
-  100% {
-    transform: translateX(240%) skewX(-14deg);
-  }
-}
-
 /* Respecteer de systeemvoorkeur: geen beweging voor wie dat uitzet. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-aurora,
-  .animate-glow-pulse,
-  .animate-fade-up,
-  .animate-sheen {
+  .animate-diagonal-glow,
+  .animate-fade-up {
     animation: none !important;
   }
 }

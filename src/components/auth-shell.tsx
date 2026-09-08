@@ -25,8 +25,8 @@ export function AuthShell({
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       {/* LINKS — gebrand paneel */}
       <aside className="relative hidden overflow-hidden bg-gradient-to-br from-[#242320] to-[#0a0a0a] lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
-        {/* Industriële textuur: fijne raster-lijnen + drijvende witte gloed,
-            zoals de hero-foto op q4s.nl — nu zacht bewegend en pulserend. */}
+        {/* Industriële textuur: fijne raster-lijnen + een gloed die schuin van
+            links-boven naar rechts-onder door het vak drijft. */}
         <div aria-hidden className="pointer-events-none absolute inset-0">
           <div
             className="absolute inset-0 opacity-[0.07]"
@@ -36,16 +36,14 @@ export function AuthShell({
               backgroundSize: "56px 56px",
             }}
           />
-          {/* Grote, langzaam drijvende witte gloed */}
-          <div className="animate-aurora absolute -top-48 -left-32 h-[42rem] w-[42rem] rounded-full bg-white/20 blur-[120px]" />
-          {/* Tweede, tegengesteld pulserende gloed voor diepte */}
-          <div className="animate-glow-pulse absolute -bottom-40 -right-24 h-[34rem] w-[34rem] rounded-full bg-white/10 blur-[100px]" />
-          <div className="animate-glow-pulse absolute left-1/3 top-1/2 h-72 w-72 rounded-full bg-white/[0.06] blur-3xl [animation-delay:2s]" />
+          {/* De drijvende gloed — start linksboven, schuift diagonaal naar
+              rechtsonder en weer terug. */}
+          <div className="animate-diagonal-glow absolute left-0 top-0 h-[38rem] w-[38rem] rounded-full bg-white/25 blur-[130px]" />
         </div>
 
         <div className="relative">
           {logoSrc ? (
-            <span className="inline-flex items-center justify-center rounded-sm bg-white px-6 py-5 shadow-[0_0_60px_-12px_rgba(255,255,255,0.5)]">
+            <span className="inline-flex items-center justify-center rounded-sm bg-white px-6 py-5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={logoSrc} alt="Q4S Project Partners" className="h-16 w-auto object-contain xl:h-20" />
             </span>

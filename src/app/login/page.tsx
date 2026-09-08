@@ -22,12 +22,15 @@ export default async function LoginPage({
       title="Inloggen"
       subtitle="Log in met je Q4S-werkaccount."
       footer={
-        <>
-          <Link href="/wachtwoord-vergeten" className="font-medium text-ink-600 hover:text-ink-900">
+        <span className="text-sm leading-relaxed text-ink-500">
+          <Link
+            href="/wachtwoord-vergeten"
+            className="font-semibold text-ink-800 underline-offset-2 hover:text-ink-900 hover:underline"
+          >
             Wachtwoord vergeten?
           </Link>{" "}
           — je krijgt een e-mail om een nieuw wachtwoord in te stellen. Alleen voor Q4S-medewerkers.
-        </>
+        </span>
       }
     >
       {reset === "1" && (
