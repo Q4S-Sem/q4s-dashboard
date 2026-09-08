@@ -240,10 +240,10 @@ const HUB_LIST: NavHub[] = [
 // tegels als de app-switcher volgen deze volgorde.
 const HUB_ORDER = [
   "/klanten", // Personeelsgegevens
-  "/verwerken/week", // Facturatie
-  "/recruitment",
+  "/verwerken/nieuw", // Facturatie
   "/agenda",
-  "/website",
+  "/recruitment",
+  "/website", // Vacatures
   "/cv",
   "/socials",
   "/evaluaties",
