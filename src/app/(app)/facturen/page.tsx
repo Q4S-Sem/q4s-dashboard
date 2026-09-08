@@ -11,10 +11,11 @@ import { FacturenOverzicht, type FactuurRow } from "./FacturenOverzicht";
 
 export const metadata = { title: "Facturen" };
 
-/** Nederlandse samenvatting van een bulkactie (verwijderen/verzenden). */
+/** Nederlandse samenvatting van een bulkactie (verwijderen/verzenden/vrijgeven). */
 function bulkMelding(p: {
   verwijderd?: string;
   verzonden?: string;
+  vrijgegeven?: string;
   modus?: string;
   overgeslagen?: string;
   geenmail?: string;
@@ -26,6 +27,18 @@ function bulkMelding(p: {
   };
   const overgeslagen = n(p.overgeslagen);
   const delen: string[] = [];
+
+  if (p.vrijgegeven !== undefined) {
+    const v = n(p.vrijgegeven);
+    delen.push(
+      v === 1
+        ? "1 factuur naar de verzendmap gezet — klaar om te versturen."
+        : `${v} facturen naar de verzendmap gezet — klaar om te versturen.`,
+    );
+    if (overgeslagen > 0)
+      delen.push(`${overgeslagen} overgeslagen — alleen concepten kunnen naar de verzendmap.`);
+    return delen.join(" ");
+  }
 
   if (p.verwijderd !== undefined) {
     const d = n(p.verwijderd);
@@ -63,6 +76,7 @@ export default async function FacturenPage({
     week?: string;
     verwijderd?: string;
     verzonden?: string;
+    vrijgegeven?: string;
     modus?: string;
     overgeslagen?: string;
     geenmail?: string;

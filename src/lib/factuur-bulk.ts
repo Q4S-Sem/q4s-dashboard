@@ -17,12 +17,21 @@ export function isDeletableInvoice(status: string): boolean {
 }
 
 /**
- * Verzenden kan alleen vanuit concept — exact de selectie van de verzendmap
- * (`getOutbox` haalt `status: "DRAFT"` op). Zo kan de bulkknop nooit iets
- * versturen dat de verzendmap zelf niet zou versturen.
+ * Vrijgeven naar de verzendmap kan alleen vanuit concept (DRAFT). Op /facturen
+ * kijk je de concepten na en zet je ze met "Naar verzendmap" klaar; pas daar
+ * worden ze verstuurd. Zo verstuur je nooit iets dat nog niet is nagekeken.
+ */
+export function isReleasableInvoice(status: string): boolean {
+  return status === "DRAFT";
+}
+
+/**
+ * Verzenden kan alleen vanuit de verzendmap-status (READY) — exact de selectie
+ * die `getOutbox` ophaalt. Zo kan een bulkknop nooit iets versturen dat de
+ * verzendmap zelf niet zou versturen (en nooit een onnagekeken concept).
  */
 export function isSendableInvoice(status: string): boolean {
-  return status === "DRAFT";
+  return status === "READY";
 }
 
 /** De aangevinkte ids uit het verborgen formulierveld: opschonen + ontdubbelen. */

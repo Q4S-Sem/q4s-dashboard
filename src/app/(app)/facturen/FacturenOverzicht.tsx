@@ -17,9 +17,9 @@ import {
   invoicePdfHref,
   invoicePdfPreviewHref,
   isDeletableInvoice,
-  isSendableInvoice,
+  isReleasableInvoice,
 } from "@/lib/factuur-bulk";
-import { bulkDeleteInvoices, bulkSendInvoices } from "./actions";
+import { bulkDeleteInvoices, bulkReleaseInvoices } from "./actions";
 
 export type FactuurRow = {
   id: string;
@@ -146,7 +146,7 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
   const selectedRows = rows.filter((r) => selected.has(r.id));
   const ids = selectedRows.map((r) => r.id).join(",");
   const deletable = selectedRows.filter((r) => isDeletableInvoice(r.status));
-  const sendable = selectedRows.filter((r) => isSendableInvoice(r.status));
+  const releasable = selectedRows.filter((r) => isReleasableInvoice(r.status));
   const clearSelection = () => {
     setSelected(new Set());
     setCapped(0);
@@ -178,20 +178,20 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
               <ExternalLink className="h-4 w-4" /> Openen ({selectedRows.length})
             </Button>
 
-            {sendable.length > 0 && (
+            {releasable.length > 0 && (
               <ConfirmSubmit
-                action={bulkSendInvoices}
+                action={bulkReleaseInvoices}
                 hidden={{ ids }}
                 trigger="button"
                 variant="primary"
                 size="sm"
                 confirmVariant="primary"
-                confirmLabel="Versturen"
-                message={`${sendable.length} factu${sendable.length === 1 ? "ur" : "ren"} versturen naar de klant?`}
-                description="De facturen gaan als PDF per e-mail naar het factuuradres van de klant en komen op 'Verzonden' te staan — net als vanuit de verzendmap."
+                confirmLabel="Naar verzendmap"
+                message={`${releasable.length} factu${releasable.length === 1 ? "ur" : "ren"} naar de verzendmap zetten?`}
+                description="De facturen worden vrijgegeven en verschijnen in de Verzendmap, klaar om te versturen. Er wordt nog niets verstuurd — dat doe je daarna vanuit de verzendmap."
               >
                 <span className="inline-flex items-center gap-2">
-                  <Send className="h-4 w-4" /> Verzend geselecteerde ({sendable.length})
+                  <Send className="h-4 w-4" /> Naar verzendmap ({releasable.length})
                 </span>
               </ConfirmSubmit>
             )}
@@ -214,12 +214,12 @@ export function FacturenOverzicht({ invoices }: { invoices: FactuurRow[] }) {
           </div>
         </div>
 
-        {(sendable.length < selectedRows.length || capped > 0) && (
+        {(releasable.length < selectedRows.length || capped > 0) && (
           <p className="mt-2 text-xs text-brand-800">
-            {sendable.length < selectedRows.length && (
+            {releasable.length < selectedRows.length && (
               <>
-                {selectedRows.length - sendable.length} van de selectie {selectedRows.length - sendable.length === 1 ? "is" : "zijn"} geen concept
-                meer — die {selectedRows.length - sendable.length === 1 ? "wordt" : "worden"} niet verstuurd.{" "}
+                {selectedRows.length - releasable.length} van de selectie {selectedRows.length - releasable.length === 1 ? "is" : "zijn"} geen concept
+                meer — die {selectedRows.length - releasable.length === 1 ? "wordt" : "worden"} niet naar de verzendmap gezet.{" "}
               </>
             )}
             {capped > 0 && (

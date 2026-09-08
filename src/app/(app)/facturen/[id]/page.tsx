@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
-import { Pencil, Printer } from "lucide-react";
+import { Pencil, Printer, Send } from "lucide-react";
 import { db } from "@/lib/db";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
@@ -81,8 +81,8 @@ export default async function FactuurDetailPage({
           <div className="flex flex-wrap items-center gap-2">
             {invoice.status === "DRAFT" && (
               <>
-                <StatusButton id={invoice.id} status="SENT" variant="primary">
-                  Markeer als verzonden
+                <StatusButton id={invoice.id} status="READY" variant="primary">
+                  Naar verzendmap
                 </StatusButton>
                 <StatusButton id={invoice.id} status="CANCELLED" variant="outline">
                   Annuleren
@@ -90,6 +90,16 @@ export default async function FactuurDetailPage({
                 <ConfirmSubmit action={deleteInvoice} id={invoice.id} message="Factuur verwijderen? De urenstaten komen weer vrij.">
                   Verwijderen
                 </ConfirmSubmit>
+              </>
+            )}
+            {invoice.status === "READY" && (
+              <>
+                <Link href="/verzenden" className={buttonVariants({ variant: "primary" })}>
+                  <Send className="h-4 w-4" /> Naar verzendmap
+                </Link>
+                <StatusButton id={invoice.id} status="DRAFT" variant="outline">
+                  Terug naar concept
+                </StatusButton>
               </>
             )}
             {invoice.status === "SENT" && (

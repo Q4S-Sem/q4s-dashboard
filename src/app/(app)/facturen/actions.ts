@@ -12,6 +12,7 @@ import {
 } from "@/lib/numbering";
 import {
   isDeletableInvoice,
+  isReleasableInvoice,
   isSendableInvoice,
   parseBulkIds,
   partitionBulk,
@@ -191,11 +192,11 @@ export async function generateInvoice(
   redirect(`/facturen/${res.invoiceId}`);
 }
 
-/** Change an invoice's status (sent / paid / cancelled / back to draft). */
+/** Change an invoice's status (concept / klaar voor verzending / sent / paid / cancelled). */
 export async function setInvoiceStatus(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "");
-  if (!id || !["DRAFT", "SENT", "PAID", "CANCELLED"].includes(status)) return;
+  if (!id || !["DRAFT", "READY", "SENT", "PAID", "CANCELLED"].includes(status)) return;
 
   if (status === "CANCELLED") {
     // Cancelling voids the invoice: release its timesheets back to APPROVED and
@@ -238,6 +239,7 @@ export async function setInvoiceStatus(formData: FormData) {
   }
 
   revalidatePath("/facturen");
+  revalidatePath("/verzenden");
   revalidatePath("/", "layout");
   revalidatePath("/uren");
   revalidatePath(`/facturen/${id}`);
@@ -360,5 +362,39 @@ export async function bulkSendInvoices(formData: FormData) {
   if (skipped > 0) p.set("overgeslagen", String(skipped));
   if (noEmail > 0) p.set("geenmail", String(noEmail));
   if (failed > 0) p.set("mislukt", String(failed));
+  redirect(`/facturen?${p.toString()}`);
+}
+
+/**
+ * Bulk: geef de aangevinkte CONCEPT-facturen vrij naar de verzendmap (DRAFT →
+ * READY). Dit VERSTUURT niets — het zet ze klaar zodat je ze vanuit de
+ * verzendmap, na een laatste blik op de PDF, echt naar de klant stuurt. Zo is de
+ * flow: concept nakijken op /facturen → "Naar verzendmap" → daar versturen.
+ * Alleen concepten gaan mee; al vrijgegeven/verzonden facturen worden geteld als
+ * overgeslagen.
+ */
+export async function bulkReleaseInvoices(formData: FormData) {
+  const requested = parseBulkIds(formData.get("ids"));
+  if (requested.length === 0) redirect("/facturen");
+
+  const rows = await db.invoice.findMany({
+    where: { id: { in: requested } },
+    select: { id: true, status: true },
+  });
+  const { ids, skipped } = partitionBulk(requested, rows, isReleasableInvoice);
+
+  // Atomair per rij: alleen een echte DRAFT schuift door naar READY.
+  let released = 0;
+  for (const id of ids) {
+    const res = await db.invoice.updateMany({
+      where: { id, status: "DRAFT" },
+      data: { status: "READY" },
+    });
+    released += res.count;
+  }
+
+  revalidateFacturen();
+  const p = new URLSearchParams({ vrijgegeven: String(released) });
+  if (skipped > 0) p.set("overgeslagen", String(skipped));
   redirect(`/facturen?${p.toString()}`);
 }

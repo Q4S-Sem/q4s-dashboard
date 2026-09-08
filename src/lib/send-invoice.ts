@@ -44,10 +44,11 @@ export async function sendSalesInvoiceById(id: string): Promise<SendOutcome> {
   if (!data.to) return "no-email";
 
   // Atomically claim the row BEFORE dispatching: only one request can flip
-  // DRAFT -> SENT, so a concurrent double-send (double-click, or a single
-  // "Versturen" overlapping with "Verstuur alles") can't e-mail twice.
+  // READY -> SENT, so a concurrent double-send (double-click, or a single
+  // "Versturen" overlapping with "Verstuur alles") can't e-mail twice. Alleen
+  // vrijgegeven facturen (READY) mogen de deur uit — concepten niet.
   const claimed = await db.invoice.updateMany({
-    where: { id, status: "DRAFT" },
+    where: { id, status: "READY" },
     data: { status: "SENT", sentAt: new Date(), sentTo: data.to },
   });
   if (claimed.count === 0) return "already";
@@ -57,7 +58,7 @@ export async function sendSalesInvoiceById(id: string): Promise<SendOutcome> {
     // Real send failed → release the claim so it returns to the verzendmap.
     await db.invoice.updateMany({
       where: { id, status: "SENT", sentTo: data.to },
-      data: { status: "DRAFT", sentAt: null, sentTo: null },
+      data: { status: "READY", sentAt: null, sentTo: null },
     });
   }
   return outcome;

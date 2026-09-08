@@ -26,10 +26,10 @@ export type PendingApprovals = {
   rows: { number: string; client: string; total: number }[];
 };
 
-/** De concept-verkoopfacturen die in de verzendmap op goedkeuring wachten. */
+/** De verkoopfacturen die vrijgegeven in de verzendmap op verzending wachten. */
 export async function pendingApprovals(): Promise<PendingApprovals> {
   const drafts = await db.invoice.findMany({
-    where: { status: "DRAFT" },
+    where: { status: "READY" },
     include: { client: { select: { companyName: true } } },
     orderBy: { issueDate: "asc" },
   });

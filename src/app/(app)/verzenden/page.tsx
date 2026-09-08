@@ -3,7 +3,6 @@ import {
   Send,
   Mail,
   MailWarning,
-  Eye,
   Inbox,
   Receipt,
   CheckCircle2,
@@ -23,6 +22,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { WeekBalk } from "@/components/week-balk";
 import { SearchFilter } from "./SearchFilter";
+import { InvoicePreviewButton } from "@/components/invoice-preview-button";
 import { sendSalesInvoice, sendScope } from "./actions";
 
 export const metadata = { title: "Verzendmap" };
@@ -73,13 +73,7 @@ function SendRow({
       <TD className="text-right tabular-nums text-ink-900">{formatCurrency(row.total)}</TD>
       <TD className="text-right">
         <div className="flex items-center justify-end gap-2">
-          <Link
-            href={`/verzenden/verkoop/${row.id}/voorbeeld`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-            title="Bekijk de e-mail + PDF-bijlage voordat je verstuurt"
-          >
-            <Eye className="h-4 w-4" /> Voorbeeld
-          </Link>
+          <InvoicePreviewButton id={row.id} number={row.number} />
           {row.email ? (
             <form action={sendSalesInvoice}>
               <input type="hidden" name="id" value={row.id} />
@@ -249,10 +243,10 @@ export default async function VerzendmapPage({
         <EmptyState
           icon={<Inbox className="h-6 w-6" />}
           title="Verzendmap is leeg"
-          description="Zodra je een verkoopfactuurconcept voor een klant maakt, verschijnt het hier klaar voor controle en verzending."
+          description="Kijk je verkoopfacturen na op 'Verkoopfacturen' en zet ze met 'Naar verzendmap' klaar. Vrijgegeven facturen verschijnen hier, klaar om te versturen."
           action={
-            <Link href="/verwerken" className={buttonVariants({ variant: "outline" })}>
-              Naar verwerken
+            <Link href="/facturen" className={buttonVariants({ variant: "outline" })}>
+              Naar verkoopfacturen
             </Link>
           }
         />

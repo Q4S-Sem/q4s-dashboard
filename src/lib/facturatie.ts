@@ -206,12 +206,12 @@ export async function getNavBadges(): Promise<{
         where: pendingWhere(),
         select: { placement: { select: { consultantId: true } } },
       }),
-      // Open sales invoices (created/sent, not yet paid or cancelled).
-      db.invoice.count({ where: { status: { in: ["DRAFT", "SENT"] } } }),
+      // Open sales invoices (concept/klaargezet/verzonden, niet betaald of geannuleerd).
+      db.invoice.count({ where: { status: { in: ["DRAFT", "READY", "SENT"] } } }),
       // Inkomende ZZP-facturen die nog niet betaald zijn.
       db.receivedInvoice.count({ where: { status: { not: "PAID" } } }),
-      // Verzendmap: uitsluitend DRAFT-verkoopfacturen voor klanten.
-      db.invoice.count({ where: { status: "DRAFT" } }),
+      // Verzendmap: uitsluitend vrijgegeven verkoopfacturen (READY) voor klanten.
+      db.invoice.count({ where: { status: "READY" } }),
       // Te-late open taken (chatter/automatisering) — de "Te doen"-badge.
       db.activity.count({ where: { kind: "TODO", done: false, dueAt: { lt: new Date() } } }),
     ]);

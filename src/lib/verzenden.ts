@@ -284,8 +284,11 @@ function weeksOf(lines: { timesheet: { weekStart: Date } | null }[]): string[] {
 }
 
 export async function getOutbox(): Promise<{ sales: OutboxRow[] }> {
+  // Alleen wat expliciet is VRIJGEGEVEN naar de verzendmap (READY). Concepten
+  // (DRAFT) blijven in "Verkoopfacturen" staan om eerst na te kijken; pas na de
+  // knop "Naar verzendmap" komt een factuur hier klaar om te versturen.
   const sales = await db.invoice.findMany({
-    where: { status: "DRAFT" },
+    where: { status: "READY" },
     orderBy: { issueDate: "asc" },
     include: {
       client: {

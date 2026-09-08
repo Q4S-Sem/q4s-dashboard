@@ -6,6 +6,7 @@ import {
   invoicePdfHref,
   invoicePdfPreviewHref,
   isDeletableInvoice,
+  isReleasableInvoice,
   isSendableInvoice,
   parseBulkIds,
   partitionBulk,
@@ -32,8 +33,17 @@ test("alleen een concept of geannuleerde factuur mag verwijderd worden", () => {
   assert.equal(isDeletableInvoice(""), false);
 });
 
-test("alleen een concept mag verstuurd worden — precies de verzendmap-selectie", () => {
-  assert.equal(isSendableInvoice("DRAFT"), true);
+test("alleen een concept mag naar de verzendmap worden vrijgegeven", () => {
+  assert.equal(isReleasableInvoice("DRAFT"), true);
+  assert.equal(isReleasableInvoice("READY"), false);
+  assert.equal(isReleasableInvoice("SENT"), false);
+  assert.equal(isReleasableInvoice("PAID"), false);
+  assert.equal(isReleasableInvoice("CANCELLED"), false);
+});
+
+test("alleen een vrijgegeven (READY) factuur mag verstuurd worden — precies de verzendmap-selectie", () => {
+  assert.equal(isSendableInvoice("READY"), true);
+  assert.equal(isSendableInvoice("DRAFT"), false);
   assert.equal(isSendableInvoice("SENT"), false);
   assert.equal(isSendableInvoice("PAID"), false);
   assert.equal(isSendableInvoice("CANCELLED"), false);
@@ -67,6 +77,7 @@ test("niets aangevinkt levert een lege lijst op", () => {
 const rijen = [
   { id: "d1", status: "DRAFT" },
   { id: "d2", status: "DRAFT" },
+  { id: "r1", status: "READY" },
   { id: "s1", status: "SENT" },
   { id: "p1", status: "PAID" },
   { id: "c1", status: "CANCELLED" },
@@ -78,9 +89,15 @@ test("verwijderen: concept en geannuleerd mogen, verstuurd/betaald wordt overges
   assert.equal(res.skipped, 2);
 });
 
-test("verzenden: alleen concepten gaan mee", () => {
-  const res = partitionBulk(["d1", "d2", "c1", "s1"], rijen, isSendableInvoice);
+test("naar verzendmap: alleen concepten gaan mee", () => {
+  const res = partitionBulk(["d1", "d2", "r1", "c1", "s1"], rijen, isReleasableInvoice);
   assert.deepEqual(res.ids, ["d1", "d2"]);
+  assert.equal(res.skipped, 3);
+});
+
+test("verzenden: alleen vrijgegeven (READY) facturen gaan mee", () => {
+  const res = partitionBulk(["d1", "r1", "s1"], rijen, isSendableInvoice);
+  assert.deepEqual(res.ids, ["r1"]);
   assert.equal(res.skipped, 2);
 });
 
@@ -97,7 +114,7 @@ test("dubbel aangevinkte ids worden één keer verwerkt", () => {
 });
 
 test("de volgorde van de selectie blijft behouden", () => {
-  const res = partitionBulk(["d2", "d1"], rijen, isSendableInvoice);
+  const res = partitionBulk(["d2", "d1"], rijen, isReleasableInvoice);
   assert.deepEqual(res.ids, ["d2", "d1"]);
 });
 
