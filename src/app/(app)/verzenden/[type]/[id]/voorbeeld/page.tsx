@@ -77,7 +77,7 @@ export default async function VoorbeeldPage({
   const pdfHref = `/verzenden/${type}/${id}/pdf`;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <BackLink href="/verzenden">
         Terug naar verzendmap
       </BackLink>
@@ -89,78 +89,82 @@ export default async function VoorbeeldPage({
         } de deur uit.`}
       />
 
-      {/* Recipient + subject + attachment + send */}
-      <Card>
-        <CardContent className="space-y-3">
-          <Row label="Aan">
-            {data.to ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5 text-ink-400" />
-                <span className="font-medium text-ink-900">{data.recipientName}</span>
-                <span className="text-ink-500">&lt;{data.to}&gt;</span>
-              </span>
-            ) : (
-              <Link
-                href={fixHref}
-                className="inline-flex items-center gap-1.5 font-medium text-amber-700 hover:underline"
+      {/* Links de gegevens + de verzendknop, rechts de mail zelf — naast elkaar
+          op een breed scherm, onder elkaar op een smal. */}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        {/* Recipient + subject + attachment + send */}
+        <Card>
+          <CardContent className="space-y-3">
+            <Row label="Aan">
+              {data.to ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-ink-400" />
+                  <span className="font-medium text-ink-900">{data.recipientName}</span>
+                  <span className="text-ink-500">&lt;{data.to}&gt;</span>
+                </span>
+              ) : (
+                <Link
+                  href={fixHref}
+                  className="inline-flex items-center gap-1.5 font-medium text-amber-700 hover:underline"
+                >
+                  <MailWarning className="h-3.5 w-3.5" /> Geen e-mailadres — toevoegen bij{" "}
+                  {type === "verkoop" ? "de klant" : "de medewerker"}
+                </Link>
+              )}
+            </Row>
+            <Row label="Onderwerp">{data.subject}</Row>
+            <Row label="Bijlage">
+              <a
+                href={pdfHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 font-medium text-brand-700 hover:underline"
               >
-                <MailWarning className="h-3.5 w-3.5" /> Geen e-mailadres — toevoegen bij{" "}
-                {type === "verkoop" ? "de klant" : "de medewerker"}
-              </Link>
-            )}
-          </Row>
-          <Row label="Onderwerp">{data.subject}</Row>
-          <Row label="Bijlage">
-            <a
-              href={pdfHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 font-medium text-brand-700 hover:underline"
-            >
-              <FileText className="h-3.5 w-3.5" /> {data.pdfName}
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </Row>
+                <FileText className="h-3.5 w-3.5" /> {data.pdfName}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </Row>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 pt-3">
-            <p className="inline-flex items-center gap-1.5 text-xs text-ink-500">
-              <Info className="h-3.5 w-3.5" />
-              {mailRedirect
-                ? `Testmodus — bij versturen gaat de mail naar ${mailRedirect}, niet naar de klant.`
-                : live
-                  ? "Live-modus — bij versturen gaat de e-mail écht de deur uit."
-                  : "Klaarzet-modus — bij versturen wordt de factuur op 'verzonden' gezet (nog geen echte mail)."}
-            </p>
-            {data.to ? (
-              <form action={action}>
-                <input type="hidden" name="id" value={id} />
-                <SubmitButton pendingLabel="Versturen…">
-                  <Send className="h-4 w-4" /> Versturen
-                </SubmitButton>
-              </form>
-            ) : (
-              <Link href={fixHref} className={buttonVariants({ variant: "outline" })}>
-                Voeg e-mailadres toe
-              </Link>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 pt-3">
+              <p className="inline-flex items-center gap-1.5 text-xs text-ink-500">
+                <Info className="h-3.5 w-3.5" />
+                {mailRedirect
+                  ? `Testmodus — bij versturen gaat de mail naar ${mailRedirect}, niet naar de klant.`
+                  : live
+                    ? "Live-modus — bij versturen gaat de e-mail écht de deur uit."
+                    : "Klaarzet-modus — bij versturen wordt de factuur op 'verzonden' gezet (nog geen echte mail)."}
+              </p>
+              {data.to ? (
+                <form action={action}>
+                  <input type="hidden" name="id" value={id} />
+                  <SubmitButton pendingLabel="Versturen…">
+                    <Send className="h-4 w-4" /> Versturen
+                  </SubmitButton>
+                </form>
+              ) : (
+                <Link href={fixHref} className={buttonVariants({ variant: "outline" })}>
+                  Voeg e-mailadres toe
+                </Link>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Q4S e-mail preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>E-mail — Q4S-opmaak</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <iframe
-            title="E-mailvoorbeeld"
-            srcDoc={renderQ4sEmail(data.content, { logoSrc: emailLogoDataUri() ?? undefined })}
-            sandbox=""
-            className="h-[640px] w-full rounded-b-xl border-0"
-          />
-        </CardContent>
-      </Card>
+        {/* Q4S e-mail preview */}
+        <Card>
+          <CardHeader>
+            <CardTitle>E-mail — Q4S-opmaak</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <iframe
+              title="E-mailvoorbeeld"
+              srcDoc={renderQ4sEmail(data.content, { logoSrc: emailLogoDataUri() ?? undefined })}
+              sandbox=""
+              className="h-[640px] w-full rounded-b-xl border-0"
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

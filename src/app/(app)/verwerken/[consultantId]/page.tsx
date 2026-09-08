@@ -289,7 +289,7 @@ export default async function VerwerkenPage({
         : "de verkoopfactu(u)r(en)";
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-4">
+    <div className="space-y-6 pb-4">
       <BackLink href="/verwerken">
         Terug naar verwerken
       </BackLink>

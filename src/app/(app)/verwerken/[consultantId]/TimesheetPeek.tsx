@@ -137,7 +137,7 @@ export function TimesheetPeek({
                 href={urenstaatHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2"
               >
                 Volledige urenstaat <ExternalLink className="h-3.5 w-3.5" />
               </a>

@@ -83,7 +83,7 @@ export default async function VakproefPage() {
                         href={`/vakproef/${c.slug}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-800"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2"
                       >
                         Bekijken <ExternalLink className="h-3.5 w-3.5" />
                       </a>

@@ -109,7 +109,7 @@ export default async function WebsitePage() {
       <Card>
         <CardHeader>
           <CardTitle>Live op de website</CardTitle>
-          <Link href="/vacatures" className="text-sm font-medium text-brand-700 hover:text-brand-800">
+          <Link href="/vacatures" className="text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">
             Alle vacatures
           </Link>
         </CardHeader>

@@ -29,7 +29,7 @@ export default async function TokenverbruikPage() {
   const maxDay = Math.max(1, ...o.perDay.map((d) => d.tokens));
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Tokenverbruik"
         description="Live overzicht van wat de AI's verbruiken en (indicatief) kosten. Elke AI-aanroep wordt automatisch bijgeschreven."

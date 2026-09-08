@@ -401,7 +401,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Omzet, inkoop & marge ${periodLabel}`}
           color="blue"
-          action={<Link href="/totaaloverzicht" className="text-sm font-bold text-brand-700 hover:text-brand-800">Totaaloverzicht →</Link>}
+          action={<Link href="/totaaloverzicht" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Totaaloverzicht →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
@@ -463,7 +463,7 @@ export default async function DashboardPage({
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-blue-600" /> Top klanten (omzet {periodLabel})
             </CardTitle>
-            <Link href="/totaaloverzicht" className="text-sm font-bold text-brand-700 hover:text-brand-800">Overzicht</Link>
+            <Link href="/totaaloverzicht" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Overzicht</Link>
           </CardHeader>
           <CardContent className="space-y-2.5">
             {topClients.length === 0 ? (
@@ -564,7 +564,7 @@ export default async function DashboardPage({
             title="Omzet per discipline"
             icon={<Layers className="h-5 w-5" />}
             iconColor="text-blue-600"
-            action={<Link href="/dashboard/rapportage" className="text-sm font-bold text-brand-700 hover:text-brand-800">Rapportage</Link>}
+            action={<Link href="/dashboard/rapportage" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Rapportage</Link>}
           >
             <DashboardPie data={comp.omzetPerDiscipline} kind="currency" centerLabel="omzet" />
           </ChartCard>
@@ -799,7 +799,7 @@ export default async function DashboardPage({
             <CardTitle className="flex items-center gap-2">
               <Receipt className="h-5 w-5 text-blue-600" /> Recente facturen
             </CardTitle>
-            <Link href="/facturen" className="text-sm font-bold text-brand-700 hover:text-brand-800">Alle facturen</Link>
+            <Link href="/facturen" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Alle facturen</Link>
           </CardHeader>
           {recentInvoices.length === 0 ? (
             <CardContent className="text-sm text-ink-500">Geen facturen in {periodLabel}.</CardContent>

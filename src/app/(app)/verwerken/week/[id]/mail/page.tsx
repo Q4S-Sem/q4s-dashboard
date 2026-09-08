@@ -73,7 +73,7 @@ export default async function MailFreelancerPage({
   const knopLabel = live ? "Verstuur naar de freelancer" : "Zet mail klaar";
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <BackLink href="/verwerken/week">Terug naar weekverwerking</BackLink>
 
       <PageHeader
@@ -117,128 +117,134 @@ export default async function MailFreelancerPage({
         </p>
       )}
 
-      {/* --- 1) Aan wie, met welk onderwerp, en wat er gebeurt bij bevestigen --- */}
-      <Card>
-        <CardContent className="space-y-3">
-          <Row label="Aan">
-            {data.to ? (
-              <span className="inline-flex flex-wrap items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5 shrink-0 text-ink-400" />
-                <span className="font-medium text-ink-900">{data.naam}</span>
-                <span className="text-ink-500">&lt;{data.to}&gt;</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 font-medium text-amber-700">
-                <MailWarning className="h-3.5 w-3.5" /> Geen e-mailadres bekend — vul het eerst in
-                bij de medewerker.
-              </span>
-            )}
-          </Row>
-          <Row label="Onderwerp">{data.subject}</Row>
-          {data.receivedInvoiceNumber && (
-            <Row label="Factuur">
-              {data.receivedInvoiceNumber}
-              {data.eerderGemaildOp && (
-                <span className="ml-1.5 text-amber-700">
-                  — er is al gemaild op {formatDate(data.eerderGemaildOp)}
-                </span>
+      {/* Links waar de mail heen gaat en wat je er zelf bij zet, rechts de mail
+          zelf — naast elkaar op een breed scherm, onder elkaar op een smal. */}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <div className="space-y-6">
+          {/* --- 1) Aan wie, met welk onderwerp, en wat er gebeurt bij bevestigen --- */}
+          <Card>
+            <CardContent className="space-y-3">
+              <Row label="Aan">
+                {data.to ? (
+                  <span className="inline-flex flex-wrap items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 shrink-0 text-ink-400" />
+                    <span className="font-medium text-ink-900">{data.naam}</span>
+                    <span className="text-ink-500">&lt;{data.to}&gt;</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 font-medium text-amber-700">
+                    <MailWarning className="h-3.5 w-3.5" /> Geen e-mailadres bekend — vul het eerst in
+                    bij de medewerker.
+                  </span>
+                )}
+              </Row>
+              <Row label="Onderwerp">{data.subject}</Row>
+              {data.receivedInvoiceNumber && (
+                <Row label="Factuur">
+                  {data.receivedInvoiceNumber}
+                  {data.eerderGemaildOp && (
+                    <span className="ml-1.5 text-amber-700">
+                      — er is al gemaild op {formatDate(data.eerderGemaildOp)}
+                    </span>
+                  )}
+                </Row>
               )}
-            </Row>
-          )}
-          {data.geparkeerdSinds && (
-            <Row label="Wachtkamer">
-              <span className="inline-flex items-center gap-1.5 text-ink-500">
-                <PauseCircle className="h-3.5 w-3.5" /> staat geparkeerd sinds{" "}
-                {formatDate(data.geparkeerdSinds)}
-              </span>
-            </Row>
-          )}
+              {data.geparkeerdSinds && (
+                <Row label="Wachtkamer">
+                  <span className="inline-flex items-center gap-1.5 text-ink-500">
+                    <PauseCircle className="h-3.5 w-3.5" /> staat geparkeerd sinds{" "}
+                    {formatDate(data.geparkeerdSinds)}
+                  </span>
+                </Row>
+              )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 pt-3">
-            <p className="inline-flex max-w-md items-start gap-1.5 text-xs leading-relaxed text-ink-500">
-              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>
-                {omleiding
-                  ? `Testmodus — de mail gaat naar ${omleiding}, niet naar de freelancer.`
-                  : live
-                    ? "Live-modus — bij bevestigen gaat de e-mail écht de deur uit."
-                    : "Klaarzet-modus — geen SMTP ingesteld, dus de mail wordt opgesteld maar niet verzonden."}{" "}
-                Daarna gaat deze week naar de wachtkamer.
-              </span>
-            </p>
-            {data.to ? (
-              <ConfirmSubmit
-                action={mailFreelancerOverAfwijking}
-                variant="success"
-                trigger="button"
-                hidden={{ id: data.inboxId, notitie }}
-                message={`${knopLabel} — ${data.naam}?`}
-                description={
-                  live
-                    ? "De e-mail hierboven gaat naar de freelancer, deze week gaat naar de wachtkamer en de bijbehorende factuur wordt gemarkeerd als 'gemaild'. Er wordt niets goedgekeurd, gefactureerd of betaald."
-                    : "De e-mail hierboven wordt klaargezet (niet echt verstuurd, want er is geen SMTP ingesteld), deze week gaat naar de wachtkamer en de bijbehorende factuur wordt gemarkeerd als 'gemaild'. Er wordt niets goedgekeurd, gefactureerd of betaald."
-                }
-                confirmLabel={live ? "Versturen" : "Klaarzetten"}
-                confirmVariant="success"
-              >
-                <Send className="h-4 w-4" /> {knopLabel}
-              </ConfirmSubmit>
-            ) : (
-              <Link
-                href={data.consultantId ? `/werknemers/${data.consultantId}` : `/inbox/${data.inboxId}`}
-                className={buttonVariants({ variant: "outline" })}
-              >
-                Voeg e-mailadres toe
-              </Link>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 pt-3">
+                <p className="inline-flex max-w-md items-start gap-1.5 text-xs leading-relaxed text-ink-500">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    {omleiding
+                      ? `Testmodus — de mail gaat naar ${omleiding}, niet naar de freelancer.`
+                      : live
+                        ? "Live-modus — bij bevestigen gaat de e-mail écht de deur uit."
+                        : "Klaarzet-modus — geen SMTP ingesteld, dus de mail wordt opgesteld maar niet verzonden."}{" "}
+                    Daarna gaat deze week naar de wachtkamer.
+                  </span>
+                </p>
+                {data.to ? (
+                  <ConfirmSubmit
+                    action={mailFreelancerOverAfwijking}
+                    variant="success"
+                    trigger="button"
+                    hidden={{ id: data.inboxId, notitie }}
+                    message={`${knopLabel} — ${data.naam}?`}
+                    description={
+                      live
+                        ? "De e-mail hierboven gaat naar de freelancer, deze week gaat naar de wachtkamer en de bijbehorende factuur wordt gemarkeerd als 'gemaild'. Er wordt niets goedgekeurd, gefactureerd of betaald."
+                        : "De e-mail hierboven wordt klaargezet (niet echt verstuurd, want er is geen SMTP ingesteld), deze week gaat naar de wachtkamer en de bijbehorende factuur wordt gemarkeerd als 'gemaild'. Er wordt niets goedgekeurd, gefactureerd of betaald."
+                    }
+                    confirmLabel={live ? "Versturen" : "Klaarzetten"}
+                    confirmVariant="success"
+                  >
+                    <Send className="h-4 w-4" /> {knopLabel}
+                  </ConfirmSubmit>
+                ) : (
+                  <Link
+                    href={data.consultantId ? `/werknemers/${data.consultantId}` : `/inbox/${data.inboxId}`}
+                    className={buttonVariants({ variant: "outline" })}
+                  >
+                    Voeg e-mailadres toe
+                  </Link>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* --- 2) De eigen bevinding — bijwerken vernieuwt het voorbeeld --- */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Quote className="h-4 w-4 text-ink-400" /> Eigen bevinding
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form method="get" className="space-y-3">
-            <Field
-              label="Wat wil je er zelf bij zeggen?"
-              hint="Komt als geciteerd blok in de mail te staan. Leeg laten mag — dan gaat alleen de automatische controle mee."
-            >
-              <Textarea
-                name="notitie"
-                rows={4}
-                maxLength={2000}
-                defaultValue={notitie}
-                placeholder="Bijv.: je hebt zaterdag 8 uur geschreven, maar er stond geen weekenddienst gepland."
-              />
-            </Field>
-            <div className="flex justify-end">
-              <SubmitButton variant="outline" pendingLabel="Bijwerken…">
-                Voorbeeld bijwerken
-              </SubmitButton>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          {/* --- 2) De eigen bevinding — bijwerken vernieuwt het voorbeeld --- */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Quote className="h-4 w-4 text-ink-400" /> Eigen bevinding
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form method="get" className="space-y-3">
+                <Field
+                  label="Wat wil je er zelf bij zeggen?"
+                  hint="Komt als geciteerd blok in de mail te staan. Leeg laten mag — dan gaat alleen de automatische controle mee."
+                >
+                  <Textarea
+                    name="notitie"
+                    rows={4}
+                    maxLength={2000}
+                    defaultValue={notitie}
+                    placeholder="Bijv.: je hebt zaterdag 8 uur geschreven, maar er stond geen weekenddienst gepland."
+                  />
+                </Field>
+                <div className="flex justify-end">
+                  <SubmitButton variant="outline" pendingLabel="Bijwerken…">
+                    Voorbeeld bijwerken
+                  </SubmitButton>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* --- 3) De mail zelf, in de Q4S-opmaak --- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>E-mail — Q4S-opmaak</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <iframe
-            title="E-mailvoorbeeld"
-            srcDoc={renderQ4sEmail(data.content, { logoSrc: emailLogoDataUri() ?? undefined })}
-            sandbox=""
-            className={cn("h-[680px] w-full rounded-b-xl border-0")}
-          />
-        </CardContent>
-      </Card>
+        {/* --- 3) De mail zelf, in de Q4S-opmaak --- */}
+        <Card>
+          <CardHeader>
+            <CardTitle>E-mail — Q4S-opmaak</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <iframe
+              title="E-mailvoorbeeld"
+              srcDoc={renderQ4sEmail(data.content, { logoSrc: emailLogoDataUri() ?? undefined })}
+              sandbox=""
+              className={cn("h-[680px] w-full rounded-b-xl border-0")}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

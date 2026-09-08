@@ -75,7 +75,7 @@ export default async function AnalysesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Recente kansen</CardTitle>
-          <Link href="/marktkansen" className="text-sm font-medium text-brand-700 hover:text-brand-800">
+          <Link href="/marktkansen" className="text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">
             Alle marktkansen <ArrowRight className="inline h-3.5 w-3.5" />
           </Link>
         </CardHeader>

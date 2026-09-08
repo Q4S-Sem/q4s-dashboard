@@ -109,7 +109,7 @@ export default async function PlaatsingenPage({
           </span>
           <Link
             href="/plaatsingen"
-            className="font-medium text-brand-700 hover:text-brand-800"
+            className="font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2"
           >
             Alle plaatsingen ✕
           </Link>

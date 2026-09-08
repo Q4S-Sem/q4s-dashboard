@@ -228,7 +228,7 @@ export default async function UrenstaatDetailPage({
           <CardTitle>Toeslagen &amp; kilometers</CardTitle>
           <Link
             href={`/plaatsingen/${placement.id}/bewerken`}
-            className="text-sm font-medium text-brand-700 hover:text-brand-800"
+            className="text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2"
           >
             Toeslagen instellen
           </Link>
@@ -288,7 +288,7 @@ export default async function UrenstaatDetailPage({
             <p className="mt-3 text-xs text-ink-500">
               Geen toeslagen of km-vergoeding ingesteld voor deze plaatsing — de
               factuur is dan uren × tarief. Stel ze per persoon in via{" "}
-              <Link href={`/plaatsingen/${placement.id}/bewerken`} className="font-medium text-brand-700 hover:text-brand-800">
+              <Link href={`/plaatsingen/${placement.id}/bewerken`} className="font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">
                 de plaatsing
               </Link>
               .

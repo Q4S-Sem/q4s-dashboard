@@ -25,7 +25,7 @@ export default async function ApiSleutelsPage({
   const providerLocked = isSettingFromEnv("AI_PROVIDER");
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="API-sleutels"
         description="Beheer de sleutels van de AI's die het dashboard gebruikt. Sleutels worden veilig opgeslagen en alleen gemaskeerd getoond — features 'lichten op' zodra de bijbehorende sleutel is ingevuld."

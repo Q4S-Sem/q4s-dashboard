@@ -92,7 +92,7 @@ export function CvsList({ rows }: { rows: CvRow[] }) {
             href={r.cvHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2"
           >
             <FileText className="h-4 w-4" /> Bekijk <ExternalLink className="h-3 w-3 text-ink-400" />
           </a>
