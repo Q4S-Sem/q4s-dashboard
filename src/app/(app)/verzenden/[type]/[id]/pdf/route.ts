@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { renderInvoicePdf } from "@/lib/invoice-pdf";
-import { salesSendData, purchaseSendData } from "@/lib/verzenden";
+import { salesSendData } from "@/lib/verzenden";
+import { isVerzendtypeToegestaan } from "@/lib/facturatiebeleid";
 
 function pdfResponse(pdf: Uint8Array, name: string) {
   return new Response(Buffer.from(pdf), {
@@ -19,6 +20,9 @@ export async function GET(
   { params }: { params: Promise<{ type: string; id: string }> },
 ) {
   const { type, id } = await params;
+  if (!isVerzendtypeToegestaan(type)) {
+    return new Response("Q4S verstuurt geen inkoopfacturen.", { status: 404 });
+  }
   const settings = await getCompanySettings();
 
   if (type === "verkoop") {
@@ -31,15 +35,6 @@ export async function GET(
     return pdfResponse(await renderInvoicePdf(data.pdfDoc), data.pdfName);
   }
 
-  if (type === "inkoop") {
-    const inv = await db.purchaseInvoice.findUnique({
-      where: { id },
-      include: { consultant: true, lines: true },
-    });
-    if (!inv) return new Response("Niet gevonden", { status: 404 });
-    const data = purchaseSendData(inv, settings);
-    return pdfResponse(await renderInvoicePdf(data.pdfDoc), data.pdfName);
-  }
 
   return new Response("Onbekend type", { status: 400 });
 }

@@ -41,14 +41,14 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
   const dimMeta = DIMS.find((d) => d.value === dim)!;
 
   const live = { not: "CANCELLED" as const };
-  const [invoices, purchases, invoiceLines] = await Promise.all([
+  const [invoices, receivedCosts, invoiceLines] = await Promise.all([
     db.invoice.findMany({
       where: { status: live, issueDate: { gte: periodStart, lt: periodEnd } },
       select: { clientId: true, subtotal: true, total: true, status: true, issueDate: true, client: { select: { companyName: true } } },
     }),
-    db.purchaseInvoice.findMany({
-      where: { status: live, issueDate: { gte: periodStart, lt: periodEnd } },
-      select: { subtotal: true, issueDate: true },
+    db.receivedInvoice.findMany({
+      where: { status: { in: ["APPROVED", "PAID"] }, issueDate: { gte: periodStart, lt: periodEnd } },
+      select: { amount: true, vatAmount: true, issueDate: true },
     }),
     db.invoiceLine.findMany({
       where: { invoice: { status: live, issueDate: { gte: periodStart, lt: periodEnd } } },
@@ -88,9 +88,11 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
       const mo = months.find((x) => x.key === mk(new Date(i.issueDate)));
       if (mo) mo.omzet += i.subtotal;
     }
-    for (const p of purchases) {
-      const mo = months.find((x) => x.key === mk(new Date(p.issueDate)));
-      if (mo) mo.inkoop += p.subtotal;
+    for (const p of receivedCosts) {
+      const issueDate = p.issueDate;
+      if (!issueDate) continue;
+      const mo = months.find((x) => x.key === mk(new Date(issueDate)));
+      if (mo) mo.inkoop += p.amount - (p.vatAmount ?? 0);
     }
     rows = months.map((mo) => ({
       key: mo.key,

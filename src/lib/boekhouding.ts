@@ -13,11 +13,8 @@ import { round2 } from "./utils";
  * - Normaal BTW-plichtig (geen KOR) → voorbelasting is aftrekbaar.
  * - Periode telt op FACTUURDATUM (issueDate), niet betaaldatum — zo hoort een
  *   BTW-aangifte. Concepten (DRAFT) en geannuleerde tellen NIET mee.
- * - Voorbelasting-bronnen: self-billing PurchaseInvoice (betrouwbaar) + declaraties
- *   (Expense) die aftrekbaar zijn. Ontvangen ZZP-facturen tellen ALLEEN mee als ze
- *   expliciet `countForVat` aan hebben — anders zou dezelfde ZZP-betaling die al via
- *   een self-billing inkoopfactuur loopt, dubbel geteld worden. Waar tóch beide
- *   bestaan voor dezelfde consultant in de periode, geven we een waarschuwing.
+ * - Voorbelasting-bronnen: goedgekeurde/betaalde ontvangen freelancerfacturen en
+ *   declaraties die aftrekbaar zijn. Q4S genereert geen self-billingdocumenten.
  * - `vatAmount` is nullable op Expense/ReceivedInvoice: null = ONBEKEND, niet €0.
  *   Onbekende BTW telt niet stilzwijgend als 0 mee maar wordt apart gemeld.
  * - Aftrekbaarheid per bon via `vatDeductible` (horeca/eten = niet aftrekbaar).
@@ -25,8 +22,7 @@ import { round2 } from "./utils";
 
 // Welke statussen tellen mee (factuurdatum-basis).
 const SALES_VAT_STATUSES = ["SENT", "PAID", "OVERDUE"]; // Invoice: excl. DRAFT/CANCELLED
-const PURCHASE_VAT_STATUSES = ["APPROVED", "PAID"]; // PurchaseInvoice: excl. DRAFT/CANCELLED
-const RECEIVED_VAT_STATUSES = ["NEW", "APPROVED", "PAID"]; // excl. DISPUTED
+const RECEIVED_VAT_STATUSES = ["APPROVED", "PAID"]; // excl. NEW/DISPUTED
 const EXPENSE_VAT_STATUSES = ["NEW", "APPROVED", "PAID"]; // Expense: excl. REJECTED
 
 export type BtwPeriod = { year: number; quarter: number | null };
@@ -103,11 +99,9 @@ const inRangeOf = (d: Date | null | undefined, r: PeriodRange, fallback?: Date |
 export async function btwOverview(period: BtwPeriod): Promise<BtwOverview> {
   const range = periodToRange(period);
 
-  const [invoices, purchases, received, expenses] = await Promise.all([
+  const [invoices, received, expenses] = await Promise.all([
     db.invoice.findMany({ select: { status: true, issueDate: true, subtotal: true, vatAmount: true, total: true } }),
-    db.purchaseInvoice.findMany({
-      select: { status: true, issueDate: true, subtotal: true, vatAmount: true, total: true, consultantId: true },
-    }),
+
     db.receivedInvoice.findMany({
       select: {
         status: true, issueDate: true, createdAt: true, amount: true, vatAmount: true,
@@ -135,21 +129,7 @@ export async function btwOverview(period: BtwPeriod): Promise<BtwOverview> {
   };
   const verschuldigd = verkoop.vat;
 
-  // ---- Voorbelasting bron 1: self-billing inkoopfacturen ----
-  const purchRows = purchases.filter(
-    (p) => PURCHASE_VAT_STATUSES.includes(p.status) && inRangeOf(p.issueDate, range),
-  );
-  const inkoopBron: BtwSource = {
-    key: "inkoop",
-    label: "Inkoopfacturen (self-billing)",
-    net: round2(purchRows.reduce((s, p) => s + p.subtotal, 0)),
-    vat: round2(purchRows.reduce((s, p) => s + p.vatAmount, 0)),
-    gross: round2(purchRows.reduce((s, p) => s + p.total, 0)),
-    count: purchRows.length,
-    unknownVatCount: 0,
-  };
-
-  // ---- Voorbelasting bron 2: ontvangen ZZP-facturen die meetellen ----
+  // ---- Voorbelasting bron 1: ontvangen freelancerfacturen ----
   const recvRows = received.filter(
     (r) =>
       r.countForVat &&
@@ -185,13 +165,12 @@ export async function btwOverview(period: BtwPeriod): Promise<BtwOverview> {
     unknownVatCount: expUnknown.length,
   };
 
-  const voorbelastingBronnen = [inkoopBron, ontvangenBron, bonnenBron].filter((b) => b.count > 0);
-  const voorbelasting = round2(inkoopBron.vat + ontvangenBron.vat + bonnenBron.vat);
+  const voorbelastingBronnen = [ontvangenBron, bonnenBron].filter((b) => b.count > 0);
+  const voorbelasting = round2(ontvangenBron.vat + bonnenBron.vat);
   const saldo = round2(verschuldigd - voorbelasting);
 
-  // ---- Geldstroom (incl. BTW, op factuur-/bondatum). UIT gebruikt dezelfde dedup
-  //      als de BTW voor de ZZP-facturen: inkoop (self-billing) + alleen meetellende
-  //      ontvangen facturen, zodat één ZZP-betaling niet dubbel telt. ----
+  // ---- Geldstroom (incl. BTW, op factuur-/bondatum). Freelancerkosten komen
+  //      uitsluitend uit ontvangen facturen. ----
   //
   // Voor de bonnen gebruikt de geldstroom bewust ALLE meetellende bonnen (expEligible),
   // óók de niet-aftrekbare (horeca): `vatDeductible` gaat over BTW-aftrek, niet over of
@@ -201,7 +180,7 @@ export async function btwOverview(period: BtwPeriod): Promise<BtwOverview> {
   // uitsluitend de aftrekbare bonnen.
   const bonnenGrossKas = round2(expEligible.reduce((s, e) => s + e.amount, 0));
   const geldIn = verkoop.gross;
-  const geldUit = round2(inkoopBron.gross + ontvangenBron.gross + bonnenGrossKas);
+  const geldUit = round2(ontvangenBron.gross + bonnenGrossKas);
   const geldNetto = round2(geldIn - geldUit);
 
   // ---- Signaal: onbekende BTW ----
@@ -214,19 +193,7 @@ export async function btwOverview(period: BtwPeriod): Promise<BtwOverview> {
     grossTotal: round2(onbekendeRows.reduce((s, a) => s + a, 0)),
   };
 
-  // ---- Signaal: mogelijke dubbeltelling (zelfde consultant in inkoop én meetellende
-  //      ontvangen factuur binnen de periode) ----
-  const purchConsultants = new Set(purchRows.map((p) => p.consultantId));
-  const dubbelMap = new Map<string, string>();
-  for (const r of recvRows) {
-    if (purchConsultants.has(r.consultantId)) {
-      dubbelMap.set(
-        r.consultantId,
-        `${r.consultant.firstName} ${r.consultant.lastName}`.trim(),
-      );
-    }
-  }
-  const mogelijkeDubbeltelling = [...dubbelMap.entries()].map(([consultantId, name]) => ({ consultantId, name }));
+  const mogelijkeDubbeltelling: { consultantId: string; name: string }[] = [];
 
   // ---- Signaal: niet-aftrekbare bonnen (BTW bewust NIET meegeteld) ----
   const expNonDeductible = expEligible.filter((e) => !e.vatDeductible);
@@ -237,12 +204,11 @@ export async function btwOverview(period: BtwPeriod): Promise<BtwOverview> {
 
   // ---- Signaal: concept-facturen die nog niet meetellen ----
   const draftSales = invoices.filter((i) => i.status === "DRAFT" && inRangeOf(i.issueDate, range));
-  const draftPurch = purchases.filter((p) => p.status === "DRAFT" && inRangeOf(p.issueDate, range));
   const concepten = {
     salesCount: draftSales.length,
     salesVat: round2(draftSales.reduce((s, i) => s + i.vatAmount, 0)),
-    purchaseCount: draftPurch.length,
-    purchaseVat: round2(draftPurch.reduce((s, p) => s + p.vatAmount, 0)),
+    purchaseCount: 0,
+    purchaseVat: 0,
   };
 
   return {

@@ -6,7 +6,6 @@ import {
   Eye,
   Inbox,
   Receipt,
-  Coins,
   CheckCircle2,
   AlertTriangle,
   Info,
@@ -22,10 +21,9 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { cn } from "@/lib/utils";
 import { WeekBalk } from "@/components/week-balk";
 import { SearchFilter } from "./SearchFilter";
-import { sendSalesInvoice, sendPurchaseInvoice, sendScope } from "./actions";
+import { sendSalesInvoice, sendScope } from "./actions";
 
 export const metadata = { title: "Verzendmap" };
 export const dynamic = "force-dynamic";
@@ -45,16 +43,12 @@ function weekShort(keys: string[]): string {
 
 function SendRow({
   row,
-  type,
   week,
   q,
-  action,
 }: {
   row: OutboxRow;
-  type: "verkoop" | "inkoop";
   week: string;
   q: string;
-  action: (formData: FormData) => Promise<void>;
 }) {
   return (
     <TR>
@@ -80,14 +74,14 @@ function SendRow({
       <TD className="text-right">
         <div className="flex items-center justify-end gap-2">
           <Link
-            href={`/verzenden/${type}/${row.id}/voorbeeld`}
+            href={`/verzenden/verkoop/${row.id}/voorbeeld`}
             className={buttonVariants({ variant: "outline", size: "sm" })}
             title="Bekijk de e-mail + PDF-bijlage voordat je verstuurt"
           >
             <Eye className="h-4 w-4" /> Voorbeeld
           </Link>
           {row.email ? (
-            <form action={action}>
+            <form action={sendSalesInvoice}>
               <input type="hidden" name="id" value={row.id} />
               <input type="hidden" name="week" value={week} />
               <input type="hidden" name="q" value={q} />
@@ -110,7 +104,6 @@ export default async function VerzendmapPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    tab?: string;
     week?: string;
     q?: string;
     sent?: string;
@@ -123,24 +116,21 @@ export default async function VerzendmapPage({
   }>;
 }) {
   const sp = await searchParams;
-  const { sales, purchase } = await getOutbox();
+  const { sales } = await getOutbox();
   const live = isEmailConfigured();
   const mailRedirect = await getMailRedirect();
 
-  const tab: "verkoop" | "inkoop" = sp.tab === "inkoop" ? "inkoop" : "verkoop";
   const week = sp.week && /^\d{4}-\d{2}-\d{2}$/.test(sp.week) ? sp.week : "";
   const q = (sp.q ?? "").trim();
 
-  const allRows = [...sales, ...purchase];
+  const allRows = sales;
   const sendable = allRows.filter((r) => r.email);
 
   // Instappunt voor de week-balk: maandag van de huidige week (lokaal).
   const currentWeek = ymd(startOfISOWeek(new Date()));
 
-  const baseRows = tab === "inkoop" ? purchase : sales;
   // Zelfde predicaat als sendScope → wat je ziet is exact wat de bulk-knop verstuurt.
-  const rows = baseRows.filter((r) => matchOutbox(r, { week, q }));
-  const action = tab === "inkoop" ? sendPurchaseInvoice : sendSalesInvoice;
+  const rows = sales.filter((r) => matchOutbox(r, { week, q }));
   const missing = allRows.length - sendable.length;
   // Bulk-knop is bewust beperkt tot wat nú in beeld staat (deze tab + week + zoek),
   // zodat je nooit per ongeluk facturen verstuurt die je niet aan het controleren bent.
@@ -175,45 +165,24 @@ export default async function VerzendmapPage({
   } else if (sp.noemail) {
     banner = {
       tone: "warn",
-      text: "Geen e-mailadres bekend voor deze ontvanger — vul het eerst in bij de klant of medewerker.",
+      text: "Geen facturatie-e-mailadres bekend voor deze klant — vul het eerst in bij de klant.",
     };
   } else if (sp.failed) {
     banner = { tone: "warn", text: "Versturen mislukt — controleer de SMTP-instellingen in je .env." };
   }
 
-  const tabLink = (t: "verkoop" | "inkoop", label: string, count: number, icon: React.ReactNode) => (
-    <Link
-      href={`/verzenden?tab=${t}${week ? `&week=${week}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-      className={cn(
-        "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        tab === t ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
-      )}
-    >
-      {icon} {label}
-      <span
-        className={cn(
-          "rounded-sm px-1.5 text-xs font-semibold tabular-nums",
-          tab === t ? "bg-brand-100 text-brand-700" : "bg-ink-200 text-ink-600",
-        )}
-      >
-        {count}
-      </span>
-    </Link>
-  );
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Verzendmap"
-        description="Aangemaakte verkoop- en inkoopfacturen die klaarstaan om te versturen — split per type, filter op week, en controleer met voorbeeld + PDF."
+        description="Verkoopfacturen die klaarstaan om naar klanten te versturen — filter op week en controleer eerst het voorbeeld met de definitieve PDF."
         actions={
           viewSendable > 0 ? (
             <form action={sendScope}>
-              <input type="hidden" name="tab" value={tab} />
               <input type="hidden" name="week" value={week} />
               <input type="hidden" name="q" value={q} />
               <SubmitButton pendingLabel="Versturen…">
-                <Send className="h-4 w-4" /> Verstuur {tab} ({viewSendable})
+                <Send className="h-4 w-4" /> Verstuur verkoopfacturen ({viewSendable})
                 {week ? ` · ${formatWeekLabel(new Date(`${week}T00:00:00`))}` : ""}
               </SubmitButton>
             </form>
@@ -255,8 +224,8 @@ export default async function VerzendmapPage({
         )}
         {mailRedirect ? (
           <span>
-            <strong>Testmodus:</strong> alle mail wordt omgeleid naar <strong>{mailRedirect}</strong> — klanten en
-            medewerkers ontvangen niets. Zet dit uit bij{" "}
+            <strong>Testmodus:</strong> alle mail wordt omgeleid naar <strong>{mailRedirect}</strong> — klanten
+            ontvangen niets. Zet dit uit bij{" "}
             <Link href="/instellingen" className="font-medium underline">
               Instellingen
             </Link>{" "}
@@ -280,7 +249,7 @@ export default async function VerzendmapPage({
         <EmptyState
           icon={<Inbox className="h-6 w-6" />}
           title="Verzendmap is leeg"
-          description="Zodra je in het verwerken-proces verkoop- of inkoopfacturen aanmaakt, verschijnen ze hier klaar om te versturen."
+          description="Zodra je een verkoopfactuurconcept voor een klant maakt, verschijnt het hier klaar voor controle en verzending."
           action={
             <Link href="/verwerken" className={buttonVariants({ variant: "outline" })}>
               Naar verwerken
@@ -289,7 +258,7 @@ export default async function VerzendmapPage({
         />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <StatCard
               label="Verkoop naar klanten"
               value={sales.length}
@@ -297,13 +266,7 @@ export default async function VerzendmapPage({
               accent="violet"
               icon={<Receipt className="h-5 w-5" />}
             />
-            <StatCard
-              label="Inkoop naar medewerkers"
-              value={purchase.length}
-              sub={formatCurrency(sum(purchase))}
-              accent="green"
-              icon={<Coins className="h-5 w-5" />}
-            />
+
             <StatCard
               label={missing > 0 ? "Zonder e-mailadres" : "Klaar om te versturen"}
               value={missing > 0 ? missing : sendable.length}
@@ -313,13 +276,8 @@ export default async function VerzendmapPage({
             />
           </div>
 
-          {/* Tabs + zoeken */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-0.5">
-              {tabLink("verkoop", "Verkoop", sales.length, <Receipt className="h-4 w-4" />)}
-              {tabLink("inkoop", "Inkoop", purchase.length, <Coins className="h-4 w-4" />)}
-            </div>
-            <SearchFilter tab={tab} week={week} value={q} />
+          <div className="flex justify-end">
+            <SearchFilter tab="verkoop" week={week} value={q} />
           </div>
 
           {/* Week-balk — standaard: alle weken, zodat je geen openstaande factuur mist */}
@@ -327,13 +285,13 @@ export default async function VerzendmapPage({
             basePath="/verzenden"
             week={week}
             currentWeek={currentWeek}
-            extraParams={{ tab, q }}
+            extraParams={{ q }}
             allWeeks
           />
 
           {/* Overzicht van de huidige selectie */}
           <p className="text-sm text-ink-500">
-            {rows.length} {tab === "verkoop" ? "verkoopfactu" : "inkoopfactu"}
+            {rows.length} verkoopfactu
             {rows.length === 1 ? "ur" : "ren"}
             {week ? ` in ${formatWeekLabel(new Date(`${week}T00:00:00`))}` : ""}
             {q ? ` voor "${q}"` : ""} · totaal{" "}
@@ -345,15 +303,15 @@ export default async function VerzendmapPage({
               {rows.length === 0 ? (
                 <p className="px-6 py-10 text-center text-sm text-ink-500">
                   {week || q
-                    ? `Geen ${tab === "verkoop" ? "verkoop" : "inkoop"}facturen die aan je filters voldoen.`
-                    : `Geen ${tab === "verkoop" ? "verkoop" : "inkoop"}facturen klaar om te versturen.`}
+                    ? "Geen verkoopfacturen die aan je filters voldoen."
+                    : "Geen verkoopfacturen klaar om te versturen."}
                 </p>
               ) : (
                 <Table>
                   <THead>
                     <TR className="hover:bg-transparent">
                       <TH>Nummer</TH>
-                      <TH>{tab === "verkoop" ? "Klant" : "Medewerker"}</TH>
+                      <TH>Klant</TH>
                       <TH>Week</TH>
                       <TH>E-mail</TH>
                       <TH className="text-right">Bedrag</TH>
@@ -362,7 +320,7 @@ export default async function VerzendmapPage({
                   </THead>
                   <TBody>
                     {rows.map((r) => (
-                      <SendRow key={r.id} row={r} type={tab} week={week} q={q} action={action} />
+                      <SendRow key={r.id} row={r} week={week} q={q} />
                     ))}
                   </TBody>
                 </Table>

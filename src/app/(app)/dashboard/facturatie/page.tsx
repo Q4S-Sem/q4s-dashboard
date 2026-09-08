@@ -35,9 +35,12 @@ export default async function FacturatieDashboardPage() {
   const yearStart = new Date(now.getFullYear(), 0, 1);
   const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
 
-  const [invoices, purchases, received] = await Promise.all([
+  const [invoices, receivedCosts, received] = await Promise.all([
     db.invoice.findMany({ include: { client: { select: { id: true, companyName: true } } } }),
-    db.purchaseInvoice.findMany({ select: { issueDate: true, subtotal: true, total: true, status: true } }),
+    db.receivedInvoice.findMany({
+      where: { status: { in: ["APPROVED", "PAID"] }, issueDate: { not: null } },
+      select: { issueDate: true, amount: true, vatAmount: true },
+    }),
     receivedInvoicesSummary(),
   ]);
 
@@ -57,9 +60,9 @@ export default async function FacturatieDashboardPage() {
       .reduce((s, i) => s + i.total, 0),
   );
   const inkoopYear = round2(
-    purchases
-      .filter((p) => p.status !== "CANCELLED" && p.issueDate >= yearStart && p.issueDate < yearEnd)
-      .reduce((s, p) => s + p.subtotal, 0),
+    receivedCosts
+      .filter((p) => p.issueDate && p.issueDate >= yearStart && p.issueDate < yearEnd)
+      .reduce((s, p) => s + p.amount - (p.vatAmount ?? 0), 0),
   );
 
   // ---- Omzet & marge per maand (dit jaar) ----
@@ -73,11 +76,11 @@ export default async function FacturatieDashboardPage() {
     if (d.getFullYear() !== now.getFullYear()) continue;
     months[d.getMonth()].omzet += i.subtotal;
   }
-  for (const p of purchases) {
-    if (p.status === "CANCELLED") continue;
+  for (const p of receivedCosts) {
+    if (!p.issueDate) continue;
     const d = new Date(p.issueDate);
     if (d.getFullYear() !== now.getFullYear()) continue;
-    months[d.getMonth()].inkoop += p.subtotal;
+    months[d.getMonth()].inkoop += p.amount - (p.vatAmount ?? 0);
   }
   const chartData = months.map((m) => ({
     month: m.label,
@@ -151,7 +154,7 @@ export default async function FacturatieDashboardPage() {
         <StatCard
           label="Aantal facturen"
           value={invoices.length.toLocaleString("nl-NL")}
-          sub={`Inkoop ${formatCurrency(inkoopYear)}`}
+          sub={`Ontvangen kosten ${formatCurrency(inkoopYear)}`}
           icon={<FileText className="h-5 w-5" />}
           accent="slate"
         />

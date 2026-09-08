@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
-import { INVOICE_STATUSES, PURCHASE_INVOICE_STATUSES } from "@/lib/domain";
+import { INVOICE_STATUSES, RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { paymentMonitor, type MonitorRow } from "@/lib/betaalmonitor";
 import { sendInvoiceReminder, sendAllReminders } from "./actions";
@@ -46,8 +46,8 @@ function OverdueTable({
   rows: MonitorRow[];
   kind: "incoming" | "outgoing";
 }) {
-  const options = kind === "incoming" ? INVOICE_STATUSES : PURCHASE_INVOICE_STATUSES;
-  const detailBase = kind === "incoming" ? "/facturen" : "/inkoopfacturen";
+  const options = kind === "incoming" ? INVOICE_STATUSES : RECEIVED_INVOICE_STATUSES;
+  const detailBase = kind === "incoming" ? "/facturen" : "/ontvangen-facturen";
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">

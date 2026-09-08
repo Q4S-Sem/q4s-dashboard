@@ -51,7 +51,7 @@ export default async function BetaalmatchingPage() {
   const now = new Date();
   const yearStart = new Date(now.getFullYear(), 0, 1);
 
-  const [invoices, purchases, received] = await Promise.all([
+  const [invoices, received] = await Promise.all([
     // Verkoopfacturen van dit jaar + alles wat nog openstaat (ook ouder), zodat
     // een oude onbetaalde factuur de bijbehorende uitbetaling blijft blokkeren.
     db.invoice.findMany({
@@ -72,22 +72,10 @@ export default async function BetaalmatchingPage() {
         lines: { select: { placementId: true, placement: { select: { consultantId: true } } } },
       },
     }),
-    // Openstaande uitbetalingen: de self-billing inkoopfacturen …
-    db.purchaseInvoice.findMany({
-      where: { status: { in: ["DRAFT", "APPROVED"] } },
-      select: {
-        id: true,
-        number: true,
-        total: true,
-        consultantId: true,
-        consultant: { select: { firstName: true, lastName: true, companyName: true } },
-        lines: { select: { placementId: true } },
-      },
-    }),
-    // … én de facturen die ZZP'ers zelf stuurden (die hebben geen regels, dus
-    // die koppelen op de freelancer).
+    // Alleen goedgekeurde facturen die freelancers zelf stuurden. Die hebben geen
+    // factuurregels, dus de koppeling loopt op de freelancer.
     db.receivedInvoice.findMany({
-      where: { status: { not: "PAID" } },
+      where: { status: "APPROVED" },
       select: {
         id: true,
         number: true,
@@ -115,18 +103,7 @@ export default async function BetaalmatchingPage() {
     consultantIds: uniek(inv.lines.map((l) => l.placement?.consultantId)),
   }));
 
-  const purchaseObligations: Uitbetaalverplichting[] = [
-    ...purchases.map<Uitbetaalverplichting>((p) => ({
-      id: p.id,
-      soort: "inkoopfactuur",
-      number: p.number,
-      consultantId: p.consultantId,
-      consultantName: partyName(p.consultant),
-      placementIds: uniek(p.lines.map((l) => l.placementId)),
-      amount: p.total,
-      betaald: false,
-    })),
-    ...received.map<Uitbetaalverplichting>((r) => ({
+  const purchaseObligations: Uitbetaalverplichting[] = received.map<Uitbetaalverplichting>((r) => ({
       id: r.id,
       soort: "ontvangen-factuur",
       number: r.number,
@@ -135,8 +112,7 @@ export default async function BetaalmatchingPage() {
       placementIds: [],
       amount: r.amount,
       betaald: false,
-    })),
-  ];
+    }));
 
   const { facturen, vrijgave, samenvatting } = buildBetaalmatching({
     salesInvoices,
@@ -145,8 +121,8 @@ export default async function BetaalmatchingPage() {
   });
   const L = BETAALMATCHING_LABELS;
 
-  const detailHref = (soort: Uitbetaalverplichting["soort"], id: string) =>
-    soort === "inkoopfactuur" ? `/inkoopfacturen/${id}` : `/ontvangen-facturen/${id}`;
+  const detailHref = (_soort: Uitbetaalverplichting["soort"], id: string) =>
+    `/ontvangen-facturen/${id}`;
 
   return (
     <div className="space-y-6">

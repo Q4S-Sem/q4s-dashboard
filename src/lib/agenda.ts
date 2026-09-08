@@ -72,7 +72,7 @@ export function formatTime(d: Date | string): string {
 
 // --- Derived deadlines: open invoices + expiring certificates ---
 
-export type DeadlineKind = "SALES_INVOICE" | "PURCHASE_INVOICE" | "CERTIFICATE";
+export type DeadlineKind = "SALES_INVOICE" | "RECEIVED_INVOICE" | "CERTIFICATE";
 
 export type AgendaDeadline = {
   date: Date;
@@ -84,7 +84,7 @@ export type AgendaDeadline = {
 
 /**
  * Automatic agenda items derived from the rest of the system: open sales
- * invoices (their due dates), self-billing purchase invoices still to be paid,
+ * invoices (their due dates), goedgekeurde ontvangen freelancerfacturen,
  * and certificates that expire. Computed live — no stored rows — so they stay
  * in sync with Facturatie and the personeelsdossier.
  */
@@ -94,13 +94,13 @@ export async function getDeadlines(
 ): Promise<AgendaDeadline[]> {
   const today = startOfDay(new Date());
 
-  const [sales, purchases, certs] = await Promise.all([
+  const [sales, received, certs] = await Promise.all([
     db.invoice.findMany({
       where: { status: { in: ["SENT", "OVERDUE"] }, dueDate: { gte: start, lt: end } },
       include: { client: true },
     }),
-    db.purchaseInvoice.findMany({
-      where: { status: "APPROVED", dueDate: { gte: start, lt: end } },
+    db.receivedInvoice.findMany({
+      where: { status: "APPROVED", issueDate: { not: null } },
       include: { consultant: true },
     }),
     db.certificate.findMany({
@@ -120,13 +120,17 @@ export async function getDeadlines(
       overdue: inv.dueDate < today,
     });
   }
-  for (const p of purchases) {
+  for (const p of received) {
+    if (!p.issueDate) continue;
+    const dueDate = new Date(p.issueDate);
+    dueDate.setDate(dueDate.getDate() + 30);
+    if (dueDate < start || dueDate >= end) continue;
     out.push({
-      date: p.dueDate,
-      kind: "PURCHASE_INVOICE",
-      title: `Inkoopfactuur ${p.number} betalen — ${p.consultant.firstName} ${p.consultant.lastName}`,
-      href: `/inkoopfacturen/${p.id}`,
-      overdue: p.dueDate < today,
+      date: dueDate,
+      kind: "RECEIVED_INVOICE",
+      title: `Ontvangen factuur ${p.number ?? "zonder nummer"} betalen — ${p.consultant.firstName} ${p.consultant.lastName}`,
+      href: `/ontvangen-facturen/${p.id}`,
+      overdue: dueDate < today,
     });
   }
   for (const c of certs) {

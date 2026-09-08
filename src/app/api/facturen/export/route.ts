@@ -2,11 +2,11 @@ import { zipSync } from "fflate";
 import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { renderInvoicePdf } from "@/lib/invoice-pdf";
-import { salesSendData, purchaseSendData } from "@/lib/verzenden";
+import { salesSendData } from "@/lib/verzenden";
 import { requireAdminApiSession } from "@/lib/api-auth";
 
-// Bundelt alle factuur-PDF's (verkoop + inkoop) in één ZIP om door te sturen
-// naar de boekhouder. Optioneel filteren op ?year=YYYY.
+// Bundelt alle door Q4S gemaakte verkoopfactuur-PDF's in één ZIP.
+// Freelancerfacturen zijn ontvangen brondocumenten en worden niet gegenereerd.
 // NOTE: no auth yet — add an auth check here once authentication is in place.
 export async function GET(req: Request) {
   const gate = await requireAdminApiSession();
@@ -20,18 +20,11 @@ export async function GET(req: Request) {
     : {};
 
   const settings = await getCompanySettings();
-  const [sales, purchases] = await Promise.all([
-    db.invoice.findMany({
-      where: dateFilter,
-      include: { client: true, lines: true },
-      orderBy: { number: "asc" },
-    }),
-    db.purchaseInvoice.findMany({
-      where: dateFilter,
-      include: { consultant: true, lines: true },
-      orderBy: { number: "asc" },
-    }),
-  ]);
+  const sales = await db.invoice.findMany({
+    where: dateFilter,
+    include: { client: true, lines: true },
+    orderBy: { number: "asc" },
+  });
 
   const files: Record<string, Uint8Array> = {};
   for (const inv of sales) {
@@ -40,14 +33,6 @@ export async function GET(req: Request) {
       files[`Verkoopfacturen/${data.pdfName}`] = await renderInvoicePdf(data.pdfDoc);
     } catch {
       // sla een onverwerkbare factuur over i.p.v. de hele export te laten falen
-    }
-  }
-  for (const inv of purchases) {
-    try {
-      const data = purchaseSendData(inv, settings);
-      files[`Inkoopfacturen/${data.pdfName}`] = await renderInvoicePdf(data.pdfDoc);
-    } catch {
-      // idem
     }
   }
 

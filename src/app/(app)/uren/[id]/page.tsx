@@ -14,13 +14,7 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatCurrency, formatDate, formatHours, formatWeekLabel, round2 } from "@/lib/utils";
 import { computeTimesheetMoney } from "@/lib/toeslag";
 import { TIMESHEET_STATUSES } from "@/lib/domain";
-import {
-  setTimesheetStatus,
-  deleteTimesheet,
-  generateBothForTimesheet,
-  generateSalesForTimesheet,
-  generatePurchaseForTimesheet,
-} from "../actions";
+import { setTimesheetStatus, deleteTimesheet, generateSalesForTimesheet } from "../actions";
 
 export const metadata = { title: "Urenstaat" };
 
@@ -297,24 +291,15 @@ export default async function UrenstaatDetailPage({
         </CardContent>
       </Card>
 
-      {/* Two-sided invoicing: purchase (pay consultant) + sales (charge client) */}
+      {/* Q4S maakt alleen de verkoopfactuur; de freelancerfactuur komt binnen. */}
       <Card>
         <CardHeader>
           <CardTitle>Facturen</CardTitle>
-          {canInvoice && !ownStaff && !salesInvoiceId && !purchaseInvoiceId && placement.clientId && (
-            <form action={generateBothForTimesheet}>
-              <input type="hidden" name="timesheetId" value={ts.id} />
-              <SubmitButton size="sm" pendingLabel="Aanmaken…">
-                <Receipt className="h-4 w-4" /> Genereer beide
-              </SubmitButton>
-            </form>
-          )}
         </CardHeader>
         <CardContent className="space-y-3">
           {!canInvoice && (
             <p className="text-sm text-ink-500">
-              Keur de urenstaat eerst goed om een inkoop- en verkoopfactuur te
-              genereren.
+              Keur de urenstaat eerst goed om de verkoopfactuur voor de klant te maken.
             </p>
           )}
 
@@ -356,7 +341,7 @@ export default async function UrenstaatDetailPage({
             )}
           </div>
 
-          {/* Purchase (consultant) — of, bij loondienst, salaris i.p.v. inkoopfactuur */}
+          {/* Freelancer levert de inkoopfactuur zelf aan; Q4S genereert niets. */}
           {ownStaff ? (
             <div className="flex items-center gap-3 rounded-lg border border-ink-100 bg-ink-50/60 px-4 py-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
@@ -376,33 +361,18 @@ export default async function UrenstaatDetailPage({
                 </div>
                 <div>
                   <div className="text-sm font-medium text-ink-900">
-                    Inkoopfactuur — {placement.consultant.firstName}{" "}
+                    Ontvangen factuur — {placement.consultant.firstName}{" "}
                     {placement.consultant.lastName}
                   </div>
                   <div className="text-xs text-ink-500">
-                    {formatHours(totalHours)} u × {formatCurrency(placement.costRate)} ={" "}
-                    {formatCurrency(money.buy.base)}
-                    {hasToeslag && <> + toeslagen = {formatCurrency(cost)}</>} (excl. BTW)
+                    De freelancer stuurt de eigen factuur. Q4S controleert en betaalt die; er wordt geen
+                    inkoopfactuur gegenereerd.
                   </div>
                 </div>
               </div>
-              {purchaseInvoiceId ? (
-                <Link
-                  href={`/inkoopfacturen/${purchaseInvoiceId}`}
-                  className={buttonVariants({ variant: "outline", size: "sm" })}
-                >
-                  Bekijk
-                </Link>
-              ) : canInvoice ? (
-                <form action={generatePurchaseForTimesheet}>
-                  <input type="hidden" name="timesheetId" value={ts.id} />
-                  <SubmitButton variant="outline" size="sm">
-                    Genereer
-                  </SubmitButton>
-                </form>
-              ) : (
-                <span className="text-xs text-ink-400">—</span>
-              )}
+              <Link href="/ontvangen-facturen" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                Naar ontvangen facturen
+              </Link>
             </div>
           )}
         </CardContent>

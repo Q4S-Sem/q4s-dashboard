@@ -81,6 +81,7 @@ export async function createReceivedInvoice(formData: FormData) {
       periodStart: parseDate(formData.get("periodStart")),
       periodEnd: parseDate(formData.get("periodEnd")),
       amount,
+      countForVat: true,
       vatAmount: vatAmount != null && Number.isFinite(vatAmount) ? vatAmount : null,
       kilometers,
       notes: String(formData.get("notes") ?? "").trim() || null,
@@ -111,9 +112,8 @@ export async function setReceivedStatus(formData: FormData) {
 }
 
 /**
- * Zet de "meetellen voor BTW-voorbelasting"-vlag. Bepaalt of de BTW van deze
- * ontvangen factuur meetelt in de aangifte (zie boekhouding.ts). Standaard uit,
- * omdat een self-billing inkoopfactuur dezelfde ZZP-betaling meestal al dekt.
+ * "meetellen voor BTW-voorbelasting"-vlag. Bepaalt of de BTW van deze
+ * ontvangen factuur meetelt in de aangifte (zie boekhouding.ts).
  */
 export async function setReceivedVatFlag(formData: FormData) {
   const id = String(formData.get("id") ?? "");

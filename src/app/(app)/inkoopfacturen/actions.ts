@@ -4,7 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { createPurchaseInvoice } from "@/lib/invoicing";
+
 import { reconcileInvoiceSequence } from "@/lib/numbering";
 import { parseForm, type FormState } from "@/lib/form";
 import { round2 } from "@/lib/utils";
@@ -16,28 +16,11 @@ import { round2 } from "@/lib/utils";
  */
 export async function generatePurchaseInvoice(
   _prev: FormState,
-  formData: FormData,
+  _formData: FormData,
 ): Promise<FormState> {
-  const consultantId = String(formData.get("consultantId") ?? "");
-  const issueDateRaw = String(formData.get("issueDate") ?? "");
-  const notesRaw = formData.get("notes");
-  const notes =
-    typeof notesRaw === "string" && notesRaw.trim() ? notesRaw.trim() : null;
-  const timesheetIds = formData
-    .getAll("timesheetIds")
-    .map(String)
-    .filter(Boolean);
-  const issueDate = issueDateRaw
-    ? new Date(`${issueDateRaw}T00:00:00`)
-    : new Date();
-
-  const res = await createPurchaseInvoice({ consultantId, timesheetIds, issueDate, notes });
-  if (!res.ok) return { error: res.error };
-
-  revalidatePath("/inkoopfacturen");
-  revalidatePath("/", "layout");
-  revalidatePath("/uren");
-  redirect(`/inkoopfacturen/${res.purchaseInvoiceId}`);
+  return {
+    error: "Q4S maakt geen inkoopfacturen. Registreer de eigen factuur van de freelancer bij Ontvangen facturen.",
+  };
 }
 
 const EditPurchaseSchema = z.object({

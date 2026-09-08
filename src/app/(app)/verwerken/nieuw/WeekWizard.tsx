@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -31,6 +31,7 @@ import { Dropzone } from "@/components/ui/dropzone";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { autoUitleesSleutel } from "@/lib/auto-uitlezen";
 import { wizardBestandUrl } from "@/lib/document-viewer";
 import { evaluateMargin } from "@/lib/facturatie-detecties";
 import { computeTimesheetMoney } from "@/lib/toeslag";
@@ -683,10 +684,59 @@ function WizardRonde({
     voor: string;
     velden: FactuurVelden;
   } | null>(null);
+  const [tsBestanden, setTsBestanden] = useState(0);
+  const [invBestanden, setInvBestanden] = useState(0);
+  const tsFormRef = useRef<HTMLFormElement>(null);
+  const invFormRef = useRef<HTMLFormElement>(null);
+  const tsRunBezig = useRef(false);
+  const invRunBezig = useRef(false);
+  const laatstGestarteTs = useRef<string | null>(null);
+  const laatstGestarteInv = useRef<string | null>(null);
 
-  const [tsState, tsAction] = useActionState<TimesheetLeesState, FormData>(leesTimesheet, {});
-  const [invState, invAction] = useActionState<FactuurLeesState, FormData>(leesFactuur, {});
+  const [tsState, tsAction, tsPending] = useActionState<TimesheetLeesState, FormData>(
+    leesTimesheet,
+    {},
+  );
+  const [invState, invAction, invPending] = useActionState<FactuurLeesState, FormData>(
+    leesFactuur,
+    {},
+  );
   const [verwerkState, verwerkAction] = useActionState<VerwerkState, FormData>(verwerkWeek, {});
+
+  // De refs sluiten ook het piepkleine gat vóór React de pending-state rendert:
+  // een dubbele browser-event kan daardoor nooit twee AI-runs tegelijk starten.
+  useEffect(() => {
+    if (!tsPending) tsRunBezig.current = false;
+  }, [tsPending]);
+  useEffect(() => {
+    if (!invPending) invRunBezig.current = false;
+  }, [invPending]);
+
+  function autoLeesTimesheet(files: File[]) {
+    setTsBestanden(files.length);
+    if (files.length === 0) laatstGestarteTs.current = null;
+    const sleutel = autoUitleesSleutel(files, {
+      bezig: tsPending || tsRunBezig.current,
+      laatstGestart: laatstGestarteTs.current,
+    });
+    if (!sleutel || !tsFormRef.current) return;
+    laatstGestarteTs.current = sleutel;
+    tsRunBezig.current = true;
+    tsFormRef.current.requestSubmit();
+  }
+
+  function autoLeesFactuur(files: File[]) {
+    setInvBestanden(files.length);
+    if (files.length === 0) laatstGestarteInv.current = null;
+    const sleutel = autoUitleesSleutel(files, {
+      bezig: invPending || invRunBezig.current,
+      laatstGestart: laatstGestarteInv.current,
+    });
+    if (!sleutel || !invFormRef.current) return;
+    laatstGestarteInv.current = sleutel;
+    invRunBezig.current = true;
+    invFormRef.current.requestSubmit();
+  }
 
   // De week uit de weekfilter: alleen om stap 1 naar die week te leiden. Wat er
   // straks vastgelegd wordt komt uit de gewerkte dagen, niet hieruit. Meteen
@@ -1222,22 +1272,27 @@ function WizardRonde({
                       <FolderPlus className="h-4 w-4" /> Bestanden toevoegen (meerdere)
                     </Link>
                   </div>
-                  <form action={tsAction} className="space-y-3">
+                  <form ref={tsFormRef} action={tsAction} className="space-y-3">
                     <Dropzone
                       name="file"
                       accept={TIMESHEET_ACCEPT}
                       label="Sleep de timesheet hierheen"
                       hint="PDF, foto/scan of Excel — gedraaide scans worden automatisch rechtgezet"
+                      onFilesChange={autoLeesTimesheet}
                     />
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="text-xs text-ink-400">
-                        {aiKlaar
+                        {tsPending
+                          ? "AI leest de timesheet nu automatisch uit…"
+                          : aiKlaar
                           ? "Het bestand komt ook gewoon in de timesheet-inbox te staan."
                           : "Er is geen AI ingesteld — je vult de uren straks zelf in."}
                       </p>
-                      <SubmitButton pendingLabel="AI leest…">
-                        <Sparkles className="h-4 w-4" /> Upload &amp; uitlezen
-                      </SubmitButton>
+                      {tsBestanden > 0 && (
+                        <SubmitButton variant="outline" pendingLabel="AI leest…">
+                          <Sparkles className="h-4 w-4" /> Opnieuw uitlezen
+                        </SubmitButton>
+                      )}
                     </div>
                   </form>
 
@@ -1461,17 +1516,25 @@ function WizardRonde({
               </p>
             </div>
 
-            <form action={invAction} className="space-y-3">
+            <form ref={invFormRef} action={invAction} className="space-y-3">
               <Dropzone
                 name="file"
                 accept={FACTUUR_ACCEPT}
                 label="Sleep de factuur hierheen"
                 hint="PDF of Excel · geen aparte inkoopfactuur nodig — deze telt als inkoop"
+                onFilesChange={autoLeesFactuur}
               />
-              <div className="flex justify-end">
-                <SubmitButton variant="outline" pendingLabel="AI leest…">
-                  <Sparkles className="h-4 w-4" /> Factuur uitlezen
-                </SubmitButton>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-ink-400" aria-live="polite">
+                  {invPending
+                    ? "AI leest de factuur nu automatisch uit…"
+                    : "Uitlezen start automatisch zodra je een bestand kiest of sleept."}
+                </p>
+                {invBestanden > 0 && (
+                  <SubmitButton variant="outline" pendingLabel="AI leest…">
+                    <Sparkles className="h-4 w-4" /> Opnieuw uitlezen
+                  </SubmitButton>
+                )}
               </div>
             </form>
 

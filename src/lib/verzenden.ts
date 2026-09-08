@@ -44,29 +44,6 @@ type SalesInvoiceFull = {
   };
 };
 
-type PurchaseInvoiceFull = {
-  number: string;
-  issueDate: Date;
-  dueDate: Date;
-  vatRate: number;
-  subtotal: number;
-  vatAmount: number;
-  total: number;
-  notes: string | null;
-  lines: Line[];
-  consultant: {
-    firstName: string;
-    lastName: string;
-    email: string | null;
-    companyName: string | null;
-    address: string | null;
-    postalCode: string | null;
-    city: string | null;
-    country: string | null;
-    vatNumber: string | null;
-    iban: string | null;
-  };
-};
 
 function compact(items: (string | null | undefined)[]): string[] {
   return items.filter((x): x is string => Boolean(x && x.trim()));
@@ -246,72 +223,6 @@ export function salesEmailContent(inv: SalesInvoiceFull, s: CompanySettings): Em
   };
 }
 
-// ---------------------------------------------------------------------------
-// Purchase (inkoop, self-billing) → consultant/medewerker
-// ---------------------------------------------------------------------------
-
-export function purchaseInvoiceDoc(inv: PurchaseInvoiceFull, s: CompanySettings): InvoiceDoc {
-  const p = inv.consultant;
-  const name = `${p.firstName} ${p.lastName}`;
-  return {
-    docTitle: "Inkoopfactuur",
-    language: "nl",
-    number: inv.number,
-    issueDate: inv.issueDate,
-    dueDate: inv.dueDate,
-    subject: name,
-    services: null,
-    ourReference: null,
-    purchaseOrder: null,
-    company: companyBlock(s),
-    recipientLabel: "Aan:",
-    recipientName: p.companyName || name,
-    recipientLines: compact([
-      p.companyName ? name : "",
-      p.address,
-      [p.postalCode, p.city].filter(Boolean).join(" "),
-      p.country,
-      p.vatNumber ? `BTW: ${p.vatNumber}` : "",
-      p.iban ? `IBAN: ${p.iban}` : "",
-    ]),
-    lines: toInvoiceRows(inv.lines),
-    vatRate: inv.vatRate,
-    subtotal: inv.subtotal,
-    vatAmount: inv.vatAmount,
-    total: inv.total,
-    attachmentNote: null,
-    footerLines: compact([
-      p.iban
-        ? `Het totaalbedrag wordt door Q4S overgemaakt op ${p.iban} o.v.v. ${inv.number}.`
-        : `Self-billing inkoopfactuur, opgesteld door Q4S namens ${name}.`,
-      s.invoiceFooter || "",
-    ]),
-    notes: inv.notes,
-  };
-}
-
-export function purchaseEmailContent(inv: PurchaseInvoiceFull, s: CompanySettings): EmailContent {
-  const p = inv.consultant;
-  return {
-    kicker: "Inkoopfactuur",
-    heading: `Inkoopfactuur ${inv.number}`,
-    greeting: `Beste ${p.firstName},`,
-    paragraphs: compact([
-      `Hierbij ontvang je inkoopfactuur ${inv.number} voor de door jou gewerkte uren. De factuur vind je als PDF in de bijlage.`,
-      p.iban
-        ? `Het totaalbedrag van ${formatCurrency(inv.total)} wordt door Q4S overgemaakt op ${p.iban} o.v.v. ${inv.number}.`
-        : `Het totaalbedrag van ${formatCurrency(inv.total)} wordt door Q4S aan je overgemaakt o.v.v. ${inv.number}.`,
-      inv.notes,
-    ]),
-    summary: [
-      { label: "Factuurnummer", value: inv.number },
-      { label: "Datum", value: formatDate(inv.issueDate) },
-      { label: "Totaal incl. BTW", value: formatCurrency(inv.total) },
-    ],
-    footerLines: companyFooterLines(s),
-    attachmentNote: "De factuur is als PDF bijgevoegd bij deze e-mail.",
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Unified "send data" — everything an action or the preview needs.
@@ -342,19 +253,6 @@ export function salesSendData(inv: SalesInvoiceFull, s: CompanySettings): SendDa
   };
 }
 
-export function purchaseSendData(inv: PurchaseInvoiceFull, s: CompanySettings): SendData {
-  const content = purchaseEmailContent(inv, s);
-  return {
-    to: inv.consultant.email?.trim() || null,
-    recipientName: `${inv.consultant.firstName} ${inv.consultant.lastName}`,
-    subject: `Inkoopfactuur ${inv.number} — ${s.companyName || "Q4S"}`,
-    content,
-    html: renderQ4sEmail(content),
-    text: renderQ4sEmailText(content),
-    pdfDoc: purchaseInvoiceDoc(inv, s),
-    pdfName: `inkoopfactuur-${fileSafe(inv.number)}.pdf`,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Outbox — the verzendmap listing.
@@ -385,29 +283,17 @@ function weeksOf(lines: { timesheet: { weekStart: Date } | null }[]): string[] {
   return [...set];
 }
 
-export async function getOutbox(): Promise<{ sales: OutboxRow[]; purchase: OutboxRow[] }> {
-  const [sales, purchase] = await Promise.all([
-    db.invoice.findMany({
-      where: { status: "DRAFT" },
-      orderBy: { issueDate: "asc" },
-      include: {
-        client: {
-          select: { id: true, companyName: true, email: true, invoiceEmail: true },
-        },
-        lines: { select: { timesheet: { select: { weekStart: true } } } },
+export async function getOutbox(): Promise<{ sales: OutboxRow[] }> {
+  const sales = await db.invoice.findMany({
+    where: { status: "DRAFT" },
+    orderBy: { issueDate: "asc" },
+    include: {
+      client: {
+        select: { id: true, companyName: true, email: true, invoiceEmail: true },
       },
-    }),
-    db.purchaseInvoice.findMany({
-      where: { sentAt: null, status: { notIn: ["CANCELLED", "PAID"] } },
-      orderBy: { issueDate: "asc" },
-      include: {
-        consultant: {
-          select: { id: true, firstName: true, lastName: true, email: true },
-        },
-        lines: { select: { timesheet: { select: { weekStart: true } } } },
-      },
-    }),
-  ]);
+      lines: { select: { timesheet: { select: { weekStart: true } } } },
+    },
+  });
 
   return {
     sales: sales.map((inv) => ({
@@ -418,16 +304,6 @@ export async function getOutbox(): Promise<{ sales: OutboxRow[]; purchase: Outbo
       recipientName: inv.client.companyName,
       email: inv.client.invoiceEmail?.trim() || inv.client.email?.trim() || null,
       fixHref: `/klanten/${inv.client.id}`,
-      weekKeys: weeksOf(inv.lines),
-    })),
-    purchase: purchase.map((inv) => ({
-      id: inv.id,
-      number: inv.number,
-      total: inv.total,
-      issueDate: inv.issueDate,
-      recipientName: `${inv.consultant.firstName} ${inv.consultant.lastName}`,
-      email: inv.consultant.email?.trim() || null,
-      fixHref: `/werknemers/${inv.consultant.id}`,
       weekKeys: weeksOf(inv.lines),
     })),
   };

@@ -6,10 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { WeekBalk } from "@/components/week-balk";
-import { PURCHASE_INVOICE_STATUSES } from "@/lib/domain";
+import { RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
 import { formatCurrency, formatDate, formatWeekLabel, startOfISOWeek } from "@/lib/utils";
 import { parseWeek, ymd } from "@/lib/week-nav";
-import { payablePurchaseInvoices } from "@/lib/betalingen";
+import { payableReceivedInvoices } from "@/lib/betalingen";
 import { getCompanySettings } from "@/lib/settings";
 
 export const metadata = { title: "Betalingen" };
@@ -21,7 +21,7 @@ export default async function BetalingenPage({
 }) {
   const { week } = await searchParams;
   const [alleRows, settings] = await Promise.all([
-    payablePurchaseInvoices(),
+    payableReceivedInvoices(),
     getCompanySettings(),
   ]);
 
@@ -51,7 +51,7 @@ export default async function BetalingenPage({
     <div className="space-y-6">
       <PageHeader
         title="Betalingen"
-        description="Openstaande inkoopfacturen (ZZP'ers) klaarzetten als SEPA-bestand voor ING — uitvoerdatum = factuurdatum + 30 dagen."
+        description="Goedgekeurde facturen die Q4S van freelancers heeft ontvangen klaarzetten als SEPA-bestand voor ING — uitvoerdatum = factuurdatum + 30 dagen."
         actions={
           canDownload ? (
             <a href="/api/betalingen/sepa" className={buttonVariants()}>
@@ -68,7 +68,7 @@ export default async function BetalingenPage({
         <p className="flex items-start gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3 text-sm text-ink-600">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
           <span>
-            Je ziet de inkoopfacturen met een <strong>factuurdatum in {formatWeekLabel(monday)}</strong> —{" "}
+            Je ziet de ontvangen freelancerfacturen met een <strong>factuurdatum in {formatWeekLabel(monday)}</strong> —{" "}
             {rows.length} van {alleRows.length} openstaand. Het{" "}
             <strong>SEPA-bestand bevat altijd álle</strong> openstaande betalingen, niet alleen deze
             week.
@@ -90,7 +90,7 @@ export default async function BetalingenPage({
       {missing.length > 0 && (
         <p className="flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          {missing.length} inkoopfactu{missing.length === 1 ? "ur" : "ren"} {missing.length === 1 ? "heeft" : "hebben"} geen
+          {missing.length} ontvangen factu{missing.length === 1 ? "ur" : "ren"} {missing.length === 1 ? "heeft" : "hebben"} geen
           IBAN bij de werknemer — die worden overgeslagen. Vul de IBAN aan op de werknemerpagina.
         </p>
       )}
@@ -101,8 +101,8 @@ export default async function BetalingenPage({
           title={monday ? "Geen openstaande betalingen in deze week" : "Geen openstaande betalingen"}
           description={
             monday
-              ? `Er staat geen inkoopfactuur open met een factuurdatum in ${formatWeekLabel(monday).toLowerCase()}. Blader met de week-balk hierboven of kies "Alle weken".`
-              : "Er zijn geen inkoopfacturen die nog betaald moeten worden."
+              ? `Er staat geen goedgekeurde ontvangen factuur met een factuurdatum in ${formatWeekLabel(monday).toLowerCase()}. Blader met de week-balk hierboven of kies "Alle weken".`
+              : "Er zijn geen goedgekeurde ontvangen freelancerfacturen die nog betaald moeten worden."
           }
         />
       ) : (
@@ -125,7 +125,7 @@ export default async function BetalingenPage({
                   {rows.map((r) => (
                     <tr key={r.id} className={r.hasIban ? "" : "opacity-60"}>
                       <td className="py-2.5 pr-2">
-                        <Link href={`/inkoopfacturen/${r.id}`} className="font-medium text-ink-900 hover:underline">
+                        <Link href={`/ontvangen-facturen/${r.id}`} className="font-medium text-ink-900 hover:underline">
                           {r.number}
                         </Link>
                       </td>
@@ -133,7 +133,7 @@ export default async function BetalingenPage({
                       <td className="py-2.5 px-2 text-ink-600">{formatDate(r.issueDate)}</td>
                       <td className="py-2.5 px-2 text-ink-600">{formatDate(r.executionDate)}</td>
                       <td className="py-2.5 px-2">
-                        <StatusBadge options={PURCHASE_INVOICE_STATUSES} value={r.status} />
+                        <StatusBadge options={RECEIVED_INVOICE_STATUSES} value={r.status} />
                       </td>
                       <td className="py-2.5 px-2">
                         {r.hasIban ? (

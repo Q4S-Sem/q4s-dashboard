@@ -528,6 +528,7 @@ export async function verwerkWeek(
             periodStart: parseDatum(tekst(formData, "factuurPeriodeStart")),
             periodEnd: parseDatum(tekst(formData, "factuurPeriodeEind")),
             amount: bedrag,
+            countForVat: true,
             vatAmount: btw !== null && btw > 0 ? btw : null,
             kilometers: km !== null && km > 0 ? km : null,
             notes: tekst(formData, "factuurNotities") || null,

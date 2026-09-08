@@ -68,6 +68,11 @@ export function invoicePdfHref(id: string): string {
   return `/verzenden/verkoop/${id}/pdf`;
 }
 
+/** Embed dezelfde echte factuur-PDF als in Instellingen, zonder browsertoolbar. */
+export function invoicePdfPreviewHref(id: string): string {
+  return `${invoicePdfHref(id)}#toolbar=0&navpanes=0&view=FitH`;
+}
+
 /** Browsers blokkeren een regen van tabbladen; hierboven stoppen we netjes. */
 export const MAX_OPEN_TABS = 10;
 

@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { parseForm, type FormState } from "@/lib/form";
 import { parseHours, startOfISOWeek, round2 } from "@/lib/utils";
-import { createSalesInvoice, createPurchaseInvoice } from "@/lib/invoicing";
+import { createSalesInvoice } from "@/lib/invoicing";
 import { EXPENSE_CATEGORY_VALUES } from "@/lib/domain";
 import { veiligTerugPad } from "@/lib/week-detail";
 
@@ -290,78 +290,4 @@ export async function generateSalesForTimesheet(formData: FormData) {
   revalidatePath("/uren");
   revalidatePath("/", "layout");
   redirect(`/facturen/${res.invoiceId}`);
-}
-
-/** Generate ONLY the purchase (self-billing) invoice for one timesheet. */
-export async function generatePurchaseForTimesheet(formData: FormData) {
-  const timesheetId = String(formData.get("timesheetId") ?? "");
-  if (!timesheetId) return;
-  const ts = await db.timesheet.findUnique({
-    where: { id: timesheetId },
-    include: { placement: true },
-  });
-  if (!ts) redirect("/uren");
-
-  const res = await createPurchaseInvoice({
-    consultantId: ts.placement.consultantId,
-    timesheetIds: [timesheetId],
-    issueDate: new Date(),
-    notes: null,
-  });
-  if (!res.ok) redirect(`/uren/${timesheetId}?error=purchase`);
-
-  revalidatePath("/inkoopfacturen");
-  revalidatePath("/uren");
-  revalidatePath("/", "layout");
-  redirect(`/inkoopfacturen/${res.purchaseInvoiceId}`);
-}
-
-/**
- * One click: generate BOTH invoices for a timesheet — the purchase (cost) and
- * the sales (charge, incl. margin). Skips whichever already exists.
- */
-export async function generateBothForTimesheet(formData: FormData) {
-  const timesheetId = String(formData.get("timesheetId") ?? "");
-  if (!timesheetId) return;
-  const ts = await db.timesheet.findUnique({
-    where: { id: timesheetId },
-    include: {
-      placement: { include: { consultant: { select: { employmentType: true } } } },
-      invoiceLine: true,
-      purchaseLine: true,
-    },
-  });
-  if (!ts) redirect("/uren");
-
-  const issueDate = new Date();
-  let failed: string | null = null;
-  // Sales side first (requires APPROVED; this flips the timesheet to INVOICED).
-  // Alleen als er een klant gekoppeld is — zonder bedrijf geen verkoopfactuur.
-  if (!ts.invoiceLine && ts.status === "APPROVED" && ts.placement.clientId) {
-    const r = await createSalesInvoice({
-      clientId: ts.placement.clientId,
-      timesheetIds: [timesheetId],
-      issueDate,
-      notes: null,
-    });
-    if (!r.ok) failed = "sales";
-  }
-  // Purchase side (independent of the sales status) — NIET voor eigen loondienst-
-  // personeel: die krijgt salaris, geen inkoopfactuur.
-  if (!ts.purchaseLine && ts.placement.consultant.employmentType !== "LOONDIENST") {
-    const r = await createPurchaseInvoice({
-      consultantId: ts.placement.consultantId,
-      timesheetIds: [timesheetId],
-      issueDate,
-      notes: null,
-    });
-    if (!r.ok && !failed) failed = "purchase";
-  }
-
-  revalidatePath("/facturen");
-  revalidatePath("/inkoopfacturen");
-  revalidatePath("/uren");
-  revalidatePath("/", "layout");
-  revalidatePath(`/uren/${timesheetId}`);
-  redirect(failed ? `/uren/${timesheetId}?error=${failed}` : `/uren/${timesheetId}`);
 }

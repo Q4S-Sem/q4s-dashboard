@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { getOutbox, matchOutbox } from "@/lib/verzenden";
 import {
   sendSalesInvoiceById,
-  sendPurchaseInvoiceById,
   type SendOutcome,
 } from "@/lib/send-invoice";
 
@@ -13,24 +12,21 @@ import {
 // zodat de bulkknoppen op /facturen exact hetzelfde doen als de verzendmap.
 type Outcome = SendOutcome;
 const runSales = sendSalesInvoiceById;
-const runPurchase = sendPurchaseInvoiceById;
 
 function revalidate() {
   revalidatePath("/verzenden");
   revalidatePath("/facturen");
-  revalidatePath("/inkoopfacturen");
+
   revalidatePath("/", "layout");
 }
 
 /** Build the single-send redirect, preserving the view the user was checking (tab + week + zoek). */
 function singleResult(
   outcome: Outcome,
-  tab: "verkoop" | "inkoop",
   week: string,
   q: string,
 ): string {
   const p = new URLSearchParams();
-  if (tab === "inkoop") p.set("tab", "inkoop"); // verkoop is the default → omit
   if (/^\d{4}-\d{2}-\d{2}$/.test(week)) p.set("week", week);
   if (q) p.set("q", q);
   if (outcome === "no-email") p.set("noemail", "1");
@@ -51,18 +47,7 @@ export async function sendSalesInvoice(formData: FormData) {
   if (!id) redirect("/verzenden");
   const outcome = await runSales(id);
   revalidate();
-  redirect(singleResult(outcome, "verkoop", week, q));
-}
-
-/** Send one inkoopfactuur to de medewerker. */
-export async function sendPurchaseInvoice(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  const week = String(formData.get("week") ?? "");
-  const q = String(formData.get("q") ?? "").trim();
-  if (!id) redirect("/verzenden");
-  const outcome = await runPurchase(id);
-  revalidate();
-  redirect(singleResult(outcome, "inkoop", week, q));
+  redirect(singleResult(outcome, week, q));
 }
 
 /**
@@ -74,14 +59,12 @@ export async function sendPurchaseInvoice(formData: FormData) {
  * is still claimed atomically inside run*.
  */
 export async function sendScope(formData: FormData) {
-  const tab = String(formData.get("tab") ?? "") === "inkoop" ? "inkoop" : "verkoop";
   const weekRaw = String(formData.get("week") ?? "");
   const week = /^\d{4}-\d{2}-\d{2}$/.test(weekRaw) ? weekRaw : "";
   const q = String(formData.get("q") ?? "").trim();
 
-  const { sales, purchase } = await getOutbox();
-  const pool = tab === "inkoop" ? purchase : sales;
-  const targets = pool.filter((r) => matchOutbox(r, { week, q }));
+  const { sales } = await getOutbox();
+  const targets = sales.filter((r) => matchOutbox(r, { week, q }));
 
   let live = 0;
   let simulated = 0;
@@ -95,12 +78,12 @@ export async function sendScope(formData: FormData) {
     // "already" → a concurrent send claimed it; silently skip.
   };
 
-  for (const r of targets) tally(await (tab === "inkoop" ? runPurchase(r.id) : runSales(r.id)));
+  for (const r of targets) tally(await runSales(r.id));
 
   revalidate();
   const total = live + simulated;
   const mode = total > 0 && live === 0 ? "sim" : "live";
-  const p = new URLSearchParams({ tab });
+  const p = new URLSearchParams();
   if (week) p.set("week", week);
   if (q) p.set("q", q);
   p.set("bulk", String(total));

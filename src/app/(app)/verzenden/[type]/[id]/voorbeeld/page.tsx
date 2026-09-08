@@ -2,7 +2,6 @@ import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import {
-  ArrowLeft,
   Send,
   Mail,
   MailWarning,
@@ -18,12 +17,13 @@ import {
   renderQ4sEmail,
   emailLogoDataUri,
 } from "@/lib/email";
-import { salesSendData, purchaseSendData, type SendData } from "@/lib/verzenden";
+import { salesSendData } from "@/lib/verzenden";
+import { isVerzendtypeToegestaan } from "@/lib/facturatiebeleid";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { sendSalesInvoice, sendPurchaseInvoice } from "../../../actions";
+import { sendSalesInvoice } from "../../../actions";
 
 export const metadata = { title: "Voorbeeld e-mail" };
 
@@ -44,33 +44,17 @@ export default async function VoorbeeldPage({
   params: Promise<{ type: string; id: string }>;
 }) {
   const { type, id } = await params;
-  if (type !== "verkoop" && type !== "inkoop") notFound();
+  if (!isVerzendtypeToegestaan(type)) notFound();
 
   const settings = await getCompanySettings();
-
-  let data: SendData;
-  let action: (formData: FormData) => Promise<void>;
-  let fixHref: string;
-
-  if (type === "verkoop") {
-    const inv = await db.invoice.findUnique({
-      where: { id },
-      include: { client: true, lines: true },
-    });
-    if (!inv) notFound();
-    data = salesSendData(inv, settings);
-    action = sendSalesInvoice;
-    fixHref = `/klanten/${inv.clientId}`;
-  } else {
-    const inv = await db.purchaseInvoice.findUnique({
-      where: { id },
-      include: { consultant: true, lines: true },
-    });
-    if (!inv) notFound();
-    data = purchaseSendData(inv, settings);
-    action = sendPurchaseInvoice;
-    fixHref = `/werknemers/${inv.consultantId}`;
-  }
+  const inv = await db.invoice.findUnique({
+    where: { id },
+    include: { client: true, lines: true },
+  });
+  if (!inv) notFound();
+  const data = salesSendData(inv, settings);
+  const action = sendSalesInvoice;
+  const fixHref = `/klanten/${inv.clientId}`;
 
   const live = isEmailConfigured();
   const mailRedirect = await getMailRedirect();
@@ -84,9 +68,7 @@ export default async function VoorbeeldPage({
 
       <PageHeader
         title="Voorbeeld e-mail"
-        description={`Zo gaat ${
-          type === "verkoop" ? "de factuur naar de klant" : "de inkoopfactuur naar de medewerker"
-        } de deur uit.`}
+        description="Zo gaat de verkoopfactuur naar de klant de deur uit."
       />
 
       {/* Links de gegevens + de verzendknop, rechts de mail zelf — naast elkaar
@@ -108,7 +90,7 @@ export default async function VoorbeeldPage({
                   className="inline-flex items-center gap-1.5 font-medium text-amber-700 hover:underline"
                 >
                   <MailWarning className="h-3.5 w-3.5" /> Geen e-mailadres — toevoegen bij{" "}
-                  {type === "verkoop" ? "de klant" : "de medewerker"}
+                  de klant
                 </Link>
               )}
             </Row>

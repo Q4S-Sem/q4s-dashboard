@@ -4,6 +4,7 @@ import {
   MAX_OPEN_TABS,
   capOpen,
   invoicePdfHref,
+  invoicePdfPreviewHref,
   isDeletableInvoice,
   isSendableInvoice,
   parseBulkIds,
@@ -110,6 +111,13 @@ test("een lege selectie doet niets", () => {
 
 test("de PDF-link wijst naar de bestaande verkoop-PDF-route", () => {
   assert.equal(invoicePdfHref("abc123"), "/verzenden/verkoop/abc123/pdf");
+});
+
+test("de factuurdetail-preview embedt exact dezelfde PDF zonder PDF-toolbar", () => {
+  assert.equal(
+    invoicePdfPreviewHref("abc123"),
+    "/verzenden/verkoop/abc123/pdf#toolbar=0&navpanes=0&view=FitH",
+  );
 });
 
 test("openen wordt afgetopt zodat de browser de tabbladen niet blokkeert", () => {

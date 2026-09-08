@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { round2, formatWeekLabel } from "./utils";
 import { computeTimesheetMoney, type SideBreakdown } from "./toeslag";
-import { createSalesInvoice, createPurchaseInvoice } from "./invoicing";
+import { createSalesInvoice } from "./invoicing";
 
 // Shared money math + aggregations for the Facturatie hub: the guided per-person
 // flow (/verwerken), the overview (/totaaloverzicht) and the dashboard.
@@ -42,18 +42,7 @@ export type FlowWeek = {
  *  invoicing), or sales-done-but-purchase-missing. Excludes fully-invoiced. */
 function pendingWhere() {
   return {
-    OR: [
-      { status: "SUBMITTED" as const },
-      { status: "APPROVED" as const },
-      {
-        status: "INVOICED" as const,
-        purchaseLine: { is: null },
-        // Loondienst-personeel (eigen medewerkers) krijgt GÉÉN inkoopfactuur — dat
-        // is salaris. Een al-gefactureerde loondienst-week is dus klaar, niet
-        // "wacht nog op inkoop". Anders bleef die eeuwig openstaan.
-        placement: { consultant: { employmentType: { not: "LOONDIENST" } } },
-      },
-    ],
+    status: { in: ["SUBMITTED" as const, "APPROVED" as const] },
   };
 }
 
@@ -178,14 +167,22 @@ export async function pendingWorkByConsultant(): Promise<ConsultantPending[]> {
     if (w.status === "SUBMITTED") row.needApproval += 1;
     // Sales pending = APPROVED and not yet on a sales invoice.
     if (w.status === "APPROVED" && !w.hasSales) row.teFactureren = round2(row.teFactureren + w.charge);
-    // Purchase pending = approved/invoiced and not yet on a purchase invoice —
-    // maar NIET voor loondienst (die krijgen salaris, geen inkoopfactuur).
-    if (!w.noInkoop && (w.status === "APPROVED" || w.status === "INVOICED") && !w.hasPurchase)
-      row.teBetalen = round2(row.teBetalen + w.cost);
+    // Verwachte kosten blijven zichtbaar voor margecontrole. De betaling loopt
+    // uitsluitend via de ontvangen freelancerfactuur (ReceivedInvoice).
+    if (!w.noInkoop && w.status === "APPROVED") row.teBetalen = round2(row.teBetalen + w.cost);
   }
 
   return [...byConsultant.values()]
-    .map(({ _c, ...row }) => row)
+    .map((row) => ({
+      consultantId: row.consultantId,
+      name: row.name,
+      discipline: row.discipline,
+      weeks: row.weeks,
+      hours: row.hours,
+      needApproval: row.needApproval,
+      teFactureren: row.teFactureren,
+      teBetalen: row.teBetalen,
+    }))
     .sort((a, b) => b.teFactureren + b.teBetalen - (a.teFactureren + a.teBetalen));
 }
 
@@ -201,7 +198,7 @@ export async function getNavBadges(): Promise<{
   verzenden: number;
   teDoen: number;
 }> {
-  const [pending, facturen, inkoop, ontvangen, verzendSales, verzendPurchase, teDoen] =
+  const [pending, facturen, ontvangen, verzendSales, teDoen] =
     await Promise.all([
       db.timesheet.findMany({
         where: pendingWhere(),
@@ -209,19 +206,15 @@ export async function getNavBadges(): Promise<{
       }),
       // Open sales invoices (created/sent, not yet paid or cancelled).
       db.invoice.count({ where: { status: { in: ["DRAFT", "SENT"] } } }),
-      // Open purchase invoices (created/approved, still to pay).
-      db.purchaseInvoice.count({ where: { status: { in: ["DRAFT", "APPROVED"] } } }),
       // Inkomende ZZP-facturen die nog niet betaald zijn.
       db.receivedInvoice.count({ where: { status: { not: "PAID" } } }),
-      // Verzendmap: DRAFT sales not yet sent…
+      // Verzendmap: uitsluitend DRAFT-verkoopfacturen voor klanten.
       db.invoice.count({ where: { status: "DRAFT" } }),
-      // …and purchase invoices not yet sent to the consultant.
-      db.purchaseInvoice.count({ where: { sentAt: null, status: { notIn: ["CANCELLED", "PAID"] } } }),
       // Te-late open taken (chatter/automatisering) — de "Te doen"-badge.
       db.activity.count({ where: { kind: "TODO", done: false, dueAt: { lt: new Date() } } }),
     ]);
   const verwerken = new Set(pending.map((t) => t.placement.consultantId)).size;
-  return { verwerken, facturen, inkoop, ontvangen, verzenden: verzendSales + verzendPurchase, teDoen };
+  return { verwerken, facturen, inkoop: 0, ontvangen, verzenden: verzendSales, teDoen };
 }
 
 export type SalesGroup = {
@@ -263,10 +256,8 @@ export async function consultantFlow(consultantId: string): Promise<ConsultantFl
 
   const needApprovalIds = weeks.filter((w) => w.status === "SUBMITTED").map((w) => w.timesheetId);
 
-  // Loondienst → geen inkoopfactuur (salaris): dan is er niets "in te kopen".
-  const inkoopPending = ownStaff
-    ? []
-    : weeks.filter((w) => (w.status === "APPROVED" || w.status === "INVOICED") && !w.hasPurchase);
+  // Q4S gebruikt de ontvangen factuur van de freelancer; self-billing staat uit.
+  const inkoopPending: FlowWeek[] = [];
   const inkoopTotals = {
     hours: round2(inkoopPending.reduce((s, w) => s + w.hours, 0)),
     cost: round2(inkoopPending.reduce((s, w) => s + w.cost, 0)),
@@ -315,15 +306,16 @@ export type BatchResult = {
 };
 
 /**
- * Genereer voor ELKE medewerker met openstaand werk automatisch de inkoopfactuur
- * (wat Q4S betaalt) en de verkoopfactuur(en) per klant. Alleen GOEDGEKEURDE
+ * Genereer voor ELKE medewerker met openstaand werk de verkoopfactuur(en) per
+ * klant. De eigen freelancerfactuur wordt apart als ReceivedInvoice geregistreerd.
+ * Alleen GOEDGEKEURDE
  * weekstaten worden verwerkt; nog-in-te-dienen (SUBMITTED) weekstaten worden
  * geteld en overgeslagen zodat een mens ze eerst controleert. Elke factuur is
  * atomair (zie invoicing.ts); we recomputen per medewerker uit de DB.
  */
 export async function processAllPending(): Promise<BatchResult> {
   const rows = await pendingWorkByConsultant();
-  let inkoop = 0;
+  const inkoop = 0;
   let verkoop = 0;
   let skippedApproval = 0;
   const errors: string[] = [];
@@ -338,17 +330,6 @@ export async function processAllPending(): Promise<BatchResult> {
       if (!flow) continue;
       skippedApproval += flow.needApprovalIds.length;
 
-      // Inkoop eerst (verandert de status niet), dan verkoop (zet op INVOICED).
-      if (flow.inkoopPendingIds.length > 0) {
-        const res = await createPurchaseInvoice({
-          consultantId: row.consultantId,
-          timesheetIds: flow.inkoopPendingIds,
-          issueDate: new Date(),
-          notes: null,
-        });
-        if (res.ok) inkoop++;
-        else errors.push(`Inkoop ${row.name}: ${res.error}`);
-      }
       for (const g of flow.verkoopByClient) {
         const res = await createSalesInvoice({
           clientId: g.clientId,
@@ -377,9 +358,8 @@ export type ConsultantProcessResult = {
 
 /**
  * Verwerk ÉÉN medewerker: keur alle ingediende (SUBMITTED) weken goed en maak
- * daarna — afhankelijk van `opts` — de inkoopfactuur (wat Q4S betaalt) en/of de
- * verkoopfactuur(en) per klant aan. Default = allebei ("Verwerk alles"); met
- * `{ inkoop: true, verkoop: false }` (of andersom) maak je er maar één. De mens
+ * daarna de verkoopfactuur(en) per klant aan. Een eventuele oude `inkoop`-optie
+ * wordt bewust genegeerd: Q4S gebruikt de ontvangen freelancerfactuur. De mens
  * controleert vooraf in het overzicht; alles wordt server-side hercomputed en
  * elke factuur is atomair (invoicing.ts).
  */
@@ -387,7 +367,6 @@ export async function processConsultant(
   consultantId: string,
   opts: { inkoop?: boolean; verkoop?: boolean } = {},
 ): Promise<ConsultantProcessResult | null> {
-  const doInkoop = opts.inkoop ?? true;
   const doVerkoop = opts.verkoop ?? true;
 
   const flow0 = await consultantFlow(consultantId);
@@ -408,23 +387,13 @@ export async function processConsultant(
   const flow = await consultantFlow(consultantId);
   if (!flow) return { ok: false, approved, inkoop: 0, verkoop: 0, errors: ["Flow verdween."] };
 
-  let inkoop = 0;
+  const inkoop = 0;
   let verkoop = 0;
   const errors: string[] = [];
 
   // Eén factuur die faalt mag de rest niet wegvagen (elke factuur is atomair),
   // maar een echte DB-fout WERPT — vang die af, log 'm en ga door.
   try {
-    if (doInkoop && flow.inkoopPendingIds.length > 0) {
-      const res = await createPurchaseInvoice({
-        consultantId,
-        timesheetIds: flow.inkoopPendingIds,
-        issueDate: new Date(),
-        notes: null,
-      });
-      if (res.ok) inkoop++;
-      else errors.push(`Inkoopfactuur: ${res.error}`);
-    }
     if (doVerkoop) {
       for (const g of flow.verkoopByClient) {
         const res = await createSalesInvoice({
@@ -468,8 +437,9 @@ export type ArchivedWeek = {
 };
 
 /**
- * Alle weekstaten die het volledige proces hebben doorlopen: INVOICED én zowel
- * op een verkoop- als op een inkoopfactuur. Gegroepeerd per week (nieuwste
+ * Alle weekstaten die het volledige proces hebben doorlopen: INVOICED en op een
+ * verkoopfactuur. De freelancerfactuur is een apart ontvangen brondocument.
+ * Gegroepeerd per week (nieuwste
  * eerst). De vorige flows (verwerken/verzendmap) blijven zo schoon; hier vind je
  * de historie terug en kun je via de factuur-links aanpassen — het bestaande
  * factuurnummer blijft behouden (bewerken wijzigt het nummer niet).
@@ -479,12 +449,6 @@ export async function archivedBillingByWeek(): Promise<ArchivedWeek[]> {
     where: {
       status: "INVOICED",
       invoiceLine: { isNot: null },
-      // Volledig verwerkt = verkoop gefactureerd én (inkoop gefactureerd OF
-      // loondienst, want dan hoort er geen inkoopfactuur bij — dat is salaris).
-      OR: [
-        { purchaseLine: { isNot: null } },
-        { placement: { consultant: { employmentType: "LOONDIENST" } } },
-      ],
     },
     include: {
       entries: { select: { hours: true } },
@@ -579,9 +543,9 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
   const end = range?.end ?? new Date(now.getFullYear() + 1, 0, 1);
   const inRange = (d: Date) => d >= start && d < end;
 
-  const [invoices, purchases, invoiceLines, purchaseLines] = await Promise.all([
+  const [invoices, received, invoiceLines] = await Promise.all([
     db.invoice.findMany({ include: { client: { select: { id: true, companyName: true } } } }),
-    db.purchaseInvoice.findMany({
+    db.receivedInvoice.findMany({
       include: { consultant: { select: { id: true, firstName: true, lastName: true } } },
     }),
     db.invoiceLine.findMany({
@@ -590,19 +554,21 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
         placement: { select: { consultantId: true } },
       },
     }),
-    db.purchaseInvoiceLine.findMany({
-      include: { purchaseInvoice: { select: { status: true, consultantId: true } } },
-    }),
   ]);
 
   const live = (s: string) => s !== "CANCELLED";
+  const acceptedReceived = received.filter(
+    (r): r is typeof r & { issueDate: Date } =>
+      (r.status === "APPROVED" || r.status === "PAID") && r.issueDate !== null,
+  );
+  const receivedNet = (r: (typeof acceptedReceived)[number]) => round2(r.amount - (r.vatAmount ?? 0));
 
   // Headline totals (periode, ex BTW voor omzet/marge).
   const omzet = round2(
     invoices.filter((i) => live(i.status) && inRange(new Date(i.issueDate))).reduce((s, i) => s + i.subtotal, 0),
   );
   const inkoop = round2(
-    purchases.filter((p) => live(p.status) && inRange(new Date(p.issueDate))).reduce((s, p) => s + p.subtotal, 0),
+    acceptedReceived.filter((p) => inRange(p.issueDate)).reduce((s, p) => s + receivedNet(p), 0),
   );
   const marge = round2(omzet - inkoop);
   const margePct = omzet > 0 ? Math.round((marge / omzet) * 100) : 0;
@@ -614,10 +580,10 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
   );
   const openstaand = round2(sentInvoices.reduce((s, i) => s + i.total, 0));
   const overdue = round2(sentInvoices.filter((i) => i.dueDate < now).reduce((s, i) => s + i.total, 0));
-  const toPay = purchases.filter(
-    (p) => p.status === "APPROVED" && (!scoped || inRange(new Date(p.issueDate))),
+  const toPay = acceptedReceived.filter(
+    (p) => p.status === "APPROVED" && (!scoped || inRange(p.issueDate)),
   );
-  const teBetalen = round2(toPay.reduce((s, p) => s + p.total, 0));
+  const teBetalen = round2(toPay.reduce((s, p) => s + p.amount, 0));
 
   // Per month (last 12), ex BTW.
   const perMonth: OverviewMonth[] = Array.from({ length: 12 }, (_, idx) => {
@@ -630,10 +596,9 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
     const m = perMonth.find((x) => x.key === monthKey(new Date(i.issueDate)));
     if (m) m.omzet = round2(m.omzet + i.subtotal);
   }
-  for (const p of purchases) {
-    if (!live(p.status)) continue;
-    const m = perMonth.find((x) => x.key === monthKey(new Date(p.issueDate)));
-    if (m) m.inkoop = round2(m.inkoop + p.subtotal);
+  for (const p of acceptedReceived) {
+    const m = perMonth.find((x) => x.key === monthKey(p.issueDate));
+    if (m) m.inkoop = round2(m.inkoop + receivedNet(p));
   }
   for (const m of perMonth) m.marge = round2(m.omzet - m.inkoop);
 
@@ -653,8 +618,7 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
   }
   const perClient = [...clientMap.values()].sort((a, b) => b.omzet - a.omzet);
 
-  // Per consultant: omzet from invoice lines (placement→consultant), kosten from
-  // purchase lines, te betalen from APPROVED purchase invoices.
+  // Per consultant: omzet uit verkoopregels, kosten/te betalen uit ontvangen facturen.
   const consMap = new Map<string, OverviewConsultant>();
   const ensureCons = (id: string): OverviewConsultant => {
     let c = consMap.get(id);
@@ -668,12 +632,11 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
     if (!live(l.invoice.status) || !l.placement) continue;
     ensureCons(l.placement.consultantId).omzet += l.amount;
   }
-  for (const l of purchaseLines) {
-    if (!live(l.purchaseInvoice.status)) continue;
-    const c = ensureCons(l.purchaseInvoice.consultantId);
-    c.kosten += l.amount;
+  for (const p of acceptedReceived) {
+    const c = ensureCons(p.consultantId);
+    c.kosten += receivedNet(p);
   }
-  for (const p of toPay) ensureCons(p.consultantId).teBetalen = round2(ensureCons(p.consultantId).teBetalen + p.total);
+  for (const p of toPay) ensureCons(p.consultantId).teBetalen = round2(ensureCons(p.consultantId).teBetalen + p.amount);
   // Resolve names + dienstverband in één query (voor het loondienst-label).
   const consInfo = new Map<string, { name: string; loondienst: boolean }>();
   const consIds = [...consMap.keys()];
@@ -733,7 +696,7 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
     perClient,
     perConsultant,
     salesStatus: countBy(invoices, true),
-    purchaseStatus: countBy(purchases, false),
+    purchaseStatus: countBy(received.map((r) => ({ status: r.status, total: r.amount })), false),
   };
 }
 

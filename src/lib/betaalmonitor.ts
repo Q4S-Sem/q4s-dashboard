@@ -4,7 +4,7 @@ import { ZZP_PAYMENT_TERM_DAYS } from "./betalingen";
 
 // ---------------------------------------------------------------------------
 // Betaalmonitor: houdt de INKOMENDE betalingen (verkoopfacturen — klanten betalen
-// Q4S) én de UITGAANDE (inkoopfacturen — Q4S betaalt ZZP'ers) bij, signaleert wat
+// Q4S) én de UITGAANDE (ontvangen freelancerfacturen — Q4S betaalt ZZP'ers) bij,
 // te laat is, en levert de lijst facturen die een betalingsherinnering verdienen.
 // ---------------------------------------------------------------------------
 
@@ -69,13 +69,13 @@ function summarize(open: MonitorRow[], paid: { total: number }[]): MonitorSide {
 }
 
 export async function paymentMonitor(now = new Date()): Promise<PaymentMonitor> {
-  const [sales, purchases] = await Promise.all([
+  const [sales, received] = await Promise.all([
     db.invoice.findMany({
       where: { status: { in: ["SENT", "PAID"] } },
       include: { client: { select: { companyName: true } } },
     }),
-    db.purchaseInvoice.findMany({
-      where: { status: { in: ["DRAFT", "APPROVED", "PAID"] } },
+    db.receivedInvoice.findMany({
+      where: { status: { in: ["APPROVED", "PAID"] }, issueDate: { not: null } },
       include: { consultant: { select: { firstName: true, lastName: true, companyName: true } } },
     }),
   ]);
@@ -101,23 +101,24 @@ export async function paymentMonitor(now = new Date()): Promise<PaymentMonitor> 
     sales.filter((i) => i.status === "PAID"),
   );
 
-  // Uitgaand (inkoop): open = DRAFT/APPROVED, betaald = PAID. "Moet betaald zijn"-datum
+  // Uitgaand: open = goedgekeurde ontvangen factuur, betaald = PAID. Betaaldatum
   // = factuurdatum + ZZP-termijn (30d), consistent met de SEPA-betalingen.
-  const purchOpen = purchases
-    .filter((p) => p.status !== "PAID")
+  const purchOpen = received
+    .filter((p) => p.status === "APPROVED" && p.issueDate && p.number?.trim())
     .map<MonitorRow>((p) => {
-      const payBy = new Date(p.issueDate);
+      const issueDate = p.issueDate as Date;
+      const payBy = new Date(issueDate);
       payBy.setDate(payBy.getDate() + ZZP_PAYMENT_TERM_DAYS);
       const name = p.consultant.companyName?.trim() || `${p.consultant.firstName} ${p.consultant.lastName}`;
       return {
         id: p.id,
-        number: p.number,
+        number: p.number!.trim(),
         partyName: name,
-        issueDate: p.issueDate,
+        issueDate,
         dueDate: payBy,
-        total: p.total,
+        total: p.amount,
         status: p.status,
-        paidDate: p.paidDate,
+        paidDate: null,
         daysOverdue: daysOverdue(payBy, now),
         reminderCount: 0,
         reminderSentAt: null,
@@ -125,7 +126,7 @@ export async function paymentMonitor(now = new Date()): Promise<PaymentMonitor> 
     });
   const outgoing = summarize(
     purchOpen,
-    purchases.filter((p) => p.status === "PAID"),
+    received.filter((p) => p.status === "PAID").map((p) => ({ total: p.amount })),
   );
 
   // Herinnerbaar: inkomende facturen >= drempel te laat die niet recent al herinnerd zijn.
