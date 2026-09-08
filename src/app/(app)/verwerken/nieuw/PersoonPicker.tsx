@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input, Select } from "@/components/ui/field";
+import { Input } from "@/components/ui/field";
 import { formatCurrency } from "@/lib/utils";
 import { initialen } from "@/lib/weekverwerking";
 import {
@@ -31,13 +31,14 @@ import {
 } from "@/lib/wizard-personen";
 import {
   personenVoorWeek,
-  weekKeuzeLabel,
   weekLabel,
   weekSamenvatting,
   weekStatusKleur,
   weekStatusLabel,
   type PersoonWeekStatus,
 } from "@/lib/wizard-weekfilter";
+import { weekSlotVanKey } from "@/lib/wizard-weeknav";
+import { WeekNavigator } from "./WeekNavigator";
 import {
   inboxSamenvatting,
   type WizardPersoon,
@@ -225,63 +226,53 @@ export function PersoonPicker({
     [gezocht, week, verwerktPerPlaatsing, alleenOpen],
   );
 
-  const huidigeWeek = weekkeuze.weken.find((w) => w.key === week) ?? null;
+  // De week waarin nu gewerkt wordt. Die kan buiten de bekende keuzelijst vallen
+  // (de navigator kan naar élke week springen), dus vallen we terug op de slot
+  // die puur uit de weeksleutel volgt. `huidig` = de lopende week.
+  const huidigeWeekKey = weekkeuze.weken.find((w) => w.huidig)?.key ?? null;
+  const gekozenWeek = weekkeuze.weken.find((w) => w.key === week) ?? weekSlotVanKey(week);
+  const isHuidigeWeek = !!week && week === huidigeWeekKey;
 
   return (
     <Card>
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="flex items-center gap-2 text-[15px] font-bold text-ink-900">
-              <Users className="h-4 w-4 text-brand-600" /> Kies de week en de persoon
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm text-ink-500">
-              Kies eerst de week waarin je werkt, dan de persoon en zijn plaatsing — daarna loop je
-              in drie stappen door de facturatie.
-            </p>
-          </div>
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-2 text-[15px] font-bold text-ink-900">
+            <Users className="h-4 w-4 text-brand-600" /> Kies de week en de persoon
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm text-ink-500">
+            Kies eerst de week waarin je werkt, dan de persoon en zijn plaatsing — daarna loop je
+            in drie stappen door de facturatie.
+          </p>
+        </div>
 
-          {/* Weekkeuze en zoekveld op één regel, even hoog; op smal onder elkaar. */}
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-            {weekkeuze.weken.length > 0 && (
-              <div className="w-full sm:w-60">
-                <Select
-                  defaultValue={week}
-                  onValueChange={onWeek}
-                  aria-label="Week om te verwerken"
-                >
-                  {weekkeuze.weken.map((w) => (
-                    <option key={w.key} value={w.key} data-color={w.open > 0 ? "amber" : "slate"}>
-                      {weekKeuzeLabel(w)}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            )}
+        {/* DE LEIDENDE WEEKFILTER: vorige/volgende week + kalender. Alles op deze
+            pagina volgt de hier gekozen week. */}
+        <div className="flex flex-col items-center gap-3 rounded-md border border-ink-200 bg-ink-50/50 px-3 py-3">
+          <WeekNavigator week={week} onWeek={onWeek} huidigeWeekKey={huidigeWeekKey} />
 
-            {toonZoek && (
-              <div className="relative w-full sm:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
-                <Input
-                  type="search"
-                  value={zoek}
-                  onChange={(e) => setZoek(e.target.value)}
-                  placeholder="Zoek op naam of klant…"
-                  aria-label="Zoek op naam of klant"
-                  className="pl-9"
-                />
-              </div>
-            )}
-          </div>
+          {toonZoek && (
+            <div className="relative w-full max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
+              <Input
+                type="search"
+                value={zoek}
+                onChange={(e) => setZoek(e.target.value)}
+                placeholder="Zoek op naam of klant…"
+                aria-label="Zoek op naam of klant"
+                className="pl-9"
+              />
+            </div>
+          )}
         </div>
 
         {/* De gekozen week in één regel, met de knop om de rest weg te laten. */}
-        {huidigeWeek && (
+        {gekozenWeek && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-ink-100 bg-ink-50/60 px-3 py-2">
             <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
               <CalendarDays className="h-4 w-4 shrink-0 text-brand-600" />
-              <span className="font-semibold text-ink-900">{weekLabel(huidigeWeek)}</span>
-              {huidigeWeek.huidig && <Badge color="blue">deze week</Badge>}
+              <span className="font-semibold text-ink-900">{weekLabel(gekozenWeek)}</span>
+              {isHuidigeWeek && <Badge color="blue">deze week</Badge>}
               <span className="text-ink-400">{weekSamenvatting(inWeek)}</span>
             </span>
             <Button
@@ -312,7 +303,7 @@ export function PersoonPicker({
         ) : getoond.length === 0 ? (
           <EmptyState
             icon={<CalendarDays className="h-6 w-6" />}
-            title={`Niets te verwerken in ${huidigeWeek ? weekLabel(huidigeWeek).toLowerCase() : "deze week"}`}
+            title={`Niets te verwerken in ${gekozenWeek ? weekLabel(gekozenWeek).toLowerCase() : "deze week"}`}
             description="Er ligt van niemand een urenstaat klaar voor deze week. Kies een andere week, of laat gewoon iedereen zien."
             action={
               <Button type="button" variant="outline" size="sm" onClick={() => setAlleenOpen(false)}>
