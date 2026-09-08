@@ -23,8 +23,9 @@ export function THead({
   return (
     <thead
       className={cn(
-        // Kleine kapitalen met ruime spatiëring — het labelritme van q4s.nl.
-        "border-b border-ink-200 bg-ink-50/60 text-left text-[13px] font-semibold text-ink-500",
+        // Studio Admin-stijl kop: kleine uppercase labels, rustig en muted,
+        // op een lichte achtergrond met een dunne onderrand.
+        "border-b border-ink-200 bg-ink-50/50 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-400",
         className,
       )}
       {...props}
@@ -47,7 +48,7 @@ export function TR({
   // zich over de héle rij kan uitrekken. Kost niets als je 'm niet gebruikt.
   return (
     <tr
-      className={cn("group relative transition-colors hover:bg-brand-50/50", className)}
+      className={cn("group relative transition-colors hover:bg-ink-50", className)}
       {...props}
     />
   );
@@ -87,7 +88,7 @@ export function TH({
   className,
   ...props
 }: React.ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th className={cn("px-4 py-3 font-bold", className)} {...props} />;
+  return <th className={cn("px-4 py-2.5 font-semibold", className)} {...props} />;
 }
 
 export function TD({
