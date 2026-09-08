@@ -169,7 +169,9 @@ export function hubActionCounts(badges: NavBadges, notifs: Notifications): Recor
   return {
     "/dashboard": badges.teDoen,
     // Facturatie: opeenvolgende stappen die op actie wachten (geen overlap).
-    "/verwerken": badges.verwerken + badges.ontvangen + badges.verzenden + all("inbox"),
+    // Sleutel = de echte hub-href (/verwerken/nieuw), anders mist de tegel de teller.
+    // `verzenden` = concept-verkoopfacturen die nog verstuurd moeten worden.
+    "/verwerken/nieuw": badges.verwerken + badges.ontvangen + badges.verzenden + all("inbox"),
     // Personeelsgegevens: certificaten die (bijna) verlopen.
     "/klanten": urgent("certificeringen"),
     // Agenda: afspraken + taken die te laat zijn of vandaag spelen.
