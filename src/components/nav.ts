@@ -50,7 +50,6 @@ import {
   PauseCircle,
   Zap,
   KeyRound,
-  Workflow,
   Wallet,
   Wand2,
   type LucideIcon,
@@ -216,7 +215,6 @@ const HUB_LIST: NavHub[] = [
     icon: Database,
     items: [
       { href: "/data/cloud", label: "SharePoint & OneDrive", icon: Cloud, section: "Cloudopslag" },
-      { href: "/data/pijplijn", label: "Data-pijplijn", icon: Workflow, section: "Cloudopslag" },
       { href: "/data", label: "Overzicht", icon: Database, exact: true, section: "Data" },
       { href: "/werknemers", label: "Werknemers", icon: HardHat, section: "Data" },
       { href: "/documenten", label: "Documenten", icon: FolderOpen, section: "Data" },
