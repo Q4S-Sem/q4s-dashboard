@@ -18,8 +18,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/field";
-import { formatCurrency } from "@/lib/utils";
-import { initialen } from "@/lib/weekverwerking";
+import { formatCurrency, cn } from "@/lib/utils";
+import { PersoonVierkant, COMPACT_PERSONEN_DREMPEL } from "@/components/ui/persoon-vierkant";
 import {
   gereedeUrenstaatVanPlaatsingen,
   type GereedPerPlaatsing,
@@ -103,9 +103,7 @@ function PersoonKaart({
   return (
     <Card className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-ink-100 p-3.5">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-brand-600 text-[13px] font-bold text-white">
-          {initialen(persoon.naam)}
-        </span>
+        <PersoonVierkant naam={persoon.naam} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-bold text-ink-900">{persoon.naam}</span>
           <span className="block truncate text-xs text-ink-400">
@@ -226,6 +224,10 @@ export function PersoonPicker({
     [gezocht, week, verwerktPerPlaatsing, alleenOpen],
   );
 
+  // Grote ploeg → dichter raster (meer kolommen, kleinere kaarten) zodat >50
+  // personen overzichtelijk in beeld blijven.
+  const compact = personen.length > COMPACT_PERSONEN_DREMPEL;
+
   // De week waarin nu gewerkt wordt. Die kan buiten de bekende keuzelijst vallen
   // (de navigator kan naar élke week springen), dus vallen we terug op de slot
   // die puur uit de weeksleutel volgt. `huidig` = de lopende week.
@@ -312,7 +314,7 @@ export function PersoonPicker({
             }
           />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+          <div className={cn("grid gap-3 sm:grid-cols-2 2xl:grid-cols-3", compact && "xl:grid-cols-4 2xl:grid-cols-5")}>
             {getoond.map((p) => (
               <PersoonKaart
                 key={p.consultantId}
