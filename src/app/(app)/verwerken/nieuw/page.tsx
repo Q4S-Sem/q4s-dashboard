@@ -135,6 +135,8 @@ export default async function WeekVerwerkenPage() {
       weekendSurchargeSell: p.weekendSurchargeSell,
       overtimeSurchargeBuy: p.overtimeSurchargeBuy,
       overtimeSurchargeSell: p.overtimeSurchargeSell,
+      overtimeCostRate: p.overtimeCostRate,
+      overtimeChargeRate: p.overtimeChargeRate,
       kmRateBuy: p.kmRateBuy,
       kmRateSell: p.kmRateSell,
     },

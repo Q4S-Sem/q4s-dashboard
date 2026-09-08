@@ -230,6 +230,11 @@ model Placement {
   weekendSurchargeSell  Float @default(0)
   overtimeSurchargeBuy  Float @default(0)
   overtimeSurchargeSell Float @default(0)
+  /// Expliciet overuren-uurtarief (€/u), los van het percentage. null = val terug
+  /// op de normale rate (geen uplift, geen margeverlies). Gevuld = het volle
+  /// overuren-tarief per uur; wint dan van overtimeSurcharge*.
+  overtimeCostRate      Float?
+  overtimeChargeRate    Float?
   kmRateBuy             Float @default(0)
   kmRateSell            Float @default(0)
   /// ACTIVE | ENDED

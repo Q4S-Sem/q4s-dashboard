@@ -26,6 +26,11 @@ export type SurchargeConfig = {
   weekendSurchargeSell: number; // % uplift on charge rate for weekend hours
   overtimeSurchargeBuy: number; // % uplift on cost rate for overtime hours (extra uren)
   overtimeSurchargeSell: number; // % uplift on charge rate for overtime hours (extra uren)
+  /** Expliciet overuren-uurtarief (€/u), los van het percentage. null/leeg =
+   *  val terug op de normale rate (geen uplift). Staat dit gevuld, dan WINT het
+   *  van het percentage — het is dan het volle overuren-tarief per uur. */
+  overtimeCostRate?: number | null;
+  overtimeChargeRate?: number | null;
   kmRateBuy: number; // €/km reimbursed to the consultant
   kmRateSell: number; // €/km charged to the client
 };
@@ -72,6 +77,21 @@ export function upliftedRate(rate: number, pct: number): number {
   return round2(rate + surchargeUnit(rate, pct));
 }
 
+/**
+ * Het effectieve overuren-uurtarief. Een EXPLICIETE rate (€/u) wint altijd:
+ * dat is het volle bedrag per overuur, het percentage telt dan niet meer mee.
+ * Leeg/0/negatief → val terug op het opgehoogde normale tarief (rate + pct);
+ * met pct 0 is dat gewoon de normale rate, dus geen margeverlies.
+ */
+export function overtimeUnit(
+  rate: number,
+  pct: number,
+  explicitRate?: number | null,
+): number {
+  if (explicitRate != null && explicitRate > 0) return round2(explicitRate);
+  return upliftedRate(rate, pct);
+}
+
 function computeSide(
   hours: number,
   weekendHours: number,
@@ -81,15 +101,17 @@ function computeSide(
   weekendPct: number,
   overtimePct: number,
   kmRate: number,
+  overtimeRate?: number | null,
 ): SideBreakdown {
   const base = round2(hours * rate);
   const weekend =
     weekendPct > 0 && weekendHours > 0
       ? round2(weekendHours * surchargeUnit(rate, weekendPct))
       : 0;
-  // Overuren zijn EXTRA uren (niet in `hours`), dus inclusief het basistarief.
+  // Overuren zijn EXTRA uren (niet in `hours`), dus tegen het volle overuren-
+  // tarief: een expliciete €/u wint, anders het opgehoogde normale tarief.
   const overtime =
-    overtimeHours > 0 ? round2(overtimeHours * upliftedRate(rate, overtimePct)) : 0;
+    overtimeHours > 0 ? round2(overtimeHours * overtimeUnit(rate, overtimePct, overtimeRate)) : 0;
   const km = kmRate > 0 && kilometers > 0 ? round2(kilometers * kmRate) : 0;
   return { base, weekend, overtime, km, total: round2(base + weekend + overtime + km) };
 }
@@ -117,10 +139,12 @@ export function computeTimesheetMoney(
   const sell = computeSide(
     hours, weekendHours, overtimeHours, kilometers,
     p.chargeRate, p.weekendSurchargeSell, p.overtimeSurchargeSell, p.kmRateSell,
+    p.overtimeChargeRate,
   );
   const buy = computeSide(
     hours, weekendHours, overtimeHours, kilometers,
     p.costRate, p.weekendSurchargeBuy, p.overtimeSurchargeBuy, p.kmRateBuy,
+    p.overtimeCostRate,
   );
   return {
     hours,
@@ -168,6 +192,8 @@ export function buildTimesheetLines(opts: {
   rate: number;
   weekendPct: number;
   overtimePct: number;
+  /** Expliciet overuren-uurtarief (€/u); wint van het percentage. Leeg = uplift. */
+  overtimeRate?: number | null;
   kmRate: number;
   /** Optionele label-overrides (bijv. Engels voor de verkoopfactuur). Default NL. */
   labels?: {
@@ -178,7 +204,13 @@ export function buildTimesheetLines(opts: {
 }): BuiltLine[] {
   const wkLabel = opts.labels?.weekend ?? ((p: number) => `Weekendtoeslag ${p}%`);
   const otLabel =
-    opts.labels?.overtime ?? ((p: number) => (p > 0 ? `Overuren +${p}%` : "Overuren"));
+    opts.labels?.overtime ??
+    ((p: number) =>
+      opts.overtimeRate != null && opts.overtimeRate > 0
+        ? "Overuren"
+        : p > 0
+          ? `Overuren +${p}%`
+          : "Overuren");
   const kmLabel = opts.labels?.km ?? "Kilometers";
   const hours = round2(opts.entries.reduce((s, e) => s + e.hours, 0));
   const weekendHours = weekendHoursOf(opts.entries);
@@ -218,7 +250,7 @@ export function buildTimesheetLines(opts: {
   // Overuren als eigen regel tegen het volle opgehoogde tarief — zo leest de
   // factuur hetzelfde als die van de freelancer ("Overuren 3,00 × €84,70").
   if (ot > 0) {
-    const unit = upliftedRate(opts.rate, opts.overtimePct);
+    const unit = overtimeUnit(opts.rate, opts.overtimePct, opts.overtimeRate);
     lines.push({
       timesheetId: null,
       placementId: opts.placementId,

@@ -63,6 +63,8 @@ function toFlowWeek(t: {
     weekendSurchargeSell: number;
     overtimeSurchargeBuy: number;
     overtimeSurchargeSell: number;
+    overtimeCostRate: number | null;
+    overtimeChargeRate: number | null;
     kmRateBuy: number;
     kmRateSell: number;
     client: { companyName: string } | null;

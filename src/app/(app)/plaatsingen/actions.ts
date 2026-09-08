@@ -31,6 +31,18 @@ const PlacementCoreSchema = z.object({
   weekendSurchargeSell: z.coerce.number().min(0).default(0),
   overtimeSurchargeBuy: z.coerce.number().min(0).default(0),
   overtimeSurchargeSell: z.coerce.number().min(0).default(0),
+  // Expliciet overuren-uurtarief (€/u), los van het percentage. Leeg → null =
+  // val terug op de normale rate (geen uplift, geen margeverlies).
+  overtimeCostRate: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? Number(v.replace(",", ".")) : null))
+    .refine((v) => v === null || (Number.isFinite(v) && v >= 0), "Overuren-inkoop mag niet negatief zijn"),
+  overtimeChargeRate: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? Number(v.replace(",", ".")) : null))
+    .refine((v) => v === null || (Number.isFinite(v) && v >= 0), "Overuren-verkoop mag niet negatief zijn"),
   kmRateBuy: z.coerce.number().min(0).default(0),
   kmRateSell: z.coerce.number().min(0).default(0),
   status: z.enum(PLACEMENT_STATUS_VALUES).default("ACTIVE"),
@@ -76,6 +88,8 @@ function coreToData(d: z.infer<typeof PlacementCoreSchema>) {
     weekendSurchargeSell: d.weekendSurchargeSell,
     overtimeSurchargeBuy: d.overtimeSurchargeBuy,
     overtimeSurchargeSell: d.overtimeSurchargeSell,
+    overtimeCostRate: d.overtimeCostRate,
+    overtimeChargeRate: d.overtimeChargeRate,
     kmRateBuy: d.kmRateBuy,
     kmRateSell: d.kmRateSell,
     status: d.status,

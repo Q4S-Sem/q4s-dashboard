@@ -17,8 +17,24 @@ export type PlaatsingRow = {
   title: string;
   costRate: number;
   chargeRate: number;
+  /** Expliciet overuren-uurtarief (€/u); null = valt terug op de normale rate. */
+  overtimeCostRate: number | null;
+  overtimeChargeRate: number | null;
   status: string;
 };
+
+/** De effectieve overuren-marge/uur: expliciete rates indien gezet, anders de
+ *  normale rates (dan gelijk aan de reguliere marge). */
+function overtimeMargin(r: PlaatsingRow): number {
+  const buy = r.overtimeCostRate ?? r.costRate;
+  const sell = r.overtimeChargeRate ?? r.chargeRate;
+  return sell - buy;
+}
+
+/** Wijkt de overuren-marge af van de reguliere marge? Dan tonen we 'm apart. */
+function heeftAfwijkendeOvertime(r: PlaatsingRow): boolean {
+  return r.overtimeCostRate != null || r.overtimeChargeRate != null;
+}
 
 export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) {
   const clientOptions = [...new Set(placements.map((p) => p.clientName))]
@@ -58,9 +74,16 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
       align: "right",
       sortValue: (r) => r.chargeRate - r.costRate,
       render: (r) => (
-        <span className="tabular-nums font-medium text-emerald-700">
-          {formatCurrency(r.chargeRate - r.costRate)}/u
-        </span>
+        <div className="text-right leading-tight">
+          <span className="tabular-nums font-medium text-emerald-700">
+            {formatCurrency(r.chargeRate - r.costRate)}/u
+          </span>
+          {heeftAfwijkendeOvertime(r) && (
+            <span className="block text-[11px] tabular-nums text-ink-400">
+              overuren {formatCurrency(overtimeMargin(r))}/u
+            </span>
+          )}
+        </div>
       ),
     },
     {

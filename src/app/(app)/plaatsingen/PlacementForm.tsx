@@ -967,6 +967,16 @@ export function PlacementForm({
                 step="any"
               />
               <ToeslagBlock
+                title="Overuren-uurtarief (vast €/u)"
+                hint="Vast tarief per overuur — wint van het percentage hierboven. Laat leeg om terug te vallen op het normale tarief (dan geen margeverlies)."
+                buyName="overtimeCostRate"
+                sellName="overtimeChargeRate"
+                buyDefault={placement?.overtimeCostRate ?? 0}
+                sellDefault={placement?.overtimeChargeRate ?? 0}
+                suffix="€/u"
+                step={0.01}
+              />
+              <ToeslagBlock
                 title="Kilometervergoeding"
                 hint="Vergoeding per gereden kilometer (reiskosten)."
                 buyName="kmRateBuy"

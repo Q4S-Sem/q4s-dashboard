@@ -213,3 +213,65 @@ test("de som van de factuurregels is exact gelijk aan het zijtotaal", () => {
   assert.equal(regelTotaal(verkoop), geld.sell.total);
   assert.equal(round2(regelTotaal(verkoop) - regelTotaal(inkoop)), geld.margin);
 });
+
+// ---------------------------------------------------------------------------
+// EXPLICIETE overuren-tarieven (€/u), los van het percentage-model.
+// De eigenaar wil per plaatsing een eigen overuren-inkoop en -verkoop kunnen
+// vastleggen; leeg = terugvallen op de normale rate (geen uplift).
+// ---------------------------------------------------------------------------
+
+test("expliciete overuren-rate wint van het percentage (inkoop én verkoop)", () => {
+  const entries = [1, 2, 3, 4].map((i) => ({ date: dag(i), hours: 8 })); // 32 u
+  // Jordy: betaalt €84,70/overuur, factureert €93,70/overuur → €9 marge/overuur.
+  const p = config({
+    costRate: 77,
+    chargeRate: 86,
+    overtimeSurchargeBuy: 999, // moet genegeerd worden zodra de expliciete rate staat
+    overtimeSurchargeSell: 999,
+    overtimeCostRate: 84.7,
+    overtimeChargeRate: 93.7,
+  });
+  const geld = computeTimesheetMoney({ entries, overtimeHours: 3, kilometers: null }, p);
+
+  assert.equal(geld.buy.overtime, 254.1); // 3 × 84,70 (niet via het percentage)
+  assert.equal(geld.sell.overtime, 281.1); // 3 × 93,70
+  // Marge op de overuren = 3 × (93,70 − 84,70) = €27; regulier = 32 × (86 − 77) = €288.
+  assert.equal(geld.margin, round2(32 * (86 - 77) + 3 * (93.7 - 84.7)));
+
+  const verkoop = buildTimesheetLines({
+    timesheetId: "ts-1",
+    placementId: "pl-1",
+    weekNumber: 2,
+    location: null,
+    baseDescription: "Total hours",
+    entries,
+    overtimeHours: 3,
+    kilometers: null,
+    rate: p.chargeRate,
+    weekendPct: p.weekendSurchargeSell,
+    overtimePct: p.overtimeSurchargeSell,
+    overtimeRate: p.overtimeChargeRate,
+    kmRate: p.kmRateSell,
+  });
+  const otRegel = verkoop.find((r) => r.quantity === 3 && r.lineKind === "SURCHARGE")!;
+  assert.equal(otRegel.unitPrice, 93.7);
+  assert.equal(otRegel.amount, 281.1);
+  assert.equal(regelTotaal(verkoop), geld.sell.total);
+});
+
+test("lege overuren-rate valt terug op de normale rate (geen margeverlies)", () => {
+  const entries = [{ date: dag(0), hours: 8 }];
+  // Geen expliciete overuren-rate en geen percentage → overuren tegen de basis.
+  const p = config({
+    costRate: 77,
+    chargeRate: 86,
+    overtimeCostRate: null,
+    overtimeChargeRate: null,
+  });
+  const geld = computeTimesheetMoney({ entries, overtimeHours: 3, kilometers: null }, p);
+
+  assert.equal(geld.buy.overtime, 231); // 3 × 77
+  assert.equal(geld.sell.overtime, 258); // 3 × 86
+  // De overuren houden dus dezelfde marge als reguliere uren (€9/u), geen verlies.
+  assert.equal(round2(geld.sell.overtime - geld.buy.overtime), 27);
+});

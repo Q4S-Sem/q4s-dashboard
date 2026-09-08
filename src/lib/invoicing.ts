@@ -52,6 +52,7 @@ export async function createSalesInvoice(opts: {
       rate: t.placement.chargeRate, // verkoop
       weekendPct: t.placement.weekendSurchargeSell,
       overtimePct: t.placement.overtimeSurchargeSell,
+      overtimeRate: t.placement.overtimeChargeRate,
       kmRate: t.placement.kmRateSell,
       // Verkoopfactuur is Engels → Engelse regelomschrijvingen.
       labels: {
