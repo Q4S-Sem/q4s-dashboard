@@ -15,6 +15,7 @@ import {
   FileText,
   FolderPlus,
   Inbox,
+  Loader2,
   Receipt,
   RotateCcw,
   Sparkles,
@@ -918,6 +919,13 @@ function WizardRonde({
       return;
     }
     if (n > voortgang.maxStap) return;
+    // Vooruit mag pas als de AI klaar is met uitlezen: vanuit stap 1 wacht op de
+    // timesheet-uitlezing, vanuit stap 2 op de factuur-uitlezing. Teruggaan mag
+    // altijd. Zo kom je nooit op de volgende stap terwijl de velden nog vullen.
+    if (n > stap) {
+      if (stap === 1 && tsPending) return;
+      if (stap === 2 && invPending) return;
+    }
     setStap(n);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -1488,15 +1496,31 @@ function WizardRonde({
               <Link href="/verwerken/week" className={buttonVariants({ variant: "ghost" })}>
                 Annuleren
               </Link>
-              <Button type="button" onClick={() => ga(2)} disabled={!klaarVoorAkkoord}>
-                Volgende: factuur <ArrowRight className="h-4 w-4" />
+              <Button
+                type="button"
+                onClick={() => ga(2)}
+                disabled={!klaarVoorAkkoord || tsPending}
+              >
+                {tsPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Bezig met uitlezen…
+                  </>
+                ) : (
+                  <>
+                    Volgende: factuur <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
-            {gekozen && !klaarVoorAkkoord && (
+            {gekozen && tsPending ? (
+              <p className="text-right text-xs text-ink-400">
+                De AI leest de urenstaat uit — je kunt zo verder.
+              </p>
+            ) : gekozen && !klaarVoorAkkoord ? (
               <p className="text-right text-xs text-amber-700">
                 Vul eerst een plaatsing, de week en minimaal één dag met uren in.
               </p>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       )}
@@ -1693,15 +1717,39 @@ function WizardRonde({
               <Button type="button" variant="outline" onClick={() => ga(1)}>
                 <ArrowLeft className="h-4 w-4" /> Terug
               </Button>
-              <div className="flex items-center gap-2">
-                {!factuur && (
-                  <Button type="button" variant="ghost" onClick={() => ga(3)}>
-                    Overslaan — factuur komt later
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-2">
+                  {!factuur && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => ga(3)}
+                      disabled={invPending}
+                    >
+                      Overslaan — factuur komt later
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={() => ga(3)}
+                    disabled={!klaarVoorAkkoord || invPending}
+                  >
+                    {invPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" /> Bezig met uitlezen…
+                      </>
+                    ) : (
+                      <>
+                        Volgende: controle <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
                   </Button>
+                </div>
+                {invPending && (
+                  <p className="text-xs text-ink-400">
+                    De AI leest de factuur uit — je kunt zo verder.
+                  </p>
                 )}
-                <Button type="button" onClick={() => ga(3)} disabled={!klaarVoorAkkoord}>
-                  Volgende: controle <ArrowRight className="h-4 w-4" />
-                </Button>
               </div>
             </div>
           </CardContent>
