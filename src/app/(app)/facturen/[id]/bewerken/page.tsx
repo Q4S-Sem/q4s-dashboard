@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { InvoiceEditForm } from "../../InvoiceEditForm";
@@ -30,17 +28,18 @@ export default async function FactuurBewerkenPage({
   if (!invoice) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <BackLink href={`/facturen/${id}`}>
         Terug naar factuur
       </BackLink>
       <PageHeader
         title="Factuur bewerken"
-        description={`${invoice.number} — corrigeer waar nodig.`}
+        description={`${invoice.number} — corrigeer waar nodig. Rechts zie je meteen hoe de factuur eruitziet.`}
       />
       <InvoiceEditForm
         action={updateInvoice}
         cancelHref={`/facturen/${id}`}
+        previewUrl={`/facturen/${id}/voorbeeld`}
         invoice={{
           id: invoice.id,
           number: invoice.number,

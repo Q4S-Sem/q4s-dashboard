@@ -54,7 +54,9 @@ export async function updateInvoice(
   });
   if (!invoice) return { error: "Onbekende factuur." };
 
-  // Parse + validate the edited lines (the form submits every line).
+  // Parse + validate the edited lines (the form submits every line). Regels
+  // mogen worden toegevoegd (zonder/id onbekend id) of weggelaten (verwijderd);
+  // bestaande regels matchen op hun id.
   let raw: unknown;
   try {
     raw = JSON.parse(String(formData.get("lines") ?? "[]"));
@@ -65,24 +67,26 @@ export async function updateInvoice(
 
   const validIds = new Set(invoice.lines.map((l) => l.id));
   const seen = new Set<string>();
-  const updates: {
-    id: string;
+  type LinePayload = {
+    existingId: string | null; // een bestaande regel om bij te werken, anders nieuw
     description: string;
     quantity: number;
     unitPrice: number;
     amount: number;
-  }[] = [];
+  };
+  const lineItems: LinePayload[] = [];
   for (const r of raw as Array<{
     id?: unknown;
     description?: unknown;
     quantity?: unknown;
     unitPrice?: unknown;
   }>) {
-    const lineId = String(r.id ?? "");
-    // Skip unknown ids AND duplicates (a duplicate would drop another line and
-    // desync the subtotal — the count guard below then rejects the payload).
-    if (!validIds.has(lineId) || seen.has(lineId)) continue;
-    seen.add(lineId);
+    const rawId = String(r.id ?? "");
+    // Alleen een id dat écht bij deze factuur hoort telt als "bestaande regel";
+    // al het andere (leeg, tijdelijk client-id) is een nieuwe regel. Dubbele
+    // bestaande ids negeren we (die zouden een andere regel overschrijven).
+    const existingId = validIds.has(rawId) && !seen.has(rawId) ? rawId : null;
+    if (existingId) seen.add(existingId);
     const description = String(r.description ?? "").trim();
     const quantity = Number(r.quantity);
     const unitPrice = Number(r.unitPrice);
@@ -95,15 +99,22 @@ export async function updateInvoice(
     }
     const amount = round2(quantity * unitPrice);
     if (!Number.isFinite(amount)) return { error: "Een bedrag is te groot om te verwerken." };
-    updates.push({ id: lineId, description, quantity, unitPrice, amount });
+    lineItems.push({ existingId, description, quantity, unitPrice, amount });
   }
-  // Every existing line must be present exactly once (the form submits all of
-  // them); combined with the dedup above this guarantees a 1-to-1 mapping.
-  if (updates.length !== invoice.lines.length) {
-    return { error: "De factuurregels konden niet volledig worden gelezen." };
+  if (lineItems.length === 0) {
+    return { error: "Een factuur heeft minstens één regel nodig." };
   }
 
-  const subtotal = round2(updates.reduce((s, l) => s + l.amount, 0));
+  // Welke bestaande regels blijven er staan, en welke zijn dus verwijderd?
+  const keptIds = new Set(lineItems.map((p) => p.existingId).filter((x): x is string => Boolean(x)));
+  const removed = invoice.lines.filter((l) => !keptIds.has(l.id));
+  // Verwijderde regels die uit een urenstaat kwamen: die urenstaat weer vrijgeven
+  // (APPROVED) zodat de uren opnieuw gefactureerd kunnen worden — geen dood spoor.
+  const releaseTimesheetIds = removed
+    .map((l) => l.timesheetId)
+    .filter((x): x is string => Boolean(x));
+
+  const subtotal = round2(lineItems.reduce((s, l) => s + l.amount, 0));
   const vatAmount = round2((subtotal * d.vatRate) / 100);
   const total = round2(subtotal + vatAmount);
   if (!Number.isFinite(subtotal) || !Number.isFinite(vatAmount) || !Number.isFinite(total)) {
@@ -121,16 +132,43 @@ export async function updateInvoice(
 
   try {
     await db.$transaction(async (tx) => {
-      for (const l of updates) {
-        await tx.invoiceLine.update({
-          where: { id: l.id },
-          data: {
-            description: l.description,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-            amount: l.amount,
-          },
+      // 1) Verwijderde regels weg + hun urenstaten weer vrijgeven.
+      if (removed.length > 0) {
+        await tx.invoiceLine.deleteMany({
+          where: { id: { in: removed.map((l) => l.id) } },
         });
+        if (releaseTimesheetIds.length > 0) {
+          await tx.timesheet.updateMany({
+            where: { id: { in: releaseTimesheetIds } },
+            data: { status: "APPROVED" },
+          });
+        }
+      }
+      // 2) Bestaande regels bijwerken, nieuwe regels toevoegen.
+      for (const l of lineItems) {
+        if (l.existingId) {
+          await tx.invoiceLine.update({
+            where: { id: l.existingId },
+            data: {
+              description: l.description,
+              quantity: l.quantity,
+              unitPrice: l.unitPrice,
+              amount: l.amount,
+            },
+          });
+        } else {
+          await tx.invoiceLine.create({
+            data: {
+              invoiceId: id,
+              description: l.description,
+              quantity: l.quantity,
+              unitPrice: l.unitPrice,
+              amount: l.amount,
+              // Handmatige regel: geen bron-urenstaat/plaatsing, standaard OTHER.
+              lineKind: "OTHER",
+            },
+          });
+        }
       }
       await tx.invoice.update({
         where: { id },
