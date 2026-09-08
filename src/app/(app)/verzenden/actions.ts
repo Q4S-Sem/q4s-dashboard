@@ -51,12 +51,54 @@ export async function sendSalesInvoice(formData: FormData) {
 }
 
 /**
- * Send exactly the invoices that match the current view (one tab, optionally a
- * week and/or a free-text search). Deliberately scoped — the verzendmap is split
- * "om alles simpel te controleren", so the bulk button must never blast rows the
- * user isn't looking at. It reuses getOutbox + matchOutbox — the SAME predicate
- * the page renders with — so the sent set is provably the visible set. Each row
- * is still claimed atomically inside run*.
+ * Verstuur exact de AANGEVINKTE facturen (ids uit de tabel-selectie). Elke id
+ * wordt tegen de actuele verzendmap (getOutbox = READY) gehouden, zodat je nooit
+ * iets verstuurt dat niet meer klaarstaat, en atomair geclaimd binnen run*.
+ */
+export async function sendSelected(formData: FormData) {
+  const week = String(formData.get("week") ?? "");
+  const q = String(formData.get("q") ?? "").trim();
+  const rawIds = String(formData.get("ids") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const { sales } = await getOutbox();
+  const inOutbox = new Set(sales.map((r) => r.id));
+  const targets = [...new Set(rawIds)].filter((id) => inOutbox.has(id));
+
+  let live = 0;
+  let simulated = 0;
+  let skipped = 0;
+  let failed = 0;
+  const tally = (o: Outcome) => {
+    if (o === "sent") live++;
+    else if (o === "simulated") simulated++;
+    else if (o === "no-email") skipped++;
+    else if (o === "error") failed++;
+    // "already" → een gelijktijdige verzending was ons voor; stil overslaan.
+  };
+
+  for (const id of targets) tally(await runSales(id));
+
+  revalidate();
+  const total = live + simulated;
+  const mode = total > 0 && live === 0 ? "sim" : "live";
+  const p = new URLSearchParams();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(week)) p.set("week", week);
+  if (q) p.set("q", q);
+  p.set("bulk", String(total));
+  p.set("mode", mode);
+  p.set("skipped", String(skipped));
+  p.set("failed", String(failed));
+  redirect(`/verzenden?${p.toString()}`);
+}
+
+/**
+ * Send exactly the invoices that match the current view (optionally a week
+ * and/or a free-text search). Deliberately scoped — reuses getOutbox +
+ * matchOutbox, the SAME predicate the page renders with, so the sent set is
+ * provably the visible set. Each row is claimed atomically inside run*.
  */
 export async function sendScope(formData: FormData) {
   const weekRaw = String(formData.get("week") ?? "");

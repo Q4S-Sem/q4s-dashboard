@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   Send,
-  Mail,
   MailWarning,
   Inbox,
   Receipt,
@@ -11,87 +10,24 @@ import {
 } from "lucide-react";
 import { getOutbox, matchOutbox, type OutboxRow } from "@/lib/verzenden";
 import { isEmailConfigured, getMailRedirect } from "@/lib/email";
-import { formatCurrency, formatWeekLabel, getISOWeek, startOfISOWeek } from "@/lib/utils";
+import { formatCurrency, formatWeekLabel, startOfISOWeek } from "@/lib/utils";
 import { ymd } from "@/lib/week-nav";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { WeekBalk } from "@/components/week-balk";
 import { SearchFilter } from "./SearchFilter";
-import { InvoicePreviewButton } from "@/components/invoice-preview-button";
-import { sendSalesInvoice, sendScope } from "./actions";
+import { VerzendTable } from "./VerzendTable";
+import { sendScope } from "./actions";
 
 export const metadata = { title: "Verzendmap" };
 export const dynamic = "force-dynamic";
 
 function sum(rows: OutboxRow[]) {
   return rows.reduce((s, r) => s + r.total, 0);
-}
-
-/** Korte weekweergave per rij, bv. "Wk 28" of "Wk 27, 28". */
-function weekShort(keys: string[]): string {
-  if (keys.length === 0) return "—";
-  return [...keys]
-    .sort()
-    .map((k) => `Wk ${getISOWeek(new Date(`${k}T00:00:00`))}`)
-    .join(", ");
-}
-
-function SendRow({
-  row,
-  week,
-  q,
-}: {
-  row: OutboxRow;
-  week: string;
-  q: string;
-}) {
-  return (
-    <TR>
-      <TD className="font-medium text-ink-900">{row.number}</TD>
-      <TD className="text-ink-700">{row.recipientName}</TD>
-      <TD className="whitespace-nowrap text-sm text-ink-500">{weekShort(row.weekKeys)}</TD>
-      <TD>
-        {row.email ? (
-          <span className="inline-flex items-center gap-1.5 text-sm text-ink-600">
-            <Mail className="h-3.5 w-3.5 text-ink-400" />
-            {row.email}
-          </span>
-        ) : (
-          <Link
-            href={row.fixHref}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-700 hover:underline"
-          >
-            <MailWarning className="h-3.5 w-3.5" /> Geen e-mailadres — toevoegen
-          </Link>
-        )}
-      </TD>
-      <TD className="text-right tabular-nums text-ink-900">{formatCurrency(row.total)}</TD>
-      <TD className="text-right">
-        <div className="flex items-center justify-end gap-2">
-          <InvoicePreviewButton id={row.id} number={row.number} />
-          {row.email ? (
-            <form action={sendSalesInvoice}>
-              <input type="hidden" name="id" value={row.id} />
-              <input type="hidden" name="week" value={week} />
-              <input type="hidden" name="q" value={q} />
-              <SubmitButton size="sm" pendingLabel="Versturen…">
-                <Send className="h-4 w-4" /> Versturen
-              </SubmitButton>
-            </form>
-          ) : (
-            <Button type="button" size="sm" variant="outline" disabled>
-              <Send className="h-4 w-4" /> Versturen
-            </Button>
-          )}
-        </div>
-      </TD>
-    </TR>
-  );
 }
 
 export default async function VerzendmapPage({
@@ -301,23 +237,7 @@ export default async function VerzendmapPage({
                     : "Geen verkoopfacturen klaar om te versturen."}
                 </p>
               ) : (
-                <Table>
-                  <THead>
-                    <TR className="hover:bg-transparent">
-                      <TH>Nummer</TH>
-                      <TH>Klant</TH>
-                      <TH>Week</TH>
-                      <TH>E-mail</TH>
-                      <TH className="text-right">Bedrag</TH>
-                      <TH></TH>
-                    </TR>
-                  </THead>
-                  <TBody>
-                    {rows.map((r) => (
-                      <SendRow key={r.id} row={r} week={week} q={q} />
-                    ))}
-                  </TBody>
-                </Table>
+                <VerzendTable rows={rows} week={week} q={q} />
               )}
             </CardContent>
           </Card>
