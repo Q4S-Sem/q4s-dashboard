@@ -61,6 +61,19 @@
      rechts-onder door het zwarte vak drijft, plus een zachte entrance. */
   --animate-diagonal-glow: diagonal-glow 14s ease-in-out infinite;
   --animate-fade-up: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* Kaart-entrance — subtiel opkomen bij het laden (Studio Admin-signatuur). */
+  --animate-card-in: card-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes diagonal-glow {
@@ -92,7 +105,8 @@
 /* Respecteer de systeemvoorkeur: geen beweging voor wie dat uitzet. */
 @media (prefers-reduced-motion: reduce) {
   .animate-diagonal-glow,
-  .animate-fade-up {
+  .animate-fade-up,
+  .animate-card-in {
     animation: none !important;
   }
 }

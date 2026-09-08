@@ -426,21 +426,21 @@ export default async function DashboardPage({
           label={`Omzet ${shortLabel}`}
           value={formatCurrency(periodOmzet)}
           deltaPct={deltaPct(periodOmzet, prevOmzet)}
-          hint={`t.o.v. vorige periode · ${periodLabel}`}
+          hint={`van ${formatCurrency(prevOmzet)} · vorige periode`}
           href="/totaaloverzicht"
         />
         <SectionCard
           label={`Marge ${shortLabel}`}
           value={formatCurrency(periodMarge)}
           deltaPct={deltaPct(periodMarge, prevMarge)}
-          hint={`${periodMargePct}% marge`}
+          hint={`van ${formatCurrency(prevMarge)} · ${periodMargePct}% marge`}
           href="/totaaloverzicht"
         />
         <SectionCard
           label={`Plaatsingen ${shortLabel}`}
           value={periodPlacements.length}
           deltaPct={deltaPct(periodPlacements.length, prevPlacementsCount)}
-          hint="actief in periode"
+          hint={`van ${prevPlacementsCount} · vorige periode`}
           href="/plaatsingen"
         />
         <SectionCard

@@ -9,7 +9,8 @@ export function Card({
     <div
       className={cn(
         // Zacht zwevende kaart met dunne rand — zoals het Studio Admin-dashboard.
-        "rounded-lg border border-ink-200 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_1px_2px_-1px_rgb(0_0_0/0.06)]",
+        // Komt subtiel op bij het laden (entrance-animatie).
+        "animate-card-in rounded-lg border border-ink-200 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_1px_2px_-1px_rgb(0_0_0/0.06)]",
         className,
       )}
       {...props}

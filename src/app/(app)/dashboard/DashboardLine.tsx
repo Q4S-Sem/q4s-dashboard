@@ -59,7 +59,10 @@ export function DashboardLine({
           strokeWidth={2}
           fill="url(#q4s-area)"
           dot={false}
-          isAnimationActive={false}
+          activeDot={{ r: 4, strokeWidth: 0 }}
+          isAnimationActive
+          animationDuration={800}
+          animationEasing="ease-out"
         />
       </AreaChart>
     </ResponsiveContainer>
