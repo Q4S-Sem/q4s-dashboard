@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { useValueSignal } from "./value-signal";
-import { useDropDirection, dropClass } from "./use-drop-direction";
 import { ChevronsUpDown, Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,13 +72,23 @@ function rankOptions(items: Opt[], query: string): Opt[] {
 const triggerBase =
   "flex w-full items-center justify-between gap-2 rounded-sm border border-ink-200 bg-white px-3 py-2 text-left text-sm text-ink-900 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-600 disabled:cursor-not-allowed disabled:bg-ink-50";
 
+/** Geschatte maximale hoogte van het open menu (zoekbalk + lijst). */
+const MENU_MAX_H = 300;
+
+type PopupPos = { left: number; width: number; top?: number; bottom?: number };
+
 /**
  * Themed, rounded select that replaces the native one (whose popup the browser
  * renders un-stylable). Keeps the same <option>-children API + a hidden input,
  * so every existing form keeps working and submits identically.
  *
- * Bij lange lijsten (>6 opties) verschijnt automatisch een zoekveld: typ om te
- * filteren, de beste match springt naar boven en kleurt groen (minder scrollen).
+ * Het OPEN menu rendert via een PORTAL op document.body met `position: fixed`.
+ * Reden: de kaarten in de app hebben een entrance-animatie (transform), en een
+ * transform maakt van elke kaart een eigen stacking context — een `absolute`
+ * menu bleef daardoor ACHTER de kaart eronder hangen, ook met z-50. Een portal
+ * met vaste positie ontsnapt aan alle stacking contexts en staat altijd bovenop.
+ *
+ * Bij lange lijsten (>2 opties) verschijnt automatisch een zoekveld.
  */
 export function Select({
   id,
@@ -107,27 +117,60 @@ export function Select({
   const [open, setOpen] = React.useState(false);
   const [active, setActive] = React.useState(0);
   const [query, setQuery] = React.useState("");
+  const [pos, setPos] = React.useState<PopupPos | null>(null);
   const rootRef = React.useRef<HTMLDivElement>(null);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const popupRef = React.useRef<HTMLDivElement>(null);
   const searchRef = React.useRef<HTMLInputElement>(null);
 
   // Selectable (non-placeholder) options for the popup + keyboard nav.
   const items = React.useMemo(() => options.filter((o) => !o.disabled), [options]);
   const current = options.find((o) => o.value === value);
-  // Zoekveld op élke keuzelijst met meer dan twee opties: typen filtert, de beste
-  // match springt naar boven — scrollen hoeft dan niet meer. Alleen een echte
-  // twee-keuze (ja/nee) blijft zonder zoekveld.
   const searchable = items.length > 2;
   const visible = React.useMemo(() => rankOptions(items, query), [items, query]);
   const searching = searchable && query.trim() !== "";
 
+  // Meet de trigger en bepaal waar (en hoe breed) het menu komt te staan.
+  // Fixed t.o.v. de viewport: klapt omhoog als er onder te weinig ruimte is.
+  const measure = React.useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const below = window.innerHeight - r.bottom;
+    const above = r.top;
+    const openUp = below < MENU_MAX_H && above > below;
+    setPos(
+      openUp
+        ? { left: r.left, width: r.width, bottom: window.innerHeight - r.top + 4 }
+        : { left: r.left, width: r.width, top: r.bottom + 4 },
+    );
+  }, []);
+
+  // Outside-click sluit; het portal-menu telt NIET als buiten (anders sluit een
+  // klik op een optie het menu vóór de keuze verwerkt is).
   React.useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t)) return;
+      if (popupRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
+
+  // Herposatie bij scroll/resize zolang het menu open is.
+  React.useEffect(() => {
+    if (!open) return;
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [open, measure]);
 
   // Bij openen: reset de zoekterm, markeer de huidige waarde en focus het zoekveld.
   React.useEffect(() => {
@@ -135,11 +178,8 @@ export function Select({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuery("");
     const idx = items.findIndex((o) => o.value === value);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActive(idx >= 0 ? idx : 0);
     if (searchable) {
-      // preventScroll: anders scrollt de browser de pagina naar het zoekveld toe
-      // en springt alles onder de keuzelijst een stukje weg.
       const t = requestAnimationFrame(() =>
         searchRef.current?.focus({ preventScroll: true }),
       );
@@ -158,7 +198,6 @@ export function Select({
   function onListKeys(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
       e.preventDefault();
-      // Sluit alleen de dropdown; laat een omliggende popover/dialog open.
       e.stopPropagation();
       setOpen(false);
     } else if (e.key === "ArrowDown") {
@@ -179,35 +218,108 @@ export function Select({
     if (!open) {
       if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
         e.preventDefault();
-        setOpen(true);
+        openMenu();
       }
       return;
     }
-    // Zonder zoekveld navigeer je met de knop zelf; mét zoekveld ligt de focus daar.
     if (!searchable) onListKeys(e);
   }
 
-  const up = useDropDirection(open, rootRef, 300);
-
+  function openMenu() {
+    measure();
+    setOpen(true);
+  }
 
   const hiddenRef = React.useRef<HTMLInputElement>(null);
-
-
   useValueSignal(hiddenRef, value);
 
-
+  const menu = open && pos && (
+    <div
+      ref={popupRef}
+      style={{
+        position: "fixed",
+        left: pos.left,
+        width: pos.width,
+        top: pos.top,
+        bottom: pos.bottom,
+        maxHeight: MENU_MAX_H,
+      }}
+      className="z-[70] flex flex-col overflow-hidden rounded-sm border border-ink-900 bg-white shadow-[0_16px_36px_-22px_rgb(0_0_0/0.55)]"
+    >
+      {searchable && (
+        <div className="flex items-center gap-2 border-b border-ink-100 px-2.5 py-2">
+          <Search className="h-4 w-4 shrink-0 text-ink-300" />
+          <input
+            ref={searchRef}
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setActive(0);
+            }}
+            onKeyDown={onListKeys}
+            placeholder="Typ om te zoeken…"
+            autoComplete="off"
+            className="w-full bg-transparent text-sm text-ink-900 placeholder:text-ink-300 focus:outline-none"
+          />
+        </div>
+      )}
+      <div className="min-h-0 flex-1 overflow-auto p-1">
+        {visible.length === 0 ? (
+          <p className="px-2.5 py-3 text-center text-sm text-ink-300">Geen resultaten.</p>
+        ) : (
+          visible.map((o, i) => {
+            const selected = o.value === value;
+            const isActive = active === i;
+            const green = searching && isActive;
+            return (
+              <button
+                key={`${o.value}-${i}`}
+                type="button"
+                onClick={() => choose(o.value)}
+                onMouseEnter={() => setActive(i)}
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 rounded-sm px-2.5 py-2 text-left text-sm transition-colors",
+                  green
+                    ? "bg-emerald-50 font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200"
+                    : selected
+                      ? "bg-brand-50 font-bold text-brand-700"
+                      : "text-ink-700",
+                  !green && isActive && !selected && "bg-ink-100",
+                  !green && isActive && selected && "bg-brand-100",
+                )}
+              >
+                <span className="flex items-center gap-2 truncate">
+                  {o.color && DOT_CLASS[o.color] && (
+                    <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT_CLASS[o.color])} />
+                  )}
+                  <span className="truncate">{o.label}</span>
+                </span>
+                {selected && (
+                  <Check
+                    className={cn("h-4 w-4 shrink-0", green ? "text-emerald-600" : "text-brand-600")}
+                  />
+                )}
+              </button>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
       <input ref={hiddenRef} type="hidden" name={name} value={value} />
       <button
+        ref={triggerRef}
         type="button"
         id={id}
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={rest["aria-label"]}
-        onClick={() => !disabled && setOpen((o) => !o)}
+        onClick={() => !disabled && (open ? setOpen(false) : openMenu())}
         onKeyDown={onTriggerKeys}
         className={cn(triggerBase, open && "border-brand-600 ring-2 ring-brand-500/25")}
       >
@@ -220,76 +332,7 @@ export function Select({
         <ChevronsUpDown className="h-4 w-4 shrink-0 text-ink-300" />
       </button>
 
-      {open && (
-        <div
-          className={cn(
-            "absolute z-50 w-full overflow-hidden rounded-sm border border-ink-900 bg-white shadow-[0_16px_36px_-22px_rgb(0_0_0/0.55)]",
-            dropClass(up),
-          )}
-        >
-          {searchable && (
-            <div className="flex items-center gap-2 border-b border-ink-100 px-2.5 py-2">
-              <Search className="h-4 w-4 shrink-0 text-ink-300" />
-              <input
-                ref={searchRef}
-                type="text"
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setActive(0);
-                }}
-                onKeyDown={onListKeys}
-                placeholder="Typ om te zoeken…"
-                autoComplete="off"
-                className="w-full bg-transparent text-sm text-ink-900 placeholder:text-ink-300 focus:outline-none"
-              />
-            </div>
-          )}
-          <div className="max-h-60 overflow-auto p-1">
-            {visible.length === 0 ? (
-              <p className="px-2.5 py-3 text-center text-sm text-ink-300">Geen resultaten.</p>
-            ) : (
-              visible.map((o, i) => {
-                const selected = o.value === value;
-                const isActive = active === i;
-                // Tijdens het zoeken kleurt de actieve rij (standaard de beste match
-                // bovenaan) GROEN — zo zie je meteen wat Enter/klik selecteert.
-                const green = searching && isActive;
-                return (
-                  <button
-                    key={`${o.value}-${i}`}
-                    type="button"
-                    onClick={() => choose(o.value)}
-                    onMouseEnter={() => setActive(i)}
-                    className={cn(
-                      "flex w-full items-center justify-between gap-2 rounded-sm px-2.5 py-2 text-left text-sm transition-colors",
-                      green
-                        ? "bg-emerald-50 font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200"
-                        : selected
-                          ? "bg-brand-50 font-bold text-brand-700"
-                          : "text-ink-700",
-                      !green && isActive && !selected && "bg-ink-100",
-                      !green && isActive && selected && "bg-brand-100",
-                    )}
-                  >
-                    <span className="flex items-center gap-2 truncate">
-                      {o.color && DOT_CLASS[o.color] && (
-                        <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT_CLASS[o.color])} />
-                      )}
-                      <span className="truncate">{o.label}</span>
-                    </span>
-                    {selected && (
-                      <Check
-                        className={cn("h-4 w-4 shrink-0", green ? "text-emerald-600" : "text-brand-600")}
-                      />
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
+      {typeof document !== "undefined" && menu ? createPortal(menu, document.body) : null}
     </div>
   );
 }
