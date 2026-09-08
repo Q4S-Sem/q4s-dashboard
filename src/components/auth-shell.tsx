@@ -75,7 +75,7 @@ export function AuthShell({
             <div className="animate-diagonal-glow absolute left-0 top-0 h-[38rem] w-[38rem] rounded-full bg-white/25 blur-[130px]" />
           </div>
 
-          {/* Boven: logo + naam + tagline */}
+          {/* Boven: logo linksboven, los */}
           <div className="relative">
             {logoSrc ? (
               <span className="inline-flex items-center justify-center rounded-sm bg-white px-5 py-4">
@@ -87,11 +87,24 @@ export function AuthShell({
                 Q4S
               </span>
             )}
-            <h2 className="mt-8 text-2xl font-bold tracking-[-0.01em] text-white xl:text-[1.75rem]">
+          </div>
+
+          {/* Midden: naam, tagline en uitleg */}
+          <div className="relative max-w-md">
+            <h2 className="text-3xl font-bold tracking-[-0.01em] text-white xl:text-4xl">
               Q4S Project Partners
             </h2>
-            <p className="mt-2 text-base font-medium text-white/60">
+            <p className="mt-3 text-lg font-medium text-white/70">
               Detacheren. Factureren. Groeien.
+            </p>
+            <p className="mt-6 text-[15px] leading-relaxed text-white/55">
+              Hét interne platform voor de complete Q4S-operatie — van gecertificeerd
+              staalbouwtalent op de juiste klus tot de factuur die de deur uitgaat.
+            </p>
+            <p className="mt-4 text-[15px] leading-relaxed text-white/55">
+              Urenstaten, recruitment, plaatsingen, facturatie en betalingen lopen hier
+              samen in één overzicht, zodat je in één oogopslag ziet wat er speelt en
+              wat er moet gebeuren — zonder los geknutsel in mappen en mailboxen.
             </p>
           </div>
 
@@ -100,13 +113,15 @@ export function AuthShell({
             <div>
               <h3 className="text-sm font-bold text-white">Alles op één plek</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
-                Uren, facturatie, recruitment en administratie in één dashboard.
+                Uren, facturatie, recruitment en administratie in één dashboard —
+                altijd actueel, altijd bij de hand.
               </p>
             </div>
             <div className="border-l border-white/10 pl-6">
               <h3 className="text-sm font-bold text-white">Hulp nodig?</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">
-                Vraag de beheerder om toegang of hulp bij het inloggen.
+                Vraag de beheerder om toegang of hulp bij het inloggen — je bent
+                zo weer op weg.
               </p>
             </div>
           </div>
