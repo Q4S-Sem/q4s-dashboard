@@ -43,7 +43,7 @@ export default async function NieuweAfspraakPage({
     date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T09:00` : undefined;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <BackLink href="/agenda">
         Terug naar agenda
       </BackLink>

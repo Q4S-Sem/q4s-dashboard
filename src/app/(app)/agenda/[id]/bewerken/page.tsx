@@ -34,7 +34,7 @@ export default async function AfspraakBewerkenPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <BackLink href={`/agenda/${event.id}`}>
         Terug naar afspraak
       </BackLink>
