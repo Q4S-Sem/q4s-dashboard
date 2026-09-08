@@ -144,30 +144,32 @@ export default async function TokenverbruikPage() {
               <div className="border-b border-ink-100 px-4 py-3 text-sm font-semibold text-ink-800">
                 Recente aanroepen
               </div>
-              <Table>
-                <THead>
-                  <TR className="hover:bg-transparent">
-                    <TH>Wanneer</TH>
-                    <TH>Provider</TH>
-                    <TH>Model</TH>
-                    <TH>Soort</TH>
-                    <TH className="text-right">Tokens</TH>
-                    <TH className="text-right">Kosten</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {o.recent.map((r) => (
-                    <TR key={r.id}>
-                      <TD className="whitespace-nowrap text-sm text-ink-500">{formatDate(r.createdAt)}</TD>
-                      <TD className="text-ink-700">{PROVIDER_LABEL[r.provider] ?? r.provider}</TD>
-                      <TD className="font-mono text-xs text-ink-500">{r.model}</TD>
-                      <TD className="text-sm text-ink-500">{KIND_LABEL[r.kind] ?? r.kind}</TD>
-                      <TD className="text-right tabular-nums text-ink-700">{fmtTokens(r.totalTokens)}</TD>
-                      <TD className="text-right tabular-nums text-ink-600">{eur(r.estCostUsd)}</TD>
+              <div className="max-h-[480px] overflow-y-auto">
+                <Table>
+                  <THead className="sticky top-0 z-10 bg-ink-100">
+                    <TR className="hover:bg-transparent">
+                      <TH>Wanneer</TH>
+                      <TH>Provider</TH>
+                      <TH>Model</TH>
+                      <TH>Soort</TH>
+                      <TH className="text-right">Tokens</TH>
+                      <TH className="text-right">Kosten</TH>
                     </TR>
-                  ))}
-                </TBody>
-              </Table>
+                  </THead>
+                  <TBody>
+                    {o.recent.map((r) => (
+                      <TR key={r.id}>
+                        <TD className="whitespace-nowrap text-sm text-ink-500">{formatDate(r.createdAt)}</TD>
+                        <TD className="text-ink-700">{PROVIDER_LABEL[r.provider] ?? r.provider}</TD>
+                        <TD className="font-mono text-xs text-ink-500">{r.model}</TD>
+                        <TD className="text-sm text-ink-500">{KIND_LABEL[r.kind] ?? r.kind}</TD>
+                        <TD className="text-right tabular-nums text-ink-700">{fmtTokens(r.totalTokens)}</TD>
+                        <TD className="text-right tabular-nums text-ink-600">{eur(r.estCostUsd)}</TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </>
