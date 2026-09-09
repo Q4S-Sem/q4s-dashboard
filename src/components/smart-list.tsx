@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { Search, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, ChevronRight, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -70,6 +71,7 @@ export function SmartList<T extends { id: string }>({
   emptyLabel = "Geen resultaten.",
   selection,
   toolbarExtra,
+  rowHref,
 }: {
   rows: T[];
   columns: SmartColumn<T>[];
@@ -83,7 +85,11 @@ export function SmartList<T extends { id: string }>({
   selection?: SmartSelection<T>;
   /** Balk direct boven de tabel — bedoeld voor bulkacties op de selectie. */
   toolbarExtra?: ReactNode;
+  /** Maak de HELE rij klikbaar naar deze href. Knoppen/links in cellen blijven
+   *  werken (die stoppen de klik zelf). */
+  rowHref?: (row: T) => string;
 }) {
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [sel, setSel] = useState<Record<string, string>>({});
   const [groupKey, setGroupKey] = useState("");
@@ -196,8 +202,22 @@ export function SmartList<T extends { id: string }>({
 
   const renderRow = (row: T) => {
     const selectable = selection ? selection.isSelectable?.(row) ?? true : false;
+    const href = rowHref?.(row);
     return (
-      <TR key={row.id}>
+      <TR
+        key={row.id}
+        className={cn(href && "cursor-pointer")}
+        onClick={
+          href
+            ? (e) => {
+                // Niet navigeren als er op een knop/link/checkbox/input in de rij is geklikt.
+                const el = e.target as HTMLElement;
+                if (el.closest("a,button,input,label,select,textarea,[role='dialog']")) return;
+                router.push(href);
+              }
+            : undefined
+        }
+      >
         {selection && (
           <TD className="w-10 pr-0">
             <input

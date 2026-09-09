@@ -116,7 +116,14 @@ function PhoneCell({ phone, name }: { phone: string | null; name: string }) {
   return <span className="tabular-nums text-ink-500">{phone}</span>;
 }
 
-export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
+export function ContactsTable({
+  contacts,
+  variant = "klanten",
+}: {
+  contacts: ContactRow[];
+  variant?: "klanten" | "freelancers";
+}) {
+  const isFreelancer = variant === "freelancers";
   const [q, setQ] = useState("");
   const raw = q.trim();
   const term = fold(raw);
@@ -162,19 +169,21 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
           <THead>
             <TR className="hover:bg-transparent">
               <TH>Naam</TH>
-              <TH>Functie</TH>
-              <TH>Bedrijf</TH>
+              <TH>{isFreelancer ? "Discipline" : "Functie"}</TH>
+              <TH>{isFreelancer ? "Bedrijf / plaats" : "Bedrijf"}</TH>
               <TH>Contact</TH>
-              <TH>Eigenaar</TH>
-              <TH className="text-right">Deals</TH>
-              <TH className="text-right">Notities</TH>
+              {!isFreelancer && <TH>Eigenaar</TH>}
+              {!isFreelancer && <TH className="text-right">Deals</TH>}
+              {!isFreelancer && <TH className="text-right">Notities</TH>}
             </TR>
           </THead>
           <TBody>
             {filtered.map((c) => (
               <TR key={c.id}>
                 <TD>
-                  <RowLink href={`/crm/contacten/${c.id}`}>{c.name}</RowLink>
+                  <RowLink href={isFreelancer ? `/werknemers/${c.id}` : `/crm/contacten/${c.id}`}>
+                    {c.name}
+                  </RowLink>
                 </TD>
                 <TD>{c.jobTitle ?? "—"}</TD>
                 <TD>{c.company ?? "—"}</TD>
@@ -184,9 +193,9 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
                     <MailButton email={c.email} name={c.name} />
                   </div>
                 </TD>
-                <TD>{c.ownerName ?? "—"}</TD>
-                <TD className="text-right tabular-nums">{c.deals}</TD>
-                <TD className="text-right tabular-nums">{c.notes}</TD>
+                {!isFreelancer && <TD>{c.ownerName ?? "—"}</TD>}
+                {!isFreelancer && <TD className="text-right tabular-nums">{c.deals}</TD>}
+                {!isFreelancer && <TD className="text-right tabular-nums">{c.notes}</TD>}
               </TR>
             ))}
           </TBody>

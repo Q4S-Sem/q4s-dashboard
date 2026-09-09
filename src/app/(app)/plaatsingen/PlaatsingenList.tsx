@@ -153,6 +153,7 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
       filters={filters}
       groups={groups}
       initialSort={{ key: "person", dir: "asc" }}
+      rowHref={(r) => `/plaatsingen/${r.id}`}
     />
   );
 }
