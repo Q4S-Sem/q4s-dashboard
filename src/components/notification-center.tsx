@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  Bell,
-  BellRing,
+  Activity,
   CalendarDays,
   ListTodo,
   ClipboardList,
@@ -13,7 +12,7 @@ import {
   Inbox,
   Zap,
   AlertTriangle,
-  ChevronRight,
+  ArrowUpRight,
   CheckCircle2,
   LayoutDashboard,
   type LucideIcon,
@@ -37,16 +36,19 @@ const META: Record<string, { icon: LucideIcon; color: string; desc: string }> = 
   },
 };
 
-const CHIP: Record<string, string> = {
-  blue: "bg-blue-100 text-blue-700",
-  violet: "bg-violet-100 text-violet-700",
-  cyan: "bg-cyan-100 text-cyan-700",
-  amber: "bg-amber-100 text-amber-700",
-  emerald: "bg-emerald-100 text-emerald-700",
-  indigo: "bg-indigo-100 text-indigo-700",
-  orange: "bg-orange-100 text-orange-700",
-  red: "bg-red-100 text-red-700",
-  slate: "bg-ink-100 text-ink-500",
+// Per categorie: gekleurde accentstreep + icoonkleur (tekst) voor de nieuwe
+// timeline-stijl. Geen gevulde chip meer — alleen een streep links en een
+// gekleurd icoon, rustiger en anders dan de oude ronde badges.
+const ACCENT: Record<string, { bar: string; icon: string; ring: string }> = {
+  blue: { bar: "bg-blue-500", icon: "text-blue-600", ring: "ring-blue-100" },
+  violet: { bar: "bg-violet-500", icon: "text-violet-600", ring: "ring-violet-100" },
+  cyan: { bar: "bg-cyan-500", icon: "text-cyan-600", ring: "ring-cyan-100" },
+  amber: { bar: "bg-amber-500", icon: "text-amber-600", ring: "ring-amber-100" },
+  emerald: { bar: "bg-emerald-500", icon: "text-emerald-600", ring: "ring-emerald-100" },
+  indigo: { bar: "bg-indigo-500", icon: "text-indigo-600", ring: "ring-indigo-100" },
+  orange: { bar: "bg-orange-500", icon: "text-orange-600", ring: "ring-orange-100" },
+  red: { bar: "bg-red-500", icon: "text-red-600", ring: "ring-red-100" },
+  slate: { bar: "bg-ink-300", icon: "text-ink-500", ring: "ring-ink-200" },
 };
 
 /**
@@ -84,17 +86,17 @@ export function NotificationCenter({ data }: { data: Notifications }) {
         aria-label={`Meldingen${urgent > 0 ? ` (${urgent})` : ""}`}
         aria-haspopup="menu"
         className={cn(
-          // Het aantal staat náást de bel in plaats van er bovenop: geen bolletje
-          // dat het icoon wegdrukt, en het getal blijft goed leesbaar.
-          "inline-flex h-9 items-center gap-1.5 rounded-sm transition-colors",
-          urgent > 0
-            ? "bg-brand-50 px-2 text-brand-700 hover:bg-brand-100"
-            : "w-9 justify-center text-ink-400 hover:bg-ink-100 hover:text-ink-900",
+          "relative inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-all",
+          open
+            ? "border-brand-700 bg-brand-700 text-white"
+            : urgent > 0
+              ? "border-ink-200 bg-white text-ink-700 shadow-sm hover:-translate-y-0.5 hover:border-ink-300"
+              : "border-transparent text-ink-400 hover:bg-ink-100 hover:text-ink-900",
         )}
       >
-        <Bell className="h-[18px] w-[18px]" />
+        <Activity className="h-[18px] w-[18px]" />
         {urgent > 0 && (
-          <span className="text-[13px] font-semibold tabular-nums">
+          <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold tabular-nums text-white ring-2 ring-white">
             {urgent > 99 ? "99+" : urgent}
           </span>
         )}
@@ -103,28 +105,28 @@ export function NotificationCenter({ data }: { data: Notifications }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-[26rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-md border border-ink-200 bg-white shadow-xl"
+          className="absolute right-0 z-50 mt-2 w-[27rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-5 py-3.5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink-900 text-white">
-                <BellRing className="h-4 w-4" />
-              </span>
-              <div>
-                <div className="text-[15px] font-bold leading-tight text-ink-900">Meldingen</div>
-                <div className="text-xs text-ink-400">
-                  {urgent > 0 ? `${urgent} ${urgent === 1 ? "vraagt" : "vragen"} aandacht` : "Alles bij — niets urgents"}
-                </div>
+          {/* Donkere kop in Q4S-antraciet met de telling ernaast — heel anders
+              dan de oude witte kop met bel-icoon. */}
+          <div className="bg-brand-700 px-5 py-4 text-white">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Activity className="h-[18px] w-[18px] text-white/70" />
+                <span className="text-[15px] font-bold tracking-tight">Activiteit</span>
               </div>
+              <span className="text-xs font-medium text-white/60">
+                {urgent > 0 ? `${urgent} open` : "alles bij"}
+              </span>
             </div>
-          </div>
-
-          {/* Overzichtsstrip */}
-          <div className="grid grid-cols-3 gap-2 px-4 pt-4">
-            <SummaryTile label="Te laat" value={totalLate} tone="red" />
-            <SummaryTile label="Vandaag" value={totalToday} tone="amber" />
-            <SummaryTile label="Later" value={totalFuture} tone="slate" />
+            {/* Inline mini-telling in de kop i.p.v. drie losse tegels. */}
+            <div className="mt-3 flex items-center gap-4 text-sm">
+              <HeaderStat value={totalLate} label="te laat" dot="bg-red-400" />
+              <span className="h-4 w-px bg-white/15" />
+              <HeaderStat value={totalToday} label="vandaag" dot="bg-amber-400" />
+              <span className="h-4 w-px bg-white/15" />
+              <HeaderStat value={totalFuture} label="later" dot="bg-white/40" />
+            </div>
           </div>
 
           {groups.length === 0 ? (
@@ -136,37 +138,38 @@ export function NotificationCenter({ data }: { data: Notifications }) {
               <p className="text-xs text-ink-400">Je bent helemaal bij. 🎉</p>
             </div>
           ) : (
-            <ul className="mt-3 max-h-[26rem] divide-y divide-ink-50 overflow-y-auto">
+            <ul className="max-h-[26rem] overflow-y-auto p-2">
               {groups.map((g) => {
-                const meta = META[g.key] ?? { icon: Bell, color: "slate", desc: "" };
+                const meta = META[g.key] ?? { icon: Activity, color: "slate", desc: "" };
                 const Icon = meta.icon;
+                const accent = ACCENT[meta.color] ?? ACCENT.slate;
+                const total = g.late + g.today + g.future;
                 return (
                   <li key={g.key}>
                     <Link
                       href={g.href}
                       onClick={() => setOpen(false)}
-                      className="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-ink-50"
+                      className="group relative flex items-center gap-3 overflow-hidden rounded-xl py-2.5 pl-4 pr-3 transition-colors hover:bg-ink-50"
                     >
-                      <span
-                        className={cn(
-                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                          CHIP[meta.color] ?? CHIP.slate,
-                        )}
-                      >
-                        <Icon className="h-5 w-5" />
+                      {/* Gekleurde accentstreep links i.p.v. een gevulde badge. */}
+                      <span className={cn("absolute inset-y-1.5 left-0 w-1 rounded-full", accent.bar)} />
+                      <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white ring-1", accent.ring)}>
+                        <Icon className={cn("h-[18px] w-[18px]", accent.icon)} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate text-sm font-semibold text-ink-900">{g.label}</span>
-                          <ChevronRight className="h-4 w-4 shrink-0 text-ink-300 transition-colors group-hover:text-ink-500" />
-                        </div>
+                        <span className="block truncate text-sm font-semibold text-ink-900">{g.label}</span>
                         {meta.desc && <p className="truncate text-xs text-ink-400">{meta.desc}</p>}
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
                           {g.late > 0 && <Pill n={g.late} label="te laat" tone="red" />}
                           {g.today > 0 && <Pill n={g.today} label="vandaag" tone="amber" />}
                           {g.future > 0 && <Pill n={g.future} label="later" tone="slate" />}
                         </div>
                       </div>
+                      {/* Grote telling rechts + pijl-naar-buiten i.p.v. chevron. */}
+                      <span className="flex shrink-0 flex-col items-end">
+                        <span className="text-lg font-bold tabular-nums leading-none text-ink-900">{total}</span>
+                        <ArrowUpRight className="mt-1 h-4 w-4 text-ink-300 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-ink-600" />
+                      </span>
                     </Link>
                   </li>
                 );
@@ -190,17 +193,13 @@ export function NotificationCenter({ data }: { data: Notifications }) {
   );
 }
 
-function SummaryTile({ label, value, tone }: { label: string; value: number; tone: "red" | "amber" | "slate" }) {
-  const map = {
-    red: { tile: "bg-red-50 ring-red-100", value: value > 0 ? "text-red-600" : "text-ink-300" },
-    amber: { tile: "bg-amber-50 ring-amber-100", value: value > 0 ? "text-amber-600" : "text-ink-300" },
-    slate: { tile: "bg-ink-50 ring-ink-200", value: value > 0 ? "text-ink-700" : "text-ink-300" },
-  }[tone];
+function HeaderStat({ value, label, dot }: { value: number; label: string; dot: string }) {
   return (
-    <div className={cn("rounded-xl px-3 py-2.5 text-center ring-1", map.tile)}>
-      <div className={cn("text-2xl font-bold leading-none tabular-nums", map.value)}>{value}</div>
-      <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-ink-500">{label}</div>
-    </div>
+    <span className="inline-flex items-center gap-1.5">
+      <span className={cn("h-1.5 w-1.5 rounded-full", value > 0 ? dot : "bg-white/20")} />
+      <span className="font-bold tabular-nums">{value}</span>
+      <span className="text-white/50">{label}</span>
+    </span>
   );
 }
 
