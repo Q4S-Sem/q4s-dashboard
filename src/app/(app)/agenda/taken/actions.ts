@@ -37,14 +37,22 @@ export async function createTask(formData: FormData) {
   if (!title) redirect("/agenda/taken");
 
   const dueRaw = String(formData.get("dueDate") ?? "").trim();
+  const dueTime = String(formData.get("dueTime") ?? "").trim();
   const priority = String(formData.get("priority") ?? "MEDIUM");
   const notes = String(formData.get("notes") ?? "").trim();
   const assigneeId = await validEmployeeId(String(formData.get("assigneeId") ?? ""));
 
+  // Datum + optionele tijd (HH:MM) samen tot één moment; zonder tijd = dag zelf.
+  let dueDate: Date | null = null;
+  if (dueRaw) {
+    dueDate = /^\d{2}:\d{2}$/.test(dueTime) ? new Date(`${dueRaw}T${dueTime}`) : new Date(dueRaw);
+    if (Number.isNaN(dueDate.getTime())) dueDate = null;
+  }
+
   await db.task.create({
     data: {
       title,
-      dueDate: dueRaw ? new Date(dueRaw) : null,
+      dueDate,
       priority: TASK_PRIORITY_VALUES.includes(priority) ? priority : "MEDIUM",
       notes: notes || null,
       assigneeId,
