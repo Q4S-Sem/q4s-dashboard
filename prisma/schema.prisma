@@ -241,6 +241,9 @@ model Placement {
   status       String   @default("ACTIVE")
   /// Werklocatie / project bij de klant (bijv. "Sif Group HKW8") — op de factuur (kolom LOCATION).
   workLocation String?
+  /// Inkoop-ordernummer (PO) van de KLANT voor deze plaatsing — verschijnt als
+  /// "PO" op de verkoopfactuur. Leeg = geen PO-regel op de factuur.
+  poNumber     String?
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -388,6 +391,9 @@ model CompanySettings {
   website              String @default("")
   /// Optional prefix before the year-number, e.g. "Q4S-".
   invoicePrefix        String @default("")
+  /// Q4S-offerte-/quotationnummer dat als "Our ref" op elke verkoopfactuur komt
+  /// (vaste referentie richting de klant). Leeg = geen Our ref-regel.
+  quotationNumber      String @default("")
   /// Vanaf welk volgnummer de automatische factuurnummering van een jaar begint.
   /// Staat de jaarteller al hoger, dan blijft die staan — nummers worden nooit
   /// hergebruikt en de nummering loopt nooit terug.

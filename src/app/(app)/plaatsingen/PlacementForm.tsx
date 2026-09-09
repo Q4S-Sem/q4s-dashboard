@@ -927,6 +927,20 @@ export function PlacementForm({
             />
           </Field>
 
+          <Field
+            label="PO-nummer (inkooporder klant)"
+            htmlFor="poNumber"
+            error={e.poNumber}
+            hint="Optioneel — het inkoop-ordernummer van de klant voor deze plaatsing. Komt als “PO” op de verkoopfactuur."
+          >
+            <Input
+              id="poNumber"
+              name="poNumber"
+              defaultValue={placement?.poNumber ?? ""}
+              placeholder="Bijv. 4500123456"
+            />
+          </Field>
+
           <div className="space-y-3">
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Startdatum" htmlFor="startDate" required error={e.startDate}>

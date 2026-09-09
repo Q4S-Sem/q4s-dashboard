@@ -21,6 +21,7 @@ const SettingsSchema = z.object({
   phone: z.string().optional(),
   website: z.string().optional(),
   invoicePrefix: z.string().optional(),
+  quotationNumber: z.string().optional(),
   invoiceStartNumber: z.coerce
     .number()
     .int("Vul een heel nummer in")
@@ -56,6 +57,7 @@ function toData(data: z.infer<typeof SettingsSchema>) {
     phone: data.phone ?? "",
     website: data.website ?? "",
     invoicePrefix: data.invoicePrefix ?? "",
+    quotationNumber: data.quotationNumber ?? "",
     invoiceStartNumber: data.invoiceStartNumber,
     defaultVatRate: data.defaultVatRate,
     defaultPaymentTermDays: data.defaultPaymentTermDays,

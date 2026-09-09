@@ -71,6 +71,14 @@ export async function createSalesInvoice(opts: {
   const titles = new Set(timesheets.map((t) => t.placement.title));
   const subject = consultantNames.size === 1 ? [...consultantNames][0] : null;
   const services = titles.size === 1 ? [...titles][0] : null;
+  // Our ref = het vaste Q4S-quotationnummer uit de instellingen. PO = het inkoop-
+  // ordernummer van de klant, per plaatsing; alleen tonen als alle regels dezelfde
+  // (niet-lege) PO delen — anders laten we 'm leeg om verwarring te voorkomen.
+  const ourReference = settings.quotationNumber?.trim() || null;
+  const poNumbers = new Set(
+    timesheets.map((t) => t.placement.poNumber?.trim()).filter((v): v is string => Boolean(v)),
+  );
+  const purchaseOrder = poNumbers.size === 1 ? [...poNumbers][0] : null;
 
   const subtotal = round2(lines.reduce((s, l) => s + l.amount, 0));
   const vatAmount = round2((subtotal * vatRate) / 100);
@@ -88,7 +96,7 @@ export async function createSalesInvoice(opts: {
     const inv = await tx.invoice.create({
       data: {
         number, clientId, issueDate, dueDate, status: "DRAFT", vatRate, subtotal, vatAmount, total, notes,
-        subject, services,
+        subject, services, ourReference, purchaseOrder,
         lines: {
           create: lines.map((l) => ({
             description: l.description, quantity: l.quantity, unitPrice: l.unitPrice,

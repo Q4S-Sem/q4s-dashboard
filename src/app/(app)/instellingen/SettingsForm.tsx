@@ -261,6 +261,22 @@ export function SettingsForm({
 
             <div className="grid gap-5 sm:grid-cols-2">
               <Field
+                label="Q4S offerte-/quotationnummer"
+                htmlFor="quotationNumber"
+                hint="Vaste Q4S-referentie die als “Our ref” op elke verkoopfactuur komt (bijv. Q4S-Q-2026-014). Leeg = geen Our ref-regel."
+                error={e.quotationNumber}
+              >
+                <Input
+                  id="quotationNumber"
+                  name="quotationNumber"
+                  placeholder="Q4S-Q-2026-014"
+                  defaultValue={settings.quotationNumber ?? ""}
+                />
+              </Field>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field
                 label="Standaard betaaltermijn (dagen)"
                 htmlFor="defaultPaymentTermDays"
                 hint="Vervaldatum = “Invoice Date” + dit aantal dagen. Heeft een klant een eigen betaaltermijn (Klanten → Betaaltermijn), dan telt die op zijn factuur."

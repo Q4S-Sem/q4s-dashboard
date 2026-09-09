@@ -22,6 +22,7 @@ const PlacementCoreSchema = z.object({
     .optional()
     .transform((v) => (v && v.trim() ? v.trim() : null)),
   title: z.string().min(1, "Functie is verplicht"),
+  poNumber: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : null)),
   startDate: z.coerce.date({ message: "Startdatum is verplicht" }),
   endDate: z.coerce.date().optional(),
   costRate: z.coerce.number().min(0, "Inkooptarief mag niet negatief zijn"),
@@ -80,6 +81,7 @@ function coreToData(d: z.infer<typeof PlacementCoreSchema>) {
   return {
     clientId: d.clientId,
     title: d.title,
+    poNumber: d.poNumber,
     startDate: d.startDate,
     endDate: d.endDate ?? null,
     costRate: d.costRate,
