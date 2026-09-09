@@ -3,7 +3,15 @@ import { aiJSON, aiJSONFromFile } from "@/lib/ai";
 import { readInboxBase64, readInboxBuffer } from "@/lib/uploads";
 import { excelToText, isSpreadsheet } from "@/lib/excel";
 import { matchByName } from "@/lib/name-match";
-import { resolveWeekStart, round2, formatHours } from "@/lib/utils";
+import {
+  buildCorrectionHint,
+  correctionFieldLabel,
+  correctionFieldUnit,
+  learnedSuggestions,
+  type CorrectionPair,
+  type LearnedSuggestion,
+} from "@/lib/timesheet-correction-core";
+import { distributeDayHours, resolveWeekStart, round2, formatHours } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // AI-uitlezing van één inbox-urenstaat (naam/week/uren/km/overuren + match op
@@ -126,6 +134,71 @@ function parseMonthDay(s?: string | null): { month: number; day: number } | null
   return { month: Number(m[2]), day: Number(m[3]) };
 }
 
+// --- correctie-geheugen per plaatsing --------------------------------------
+//
+// Eerlijk: het AI-model wordt hier NIET bijgetraind. We houden per plaatsing bij
+// wat de AI las tegenover wat de mens ervan maakte (TimesheetCorrection, gevuld
+// bij het bevestigen in inbox-confirm.ts) en zetten dat twee keer in:
+//
+//   • vóór de uitlezing als aandachtspunt in het prompt (buildCorrectionHint);
+//   • ná de uitlezing als zichtbaar VOORSTEL, maar alleen voor een fout die de
+//     mens al minstens twee keer identiek verbeterde én die nu terugkomt.
+//
+// Het oordeel zelf is puur en getest: src/lib/timesheet-correction-core.ts.
+
+/** Hoeveel eerdere correcties we van een plaatsing meenemen. */
+const CORRECTION_HISTORY = 3;
+
+/** De laatste correcties van deze plaatsing, nieuwste eerst. */
+async function correctieHistorie(placementId: string | null): Promise<CorrectionPair[]> {
+  if (!placementId) return [];
+  const rows = await db.timesheetCorrection.findMany({
+    where: { placementId },
+    orderBy: { createdAt: "desc" },
+    take: CORRECTION_HISTORY,
+  });
+  return rows.flatMap((r) => {
+    try {
+      return [{ ai: JSON.parse(r.aiJson), human: JSON.parse(r.humanJson) } as CorrectionPair];
+    } catch {
+      return [];
+    }
+  });
+}
+
+/**
+ * De plaatsing waarvan we VÓÓR de uitlezing al weten dat hij erbij hoort — nodig
+ * omdat de hint met het prompt mee moet, terwijl de naam-match pas ná de uitlezing
+ * rond is. Dat is het geval bij "opnieuw uitlezen" van een al gekoppeld item, en
+ * bij een medewerker met precies één actieve plaatsing. Weten we het niet, dan
+ * gaat de scan gewoon zonder hint — precies zoals voorheen.
+ */
+async function bekendePlaatsing(item: {
+  placementId: string | null;
+  consultantId: string | null;
+}): Promise<string | null> {
+  if (item.placementId) return item.placementId;
+  if (!item.consultantId) return null;
+  const actief = await db.placement.findMany({
+    where: { consultantId: item.consultantId, status: "ACTIVE" },
+    select: { id: true },
+  });
+  return actief.length === 1 ? actief[0].id : null;
+}
+
+/** De i-de dag ná de maandag als "YYYY-MM-DD" (lokaal, net als de rest). */
+function isoDatum(monday: Date, i: number): string {
+  const d = new Date(monday);
+  d.setDate(d.getDate() + i);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** "Ma (8 → 0 u)" — hoe het scherm en de vlag een geleerde correctie noemen. */
+function suggestieLabel(s: LearnedSuggestion): string {
+  const eenheid = correctionFieldUnit(s.field);
+  return `${correctionFieldLabel(s.field)} (${formatHours(s.from)} → ${formatHours(s.to)} ${eenheid})`;
+}
+
 /**
  * Core AI extraction for ONE inbox item (name/week/hours/km/overtime + best-effort
  * consultant match). Throws on any failure (no redirect) so it's reusable by the
@@ -164,13 +237,21 @@ export async function runInboxExtraction(id: string): Promise<void> {
     if (profile?.hints.trim()) senderHints = profile.hints.trim();
   }
 
+  // Tweede leer-lus: de correcties van DEZE plaatsing (per dag/overuren/km).
+  // Alleen bruikbaar als de plaatsing nu al bekend is — de naam-match komt pas ná
+  // de uitlezing. Is hij dat niet, dan blijft het prompt onveranderd.
+  const bekendeId = await bekendePlaatsing(item);
+  const vooraf = await correctieHistorie(bekendeId);
+  const correctieHint = buildCorrectionHint(vooraf);
+
   const now = new Date();
   const system =
     SYSTEM_EXTRACT +
     dateContext(now) +
     (senderHints
       ? `\n\nLET OP — AANDACHTSPUNTEN bij deze afzender (uit eerdere correcties; deze gingen eerder mis, controleer ze hier extra — laat je niet leiden naar één vast getal, kijk gewoon extra goed):\n${senderHints}`
-      : "");
+      : "") +
+    (correctieHint ? `\n\n${correctieHint}` : "");
 
   const data = spreadsheet
     ? await aiJSON<Extracted>({
@@ -203,30 +284,18 @@ export async function runInboxExtraction(id: string): Promise<void> {
     parseMonthDay((data.days ?? []).find((d) => /^\d{4}-\d{2}-\d{2}$/.test(d?.date ?? ""))?.date);
   const weekStart = resolveWeekStart(monthDay, explicitYear, now);
 
-  // Reconciliatie: de dag-optelling is wat straks de urenstaat wordt. Vergelijk
-  // met het door de staat vermelde totaal en meld een afwijking. Kies voor km het
-  // expliciet vermelde totaal (bv. 'Total Kilometers: 220') als dat er is.
-  const daySum = round2(
-    (data.days ?? []).reduce((s, d) => s + (typeof d.hours === "number" && d.hours > 0 ? d.hours : 0), 0),
-  );
+  // De totalen die de staat ZELF vermeldt — de maatstaf voor de reconciliatie
+  // hieronder, en (voor km) wat er zonder tegenbericht wordt vastgelegd.
   const statedHours =
     typeof data.reportedTotalHours === "number" && data.reportedTotalHours > 0 ? data.reportedTotalHours : null;
-  const finalHours =
-    daySum > 0 ? daySum : typeof data.totalHours === "number" && data.totalHours > 0 ? data.totalHours : statedHours;
   const statedKm =
     typeof data.reportedTotalKm === "number" && data.reportedTotalKm > 0 ? data.reportedTotalKm : null;
-  const finalKm = statedKm ?? (typeof data.kilometers === "number" && data.kilometers > 0 ? data.kilometers : null);
-
-  const noteParts: string[] = [];
-  if (statedHours != null && daySum > 0 && Math.abs(statedHours - daySum) > 0.01) {
-    noteParts.push(
-      `Let op: opgeteld dagtotaal (${formatHours(daySum)} u) wijkt af van het op de staat vermelde totaal (${formatHours(statedHours)} u) — controleer de uren.`,
-    );
-  }
-  if (data.notes?.trim()) noteParts.push(data.notes.trim());
-  const aiNotes = noteParts.join(" ") || null;
+  const gelezenKm =
+    statedKm ?? (typeof data.kilometers === "number" && data.kilometers > 0 ? data.kilometers : null);
 
   // Best-effort match to a consultant by name (+ their single active placement).
+  // Bewust vóór de reconciliatie: pas mét de plaatsing in de hand kunnen de
+  // geleerde correcties van deze persoon nog op de uitlezing worden toegepast.
   let consultantId: string | null = null;
   let placementId: string | null = null;
   if (data.name && data.name.trim()) {
@@ -239,6 +308,63 @@ export async function runInboxExtraction(id: string): Promise<void> {
       if (match.placements.length === 1) placementId = match.placements[0].id;
     }
   }
+
+  // Geleerde correcties toepassen: alleen waar de mens dezelfde fout al minstens
+  // twee keer identiek verbeterde én de AI hem nu opnieuw maakt. Nooit stil — wat
+  // er verandert gaat als learnedJson mee naar het controle-scherm, staat als vlag
+  // bij de uitlezing, en is daar gewoon te overschrijven.
+  const historie =
+    placementId && placementId !== bekendeId ? await correctieHistorie(placementId) : vooraf;
+  const gelezenDagen = distributeDayHours(data.days ?? [], weekStart);
+  const suggesties = placementId
+    ? learnedSuggestions(historie, {
+        dagUren: gelezenDagen,
+        overuren: data.overtimeHours,
+        kilometers: gelezenKm,
+      })
+    : [];
+  let kmGeleerd = false;
+  if (suggesties.length > 0) {
+    const dagen = gelezenDagen.map((h) => (h === "" ? 0 : h));
+    for (const s of suggesties) {
+      if (s.field === "overuren") data.overtimeHours = s.to;
+      else if (s.field === "kilometers") {
+        data.kilometers = s.to;
+        kmGeleerd = true;
+      } else dagen[Number(s.field.slice(3))] = s.to;
+    }
+    // De dagregels opnieuw opschrijven op de maandag van déze week: het scherm
+    // leest de uren uit extractedJson, dus daar moet het resultaat in staan.
+    // Zonder bekende maandag blijven de datums leeg — dan leest het scherm ze
+    // (net als nu) positioneel als Ma..Zo.
+    data.days = dagen.map((hours, i) => ({
+      date: weekStart ? isoDatum(weekStart, i) : "",
+      hours,
+    }));
+    data.totalHours = round2(dagen.reduce((som, h) => som + h, 0));
+  }
+
+  // Reconciliatie: de dag-optelling is wat straks de urenstaat wordt. Vergelijk
+  // met het door de staat vermelde totaal en meld een afwijking. Kies voor km het
+  // expliciet vermelde totaal (bv. 'Total Kilometers: 220') als dat er is — tenzij
+  // een geleerde correctie de km net heeft bijgesteld.
+  const daySum = round2(
+    (data.days ?? []).reduce((s, d) => s + (typeof d.hours === "number" && d.hours > 0 ? d.hours : 0), 0),
+  );
+  const finalHours =
+    daySum > 0 ? daySum : typeof data.totalHours === "number" && data.totalHours > 0 ? data.totalHours : statedHours;
+  const finalKm = kmGeleerd
+    ? (typeof data.kilometers === "number" && data.kilometers > 0 ? data.kilometers : null)
+    : gelezenKm;
+
+  const noteParts: string[] = [];
+  if (statedHours != null && daySum > 0 && Math.abs(statedHours - daySum) > 0.01) {
+    noteParts.push(
+      `Let op: opgeteld dagtotaal (${formatHours(daySum)} u) wijkt af van het op de staat vermelde totaal (${formatHours(statedHours)} u) — controleer de uren.`,
+    );
+  }
+  if (data.notes?.trim()) noteParts.push(data.notes.trim());
+  const aiNotes = noteParts.join(" ") || null;
 
   // Controle-vangnet: harde checks → vlaggen + 'moet nagekeken worden'.
   const confidence = ["high", "medium", "low"].includes((data.confidence ?? "").toLowerCase())
@@ -274,12 +400,20 @@ export async function runInboxExtraction(id: string): Promise<void> {
   if (confidence === "low") {
     flags.push({ level: "warn", message: "De AI was onzeker over deze uitlezing — controleer alles goed." });
   }
+  if (suggesties.length > 0) {
+    flags.push({
+      level: "warn",
+      message: `Op basis van eerdere correcties bijgesteld: ${suggesties.map(suggestieLabel).join(", ")} — controleer het even.`,
+    });
+  }
   const needsReview =
     flags.some((f) => f.level === "error") ||
     hoursMismatch ||
     kmMismatch ||
     !consultantId ||
-    confidence === "low";
+    confidence === "low" ||
+    // Geleerd is niet hetzelfde als zeker: hier hoort een mens naar te kijken.
+    suggesties.length > 0;
 
   await db.timesheetInbox.update({
     where: { id },
@@ -296,6 +430,7 @@ export async function runInboxExtraction(id: string): Promise<void> {
       confidence,
       needsReview,
       reviewFlags: flags.length ? JSON.stringify(flags) : null,
+      learnedJson: suggesties.length ? JSON.stringify(suggesties) : null,
       consultantId,
       placementId,
     },

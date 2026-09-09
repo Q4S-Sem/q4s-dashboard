@@ -1,4 +1,5 @@
 import { distributeDayHours, formatHours, parseHours, type DayHours } from "@/lib/utils";
+import { CORRECTION_FIELDS, type CorrectionField } from "@/lib/timesheet-correction-core";
 import type { SurchargeConfig } from "@/lib/toeslag";
 import type { GereedPerPlaatsing } from "@/lib/urenstaat-gereed";
 import type { WeekSlot } from "@/lib/week-koppeling";
@@ -17,6 +18,35 @@ import { weekstaatWeekKey, type WeekKeuze } from "@/lib/wizard-weekfilter";
 // ---------------------------------------------------------------------------
 
 export const LEGE_DAGUREN: string[] = ["", "", "", "", "", "", ""];
+
+/**
+ * Het concept-vangnet: de uren zoals de mens ze in het controle-scherm had staan
+ * toen hij wegklikte. Debounced weggeschreven door `bewaarConcept` (./actions.ts)
+ * en bij terugkomst LEIDEND boven de kale AI-uitlezing — anders was elke
+ * handmatige correctie kwijt na een refresh.
+ */
+export type WizardConcept = {
+  dagUren: string[];
+  overuren: string;
+  kilometers: string;
+  placementId: string;
+  weekStart: string;
+};
+
+/**
+ * Eén correctie die de scan op basis van eerdere weken van deze plaatsing al
+ * heeft toegepast. Het scherm toont ze bovenaan het controle-paneel: geleerde
+ * correcties gaan nooit stilzwijgend door.
+ */
+export type GeleerdeCorrectie = {
+  field: CorrectionField;
+  /** Wat de AI nu las. */
+  from: number;
+  /** Wat we op basis van eerdere correcties hebben ingevuld. */
+  to: number;
+  /** De Nederlandse uitleg erbij. */
+  reason: string;
+};
 
 /** Eén openstaande weekstaat uit de timesheet-inbox, klaar voor stap 1. */
 export type WizardTimesheet = {
@@ -52,6 +82,10 @@ export type WizardTimesheet = {
   dagUren: string[];
   overuren: string;
   kilometers: string;
+  /** Eerder handmatig gecorrigeerde uren van deze week; null = alleen de AI. */
+  concept: WizardConcept | null;
+  /** Wat de scan op basis van eerdere correcties al heeft bijgesteld. */
+  geleerd: GeleerdeCorrectie[];
 };
 
 /**
@@ -247,6 +281,8 @@ export type InboxRij = {
   extractedJson: string | null;
   extractedOvertimeHours: number | null;
   extractedKilometers: number | null;
+  draftJson: string | null;
+  learnedJson: string | null;
   consultantId: string | null;
   placementId: string | null;
   consultant: { firstName: string; lastName: string } | null;
@@ -275,6 +311,52 @@ function dagUrenVan(extractedJson: string | null, maandag: Date | null): string[
 /** Getal → invoerwaarde; 0 en null blijven leeg ("niet gemeld", niet "nul"). */
 function getalVeld(value: number | null | undefined): string {
   return typeof value === "number" && value > 0 ? String(value) : "";
+}
+
+/**
+ * Het bewaarde concept uitpakken. Onleesbaar of zonder complete week aan dagen →
+ * null: dan blijft de AI-uitlezing gewoon de basis (een half concept is erger dan
+ * geen concept).
+ */
+function conceptVan(draftJson: string | null): WizardConcept | null {
+  if (!draftJson) return null;
+  try {
+    const d = JSON.parse(draftJson) as Partial<Record<keyof WizardConcept, unknown>>;
+    if (!Array.isArray(d.dagUren) || d.dagUren.length !== 7) return null;
+    return {
+      dagUren: d.dagUren.map((h) => (h === null || h === undefined ? "" : String(h))),
+      overuren: typeof d.overuren === "string" ? d.overuren : "",
+      kilometers: typeof d.kilometers === "string" ? d.kilometers : "",
+      placementId: typeof d.placementId === "string" ? d.placementId : "",
+      weekStart: typeof d.weekStart === "string" ? d.weekStart : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** De toegepaste geleerde correcties uitpakken; onleesbare regels vallen weg. */
+function geleerdVan(learnedJson: string | null): GeleerdeCorrectie[] {
+  if (!learnedJson) return [];
+  try {
+    const rows = JSON.parse(learnedJson);
+    if (!Array.isArray(rows)) return [];
+    return rows.flatMap((r: unknown) => {
+      const c = r as Partial<GeleerdeCorrectie>;
+      if (!CORRECTION_FIELDS.includes(c?.field as CorrectionField)) return [];
+      if (typeof c.from !== "number" || typeof c.to !== "number") return [];
+      return [
+        {
+          field: c.field as CorrectionField,
+          from: c.from,
+          to: c.to,
+          reason: typeof c.reason === "string" ? c.reason : "",
+        },
+      ];
+    });
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -326,6 +408,8 @@ export function naarWizardTimesheet(
     dagUren: dagUrenVan(item.extractedJson, maandag),
     overuren: getalVeld(item.extractedOvertimeHours),
     kilometers: getalVeld(item.extractedKilometers),
+    concept: conceptVan(item.draftJson),
+    geleerd: geleerdVan(item.learnedJson),
   };
 }
 

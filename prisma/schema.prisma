@@ -286,6 +286,7 @@ model Placement {
   invoiceLines InvoiceLine[]
   purchaseLines PurchaseInvoiceLine[]
   inboxItems   TimesheetInbox[]
+  timesheetCorrections TimesheetCorrection[]
 
   @@index([consultantId])
   @@index([clientId])
@@ -735,6 +736,17 @@ model TimesheetInbox {
   extractedJson       String?
   aiNotes             String?
 
+  /// Concept-vangnet van het controle-scherm: de RUWE invoer zoals de mens hem
+  /// op dit moment heeft staan ({dagUren:string[7], overuren, kilometers,
+  /// placementId, weekStart}). Wordt debounced weggeschreven terwijl er
+  /// gecorrigeerd wordt, zodat weg-navigeren of herladen niets kost. Raakt de
+  /// definitieve Timesheet NIET aan; bij het verwerken wordt hij leeggemaakt.
+  draftJson           String?
+  /// Wat er op basis van eerdere correcties bij deze plaatsing is aangepast of
+  /// voorgesteld: [{ field, from, to, reason }]. Het scherm toont dit als
+  /// info-strip — geleerde correcties gaan nooit stilzwijgend door.
+  learnedJson         String?
+
   // Controle-vangnet: betrouwbaarheid + of een mens moet nakijken.
   /// high | medium | low — hoe zeker de AI was over deze uitlezing.
   confidence          String?
@@ -780,6 +792,30 @@ model SenderProfile {
   /// Aantal verwerkte correcties.
   corrections Int      @default(0)
   updatedAt   DateTime @default(now()) @updatedAt
+}
+
+/// Correctie-geheugen per PLAATSING: wat de AI van een handgeschreven weekstaat
+/// las tegenover wat de mens er bij het verwerken van maakte. Alleen afwijkende
+/// weken komen hier terecht (klopte de uitlezing, dan valt er niets te leren).
+///
+/// Bij een volgende scan van dezelfde plaatsing gaan de laatste rijen mee als
+/// aandachtspunt in het extractie-prompt, en wordt een fout die de mens al
+/// meermaals identiek verbeterde ZICHTBAAR voorgesteld. Het model zelf wordt
+/// nergens bijgetraind — zie src/lib/timesheet-correction-core.ts.
+model TimesheetCorrection {
+  id           String   @id @default(cuid())
+  placementId  String
+  /// Wat de AI las (JSON: {dagUren:string[7], overuren, kilometers}).
+  aiJson       String
+  /// Wat de mens er definitief van maakte (zelfde vorm).
+  humanJson    String
+  /// Welke velden afweken (JSON string[]) — voor de hint-tekst.
+  changedJson  String?
+  createdAt    DateTime @default(now())
+
+  placement    Placement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+
+  @@index([placementId])
 }
 
 /// Concept-plaatsing: een half ingevuld plaatsing-formulier dat je bewaart om

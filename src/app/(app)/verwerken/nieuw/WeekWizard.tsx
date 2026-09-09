@@ -69,8 +69,12 @@ import {
 import { bouwPersoonRijen } from "@/lib/wizard-personen";
 import { dubbeleUploadLabel } from "@/lib/wizard-dubbelen";
 import { weekLabel, weekstatenVoorWeek } from "@/lib/wizard-weekfilter";
+import {
+  correctionFieldLabel,
+  correctionFieldUnit,
+} from "@/lib/timesheet-correction-core";
 import { deleteTimesheet } from "../../uren/actions";
-import { leesFactuur, leesTimesheet, verwerkWeek } from "./actions";
+import { bewaarConcept, leesFactuur, leesTimesheet, verwerkWeek } from "./actions";
 import { DocumentViewer } from "./DocumentViewer";
 import { PersoonPicker } from "./PersoonPicker";
 import { WeekStrip } from "./WeekStrip";
@@ -82,6 +86,7 @@ import {
   type BestaandeUrenstaat,
   type FactuurLeesState,
   type FactuurVelden,
+  type GeleerdeCorrectie,
   type TimesheetLeesState,
   type VerwerkState,
   type WizardPersoon,
@@ -118,6 +123,11 @@ import {
 const DAG_LABELS = ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"];
 const DAG_MS = 86400000;
 
+/** Zo lang wachten we na de laatste toetsaanslag voordat het concept weggaat. */
+const CONCEPT_DEBOUNCE_MS = 600;
+/** En zo lang blijft "Concept opgeslagen ✓" staan — subtiel, geen toast. */
+const CONCEPT_ZICHTBAAR_MS = 2000;
+
 const TIMESHEET_ACCEPT =
   ".pdf,.png,.jpg,.jpeg,.webp,.gif,.xlsx,.xls,.csv,application/pdf,image/*";
 const FACTUUR_ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.xls,.csv,application/pdf,image/*";
@@ -149,14 +159,30 @@ function eenPlaatsingVoor(plaatsingen: WizardPlaatsing[], consultantId: string |
   return eigen.length === 1 ? eigen[0].id : "";
 }
 
-/** De velden zoals de AI-uitlezing ze aanreikt — de basis onder de correcties. */
+/**
+ * De velden zoals ze onder de correcties van dit scherm liggen: de AI-uitlezing,
+ * of — als deze week eerder al met de hand is bijgewerkt — het bewaarde concept.
+ * Zo staat er na weg-navigeren of herladen weer wat de MENS ervan maakte, niet de
+ * oude AI-waarden. Het concept wordt debounced weggeschreven; zie `bewaarConcept`.
+ */
 function beginWaarden(item: WizardTimesheet, plaatsingen: WizardPlaatsing[]) {
-  return {
+  const uitAI = {
     placementId: item.placementId || eenPlaatsingVoor(plaatsingen, item.consultantId),
     weekStart: item.weekStart,
     dagUren: item.dagUren.length === 7 ? item.dagUren : LEGE_DAGUREN,
     overuren: item.overuren,
     kilometers: item.kilometers,
+  };
+  const concept = item.concept;
+  if (!concept) return uitAI;
+  return {
+    // Plaatsing en week alleen overnemen als het concept ze écht kent — anders
+    // wint de (later alsnog gematchte) waarde van de uitlezing.
+    placementId: concept.placementId || uitAI.placementId,
+    weekStart: concept.weekStart || uitAI.weekStart,
+    dagUren: concept.dagUren,
+    overuren: concept.overuren,
+    kilometers: concept.kilometers,
   };
 }
 
@@ -235,6 +261,48 @@ function WeekAfwijkingNote({ melding }: { melding: string }) {
         </span>
       </span>
     </p>
+  );
+}
+
+/**
+ * "We hebben X op basis van eerdere correcties aangepast" — de info-strip boven
+ * het controle-paneel.
+ *
+ * Het model wordt niet bijgetraind; wat hier staat komt uit het correctie-
+ * geheugen van deze plaatsing (wat de AI eerder las × wat de mens ervan maakte,
+ * zie src/lib/timesheet-correction-core.ts). Een geleerde correctie gaat daarom
+ * nooit stilzwijgend door: hij staat hier, en je typt er gewoon overheen.
+ */
+function GeleerdNote({ geleerd }: { geleerd: GeleerdeCorrectie[] }) {
+  return (
+    <div className="mb-3 flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-[13px] text-blue-900">
+      <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+      <div>
+        <p>
+          We hebben{" "}
+          <span className="font-semibold">
+            {geleerd
+              .map(
+                (g) =>
+                  `${correctionFieldLabel(g.field)} (${formatHours(g.from)} → ${formatHours(g.to)} ${correctionFieldUnit(g.field)})`,
+              )
+              .join(", ")}
+          </span>{" "}
+          op basis van eerdere correcties aangepast — controleer het even.
+        </p>
+        {geleerd.some((g) => g.reason) && (
+          <ul className="mt-1 space-y-0.5 text-[12px] text-blue-800">
+            {geleerd
+              .filter((g) => g.reason)
+              .map((g) => (
+                <li key={g.field}>
+                  {correctionFieldLabel(g.field)}: {g.reason}
+                </li>
+              ))}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -693,6 +761,10 @@ function WizardRonde({
   const invRunBezig = useRef(false);
   const laatstGestarteTs = useRef<string | null>(null);
   const laatstGestarteInv = useRef<string | null>(null);
+  // Het concept-vangnet: één lopende debounce-timer en één voor de melding.
+  const conceptTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [conceptGetoond, setConceptGetoond] = useState(false);
 
   const [tsState, tsAction, tsPending] = useActionState<TimesheetLeesState, FormData>(
     leesTimesheet,
@@ -712,6 +784,16 @@ function WizardRonde({
   useEffect(() => {
     if (!invPending) invRunBezig.current = false;
   }, [invPending]);
+
+  // Een openstaande concept-opslag hoort bij dit scherm: bij het verlaten ervan
+  // vervalt hij (wat er al bewaard is, blijft gewoon staan).
+  useEffect(
+    () => () => {
+      if (conceptTimer.current) clearTimeout(conceptTimer.current);
+      if (fadeTimer.current) clearTimeout(fadeTimer.current);
+    },
+    [],
+  );
 
   function autoLeesTimesheet(files: File[]) {
     setTsBestanden(files.length);
@@ -770,8 +852,43 @@ function WizardRonde({
   const overuren = correcties.overuren ?? basis?.overuren ?? "";
   const kilometers = correcties.kilometers ?? basis?.kilometers ?? "";
 
+  /**
+   * Elke wijziging gaat ook (debounced) als CONCEPT naar de server, zodat een
+   * handmatige correctie niet verdampt bij weg-navigeren of herladen. Alleen het
+   * inbox-item wordt bijgewerkt — pas het akkoord in stap 3 legt iets vast.
+   */
+  function planConcept(next: Correcties) {
+    const id = gekozen?.id;
+    if (!id) return;
+    if (conceptTimer.current) clearTimeout(conceptTimer.current);
+    const waarden = {
+      dagUren: next.dagUren ?? basis?.dagUren ?? LEGE_DAGUREN,
+      overuren: next.overuren ?? basis?.overuren ?? "",
+      kilometers: next.kilometers ?? basis?.kilometers ?? "",
+      placementId: next.placementId ?? basis?.placementId ?? "",
+      weekStart: next.weekStart ?? (basis?.weekStart || filterWeekMaandag),
+    };
+    conceptTimer.current = setTimeout(() => {
+      conceptTimer.current = null;
+      void bewaarConcept(id, waarden)
+        .then((res) => {
+          if (!res.ok) return;
+          setConceptGetoond(true);
+          if (fadeTimer.current) clearTimeout(fadeTimer.current);
+          fadeTimer.current = setTimeout(() => {
+            fadeTimer.current = null;
+            setConceptGetoond(false);
+          }, CONCEPT_ZICHTBAAR_MS);
+        })
+        // Het concept is een vangnet, geen belofte: stilhouden als het niet lukt.
+        .catch(() => {});
+    }, CONCEPT_DEBOUNCE_MS);
+  }
+
   function corrigeer(patch: Correcties) {
-    setCorrecties((prev) => ({ ...prev, ...patch }));
+    const next = { ...correcties, ...patch };
+    setCorrecties(next);
+    planConcept(next);
   }
 
   function kies(item: WizardTimesheet) {
@@ -1347,15 +1464,35 @@ function WizardRonde({
                             enige uitgelezen klaar — alvast opengezet.
                           </p>
                         )}
+                        {gekozen.concept && (
+                          <p className="mt-1 text-[11px] text-ink-400">
+                            Je eerdere correcties op deze week staan er weer in.
+                          </p>
+                        )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={opnieuw}
-                        className="shrink-0 text-xs font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
-                      >
-                        andere kiezen
-                      </button>
+                      <div className="flex shrink-0 items-center gap-3">
+                        {/* Subtiel, geen toast: verschijnt na het opslaan en
+                            vervaagt vanzelf weer. */}
+                        <span
+                          aria-live="polite"
+                          className={cn(
+                            "text-[11px] text-ink-400 transition-opacity duration-500",
+                            conceptGetoond ? "opacity-100" : "opacity-0",
+                          )}
+                        >
+                          Concept opgeslagen ✓
+                        </span>
+                        <button
+                          type="button"
+                          onClick={opnieuw}
+                          className="text-xs font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800"
+                        >
+                          andere kiezen
+                        </button>
+                      </div>
                     </div>
+
+                    {gekozen.geleerd.length > 0 && <GeleerdNote geleerd={gekozen.geleerd} />}
 
                     <div className={VELD_GRID}>
                       <Field label="Plaatsing (werknemer · klant)" htmlFor="placementId" required>

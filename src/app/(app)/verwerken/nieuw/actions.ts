@@ -132,6 +132,56 @@ export async function leesTimesheet(
   return { item: naarWizardTimesheet(item, getypteWeekVanStaat(item)), waarschuwing };
 }
 
+// ---------------------------------------------------------------------------
+// Auto-opslaan van correcties (het concept-vangnet)
+// ---------------------------------------------------------------------------
+
+/**
+ * Bewaar de uren zoals ze op DIT MOMENT in het controle-scherm staan als concept
+ * bij het inbox-item. Het scherm roept dit debounced aan bij elke wijziging, zodat
+ * weg-navigeren of herladen geen handmatige correctie meer kost: bij terugkomst
+ * toont de wizard de waarden van de mens in plaats van de kale AI-uitlezing.
+ *
+ * Dit is nadrukkelijk GEEN verwerking: er wordt niets aan de urenstaat, de inkoop
+ * of een factuur veranderd. Alleen `TimesheetInbox.draftJson` gaat om — en alleen
+ * zolang de week nog openstaat (een al verwerkte of afgewezen week raken we niet
+ * meer aan). Bewust zonder revalidatePath: een concept-opslag hoort het scherm
+ * waar je in typt niet opnieuw te laten renderen.
+ */
+export async function bewaarConcept(
+  inboxId: string,
+  concept: {
+    dagUren: string[];
+    overuren: string;
+    kilometers: string;
+    placementId: string;
+    weekStart: string;
+  },
+): Promise<{ ok: boolean }> {
+  const id = String(inboxId ?? "").trim();
+  if (!id) return { ok: false };
+
+  const draftJson = JSON.stringify({
+    dagUren: [0, 1, 2, 3, 4, 5, 6].map((i) => String(concept.dagUren?.[i] ?? "")),
+    overuren: String(concept.overuren ?? ""),
+    kilometers: String(concept.kilometers ?? ""),
+    placementId: String(concept.placementId ?? ""),
+    weekStart: String(concept.weekStart ?? ""),
+  });
+
+  try {
+    const { count } = await db.timesheetInbox.updateMany({
+      where: { id, timesheetId: null, status: { in: ["NEW", "EXTRACTED"] } },
+      data: { draftJson },
+    });
+    return { ok: count > 0 };
+  } catch {
+    // Het concept is een vangnet, geen belofte: mislukt het, dan blijft wat de
+    // mens ziet gewoon staan en legt het akkoord straks alsnog alles vast.
+    return { ok: false };
+  }
+}
+
 /**
  * Hoeveel ANDERE openstaande weekstaten van deze persoon vallen in dezelfde
  * week? Vergelijken gebeurt op de canonieke weeksleutel (weekSlotVanDatum, dus
@@ -479,6 +529,8 @@ async function hergebruikBestaandeUrenstaat(opts: {
         placementId,
         timesheetId: info.id,
         extractedWeekStart: monday,
+        // De week is klaar — het concept-vangnet mag weg.
+        draftJson: null,
         wachtkamerSince: null,
         wachtkamerReason: null,
       },

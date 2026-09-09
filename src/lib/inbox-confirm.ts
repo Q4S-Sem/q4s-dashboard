@@ -1,10 +1,18 @@
 import { db } from "./db";
-import { formatDate, formatHours, startOfISOWeek } from "./utils";
+import {
+  distributeDayHours,
+  formatDate,
+  formatHours,
+  startOfISOWeek,
+  type DayHours,
+} from "./utils";
 import {
   parseConfirmInput,
+  type ConfirmInboxFields,
   type ConfirmInboxRaw,
   type ConfirmInputError,
 } from "./inbox-confirm-input";
+import { diffTimesheet, type TimesheetSnapshot } from "./timesheet-correction-core";
 import { invoiceKilometersForWeek } from "./received-invoices";
 import { resolveKilometers, resolveKilometersSource, type KilometerSource } from "./kilometers";
 
@@ -121,6 +129,75 @@ async function recordCorrection(
   });
 }
 
+const LEGE_DAG_UREN = ["", "", "", "", "", "", ""];
+
+/** De uitgelezen dag-uren als string[7] (Ma..Zo), t.o.v. de bevestigde maandag. */
+function uitgelezenDagUren(extractedJson: string | null, monday: Date): string[] {
+  if (!extractedJson) return [...LEGE_DAG_UREN];
+  try {
+    const days = (JSON.parse(extractedJson) as { days?: DayHours[] }).days ?? [];
+    return distributeDayHours(days, monday).map((h) => (h === "" ? "" : String(h)));
+  } catch {
+    return [...LEGE_DAG_UREN];
+  }
+}
+
+/** De bevestigde dagregels terug als string[7] (Ma..Zo); niet gewerkt = "". */
+function bevestigdeDagUren(entries: { date: Date; hours: number }[], monday: Date): string[] {
+  const out = [...LEGE_DAG_UREN];
+  for (const e of entries) {
+    // Afronden vangt de zomertijd-sprong op (een dag is dan 23 of 25 uur).
+    const idx = Math.round((e.date.getTime() - monday.getTime()) / 86400000);
+    if (idx >= 0 && idx < 7) out[idx] = String(e.hours);
+  }
+  return out;
+}
+
+/**
+ * Correctie-geheugen PER PLAATSING: bewaar wat de AI van deze handgeschreven
+ * staat las tegenover wat de mens ervan maakte. Alleen bij een écht verschil —
+ * klopte de uitlezing, dan valt er niets te leren en bewaren we niets (geen ruis).
+ *
+ * Bij een volgende scan van dezelfde plaatsing gaan deze rijen als aandachtspunt
+ * mee het extractie-prompt in, en wordt een fout die al meermaals identiek
+ * verbeterd is zichtbaar voorgesteld (zie src/lib/inbox-extract.ts). Het model
+ * zelf wordt nergens bijgetraind.
+ *
+ * Best-effort: mag de bevestiging nooit blokkeren.
+ */
+async function recordTimesheetCorrection(
+  item: {
+    extractedJson: string | null;
+    extractedKilometers: number | null;
+    extractedOvertimeHours: number | null;
+  },
+  confirmed: ConfirmInboxFields,
+) {
+  const ai: TimesheetSnapshot = {
+    dagUren: uitgelezenDagUren(item.extractedJson, confirmed.monday),
+    overuren: item.extractedOvertimeHours,
+    kilometers: item.extractedKilometers,
+  };
+  const human: TimesheetSnapshot = {
+    dagUren: bevestigdeDagUren(confirmed.entries, confirmed.monday),
+    // Bewust de km VAN DE STAAT: de factuur-terugval is geen leesfout van de AI.
+    overuren: confirmed.overtimeHours,
+    kilometers: confirmed.kilometers,
+  };
+
+  const changed = diffTimesheet(ai, human);
+  if (changed.length === 0) return;
+
+  await db.timesheetCorrection.create({
+    data: {
+      placementId: confirmed.placementId,
+      aiJson: JSON.stringify(ai),
+      humanJson: JSON.stringify(human),
+      changedJson: JSON.stringify(changed.map((c) => c.field)),
+    },
+  });
+}
+
 /**
  * Zet één inbox-item om in een echte urenstaat (status APPROVED) en koppel ze aan
  * elkaar. Geeft terug wat er gebeurd is; de aanroeper beslist over redirect,
@@ -195,6 +272,9 @@ export async function confirmInboxItem(
       placementId,
       timesheetId,
       extractedWeekStart: monday,
+      // De week is vastgelegd — het concept-vangnet van het controle-scherm
+      // heeft zijn werk gedaan en mag weg.
+      draftJson: null,
       // Afgehandeld = niet meer aan het wachten: uit de wachtkamer halen.
       wachtkamerSince: null,
       wachtkamerReason: null,
@@ -210,6 +290,10 @@ export async function confirmInboxItem(
     overtime: overtimeHours,
     monday,
   }).catch(() => {});
+
+  // Tweede leer-lus, per PLAATSING en per veld: dag-uren/overuren/km die de mens
+  // anders vastzette dan de AI las. Die voedt de volgende scan van deze persoon.
+  await recordTimesheetCorrection(item, parsed.fields).catch(() => {});
 
   return { ok: true, timesheetId, kmSource };
 }
