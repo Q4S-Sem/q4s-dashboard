@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   Users,
   Plus,
-  Search,
   Star,
   ThumbsUp,
   UserX,
@@ -10,17 +9,16 @@ import {
   ChevronRight,
   MapPin,
   Mail,
+  Phone,
   ClipboardList,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { Input, Select } from "@/components/ui/field";
 import { person } from "@/lib/people";
 import { cn } from "@/lib/utils";
 import {
@@ -33,7 +31,7 @@ import {
 import { RatingSelect } from "./RatingSelect";
 import { AvailabilitySelect } from "./AvailabilitySelect";
 import { InterviewSelect } from "./InterviewSelect";
-import { PhoneReveal } from "./PhoneReveal";
+import { KandidatenFilters } from "./KandidatenFilters";
 
 export const metadata = { title: "Talentpool" };
 export const dynamic = "force-dynamic";
@@ -165,60 +163,16 @@ export default async function KandidatenPage({
         </span>
       </Link>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="py-4">
-          <form
-            method="get"
-            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_180px_180px_180px_auto]"
-          >
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-              <Input
-                name="q"
-                defaultValue={q}
-                placeholder="Zoek op naam, e-mail, telefoon, locatie…"
-                className="pl-9"
-                aria-label="Zoeken"
-              />
-            </div>
-            <Select name="discipline" defaultValue={discipline} aria-label="Industrie">
-              <option value="">Alle industrieën</option>
-              {DISCIPLINES.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </Select>
-            <Select name="rating" defaultValue={rating} aria-label="Beoordeling">
-              <option value="">Alle beoordelingen</option>
-              {CANDIDATE_RATINGS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </Select>
-            <Select name="availability" defaultValue={availability} aria-label="Beschikbaarheid">
-              <option value="">Alle beschikbaarheid</option>
-              {CANDIDATE_AVAILABILITY.map((a) => (
-                <option key={a.value} value={a.value}>
-                  {a.label}
-                </option>
-              ))}
-            </Select>
-            <div className="flex gap-2">
-              <button type="submit" className={buttonVariants()}>
-                <Search className="h-4 w-4" /> Filter
-              </button>
-              {hasFilter && (
-                <Link href="/kandidaten" className={buttonVariants({ variant: "outline" })}>
-                  Wissen
-                </Link>
-              )}
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Filters — zoekt automatisch tijdens typen en bij elke keuze */}
+      <KandidatenFilters
+        q={q}
+        discipline={discipline}
+        rating={rating}
+        availability={availability}
+        disciplines={DISCIPLINES}
+        ratings={CANDIDATE_RATINGS}
+        availabilities={CANDIDATE_AVAILABILITY}
+      />
 
       {candidates.length === 0 ? (
         <EmptyState
@@ -275,26 +229,15 @@ export default async function KandidatenPage({
                     </div>
                   </div>
 
-                  {/* Contact — verschijnt vanaf lg */}
-                  <div className="hidden items-center gap-x-4 text-xs text-ink-500 lg:flex">
+                  {/* Contact — verschijnt vanaf lg, vaste breedte zodat de
+                      statuskolommen rechts netjes uitgelijnd blijven */}
+                  <div className="hidden w-[300px] shrink-0 items-center justify-end gap-x-3 text-xs text-ink-500 lg:flex">
                     {c.location && (
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5 text-ink-400" /> {c.location}
+                      <span className="inline-flex min-w-0 items-center gap-1" title={c.location}>
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-400" />
+                        <span className="max-w-[110px] truncate">{c.location}</span>
                       </span>
                     )}
-                    {c.email && (
-                      <a
-                        href={`mailto:${c.email}`}
-                        className="inline-flex items-center gap-1 transition-colors hover:text-emerald-700"
-                      >
-                        <Mail className="h-3.5 w-3.5 text-ink-400" />
-                        <span className="max-w-[150px] truncate">{c.email}</span>
-                      </a>
-                    )}
-                    <PhoneReveal phone={c.phone} />
-                    <span className="inline-flex items-center gap-1 text-ink-400" title="Sollicitaties">
-                      <ClipboardList className="h-3.5 w-3.5" /> {c._count.applications}
-                    </span>
                     {companies.length > 0 && (
                       <span className="inline-flex items-center gap-1" title={`Geplaatst bij ${companies.join(", ")}`}>
                         <Badge color="violet">{companies[0]}</Badge>
@@ -303,6 +246,47 @@ export default async function KandidatenPage({
                         )}
                       </span>
                     )}
+                    <span className="inline-flex items-center gap-1 text-ink-400" title={`${c._count.applications} sollicitatie(s)`}>
+                      <ClipboardList className="h-3.5 w-3.5" /> {c._count.applications}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      {c.phone ? (
+                        <a
+                          href={`tel:${c.phone}`}
+                          title={`Bel ${c.firstName} (${c.phone})`}
+                          aria-label={`Bel ${c.firstName} ${c.lastName}`}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors hover:bg-emerald-200"
+                        >
+                          <Phone className="h-4 w-4" />
+                        </a>
+                      ) : (
+                        <span
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300"
+                          title="Geen telefoonnummer bekend"
+                          aria-hidden
+                        >
+                          <Phone className="h-4 w-4" />
+                        </span>
+                      )}
+                      {c.email ? (
+                        <a
+                          href={`mailto:${c.email}`}
+                          title={`Mail ${c.firstName} (${c.email})`}
+                          aria-label={`Stuur een e-mail naar ${c.firstName} ${c.lastName}`}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200"
+                        >
+                          <Mail className="h-4 w-4" />
+                        </a>
+                      ) : (
+                        <span
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300"
+                          title="Geen e-mailadres bekend"
+                          aria-hidden
+                        >
+                          <Mail className="h-4 w-4" />
+                        </span>
+                      )}
+                    </span>
                   </div>
 
                   {/* Statussen — compact naast elkaar */}
