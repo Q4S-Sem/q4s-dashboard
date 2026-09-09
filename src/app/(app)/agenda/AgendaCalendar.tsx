@@ -269,25 +269,6 @@ export function AgendaCalendar({
         </div>
       </div>
 
-      {/* Legenda */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-ink-100 bg-ink-50/60 px-4 py-2 text-[11px] font-medium text-ink-500">
-        {EVENT_TYPES.map((t) => (
-          <span key={t.value} className="inline-flex items-center gap-1.5">
-            <span className={cn("h-2 w-2 rounded-full", DOT[t.color as BadgeColor])} />
-            {t.label}
-          </span>
-        ))}
-        <span className="inline-flex items-center gap-1.5">
-          <AlertTriangle className="h-3 w-3 text-amber-600" /> Deadline / factuur
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <ListTodo className="h-3 w-3 text-brand-600" /> Taak
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <Plane className="h-3 w-3 text-emerald-600" /> Afwezig / vakantie
-        </span>
-      </div>
-
       {view === "maand" ? (
         <MonthGrid
           weeks={weeks}
