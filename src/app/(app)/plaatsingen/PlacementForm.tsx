@@ -339,66 +339,6 @@ function ToeslagRow({
 }
 
 /**
- * Het overuren-blok met een SCHAKELAAR: elke afspraak is anders, dus de eigenaar
- * kiest per plaatsing óf een percentage-toeslag (bovenop het normale tarief) óf
- * een vast overuren-uurtarief (€/u). Alleen de gekozen variant staat in beeld en
- * wordt meegestuurd; de andere velden renderen niet, dus die vallen server-side
- * terug op 0 (percentage) resp. null (vast tarief) — precies wat overtimeUnit()
- * verwacht (een vast tarief wint van het percentage, leeg = geen uplift).
- */
-function OverurenBlock({
-  buyPct,
-  sellPct,
-  buyRate,
-  sellRate,
-}: {
-  buyPct: number;
-  sellPct: number;
-  buyRate: number | null;
-  sellRate: number | null;
-}) {
-  // Start in de modus die bij de opgeslagen plaatsing past: staat er een vast
-  // tarief, dan opent hij op "vast tarief"; anders op "percentage".
-  const [modus, setModus] = useState<"pct" | "rate">(
-    buyRate != null || sellRate != null ? "rate" : "pct",
-  );
-  return (
-    <div className="rounded-lg border border-ink-200 bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-ink-800">Overuren</p>
-          <p className="mt-0.5 text-xs text-ink-400">
-            {modus === "pct"
-              ? "Extra percentage bovenop het normale tarief."
-              : "Vast tarief per overuur — los van het normale tarief."}
-          </p>
-        </div>
-        {/* De schakelaar tussen de twee manieren van afspreken. */}
-        <UnitSchakelaar
-          unit={modus === "pct" ? "PCT" : "FIXED"}
-          onChange={(u) => setModus(u === "PCT" ? "pct" : "rate")}
-          label="Overuren"
-        />
-      </div>
-
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        {modus === "pct" ? (
-          <>
-            <ToeslagField label="Inkoop — wij betalen" name="overtimeSurchargeBuy" def={buyPct} suffix="%" step="any" />
-            <ToeslagField label="Verkoop — klant betaalt" name="overtimeSurchargeSell" def={sellPct} suffix="%" step="any" />
-          </>
-        ) : (
-          <>
-            <ToeslagField label="Inkoop — wij betalen" name="overtimeCostRate" def={buyRate ?? 0} suffix="€/u" step={0.01} />
-            <ToeslagField label="Verkoop — klant betaalt" name="overtimeChargeRate" def={sellRate ?? 0} suffix="€/u" step={0.01} />
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
  * Klant-keuze met een inline "+ Nieuw bedrijf". Vergeet je een bedrijf, dan zet
  * je 'm er hier meteen bij zónder de rest van je (half ingevulde) plaatsing kwijt
  * te raken — het nieuwe bedrijf wordt direct geselecteerd. De overige klantvelden
@@ -1255,12 +1195,17 @@ export function PlacementForm({
                 unitDefault={placement?.abroadSurchargeUnit ?? "PCT"}
                 toggle={{ name: "abroadEnabled", defaultOn: placement?.abroadEnabled ?? false }}
               />
-              <OverurenBlock
-                buyPct={placement?.overtimeSurchargeBuy ?? 0}
-                sellPct={placement?.overtimeSurchargeSell ?? 0}
-                buyRate={placement?.overtimeCostRate ?? null}
-                sellRate={placement?.overtimeChargeRate ?? null}
-              />
+              {/* Geen los Overuren-blok meer: ma–vr valt onder 'doordeweeks'. We
+                  bewaren wel de eventuele bestaande overuren-waarden verborgen, zodat
+                  bewerken van een oude plaatsing ze niet op 0 zet. */}
+              <input type="hidden" name="overtimeSurchargeBuy" value={placement?.overtimeSurchargeBuy ?? 0} />
+              <input type="hidden" name="overtimeSurchargeSell" value={placement?.overtimeSurchargeSell ?? 0} />
+              {placement?.overtimeCostRate != null && (
+                <input type="hidden" name="overtimeCostRate" value={placement.overtimeCostRate} />
+              )}
+              {placement?.overtimeChargeRate != null && (
+                <input type="hidden" name="overtimeChargeRate" value={placement.overtimeChargeRate} />
+              )}
               <ToeslagBlock
                 title="Kilometervergoeding"
                 hint="Vergoeding per gereden kilometer (reiskosten)."
