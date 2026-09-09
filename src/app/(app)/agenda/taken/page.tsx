@@ -1,8 +1,6 @@
-import Link from "next/link";
-import { Users } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
-import { cn, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { startOfDay } from "@/lib/agenda";
 import type { Person } from "./AssigneeSelect";
 import { TaskListView, type TaskRowData } from "./TaskListView";
@@ -38,13 +36,7 @@ function dueMeta(task: TaskWithAssignee): { label: string; tone: TaskRowData["du
   return { label: formatDate(task.dueDate), tone: "normal" };
 }
 
-export default async function TakenPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ wie?: string }>;
-}) {
-  const { wie } = await searchParams;
-
+export default async function TakenPage() {
   const employees = await db.employee.findMany({
     where: { active: true },
     orderBy: [{ firstName: "asc" }],
@@ -52,18 +44,14 @@ export default async function TakenPage({
   });
   const people: Person[] = employees.map((e) => ({ id: e.id, name: fullName(e) }));
 
-  // Filter op toegewezen persoon: leeg = iedereen, "none" = niet toegewezen.
-  const assigneeWhere =
-    wie === "none" ? { assigneeId: null } : wie ? { assigneeId: wie } : {};
-
   const [open, completed] = await Promise.all([
     db.task.findMany({
-      where: { done: false, ...assigneeWhere },
+      where: { done: false },
       orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
       include: { assignee: true },
     }),
     db.task.findMany({
-      where: { done: true, ...assigneeWhere },
+      where: { done: true },
       orderBy: { doneAt: "desc" },
       take: 50,
       include: { assignee: true },
@@ -84,14 +72,6 @@ export default async function TakenPage({
     };
   });
 
-  const chip = (active: boolean) =>
-    cn(
-      "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-      active
-        ? "border-ink-900 bg-ink-900 text-white"
-        : "border-ink-200 bg-white text-ink-600 hover:bg-ink-50",
-    );
-
   return (
     <div className="space-y-5">
       <PageHeader
@@ -99,24 +79,6 @@ export default async function TakenPage({
         description="Wijs to-do's toe aan collega's — wie doet wat. Taken met een deadline verschijnen ook in de agenda."
         actions={<CreateTaskModal people={people} />}
       />
-
-      {/* Filter op collega */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-400">
-          <Users className="h-3.5 w-3.5" /> Filter:
-        </span>
-        <Link href="/agenda/taken" className={chip(!wie)}>
-          Iedereen
-        </Link>
-        {people.map((p) => (
-          <Link key={p.id} href={`/agenda/taken?wie=${p.id}`} className={chip(wie === p.id)}>
-            {p.name}
-          </Link>
-        ))}
-        <Link href="/agenda/taken?wie=none" className={chip(wie === "none")}>
-          Niet toegewezen
-        </Link>
-      </div>
 
       <TaskListView rows={rows} people={people} />
     </div>
