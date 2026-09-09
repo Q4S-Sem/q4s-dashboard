@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutGrid, LogOut, ChevronRight } from "lucide-react";
+import { Menu, X, Home, LogOut, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hubForPath, itemIsActive, type NavHub, type NavItem } from "./nav";
 import { ConnectionStatus } from "./connection-status";
@@ -143,9 +143,11 @@ export function AppShell({
         {!isHome && (
           <Link
             href="/"
-            className="group inline-flex h-9 shrink-0 items-center gap-1.5 rounded-sm px-1.5 text-[13px] font-medium text-ink-400 transition-colors hover:text-ink-900"
+            title="Terug naar werkplekken"
+            aria-label="Terug naar werkplekken"
+            className="group inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-ink-200 bg-white px-2.5 text-[13px] font-medium text-ink-600 shadow-sm transition-colors hover:border-ink-300 hover:bg-ink-50 hover:text-ink-900"
           >
-            <LayoutGrid className="h-4 w-4 transition-colors group-hover:text-brand-600" />
+            <Home className="h-4 w-4 text-ink-400 transition-colors group-hover:text-brand-600" />
             <span className="hidden sm:inline">Werkplekken</span>
           </Link>
         )}
