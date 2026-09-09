@@ -42,9 +42,41 @@ export function Dropzone({
 
   function applyFiles(list: FileList | File[]) {
     const dt = new DataTransfer();
-    for (const f of Array.from(list)) dt.items.add(f);
+    const arr = Array.from(list);
+    const picked = multiple ? arr : arr.slice(0, 1);
+    for (const f of picked) dt.items.add(f);
     if (inputRef.current) inputRef.current.files = dt.files;
     update(Array.from(dt.files));
+  }
+
+  /**
+   * Sleep-bron uitpakken. Naast echte bestanden (OS/verkenner/tweede scherm en de
+   * meeste mailbijlagen) ook een gesleepte AFBEELDING/LINK uit een webpagina of
+   * webmail-preview: die komt binnen als een URL (uri-list/text), die we ophalen
+   * en tot een File maken. Zo lukt "direct vanuit de mail erin slepen" ook.
+   */
+  async function handleDataTransfer(dtIn: DataTransfer) {
+    if (dtIn.files && dtIn.files.length) {
+      applyFiles(dtIn.files);
+      return;
+    }
+    const uri =
+      dtIn.getData("text/uri-list") ||
+      dtIn.getData("text/plain") ||
+      "";
+    const url = uri.split(/\s+/).find((l) => /^https?:\/\//i.test(l))?.trim();
+    if (!url) return;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const name =
+        decodeURIComponent(new URL(url).pathname.split("/").pop() || "") || "bijlage";
+      const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
+      applyFiles([file]);
+    } catch {
+      // Cross-origin/afgeschermde bron: stil negeren, gebruiker kan nog klikken/kiezen.
+    }
   }
 
   function clear() {
@@ -65,6 +97,12 @@ export function Dropzone({
             inputRef.current?.click();
           }
         }}
+        onPaste={(e) => {
+          if (e.clipboardData?.files.length || e.clipboardData?.getData("text")) {
+            e.preventDefault();
+            void handleDataTransfer(e.clipboardData);
+          }
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -73,7 +111,7 @@ export function Dropzone({
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
-          if (e.dataTransfer.files.length) applyFiles(e.dataTransfer.files);
+          void handleDataTransfer(e.dataTransfer);
         }}
         style={dragOver ? undefined : { backgroundImage: STRIPES }}
         className={cn(
