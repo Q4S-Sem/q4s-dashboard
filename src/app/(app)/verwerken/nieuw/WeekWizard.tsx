@@ -1819,9 +1819,30 @@ function WizardRonde({
                   </div>
 
                   <div className="mt-4">
+                    {/* Eerlijke opsplitsing: het verwachte inkoopbedrag is basis (uren ×
+                        tarief) PLUS toeslagen/overuren/km. Toon elke component apart, zodat
+                        het eindbedrag nooit lijkt te botsen met "uren × tarief". */}
                     <KV
-                      k={`${formatHours(totaalUren)} uur × ${formatCurrency(plaatsing?.config.costRate ?? 0)} inkoop (verwacht)`}
+                      k={`${formatHours(totaalUren)} uur × ${formatCurrency(plaatsing?.config.costRate ?? 0)} inkoop`}
+                      v={geld ? formatCurrency(geld.buy.base) : "—"}
+                    />
+                    {geld?.buy.surcharges.map((r) => (
+                      <KV
+                        key={r.type}
+                        k={`${r.label} (${formatHours(r.hours)} × ${formatCurrency(r.unitAmount)})`}
+                        v={formatCurrency(r.amount)}
+                      />
+                    ))}
+                    {geld && geld.buy.overtime > 0 && (
+                      <KV k="Overuren" v={formatCurrency(geld.buy.overtime)} />
+                    )}
+                    {geld && geld.buy.km > 0 && (
+                      <KV k="Kilometers" v={formatCurrency(geld.buy.km)} />
+                    )}
+                    <KV
+                      k="Verwacht inkoopbedrag"
                       v={geld ? formatCurrency(geld.buy.total) : "—"}
+                      sterk
                     />
                     <KV
                       k="Zijn factuur (excl. btw)"

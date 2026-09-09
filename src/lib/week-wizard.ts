@@ -138,7 +138,7 @@ export function matchFactuurBedrag(input: FactuurMatchInput): FactuurMatch {
       verwacht,
       verschil,
       tolerantie,
-      message: `Klopt: ${bedrag} ${richting} dan uren × tarief (${formatCurrency(verwacht)}) — binnen de marge.`,
+      message: `Klopt: ${bedrag} ${richting} dan het verwachte inkoopbedrag (${formatCurrency(verwacht)}) — binnen de marge.`,
     };
   }
 
@@ -147,7 +147,7 @@ export function matchFactuurBedrag(input: FactuurMatchInput): FactuurMatch {
     verwacht,
     verschil,
     tolerantie,
-    message: `Afwijking: hij factureert ${bedrag} ${richting} dan uren × tarief (${formatCurrency(verwacht)}).`,
+    message: `Afwijking: hij factureert ${bedrag} ${richting} dan het verwachte inkoopbedrag (${formatCurrency(verwacht)} = uren × tarief + toeslagen/km).`,
   };
 }
 
