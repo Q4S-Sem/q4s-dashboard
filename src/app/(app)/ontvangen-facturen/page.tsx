@@ -9,6 +9,8 @@ import {
   Inbox,
   Clock,
   FileQuestion,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -25,6 +27,9 @@ import {
 } from "@/lib/received-invoices";
 import { ReceivedList } from "./ReceivedList";
 import { DiscrepancyMailButton } from "./DiscrepancyMailButton";
+import { setReceivedStatus, resetWeekVanuitFactuur } from "./actions";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export const metadata = { title: "Ontvangen facturen" };
 export const dynamic = "force-dynamic";
@@ -241,7 +246,7 @@ export default async function OntvangenFacturenPage({
                       : "Nog niet gemaild"}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <DiscrepancyMailButton id={r.id} alreadyMailed={false} variant="button" />
                     {r.email && (
                       <a
@@ -260,6 +265,27 @@ export default async function OntvangenFacturenPage({
                     >
                       Bekijken
                     </Link>
+                    {/* Toch akkoord ondanks het verschil (bijv. afgesproken correctie). */}
+                    <form action={setReceivedStatus}>
+                      <input type="hidden" name="id" value={r.id} />
+                      <input type="hidden" name="status" value="APPROVED" />
+                      <SubmitButton variant="success" size="sm" pendingLabel="…">
+                        <Check className="h-4 w-4" /> Toch accepteren
+                      </SubmitButton>
+                    </form>
+                    {/* Fout? Verwijder de factuur + urenstaat + concept en reset de week. */}
+                    <ConfirmSubmit
+                      action={resetWeekVanuitFactuur}
+                      id={r.id}
+                      trigger="button"
+                      variant="danger"
+                      size="sm"
+                      message="Deze week verwijderen en resetten?"
+                      description="Dit verwijdert deze factuur, de urenstaat van deze week én een eventuele concept-verkoopfactuur, en zet de weekstaat terug in 'Week verwerken'. Verstuurde/betaalde facturen blijven beschermd."
+                      confirmLabel="Verwijderen & resetten"
+                    >
+                      <RotateCcw className="h-4 w-4" /> Verwijderen
+                    </ConfirmSubmit>
                   </div>
                 </div>
               );
