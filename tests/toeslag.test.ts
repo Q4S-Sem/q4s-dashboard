@@ -363,6 +363,31 @@ test("alle toeslagen op 0/uit → precies uren × tarief (backwards compatibel)"
   assert.equal(regelTotaal(regels), 2500);
 });
 
+test("unit mag per zijde verschillen: inkoop % en verkoop vast tarief", () => {
+  // Zaterdag: inkoop 50% (op costRate 50 = €25/u), verkoop VAST €10/u.
+  const p = config({
+    ...TOESLAGEN_UIT,
+    costRate: 50,
+    chargeRate: 70,
+    saturdaySurchargeBuy: 50,
+    saturdaySurchargeUnit: "PCT",
+    saturdaySurchargeSell: 10,
+    saturdaySurchargeSellUnit: "FIXED",
+  });
+  const geld = computeTimesheetMoney(
+    { entries: WEEK, overtimeHours: null, kilometers: null },
+    p,
+  );
+
+  // 6 zaterdaguren. Inkoop-toeslag: 6 × €25 = €150. Verkoop-toeslag: 6 × €10 = €60.
+  const buyZa = geld.buy.surcharges.find((r) => r.type === "saturday");
+  const sellZa = geld.sell.surcharges.find((r) => r.type === "saturday");
+  assert.equal(buyZa?.unitAmount, 25);
+  assert.equal(buyZa?.amount, 150);
+  assert.equal(sellZa?.unitAmount, 10);
+  assert.equal(sellZa?.amount, 60);
+});
+
 test("zaterdagtoeslag 50% raakt alléén de zaterdaguren", () => {
   const p = config({
     ...TOESLAGEN_UIT,

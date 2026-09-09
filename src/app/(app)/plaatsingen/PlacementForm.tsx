@@ -196,10 +196,7 @@ function ToeslagBlock({
   );
 }
 
-/** De twee knoppen van een percentage/vast-tarief-schakelaar. */
-const SCHAKEL_TAB =
-  "flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors";
-
+/** Icoon-schakelaar %/€ per veld — compact, alleen de tekens. */
 function UnitSchakelaar({
   unit,
   onChange,
@@ -209,33 +206,36 @@ function UnitSchakelaar({
   onChange: (u: "PCT" | "FIXED") => void;
   label: string;
 }) {
+  const tab = (active: boolean) =>
+    cn(
+      "flex h-7 w-9 items-center justify-center text-sm font-semibold transition-colors",
+      active ? "bg-ink-900 text-white" : "bg-white text-ink-400 hover:text-ink-700",
+    );
   return (
     <div
       role="group"
       aria-label={`${label}: percentage of vast tarief`}
-      className="flex w-full max-w-xs rounded-lg bg-ink-100 p-1 sm:w-auto"
+      className="inline-flex overflow-hidden rounded-md border border-ink-200"
     >
       <button
         type="button"
         onClick={() => onChange("PCT")}
         aria-pressed={unit === "PCT"}
-        className={cn(
-          SCHAKEL_TAB,
-          unit === "PCT" ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
-        )}
+        title="Percentage (%)"
+        aria-label="Percentage"
+        className={cn(tab(unit === "PCT"), "border-r border-ink-200")}
       >
-        Percentage
+        %
       </button>
       <button
         type="button"
         onClick={() => onChange("FIXED")}
         aria-pressed={unit === "FIXED"}
-        className={cn(
-          SCHAKEL_TAB,
-          unit === "FIXED" ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
-        )}
+        title="Vast tarief (€ per uur)"
+        aria-label="Vast tarief per uur"
+        className={tab(unit === "FIXED")}
       >
-        Vast tarief (€/u)
+        €
       </button>
     </div>
   );
@@ -260,6 +260,7 @@ function ToeslagRow({
   buyDefault,
   sellDefault,
   unitDefault,
+  sellUnitDefault,
   toggle,
 }: {
   title: string;
@@ -269,18 +270,23 @@ function ToeslagRow({
   buyDefault: number;
   sellDefault: number;
   unitDefault: string;
+  sellUnitDefault: string;
   /** Alleen voor offshore/ploegendienst/buitenland. */
   toggle?: { name: string; defaultOn: boolean };
 }) {
-  const [unit, setUnit] = useState<"PCT" | "FIXED">(
+  const [buyUnit, setBuyUnit] = useState<"PCT" | "FIXED">(
     unitDefault === "FIXED" ? "FIXED" : "PCT",
+  );
+  const [sellUnit, setSellUnit] = useState<"PCT" | "FIXED">(
+    sellUnitDefault === "FIXED" ? "FIXED" : "PCT",
   );
   const [aan, setAan] = useState(toggle?.defaultOn ?? true);
   const uit = Boolean(toggle) && !aan;
   const buyName = `${prefix}SurchargeBuy`;
   const sellName = `${prefix}SurchargeSell`;
-  const suffix = unit === "PCT" ? "%" : "€/u";
-  const step = unit === "PCT" ? "any" : 0.01;
+  const unitInfo = (u: "PCT" | "FIXED") => (u === "PCT" ? { suffix: "%", step: "any" as const } : { suffix: "€/u", step: 0.01 });
+  const buyI = unitInfo(buyUnit);
+  const sellI = unitInfo(sellUnit);
 
   return (
     <div className="rounded-lg border border-ink-200 bg-white p-4">
@@ -304,11 +310,11 @@ function ToeslagRow({
             {uit ? "Staat uit — vink aan om deze toeslag te laten meetellen." : hint}
           </p>
         </div>
-        {!uit && <UnitSchakelaar unit={unit} onChange={setUnit} label={title} />}
       </div>
 
-      {/* De schakelaar zelf reist als verborgen veld mee. */}
-      <input type="hidden" name={`${prefix}SurchargeUnit`} value={unit} />
+      {/* De schakelaars reizen als verborgen velden mee (per zijde). */}
+      <input type="hidden" name={`${prefix}SurchargeUnit`} value={buyUnit} />
+      <input type="hidden" name={`${prefix}SurchargeSellUnit`} value={sellUnit} />
 
       {uit ? (
         // Uitgevinkt: de bedragen blijven bewaard, maar zijn niet te bewerken.
@@ -318,20 +324,36 @@ function ToeslagRow({
         </>
       ) : (
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <ToeslagField
-            label="Inkoop — wij betalen"
-            name={buyName}
-            def={buyDefault}
-            suffix={suffix}
-            step={step}
-          />
-          <ToeslagField
-            label="Verkoop — klant betaalt"
-            name={sellName}
-            def={sellDefault}
-            suffix={suffix}
-            step={step}
-          />
+          <div>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
+                Inkoop — wij betalen
+              </span>
+              <UnitSchakelaar unit={buyUnit} onChange={setBuyUnit} label={`${title} inkoop`} />
+            </div>
+            <ToeslagField
+              label=""
+              name={buyName}
+              def={buyDefault}
+              suffix={buyI.suffix}
+              step={buyI.step}
+            />
+          </div>
+          <div>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
+                Verkoop — klant betaalt
+              </span>
+              <UnitSchakelaar unit={sellUnit} onChange={setSellUnit} label={`${title} verkoop`} />
+            </div>
+            <ToeslagField
+              label=""
+              name={sellName}
+              def={sellDefault}
+              suffix={sellI.suffix}
+              step={sellI.step}
+            />
+          </div>
         </div>
       )}
     </div>
@@ -1151,6 +1173,7 @@ export function PlacementForm({
                 buyDefault={placement?.weekdaySurchargeBuy ?? 0}
                 sellDefault={placement?.weekdaySurchargeSell ?? 0}
                 unitDefault={placement?.weekdaySurchargeUnit ?? "PCT"}
+                sellUnitDefault={placement?.weekdaySurchargeSellUnit ?? placement?.weekdaySurchargeUnit ?? "PCT"}
               />
               <ToeslagRow
                 title="Zaterdagtoeslag"
@@ -1159,6 +1182,7 @@ export function PlacementForm({
                 buyDefault={placement?.saturdaySurchargeBuy || placement?.weekendSurchargeBuy || 0}
                 sellDefault={placement?.saturdaySurchargeSell || placement?.weekendSurchargeSell || 0}
                 unitDefault={placement?.saturdaySurchargeUnit ?? "PCT"}
+                sellUnitDefault={placement?.saturdaySurchargeSellUnit ?? placement?.saturdaySurchargeUnit ?? "PCT"}
               />
               <ToeslagRow
                 title="Zondagtoeslag"
@@ -1167,6 +1191,7 @@ export function PlacementForm({
                 buyDefault={placement?.sundaySurchargeBuy || placement?.weekendSurchargeBuy || 0}
                 sellDefault={placement?.sundaySurchargeSell || placement?.weekendSurchargeSell || 0}
                 unitDefault={placement?.sundaySurchargeUnit ?? "PCT"}
+                sellUnitDefault={placement?.sundaySurchargeSellUnit ?? placement?.sundaySurchargeUnit ?? "PCT"}
               />
               <ToeslagRow
                 title="Offshoretoeslag"
@@ -1175,6 +1200,7 @@ export function PlacementForm({
                 buyDefault={placement?.offshoreSurchargeBuy ?? 0}
                 sellDefault={placement?.offshoreSurchargeSell ?? 0}
                 unitDefault={placement?.offshoreSurchargeUnit ?? "PCT"}
+                sellUnitDefault={placement?.offshoreSurchargeSellUnit ?? placement?.offshoreSurchargeUnit ?? "PCT"}
                 toggle={{ name: "offshoreEnabled", defaultOn: placement?.offshoreEnabled ?? false }}
               />
               <ToeslagRow
@@ -1184,6 +1210,7 @@ export function PlacementForm({
                 buyDefault={placement?.shiftSurchargeBuy ?? 0}
                 sellDefault={placement?.shiftSurchargeSell ?? 0}
                 unitDefault={placement?.shiftSurchargeUnit ?? "PCT"}
+                sellUnitDefault={placement?.shiftSurchargeSellUnit ?? placement?.shiftSurchargeUnit ?? "PCT"}
                 toggle={{ name: "shiftEnabled", defaultOn: placement?.shiftEnabled ?? false }}
               />
               <ToeslagRow
@@ -1193,6 +1220,7 @@ export function PlacementForm({
                 buyDefault={placement?.abroadSurchargeBuy ?? 0}
                 sellDefault={placement?.abroadSurchargeSell ?? 0}
                 unitDefault={placement?.abroadSurchargeUnit ?? "PCT"}
+                sellUnitDefault={placement?.abroadSurchargeSellUnit ?? placement?.abroadSurchargeUnit ?? "PCT"}
                 toggle={{ name: "abroadEnabled", defaultOn: placement?.abroadEnabled ?? false }}
               />
               {/* Geen los Overuren-blok meer: ma–vr valt onder 'doordeweeks'. We

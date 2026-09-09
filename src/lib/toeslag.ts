@@ -50,26 +50,32 @@ export type SurchargeConfig = {
   weekdaySurchargeBuy?: number;
   weekdaySurchargeSell?: number;
   weekdaySurchargeUnit?: string;
+  weekdaySurchargeSellUnit?: string;
   saturdaySurchargeBuy?: number;
   saturdaySurchargeSell?: number;
   saturdaySurchargeUnit?: string;
+  saturdaySurchargeSellUnit?: string;
   sundaySurchargeBuy?: number;
   sundaySurchargeSell?: number;
   sundaySurchargeUnit?: string;
+  sundaySurchargeSellUnit?: string;
   /** Offshore/ploegendienst/buitenland zijn niet uit de datums af te leiden: staat
    *  de vlag aan, dan geldt de toeslag over ALLE reguliere uren van de week. */
   offshoreEnabled?: boolean;
   offshoreSurchargeBuy?: number;
   offshoreSurchargeSell?: number;
   offshoreSurchargeUnit?: string;
+  offshoreSurchargeSellUnit?: string;
   shiftEnabled?: boolean;
   shiftSurchargeBuy?: number;
   shiftSurchargeSell?: number;
   shiftSurchargeUnit?: string;
+  shiftSurchargeSellUnit?: string;
   abroadEnabled?: boolean;
   abroadSurchargeBuy?: number;
   abroadSurchargeSell?: number;
   abroadSurchargeUnit?: string;
+  abroadSurchargeSellUnit?: string;
   /** Expliciet overuren-uurtarief (€/u), los van het percentage. null/leeg =
    *  val terug op de normale rate (geen uplift). Staat dit gevuld, dan WINT het
    *  van het percentage — het is dan het volle overuren-tarief per uur. */
@@ -164,23 +170,27 @@ function setting(value: number | undefined, unit: string | undefined, enabled: b
  *  gedeeld — het is één afspraak, alleen het bedrag verschilt per zijde. */
 export function sideSurcharges(p: SurchargeConfig, side: "buy" | "sell"): SideSurcharges {
   const buy = side === "buy";
+  // De unit mag per zijde verschillen: inkoop gebruikt *SurchargeUnit, verkoop
+  // *SurchargeSellUnit (met terugval op de inkoop-unit voor oude rijen).
+  const unitFor = (buyUnit?: string, sellUnit?: string) =>
+    buy ? buyUnit : (sellUnit ?? buyUnit);
   return {
-    weekday: setting(buy ? p.weekdaySurchargeBuy : p.weekdaySurchargeSell, p.weekdaySurchargeUnit, true),
-    saturday: setting(buy ? p.saturdaySurchargeBuy : p.saturdaySurchargeSell, p.saturdaySurchargeUnit, true),
-    sunday: setting(buy ? p.sundaySurchargeBuy : p.sundaySurchargeSell, p.sundaySurchargeUnit, true),
+    weekday: setting(buy ? p.weekdaySurchargeBuy : p.weekdaySurchargeSell, unitFor(p.weekdaySurchargeUnit, p.weekdaySurchargeSellUnit), true),
+    saturday: setting(buy ? p.saturdaySurchargeBuy : p.saturdaySurchargeSell, unitFor(p.saturdaySurchargeUnit, p.saturdaySurchargeSellUnit), true),
+    sunday: setting(buy ? p.sundaySurchargeBuy : p.sundaySurchargeSell, unitFor(p.sundaySurchargeUnit, p.sundaySurchargeSellUnit), true),
     offshore: setting(
       buy ? p.offshoreSurchargeBuy : p.offshoreSurchargeSell,
-      p.offshoreSurchargeUnit,
+      unitFor(p.offshoreSurchargeUnit, p.offshoreSurchargeSellUnit),
       p.offshoreEnabled ?? false,
     ),
     shift: setting(
       buy ? p.shiftSurchargeBuy : p.shiftSurchargeSell,
-      p.shiftSurchargeUnit,
+      unitFor(p.shiftSurchargeUnit, p.shiftSurchargeSellUnit),
       p.shiftEnabled ?? false,
     ),
     abroad: setting(
       buy ? p.abroadSurchargeBuy : p.abroadSurchargeSell,
-      p.abroadSurchargeUnit,
+      unitFor(p.abroadSurchargeUnit, p.abroadSurchargeSellUnit),
       p.abroadEnabled ?? false,
     ),
   };
