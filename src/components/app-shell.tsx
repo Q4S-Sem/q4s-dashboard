@@ -58,7 +58,7 @@ function HubNav({
                 {group.section}
               </div>
             )}
-            <div className="space-y-0.5">
+            <div className="space-y-1.5">
               {group.items.map((item) => {
               const active = item.href === activeHref;
               const Icon = item.icon;
@@ -70,11 +70,13 @@ function HubNav({
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    // Actief item: subtiel gevuld afgerond blok (Studio Admin-stijl).
-                    "relative flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
+                    // Elk item is een omlijnde pill (zoals de Werkplekken-knop).
+                    // Bij klikken/actief tilt hij een klein stukje omhoog én wordt
+                    // hij donkerder — vandaar transition-all + -translate-y.
+                    "relative flex items-center gap-3 rounded-lg border px-3 py-2 text-[13px] font-medium shadow-sm transition-all duration-150 active:translate-y-0",
                     active
-                      ? "bg-brand-600 text-white"
-                      : "text-ink-600 hover:bg-ink-100 hover:text-ink-900",
+                      ? "-translate-y-0.5 border-brand-700 bg-brand-700 text-white shadow-md"
+                      : "border-ink-200 bg-white text-ink-600 hover:-translate-y-0.5 hover:border-ink-300 hover:bg-ink-50 hover:text-ink-900",
                   )}
                 >
                   <Icon
