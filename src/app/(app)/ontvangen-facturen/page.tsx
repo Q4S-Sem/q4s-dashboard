@@ -6,6 +6,7 @@ import {
   Upload,
   CheckCircle2,
   Mail,
+  MessageSquare,
   Inbox,
   Clock,
   FileQuestion,
@@ -27,12 +28,22 @@ import {
 } from "@/lib/received-invoices";
 import { ReceivedList } from "./ReceivedList";
 import { DiscrepancyMailButton } from "./DiscrepancyMailButton";
+import { ReceivedInvoicePreviewButton } from "@/components/received-invoice-preview-button";
 import { setReceivedStatus, resetWeekVanuitFactuur } from "./actions";
 import { ConfirmSubmit } from "@/components/confirm-submit";
-import { SubmitButton } from "@/components/ui/submit-button";
 
 export const metadata = { title: "Ontvangen facturen" };
 export const dynamic = "force-dynamic";
+
+/** Nette icoon-knop (10×10 box met kleur-hover) — zelfde stijl als in de lijst. */
+function iconAction(tone: "slate" | "green" | "red"): string {
+  return cn(
+    "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-transparent transition-colors",
+    tone === "slate" && "text-ink-600 hover:border-ink-200 hover:bg-white",
+    tone === "green" && "text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50",
+    tone === "red" && "text-red-600 hover:border-red-200 hover:bg-red-50",
+  );
+}
 
 function daysSince(d: Date): number {
   return Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000));
@@ -246,45 +257,51 @@ export default async function OntvangenFacturenPage({
                       : "Nog niet gemaild"}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <DiscrepancyMailButton id={r.id} alreadyMailed={false} variant="button" />
+                  <div className="flex items-center gap-1.5">
+                    {/* Mail de medewerker over de afwijking (icoon) */}
+                    <DiscrepancyMailButton id={r.id} alreadyMailed={r.mailed} />
+                    {/* Mailwisseling openen (icoon) */}
                     {r.email && (
                       <a
                         href={`mailto:${r.email}?subject=${encodeURIComponent(
                           `Factuur ${r.number ?? ""} — aangepaste factuur`,
                         )}`}
-                        className={buttonVariants({ variant: "outline", size: "sm" })}
-                        title="Open het mailverkeer met deze persoon"
+                        className={iconAction("slate")}
+                        title="Open de mailwisseling met deze persoon"
+                        aria-label="Mailwisseling openen"
                       >
-                        <Mail className="h-4 w-4" /> Mailwisseling
+                        <MessageSquare className="h-4 w-4" />
                       </a>
                     )}
-                    <Link
-                      href={`/ontvangen-facturen/${r.id}`}
-                      className={buttonVariants({ variant: "outline", size: "sm" })}
-                    >
-                      Bekijken
-                    </Link>
+                    {/* Bekijken → oog-icoon toont de geüploade factuur */}
+                    <ReceivedInvoicePreviewButton id={r.id} name={r.consultantName} hasFile={r.hasFile} />
+
+                    <span className="mx-0.5 h-6 w-px shrink-0 bg-amber-200" aria-hidden="true" />
+
                     {/* Toch akkoord ondanks het verschil (bijv. afgesproken correctie). */}
                     <form action={setReceivedStatus}>
                       <input type="hidden" name="id" value={r.id} />
                       <input type="hidden" name="status" value="APPROVED" />
-                      <SubmitButton variant="success" size="sm" pendingLabel="…">
-                        <Check className="h-4 w-4" /> Toch accepteren
-                      </SubmitButton>
+                      <button
+                        type="submit"
+                        title="Toch accepteren (markeer als gecontroleerd)"
+                        aria-label="Toch accepteren"
+                        className={iconAction("green")}
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
                     </form>
                     {/* Fout? Verwijder de factuur + urenstaat + concept en reset de week. */}
                     <ConfirmSubmit
                       action={resetWeekVanuitFactuur}
                       id={r.id}
-                      trigger="button"
-                      variant="danger"
-                      size="sm"
+                      trigger="icon"
+                      icon={<RotateCcw className="h-4 w-4" />}
                       message="Deze week verwijderen en resetten?"
                       description="Dit verwijdert deze factuur, de urenstaat van deze week én een eventuele concept-verkoopfactuur, en zet de weekstaat terug in 'Week verwerken'. Verstuurde/betaalde facturen blijven beschermd."
                       confirmLabel="Verwijderen & resetten"
                     >
-                      <RotateCcw className="h-4 w-4" /> Verwijderen
+                      Verwijderen &amp; resetten
                     </ConfirmSubmit>
                   </div>
                 </div>

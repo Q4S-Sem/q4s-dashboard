@@ -9,6 +9,7 @@ import { RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
 import type { ReceivedRow } from "@/lib/received-invoices";
 import { setReceivedStatus, deleteReceivedInvoice, resetWeekVanuitFactuur } from "./actions";
 import { DiscrepancyMailButton } from "./DiscrepancyMailButton";
+import { ReceivedInvoicePreviewButton } from "@/components/received-invoice-preview-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 
 function periodLabel(start: Date | null, end: Date | null): string {
@@ -161,6 +162,7 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
 
           {/* Vaste acties — altijd rechts, uitgelijnd over alle rijen */}
           <span className="mx-1 h-6 w-px shrink-0 bg-ink-200" aria-hidden="true" />
+          <ReceivedInvoicePreviewButton id={r.id} name={r.consultantName} hasFile={r.hasFile} />
           <Link
             href={`/ontvangen-facturen/${r.id}`}
             title="Open de factuur"
