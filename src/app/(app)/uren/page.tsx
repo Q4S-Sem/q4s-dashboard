@@ -198,8 +198,16 @@ export default async function UrenPage({
         </Card>
       ) : compact ? (
         <Card className="divide-y divide-ink-100 overflow-hidden">
-          {rows.map((r) => (
-            <div key={r.id} className="flex items-center gap-3 px-3.5 py-2.5">
+          {rows.map((r) => {
+            const klaar = r.status === "APPROVED" || r.status === "INVOICED";
+            return (
+            <div
+              key={r.id}
+              className={cn(
+                "flex items-center gap-3 border-l-4 px-3.5 py-2.5",
+                klaar ? "border-l-emerald-400" : "border-l-amber-400",
+              )}
+            >
               <Link
                 href={`/uren/${r.id}`}
                 className="group flex min-w-0 flex-1 items-center gap-3"
@@ -223,12 +231,22 @@ export default async function UrenPage({
                 <Pencil className="h-4 w-4" />
               </Link>
             </div>
-          ))}
+            );
+          })}
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-          {rows.map((r) => (
-            <Card key={r.id} className="flex h-full flex-col overflow-hidden">
+          {rows.map((r) => {
+            // Groen = klaar (goedgekeurd/gefactureerd), oranje = nog actie nodig.
+            const klaar = r.status === "APPROVED" || r.status === "INVOICED";
+            return (
+            <Card
+              key={r.id}
+              className={cn(
+                "flex h-full flex-col overflow-hidden border-l-4",
+                klaar ? "border-l-emerald-400" : "border-l-amber-400",
+              )}
+            >
               <Link
                 href={`/uren/${r.id}`}
                 className="group flex items-center gap-3 border-b border-ink-100 p-3.5 transition-colors hover:bg-brand-50/60"
@@ -267,7 +285,8 @@ export default async function UrenPage({
                 </span>
               </div>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -290,7 +309,7 @@ export default async function UrenPage({
                   key={m.id}
                   href={`/uren/nieuw?placement=${m.id}&week=${wp}`}
                   title={`Urenstaat invoeren voor ${m.name} — plaatsing en week staan al ingevuld`}
-                  className="group flex items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-brand-50/40"
+                  className="group flex items-center gap-3 border-l-4 border-l-amber-400 px-3.5 py-2.5 transition-colors hover:bg-brand-50/40"
                 >
                   <PersoonVierkant naam={m.name} size="sm" />
                   <span className="min-w-0 flex-1">
@@ -312,7 +331,7 @@ export default async function UrenPage({
                   title={`Urenstaat invoeren voor ${m.name} — plaatsing en week staan al ingevuld`}
                   className="group"
                 >
-                  <Card className="flex items-center gap-3 border-dashed p-3.5 transition-colors hover:border-brand-300 hover:bg-brand-50/40">
+                  <Card className="flex items-center gap-3 border-l-4 border-l-amber-400 border-dashed p-3.5 transition-colors hover:border-brand-300 hover:bg-brand-50/40">
                     <PersoonVierkant naam={m.name} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold text-ink-900">{m.name}</span>

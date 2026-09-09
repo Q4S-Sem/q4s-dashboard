@@ -101,7 +101,12 @@ function PersoonKaart({
   const open = persoon.openstaand.length;
 
   return (
-    <Card className="flex h-full flex-col overflow-hidden">
+    <Card
+      className={cn(
+        "flex h-full flex-col overflow-hidden border-l-4",
+        gereed ? "border-l-emerald-400" : "border-l-amber-400",
+      )}
+    >
       <div className="flex items-center gap-3 border-b border-ink-100 p-3.5">
         <PersoonVierkant naam={persoon.naam} />
         <span className="min-w-0 flex-1">
