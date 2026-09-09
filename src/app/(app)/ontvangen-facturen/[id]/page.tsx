@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Wallet,
   Check,
-  Trash2,
   FileText,
   ExternalLink,
   ClipboardList,
@@ -17,7 +16,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
-import { buttonVariants, Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
 import { RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
@@ -384,12 +383,17 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
                 </SubmitButton>
               </form>
             )}
-            <form action={deleteReceivedInvoice}>
-              <input type="hidden" name="id" value={inv.id} />
-              <Button type="submit" variant="ghost" title="Verwijderen" aria-label="Verwijderen">
-                <Trash2 className="h-4 w-4" /> Verwijderen
-              </Button>
-            </form>
+            <ConfirmSubmit
+              action={deleteReceivedInvoice}
+              id={inv.id}
+              trigger="button"
+              variant="danger"
+              message="Deze factuur verwijderen?"
+              description="De ontvangen factuur wordt verwijderd. Dit kan niet ongedaan worden gemaakt. (Wil je ook de urenstaat en week terugzetten? Gebruik dan 'Verwijderen & resetten'.)"
+              confirmLabel="Verwijderen"
+            >
+              Verwijderen
+            </ConfirmSubmit>
             {inv.status !== "PAID" && (
               <ConfirmSubmit
                 action={resetWeekVanuitFactuur}

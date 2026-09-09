@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, AlertTriangle, Wallet, Check, Trash2, FileText, RotateCcw } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Wallet, Check, FileText, RotateCcw } from "lucide-react";
 import { cn, formatCurrency, formatDate, formatHours, getISOWeek, startOfISOWeek } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/badge";
 import { SmartList, type SmartColumn, type SmartFilter } from "@/components/smart-list";
@@ -209,12 +209,16 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
               Verwijderen &amp; resetten
             </ConfirmSubmit>
           )}
-          <form action={deleteReceivedInvoice}>
-            <input type="hidden" name="id" value={r.id} />
-            <button type="submit" title="Verwijderen" aria-label="Verwijderen" className={iconBtn("delete")}>
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </form>
+          <ConfirmSubmit
+            action={deleteReceivedInvoice}
+            id={r.id}
+            trigger="icon"
+            message="Deze factuur verwijderen?"
+            description="De ontvangen factuur wordt verwijderd. Dit kan niet ongedaan worden gemaakt. (Wil je ook de urenstaat en week terugzetten? Gebruik dan het ↺-icoon 'Verwijderen & resetten'.)"
+            confirmLabel="Verwijderen"
+          >
+            Verwijderen
+          </ConfirmSubmit>
         </div>
       ),
     },
