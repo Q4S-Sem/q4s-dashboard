@@ -21,6 +21,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { Dropzone } from "@/components/ui/dropzone";
 import { Input, Select } from "@/components/ui/field";
+import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { WeekBalk } from "@/components/week-balk";
 import { formatCurrency, formatDate, formatWeekLabel, round2, startOfISOWeek } from "@/lib/utils";
@@ -239,8 +240,8 @@ export default async function DeclaratiesPage({
       {/* Filters */}
       <Card>
         <CardContent className="py-4">
-          <form
-            method="get"
+          <AutoFilterForm
+            basePath="/declaraties"
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_180px_180px_180px_auto]"
           >
             {/* De gekozen week blijft staan als je hier filtert. */}
@@ -252,13 +253,13 @@ export default async function DeclaratiesPage({
             <Select name="status" defaultValue={status} aria-label="Status">
               <option value="">Alle statussen</option>
               {EXPENSE_STATUSES.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
+                <option key={s.value} value={s.value} data-color={s.color}>{s.label}</option>
               ))}
             </Select>
             <Select name="category" defaultValue={category} aria-label="Categorie">
               <option value="">Alle categorieën</option>
               {EXPENSE_CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+                <option key={c.value} value={c.value} data-color={c.color}>{c.label}</option>
               ))}
             </Select>
             <Select name="consultant" defaultValue={consultant} aria-label="Persoon">
@@ -268,16 +269,13 @@ export default async function DeclaratiesPage({
               ))}
             </Select>
             <div className="flex gap-2">
-              <button type="submit" className={buttonVariants()}>
-                <Search className="h-4 w-4" /> Filter
-              </button>
               {hasFilter && (
                 <Link href="/declaraties" className={buttonVariants({ variant: "outline" })}>
                   Wissen
                 </Link>
               )}
             </div>
-          </form>
+          </AutoFilterForm>
         </CardContent>
       </Card>
 

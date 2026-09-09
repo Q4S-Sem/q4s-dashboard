@@ -193,6 +193,14 @@ export function Select({
     setOpen(false);
     setQuery("");
     onValueChange?.(v);
+    // Laat een omhullend <form> automatisch reageren: React zet de verborgen
+    // input-waarde pas bij de volgende render, dus zetten we 'm hier alvast en
+    // sturen een bubbling change-event zodat AutoFilterForm direct kan filteren.
+    const el = hiddenRef.current;
+    if (el) {
+      el.value = v;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
   }
 
   function onListKeys(e: React.KeyboardEvent) {

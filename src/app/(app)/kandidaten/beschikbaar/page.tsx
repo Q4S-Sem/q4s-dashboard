@@ -17,6 +17,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Input, Select } from "@/components/ui/field";
+import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
 import { cn, formatDate } from "@/lib/utils";
 import { person } from "@/lib/people";
@@ -237,11 +238,11 @@ export default async function BeschikbaarPage({
         <StatCard label="Binnenkort beschikbaar" value={soon.length} icon={<CalendarClock className="h-5 w-5" />} accent="amber" />
       </div>
 
-      {/* Filters */}
+      {/* Filters — zoekt automatisch bij typen/kiezen, geen knop nodig */}
       <Card>
         <CardContent className="py-4">
-          <form
-            method="get"
+          <AutoFilterForm
+            basePath="/kandidaten/beschikbaar"
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_220px_auto]"
           >
             <div className="relative">
@@ -257,22 +258,19 @@ export default async function BeschikbaarPage({
             <Select name="discipline" defaultValue={discipline} aria-label="Industrie">
               <option value="">Alle industrieën</option>
               {DISCIPLINES.map((d) => (
-                <option key={d.value} value={d.value}>
+                <option key={d.value} value={d.value} data-color={d.color}>
                   {d.label}
                 </option>
               ))}
             </Select>
             <div className="flex gap-2">
-              <button type="submit" className={buttonVariants()}>
-                <Search className="h-4 w-4" /> Filter
-              </button>
               {hasFilter && (
                 <Link href="/kandidaten/beschikbaar" className={buttonVariants({ variant: "outline" })}>
                   Wissen
                 </Link>
               )}
             </div>
-          </form>
+          </AutoFilterForm>
         </CardContent>
       </Card>
 

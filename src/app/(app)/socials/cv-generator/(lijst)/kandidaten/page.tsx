@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/field";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { AutoFilterForm } from "@/components/ui/auto-filter-form";
+import { buttonVariants } from "@/components/ui/button";
 import { person } from "@/lib/people";
 import { DISCIPLINES } from "@/lib/domain";
 import { profileFromCandidateCv } from "../../actions";
@@ -92,7 +93,7 @@ export default async function CvGeneratorKandidatenPage({
 
       <Card>
         <CardContent className="py-4">
-          <form method="get" className="flex flex-wrap items-center gap-3">
+          <AutoFilterForm basePath="/socials/cv-generator/kandidaten" className="flex flex-wrap items-center gap-3">
             <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
               <Input
@@ -104,9 +105,6 @@ export default async function CvGeneratorKandidatenPage({
                 autoFocus
               />
             </div>
-            <Button type="submit" variant="outline">
-              Zoeken
-            </Button>
             {q && (
               <Link
                 href="/socials/cv-generator/kandidaten"
@@ -115,7 +113,7 @@ export default async function CvGeneratorKandidatenPage({
                 Wissen
               </Link>
             )}
-          </form>
+          </AutoFilterForm>
           <p className="mt-3 text-xs text-ink-500">
             {q
               ? `${kandidaten.length} kandidaat${kandidaten.length === 1 ? "" : "en"} gevonden, waarvan ${metCv} met een CV in het dossier.`

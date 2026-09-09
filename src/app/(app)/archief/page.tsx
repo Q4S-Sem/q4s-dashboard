@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
+import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatDateLong } from "@/lib/utils";
 
@@ -87,21 +88,18 @@ export default async function ArchiefPage({
           {/* Zoeken */}
           <Card>
             <CardContent className="py-4">
-              <form method="get" className="flex flex-wrap items-center gap-3">
+              <AutoFilterForm basePath="/archief" className="flex flex-wrap items-center gap-3">
                 {type && <input type="hidden" name="type" value={type} />}
                 <div className="relative flex-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
                   <Input name="q" defaultValue={q} placeholder="Zoek in het archief op naam of inhoud…" className="pl-9" aria-label="Zoeken" />
                 </div>
-                <button type="submit" className={buttonVariants()}>
-                  <Search className="h-4 w-4" /> Zoeken
-                </button>
                 {(q || type) && (
                   <Link href="/archief" className={buttonVariants({ variant: "outline" })}>
                     Wissen
                   </Link>
                 )}
-              </form>
+              </AutoFilterForm>
             </CardContent>
           </Card>
 
