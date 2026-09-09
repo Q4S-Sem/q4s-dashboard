@@ -3,7 +3,6 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { useValueSignal } from "./value-signal";
-import { useDropDirection, dropClass } from "./use-drop-direction";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -413,7 +412,35 @@ export function DateInput({
 
   const hiddenRef = React.useRef<HTMLInputElement>(null);
   useValueSignal(hiddenRef, submitValue);
-  const calUp = useDropDirection(open, rootRef, 380);
+
+  // De hele kalender-popup hangt via een portal aan <body> met vaste positie,
+  // zodat hij niet achter een kaart/tabel eronder valt (stacking-context). We
+  // meten de trigger en klappen omhoog als het beneden niet past.
+  const CAL_W = 288; // 18rem
+  const CAL_H = withTime ? 440 : 380;
+  const [calRect, setCalRect] = React.useState<{ left: number; top: number; up: boolean } | null>(null);
+  const placeCal = React.useCallback(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const below = window.innerHeight - r.bottom;
+    const up = below < CAL_H && r.top > below;
+    // Binnen het scherm houden: niet links/rechts uitlopen.
+    const left = Math.min(Math.max(8, r.left), Math.max(8, window.innerWidth - CAL_W - 8));
+    setCalRect({ left, top: up ? r.top : r.bottom, up });
+  }, [CAL_H]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    placeCal();
+    const reflow = () => placeCal();
+    window.addEventListener("resize", reflow);
+    window.addEventListener("scroll", reflow, true);
+    return () => {
+      window.removeEventListener("resize", reflow);
+      window.removeEventListener("scroll", reflow, true);
+    };
+  }, [open, placeCal]);
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
@@ -475,13 +502,21 @@ export function DateInput({
         </div>
       )}
 
-      {open && (
-        <div
-          className={cn(
-            "absolute z-50 w-[18rem] rounded-xl border border-ink-200 bg-white p-3 shadow-lg",
-            dropClass(calUp),
-          )}
-        >
+      {open &&
+        calRect &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            data-dateinput-portal=""
+            style={{
+              position: "fixed",
+              left: calRect.left,
+              ...(calRect.up
+                ? { bottom: window.innerHeight - calRect.top + 4 }
+                : { top: calRect.top + 4 }),
+            }}
+            className="z-[110] w-[18rem] rounded-xl border border-ink-200 bg-white p-3 shadow-lg"
+          >
           <div className="mb-2 flex items-center justify-between">
             <button
               type="button"
@@ -648,8 +683,9 @@ export function DateInput({
               {weekMode ? "Deze week" : "Vandaag"}
             </button>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
