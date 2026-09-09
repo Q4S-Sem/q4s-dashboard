@@ -252,7 +252,7 @@ export function Select({
         bottom: pos.bottom,
         maxHeight: MENU_MAX_H,
       }}
-      className="z-[70] flex flex-col overflow-hidden rounded-sm border border-ink-900 bg-white shadow-[0_16px_36px_-22px_rgb(0_0_0/0.55)]"
+      className="z-[130] flex flex-col overflow-hidden rounded-sm border border-ink-900 bg-white shadow-[0_16px_36px_-22px_rgb(0_0_0/0.55)]"
     >
       {searchable && (
         <div className="flex items-center gap-2 border-b border-ink-100 px-2.5 py-2">
