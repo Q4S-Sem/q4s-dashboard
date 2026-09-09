@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { useValueSignal } from "./value-signal";
 import { useDropDirection, dropClass } from "./use-drop-direction";
 import {
@@ -123,20 +124,48 @@ function HeaderSelect({
 }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
+  const btnRef = React.useRef<HTMLButtonElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
+  // Vaste positie t.o.v. het scherm, herberekend bij openen/scroll/resize —
+  // zo valt het menu via een portal op <body> nooit achter de kalender of een
+  // andere stacking-context (zoals eerder bij de Select en het factuurvoorbeeld).
+  const [rect, setRect] = React.useState<{ left: number; top: number; width: number; up: boolean } | null>(null);
+
+  const place = React.useCallback(() => {
+    const el = btnRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const MENU_H = 220;
+    const below = window.innerHeight - r.bottom;
+    const up = below < MENU_H && r.top > below;
+    setRect({
+      left: r.left,
+      top: up ? r.top : r.bottom,
+      width: Math.max(r.width, 96),
+      up,
+    });
+  }, []);
 
   React.useEffect(() => {
     if (!open) return;
+    place();
     const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (ref.current?.contains(t) || listRef.current?.contains(t)) return;
+      setOpen(false);
     };
+    const reflow = () => place();
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
+    window.addEventListener("resize", reflow);
+    window.addEventListener("scroll", reflow, true);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      window.removeEventListener("resize", reflow);
+      window.removeEventListener("scroll", reflow, true);
+    };
+  }, [open, place]);
 
-  // De gekozen week/maand centreren in de lijst — maar alléén de lijst zelf
-  // verschuiven. `scrollIntoView` scrollt óók elke scrollbare voorouder mee,
-  // waardoor de pagina eronder een stukje wegsprong zodra je de datum aanklikte.
+  // De gekozen waarde centreren in de lijst — alléén de lijst zelf verschuiven.
   React.useEffect(() => {
     if (!open) return;
     const box = listRef.current;
@@ -145,14 +174,14 @@ function HeaderSelect({
     const b = box.getBoundingClientRect();
     const s = sel.getBoundingClientRect();
     box.scrollTop += s.top - b.top - (b.height - s.height) / 2;
-  }, [open]);
+  }, [open, rect]);
 
   const current = options.find((o) => o.value === value);
-  const listUp = useDropDirection(open, ref, 220);
 
   return (
     <div ref={ref} className="relative">
       <button
+        ref={btnRef}
         type="button"
         aria-label={ariaLabel}
         onClick={() => setOpen((o) => !o)}
@@ -164,38 +193,48 @@ function HeaderSelect({
         <span className="truncate">{current?.label}</span>
         <ChevronDown className="h-3.5 w-3.5 shrink-0 text-ink-400" />
       </button>
-      {open && (
-        <div
-          ref={listRef}
-          className={cn(
-            "absolute left-0 z-[60] max-h-52 w-full overflow-auto rounded-xl border border-ink-200 bg-white p-1 shadow-lg",
-            listUp ? "bottom-[calc(100%+0.25rem)]" : "top-[calc(100%+0.25rem)]",
-          )}
-        >
-          {options.map((o) => {
-            const sel = o.value === value;
-            return (
-              <button
-                key={o.value}
-                type="button"
-                data-sel={sel}
-                onClick={() => {
-                  onChange(o.value);
-                  setOpen(false);
-                }}
-                className={cn(
-                  "block w-full rounded-md px-2.5 py-1.5 text-left text-sm capitalize transition-colors",
-                  sel
-                    ? "bg-brand-50 font-semibold text-brand-700"
-                    : "text-ink-700 hover:bg-ink-100",
-                )}
-              >
-                {o.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {open &&
+        rect &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={listRef}
+            data-dateinput-portal=""
+            style={{
+              position: "fixed",
+              left: rect.left,
+              width: rect.width,
+              ...(rect.up
+                ? { bottom: window.innerHeight - rect.top + 4 }
+                : { top: rect.top + 4 }),
+            }}
+            className="z-[120] max-h-52 overflow-auto rounded-xl border border-ink-200 bg-white p-1 shadow-lg"
+          >
+            {options.map((o) => {
+              const sel = o.value === value;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  data-sel={sel}
+                  onClick={() => {
+                    onChange(o.value);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "block w-full rounded-md px-2.5 py-1.5 text-left text-sm capitalize transition-colors",
+                    sel
+                      ? "bg-brand-50 font-semibold text-brand-700"
+                      : "text-ink-700 hover:bg-ink-100",
+                  )}
+                >
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -260,7 +299,11 @@ export function DateInput({
   React.useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as HTMLElement;
+      // De maand/jaar-lijst hangt via een portal aan <body>, dus buiten rootRef.
+      // Een klik daarin mag de kalender NIET sluiten.
+      if (t.closest?.("[data-dateinput-portal]")) return;
+      if (rootRef.current && !rootRef.current.contains(t)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
