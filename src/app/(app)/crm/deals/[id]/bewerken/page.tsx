@@ -17,7 +17,7 @@ export default async function EditDealPage({ params }: { params: Promise<{ id: s
   if (!deal) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <BackLink href={`/crm/deals/${deal.id}`}>
         Terug naar deal
       </BackLink>
@@ -32,6 +32,7 @@ export default async function EditDealPage({ params }: { params: Promise<{ id: s
         recruiters={opts.recruiters}
         targets={opts.targets}
         clients={opts.clients}
+        companies={opts.companies}
         vacancies={opts.vacancies}
         contacts={opts.contacts}
       />

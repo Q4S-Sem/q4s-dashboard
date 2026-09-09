@@ -13,7 +13,7 @@ export default async function NewDealPage() {
   const opts = await loadDealFormOptions();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <BackLink href="/crm">
         Terug naar CRM
       </BackLink>
@@ -30,6 +30,7 @@ export default async function NewDealPage() {
         recruiters={opts.recruiters}
         targets={opts.targets}
         clients={opts.clients}
+        companies={opts.companies}
         vacancies={opts.vacancies}
         contacts={opts.contacts}
       />

@@ -24,6 +24,7 @@ const DealSchema = z.object({
   primaryContactId: z.string().optional(),
   expectedCloseDate: z.coerce.date().optional(),
   nextFollowUpAt: z.coerce.date().optional(),
+  notes: z.string().optional(),
 });
 
 type DealData = z.infer<typeof DealSchema>;
@@ -74,6 +75,12 @@ export async function createDeal(_prev: FormState, formData: FormData): Promise<
     authorId: recruiterId,
     body: `Deal aangemaakt in fase "${stageName}".`,
   });
+
+  // Eigen notitie bij het aanmaken meteen vastleggen in het notitieblok.
+  const notes = String(formData.get("notes") ?? "").trim();
+  if (notes) {
+    await logNote({ type: "NOTE", dealId: created.id, authorId: recruiterId, body: notes });
+  }
 
   revalidatePath("/crm");
   redirect(`/crm/deals/${created.id}`);
