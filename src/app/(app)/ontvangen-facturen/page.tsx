@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Upload, CheckCircle2, Mail, Inbox } from "lucide-react";
+import { AlertTriangle, Upload, CheckCircle2, Inbox } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -128,19 +128,6 @@ export default async function OntvangenFacturenPage({
       ) : (
         <ReceivedList rows={rows} />
       )}
-
-      {/* Gated: AI-uit-de-mail (later) */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-ink-300 bg-ink-50/60 px-4 py-3 text-sm text-ink-500">
-        <Mail className="h-4 w-4 shrink-0 text-ink-400" />
-        <span className="flex-1">
-          <strong className="font-medium text-ink-700">Binnenkort:</strong> AI leest inkomende facturen
-          automatisch uit je mailbox en zet ze hier klaar — net als de CV-inbox. Tot die tijd importeer je
-          ze zelf.
-        </span>
-        <span className="rounded-sm bg-ink-200 px-2 py-0.5 text-xs font-semibold text-ink-500">
-          Gepland
-        </span>
-      </div>
     </div>
   );
 }
