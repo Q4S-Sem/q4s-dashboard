@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Pencil, Receipt, Coins, Building2, Inbox } from "lucide-react";
+import { ArrowLeft, Pencil, Receipt, Coins, Building2, Inbox, RotateCcw } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -14,7 +14,8 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatCurrency, formatDate, formatHours, formatWeekLabel, round2 } from "@/lib/utils";
 import { computeTimesheetMoney } from "@/lib/toeslag";
 import { TIMESHEET_STATUSES } from "@/lib/domain";
-import { setTimesheetStatus, deleteTimesheet, generateSalesForTimesheet } from "../actions";
+import { mayDeleteConceptInvoice } from "@/lib/week-reset-core";
+import { setTimesheetStatus, deleteTimesheet, generateSalesForTimesheet, resetWeekVanuitUrenstaat } from "../actions";
 
 export const metadata = { title: "Urenstaat" };
 
@@ -56,7 +57,7 @@ export default async function UrenstaatDetailPage({
     where: { id },
     include: {
       entries: { orderBy: { date: "asc" } },
-      invoiceLine: { select: { invoiceId: true } },
+      invoiceLine: { select: { invoiceId: true, invoice: { select: { status: true } } } },
       purchaseLine: { select: { purchaseInvoiceId: true } },
       placement: { include: { consultant: true, client: true } },
       inbox: { select: { id: true, source: true, originalName: true } },
@@ -96,6 +97,11 @@ export default async function UrenstaatDetailPage({
   const canInvoice = ts.status === "APPROVED" || ts.status === "INVOICED";
   // Once the hours back an issued sales OR purchase invoice, they're locked.
   const committed = Boolean(salesInvoiceId || purchaseInvoiceId);
+  // "Verwijderen & resetten" mag zolang de gekoppelde verkoopfactuur nog een
+  // concept/geannuleerd is (of er geen is). Vrijgegeven/verstuurd/betaald =
+  // administratie → dan crediteren, niet resetten (server-guard bevestigt dit).
+  const salesStatus = ts.invoiceLine?.invoice?.status ?? null;
+  const weekResettable = mayDeleteConceptInvoice(salesStatus);
 
   return (
     <div className="space-y-6">
@@ -200,6 +206,20 @@ export default async function UrenstaatDetailPage({
           >
             <Receipt className="h-4 w-4" /> Bekijk factuur
           </Link>
+        )}
+        {weekResettable && (
+          <ConfirmSubmit
+            action={resetWeekVanuitUrenstaat}
+            id={ts.id}
+            hidden={{ terug: `/uren/${ts.id}` }}
+            trigger="button"
+            variant="danger"
+            message="Deze week verwijderen en resetten?"
+            description="Fout gemaakt? Dit verwijdert deze urenstaat, een eventuele concept-verkoopfactuur én de ontvangen factuur van deze week, en zet de weekstaat terug in 'Week verwerken' zodat je 'm opnieuw kunt doen. Al verstuurde of betaalde facturen blijven beschermd."
+            confirmLabel="Verwijderen & resetten"
+          >
+            <RotateCcw className="h-4 w-4" /> Verwijderen &amp; resetten
+          </ConfirmSubmit>
         )}
       </div>
 

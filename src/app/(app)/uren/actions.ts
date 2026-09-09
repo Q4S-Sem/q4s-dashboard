@@ -9,6 +9,7 @@ import { parseHours, startOfISOWeek, round2 } from "@/lib/utils";
 import { createSalesInvoice } from "@/lib/invoicing";
 import { EXPENSE_CATEGORY_VALUES } from "@/lib/domain";
 import { veiligTerugPad } from "@/lib/week-detail";
+import { resetWeekForTimesheet } from "@/lib/week-reset";
 
 const BaseSchema = z.object({
   placementId: z.string().min(1, "Kies een plaatsing"),
@@ -262,6 +263,30 @@ export async function deleteTimesheet(formData: FormData) {
   revalidatePath("/verwerken/nieuw");
   revalidatePath("/", "layout");
   redirect(terug);
+}
+
+/**
+ * "Verwijderen & resetten vanaf Week verwerken" vanaf een URENSTAAT. Draait de
+ * hele week terug: de concept-verkoopfactuur én de ontvangen factuur van die
+ * week weg, de urenstaat weg, en de uitgelezen weekstaat terug in de inbox
+ * zodat je 'm opnieuw kunt verwerken. Een al vrijgegeven/verstuurde/betaalde
+ * factuur blokkeert dit (dan "locked"). Zie src/lib/week-reset.ts.
+ */
+export async function resetWeekVanuitUrenstaat(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const terug = veiligTerugPad(formData.get("terug"), "/uren");
+
+  const res = await resetWeekForTimesheet(id);
+  revalidatePath("/uren");
+  revalidatePath("/ontvangen-facturen");
+  revalidatePath("/verwerken/nieuw");
+  revalidatePath("/", "layout");
+
+  if (res.result === "locked") {
+    redirect(`/uren/${id}?error=locked`);
+  }
+  redirect(terug === `/uren/${id}` ? "/uren?reset=ok" : terug);
 }
 
 // ---------- Invoice generation from a single timesheet ----------

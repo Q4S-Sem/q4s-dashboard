@@ -36,7 +36,7 @@ function daysSince(d: Date): number {
 export default async function OntvangenFacturenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; week?: string; toon?: string }>;
+  searchParams: Promise<{ ok?: string; week?: string; toon?: string; reset?: string }>;
 }) {
   const sp = await searchParams;
   const [rows, summary] = await Promise.all([listReceivedInvoices(), receivedInvoicesSummary()]);
@@ -87,6 +87,18 @@ export default async function OntvangenFacturenPage({
       {sp.ok && (
         <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           <CheckCircle2 className="h-4 w-4" /> Factuur geregistreerd en gecontroleerd tegen de timesheet.
+        </p>
+      )}
+
+      {sp.reset === "ok" && (
+        <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <CheckCircle2 className="h-4 w-4" /> Week teruggezet — de urenstaat en het concept zijn verwijderd. De weekstaat staat weer klaar in{" "}
+          <Link href="/verwerken/nieuw" className="font-medium underline underline-offset-2">Week verwerken</Link>.
+        </p>
+      )}
+      {sp.reset === "locked" && (
+        <p className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> Deze week is <strong>niet</strong> gereset: er hangt een al vrijgegeven, verstuurde of betaalde factuur aan. Crediteer die eerst — administratie wordt nooit automatisch verwijderd.
         </p>
       )}
 

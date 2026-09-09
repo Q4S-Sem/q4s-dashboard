@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { RECEIVED_INVOICE_STATUS_VALUES } from "@/lib/domain";
 import { MAX_UPLOAD_BYTES, saveReceivedBytes, deleteReceivedUpload } from "@/lib/uploads";
 import { mailReceivedDiscrepancy } from "@/lib/received-invoices";
+import { resetWeekForReceivedInvoice } from "@/lib/week-reset";
 
 const IMPORT = "/ontvangen-facturen/importeren";
 
@@ -145,4 +146,26 @@ export async function deleteReceivedInvoice(formData: FormData) {
   if (inv?.fileName) await deleteReceivedUpload(inv.fileName);
   revalidate();
   redirect("/ontvangen-facturen");
+}
+
+/**
+ * "Verwijderen & resetten vanaf Week verwerken": draai de hele week terug — de
+ * ontvangen factuur, de urenstaat én de concept-verkoopfactuur weg, en de
+ * uitgelezen weekstaat terug in de inbox zodat je 'm opnieuw kunt doen.
+ * Verstuurde/betaalde facturen blijven beschermd (dan komt er een "locked"-
+ * melding). Zie src/lib/week-reset.ts.
+ */
+export async function resetWeekVanuitFactuur(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect("/ontvangen-facturen");
+
+  const res = await resetWeekForReceivedInvoice(id);
+  revalidate();
+  revalidatePath("/uren");
+  revalidatePath("/verwerken/nieuw");
+
+  if (res.result === "locked") {
+    redirect(`/ontvangen-facturen?reset=locked`);
+  }
+  redirect(`/ontvangen-facturen?reset=ok`);
 }

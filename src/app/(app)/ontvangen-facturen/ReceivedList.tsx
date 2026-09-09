@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, AlertTriangle, Wallet, Check, Trash2, FileText } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Wallet, Check, Trash2, FileText, RotateCcw } from "lucide-react";
 import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/badge";
 import { SmartList, type SmartColumn, type SmartFilter } from "@/components/smart-list";
 import { RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
 import type { ReceivedRow } from "@/lib/received-invoices";
-import { setReceivedStatus, deleteReceivedInvoice } from "./actions";
+import { setReceivedStatus, deleteReceivedInvoice, resetWeekVanuitFactuur } from "./actions";
 import { DiscrepancyMailButton } from "./DiscrepancyMailButton";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 
 function periodLabel(start: Date | null, end: Date | null): string {
   if (start && end) return `${formatDate(start)} – ${formatDate(end)}`;
@@ -168,6 +169,19 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
           >
             <FileText className="h-4 w-4" />
           </Link>
+          {r.status !== "PAID" && (
+            <ConfirmSubmit
+              action={resetWeekVanuitFactuur}
+              id={r.id}
+              trigger="icon"
+              icon={<RotateCcw className="h-4 w-4" />}
+              message="Deze week verwijderen en resetten?"
+              description="Dit verwijdert deze factuur, de urenstaat van deze week én een eventuele concept-verkoopfactuur, en zet de weekstaat terug in 'Week verwerken'. Verstuurde/betaalde facturen blijven beschermd."
+              confirmLabel="Verwijderen & resetten"
+            >
+              Verwijderen &amp; resetten
+            </ConfirmSubmit>
+          )}
           <form action={deleteReceivedInvoice}>
             <input type="hidden" name="id" value={r.id} />
             <button type="submit" title="Verwijderen" aria-label="Verwijderen" className={iconBtn("delete")}>

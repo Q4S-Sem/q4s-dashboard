@@ -25,6 +25,7 @@ export function ConfirmSubmit({
   confirmLabel,
   confirmVariant,
   trigger,
+  icon,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   /** De vraag/titel in het venster. */
@@ -43,6 +44,8 @@ export function ConfirmSubmit({
   confirmVariant?: ButtonProps["variant"];
   /** Forceer de triggervorm; standaard: icoon bij een gevaarlijke actie. */
   trigger?: "icon" | "button";
+  /** Icoon voor de icoon-trigger (default een prullenbak). */
+  icon?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -82,7 +85,7 @@ export function ConfirmSubmit({
           aria-label={label}
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
         >
-          <Trash2 className="h-4 w-4" />
+          {icon ?? <Trash2 className="h-4 w-4" />}
         </button>
       ) : (
         <Button type="button" variant={variant} size={size} onClick={() => setOpen(true)}>

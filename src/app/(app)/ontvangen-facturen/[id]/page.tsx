@@ -12,6 +12,7 @@ import {
   ExternalLink,
   ClipboardList,
   Mail,
+  RotateCcw,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,8 +22,9 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
 import { RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
 import { getReceivedDetail } from "@/lib/received-invoices";
-import { setReceivedStatus, deleteReceivedInvoice, setReceivedVatFlag } from "../actions";
+import { setReceivedStatus, deleteReceivedInvoice, setReceivedVatFlag, resetWeekVanuitFactuur } from "../actions";
 import { DiscrepancyMailButton } from "../DiscrepancyMailButton";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 
 export const metadata = { title: "Ontvangen factuur" };
 export const dynamic = "force-dynamic";
@@ -388,6 +390,19 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
                 <Trash2 className="h-4 w-4" /> Verwijderen
               </Button>
             </form>
+            {inv.status !== "PAID" && (
+              <ConfirmSubmit
+                action={resetWeekVanuitFactuur}
+                id={inv.id}
+                trigger="button"
+                variant="danger"
+                message="Deze week verwijderen en resetten?"
+                description="Fout gemaakt? Dit verwijdert deze ontvangen factuur, de urenstaat van deze week én een eventuele concept-verkoopfactuur, en zet de weekstaat terug in 'Week verwerken' zodat je 'm opnieuw kunt doen. Al verstuurde of betaalde facturen blijven beschermd."
+                confirmLabel="Verwijderen & resetten"
+              >
+                <RotateCcw className="h-4 w-4" /> Verwijderen & resetten
+              </ConfirmSubmit>
+            )}
           </CardContent>
         </Card>
       </div>
