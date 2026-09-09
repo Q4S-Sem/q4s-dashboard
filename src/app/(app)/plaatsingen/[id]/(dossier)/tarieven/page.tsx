@@ -34,17 +34,20 @@ export default async function PlaatsingTarievenPage({
   const toeslagWaarde = (value: number, unit: string) =>
     unit === "FIXED" ? `${formatCurrency(value)}/u` : `${formatHours(value)}%`;
 
-  /** Eén van de zes losse toeslagen als tabelrij. */
+  /** Eén van de zes losse toeslagen als tabelrij. De unit mag per zijde
+   *  verschillen (inkoop %/€, verkoop %/€); verkoop valt terug op de inkoop-unit
+   *  voor oude rijen zonder aparte verkoop-unit. */
   const toeslagRij = (
     label: string,
     buy: number,
     sell: number,
-    unit: string,
+    buyUnit: string,
+    sellUnit: string | null | undefined,
     enabled = true,
   ) => ({
     label: enabled ? label : `${label} (staat uit)`,
-    buy: toeslagWaarde(buy, unit),
-    sell: toeslagWaarde(sell, unit),
+    buy: toeslagWaarde(buy, buyUnit),
+    sell: toeslagWaarde(sell, sellUnit ?? buyUnit),
     set: enabled && (buy > 0 || sell > 0),
   });
 
@@ -63,24 +66,28 @@ export default async function PlaatsingTarievenPage({
       placement.weekdaySurchargeBuy,
       placement.weekdaySurchargeSell,
       placement.weekdaySurchargeUnit,
+      placement.weekdaySurchargeSellUnit,
     ),
     toeslagRij(
       "Zaterdagtoeslag",
       placement.saturdaySurchargeBuy,
       placement.saturdaySurchargeSell,
       placement.saturdaySurchargeUnit,
+      placement.saturdaySurchargeSellUnit,
     ),
     toeslagRij(
       "Zondagtoeslag",
       placement.sundaySurchargeBuy,
       placement.sundaySurchargeSell,
       placement.sundaySurchargeUnit,
+      placement.sundaySurchargeSellUnit,
     ),
     toeslagRij(
       "Offshoretoeslag",
       placement.offshoreSurchargeBuy,
       placement.offshoreSurchargeSell,
       placement.offshoreSurchargeUnit,
+      placement.offshoreSurchargeSellUnit,
       placement.offshoreEnabled,
     ),
     toeslagRij(
@@ -88,6 +95,7 @@ export default async function PlaatsingTarievenPage({
       placement.shiftSurchargeBuy,
       placement.shiftSurchargeSell,
       placement.shiftSurchargeUnit,
+      placement.shiftSurchargeSellUnit,
       placement.shiftEnabled,
     ),
     toeslagRij(
@@ -95,6 +103,7 @@ export default async function PlaatsingTarievenPage({
       placement.abroadSurchargeBuy,
       placement.abroadSurchargeSell,
       placement.abroadSurchargeUnit,
+      placement.abroadSurchargeSellUnit,
       placement.abroadEnabled,
     ),
     ...(legacyWeekend
