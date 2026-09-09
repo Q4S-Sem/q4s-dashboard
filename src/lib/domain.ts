@@ -34,6 +34,13 @@ export const PLACEMENT_STATUSES: Option[] = [
   { value: "ENDED", label: "Beëindigd", color: "slate" },
 ];
 
+/** Hoe een toeslag gerekend wordt — per toeslag, per plaatsing te schakelen.
+ *  PCT = percentage bovenop het uurtarief, FIXED = vast bedrag per uur (€/u). */
+export const SURCHARGE_UNITS: Option[] = [
+  { value: "PCT", label: "Percentage", color: "blue" },
+  { value: "FIXED", label: "Vast tarief", color: "violet" },
+];
+
 export const TIMESHEET_STATUSES: Option[] = [
   { value: "DRAFT", label: "Concept", color: "slate" },
   { value: "SUBMITTED", label: "Ingediend", color: "amber" },
@@ -102,6 +109,7 @@ export function colorFor(options: Option[], value: string | null | undefined): B
 export const DISCIPLINE_VALUES = DISCIPLINES.map((d) => d.value) as [string, ...string[]];
 export const EMPLOYMENT_VALUES = EMPLOYMENT_TYPES.map((d) => d.value) as [string, ...string[]];
 export const PLACEMENT_STATUS_VALUES = PLACEMENT_STATUSES.map((d) => d.value) as [string, ...string[]];
+export const SURCHARGE_UNIT_VALUES = SURCHARGE_UNITS.map((d) => d.value) as [string, ...string[]];
 export const TIMESHEET_STATUS_VALUES = TIMESHEET_STATUSES.map((d) => d.value) as [string, ...string[]];
 export const INVOICE_STATUS_VALUES = INVOICE_STATUSES.map((d) => d.value) as [string, ...string[]];
 

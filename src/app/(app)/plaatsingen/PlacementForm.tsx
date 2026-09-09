@@ -131,15 +131,17 @@ function ToeslagField({
   def,
   suffix,
   step,
+  disabled,
 }: {
   label: string;
   name: string;
   def: number;
   suffix: string;
   step: number | string;
+  disabled?: boolean;
 }) {
   return (
-    <label className="block">
+    <label className={cn("block", disabled && "opacity-60")}>
       <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-400">
         {label}
       </span>
@@ -147,6 +149,7 @@ function ToeslagField({
         <NumberInput
           name={name}
           min={0}
+          disabled={disabled}
           step={step}
           defaultValue={def || ""}
           placeholder="0"
@@ -193,6 +196,148 @@ function ToeslagBlock({
   );
 }
 
+/** De twee knoppen van een percentage/vast-tarief-schakelaar. */
+const SCHAKEL_TAB =
+  "flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors";
+
+function UnitSchakelaar({
+  unit,
+  onChange,
+  label,
+}: {
+  unit: "PCT" | "FIXED";
+  onChange: (u: "PCT" | "FIXED") => void;
+  label: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={`${label}: percentage of vast tarief`}
+      className="flex w-full max-w-xs rounded-lg bg-ink-100 p-1 sm:w-auto"
+    >
+      <button
+        type="button"
+        onClick={() => onChange("PCT")}
+        aria-pressed={unit === "PCT"}
+        className={cn(
+          SCHAKEL_TAB,
+          unit === "PCT" ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
+        )}
+      >
+        Percentage
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("FIXED")}
+        aria-pressed={unit === "FIXED"}
+        className={cn(
+          SCHAKEL_TAB,
+          unit === "FIXED" ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
+        )}
+      >
+        Vast tarief (€/u)
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Eén van de ZES toeslagen, met per stuk dezelfde SCHAKELAAR als bij Overuren:
+ * een percentage bovenop het uurtarief, of een vast bedrag per uur (€/u). Alleen
+ * de gekozen variant staat in beeld; de schakelaar zelf gaat als verborgen veld
+ * mee (`…SurchargeUnit`), dus de rekenlaag weet altijd hoe het bedrag bedoeld is.
+ *
+ * Doordeweeks/zaterdag/zondag volgen uit de datums op de urenstaat. Offshore,
+ * ploegendienst en buitenland zijn daar niet uit af te leiden en krijgen daarom
+ * een AAN/UIT-vinkje: staat het aan, dan geldt de toeslag over ALLE gewerkte
+ * reguliere uren van deze plaatsing. Staat het uit, dan blijven de bedragen
+ * bewaard (verborgen velden) maar rekenen ze niet mee.
+ */
+function ToeslagRow({
+  title,
+  hint,
+  prefix,
+  buyDefault,
+  sellDefault,
+  unitDefault,
+  toggle,
+}: {
+  title: string;
+  hint: string;
+  /** Veldnaam-voorvoegsel: "saturday" → saturdaySurchargeBuy/Sell/Unit. */
+  prefix: string;
+  buyDefault: number;
+  sellDefault: number;
+  unitDefault: string;
+  /** Alleen voor offshore/ploegendienst/buitenland. */
+  toggle?: { name: string; defaultOn: boolean };
+}) {
+  const [unit, setUnit] = useState<"PCT" | "FIXED">(
+    unitDefault === "FIXED" ? "FIXED" : "PCT",
+  );
+  const [aan, setAan] = useState(toggle?.defaultOn ?? true);
+  const uit = Boolean(toggle) && !aan;
+  const buyName = `${prefix}SurchargeBuy`;
+  const sellName = `${prefix}SurchargeSell`;
+  const suffix = unit === "PCT" ? "%" : "€/u";
+  const step = unit === "PCT" ? "any" : 0.01;
+
+  return (
+    <div className="rounded-lg border border-ink-200 bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          {toggle ? (
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                name={toggle.name}
+                checked={aan}
+                onChange={(ev) => setAan(ev.target.checked)}
+                className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
+              />
+              <span className="text-sm font-semibold text-ink-800">{title}</span>
+            </label>
+          ) : (
+            <p className="text-sm font-semibold text-ink-800">{title}</p>
+          )}
+          <p className="mt-0.5 text-xs text-ink-400">
+            {uit ? "Staat uit — vink aan om deze toeslag te laten meetellen." : hint}
+          </p>
+        </div>
+        {!uit && <UnitSchakelaar unit={unit} onChange={setUnit} label={title} />}
+      </div>
+
+      {/* De schakelaar zelf reist als verborgen veld mee. */}
+      <input type="hidden" name={`${prefix}SurchargeUnit`} value={unit} />
+
+      {uit ? (
+        // Uitgevinkt: de bedragen blijven bewaard, maar zijn niet te bewerken.
+        <>
+          <input type="hidden" name={buyName} value={buyDefault} />
+          <input type="hidden" name={sellName} value={sellDefault} />
+        </>
+      ) : (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <ToeslagField
+            label="Inkoop — wij betalen"
+            name={buyName}
+            def={buyDefault}
+            suffix={suffix}
+            step={step}
+          />
+          <ToeslagField
+            label="Verkoop — klant betaalt"
+            name={sellName}
+            def={sellDefault}
+            suffix={suffix}
+            step={step}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * Het overuren-blok met een SCHAKELAAR: elke afspraak is anders, dus de eigenaar
  * kiest per plaatsing óf een percentage-toeslag (bovenop het normale tarief) óf
@@ -217,8 +362,6 @@ function OverurenBlock({
   const [modus, setModus] = useState<"pct" | "rate">(
     buyRate != null || sellRate != null ? "rate" : "pct",
   );
-  const tab =
-    "flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors";
   return (
     <div className="rounded-lg border border-ink-200 bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -231,24 +374,11 @@ function OverurenBlock({
           </p>
         </div>
         {/* De schakelaar tussen de twee manieren van afspreken. */}
-        <div className="flex w-full max-w-xs rounded-lg bg-ink-100 p-1 sm:w-auto">
-          <button
-            type="button"
-            onClick={() => setModus("pct")}
-            aria-pressed={modus === "pct"}
-            className={cn(tab, modus === "pct" ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800")}
-          >
-            Percentage
-          </button>
-          <button
-            type="button"
-            onClick={() => setModus("rate")}
-            aria-pressed={modus === "rate"}
-            className={cn(tab, modus === "rate" ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800")}
-          >
-            Vast tarief (€/u)
-          </button>
-        </div>
+        <UnitSchakelaar
+          unit={modus === "pct" ? "PCT" : "FIXED"}
+          onChange={(u) => setModus(u === "PCT" ? "pct" : "rate")}
+          label="Overuren"
+        />
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -1056,18 +1186,74 @@ export function PlacementForm({
               Per persoon. <span className="font-medium text-ink-500">Inkoop</span> ={" "}
               wat we de werknemer betalen, <span className="font-medium text-ink-500">Verkoop</span>{" "}
               = wat we de klant rekenen. Laat 0 staan als er geen toeslag geldt — het
-              komt als aparte regel bovenop het basisbedrag op de factuur.
+              komt als aparte regel bovenop het basisbedrag op de factuur. Per toeslag
+              kies je zelf of het een <span className="font-medium text-ink-500">percentage</span>{" "}
+              op het uurtarief is of een <span className="font-medium text-ink-500">vast bedrag per uur</span>.
+            </p>
+            <p className="mt-2 text-xs text-ink-400">
+              Doordeweeks, zaterdag en zondag volgen automatisch uit de datums op de
+              urenstaat. Offshore, ploegendienst en buitenland staan niet op de uren —
+              vink je ze aan, dan gelden ze over <strong>alle</strong> gewerkte reguliere
+              uren van deze plaatsing.
             </p>
             <div className="mt-4 space-y-3">
-              <ToeslagBlock
-                title="Weekendtoeslag"
-                hint="Extra percentage op de zaterdag-/zonduren."
-                buyName="weekendSurchargeBuy"
-                sellName="weekendSurchargeSell"
-                buyDefault={placement?.weekendSurchargeBuy ?? 0}
-                sellDefault={placement?.weekendSurchargeSell ?? 0}
-                suffix="%"
-                step="any"
+              {/* De oude, gecombineerde weekendtoeslag is opgesplitst in een losse
+                  zaterdag- en zondagtoeslag. Zolang een plaatsing nog op het oude veld
+                  staat, rekent src/lib/toeslag.ts daar gewoon mee door; hierboven
+                  tonen we die waarde alvast als za/zo, en bij opslaan gaat 'ie mee in
+                  de nieuwe velden (zelfde bedrag, alleen twee regels i.p.v. één). */}
+              <input type="hidden" name="weekendSurchargeBuy" value={0} />
+              <input type="hidden" name="weekendSurchargeSell" value={0} />
+              <ToeslagRow
+                title="Toeslag doordeweeks (ma–vr)"
+                hint="Geldt over de uren van maandag t/m vrijdag."
+                prefix="weekday"
+                buyDefault={placement?.weekdaySurchargeBuy ?? 0}
+                sellDefault={placement?.weekdaySurchargeSell ?? 0}
+                unitDefault={placement?.weekdaySurchargeUnit ?? "PCT"}
+              />
+              <ToeslagRow
+                title="Zaterdagtoeslag"
+                hint="Geldt over de uren die op zaterdag geschreven zijn."
+                prefix="saturday"
+                buyDefault={placement?.saturdaySurchargeBuy || placement?.weekendSurchargeBuy || 0}
+                sellDefault={placement?.saturdaySurchargeSell || placement?.weekendSurchargeSell || 0}
+                unitDefault={placement?.saturdaySurchargeUnit ?? "PCT"}
+              />
+              <ToeslagRow
+                title="Zondagtoeslag"
+                hint="Geldt over de uren die op zondag geschreven zijn."
+                prefix="sunday"
+                buyDefault={placement?.sundaySurchargeBuy || placement?.weekendSurchargeBuy || 0}
+                sellDefault={placement?.sundaySurchargeSell || placement?.weekendSurchargeSell || 0}
+                unitDefault={placement?.sundaySurchargeUnit ?? "PCT"}
+              />
+              <ToeslagRow
+                title="Offshoretoeslag"
+                hint="Werkt deze persoon offshore? Geldt over alle reguliere uren."
+                prefix="offshore"
+                buyDefault={placement?.offshoreSurchargeBuy ?? 0}
+                sellDefault={placement?.offshoreSurchargeSell ?? 0}
+                unitDefault={placement?.offshoreSurchargeUnit ?? "PCT"}
+                toggle={{ name: "offshoreEnabled", defaultOn: placement?.offshoreEnabled ?? false }}
+              />
+              <ToeslagRow
+                title="Ploegendiensttoeslag"
+                hint="Draait deze persoon ploegendienst? Geldt over alle reguliere uren."
+                prefix="shift"
+                buyDefault={placement?.shiftSurchargeBuy ?? 0}
+                sellDefault={placement?.shiftSurchargeSell ?? 0}
+                unitDefault={placement?.shiftSurchargeUnit ?? "PCT"}
+                toggle={{ name: "shiftEnabled", defaultOn: placement?.shiftEnabled ?? false }}
+              />
+              <ToeslagRow
+                title="Buitenlandtoeslag"
+                hint="Werkt deze persoon in het buitenland? Geldt over alle reguliere uren."
+                prefix="abroad"
+                buyDefault={placement?.abroadSurchargeBuy ?? 0}
+                sellDefault={placement?.abroadSurchargeSell ?? 0}
+                unitDefault={placement?.abroadSurchargeUnit ?? "PCT"}
+                toggle={{ name: "abroadEnabled", defaultOn: placement?.abroadEnabled ?? false }}
               />
               <OverurenBlock
                 buyPct={placement?.overtimeSurchargeBuy ?? 0}

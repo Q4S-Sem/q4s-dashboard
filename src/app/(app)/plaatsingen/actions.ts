@@ -9,6 +9,7 @@ import {
   PLACEMENT_STATUS_VALUES,
   DOCUMENT_CATEGORY_VALUES,
   EMPLOYMENT_VALUES,
+  SURCHARGE_UNIT_VALUES,
 } from "@/lib/domain";
 import { saveUpload, deleteUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
 
@@ -33,6 +34,30 @@ const PlacementCoreSchema = z.object({
   weekendSurchargeSell: z.coerce.number().min(0).default(0),
   overtimeSurchargeBuy: z.coerce.number().min(0).default(0),
   overtimeSurchargeSell: z.coerce.number().min(0).default(0),
+  // De zes losse toeslagen: bedrag per zijde + de schakelaar percentage/vast.
+  // Offshore, ploegendienst en buitenland zijn niet uit de datums af te leiden en
+  // hebben daarom een AAN/UIT-vlag; aan = over alle reguliere uren.
+  weekdaySurchargeBuy: z.coerce.number().min(0).default(0),
+  weekdaySurchargeSell: z.coerce.number().min(0).default(0),
+  weekdaySurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
+  saturdaySurchargeBuy: z.coerce.number().min(0).default(0),
+  saturdaySurchargeSell: z.coerce.number().min(0).default(0),
+  saturdaySurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
+  sundaySurchargeBuy: z.coerce.number().min(0).default(0),
+  sundaySurchargeSell: z.coerce.number().min(0).default(0),
+  sundaySurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
+  offshoreEnabled: z.coerce.boolean().default(false),
+  offshoreSurchargeBuy: z.coerce.number().min(0).default(0),
+  offshoreSurchargeSell: z.coerce.number().min(0).default(0),
+  offshoreSurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
+  shiftEnabled: z.coerce.boolean().default(false),
+  shiftSurchargeBuy: z.coerce.number().min(0).default(0),
+  shiftSurchargeSell: z.coerce.number().min(0).default(0),
+  shiftSurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
+  abroadEnabled: z.coerce.boolean().default(false),
+  abroadSurchargeBuy: z.coerce.number().min(0).default(0),
+  abroadSurchargeSell: z.coerce.number().min(0).default(0),
+  abroadSurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
   // Expliciet overuren-uurtarief (€/u), los van het percentage. Leeg → null =
   // val terug op de normale rate (geen uplift, geen margeverlies).
   overtimeCostRate: z
@@ -96,6 +121,27 @@ function coreToData(d: z.infer<typeof PlacementCoreSchema>) {
     overtimeChargeRate: d.overtimeChargeRate,
     kmRateBuy: d.kmRateBuy,
     kmRateSell: d.kmRateSell,
+    weekdaySurchargeBuy: d.weekdaySurchargeBuy,
+    weekdaySurchargeSell: d.weekdaySurchargeSell,
+    weekdaySurchargeUnit: d.weekdaySurchargeUnit,
+    saturdaySurchargeBuy: d.saturdaySurchargeBuy,
+    saturdaySurchargeSell: d.saturdaySurchargeSell,
+    saturdaySurchargeUnit: d.saturdaySurchargeUnit,
+    sundaySurchargeBuy: d.sundaySurchargeBuy,
+    sundaySurchargeSell: d.sundaySurchargeSell,
+    sundaySurchargeUnit: d.sundaySurchargeUnit,
+    offshoreEnabled: d.offshoreEnabled,
+    offshoreSurchargeBuy: d.offshoreSurchargeBuy,
+    offshoreSurchargeSell: d.offshoreSurchargeSell,
+    offshoreSurchargeUnit: d.offshoreSurchargeUnit,
+    shiftEnabled: d.shiftEnabled,
+    shiftSurchargeBuy: d.shiftSurchargeBuy,
+    shiftSurchargeSell: d.shiftSurchargeSell,
+    shiftSurchargeUnit: d.shiftSurchargeUnit,
+    abroadEnabled: d.abroadEnabled,
+    abroadSurchargeBuy: d.abroadSurchargeBuy,
+    abroadSurchargeSell: d.abroadSurchargeSell,
+    abroadSurchargeUnit: d.abroadSurchargeUnit,
     status: d.status,
     notes: d.notes ?? null,
   };

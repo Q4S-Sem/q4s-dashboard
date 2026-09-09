@@ -67,6 +67,29 @@ function toFlowWeek(t: {
     overtimeChargeRate: number | null;
     kmRateBuy: number;
     kmRateSell: number;
+    // De zes losse toeslagen (doordeweeks/za/zo/offshore/ploeg/buitenland) —
+    // dezelfde velden waar invoicing.ts de factuurregels mee bouwt.
+    weekdaySurchargeBuy: number;
+    weekdaySurchargeSell: number;
+    weekdaySurchargeUnit: string;
+    saturdaySurchargeBuy: number;
+    saturdaySurchargeSell: number;
+    saturdaySurchargeUnit: string;
+    sundaySurchargeBuy: number;
+    sundaySurchargeSell: number;
+    sundaySurchargeUnit: string;
+    offshoreEnabled: boolean;
+    offshoreSurchargeBuy: number;
+    offshoreSurchargeSell: number;
+    offshoreSurchargeUnit: string;
+    shiftEnabled: boolean;
+    shiftSurchargeBuy: number;
+    shiftSurchargeSell: number;
+    shiftSurchargeUnit: string;
+    abroadEnabled: boolean;
+    abroadSurchargeBuy: number;
+    abroadSurchargeSell: number;
+    abroadSurchargeUnit: string;
     client: { companyName: string } | null;
     consultant: { employmentType: string };
   };

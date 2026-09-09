@@ -29,13 +29,84 @@ export default async function PlaatsingTarievenPage({
   const hours = totalHours(timesheets);
   const earned = round2(hours * marginPerHour);
 
+  // Een toeslagbedrag zoals het is afgesproken: percentage op het tarief, of een
+  // vast bedrag per uur.
+  const toeslagWaarde = (value: number, unit: string) =>
+    unit === "FIXED" ? `${formatCurrency(value)}/u` : `${formatHours(value)}%`;
+
+  /** Eén van de zes losse toeslagen als tabelrij. */
+  const toeslagRij = (
+    label: string,
+    buy: number,
+    sell: number,
+    unit: string,
+    enabled = true,
+  ) => ({
+    label: enabled ? label : `${label} (staat uit)`,
+    buy: toeslagWaarde(buy, unit),
+    sell: toeslagWaarde(sell, unit),
+    set: enabled && (buy > 0 || sell > 0),
+  });
+
+  // De oude, gecombineerde weekendtoeslag telt alleen nog mee zolang zaterdag en
+  // zondag niet apart zijn ingesteld — dan geldt hij voor allebei die dagen.
+  const legacyWeekend =
+    (placement.weekendSurchargeBuy > 0 || placement.weekendSurchargeSell > 0) &&
+    placement.saturdaySurchargeBuy === 0 &&
+    placement.saturdaySurchargeSell === 0 &&
+    placement.sundaySurchargeBuy === 0 &&
+    placement.sundaySurchargeSell === 0;
+
   const surcharges = [
-    {
-      label: "Weekendtoeslag",
-      buy: `${formatHours(placement.weekendSurchargeBuy)}%`,
-      sell: `${formatHours(placement.weekendSurchargeSell)}%`,
-      set: placement.weekendSurchargeBuy > 0 || placement.weekendSurchargeSell > 0,
-    },
+    toeslagRij(
+      "Toeslag doordeweeks (ma–vr)",
+      placement.weekdaySurchargeBuy,
+      placement.weekdaySurchargeSell,
+      placement.weekdaySurchargeUnit,
+    ),
+    toeslagRij(
+      "Zaterdagtoeslag",
+      placement.saturdaySurchargeBuy,
+      placement.saturdaySurchargeSell,
+      placement.saturdaySurchargeUnit,
+    ),
+    toeslagRij(
+      "Zondagtoeslag",
+      placement.sundaySurchargeBuy,
+      placement.sundaySurchargeSell,
+      placement.sundaySurchargeUnit,
+    ),
+    toeslagRij(
+      "Offshoretoeslag",
+      placement.offshoreSurchargeBuy,
+      placement.offshoreSurchargeSell,
+      placement.offshoreSurchargeUnit,
+      placement.offshoreEnabled,
+    ),
+    toeslagRij(
+      "Ploegendiensttoeslag",
+      placement.shiftSurchargeBuy,
+      placement.shiftSurchargeSell,
+      placement.shiftSurchargeUnit,
+      placement.shiftEnabled,
+    ),
+    toeslagRij(
+      "Buitenlandtoeslag",
+      placement.abroadSurchargeBuy,
+      placement.abroadSurchargeSell,
+      placement.abroadSurchargeUnit,
+      placement.abroadEnabled,
+    ),
+    ...(legacyWeekend
+      ? [
+          {
+            label: "Weekendtoeslag (oud — geldt voor zaterdag én zondag)",
+            buy: `${formatHours(placement.weekendSurchargeBuy)}%`,
+            sell: `${formatHours(placement.weekendSurchargeSell)}%`,
+            set: true,
+          },
+        ]
+      : []),
     {
       label: "Overurentoeslag",
       buy: `${formatHours(placement.overtimeSurchargeBuy)}%`,

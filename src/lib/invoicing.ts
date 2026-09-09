@@ -2,7 +2,7 @@ import { db } from "./db";
 import { round2, getISOWeek } from "./utils";
 import { nextInvoiceNumber } from "./numbering";
 import { getCompanySettings } from "./settings";
-import { buildTimesheetLines } from "./toeslag";
+import { buildTimesheetLines, sideSurcharges } from "./toeslag";
 
 export type InvoiceResult =
   | { ok: true; invoiceId: string }
@@ -58,6 +58,7 @@ export async function createSalesInvoice(opts: {
       kilometers: t.kilometers,
       rate: t.placement.chargeRate, // verkoop
       weekendPct: t.placement.weekendSurchargeSell,
+      surcharges: sideSurcharges(t.placement, "sell"),
       overtimePct: t.placement.overtimeSurchargeSell,
       overtimeRate: t.placement.overtimeChargeRate,
       kmRate: t.placement.kmRateSell,
@@ -66,6 +67,14 @@ export async function createSalesInvoice(opts: {
         weekend: (p) => `Weekend surcharge ${p}%`,
         overtime: (p) => (p > 0 ? `Overtime +${p}%` : "Overtime"),
         km: "Kilometres",
+        names: {
+          weekday: "Weekday surcharge",
+          saturday: "Saturday surcharge",
+          sunday: "Sunday surcharge",
+          offshore: "Offshore surcharge",
+          shift: "Shift surcharge",
+          abroad: "Foreign posting surcharge",
+        },
       },
     });
   });

@@ -11,8 +11,8 @@ import { StatCard } from "@/components/ui/stat-card";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { formatCurrency, formatDate, formatHours, formatWeekLabel, round2 } from "@/lib/utils";
-import { computeTimesheetMoney } from "@/lib/toeslag";
+import { formatCurrency, formatDate, formatHours, formatWeekLabel } from "@/lib/utils";
+import { computeTimesheetMoney, surchargeName } from "@/lib/toeslag";
 import { TIMESHEET_STATUSES } from "@/lib/domain";
 import { mayDeleteConceptInvoice } from "@/lib/week-reset-core";
 import { setTimesheetStatus, deleteTimesheet, generateSalesForTimesheet, resetWeekVanuitUrenstaat } from "../actions";
@@ -79,7 +79,7 @@ export default async function UrenstaatDetailPage({
   const overtimeHours = money.overtimeHours;
   const workedHours = money.workedHours; // reguliere uren + overuren = totaal gewerkt
   const weekendHours = money.weekendHours;
-  const weekdayHours = round2(totalHours - weekendHours);
+  const weekdayHours = money.weekdayHours;
   const revenue = money.sell.total;
   const cost = money.buy.total;
   const margin = money.margin;
@@ -87,8 +87,33 @@ export default async function UrenstaatDetailPage({
     const g = new Date(d).getDay();
     return g === 0 || g === 6;
   };
+  // Elke ingestelde toeslag (doordeweeks, za, zo, offshore, ploegendienst,
+  // buitenland — of nog de oude weekendtoeslag) naast elkaar in verkoop/inkoop.
+  // Een toeslag kan aan één kant op 0 staan, dus beide zijden samenvoegen.
+  const toeslagRijen: { type: string; label: string; hours: number; sell: number; buy: number }[] = [];
+  for (const r of money.sell.surcharges) {
+    toeslagRijen.push({
+      type: r.type,
+      label: surchargeName(r.type),
+      hours: r.hours,
+      sell: r.amount,
+      buy: 0,
+    });
+  }
+  for (const r of money.buy.surcharges) {
+    const bestaand = toeslagRijen.find((x) => x.type === r.type);
+    if (bestaand) bestaand.buy = r.amount;
+    else
+      toeslagRijen.push({
+        type: r.type,
+        label: surchargeName(r.type),
+        hours: r.hours,
+        sell: 0,
+        buy: r.amount,
+      });
+  }
   const hasToeslag =
-    money.sell.weekend > 0 || money.buy.weekend > 0 ||
+    toeslagRijen.length > 0 ||
     money.sell.overtime > 0 || money.buy.overtime > 0 ||
     money.sell.km > 0 || money.buy.km > 0;
 
@@ -250,7 +275,12 @@ export default async function UrenstaatDetailPage({
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-4">
             <StatCard label="Doordeweeks (ma–vr)" value={`${formatHours(weekdayHours)} u`} accent="slate" />
-            <StatCard label="Weekend (za + zo)" value={`${formatHours(weekendHours)} u`} accent="amber" />
+            <StatCard
+              label="Weekend (za + zo)"
+              value={`${formatHours(weekendHours)} u`}
+              sub={`${formatHours(money.saturdayHours)} u za · ${formatHours(money.sundayHours)} u zo`}
+              accent="amber"
+            />
             <StatCard label="Overuren" value={`${formatHours(ts.overtimeHours ?? 0)} u`} accent="violet" />
             <StatCard label="Kilometers" value={`${formatHours(ts.kilometers ?? 0)} km`} accent="brand" />
           </div>
@@ -265,15 +295,15 @@ export default async function UrenstaatDetailPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {(money.sell.weekend > 0 || money.buy.weekend > 0) && (
-                    <tr className="border-t border-ink-100">
+                  {toeslagRijen.map((r) => (
+                    <tr key={r.type} className="border-t border-ink-100">
                       <td className="px-4 py-2 text-ink-700">
-                        Weekendtoeslag ({formatHours(placement.weekendSurchargeSell)}% verkoop / {formatHours(placement.weekendSurchargeBuy)}% inkoop)
+                        {r.label} ({formatHours(r.hours)} u)
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(money.sell.weekend)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(money.buy.weekend)}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(r.sell)}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(r.buy)}</td>
                     </tr>
-                  )}
+                  ))}
                   {(money.sell.overtime > 0 || money.buy.overtime > 0) && (
                     <tr className="border-t border-ink-100">
                       <td className="px-4 py-2 text-ink-700">

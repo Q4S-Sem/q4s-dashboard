@@ -1825,12 +1825,11 @@ function WizardRonde({
                       k={`${formatHours(geld.hours)} uur × ${formatCurrency(plaatsing.config.chargeRate)}`}
                       v={formatCurrency(geld.sell.base)}
                     />
-                    {geld.sell.weekend > 0 && (
-                      <KV
-                        k={`Weekendtoeslag ${formatPercent(plaatsing.config.weekendSurchargeSell)}`}
-                        v={formatCurrency(geld.sell.weekend)}
-                      />
-                    )}
+                    {/* Elke toeslag apart, precies de regels die straks op de
+                        verkoopfactuur komen (zelfde rekenlaag, zelfde bedragen). */}
+                    {geld.sell.surcharges.map((r) => (
+                      <KV key={r.type} k={r.label} v={formatCurrency(r.amount)} />
+                    ))}
                     {geld.sell.overtime > 0 && (
                       <KV
                         k={`Overuren (${formatPercent(plaatsing.config.overtimeSurchargeSell)} toeslag)`}
