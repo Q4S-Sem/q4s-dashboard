@@ -388,6 +388,34 @@ test("unit mag per zijde verschillen: inkoop % en verkoop vast tarief", () => {
   assert.equal(sellZa?.amount, 60);
 });
 
+test("Jordy: 32 reguliere uren op normaal tarief + 3 overuren op overurentarief (geen doordeweekse toeslag)", () => {
+  // 4 dagen × 8 u = 32 reguliere uren, plus 3 losse overuren.
+  const entries = [0, 1, 2, 3].map((i) => ({ date: dag(i), hours: 8 }));
+  const p = config({
+    ...TOESLAGEN_UIT,
+    costRate: 77,
+    chargeRate: 100,
+    // Overuren-tarief inkoop €84,70/u (verkoop €110/u).
+    overtimeCostRate: 84.7,
+    overtimeChargeRate: 110,
+  });
+  const geld = computeTimesheetMoney(
+    { entries, overtimeHours: 3, kilometers: null },
+    p,
+  );
+
+  // Inkoop: 32 × €77 = €2.464 basis, GEEN doordeweekse toeslag, 3 × €84,70 = €254,10 overuren.
+  assert.equal(geld.buy.base, 2464);
+  assert.equal(geld.buy.surchargeTotal, 0);
+  assert.equal(geld.buy.overtime, 254.1);
+  assert.equal(geld.buy.total, 2718.1);
+  // Verkoop: 32 × €100 = €3.200 + 3 × €110 = €330.
+  assert.equal(geld.sell.base, 3200);
+  assert.equal(geld.sell.surchargeTotal, 0);
+  assert.equal(geld.sell.overtime, 330);
+  assert.equal(geld.sell.total, 3530);
+});
+
 test("zaterdagtoeslag 50% raakt alléén de zaterdaguren", () => {
   const p = config({
     ...TOESLAGEN_UIT,

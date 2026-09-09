@@ -41,7 +41,6 @@ import {
   formatCurrency,
   formatDate,
   formatHours,
-  formatPercent,
   formatWeekLabel,
   parseHours,
   round2,
@@ -1990,7 +1989,7 @@ function WizardRonde({
                     ))}
                     {geld.sell.overtime > 0 && (
                       <KV
-                        k={`Overuren (${formatPercent(plaatsing.config.overtimeSurchargeSell)} toeslag)`}
+                        k={`Overuren (${formatHours(geld.overtimeHours)} u${plaatsing.config.overtimeChargeRate ? ` × ${formatCurrency(plaatsing.config.overtimeChargeRate)}/u` : ""})`}
                         v={formatCurrency(geld.sell.overtime)}
                       />
                     )}

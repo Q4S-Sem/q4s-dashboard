@@ -1166,15 +1166,14 @@ export function PlacementForm({
                   de nieuwe velden (zelfde bedrag, alleen twee regels i.p.v. één). */}
               <input type="hidden" name="weekendSurchargeBuy" value={0} />
               <input type="hidden" name="weekendSurchargeSell" value={0} />
-              <ToeslagRow
-                title="Toeslag doordeweeks (ma–vr)"
-                hint="Geldt over de uren van maandag t/m vrijdag."
-                prefix="weekday"
-                buyDefault={placement?.weekdaySurchargeBuy ?? 0}
-                sellDefault={placement?.weekdaySurchargeSell ?? 0}
-                unitDefault={placement?.weekdaySurchargeUnit ?? "PCT"}
-                sellUnitDefault={placement?.weekdaySurchargeSellUnit ?? placement?.weekdaySurchargeUnit ?? "PCT"}
-              />
+              {/* Reguliere ma–vr uren gaan tegen het NORMALE uurtarief (geen
+                  doordeweekse toeslag). Alleen echte overuren krijgen een hoger
+                  tarief — zie het Overuren-blok onderaan. We forceren de oude
+                  doordeweekse toeslag daarom op 0. */}
+              <input type="hidden" name="weekdaySurchargeBuy" value={0} />
+              <input type="hidden" name="weekdaySurchargeSell" value={0} />
+              <input type="hidden" name="weekdaySurchargeUnit" value="PCT" />
+              <input type="hidden" name="weekdaySurchargeSellUnit" value="PCT" />
               <ToeslagRow
                 title="Zaterdagtoeslag"
                 hint="Geldt over de uren die op zaterdag geschreven zijn."
@@ -1223,17 +1222,22 @@ export function PlacementForm({
                 sellUnitDefault={placement?.abroadSurchargeSellUnit ?? placement?.abroadSurchargeUnit ?? "PCT"}
                 toggle={{ name: "abroadEnabled", defaultOn: placement?.abroadEnabled ?? false }}
               />
-              {/* Geen los Overuren-blok meer: ma–vr valt onder 'doordeweeks'. We
-                  bewaren wel de eventuele bestaande overuren-waarden verborgen, zodat
-                  bewerken van een oude plaatsing ze niet op 0 zet. */}
+              {/* Overuren: een APART uurtarief (€/u) dat alléén over de losse
+                  overuren-uren rekent (het aantal vul je per week in bij 'Week
+                  verwerken'). Leeg = overuren tegen het normale tarief. De oude
+                  percentage-velden bewaren we verborgen voor terugval. */}
               <input type="hidden" name="overtimeSurchargeBuy" value={placement?.overtimeSurchargeBuy ?? 0} />
               <input type="hidden" name="overtimeSurchargeSell" value={placement?.overtimeSurchargeSell ?? 0} />
-              {placement?.overtimeCostRate != null && (
-                <input type="hidden" name="overtimeCostRate" value={placement.overtimeCostRate} />
-              )}
-              {placement?.overtimeChargeRate != null && (
-                <input type="hidden" name="overtimeChargeRate" value={placement.overtimeChargeRate} />
-              )}
+              <ToeslagBlock
+                title="Overuren-tarief (€/u)"
+                hint="Vast uurtarief voor overuren. Geldt alléén over de losse overuren — reguliere uren blijven op het normale tarief. Leeg = zelfde als normaal tarief."
+                buyName="overtimeCostRate"
+                sellName="overtimeChargeRate"
+                buyDefault={placement?.overtimeCostRate ?? 0}
+                sellDefault={placement?.overtimeChargeRate ?? 0}
+                suffix="€/u"
+                step={0.01}
+              />
               <ToeslagBlock
                 title="Kilometervergoeding"
                 hint="Vergoeding per gereden kilometer (reiskosten)."
