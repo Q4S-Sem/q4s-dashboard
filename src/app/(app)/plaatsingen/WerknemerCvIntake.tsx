@@ -1,0 +1,191 @@
+"use client";
+
+import { useState } from "react";
+import { Sparkles, Loader2, CheckCircle2, AlertTriangle, FileText, X } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { DISCIPLINES } from "@/lib/domain";
+import { readCvFields } from "../kandidaten/actions";
+
+// Subtiele schuine streepjes op de sleepzone (zoals de Dropzone-component).
+const STRIPES =
+  "repeating-linear-gradient(45deg, rgba(148,163,184,0.14) 0, rgba(148,163,184,0.14) 1px, transparent 1px, transparent 9px)";
+
+/** Zet een uncontrolled input/textarea op waarde en trigger React's change. */
+function setField(id: string, value: string | null) {
+  if (!value) return;
+  const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null;
+  if (!el) return;
+  el.value = value;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+/**
+ * CV inlezen bij "Nieuwe werknemer" op de plaatsingsflow. Eén sleepactie:
+ *  - het bestand wordt in de bestaande #cvFile-upload gezet, zodat het CV meteen
+ *    aan de nieuwe werknemer/plaatsing hangt bij opslaan;
+ *  - "CV inlezen" leest het uit en vult naam, e-mail, telefoon, functie (title)
+ *    en discipline automatisch in — de recruiter controleert daarna.
+ *
+ * Vult de bestaande uncontrolled inputs via hun id (firstName/lastName/email/
+ * phone/discipline/title), net zoals de ZZP-adres-autofill dat doet.
+ */
+export function WerknemerCvIntake() {
+  const [file, setFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [reading, setReading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  /** Zet het gekozen bestand ook in de echte #cvFile-upload (zodat het meegaat). */
+  function pushToCvUpload(f: File | null) {
+    const input = document.getElementById("cvFile") as HTMLInputElement | null;
+    if (!input) return;
+    const dt = new DataTransfer();
+    if (f) dt.items.add(f);
+    input.files = dt.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function choose(f: File | null) {
+    setFile(f);
+    setDone(false);
+    setError(null);
+    pushToCvUpload(f);
+  }
+
+  async function lees() {
+    if (!file) return;
+    setReading(true);
+    setError(null);
+    setDone(false);
+    try {
+      const fd = new FormData();
+      fd.set("file", file);
+      const res = await readCvFields(fd);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      const f = res.fields;
+      setField("firstName", f.firstName);
+      setField("lastName", f.lastName);
+      setField("email", f.email);
+      setField("phone", f.phone);
+      // Functie: de placementregel "Functie" (title) staat verderop; vul 'm met de
+      // uit het CV afgeleide functietitel als hij nog leeg is.
+      const titleEl = document.getElementById("title") as HTMLInputElement | null;
+      if (titleEl && !titleEl.value && f.headline) setField("title", f.headline);
+      // Discipline is hier een vrij tekstveld met datalist → zet het NL-label.
+      if (f.discipline) {
+        const label = DISCIPLINES.find((d) => d.value === f.discipline)?.label ?? f.discipline;
+        setField("discipline", label);
+      }
+      setDone(true);
+    } catch {
+      setError("Het CV kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in.");
+    } finally {
+      setReading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4">
+      <div className="flex items-start gap-2.5">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+          <Sparkles className="h-[18px] w-[18px]" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-ink-800">CV automatisch inlezen</p>
+          <p className="text-xs text-ink-500">
+            Sleep een CV (PDF, Word of foto) hierheen. De AI vult naam, contactgegevens, functie en
+            discipline hieronder in — controleer het nog even. Het CV wordt meteen aan de werknemer
+            gekoppeld.
+          </p>
+        </div>
+      </div>
+
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Sleep een CV hierheen of klik om te selecteren"
+        onClick={() => document.getElementById("cvIntakePicker")?.click()}
+        onKeyDown={(ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            document.getElementById("cvIntakePicker")?.click();
+          }
+        }}
+        onDragOver={(ev) => {
+          ev.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(ev) => {
+          ev.preventDefault();
+          setDragOver(false);
+          if (ev.dataTransfer.files.length) choose(ev.dataTransfer.files[0]);
+        }}
+        style={dragOver ? undefined : { backgroundImage: STRIPES }}
+        className={cn(
+          "mt-3 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-6 py-6 text-center transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400",
+          dragOver ? "border-brand-400 bg-brand-50" : "border-ink-300 bg-white/70 hover:border-brand-400 hover:bg-brand-50",
+        )}
+      >
+        <p className="text-sm font-medium text-ink-700">Sleep een CV hierheen of klik om te selecteren</p>
+        <p className="text-xs text-ink-400">PDF, Word (.docx) of een duidelijke foto/scan</p>
+        <input
+          id="cvIntakePicker"
+          type="file"
+          accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,application/pdf"
+          className="hidden"
+          onChange={(ev) => choose(ev.target.files?.[0] ?? null)}
+        />
+      </div>
+
+      {file && (
+        <div className="mt-2 flex items-center gap-2 text-xs text-ink-600">
+          <FileText className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+          <span className="max-w-[16rem] truncate" title={file.name}>{file.name}</span>
+          <button
+            type="button"
+            onClick={() => choose(null)}
+            className="inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-ink-400 hover:text-ink-700"
+          >
+            <X className="h-3 w-3" /> wissen
+          </button>
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={lees}
+          disabled={!file || reading}
+          className={buttonVariants({ size: "sm" })}
+        >
+          {reading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Bezig met inlezen…
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-4 w-4" /> CV inlezen
+            </>
+          )}
+        </button>
+        {done && !error && (
+          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+            <CheckCircle2 className="h-4 w-4" /> Ingelezen — controleer de velden hieronder
+          </span>
+        )}
+      </div>
+
+      {error && (
+        <p className="mt-3 flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
+        </p>
+      )}
+    </div>
+  );
+}

@@ -28,6 +28,7 @@ import { emptyFormState, type FormState } from "@/lib/form";
 import { quickCreateClient } from "../klanten/actions";
 import { lookupDutchAddress } from "../klanten/address-actions";
 import { savePlacementDraft } from "./actions";
+import { WerknemerCvIntake } from "./WerknemerCvIntake";
 
 // Snelle duur-knoppen: vullen de einddatum vanaf de startdatum. Handig voor korte
 // klussen (een week / paar weken) zodat je de einddatum niet los hoeft te kiezen.
@@ -766,6 +767,7 @@ export function PlacementForm({
                   <p className="text-xs font-medium uppercase tracking-wide text-ink-500">
                     Nieuwe werknemer — gegevens
                   </p>
+                  <WerknemerCvIntake />
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Voornaam" htmlFor="firstName" required error={e.firstName}>
                       <Input id="firstName" name="firstName" required />
@@ -885,7 +887,7 @@ export function PlacementForm({
                         id="cvFile"
                         name="cvFile"
                         label="CV"
-                        hint="Curriculum vitae"
+                        hint="Automatisch gevuld via 'CV inlezen' hierboven"
                         icon={<FileText className="h-[18px] w-[18px]" />}
                       />
                       <UploadCard
