@@ -31,7 +31,7 @@ export const EMPLOYMENT_TYPES: Option[] = [
 
 export const PLACEMENT_STATUSES: Option[] = [
   { value: "ACTIVE", label: "Actief", color: "green" },
-  { value: "ENDED", label: "Beëindigd", color: "slate" },
+  { value: "ENDED", label: "Beëindigd", color: "red" },
 ];
 
 /** Hoe een toeslag gerekend wordt — per toeslag, per plaatsing te schakelen.
