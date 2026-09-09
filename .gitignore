@@ -56,3 +56,6 @@ klant-gegevens/
 Klant gegevens/
 klant gegevens/
 Klant Gegevens/
+
+# Lokale DB-backups met PII — NOOIT in git
+.hermes/backups/
