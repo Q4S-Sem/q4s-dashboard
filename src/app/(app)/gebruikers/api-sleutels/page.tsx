@@ -86,12 +86,12 @@ export default async function ApiSleutelsPage({
                 <Select id="textProvider" name="textProvider" defaultValue={cfg.AI_PROVIDER || "deepseek"}>
                   <option value="deepseek">DeepSeek — goedkoop &amp; snel (standaard)</option>
                   <option value="anthropic">Anthropic Claude — krachtig, duurder</option>
-                  <option value="hermes">Nous Hermes — open model (OpenRouter of eigen server)</option>
+                  <option value="hermes">OpenRouter.ai — open modellen (of eigen server)</option>
                   <option value="ollama">Ollama — lokaal draaiend</option>
                 </Select>
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Hermes-endpoint (optioneel)" htmlFor="hermesBaseUrl">
+                <Field label="OpenRouter-endpoint (optioneel)" htmlFor="hermesBaseUrl">
                   <Input
                     id="hermesBaseUrl"
                     name="hermesBaseUrl"
@@ -99,18 +99,19 @@ export default async function ApiSleutelsPage({
                     placeholder="https://openrouter.ai/api/v1"
                   />
                 </Field>
-                <Field label="Hermes-model (optioneel)" htmlFor="hermesModel">
+                <Field label="OpenRouter-model (optioneel)" htmlFor="hermesModel">
                   <Input
                     id="hermesModel"
                     name="hermesModel"
                     defaultValue={cfg.HERMES_MODEL}
-                    placeholder="nousresearch/hermes-4-70b"
+                    placeholder="google/gemini-2.5-flash"
                   />
                 </Field>
               </div>
               <p className="text-xs text-ink-400">
-                De Hermes-velden gelden alleen als je Hermes kiest. Leeg = standaard (OpenRouter). Voor je eigen
-                EU-server: zet hier je endpoint-URL (dan mag Hermes ook persoonsgegevens verwerken met{" "}
+                De OpenRouter-velden gelden alleen als je OpenRouter.ai kiest. Leeg = standaard
+                (openrouter.ai met google/gemini-2.5-flash). Voor je eigen EU-server: zet hier je
+                endpoint-URL (dan mag deze route ook persoonsgegevens verwerken met{" "}
                 <code className="rounded bg-ink-100 px-1">HERMES_PERSONAL_DATA=1</code>).
               </p>
               <SubmitButton pendingLabel="Opslaan…">
@@ -155,42 +156,50 @@ export default async function ApiSleutelsPage({
                 )}
               </div>
 
-              {s.source === "env" ? (
-                <p className="rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">
-                  Beheerd via <code className="rounded bg-ink-100 px-1">.env</code> (heeft voorrang) —
-                  pas deze sleutel aan in je <code className="rounded bg-ink-100 px-1">.env</code>-bestand.
+              {s.source === "env" && (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Er staat nu een sleutel in <code className="rounded bg-amber-100 px-1">.env</code> / Vercel
+                  (<code className="rounded bg-amber-100 px-1">{`HERMES_API_KEY`.replace("HERMES", s.provider.toUpperCase())}</code>).
+                  Die heeft <strong>voorrang</strong>. Je kunt hieronder alsnog een sleutel in het dashboard
+                  zetten — verwijder de sleutel in Vercel (Project → Settings → Environment Variables) om de
+                  dashboard-sleutel te laten gelden.
                 </p>
-              ) : (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                  <form action={saveAiKey} className="flex flex-1 items-end gap-2">
+              )}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <form action={saveAiKey} className="flex flex-1 items-end gap-2">
+                  <input type="hidden" name="provider" value={s.provider} />
+                  <Field
+                    label={s.configured ? "Nieuwe sleutel (leeg = behouden)" : "Sleutel"}
+                    htmlFor={`key-${s.provider}`}
+                    className="flex-1"
+                  >
+                    <Input
+                      id={`key-${s.provider}`}
+                      name="apiKey"
+                      type="password"
+                      autoComplete="off"
+                      placeholder={
+                        s.provider === "hermes"
+                          ? "sk-or-v1-…  (openrouter.ai/keys)"
+                          : s.configured
+                            ? "••••••••••••"
+                            : "Plak hier je API-sleutel"
+                      }
+                    />
+                  </Field>
+                  <SubmitButton pendingLabel="Opslaan…">
+                    <Save className="h-4 w-4" /> Opslaan
+                  </SubmitButton>
+                </form>
+                {s.source === "dashboard" && (
+                  <form action={clearAiKey}>
                     <input type="hidden" name="provider" value={s.provider} />
-                    <Field
-                      label={s.configured ? "Nieuwe sleutel (leeg = behouden)" : "Sleutel"}
-                      htmlFor={`key-${s.provider}`}
-                      className="flex-1"
-                    >
-                      <Input
-                        id={`key-${s.provider}`}
-                        name="apiKey"
-                        type="password"
-                        autoComplete="off"
-                        placeholder={s.configured ? "••••••••••••" : "Plak hier je API-sleutel"}
-                      />
-                    </Field>
-                    <SubmitButton pendingLabel="Opslaan…">
-                      <Save className="h-4 w-4" /> Opslaan
+                    <SubmitButton variant="outline" pendingLabel="Verwijderen…">
+                      <Trash2 className="h-4 w-4" /> Verwijderen
                     </SubmitButton>
                   </form>
-                  {s.source === "dashboard" && (
-                    <form action={clearAiKey}>
-                      <input type="hidden" name="provider" value={s.provider} />
-                      <SubmitButton variant="outline" pendingLabel="Verwijderen…">
-                        <Trash2 className="h-4 w-4" /> Verwijderen
-                      </SubmitButton>
-                    </form>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
 
               <TestConnectionButton provider={s.provider} configured={s.configured} />
             </CardContent>

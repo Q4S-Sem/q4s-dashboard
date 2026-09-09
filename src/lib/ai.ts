@@ -58,7 +58,7 @@ function hermesBaseUrl(): string {
   return (process.env.HERMES_BASE_URL ?? "https://openrouter.ai/api/v1").replace(/\/+$/, "");
 }
 function hermesModel(tier: Tier): string {
-  const main = process.env.HERMES_MODEL ?? "nousresearch/hermes-4-70b";
+  const main = process.env.HERMES_MODEL ?? "google/gemini-2.5-flash";
   return tier === "fast" ? process.env.HERMES_MODEL_FAST ?? main : main;
 }
 

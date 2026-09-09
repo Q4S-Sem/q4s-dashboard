@@ -121,7 +121,7 @@ async function testHermes(): Promise<ConnTest> {
   const key = process.env.HERMES_API_KEY?.trim();
   if (!key) return { ok: false, provider: "hermes", message: "Geen Hermes-sleutel ingesteld." };
   const base = stripSlash(process.env.HERMES_BASE_URL ?? "https://openrouter.ai/api/v1");
-  const model = process.env.HERMES_MODEL ?? "nousresearch/hermes-4-70b";
+  const model = process.env.HERMES_MODEL ?? "google/gemini-2.5-flash";
   const t0 = Date.now();
   const res = await fetch(`${base}/chat/completions`, {
     method: "POST",

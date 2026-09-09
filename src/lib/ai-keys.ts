@@ -69,9 +69,9 @@ export const AI_KEY_META: { provider: AiProviderKey; label: string; hint: string
   },
   {
     provider: "hermes",
-    label: "Nous Hermes",
-    hint: "Tekst/agent-AI — open model (OpenRouter of eigen server)",
-    help: "Open model voor tekst- en agent-taken (sourcing, matching, teksten, mail-triage). Standaard via OpenRouter; endpoint + model stel je hieronder in bij 'AI-motor'. Activeren doe je daar met de keuzeknop 'Actieve tekst-AI'.",
+    label: "OpenRouter.ai",
+    hint: "Tekst/agent-AI — via OpenRouter (of eigen server)",
+    help: "Sleutel van openrouter.ai (begint met sk-or-...). Draait tekst- en agent-taken (sourcing, matching, teksten, mail-triage) én het uitlezen van Word-CV's. Endpoint + model stel je hieronder in bij 'AI-motor'; activeren doe je daar met 'Actieve tekst-AI'.",
   },
 ];
 
