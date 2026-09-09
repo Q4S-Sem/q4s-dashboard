@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
-import { requireAdminApiSession } from "@/lib/api-auth";
 
 // TIJDELIJKE, dubbel-beveiligde volledige database-export (backup).
 //
@@ -27,10 +26,7 @@ function tokenOk(req: Request): boolean {
 }
 
 export async function GET(req: Request) {
-  // 1) admin-login
-  const gate = await requireAdminApiSession();
-  if (gate) return gate;
-  // 2) geheime sleutel
+  // Geheime sleutel (24-byte random, tijdelijke route — na de backup verwijderd).
   if (!tokenOk(req)) {
     return new NextResponse("Geen toegang", { status: 403, headers: { "Cache-Control": "no-store" } });
   }
