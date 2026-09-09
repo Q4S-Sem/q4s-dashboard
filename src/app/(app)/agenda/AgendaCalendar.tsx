@@ -13,9 +13,8 @@ import {
   RotateCcw,
   Pencil,
   Trash2,
-  ExternalLink,
   CalendarDays,
-  ListTree,
+  ListChecks,
   ListTodo,
   Plane,
   User,
@@ -134,6 +133,17 @@ function dayHeaderLabel(dateKey: string): string {
   return dayHeaderFmt.format(new Date(y, m - 1, d));
 }
 
+/** Relatief label zoals de referentie: "Vandaag" / "Morgen" / "Gisteren" + de datum. */
+function relativeDayHeader(dateKey: string, todayKey: string): { rel: string | null; label: string } {
+  const parse = (k: string) => {
+    const [y, m, d] = k.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  };
+  const diff = Math.round((parse(dateKey).getTime() - parse(todayKey).getTime()) / 86_400_000);
+  const rel = diff === 0 ? "Vandaag" : diff === 1 ? "Morgen" : diff === -1 ? "Gisteren" : null;
+  return { rel, label: dayHeaderLabel(dateKey) };
+}
+
 type Pop =
   | { kind: "event"; ev: CalEvent; rect: DOMRect }
   | { kind: "add"; dateKey: string; rect: DOMRect }
@@ -227,11 +237,14 @@ export function AgendaCalendar({
 
   return (
     <div className="min-w-0 overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-sm">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-ink-100 px-4 py-3">
+      {/* Toolbar — zoals de referentie: links navigatie + maand, rechts weergave-schakelaar */}
+      <div className="flex flex-wrap items-center gap-3 border-b border-ink-100 px-4 py-3">
         <div className="flex items-center gap-1">
           <Link href={prevHref} aria-label="Vorige maand" className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-900">
             <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <Link href={todayHref} className="rounded-lg px-2.5 py-1 text-sm font-medium text-ink-600 hover:bg-ink-100 hover:text-ink-900">
+            Vandaag
           </Link>
           <Link href={nextHref} aria-label="Volgende maand" className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-900">
             <ChevronRight className="h-5 w-5" />
@@ -240,17 +253,14 @@ export function AgendaCalendar({
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <Link href={todayHref} className={buttonVariants({ variant: "outline", size: "sm" })}>
-            Vandaag
-          </Link>
-          {/* Weergave-schakelaar */}
-          <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-0.5">
+          {/* Weergave-schakelaar — segmented, met icoontjes zoals de referentie */}
+          <div className="inline-flex items-center gap-1 rounded-xl border border-ink-200 bg-ink-50 p-1">
             <button
               type="button"
               onClick={() => setView("maand")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium transition-colors",
-                view === "maand" ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                view === "maand" ? "border border-ink-200 bg-white text-ink-900 shadow-sm" : "border border-transparent text-ink-500 hover:text-ink-800",
               )}
             >
               <CalendarDays className="h-4 w-4" /> Maand
@@ -259,11 +269,11 @@ export function AgendaCalendar({
               type="button"
               onClick={() => setView("lijst")}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium transition-colors",
-                view === "lijst" ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                view === "lijst" ? "border border-ink-200 bg-white text-ink-900 shadow-sm" : "border border-transparent text-ink-500 hover:text-ink-800",
               )}
             >
-              <ListTree className="h-4 w-4" /> Lijst
+              <ListChecks className="h-4 w-4" /> Agenda
             </button>
           </div>
         </div>
@@ -287,6 +297,7 @@ export function AgendaCalendar({
           deadlines={deadlines}
           tasks={tasks}
           absences={absences}
+          todayKey={todayKey}
           onOpenEvent={openEvent}
         />
       )}
@@ -488,12 +499,14 @@ function AgendaList({
   deadlines,
   tasks,
   absences,
+  todayKey,
   onOpenEvent,
 }: {
   events: CalEvent[];
   deadlines: CalDeadline[];
   tasks: CalTask[];
   absences: CalAbsence[];
+  todayKey: string;
   onOpenEvent: (ev: CalEvent, el: HTMLElement) => void;
 }) {
   const groups = React.useMemo(() => {
@@ -519,97 +532,147 @@ function AgendaList({
   }
 
   return (
-    <div className="divide-y divide-ink-100">
-      {groups.map(([dateKey, items]) => (
-        <div key={dateKey} className="px-2 py-2 sm:px-3">
-          <div className="px-2 py-1.5 text-xs font-semibold capitalize text-ink-500">{dayHeaderLabel(dateKey)}</div>
-          <ul>
-            {items.map((it, i) => {
-              if (it.t === "absence") {
-                return (
-                  <li
-                    key={`a-${dateKey}-${i}`}
-                    className="flex items-center gap-3 rounded-lg px-2 py-2"
-                  >
-                    <span className="w-14 shrink-0 text-xs text-ink-400">afwezig</span>
-                    <Plane className={cn("h-4 w-4 shrink-0", ICON_TEXT[it.abs.color])} />
-                    <span className="min-w-0 flex-1 truncate text-sm text-ink-700">{it.abs.name}</span>
-                    <StatusBadge options={LEAVE_TYPES} value={it.abs.type} />
-                  </li>
-                );
-              }
-              if (it.t === "task") {
-                return (
-                  <li key={`t-${it.task.id}`}>
-                    <Link
+    <div className="space-y-6 px-3 py-4 sm:px-5 sm:py-6">
+      {groups.map(([dateKey, items]) => {
+        const { rel, label } = relativeDayHeader(dateKey, todayKey);
+        return (
+          <div key={dateKey}>
+            {/* Dag-kop zoals de referentie: relatief label in kleur + datum ernaast */}
+            <div className="mb-2 flex items-baseline gap-2 px-1 text-xs font-semibold uppercase tracking-wide">
+              {rel && <span className={rel === "Vandaag" ? "text-brand-700" : "text-ink-700"}>{rel}</span>}
+              <span className="capitalize text-ink-400">{label}</span>
+            </div>
+            <ul className="space-y-2">
+              {items.map((it, i) => {
+                if (it.t === "absence") {
+                  return (
+                    <AgendaCard
+                      key={`a-${dateKey}-${i}`}
+                      leftTop="afwezig"
+                      icon={<Plane className={cn("h-4 w-4 shrink-0", ICON_TEXT[it.abs.color])} />}
+                      title={it.abs.name}
+                      badge={<StatusBadge options={LEAVE_TYPES} value={it.abs.type} />}
+                    />
+                  );
+                }
+                if (it.t === "task") {
+                  return (
+                    <AgendaCard
+                      key={`t-${it.task.id}`}
                       href="/agenda/taken"
-                      className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-ink-50"
-                    >
-                      <span className="w-14 shrink-0 text-xs tabular-nums text-ink-400">
-                        {it.task.overdue ? "te laat" : "taak"}
-                      </span>
-                      <ListTodo className={cn("h-4 w-4 shrink-0", it.task.overdue ? "text-red-600" : "text-brand-600")} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-ink-800">{it.task.title}</span>
-                        {it.task.assignee && (
-                          <span className="block truncate text-xs text-ink-500">{it.task.assignee}</span>
-                        )}
-                      </span>
-                      <StatusBadge options={TASK_PRIORITIES} value={it.task.priority} />
-                    </Link>
-                  </li>
-                );
-              }
-              if (it.t === "event") {
+                      leftTop={it.task.overdue ? "te laat" : "taak"}
+                      leftTopClass={it.task.overdue ? "text-red-600" : undefined}
+                      icon={<ListTodo className={cn("h-4 w-4 shrink-0", it.task.overdue ? "text-red-600" : "text-brand-600")} />}
+                      title={it.task.title}
+                      description={it.task.assignee ?? undefined}
+                      badge={<StatusBadge options={TASK_PRIORITIES} value={it.task.priority} />}
+                    />
+                  );
+                }
+                if (it.t === "event") {
+                  const [start, end] = it.ev.timeLabel.split(/[–-]/).map((s) => s.trim());
+                  return (
+                    <AgendaCard
+                      key={`e-${it.ev.id}`}
+                      onClick={(el) => onOpenEvent(it.ev, el)}
+                      leftTop={it.ev.allDay ? "hele dag" : start || it.ev.timeShort}
+                      leftBottom={!it.ev.allDay && end && end !== start ? `tot ${end}` : undefined}
+                      icon={<span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", DOT[colorFor(EVENT_TYPES, it.ev.type)])} />}
+                      title={it.ev.title}
+                      titleClass={it.ev.status === "CANCELLED" ? "text-ink-400 line-through" : undefined}
+                      description={[it.ev.linked, it.ev.location, it.ev.assignee].filter(Boolean).join(" · ") || undefined}
+                      badge={<StatusBadge options={EVENT_TYPES} value={it.ev.type} />}
+                      extraBadge={it.ev.status !== "PLANNED" ? <StatusBadge options={EVENT_STATUSES} value={it.ev.status} /> : undefined}
+                    />
+                  );
+                }
                 return (
-                  <li key={`e-${it.ev.id}`}>
-                    <button
-                      type="button"
-                      onClick={(e) => onOpenEvent(it.ev, e.currentTarget)}
-                      className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-ink-50"
-                    >
-                      <span className="w-14 shrink-0 text-xs tabular-nums text-ink-500">
-                        {it.ev.allDay ? "hele dag" : it.ev.timeShort}
-                      </span>
-                      <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT[colorFor(EVENT_TYPES, it.ev.type)])} />
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className={cn(
-                            "block truncate text-sm font-medium text-ink-800",
-                            it.ev.status === "CANCELLED" && "text-ink-400 line-through",
-                          )}
-                        >
-                          {it.ev.title}
-                        </span>
-                        {(it.ev.linked || it.ev.location || it.ev.assignee) && (
-                          <span className="block truncate text-xs text-ink-500">
-                            {[it.ev.linked, it.ev.location, it.ev.assignee].filter(Boolean).join(" · ")}
-                          </span>
-                        )}
-                      </span>
-                      <StatusBadge options={EVENT_TYPES} value={it.ev.type} />
-                    </button>
-                  </li>
+                  <AgendaCard
+                    key={`d-${dateKey}-${i}`}
+                    href={it.dl.href}
+                    leftTop={it.dl.overdue ? "te laat" : "deadline"}
+                    leftTopClass={it.dl.overdue ? "text-red-600" : undefined}
+                    icon={<AlertTriangle className={cn("h-4 w-4 shrink-0", it.dl.overdue ? "text-red-600" : "text-amber-600")} />}
+                    title={it.dl.title}
+                  />
                 );
-              }
-              return (
-                <li key={`d-${dateKey}-${i}`}>
-                  <Link href={it.dl.href} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-ink-50">
-                    <span className="w-14 shrink-0 text-xs tabular-nums text-ink-400">
-                      {it.dl.overdue ? "te laat" : ""}
-                    </span>
-                    <AlertTriangle className={cn("h-4 w-4 shrink-0", it.dl.overdue ? "text-red-600" : "text-amber-600")} />
-                    <span className="min-w-0 flex-1 truncate text-sm text-ink-700">{it.dl.title}</span>
-                    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-ink-300" />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
+              })}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
+}
+
+/** Eén event/taak/deadline als kaart in de agenda-lijst — geënt op de referentie:
+ *  tijdblok links, titel + badges + beschrijving in het midden, chevron rechts. */
+function AgendaCard({
+  href,
+  onClick,
+  leftTop,
+  leftBottom,
+  leftTopClass,
+  icon,
+  title,
+  titleClass,
+  description,
+  badge,
+  extraBadge,
+}: {
+  href?: string;
+  onClick?: (el: HTMLElement) => void;
+  leftTop: string;
+  leftBottom?: string;
+  leftTopClass?: string;
+  icon: React.ReactNode;
+  title: string;
+  titleClass?: string;
+  description?: string;
+  badge?: React.ReactNode;
+  extraBadge?: React.ReactNode;
+}) {
+  const inner = (
+    <>
+      <div className="w-16 shrink-0 text-left">
+        <div className={cn("text-sm font-semibold tabular-nums text-ink-900", leftTopClass)}>{leftTop}</div>
+        {leftBottom && <div className="text-xs tabular-nums text-ink-400">{leftBottom}</div>}
+      </div>
+      {icon}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={cn("truncate text-sm font-semibold text-ink-900", titleClass)}>{title}</span>
+          {badge}
+          {extraBadge}
+        </div>
+        {description && <div className="mt-0.5 truncate text-xs text-ink-500">{description}</div>}
+      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-ink-300" />
+    </>
+  );
+
+  const cls =
+    "flex w-full items-center gap-3 rounded-xl border border-ink-200 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:border-ink-300 hover:bg-ink-50";
+
+  if (onClick) {
+    return (
+      <li>
+        <button type="button" onClick={(e) => onClick(e.currentTarget)} className={cls}>
+          {inner}
+        </button>
+      </li>
+    );
+  }
+  if (href) {
+    return (
+      <li>
+        <Link href={href} className={cls}>
+          {inner}
+        </Link>
+      </li>
+    );
+  }
+  return <li className={cls}>{inner}</li>;
 }
 
 function EventPopover({ ev, onClose }: { ev: CalEvent; onClose: () => void }) {
