@@ -42,8 +42,8 @@ export const TIMESHEET_STATUSES: Option[] = [
 ];
 
 export const INVOICE_STATUSES: Option[] = [
-  { value: "DRAFT", label: "Concept", color: "slate" },
-  { value: "READY", label: "Klaar voor verzending", color: "violet" },
+  { value: "DRAFT", label: "Concept", color: "amber" },
+  { value: "READY", label: "Gereed", color: "green" },
   { value: "SENT", label: "Verzonden", color: "blue" },
   { value: "PAID", label: "Betaald", color: "green" },
   { value: "OVERDUE", label: "Te laat", color: "red" },
