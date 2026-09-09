@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { CANDIDATE_INTERVIEW_STATUSES } from "@/lib/domain";
 import { setCandidateInterview } from "./actions";
@@ -116,7 +117,7 @@ export function InterviewSelect({
         />
       </button>
 
-      {open && pos && (
+      {open && pos && createPortal(
         <div
           ref={panelRef}
           role="listbox"
@@ -126,7 +127,7 @@ export function InterviewSelect({
             left: pos.left,
             width: Math.max(pos.width, 208),
           }}
-          className="z-50 overflow-hidden rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5"
+          className="z-[60] overflow-hidden rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5"
         >
           {CANDIDATE_INTERVIEW_STATUSES.map((s) => (
             <button
@@ -140,7 +141,8 @@ export function InterviewSelect({
               {current === s.value && <Check className="h-4 w-4 text-emerald-600" />}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

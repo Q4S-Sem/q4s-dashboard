@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { CANDIDATE_RATINGS } from "@/lib/domain";
 import { setCandidateRating } from "./actions";
@@ -117,7 +118,7 @@ export function RatingSelect({
         />
       </button>
 
-      {open && pos && (
+      {open && pos && createPortal(
         <div
           ref={panelRef}
           role="listbox"
@@ -127,7 +128,7 @@ export function RatingSelect({
             left: pos.left,
             width: Math.max(pos.width, 208),
           }}
-          className="z-50 overflow-hidden rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5"
+          className="z-[60] overflow-hidden rounded-xl border border-ink-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5"
         >
           {CANDIDATE_RATINGS.map((r) => (
             <button
@@ -141,7 +142,8 @@ export function RatingSelect({
               {current === r.value && <Check className="h-4 w-4 text-emerald-600" />}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
