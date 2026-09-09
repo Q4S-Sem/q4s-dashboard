@@ -11,7 +11,7 @@ import {
   Award,
   Receipt,
   Inbox,
-  Zap,
+  Briefcase,
   AlertTriangle,
   ArrowUpRight,
   CheckCircle2,
@@ -29,7 +29,7 @@ const META: Record<string, { icon: LucideIcon; color: string; desc: string }> = 
   certificeringen: { icon: Award, color: "amber", desc: "Certificaten die (bijna) verlopen" },
   facturen: { icon: Receipt, color: "emerald", desc: "Verzonden facturen, nog niet betaald" },
   inbox: { icon: Inbox, color: "indigo", desc: "Timesheets om te verwerken" },
-  msp: { icon: Zap, color: "orange", desc: "Ongelezen MSP-intakemeldingen" },
+  msp: { icon: Briefcase, color: "orange", desc: "Ongelezen MSP-intakemeldingen" },
   "factuur-afwijking": {
     icon: AlertTriangle,
     color: "red",
@@ -108,25 +108,26 @@ export function NotificationCenter({ data }: { data: Notifications }) {
           role="menu"
           className="absolute right-0 z-50 mt-2 w-[27rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-2xl"
         >
-          {/* Donkere kop in Q4S-antraciet met de telling ernaast — heel anders
-              dan de oude witte kop met bel-icoon. */}
-          <div className="bg-brand-700 px-5 py-4 text-white">
+          {/* Lichte, rustige kop met de telling eronder. */}
+          <div className="border-b border-ink-100 px-5 py-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <Activity className="h-[18px] w-[18px] text-white/70" />
-                <span className="text-[15px] font-bold tracking-tight">Activiteit</span>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-ink-100 text-ink-600">
+                  <Activity className="h-[16px] w-[16px]" />
+                </span>
+                <span className="text-[15px] font-bold tracking-tight text-ink-900">Activiteit</span>
               </div>
-              <span className="text-xs font-medium text-white/60">
+              <span className="text-xs font-medium text-ink-400">
                 {urgent > 0 ? `${urgent} open` : "alles bij"}
               </span>
             </div>
             {/* Inline mini-telling in de kop i.p.v. drie losse tegels. */}
             <div className="mt-3 flex items-center gap-4 text-sm">
-              <HeaderStat value={totalLate} label="te laat" dot="bg-red-400" />
-              <span className="h-4 w-px bg-white/15" />
-              <HeaderStat value={totalToday} label="vandaag" dot="bg-amber-400" />
-              <span className="h-4 w-px bg-white/15" />
-              <HeaderStat value={totalFuture} label="later" dot="bg-white/40" />
+              <HeaderStat value={totalLate} label="te laat" dot="bg-red-500" />
+              <span className="h-4 w-px bg-ink-200" />
+              <HeaderStat value={totalToday} label="vandaag" dot="bg-amber-500" />
+              <span className="h-4 w-px bg-ink-200" />
+              <HeaderStat value={totalFuture} label="later" dot="bg-ink-300" />
             </div>
           </div>
 
@@ -197,9 +198,9 @@ export function NotificationCenter({ data }: { data: Notifications }) {
 function HeaderStat({ value, label, dot }: { value: number; label: string; dot: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={cn("h-1.5 w-1.5 rounded-full", value > 0 ? dot : "bg-white/20")} />
-      <span className="font-bold tabular-nums">{value}</span>
-      <span className="text-white/50">{label}</span>
+      <span className={cn("h-1.5 w-1.5 rounded-full", value > 0 ? dot : "bg-ink-200")} />
+      <span className="font-bold tabular-nums text-ink-900">{value}</span>
+      <span className="text-ink-400">{label}</span>
     </span>
   );
 }
