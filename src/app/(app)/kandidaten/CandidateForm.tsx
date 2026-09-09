@@ -7,6 +7,7 @@ import { Sparkles, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { Dropzone } from "@/components/ui/dropzone";
+import { CvPreviewButton } from "@/components/cv-preview-button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -155,6 +156,9 @@ export function CandidateForm({
                 >
                   <Sparkles className="h-4 w-4" /> Opnieuw inlezen
                 </button>
+              )}
+              {!reading && cvFile && (
+                <CvPreviewButton file={cvFile} label="Bekijk CV" />
               )}
             </div>
 

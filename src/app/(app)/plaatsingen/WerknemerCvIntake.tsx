@@ -5,6 +5,7 @@ import { Sparkles, Loader2, CheckCircle2, AlertTriangle, FileText, X } from "luc
 import { cn } from "@/lib/utils";
 import { DISCIPLINES } from "@/lib/domain";
 import { readCvFields } from "../kandidaten/actions";
+import { CvPreviewButton } from "@/components/cv-preview-button";
 
 // Subtiele schuine streepjes op de sleepzone (zoals de Dropzone-component).
 const STRIPES =
@@ -149,6 +150,7 @@ export function WerknemerCvIntake() {
         <div className="mt-2 flex items-center gap-2 text-xs text-ink-600">
           <FileText className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
           <span className="max-w-[16rem] truncate" title={file.name}>{file.name}</span>
+          <CvPreviewButton file={file} label="Bekijk CV" className="text-xs" />
           <button
             type="button"
             onClick={() => choose(null)}

@@ -89,24 +89,21 @@ export function ConfirmCancel({
                 </div>
               </div>
 
-              {/* Huisstijl van de vensters: doorgaan = groen, terug/annuleren = rood. */}
+              {/* Huisstijl: neutrale 'Terug' (blijf veilig werken) + rode
+                  destructieve bevestiging (invoer gaat verloren). */}
               <div className="flex justify-end gap-2 border-t border-ink-100 bg-ink-50/60 px-6 py-4">
                 <button
                   ref={cancelRef}
                   type="button"
                   onClick={() => setOpen(false)}
-                  className={buttonVariants({
-                    variant: "outline",
-                    size: "md",
-                    className: "border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800",
-                  })}
+                  className={buttonVariants({ variant: "outline", size: "md" })}
                 >
                   Terug
                 </button>
                 <button
                   type="button"
                   onClick={() => router.push(href)}
-                  className={buttonVariants({ variant: "success", size: "md" })}
+                  className={buttonVariants({ variant: "danger", size: "md" })}
                 >
                   {confirmLabel}
                 </button>
