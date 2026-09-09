@@ -5,6 +5,7 @@ import { OfflineGuard } from "@/components/offline-guard";
 import { NavHistory } from "@/components/nav-history";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { UnsavedGuard } from "@/components/unsaved-guard";
+import { UpdateNotifier } from "@/components/update-notifier";
 import { getNavBadges } from "@/lib/facturatie";
 import { getNotifications } from "@/lib/notifications";
 import { currentUser, authRequired } from "@/lib/session";
@@ -36,6 +37,7 @@ export default async function AppLayout({
       <NavHistory />
       <ScrollToTop />
       <UnsavedGuard />
+      <UpdateNotifier />
       <AppShell badges={badges} notifications={notifications} user={user}>
         {children}
       </AppShell>
