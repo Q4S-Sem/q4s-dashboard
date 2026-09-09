@@ -335,3 +335,98 @@ export async function extractCandidateFields(
   }
   return parsed.data;
 }
+
+// ---------------------------------------------------------------------------
+// Documentclassificatie (plaatsingen → Documenten-tab)
+// Leest een geüpload bestand en stelt een SOORT + TITEL voor, zodat de gebruiker
+// die niet handmatig hoeft te kiezen. Dezelfde twee routes als hierboven.
+// ---------------------------------------------------------------------------
+
+/** Toegestane soorten — moet gelijk lopen met DOCUMENT_CATEGORIES in domain.ts. */
+const DOCUMENT_META_CATEGORIES = ["CONTRACT", "ID", "CERTIFICAAT", "CV", "EVALUATIE", "OVERIG"] as const;
+
+export type DocumentMeta = { category: (typeof DOCUMENT_META_CATEGORIES)[number]; title: string };
+
+const documentMetaSchema = z.object({
+  category: z.enum(DOCUMENT_META_CATEGORIES).catch("OVERIG"),
+  title: z.string().nullish().transform((v) => (v ?? "").trim()),
+});
+
+const DOCUMENT_META_AI_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    category: { type: "string", enum: DOCUMENT_META_CATEGORIES as unknown as string[] },
+    title: { type: "string" },
+  },
+  required: ["category", "title"],
+} as const;
+
+const DOCUMENT_META_SYSTEM =
+  "Je bent een documentclassificatie-assistent voor een detacheringsbureau. Je leest één geüpload " +
+  "document en bepaalt (1) de soort en (2) een korte, nette Nederlandse titel. Antwoord uitsluitend als JSON.";
+
+const DOCUMENT_META_PROMPT =
+  "Bepaal het soort document en een korte titel.\n\n" +
+  "Kies 'category' uit exact deze waarden:\n" +
+  "- CONTRACT = arbeids-, opdracht-, detacherings- of uitzendovereenkomst, addendum, verlenging\n" +
+  "- ID = identiteitsbewijs, paspoort, rijbewijs, ID-kaart, BSN-document\n" +
+  "- CERTIFICAAT = diploma, certificaat, VCA, lascertificaat, keuring, kwalificatie\n" +
+  "- CV = curriculum vitae / resmay\n" +
+  "- EVALUATIE = beoordeling, evaluatie, functioneringsverslag\n" +
+  "- OVERIG = alles wat niet in bovenstaande past\n\n" +
+  "'title': een korte herkenbare titel in het Nederlands (max ~6 woorden), bijv. " +
+  "'Detacheringsovereenkomst 2026', 'VCA-certificaat', 'Paspoort'. Verzin geen jaartal dat er niet staat.";
+
+/**
+ * Bestand → { category, title }. Gebruikt dezelfde routes als de CV-uitlezing
+ * (docx lokaal naar tekst, PDF/afbeelding naar vision). Bij twijfel of als de AI
+ * niet is geconfigureerd, valt de aanroeper terug op OVERIG + de bestandsnaam.
+ */
+export async function extractDocumentMeta(
+  bytes: Buffer,
+  fileName: string,
+  mimeType: string,
+): Promise<DocumentMeta> {
+  const kind = cvSourceKind(fileName, mimeType);
+  if (!kind) {
+    throw new CvExtractError(
+      "Alleen PDF, Word (.docx) of een afbeelding kunnen automatisch worden herkend.",
+    );
+  }
+
+  let raw: unknown;
+  if (kind === "docx") {
+    raw = await extractFromDocx<unknown>(bytes, {
+      system: DOCUMENT_META_SYSTEM,
+      prompt: DOCUMENT_META_PROMPT,
+      schema: DOCUMENT_META_AI_SCHEMA,
+      schemaName: "document_meta",
+      maxTokens: 300,
+    });
+  } else {
+    if (!isVisionConfigured()) {
+      throw new CvExtractError(
+        "Om PDF's/afbeeldingen te herkennen is een Gemini- of Anthropic-sleutel nodig.",
+      );
+    }
+    raw = await aiJSONFromFile<unknown>({
+      system: DOCUMENT_META_SYSTEM,
+      prompt: DOCUMENT_META_PROMPT,
+      schema: DOCUMENT_META_AI_SCHEMA,
+      schemaName: "document_meta",
+      file: {
+        base64: bytes.toString("base64"),
+        mediaType: kind === "pdf" ? "application/pdf" : mimeType || "image/jpeg",
+      },
+      maxTokens: 300,
+      effort: "low",
+    });
+  }
+
+  const parsed = documentMetaSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new CvExtractError("De AI gaf een onverwacht antwoord op dit document.");
+  }
+  return { category: parsed.data.category, title: parsed.data.title };
+}

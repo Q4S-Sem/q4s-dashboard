@@ -1,15 +1,14 @@
 import { notFound } from "next/navigation";
-import { FileText, ExternalLink, Trash2, Upload } from "lucide-react";
+import { FileText, ExternalLink, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/badge";
-import { Field, Input, Select } from "@/components/ui/field";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { DOCUMENT_CATEGORIES } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
-import { uploadPlacementDocument, deletePlacementDocument } from "../../../actions";
+import { deletePlacementDocument } from "../../../actions";
 import { getPlacement } from "../data";
+import { DocumentUpload } from "./DocumentUpload";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -120,42 +119,7 @@ export default async function PlaatsingDocumentenPage({
             </div>
           )}
 
-          <form
-            action={uploadPlacementDocument}
-            className="grid items-end gap-3 rounded-lg border border-dashed border-ink-200 p-4 sm:grid-cols-[10rem_1fr_auto]"
-          >
-            <input type="hidden" name="placementId" value={placement.id} />
-            <input type="hidden" name="consultantId" value={placement.consultantId} />
-            <Field label="Soort" htmlFor="doc-category">
-              <Select id="doc-category" name="category" defaultValue="CONTRACT">
-                {DOCUMENT_CATEGORIES.map((o) => (
-                  <option key={o.value} value={o.value} data-color={o.color}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Titel" htmlFor="doc-title">
-              <Input id="doc-title" name="title" placeholder="Bijv. Arbeidsovereenkomst 2026" />
-            </Field>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="doc-file" className="text-sm font-medium text-ink-700">
-                Bestand
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="doc-file"
-                  name="file"
-                  type="file"
-                  required
-                  className="block w-full text-sm text-ink-600 file:mr-3 file:rounded-lg file:border-0 file:bg-ink-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink-700 hover:file:bg-ink-200"
-                />
-                <SubmitButton pendingLabel="Uploaden…">
-                  <Upload className="h-4 w-4" /> Upload
-                </SubmitButton>
-              </div>
-            </div>
-          </form>
+          <DocumentUpload placementId={placement.id} consultantId={placement.consultantId} />
         </CardContent>
       </Card>
     </div>

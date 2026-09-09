@@ -12,6 +12,7 @@ import {
   SURCHARGE_UNIT_VALUES,
 } from "@/lib/domain";
 import { saveUpload, deleteUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
+import { extractDocumentMeta, CvExtractError } from "@/lib/cv-extract";
 
 // Placement fields WITHOUT the consultant link (resolved separately so a new
 // placement can either pick an existing person or create one inline).
@@ -500,4 +501,33 @@ export async function savePlacementNotes(formData: FormData) {
   revalidatePath(`/plaatsingen/${id}`);
   revalidatePath(`/plaatsingen/${id}/notities`);
   redirect(`/plaatsingen/${id}/notities?saved=1`);
+}
+
+/**
+ * Leest een geüpload document en stelt automatisch een SOORT + TITEL voor
+ * (client roept dit aan zodra een bestand in de Dropzone valt). Faalt de AI of is
+ * die niet geconfigureerd, dan geeft het een nette terugval terug (OVERIG + de
+ * bestandsnaam zonder extensie), zodat uploaden altijd blijft werken.
+ */
+export type DocMetaResult =
+  | { ok: true; category: string; title: string }
+  | { ok: false; category: string; title: string; error: string };
+
+export async function readDocumentMeta(formData: FormData): Promise<DocMetaResult> {
+  const file = formData.get("file");
+  const fallbackTitle = (name: string) => name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, category: "OVERIG", title: "", error: "Geen bestand ontvangen." };
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return { ok: false, category: "OVERIG", title: fallbackTitle(file.name), error: "Dit bestand is te groot." };
+  }
+  try {
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const meta = await extractDocumentMeta(bytes, file.name, file.type || "");
+    return { ok: true, category: meta.category, title: meta.title || fallbackTitle(file.name) };
+  } catch (err) {
+    const msg = err instanceof CvExtractError ? err.message : "Automatisch herkennen lukte niet — kies de soort zelf.";
+    return { ok: false, category: "OVERIG", title: fallbackTitle(file.name), error: msg };
+  }
 }
