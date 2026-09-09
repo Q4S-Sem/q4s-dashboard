@@ -1,98 +1,54 @@
 import Link from "next/link";
-import {
-  Coins,
-  AlertTriangle,
-  Wallet,
-  Upload,
-  CheckCircle2,
-  Mail,
-  MessageSquare,
-  Inbox,
-  Clock,
-  FileQuestion,
-  Check,
-  RotateCcw,
-} from "lucide-react";
+import { AlertTriangle, Upload, CheckCircle2, Mail, Inbox } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
-import { WeekBalk } from "@/components/week-balk";
-import { cn, formatCurrency, formatWeekLabel, startOfISOWeek } from "@/lib/utils";
-import { parseWeek, ymd } from "@/lib/week-nav";
+import { cn, formatCurrency } from "@/lib/utils";
 import {
   listReceivedInvoices,
   receivedInvoicesSummary,
   receivedBucket,
 } from "@/lib/received-invoices";
 import { ReceivedList } from "./ReceivedList";
-import { DiscrepancyMailButton } from "./DiscrepancyMailButton";
-import { ReceivedInvoicePreviewButton } from "@/components/received-invoice-preview-button";
-import { setReceivedStatus, resetWeekVanuitFactuur } from "./actions";
-import { ConfirmSubmit } from "@/components/confirm-submit";
 
 export const metadata = { title: "Ontvangen facturen" };
 export const dynamic = "force-dynamic";
 
-/** Nette icoon-knop (10×10 box met kleur-hover) — zelfde stijl als in de lijst. */
-function iconAction(tone: "slate" | "green" | "red"): string {
-  return cn(
-    "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-transparent transition-colors",
-    tone === "slate" && "text-ink-600 hover:border-ink-200 hover:bg-white",
-    tone === "green" && "text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50",
-    tone === "red" && "text-red-600 hover:border-red-200 hover:bg-red-50",
-  );
-}
-
-function daysSince(d: Date): number {
-  return Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 86_400_000));
-}
-
 export default async function OntvangenFacturenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; week?: string; toon?: string; reset?: string }>;
+  searchParams: Promise<{ ok?: string; reset?: string }>;
 }) {
   const sp = await searchParams;
   const [rows, summary] = await Promise.all([listReceivedInvoices(), receivedInvoicesSummary()]);
 
-  // Afwijkingen staan APART bovenaan; de hoofdlijst toont de rest.
-  const awaiting = rows.filter((r) => receivedBucket(r) === "afwijking");
-  const toCheck = rows.filter((r) => receivedBucket(r) === "controleren");
-  const rest = rows.filter((r) => receivedBucket(r) !== "afwijking");
+  const awaiting = rows.filter((r) => receivedBucket(r) === "afwijking").length;
+  const toCheck = rows.filter((r) => receivedBucket(r) === "controleren").length;
 
-  const toon =
-    sp.toon === "tebetalen" || sp.toon === "controleren" || sp.toon === "betaald" ? sp.toon : null;
-
-  // Week-filter op factuurdatum ("wat is er die week binnengekomen"); leeg = alle weken.
-  const monday = toon ? null : parseWeek(sp.week);
-  const hasWeek = monday !== null;
-  const anchor = monday ?? startOfISOWeek(new Date());
-  const weekEnd = monday ? new Date(monday.getTime() + 7 * 86_400_000) : null;
-
-  let shown = rest;
-  let selectionLabel = "";
-  if (toon === "tebetalen") {
-    shown = rows.filter((r) => receivedBucket(r) === "tebetalen");
-    selectionLabel = "Nog te betalen (klopt)";
-  } else if (toon === "controleren") {
-    shown = toCheck;
-    selectionLabel = "Te controleren (geen periode)";
-  } else if (toon === "betaald") {
-    shown = rows.filter((r) => receivedBucket(r) === "betaald");
-    selectionLabel = "Betaald";
-  } else if (monday && weekEnd) {
-    shown = rest.filter(
-      (r) => r.issueDate && new Date(r.issueDate) >= monday && new Date(r.issueDate) < weekEnd,
-    );
-  }
+  // Compacte overzichts-chips i.p.v. drie grote stat-cards — deze pagina is een
+  // naslag/archief; de flow (Week verwerken → wachtkamer) is elders leidend.
+  const chips: { label: string; value: string; tone: "amber" | "red" | "green" | "slate" }[] = [
+    {
+      label: "Nog te betalen",
+      value: `${formatCurrency(summary.toPayAmount)} · ${summary.toPayCount}`,
+      tone: "amber",
+    },
+    { label: "Wacht op correctie", value: String(summary.awaitingCount), tone: summary.awaitingCount > 0 ? "red" : "green" },
+    { label: "Betaald", value: `${summary.paidCount} van ${summary.total}`, tone: "green" },
+  ];
+  const chipTone: Record<"amber" | "red" | "green" | "slate", string> = {
+    amber: "border-amber-200 bg-amber-50 text-amber-800",
+    red: "border-red-200 bg-red-50 text-red-700",
+    green: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    slate: "border-ink-200 bg-ink-50 text-ink-600",
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Ontvangen facturen"
-        description="Facturen van geplaatste ZZP'ers. Klopt het met de urenstaat? Dan betaal je op tijd. Wijkt het af? Dan zetten we het apart en wachten we op een aangepaste factuur — zo betaal je nooit te laat of fout."
+        description="Archief van alle facturen van geplaatste ZZP'ers. Sorteer of filter op week, status en controle. De echte afhandeling loopt via Week verwerken en de wachtkamer — hier heb je het overzicht."
         actions={
           <Link href="/ontvangen-facturen/importeren" className={buttonVariants()}>
             <Upload className="h-4 w-4" /> Factuur importeren
@@ -105,7 +61,6 @@ export default async function OntvangenFacturenPage({
           <CheckCircle2 className="h-4 w-4" /> Factuur geregistreerd en gecontroleerd tegen de timesheet.
         </p>
       )}
-
       {sp.reset === "ok" && (
         <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           <CheckCircle2 className="h-4 w-4" /> Week teruggezet — de urenstaat en het concept zijn verwijderd. De weekstaat staat weer klaar in{" "}
@@ -118,249 +73,60 @@ export default async function OntvangenFacturenPage({
         </p>
       )}
 
-      {/* Compacte melding: wacht op correctie. Klik "Zie facturen" → naar de lijst hieronder. */}
-      {awaiting.length > 0 && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs text-amber-900">
-          <span className="flex min-w-0 items-center gap-1.5">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            <span>
-              <strong>{awaiting.length} factu{awaiting.length === 1 ? "ur wacht" : "ren wachten"}</strong> op een
-              aangepaste factuur — betaal deze <strong>pas na de correctie</strong>. Ze staan hieronder apart zodat
-              je ze nooit vergeet.
-            </span>
-          </span>
-          <Link
-            href="#wacht"
+      {/* Compacte chips — één regel, geen grote kaarten meer */}
+      <div className="flex flex-wrap items-center gap-2">
+        {chips.map((c) => (
+          <span
+            key={c.label}
             className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              "shrink-0 border-amber-300 bg-white/70 text-amber-900 hover:bg-white",
+              "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium",
+              chipTone[c.tone],
             )}
           >
-            Zie facturen
-          </Link>
-        </div>
-      )}
+            {c.label}
+            <span className="font-semibold tabular-nums">{c.value}</span>
+          </span>
+        ))}
+      </div>
 
-      {/* Zachtere melding: facturen zonder periode kunnen we (nog) niet controleren */}
-      {toCheck.length > 0 && (
-        <p className="flex items-start gap-2 rounded-lg border border-ink-300 bg-ink-50 px-4 py-3 text-sm text-ink-700">
-          <FileQuestion className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
+      {/* Lichte hint: afwijkingen zitten gewoon in de tabel (filter op 'Afwijking') */}
+      {(awaiting > 0 || toCheck > 0) && (
+        <p className="flex items-start gap-2 rounded-lg border border-ink-200 bg-ink-50 px-4 py-2.5 text-xs text-ink-600">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
           <span>
-            <strong>
-              {toCheck.length} factu{toCheck.length === 1 ? "ur heeft" : "ren hebben"} geen periode
-            </strong>{" "}
-            en {toCheck.length === 1 ? "is" : "zijn"} nog niet tegen de urenstaat gecontroleerd —{" "}
-            <strong>nog niet betalen</strong>.{" "}
-            <Link
-              href="/ontvangen-facturen?toon=controleren"
-              className="font-medium text-brand-700 hover:underline"
-            >
-              Vul de periode aan
-            </Link>{" "}
-            zodat we ook deze veilig kunnen betalen.
+            {awaiting > 0 && (
+              <>
+                <strong>{awaiting}</strong> factu{awaiting === 1 ? "ur wijkt" : "ren wijken"} af van de urenstaat —
+                betaal die pas na correctie.{" "}
+              </>
+            )}
+            {toCheck > 0 && (
+              <>
+                <strong>{toCheck}</strong> zonder periode nog niet gecontroleerd.{" "}
+              </>
+            )}
+            Filter hieronder op <strong>Controle → Afwijking</strong> om ze apart te zien.
           </span>
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Link href="/ontvangen-facturen?toon=tebetalen" className="block">
-          <StatCard
-            label="Nog te betalen (op tijd)"
-            value={formatCurrency(summary.toPayAmount)}
-            sub={`${summary.toPayCount} factu${summary.toPayCount === 1 ? "ur" : "ren"} · klopt · bekijk →`}
-            accent="amber"
-            icon={<Wallet className="h-5 w-5" />}
-            className={cn(
-              "cursor-pointer transition hover:border-brand-300 hover:shadow-md",
-              toon === "tebetalen" && "border-brand-500 ring-1 ring-brand-500",
-            )}
-          />
-        </Link>
-        <Link href="#wacht" className="block">
-          <StatCard
-            label="Wacht op aangepaste factuur"
-            value={summary.awaitingCount}
-            sub={summary.awaitingCount > 0 ? `${formatCurrency(summary.awaitingAmount)} · bekijk →` : "alles klopt"}
-            accent={summary.awaitingCount > 0 ? "red" : "green"}
-            icon={<Clock className="h-5 w-5" />}
-            className="cursor-pointer transition hover:border-brand-300 hover:shadow-md"
-          />
-        </Link>
-        <Link href="/ontvangen-facturen?toon=betaald" className="block">
-          <StatCard
-            label="Betaald"
-            value={summary.paidCount}
-            sub={`${summary.total} totaal · bekijk →`}
-            accent="green"
-            icon={<Coins className="h-5 w-5" />}
-            className={cn(
-              "cursor-pointer transition hover:border-brand-300 hover:shadow-md",
-              toon === "betaald" && "border-brand-500 ring-1 ring-brand-500",
-            )}
-          />
-        </Link>
-      </div>
-
-      {/* Aparte sectie: wacht op een aangepaste factuur */}
-      {awaiting.length > 0 && (
-        <div
-          id="wacht"
-          className="scroll-mt-6 rounded-2xl border-2 border-amber-300 bg-amber-50/50 p-5 shadow-sm"
-        >
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-              <Clock className="h-5 w-5" />
-            </span>
-            <div>
-              <h2 className="font-semibold text-amber-900">
-                Wacht op een aangepaste factuur ({awaiting.length})
-              </h2>
-              <p className="text-sm text-amber-700">
-                Deze kloppen niet met ons plaatsingstarief × de uren — vaak omdat de ZZP&apos;er zijn tarief
-                heeft gewijzigd. Open de factuur om het tarief te controleren en de plaatsing bij te werken.
-                Betaal pas na de correctie.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            {awaiting.map((r) => {
-              const days = r.mailedAt ? daysSince(r.mailedAt) : null;
-              const stale = days != null && days >= 7;
-              return (
-                <div
-                  key={r.id}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-amber-200 bg-white px-4 py-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/ontvangen-facturen/${r.id}`}
-                      className="font-medium text-ink-900 hover:text-brand-700"
-                    >
-                      {r.consultantName}
-                    </Link>
-                    {r.number && <span className="ml-2 text-sm text-ink-400">{r.number}</span>}
-                    <div className="text-xs text-ink-500">
-                      Gefactureerd {formatCurrency(r.amount)} · verwacht{" "}
-                      {r.expected ? formatCurrency(r.expected.total) : "—"} ·{" "}
-                      <span className="font-medium text-red-600">
-                        verschil {r.diff != null ? `${r.diff > 0 ? "+" : ""}${formatCurrency(r.diff)}` : "—"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={cn("text-xs", stale ? "font-semibold text-red-600" : "text-ink-500")}>
-                    {r.mailed
-                      ? days === 0
-                        ? "Vandaag gemaild"
-                        : `${days} dag${days === 1 ? "" : "en"} geleden gemaild${stale ? " — herinner" : ""}`
-                      : "Nog niet gemaild"}
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {/* Mail de medewerker over de afwijking (icoon) */}
-                    <DiscrepancyMailButton id={r.id} alreadyMailed={r.mailed} />
-                    {/* Mailwisseling openen (icoon) */}
-                    {r.email && (
-                      <a
-                        href={`mailto:${r.email}?subject=${encodeURIComponent(
-                          `Factuur ${r.number ?? ""} — aangepaste factuur`,
-                        )}`}
-                        className={iconAction("slate")}
-                        title="Open de mailwisseling met deze persoon"
-                        aria-label="Mailwisseling openen"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </a>
-                    )}
-                    {/* Bekijken → oog-icoon toont de geüploade factuur */}
-                    <ReceivedInvoicePreviewButton id={r.id} name={r.consultantName} hasFile={r.hasFile} />
-
-                    <span className="mx-0.5 h-6 w-px shrink-0 bg-amber-200" aria-hidden="true" />
-
-                    {/* Toch akkoord ondanks het verschil (bijv. afgesproken correctie). */}
-                    <form action={setReceivedStatus}>
-                      <input type="hidden" name="id" value={r.id} />
-                      <input type="hidden" name="status" value="APPROVED" />
-                      <button
-                        type="submit"
-                        title="Toch accepteren (markeer als gecontroleerd)"
-                        aria-label="Toch accepteren"
-                        className={iconAction("green")}
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                    </form>
-                    {/* Fout? Verwijder de factuur + urenstaat + concept en reset de week. */}
-                    <ConfirmSubmit
-                      action={resetWeekVanuitFactuur}
-                      id={r.id}
-                      trigger="icon"
-                      icon={<RotateCcw className="h-4 w-4" />}
-                      message="Deze week verwijderen en resetten?"
-                      description="Dit verwijdert deze factuur, de urenstaat van deze week én een eventuele concept-verkoopfactuur, en zet de weekstaat terug in 'Week verwerken'. Verstuurde/betaalde facturen blijven beschermd."
-                      confirmLabel="Verwijderen & resetten"
-                    >
-                      Verwijderen &amp; resetten
-                    </ConfirmSubmit>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Hoofdlijst (zonder de afwijkingen) */}
-      {toon ? (
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <span className="inline-flex items-center gap-2 rounded-sm bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700">
-            {selectionLabel} · {shown.length} factu{shown.length === 1 ? "ur" : "ren"}
-          </span>
-          <Link href="/ontvangen-facturen" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            Toon alles
-          </Link>
-        </div>
+      {rows.length === 0 ? (
+        <Card>
+          <CardContent>
+            <EmptyState
+              icon={<Inbox className="h-6 w-6" />}
+              title="Nog geen ontvangen facturen"
+              description="Importeer de eerste factuur die een geplaatste ZZP'er je stuurde — die wordt meteen tegen de timesheet gecontroleerd."
+              action={
+                <Link href="/ontvangen-facturen/importeren" className={buttonVariants()}>
+                  <Upload className="h-4 w-4" /> Factuur importeren
+                </Link>
+              }
+            />
+          </CardContent>
+        </Card>
       ) : (
-        <>
-          {/* Week-balk — dezelfde als op alle andere facturatiepagina's */}
-          <WeekBalk
-            basePath="/ontvangen-facturen"
-            week={hasWeek ? ymd(anchor) : ""}
-            currentWeek={ymd(startOfISOWeek(new Date()))}
-            allWeeks
-          />
-
-          <p className="text-center text-xs text-ink-400">
-            {hasWeek ? formatWeekLabel(anchor) : "Alle weken"} · {shown.length} factu
-            {shown.length === 1 ? "ur" : "ren"} (afwijkingen staan apart hierboven)
-          </p>
-        </>
-      )}
-
-      {shown.length === 0 ? (
-        awaiting.length === 0 ? (
-          <Card>
-            <CardContent>
-              <EmptyState
-                icon={<Inbox className="h-6 w-6" />}
-                title={toon ? "Niets in deze selectie" : hasWeek ? "Geen facturen in deze week" : "Nog geen ontvangen facturen"}
-                description="Importeer de eerste factuur die een geplaatste ZZP'er je stuurde — die wordt meteen tegen de timesheet gecontroleerd."
-                action={
-                  <Link href="/ontvangen-facturen/importeren" className={buttonVariants()}>
-                    <Upload className="h-4 w-4" /> Factuur importeren
-                  </Link>
-                }
-              />
-            </CardContent>
-          </Card>
-        ) : (
-          <p className="rounded-xl border border-ink-200 bg-white px-4 py-8 text-center text-sm text-ink-500">
-            Geen facturen in deze selectie — alle openstaande facturen wachten op een correctie (zie hierboven).
-          </p>
-        )
-      ) : (
-        <ReceivedList rows={shown} />
+        <ReceivedList rows={rows} />
       )}
 
       {/* Gated: AI-uit-de-mail (later) */}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CheckCircle2, AlertTriangle, Wallet, Check, Trash2, FileText, RotateCcw } from "lucide-react";
-import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
+import { cn, formatCurrency, formatDate, formatHours, getISOWeek, startOfISOWeek } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/badge";
 import { SmartList, type SmartColumn, type SmartFilter } from "@/components/smart-list";
 import { RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
@@ -16,6 +16,18 @@ function periodLabel(start: Date | null, end: Date | null): string {
   if (start && end) return `${formatDate(start)} – ${formatDate(end)}`;
   if (start || end) return formatDate((start ?? end) as Date);
   return "—";
+}
+
+/** Bepaal de ISO-week + jaar van een factuur (periode wint van factuurdatum). */
+function weekOf(r: ReceivedRow): { key: string; label: string; sort: number } | null {
+  const d = r.periodStart ?? r.periodEnd ?? r.issueDate;
+  if (!d) return null;
+  const monday = startOfISOWeek(new Date(d));
+  const thu = new Date(Date.UTC(monday.getFullYear(), monday.getMonth(), monday.getDate()));
+  thu.setUTCDate(thu.getUTCDate() + 4 - (thu.getUTCDay() || 7));
+  const week = getISOWeek(new Date(d));
+  const year = thu.getUTCFullYear();
+  return { key: `${year}-W${String(week).padStart(2, "0")}`, label: `Week ${week} · ${year}`, sort: year * 100 + week };
 }
 
 /** Gedeelde stijl voor de actie-icoonknoppen: nette "box" met kleur-hover. */
@@ -56,6 +68,19 @@ function StatusButton({
 
 export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
   const columns: SmartColumn<ReceivedRow>[] = [
+    {
+      key: "week",
+      header: "Week",
+      sortValue: (r) => weekOf(r)?.sort ?? 0,
+      render: (r) => {
+        const w = weekOf(r);
+        return w ? (
+          <span className="whitespace-nowrap text-sm font-medium text-ink-800">{w.label}</span>
+        ) : (
+          <span className="text-xs text-ink-400">geen periode</span>
+        );
+      },
+    },
     {
       key: "medewerker",
       header: "Medewerker",
@@ -195,7 +220,24 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
     },
   ];
 
+  // Alle voorkomende weken → sorteerbaar/filterbaar (nieuwste eerst).
+  const weekOptions = Array.from(
+    new Map(
+      rows
+        .map((r) => weekOf(r))
+        .filter((w): w is NonNullable<typeof w> => w != null)
+        .sort((a, b) => b.sort - a.sort)
+        .map((w) => [w.key, { value: w.key, label: w.label }]),
+    ).values(),
+  );
+
   const filters: SmartFilter<ReceivedRow>[] = [
+    {
+      key: "week",
+      label: "Week",
+      value: (r) => weekOf(r)?.key ?? "geen",
+      options: [...weekOptions, { value: "geen", label: "Geen periode" }],
+    },
     {
       key: "status",
       label: "Status",
@@ -221,7 +263,7 @@ export function ReceivedList({ rows }: { rows: ReceivedRow[] }) {
       search={(r) => `${r.consultantName} ${r.number ?? ""}`}
       searchPlaceholder="Zoek op naam of factuurnummer…"
       filters={filters}
-      initialSort={{ key: "binnen", dir: "desc" }}
+      initialSort={{ key: "week", dir: "desc" }}
       emptyLabel="Geen facturen in deze selectie."
     />
   );
