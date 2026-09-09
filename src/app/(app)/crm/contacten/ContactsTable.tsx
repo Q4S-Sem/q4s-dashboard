@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Phone } from "lucide-react";
+import { Search, Phone, Mail } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
 
@@ -46,9 +46,35 @@ export type ContactRow = {
   company: string | null;
   ownerName: string | null;
   phone: string | null;
+  email: string | null;
   deals: number;
   notes: number;
 };
+
+/** Mail-icoon dat direct een nieuwe e-mail opent (mailto:). Valt terug op — zonder adres. */
+function MailButton({ email, name }: { email: string | null; name: string }) {
+  if (!email) {
+    return (
+      <span
+        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300"
+        title={`Geen e-mailadres bekend voor ${name}`}
+        aria-hidden
+      >
+        <Mail className="h-4 w-4" />
+      </span>
+    );
+  }
+  return (
+    <a
+      href={`mailto:${email}`}
+      title={`Mail ${name} (${email})`}
+      aria-label={`Stuur een e-mail naar ${name}`}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200"
+    >
+      <Mail className="h-4 w-4" />
+    </a>
+  );
+}
 
 /** Telefoon verborgen achter alleen het icoontje; klik toont het nummer als
  *  belbare tel:-link (niet-belbare/lege waarden vallen netjes terug). */
@@ -98,7 +124,7 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
   const filtered = useMemo(() => {
     if (!raw) return contacts;
     return contacts.filter((c) => {
-      const inText = [c.name, c.jobTitle, c.company, c.ownerName]
+      const inText = [c.name, c.jobTitle, c.company, c.ownerName, c.email]
         .filter(Boolean)
         .some((v) => fold(String(v)).includes(term));
       // Telefoon zowel als tekst (rauw) als digit-genormaliseerd matchen, zodat
@@ -120,7 +146,7 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Zoek op naam, functie, bedrijf of telefoon…"
+            placeholder="Zoek op naam, functie, bedrijf, e-mail of telefoon…"
             aria-label="Zoek contact"
             className="block w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
           />
@@ -138,7 +164,7 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
               <TH>Naam</TH>
               <TH>Functie</TH>
               <TH>Bedrijf</TH>
-              <TH>Telefoon</TH>
+              <TH>Contact</TH>
               <TH>Eigenaar</TH>
               <TH className="text-right">Deals</TH>
               <TH className="text-right">Notities</TH>
@@ -153,7 +179,10 @@ export function ContactsTable({ contacts }: { contacts: ContactRow[] }) {
                 <TD>{c.jobTitle ?? "—"}</TD>
                 <TD>{c.company ?? "—"}</TD>
                 <TD className="relative z-10">
-                  <PhoneCell phone={c.phone} name={c.name} />
+                  <div className="flex items-center gap-2">
+                    <PhoneCell phone={c.phone} name={c.name} />
+                    <MailButton email={c.email} name={c.name} />
+                  </div>
                 </TD>
                 <TD>{c.ownerName ?? "—"}</TD>
                 <TD className="text-right tabular-nums">{c.deals}</TD>

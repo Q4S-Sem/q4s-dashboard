@@ -71,6 +71,7 @@ export default async function ContactenPage() {
             company: c.company,
             ownerName: c.owner?.name ?? null,
             phone: c.phone,
+            email: c.email,
             deals: c._count.deals,
             notes: c._count.crmNotes,
           }))}
