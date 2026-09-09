@@ -22,10 +22,9 @@ import { StatusBadge, Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Input, Select } from "@/components/ui/field";
 import { person } from "@/lib/people";
-import { cn, formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   DISCIPLINES,
-  CANDIDATE_SOURCES,
   CANDIDATE_RATINGS,
   CANDIDATE_RATING_ORDER,
   CANDIDATE_AVAILABILITY,
@@ -247,42 +246,37 @@ export default async function KandidatenPage({
           <p className="text-xs text-ink-400">
             {candidates.length} kandida{candidates.length === 1 ? "at" : "ten"} · beste beoordeling eerst
           </p>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="divide-y divide-ink-100 overflow-hidden rounded-md border border-ink-100 bg-white">
             {candidates.map((c) => {
               const companies = [...new Set(c.candidatePlacements.map((p) => p.company))];
               return (
                 <div
                   key={c.id}
-                  className="q4s-hoverable group relative flex flex-col rounded-md border border-ink-100 bg-white p-4 focus-within:border-ink-900"
+                  className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 transition-colors hover:bg-ink-50/60"
                 >
-                  {/* Kop: profielfoto + naam + disciplines */}
-                  <div className="flex items-start gap-3">
-                    <Avatar
-                      {...person(c)}
-                      size="lg"
-                      className={cn("ring-2", ringByRating(c.rating))}
-                    />
-                    <div className="min-w-0 flex-1">
+                  {/* Persoon: avatar + naam + discipline */}
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <Avatar {...person(c)} size="sm" className={cn("ring-2", ringByRating(c.rating))} />
+                    <div className="min-w-0">
                       <Link
                         href={`/kandidaten/${c.id}`}
-                        className="font-semibold text-ink-900 after:absolute after:inset-0 after:content-[''] group-hover:text-brand-600"
+                        className="block truncate text-sm font-semibold text-ink-900 hover:text-brand-600"
                       >
                         {c.firstName} {c.lastName}
                       </Link>
-                      {c.headline && <p className="truncate text-xs text-ink-500">{c.headline}</p>}
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        {c.discipline && <StatusBadge options={DISCIPLINES} value={c.discipline} />}
-                        <StatusBadge options={CANDIDATE_SOURCES} value={c.source} />
+                      <div className="flex items-center gap-1.5 truncate text-xs text-ink-500">
+                        {c.headline && <span className="truncate">{c.headline}</span>}
+                        {c.discipline && (
+                          <span className="shrink-0">
+                            <StatusBadge options={DISCIPLINES} value={c.discipline} />
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <ChevronRight
-                      aria-hidden
-                      className="mt-1 h-5 w-5 shrink-0 text-ink-300 transition-all group-hover:translate-x-0.5 group-hover:text-brand-600"
-                    />
                   </div>
 
-                  {/* Contact */}
-                  <div className="relative z-10 mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-ink-100 pt-3 text-xs text-ink-500">
+                  {/* Contact — verschijnt vanaf lg */}
+                  <div className="hidden items-center gap-x-4 text-xs text-ink-500 lg:flex">
                     {c.location && (
                       <span className="inline-flex items-center gap-1">
                         <MapPin className="h-3.5 w-3.5 text-ink-400" /> {c.location}
@@ -298,48 +292,32 @@ export default async function KandidatenPage({
                       </a>
                     )}
                     <PhoneReveal phone={c.phone} />
-                    <span className="ml-auto inline-flex items-center gap-1 text-ink-400">
+                    <span className="inline-flex items-center gap-1 text-ink-400" title="Sollicitaties">
                       <ClipboardList className="h-3.5 w-3.5" /> {c._count.applications}
                     </span>
-                  </div>
-
-                  {/* Beoordeling · beschikbaarheid · interview */}
-                  <div className="relative z-10 mt-3 space-y-2 border-t border-ink-100 pt-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-ink-400">Beoordeling</span>
-                      <RatingSelect id={c.id} value={c.rating} />
-                    </div>
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="pt-1.5 text-xs font-medium text-ink-400">Beschikbaar</span>
-                      <div className="text-right">
-                        <AvailabilitySelect id={c.id} value={c.availability} />
-                        {c.availability === "BINNENKORT" && c.availableFrom && (
-                          <div className="mt-0.5 text-[11px] text-ink-400">
-                            Vanaf {formatDate(c.availableFrom)}
-                          </div>
+                    {companies.length > 0 && (
+                      <span className="inline-flex items-center gap-1" title={`Geplaatst bij ${companies.join(", ")}`}>
+                        <Badge color="violet">{companies[0]}</Badge>
+                        {companies.length > 1 && (
+                          <span className="text-ink-400">+{companies.length - 1}</span>
                         )}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-ink-400">Interview</span>
-                      <InterviewSelect id={c.id} value={c.interviewStatus} />
-                    </div>
+                      </span>
+                    )}
                   </div>
 
-                  {/* Geplaatst bij */}
-                  {companies.length > 0 && (
-                    <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-ink-100 pt-3">
-                      <span className="text-xs text-ink-400">Geplaatst:</span>
-                      {companies.slice(0, 2).map((co) => (
-                        <Badge key={co} color="violet">
-                          {co}
-                        </Badge>
-                      ))}
-                      {companies.length > 2 && (
-                        <span className="text-xs text-ink-400">+{companies.length - 2}</span>
-                      )}
-                    </div>
-                  )}
+                  {/* Statussen — compact naast elkaar */}
+                  <div className="flex items-center gap-2">
+                    <RatingSelect id={c.id} value={c.rating} className="w-36" />
+                    <AvailabilitySelect id={c.id} value={c.availability} className="w-36" />
+                    <InterviewSelect id={c.id} value={c.interviewStatus} className="w-32" />
+                    <Link
+                      href={`/kandidaten/${c.id}`}
+                      aria-label={`${c.firstName} ${c.lastName} openen`}
+                      className="inline-flex shrink-0 rounded-md p-1 text-ink-300 transition-colors hover:bg-ink-100 hover:text-brand-600"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Link>
+                  </div>
                 </div>
               );
             })}

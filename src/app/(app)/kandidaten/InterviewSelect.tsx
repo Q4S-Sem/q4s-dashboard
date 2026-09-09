@@ -22,7 +22,15 @@ const DOT: Record<string, string> = {
  * automatisch vandaag in. Het menu is fixed-gepositioneerd zodat de tabel-overflow
  * het niet afknipt.
  */
-export function InterviewSelect({ id, value }: { id: string; value: string }) {
+export function InterviewSelect({
+  id,
+  value,
+  className = "w-44",
+}: {
+  id: string;
+  value: string;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState(value);
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(
@@ -97,7 +105,7 @@ export function InterviewSelect({ id, value }: { id: string; value: string }) {
         onClick={() => setOpen((o) => !o)}
         aria-label="Interview-status"
         aria-haspopup="menu"
-        className={`inline-flex w-44 items-center justify-between gap-2 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors ${tone}`}
+        className={`inline-flex ${className} items-center justify-between gap-2 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors ${tone}`}
       >
         <span className="inline-flex items-center gap-1.5 truncate">
           <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[current] ?? DOT.NONE}`} />
