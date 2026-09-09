@@ -745,7 +745,13 @@ export function PlacementForm({
               </div>
 
               {personMode === "existing" ? (
-                <Field label="Kies werknemer" htmlFor="consultantId" required error={e.consultantId}>
+                <Field
+                  label="Kies werknemer"
+                  htmlFor="consultantId"
+                  required
+                  error={e.consultantId}
+                  hint="Dezelfde persoon mag meerdere plaatsingen tegelijk hebben — bijv. bij verschillende bedrijven. Kies 'm hier gewoon opnieuw voor een extra plaatsing."
+                >
                   <SearchSelect
                     id="consultantId"
                     name="consultantId"
