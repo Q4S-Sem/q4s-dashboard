@@ -36,7 +36,14 @@ export async function createSalesInvoice(opts: {
     return { ok: false, error: "Geen geldige (goedgekeurde) urenstaten gevonden." };
 
   const settings = await getCompanySettings();
-  const vatRate = settings.defaultVatRate ?? 21;
+  const baseVatRate = settings.defaultVatRate ?? 21;
+  // BTW verlegd: als ALLE plaatsingen op deze factuur "BTW verlegd" hebben, dan
+  // is de hele factuur verlegd (0% BTW + verplichte vermelding). Zijn ze gemengd,
+  // dan verleggen we niet automatisch — dat vraagt om een aparte factuur per
+  // BTW-regime, wat de gebruiker bewust doet.
+  const reverseFlags = new Set(timesheets.map((t) => t.placement.vatReverseCharge));
+  const vatReverseCharge = reverseFlags.size === 1 && reverseFlags.has(true);
+  const vatRate = vatReverseCharge ? 0 : baseVatRate;
 
   const lines = timesheets.flatMap((t) => {
     const consultantName = `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`;
@@ -96,6 +103,7 @@ export async function createSalesInvoice(opts: {
     const inv = await tx.invoice.create({
       data: {
         number, clientId, issueDate, dueDate, status: "DRAFT", vatRate, subtotal, vatAmount, total, notes,
+        vatReverseCharge,
         subject, services, ourReference, purchaseOrder,
         lines: {
           create: lines.map((l) => ({

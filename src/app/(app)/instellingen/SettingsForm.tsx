@@ -294,7 +294,7 @@ export function SettingsForm({
               <Field
                 label="Standaard BTW-tarief (%)"
                 htmlFor="defaultVatRate"
-                hint="Onder het subtotaal als “VAT rate 21%”. Wordt overgenomen zodra een nieuwe factuur wordt aangemaakt."
+                hint="Geldt voor ALLE nieuwe verkoopfacturen tegelijk — pas 'm hier één keer aan om het %-niveau overal te wijzigen. Per plaatsing kun je 'BTW verlegd' aanzetten (dan 0%). Onder het subtotaal als “VAT rate 21%”."
                 error={e.defaultVatRate}
               >
                 <Input

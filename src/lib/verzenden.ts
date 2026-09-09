@@ -21,6 +21,7 @@ type SalesInvoiceFull = {
   issueDate: Date;
   dueDate: Date;
   vatRate: number;
+  vatReverseCharge?: boolean;
   subtotal: number;
   vatAmount: number;
   total: number;
@@ -123,6 +124,8 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
     ]),
     lines: toInvoiceRows(inv.lines),
     vatRate: inv.vatRate,
+    vatReverseCharge: inv.vatReverseCharge ?? false,
+    vatNote: inv.vatReverseCharge ? "BTW verlegd — VAT reverse-charged (art. 12 Wet OB)" : null,
     subtotal: inv.subtotal,
     vatAmount: inv.vatAmount,
     total: inv.total,

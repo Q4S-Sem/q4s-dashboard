@@ -244,6 +244,9 @@ model Placement {
   /// Inkoop-ordernummer (PO) van de KLANT voor deze plaatsing — verschijnt als
   /// "PO" op de verkoopfactuur. Leeg = geen PO-regel op de factuur.
   poNumber     String?
+  /// BTW verlegd op de verkoopfactuur voor deze plaatsing? Aan = 0% BTW +
+  /// verplichte "BTW verlegd"-vermelding (reverse charge). Standaard uit.
+  vatReverseCharge Boolean @default(false)
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -316,6 +319,9 @@ model Invoice {
   subtotal   Float    @default(0)
   vatAmount  Float    @default(0)
   total      Float    @default(0)
+  /// BTW verlegd (reverse charge): dan is vatRate/vatAmount 0 en toont de factuur
+  /// de verplichte "BTW verlegd"-vermelding. Afgeleid van de plaatsing.
+  vatReverseCharge Boolean @default(false)
   notes      String?
   /// Kop-velden voor het Q4S-factuurformat (doorgaans één medewerker per factuur).
   subject       String?  // "Subject" — bijv. de medewerker (R. van Son)

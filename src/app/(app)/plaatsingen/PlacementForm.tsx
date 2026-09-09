@@ -941,6 +941,22 @@ export function PlacementForm({
             />
           </Field>
 
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-ink-200 bg-ink-50/60 px-4 py-3">
+            <input
+              type="checkbox"
+              name="vatReverseCharge"
+              defaultChecked={placement?.vatReverseCharge ?? false}
+              className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-ink-900">BTW verlegd (reverse charge)</span>
+              <span className="mt-0.5 block text-ink-500">
+                Zet aan als de verkoopfactuur voor deze plaatsing met <strong>0% BTW / BTW verlegd</strong> gaat.
+                De factuur toont dan automatisch de verplichte “BTW verlegd”-vermelding en rekent geen BTW.
+              </span>
+            </span>
+          </label>
+
           <div className="space-y-3">
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Startdatum" htmlFor="startDate" required error={e.startDate}>
