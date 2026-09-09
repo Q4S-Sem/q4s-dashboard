@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Q4S — Weekcockpit (mockup)</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1f2430; --muted:#6b7280; --line:#e6e8ee;
+    --brand:#e0492f; --brand-soft:#fdeee9;
+    --green:#0f9d58; --green-soft:#e8f6ee;
+    --amber:#c77700; --amber-soft:#fdf3e2;
+    --red:#c62828; --red-soft:#fdeaea;
+    --blue:#2563eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  .app{display:flex;min-height:100vh}
+
+  /* Sidebar */
+  .side{width:236px;background:#fff;border-right:1px solid var(--line);padding:14px 10px;flex-shrink:0}
+  .brand{font-weight:800;font-size:17px;padding:6px 10px 14px;color:var(--brand);letter-spacing:.5px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;color:#374151;text-decoration:none;font-weight:500;cursor:pointer;margin:1px 0}
+  .nav-item:hover{background:#f2f4f7}
+  .nav-item.active{background:var(--brand-soft);color:var(--brand);font-weight:700}
+  .nav-item .ico{width:18px;text-align:center}
+  .nav-hero{margin:2px 0 6px;padding:11px 12px;border-radius:11px;background:linear-gradient(135deg,#e0492f,#f0785e);color:#fff;font-weight:700;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:0 3px 10px rgba(224,73,47,.25)}
+  .nav-sec{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#9aa1ad;padding:14px 12px 4px;font-weight:700}
+  .badge{margin-left:auto;background:var(--brand);color:#fff;border-radius:20px;font-size:11px;font-weight:700;padding:1px 7px}
+  .fold{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:9px;color:#6b7280;cursor:pointer;font-weight:600;margin-top:8px;border:1px dashed var(--line)}
+  .fold:hover{background:#f2f4f7}
+  .fold .chev{margin-left:auto;transition:transform .2s}
+  .fold.open .chev{transform:rotate(90deg)}
+  .fold-body{display:none;padding-left:4px}
+  .fold-body.show{display:block}
+  .muted-item{color:#8a91a0}
+
+  /* Main */
+  .main{flex:1;padding:26px 34px;max-width:900px}
+  .h1{font-size:22px;font-weight:800;margin:0}
+  .sub{color:var(--muted);margin:3px 0 20px}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:15px 16px}
+  .stat .n{font-size:26px;font-weight:800;line-height:1}
+  .stat .l{color:var(--muted);margin-top:5px;font-size:12.5px}
+  .stat.green{background:var(--green-soft);border-color:#cde7d9}
+  .stat.green .n{color:var(--green)}
+  .stat.amber{background:var(--amber-soft);border-color:#f3ddb0}
+  .stat.amber .n{color:var(--amber)}
+
+  .section-title{font-weight:800;font-size:15px;margin:6px 0 12px;display:flex;align-items:center;gap:8px}
+
+  .row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+  .row.warn{border-left:4px solid var(--amber)}
+  .row.err{border-left:4px solid var(--red)}
+  .row .who{font-weight:700}
+  .row .reason{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+  .pill.amber{background:var(--amber-soft);color:var(--amber)}
+  .pill.red{background:var(--red-soft);color:var(--red)}
+  .row .grow{flex:1}
+  .btn{border:0;border-radius:9px;padding:8px 13px;font-weight:700;cursor:pointer;font-size:13px}
+  .btn.ghost{background:#f2f4f7;color:#374151}
+  .btn.ok{background:var(--green);color:#fff}
+  .btn.big{padding:12px 18px;font-size:14.5px}
+  .btn.brand{background:var(--brand);color:#fff}
+  .btn:active{transform:translateY(1px)}
+
+  .green-card{background:var(--green-soft);border:1px solid #cde7d9;border-radius:13px;padding:16px;margin:18px 0}
+  .green-card .top{display:flex;align-items:center;gap:12px}
+  .green-card .cnt{font-weight:800;font-size:15px;color:var(--green)}
+  details.collapsed{margin-top:12px}
+  details.collapsed summary{cursor:pointer;color:var(--green);font-weight:600;font-size:13px;list-style:none}
+  details.collapsed summary::-webkit-details-marker{display:none}
+  .mini{font-size:12.5px;color:#3d7a53;padding:7px 2px;border-top:1px dashed #bfe3cd;display:flex;gap:12px}
+
+  .actions{display:flex;gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+  .note{background:#eef4ff;border:1px solid #d3e2ff;color:#2c4a86;border-radius:10px;padding:10px 13px;font-size:12.5px;margin-top:16px}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1f2430;color:#fff;padding:11px 18px;border-radius:10px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none}
+  .toast.show{opacity:1}
+  .tag-mock{position:fixed;top:10px;right:14px;background:#1f2430;color:#fff;font-size:11px;padding:4px 10px;border-radius:20px;opacity:.8}
+</style>
+</head>
+<body>
+<div class="tag-mock">MOCKUP — nog niet live</div>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">Q4S</div>
+
+    <div class="nav-hero" onclick="toast('Weekcockpit — de enige plek die HR nodig heeft')">
+      <span class="ico">📅</span> Deze week <span class="badge" style="background:rgba(255,255,255,.25)">3</span>
+    </div>
+
+    <div class="nav-sec">Werk</div>
+    <a class="nav-item"><span class="ico">🧾</span> Kandidaten</a>
+    <a class="nav-item"><span class="ico">💼</span> Plaatsingen</a>
+    <a class="nav-item"><span class="ico">🏢</span> Klanten</a>
+
+    <div class="fold" id="fold" onclick="toggleFold()">
+      <span class="ico">⚙️</span> Finance &amp; Admin
+      <span class="chev">›</span>
+    </div>
+    <div class="fold-body" id="foldbody">
+      <a class="nav-item muted-item"><span class="ico">💲</span> Facturen (verkoop)</a>
+      <a class="nav-item muted-item"><span class="ico">🔗</span> Inkoopfacturen</a>
+      <a class="nav-item muted-item"><span class="ico">📥</span> Ontvangen facturen</a>
+      <a class="nav-item muted-item"><span class="ico">✈️</span> Verzendmap</a>
+      <a class="nav-item muted-item"><span class="ico">🏦</span> Betalingen (SEPA)</a>
+      <a class="nav-item muted-item"><span class="ico">🔔</span> Betaalmonitor</a>
+      <a class="nav-item muted-item"><span class="ico">📊</span> Boekhouding &amp; BTW</a>
+      <a class="nav-item muted-item"><span class="ico">📈</span> Totaaloverzicht</a>
+      <a class="nav-item muted-item"><span class="ico">🗄️</span> Archief</a>
+      <a class="nav-item muted-item"><span class="ico">⚙️</span> Instellingen</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <h1 class="h1">Deze week</h1>
+    <div class="sub">Week 36 · 1–7 september 2026 · maandagochtend</div>
+
+    <div class="stats">
+      <div class="stat"><div class="n">12</div><div class="l">tijdlijsten binnen</div></div>
+      <div class="stat green"><div class="n">9</div><div class="l">automatisch akkoord · 360 u · €14.400</div></div>
+      <div class="stat amber"><div class="n">3</div><div class="l">te controleren</div></div>
+    </div>
+
+    <div class="section-title">⚠️ Te controleren <span style="color:var(--muted);font-weight:500">— alleen deze vragen je aandacht</span></div>
+
+    <div class="row err" id="r1">
+      <div>
+        <div class="who">Jan de Vries <span class="pill red">marge</span></div>
+        <div class="reason">Marge niet positief — inkoop €48 ≥ verkoop €45. Controleer het tarief.</div>
+      </div>
+      <div class="grow"></div>
+      <button class="btn ghost" onclick="toast('Opent de plaatsing om het tarief te corrigeren')">✎ Corrigeren</button>
+      <button class="btn ok" onclick="approve('r1')">✓ Goedkeuren</button>
+    </div>
+
+    <div class="row warn" id="r2">
+      <div>
+        <div class="who">Piet Jansen <span class="pill amber">uren</span></div>
+        <div class="reason">78 u deze week — ~2× hoger dan zijn gemiddelde van 40 u (laatste 8 weken).</div>
+      </div>
+      <div class="grow"></div>
+      <button class="btn ghost" onclick="toast('Opent de weekstaat om de uren na te kijken')">✎ Corrigeren</button>
+      <button class="btn ok" onclick="approve('r2')">✓ Goedkeuren</button>
+    </div>
+
+    <div class="row err" id="r3">
+      <div>
+        <div class="who">Klaas Bakker <span class="pill red">geen plaatsing</span></div>
+        <div class="reason">Geen actieve plaatsing gevonden voor deze persoon — koppel eerst een plaatsing.</div>
+      </div>
+      <div class="grow"></div>
+      <button class="btn ghost" onclick="toast('Opent het scherm om een plaatsing te koppelen')">✎ Corrigeren</button>
+      <button class="btn ok" onclick="approve('r3')">✓ Goedkeuren</button>
+    </div>
+
+    <div class="green-card">
+      <div class="top">
+        <span style="font-size:20px">✅</span>
+        <div class="cnt">9 weekstaten zijn automatisch akkoord</div>
+        <div class="grow"></div>
+        <button class="btn ok big" onclick="toast('9 groene weken in één klik goedgekeurd')">Keur 9 groene goed</button>
+      </div>
+      <details class="collapsed">
+        <summary>Toon de 9 automatisch goedgekeurde weken ›</summary>
+        <div style="margin-top:8px">
+          <div class="mini"><b style="min-width:150px">R. van Son</b> 40 u <span>QC Inspector · Sif</span> <span style="margin-left:auto">€1.600</span></div>
+          <div class="mini"><b style="min-width:150px">M. El Amrani</b> 38 u <span>Lasser 141 · HKW8</span> <span style="margin-left:auto">€1.520</span></div>
+          <div class="mini"><b style="min-width:150px">D. Kowalski</b> 45 u <span>NDT Level 2 · Smulders</span> <span style="margin-left:auto">€1.980</span></div>
+          <div class="mini"><b style="min-width:150px">+ 6 meer…</b> <span style="margin-left:auto">totaal 360 u · €14.400</span></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="actions">
+      <button class="btn ok big" onclick="toast('Alle groene weken goedgekeurd')">✅ Keur 9 groene goed</button>
+      <button class="btn brand big" onclick="toast('Inkoop- en verkoopfacturen als concept aangemaakt → Verzendmap')">📄 Maak facturen (inkoop + verkoop)</button>
+    </div>
+
+    <div class="note">
+      🔒 Hier wordt <b>niets verzonden</b> en <b>geen betaling</b> gedaan. Facturen ontstaan als <b>concept</b> en gaan naar de Verzendmap; een mens verstuurt ze. ZZP-facturen die binnenkomen blijven altijd handmatig te controleren.
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleFold(){
+    document.getElementById('fold').classList.toggle('open');
+    document.getElementById('foldbody').classList.toggle('show');
+  }
+  function approve(id){
+    var el=document.getElementById(id);
+    el.style.transition='opacity .3s,transform .3s';
+    el.style.opacity='0';el.style.transform='translateX(20px)';
+    setTimeout(function(){el.style.display='none'},300);
+    toast('Weekstaat goedgekeurd');
+  }
+  var tId;
+  function toast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg;t.classList.add('show');
+    clearTimeout(tId);tId=setTimeout(function(){t.classList.remove('show')},2200);
+  }
+</script>
+</body>
+</html>

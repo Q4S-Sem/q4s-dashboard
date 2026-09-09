@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Q4S — Weekverwerking (mockup)</title>
+<style>
+  :root{
+    --brand-50:#fff4ef; --brand-100:#ffe3d6; --brand-600:#e8430a; --brand-700:#c73508;
+    --ink-100:#e7e7e5; --ink-200:#d1d1ce; --ink-300:#a8a8a3; --ink-400:#787873;
+    --ink-500:#4d4d49; --ink-600:#2e2e2b; --ink-700:#1c1c1a; --ink-900:#111110;
+    --emerald-50:#ecfdf5; --emerald-500:#10b981; --emerald-600:#059669; --emerald-700:#047857;
+    --amber-50:#fffbeb; --amber-500:#f59e0b; --amber-600:#d97706; --amber-700:#b45309;
+    --red-50:#fef2f2; --red-500:#ef4444; --red-600:#dc2626; --red-700:#b91c1c;
+    --blue-50:#eff6ff; --violet-50:#f5f3ff; --violet-700:#6d28d9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#f4f4f2;color:var(--ink-900);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.5}
+  .app{display:flex;min-height:100vh}
+  .mono{font-variant-numeric:tabular-nums}
+
+  /* ---------- Sidebar ---------- */
+  .side{width:240px;background:#fff;border-right:1px solid var(--ink-100);padding:16px 12px;flex-shrink:0}
+  .brand{font-weight:800;font-size:20px;color:var(--brand-600);padding:4px 10px 16px;letter-spacing:.3px}
+  .hero{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:4px;background:var(--brand-600);color:#fff;font-weight:700;cursor:pointer;margin-bottom:4px}
+  .hero .cnt{margin-left:auto;background:rgba(255,255,255,.24);border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px;min-width:22px;text-align:center}
+  .sec{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-300);font-weight:700;padding:16px 12px 6px}
+  .nav{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:4px;color:var(--ink-600);text-decoration:none;font-weight:500;font-size:13.5px;cursor:pointer}
+  .nav:hover{background:#f4f4f2}
+  .nav .i{width:18px;text-align:center;opacity:.85;flex-shrink:0}
+  .nav .cnt{margin-left:auto;border-radius:999px;font-size:11px;font-weight:800;padding:1px 8px;min-width:22px;text-align:center;color:#fff}
+  .fold{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:4px;color:var(--ink-400);cursor:pointer;font-weight:600;font-size:13.5px}
+  .fold:hover{background:#f4f4f2}
+  .fold .i{width:18px;text-align:center;flex-shrink:0}
+  .fold .chev{margin-left:auto;transition:transform .12s}
+  .fold.open .chev{transform:rotate(90deg)}
+  .foldbody{display:none}
+  .foldbody.show{display:block}
+  .foldbody .nav{color:var(--ink-400);font-size:13px;padding-left:28px}
+
+  /* ---------- Main ---------- */
+  .main{flex:1;padding:28px 36px;max-width:1080px;min-width:0}
+  .eyebrow{font-size:13px;font-weight:600;color:var(--brand-600);margin-bottom:4px}
+  .h1{font-weight:700;letter-spacing:-.01em;font-size:26px}
+  .lead{margin:6px 0 24px;color:var(--ink-500);font-size:15px}
+
+  /* Stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}
+  .card{background:#fff;border:1px solid var(--ink-100);border-radius:4px;box-shadow:0 1px 2px 0 rgb(0 0 0/.04)}
+  .stat{position:relative;overflow:hidden;padding:18px}
+  .stat .bar{position:absolute;top:0;left:0;height:3px;width:38px;transition:width .2s}
+  .stat:hover .bar{width:100%}
+  .stat .l{font-size:12.5px;font-weight:500;color:var(--ink-400)}
+  .stat .v{font-weight:700;font-size:26px;margin-top:8px;letter-spacing:-.01em}
+  .stat .s{font-size:12px;color:var(--ink-300);margin-top:6px}
+
+  /* Section heading */
+  .sect{font-weight:700;font-size:15px;margin:26px 0 12px;display:flex;align-items:baseline;gap:8px}
+  .sect .cnt{color:var(--ink-400);font-weight:500;font-size:13.5px}
+
+  /* Info-strip (#3 ontbreekt nog) */
+  .strip{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--ink-100);border-left:3px solid var(--brand-600);border-radius:4px;padding:12px 15px;font-size:13.5px;color:var(--ink-600)}
+  .strip .stripic{font-size:16px;flex-shrink:0}
+  .strip b{color:var(--ink-900)}
+  /* Herhaal-waarschuwing (#1) */
+  .repeat{display:inline-flex;align-items:center;gap:5px;background:var(--red-50);color:var(--red-700);border-radius:2px;padding:1px 7px;font-size:11px;font-weight:800;margin-top:5px;box-shadow:inset 0 0 0 1px #fecaca}
+
+  /* ---------- Week row: one consistent grid ---------- */
+  .wk{background:#fff;border:1px solid var(--ink-100);border-radius:4px;margin-bottom:10px;overflow:hidden}
+  .wk.warn{border-left:3px solid var(--amber-500)}
+  .wk.err{border-left:3px solid var(--red-500)}
+  /* head grid: avatar | naam+rol | uren | factuur | reden-badge | chevron */
+  .wkhead{display:grid;grid-template-columns:40px minmax(0,1fr) 96px 96px 150px 20px;align-items:center;gap:14px;padding:13px 16px;cursor:pointer}
+  .wkhead:hover{background:#fafaf9}
+  .ava{width:40px;height:40px;border-radius:999px;background:var(--ink-100);color:var(--ink-500);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  .who{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .role{color:var(--ink-400);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  .col{text-align:right}
+  .col .n{font-weight:700;font-size:14px}
+  .col .cap{color:var(--ink-400);font-size:11.5px;margin-top:1px}
+  .chev{color:var(--ink-300);transition:transform .12s;justify-self:center}
+  .wk.open .chev{transform:rotate(90deg)}
+  .badge-cell{display:flex;justify-content:flex-end}
+
+  .pill{display:inline-flex;align-items:center;border-radius:2px;padding:2px 9px;font-size:11px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}
+  .pill.green{background:var(--emerald-50);color:var(--emerald-700);box-shadow:inset 0 0 0 1px #a7f3d0}
+  .pill.amber{background:var(--amber-50);color:var(--amber-700);box-shadow:inset 0 0 0 1px #fde68a}
+  .pill.red{background:var(--red-50);color:var(--red-700);box-shadow:inset 0 0 0 1px #fecaca}
+  .pill.violet{background:var(--violet-50);color:var(--violet-700);box-shadow:inset 0 0 0 1px #ddd6fe}
+
+  /* Expanded body */
+  .wkbody{display:none;border-top:1px solid var(--ink-100);padding:16px;background:#fafaf9}
+  .wk.open .wkbody{display:block}
+  .docs{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .docs.three{grid-template-columns:repeat(3,1fr)}
+  .doc{background:#fff;border:1px solid var(--ink-100);border-radius:4px;padding:14px}
+  .doc h4{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-400);margin-bottom:10px;font-weight:700}
+  .kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:5px 0;font-size:13px;border-bottom:1px dashed var(--ink-100)}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--ink-500)}
+  .kv .val{font-weight:700;text-align:right;white-space:nowrap}
+  .check{margin-top:12px;border-radius:4px;padding:11px 13px;font-size:13px;display:flex;gap:10px;align-items:flex-start;line-height:1.45}
+  .check.ok{background:var(--emerald-50);color:var(--emerald-700)}
+  .check.warn{background:var(--amber-50);color:var(--amber-700)}
+  .check.err{background:var(--red-50);color:var(--red-700)}
+  .check .ic{flex-shrink:0}
+  .check b{font-weight:800}
+  .wkact{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap}
+
+  /* Notitie-blok */
+  .notebox{background:#fff;border:1px solid var(--ink-100);border-radius:4px;padding:13px 14px;margin-top:12px}
+  .nbhead{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+  .nbhead>span:first-child{font-weight:700;font-size:13px}
+  .nbhint{color:var(--ink-400);font-size:12px}
+  textarea.nb{width:100%;min-height:64px;resize:vertical;border:1px solid var(--ink-200);border-radius:3px;padding:9px 11px;font:inherit;font-size:13px;color:var(--ink-900)}
+  textarea.nb:focus{outline:none;border-color:var(--brand-600)}
+  .nbchk{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--ink-500)}
+
+  /* E-mail modal */
+  .overlay{position:fixed;inset:0;background:rgba(17,17,16,.45);display:none;align-items:center;justify-content:center;padding:24px;z-index:50}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:6px;width:100%;max-width:620px;max-height:88vh;overflow:auto;box-shadow:0 24px 60px -20px rgba(0,0,0,.5)}
+  .mhead{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--ink-100)}
+  .mhead .t{font-weight:700;font-size:15px}
+  .mx{cursor:pointer;color:var(--ink-400);font-size:20px;line-height:1;background:none;border:0}
+  .mbody{padding:0 20px 8px}
+  .mfield{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--ink-100);font-size:13px}
+  .mfield .lbl{color:var(--ink-400);width:64px;flex-shrink:0}
+  .mfield .in{flex:1;font-weight:600}
+  /* E-mail voorbeeld (nette opmaak) */
+  .mail{margin:16px 0;border:1px solid var(--ink-100);border-radius:4px;overflow:hidden}
+  .mail .top{background:var(--brand-600);height:6px}
+  .mail .pad{padding:22px 24px;font-size:13.5px;line-height:1.65;color:var(--ink-700)}
+  .mail .logo{font-weight:800;color:var(--brand-600);font-size:18px;letter-spacing:.3px;margin-bottom:16px}
+  .mail p{margin:0 0 12px}
+  .mail .box{background:#fafaf9;border:1px solid var(--ink-100);border-radius:4px;padding:12px 14px;margin:14px 0}
+  .mail .box .li{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
+  .mail .box .li b{color:var(--ink-900)}
+  .mail .amber{color:var(--amber-700);font-weight:700}
+  .mail .note-q{border-left:3px solid var(--brand-600);padding:4px 0 4px 12px;color:var(--ink-600);font-style:italic;margin:14px 0}
+  .mail .sig{margin-top:18px;color:var(--ink-500);font-size:12.5px}
+  .mfoot{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--ink-100);position:sticky;bottom:0;background:#fff}
+
+  .btn{border:0;border-radius:3px;padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer;transition:transform .06s;white-space:nowrap}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:#fff;color:var(--ink-600);box-shadow:inset 0 0 0 1px var(--ink-200)}
+  .btn.ok{background:var(--emerald-600);color:#fff}
+  .btn.brand{background:var(--brand-600);color:#fff}
+  .btn.wacht{background:var(--amber-50);color:var(--amber-700);box-shadow:inset 0 0 0 1px #fde68a}
+  .btn.big{padding:12px 18px;font-size:14px}
+
+  /* Green auto block */
+  .green{background:var(--emerald-50);border:1px solid #a7f3d0;border-radius:4px;padding:16px;margin:20px 0 0}
+  .green .top{display:flex;align-items:center;gap:12px}
+  .green .t{font-weight:800;color:var(--emerald-700);font-size:14.5px}
+  .green .desc{font-size:13px;color:#3d7a53;margin-top:8px;line-height:1.5}
+  details.g{margin-top:12px}
+  details.g summary{cursor:pointer;color:var(--emerald-700);font-weight:600;font-size:13px;list-style:none}
+  details.g summary::-webkit-details-marker{display:none}
+  .grow-row{display:grid;grid-template-columns:170px 96px minmax(0,1fr) 130px;align-items:baseline;gap:12px;font-size:12.5px;color:#3d7a53;padding:7px 0;border-top:1px dashed #bbead0}
+  .grow-row .amt{text-align:right;font-weight:700}
+
+  .foot{margin-top:22px;padding-top:18px;border-top:1px solid var(--ink-100)}
+  .note{background:var(--blue-50);border:1px solid #d3e2ff;color:#2c4a86;border-radius:4px;padding:11px 14px;font-size:12.5px;line-height:1.5;margin-top:16px}
+
+  /* Tabel (#5 marge, #6 betaal) */
+  .tbl{background:#fff;border:1px solid var(--ink-100);border-radius:4px;overflow:hidden}
+  .trow{display:grid;grid-template-columns:minmax(0,1.6fr) 1fr 1fr 1fr 1.2fr;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--ink-100);font-size:13px}
+  .trow:last-child{border-bottom:0}
+  .trow.th{background:#fafaf9;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-400);font-weight:700}
+  .trow .r{text-align:right;justify-self:end}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink-900);color:#fff;padding:11px 18px;border-radius:4px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+  .tag{position:fixed;top:10px;right:14px;background:var(--ink-900);color:#fff;font-size:11px;padding:4px 10px;border-radius:3px;opacity:.85;font-weight:600}
+</style>
+</head>
+<body>
+<div class="tag">MOCKUP — nog niet live</div>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="side">
+    <div class="brand">Q4S</div>
+    <div class="hero" onclick="show('week')"><span class="i">📅</span> Weekverwerking <span class="cnt">3</span></div>
+    <a class="nav" onclick="show('wacht')"><span class="i">⏳</span> Wachtkamer <span class="cnt" style="background:var(--amber-500)">2</span></a>
+    <a class="nav" onclick="show('marge')"><span class="i">📈</span> Marge-overzicht</a>
+    <a class="nav" onclick="show('betaal')"><span class="i">🏦</span> Betaalmatching <span class="cnt" style="background:var(--brand-600)">4</span></a>
+
+    <div class="sec">Werk</div>
+    <a class="nav"><span class="i">👤</span> Kandidaten</a>
+    <a class="nav"><span class="i">💼</span> Plaatsingen</a>
+    <a class="nav"><span class="i">🏢</span> Klanten</a>
+
+    <div class="sec">Administratie</div>
+    <div class="fold" id="fold" onclick="fold()"><span class="i">⚙️</span> Finance &amp; Admin <span class="chev">›</span></div>
+    <div class="foldbody" id="fb">
+      <a class="nav"><span class="i">💲</span> Facturen (verkoop)</a>
+      <a class="nav"><span class="i">🔗</span> Inkoopfacturen</a>
+      <a class="nav"><span class="i">📥</span> Ontvangen facturen</a>
+      <a class="nav"><span class="i">✈️</span> Verzendmap</a>
+      <a class="nav"><span class="i">🏦</span> Betalingen (SEPA)</a>
+      <a class="nav"><span class="i">🔔</span> Betaalmonitor</a>
+      <a class="nav"><span class="i">📊</span> Boekhouding &amp; BTW</a>
+      <a class="nav"><span class="i">🗄️</span> Archief</a>
+      <a class="nav"><span class="i">⚙️</span> Instellingen</a>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ============ WEEKVERWERKING ============ -->
+    <section id="view-week">
+      <div class="eyebrow">Facturatie</div>
+      <div class="h1">Weekverwerking</div>
+      <div class="lead">Week 36 · 1–7 september 2026 — controleer de afwijkingen, de rest is al automatisch afgehandeld.</div>
+
+      <div class="stats">
+        <div class="card stat"><span class="bar" style="background:var(--brand-600)"></span><div class="l">Freelancers deze week</div><div class="v mono">12</div><div class="s">timesheet + factuur binnen</div></div>
+        <div class="card stat"><span class="bar" style="background:var(--emerald-500)"></span><div class="l">Automatisch afgehandeld</div><div class="v mono" style="color:var(--emerald-600)">9</div><div class="s">uren + concept-factuur klaar</div></div>
+        <div class="card stat"><span class="bar" style="background:var(--amber-500)"></span><div class="l">Te controleren</div><div class="v mono" style="color:var(--amber-600)">3</div><div class="s">afwijking gevonden</div></div>
+        <div class="card stat"><span class="bar" style="background:var(--ink-900)"></span><div class="l">Verkoop deze week</div><div class="v mono">€38.240</div><div class="s">marge €4.780</div></div>
+      </div>
+
+      <!-- #3 Ontbreekt nog + #4 bulk-reminder -->
+      <div class="strip">
+        <span class="stripic">📮</span>
+        <div><b>3 van 12 nog niet binnen</b> — Ahmed Ben Ali, Jan de Vries, Piet Bakker hebben deze week nog geen timesheet + factuur gestuurd.</div>
+        <button class="btn ghost" style="margin-left:auto" onclick="t('Herinnering gestuurd naar alle 3')">✉️ Herinner alle 3</button>
+      </div>
+
+      <div class="sect">⚠️ Te controleren <span class="cnt">— alleen deze wijken af</span></div>
+
+      <!-- WARN: uren mismatch -->
+      <div class="wk warn" id="w1">
+        <div class="wkhead" onclick="op('w1')">
+          <div class="ava">PJ</div>
+          <div style="min-width:0">
+            <div class="who">Piet Jansen</div>
+            <div class="role">Lasser 141 · Sif Group HKW8</div>
+          </div>
+          <div class="col"><div class="n mono">42 u</div><div class="cap">timesheet</div></div>
+          <div class="col"><div class="n mono" style="color:var(--amber-600)">40 u</div><div class="cap">op factuur</div></div>
+          <div class="badge-cell"><span class="pill amber">uren wijken af</span></div>
+          <span class="chev">›</span>
+        </div>
+        <div class="wkbody">
+          <div class="docs">
+            <div class="doc">
+              <h4>Timesheet (uren)</h4>
+              <div class="kv"><span class="k">Week</span><span class="val">36</span></div>
+              <div class="kv"><span class="k">Uren</span><span class="val">42,0</span></div>
+              <div class="kv"><span class="k">Tarief (inkoop)</span><span class="val">€70,00</span></div>
+              <div class="kv"><span class="k">Verwacht bedrag</span><span class="val">€2.940</span></div>
+            </div>
+            <div class="doc">
+              <h4>Factuur van freelancer</h4>
+              <div class="kv"><span class="k">Factuurnr.</span><span class="val">2026-114</span></div>
+              <div class="kv"><span class="k">Uren op factuur</span><span class="val" style="color:var(--amber-600)">40,0</span></div>
+              <div class="kv"><span class="k">Bedrag (uren)</span><span class="val">€2.800</span></div>
+              <div class="kv"><span class="k">Kilometers</span><span class="val">220 km · €66</span></div>
+            </div>
+          </div>
+          <div class="check ok"><span class="ic">✅</span><div><b>Kilometers kloppen.</b> 220 km × €0,30 = €66, gelijk aan de km-vergoeding op de plaatsing. Wordt 1-op-1 doorverwerkt (geen marge).</div></div>
+          <div class="check warn"><span class="ic">⚠️</span><div><b>Uren komen niet overeen.</b> De timesheet zegt 42 u, zijn factuur 40 u (€140 verschil). Kies welke klopt voordat de verkoopfactuur wordt gemaakt.</div></div>
+          <div class="wkact">
+            <button class="btn ghost" onclick="t('Opent timesheet + factuur naast elkaar')">Bekijk &amp; corrigeer</button>
+            <button class="btn wacht" onclick="rm('w1','Naar de wachtkamer')">Naar wachtkamer</button>
+            <button class="btn ok" onclick="rm('w1','Goedgekeurd op 40 u')">40 u aanhouden &amp; goedkeuren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ERR: bedrag klopt niet -->
+      <div class="wk err" id="w2">
+        <div class="wkhead" onclick="op('w2')">
+          <div class="ava">KB</div>
+          <div style="min-width:0">
+            <div class="who">Klaas Bakker</div>
+            <div class="role">NDT Level 2 · Smulders</div>
+            <div class="repeat">🔁 3e keer tarief te hoog</div>
+          </div>
+          <div class="col"><div class="n mono">€2.800</div><div class="cap">verwacht</div></div>
+          <div class="col"><div class="n mono" style="color:var(--red-600)">€3.150</div><div class="cap">op factuur</div></div>
+          <div class="badge-cell"><span class="pill red">bedrag klopt niet</span></div>
+          <span class="chev">›</span>
+        </div>
+        <div class="wkbody">
+          <div class="docs">
+            <div class="doc">
+              <h4>Timesheet (uren)</h4>
+              <div class="kv"><span class="k">Week</span><span class="val">36</span></div>
+              <div class="kv"><span class="k">Uren</span><span class="val">40,0</span></div>
+              <div class="kv"><span class="k">Tarief (inkoop)</span><span class="val">€70,00</span></div>
+              <div class="kv"><span class="k">Verwacht bedrag</span><span class="val">€2.800</span></div>
+            </div>
+            <div class="doc">
+              <h4>Factuur van freelancer</h4>
+              <div class="kv"><span class="k">Factuurnr.</span><span class="val">F-2026-88</span></div>
+              <div class="kv"><span class="k">Uren op factuur</span><span class="val">40,0</span></div>
+              <div class="kv"><span class="k">Bedrag</span><span class="val" style="color:var(--red-600)">€3.150</span></div>
+              <div class="kv"><span class="k">Impliciet tarief</span><span class="val" style="color:var(--red-600)">€78,75</span></div>
+            </div>
+          </div>
+          <div class="check err"><span class="ic">🚫</span><div><b>Bedrag hoger dan afgesproken.</b> 40 u × €70 = €2.800, maar zijn factuur staat op €3.150 (tarief €78,75 i.p.v. €70). Neem contact op of pas de plaatsing aan.</div></div>
+          <div class="check warn"><span class="ic">📉</span><div><b>Marge onder druk.</b> Met dit factuurbedrag zakt de marge naar <b>€1,25/u</b> (normaal €10/u bij Smulders). <span style="opacity:.85">— marge-bewaking</span></div></div>
+          <div class="check warn"><span class="ic">🔎</span><div><b>Mogelijk dubbel.</b> Factuurnummer <b>F-2026-88</b> kwam 2 weken geleden ook al langs. Controleer of dit geen dubbele inzending is. <span style="opacity:.85">— dubbel-detectie</span></div></div>
+
+          <!-- Eigen controle + notitie -->
+          <div class="notebox">
+            <div class="nbhead">
+              <span>📝 Eigen bevinding</span>
+              <span class="nbhint">Zag je zelf nog iets anders? Zet het erbij — het komt in de mail te staan.</span>
+            </div>
+            <textarea id="note-w2" class="nb" placeholder="Bijv.: 'Ook het factuurnummer ontbreekt, en de periode klopt niet — graag week 36 i.p.v. 35.'"></textarea>
+            <label class="nbchk"><input type="checkbox" id="chk-hours" checked> Uren-/bedragafwijking meesturen (automatisch herkend)</label>
+          </div>
+
+          <div class="wkact">
+            <button class="btn ghost" onclick="t('Opent de ontvangen factuur')">Bekijk factuur</button>
+            <button class="btn wacht" onclick="rm('w2','Naar de wachtkamer')">Naar wachtkamer</button>
+            <button class="btn brand" onclick="openMail()">✉️ Mail freelancer</button>
+            <button class="btn ok" onclick="rm('w2','Goedgekeurd')">Klopt toch — goedkeuren</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WARN: declaratie / rommelige mail -->
+      <div class="wk warn" id="w4">
+        <div class="wkhead" onclick="op('w4')">
+          <div class="ava">PR</div>
+          <div style="min-width:0">
+            <div class="who">Peter Rosenberg</div>
+            <div class="role">Rosenberg W&amp;I · zakenreis Slowakije · Lyondell Basell</div>
+          </div>
+          <div class="col"><div class="n mono">15</div><div class="cap">bijlagen</div></div>
+          <div class="col"><div class="n mono">€99,90</div><div class="cap">declaratie</div></div>
+          <div class="badge-cell"><span class="pill amber">koppeling checken</span></div>
+          <span class="chev">›</span>
+        </div>
+        <div class="wkbody">
+          <div class="check warn" style="margin-top:0;margin-bottom:12px"><span class="ic">📬</span><div><b>Eén mail, meerdere documenten.</b> De AI splitste de mail van <b>facturen@rw-i.nl</b> ("timesheet week 34 en 35 + declaratieformulier van Peter voor Lyondell Basell"). Afzender + naam "Peter" → gekoppeld aan <b>Peter Rosenberg</b>. Bevestig de koppeling.</div></div>
+          <div class="docs three">
+            <div class="doc">
+              <h4>Timesheets</h4>
+              <div class="kv"><span class="k">Week 34</span><span class="val">40,0 u</span></div>
+              <div class="kv"><span class="k">Week 35</span><span class="val">38,0 u</span></div>
+              <div class="kv"><span class="k">Urenregistratie</span><span class="val" style="color:var(--emerald-600)">gereed</span></div>
+            </div>
+            <div class="doc">
+              <h4>Kostenfactuur</h4>
+              <div class="kv"><span class="k">FO-Q4S-023</span><span class="val">€30,00</span></div>
+              <div class="kv"><span class="k">Transfer / reis</span><span class="val">€30,00</span></div>
+              <div class="kv"><span class="k">Klant</span><span class="val">Lyondell B.</span></div>
+            </div>
+            <div class="doc">
+              <h4>Bonnetjes (3)</h4>
+              <div class="kv"><span class="k">Restaurant</span><span class="val">€50,30</span></div>
+              <div class="kv"><span class="k">Eten / parkeren</span><span class="val">€19,60</span></div>
+              <div class="kv"><span class="k">Categorie</span><span class="val">Verblijf</span></div>
+            </div>
+          </div>
+          <div class="check ok"><span class="ic">✅</span><div><b>Geboekt onder Peter → Lyondell Basell.</b> Totaal €99,90. Horeca-bonnetjes zonder aftrekbare BTW zijn apart gemarkeerd voor de boekhouding.</div></div>
+          <div class="wkact">
+            <button class="btn ghost" onclick="t('Opent de mail + 15 bijlagen')">Bekijk mail &amp; bijlagen</button>
+            <button class="btn wacht" onclick="rm('w4','Naar de wachtkamer')">Naar wachtkamer</button>
+            <button class="btn ok" onclick="rm('w4','Koppeling bevestigd, alles verwerkt')">Koppeling klopt — verwerk</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ERR: geen plaatsing -->
+      <div class="wk err" id="w3">
+        <div class="wkhead" onclick="op('w3')">
+          <div class="ava">MA</div>
+          <div style="min-width:0">
+            <div class="who">Mohammed Amrani</div>
+            <div class="role">— nog niet gekoppeld aan een klant</div>
+          </div>
+          <div class="col"><div class="n mono">38 u</div><div class="cap">timesheet</div></div>
+          <div class="col"><div class="n mono" style="color:var(--ink-300)">—</div><div class="cap">geen tarief</div></div>
+          <div class="badge-cell"><span class="pill red">geen plaatsing</span></div>
+          <span class="chev">›</span>
+        </div>
+        <div class="wkbody">
+          <div class="check err" style="margin-top:0"><span class="ic">🚫</span><div><b>Geen actieve plaatsing gevonden.</b> Deze freelancer is niet gekoppeld aan een klant/tarief, dus er kan geen inkoop- of verkoopbedrag berekend worden. Koppel eerst een plaatsing.</div></div>
+          <div class="wkact">
+            <button class="btn wacht" onclick="rm('w3','Naar de wachtkamer')">Naar wachtkamer</button>
+            <button class="btn brand" onclick="t('Opent Plaatsingen')">Plaatsing koppelen</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Groen -->
+      <div class="green">
+        <div class="top">
+          <span style="font-size:19px">✅</span>
+          <div class="t">9 freelancers — automatisch afgehandeld</div>
+          <span class="pill green" style="margin-left:auto">uren geaccepteerd · concept klaar</span>
+        </div>
+        <div class="desc">Timesheet én factuur klopten, dus de AI heeft de <b>uren geaccepteerd</b> en de <b>verkoopfactuur als concept</b> klaargezet in de Verzendmap (gericht aan de juiste klant-HR). Je hoeft ze alleen nog te verzenden.</div>
+        <details class="g">
+          <summary>Toon de 9 afgehandelde freelancers ›</summary>
+          <div style="margin-top:4px">
+            <div class="grow-row"><b>R. van Son</b><span class="mono">40 u × €80</span><span>QC Inspector · Sif</span><span class="amt mono">€3.200 → concept</span></div>
+            <div class="grow-row"><b>D. Kowalski</b><span class="mono">45 u × €82</span><span>NDT · Smulders</span><span class="amt mono">€3.690 → concept</span></div>
+            <div class="grow-row"><b>T. Nowak</b><span class="mono">40 u × €76</span><span>Fitter · HKW8</span><span class="amt mono">€3.040 → concept</span></div>
+            <div class="grow-row"><b>+ 6 meer…</b><span></span><span></span><span class="amt mono">totaal €28.310</span></div>
+          </div>
+        </details>
+      </div>
+
+      <div class="foot">
+        <button class="btn brand big" onclick="t('Opent de Verzendmap — 9 concepten klaar')">✈️ Ga naar Verzendmap (9 concepten)</button>
+      </div>
+
+      <div class="note">🔒 <b>Alleen groene weken lopen automatisch door</b> — uren geaccepteerd + verkoopfactuur als concept. Er wordt <b>niets automatisch verzonden</b> en <b>niets betaald</b>: een mens drukt op verzenden in de Verzendmap.</div>
+    </section>
+
+    <!-- ============ WACHTKAMER ============ -->
+    <section id="view-wacht" style="display:none">
+      <div class="eyebrow">Facturatie</div>
+      <div class="h1">Wachtkamer</div>
+      <div class="lead">Weken die wachten op een gecorrigeerde timesheet of factuur van de freelancer — uit het weekoverzicht gehaald zodat dat schoon blijft.</div>
+
+      <div class="wk warn">
+        <div class="wkhead" style="cursor:default;grid-template-columns:40px minmax(0,1fr) 150px 150px auto">
+          <div class="ava" style="background:var(--amber-50);color:var(--amber-700)">AB</div>
+          <div style="min-width:0">
+            <div class="who">Ahmed Ben Ali</div>
+            <div class="role">Fitter · Iemants</div>
+          </div>
+          <div class="col"><div class="n mono" style="font-size:13px">bedrag klopte niet</div><div class="cap">reden</div></div>
+          <div class="col"><div class="n mono" style="font-size:13px">3 dagen</div><div class="cap">sinds 29 aug</div></div>
+          <div style="display:flex;gap:8px;justify-self:end">
+            <button class="btn ghost" onclick="t('Herinnering gestuurd')">Herinner</button>
+            <button class="btn ghost" onclick="t('Teruggezet naar het weekoverzicht')">Terug</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="wk warn">
+        <div class="wkhead" style="cursor:default;grid-template-columns:40px minmax(0,1fr) 150px 150px auto">
+          <div class="ava" style="background:var(--amber-50);color:var(--amber-700)">JV</div>
+          <div style="min-width:0">
+            <div class="who">Jan de Vries</div>
+            <div class="role">Lasser 135 · Hollandia</div>
+          </div>
+          <div class="col"><div class="n mono" style="font-size:13px">uren weken af</div><div class="cap">reden</div></div>
+          <div class="col"><div class="n mono" style="font-size:13px">2 dagen</div><div class="cap">sinds 30 aug</div></div>
+          <div style="display:flex;gap:8px;justify-self:end">
+            <button class="btn ghost" onclick="t('Herinnering gestuurd')">Herinner</button>
+            <button class="btn ghost" onclick="t('Teruggezet naar het weekoverzicht')">Terug</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="note" style="background:var(--emerald-50);border-color:#a7f3d0;color:var(--emerald-700)">✅ <b>Automatisch terug.</b> Zodra een nieuwe timesheet of factuur van deze freelancer binnenkomt, wordt die opnieuw gecontroleerd en verschijnt de week weer in het weekoverzicht — groen als het dan klopt.</div>
+    </section>
+
+    <!-- ============ MARGE-OVERZICHT (#5) ============ -->
+    <section id="view-marge" style="display:none">
+      <div class="eyebrow">Facturatie</div>
+      <div class="h1">Marge-overzicht</div>
+      <div class="lead">Waar verdien je aan, en waar staat de marge onder druk — per klant en per freelancer.</div>
+
+      <div class="stats" style="grid-template-columns:repeat(3,1fr)">
+        <div class="card stat"><span class="bar" style="background:var(--emerald-500)"></span><div class="l">Marge deze maand</div><div class="v mono" style="color:var(--emerald-600)">€19.240</div><div class="s">gemiddeld €9,40/u</div></div>
+        <div class="card stat"><span class="bar" style="background:var(--brand-600)"></span><div class="l">Beste klant</div><div class="v mono" style="font-size:20px">Sif Group</div><div class="s">€6.120 marge · €11,20/u</div></div>
+        <div class="card stat"><span class="bar" style="background:var(--red-500)"></span><div class="l">Onder druk</div><div class="v mono" style="font-size:20px">Smulders</div><div class="s">€4,10/u · onder norm</div></div>
+      </div>
+
+      <div class="sect">Per klant</div>
+      <div class="tbl">
+        <div class="trow th"><span>Klant</span><span class="r">Freelancers</span><span class="r">Uren</span><span class="r">Marge/u</span><span class="r">Marge totaal</span></div>
+        <div class="trow"><span><b>Sif Group</b></span><span class="r mono">5</span><span class="r mono">820</span><span class="r mono" style="color:var(--emerald-600)">€11,20</span><span class="r mono">€6.120</span></div>
+        <div class="trow"><span><b>Hollandia</b></span><span class="r mono">3</span><span class="r mono">460</span><span class="r mono" style="color:var(--emerald-600)">€10,50</span><span class="r mono">€4.830</span></div>
+        <div class="trow"><span><b>Iemants</b></span><span class="r mono">2</span><span class="r mono">300</span><span class="r mono">€9,00</span><span class="r mono">€2.700</span></div>
+        <div class="trow"><span><b>Smulders</b> <span class="pill red" style="margin-left:6px">onder norm</span></span><span class="r mono">2</span><span class="r mono">340</span><span class="r mono" style="color:var(--red-600)">€4,10</span><span class="r mono">€1.394</span></div>
+      </div>
+      <div class="note">💡 <b>Smulders</b> levert €4,10/u tegen een norm van €10 — mogelijk verlopen tariefafspraak of te lage verkoopprijs. Bekijk de plaatsingen om de marge te herstellen.</div>
+    </section>
+
+    <!-- ============ BETAALMATCHING (#6) ============ -->
+    <section id="view-betaal" style="display:none">
+      <div class="eyebrow">Facturatie</div>
+      <div class="h1">Betaalmatching</div>
+      <div class="lead">Klantbetalingen automatisch gekoppeld aan verkoopfacturen — en zie wie je pas mag uitbetalen als de klant heeft betaald.</div>
+
+      <div class="sect">Openstaand & gematcht</div>
+      <div class="tbl">
+        <div class="trow th"><span>Verkoopfactuur</span><span>Klant</span><span class="r">Bedrag</span><span class="r">Status</span><span class="r">Freelancer uitbetalen?</span></div>
+        <div class="trow"><span class="mono"><b>2026-0142</b></span><span>Sif Group</span><span class="r mono">€3.200</span><span class="r"><span class="pill green">betaald</span></span><span class="r"><span class="pill green">vrijgeven</span></span></div>
+        <div class="trow"><span class="mono"><b>2026-0143</b></span><span>Hollandia</span><span class="r mono">€3.690</span><span class="r"><span class="pill green">betaald</span></span><span class="r"><span class="pill green">vrijgeven</span></span></div>
+        <div class="trow"><span class="mono"><b>2026-0144</b></span><span>Iemants</span><span class="r mono">€3.040</span><span class="r"><span class="pill amber">open · 12 dgn</span></span><span class="r"><span class="pill amber">wacht op klant</span></span></div>
+        <div class="trow"><span class="mono"><b>2026-0140</b></span><span>Smulders</span><span class="r mono">€2.800</span><span class="r"><span class="pill red">te laat · 34 dgn</span></span><span class="r"><span class="pill red">herinnering sturen</span></span></div>
+      </div>
+      <div class="note">🔒 <b>Cashflow-bescherming.</b> Freelancers worden pas als "vrij te geven" gemarkeerd zodra de klant heeft betaald. Zo schiet je geen geld voor. Betaling niet automatisch: een mens keurt de uitbetaling goed.</div>
+    </section>
+
+  </main>
+</div>
+
+<!-- E-mail voorbeeld modal -->
+<div class="overlay" id="mailOverlay">
+  <div class="modal">
+    <div class="mhead">
+      <div class="t">✉️ Mail naar freelancer — controleer &amp; verstuur</div>
+      <button class="mx" onclick="closeMail()">×</button>
+    </div>
+    <div class="mbody">
+      <div class="mfield"><span class="lbl">Aan</span><span class="in">Klaas Bakker &lt;klaas@bakker-inspection.nl&gt;</span></div>
+      <div class="mfield"><span class="lbl">Onderwerp</span><span class="in">Vraag over je factuur F-2026-88 (week 36)</span></div>
+
+      <!-- Nette e-mail layout -->
+      <div class="mail">
+        <div class="top"></div>
+        <div class="pad">
+          <div class="logo">Q4S</div>
+          <p>Beste Klaas,</p>
+          <p>Dank voor het insturen van je timesheet en factuur voor week 36. Bij de controle liep ons systeem tegen het volgende aan:</p>
+
+          <div class="box">
+            <div class="li"><span>Uren (timesheet)</span><b>40,0 u</b></div>
+            <div class="li"><span>Afgesproken tarief</span><b>€70,00 / u</b></div>
+            <div class="li"><span>Verwacht bedrag</span><b>€2.800,00</b></div>
+            <div class="li"><span>Bedrag op je factuur</span><b class="amber">€3.150,00</b></div>
+            <div class="li"><span>Verschil</span><b class="amber">+ €350,00 (tarief €78,75)</b></div>
+          </div>
+
+          <p>Zou je je factuur willen corrigeren naar het afgesproken tarief van €70,00 per uur, of ons laten weten als hier een reden voor is die wij missen?</p>
+
+          <div class="note-q" id="mailNote">Ook het factuurnummer ontbreekt op de bijlage — graag toevoegen bij de nieuwe versie.</div>
+
+          <p>Zodra je een aangepaste factuur stuurt, controleren we die automatisch opnieuw en verwerken we hem verder. Alvast bedankt!</p>
+
+          <div class="sig">
+            Met vriendelijke groet,<br>
+            <b>Administratie Q4S</b><br>
+            admin@q4s.nl · +31 (0)10 123 4567
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn ghost" onclick="closeMail()">Annuleren</button>
+      <button class="btn ghost" onclick="t('E-mail opgeslagen als concept')">Bewaar als concept</button>
+      <button class="btn brand" onclick="closeMail();rm('w2','Mail verstuurd — Klaas staat nu in de wachtkamer')">Verstuur &amp; naar wachtkamer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+  function fold(){document.getElementById('fold').classList.toggle('open');document.getElementById('fb').classList.toggle('show')}
+  function op(id){document.getElementById(id).classList.toggle('open')}
+  function rm(id,msg){var e=document.getElementById(id);e.style.transition='opacity .3s,transform .3s';e.style.opacity='0';e.style.transform='translateX(16px)';setTimeout(function(){e.style.display='none'},300);t(msg)}
+  function show(v){
+    ['week','wacht','marge','betaal'].forEach(function(name){
+      document.getElementById('view-'+name).style.display = (name===v)?'block':'none';
+    });
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  var ti;function t(m){var x=document.getElementById('toast');x.textContent=m;x.classList.add('show');clearTimeout(ti);ti=setTimeout(function(){x.classList.remove('show')},2200)}
+  function openMail(){
+    var note=document.getElementById('note-w2').value.trim();
+    var q=document.getElementById('mailNote');
+    if(note){q.textContent=note;q.style.display='block';}
+    else{q.style.display='none';}
+    document.getElementById('mailOverlay').classList.add('show');
+  }
+  function closeMail(){document.getElementById('mailOverlay').classList.remove('show')}
+</script>
+</body>
+</html>
