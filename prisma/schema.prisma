@@ -443,6 +443,22 @@ model CompanySettings {
   defaultVatRate       Float  @default(21)
   defaultPaymentTermDays Int  @default(30)
   invoiceFooter        String @default("")
+
+  // ---- E-mailhandtekening (footer) ----
+  // Eén centrale handtekening in Q4S-huisstijl (zie het voorbeeld), te kopiëren
+  // naar Outlook/Gmail én gebruikt onder dashboard-mails. Naam/functie zijn per
+  // medewerker in te vullen; de rest is bedrijfsbreed.
+  emailSigName         String @default("")
+  emailSigRole         String @default("")
+  emailSigPhone        String @default("")
+  emailSigEmail        String @default("")
+  emailSigWebsite      String @default("www.q4s.nl")
+  /// Adresregels, één per regel (bijv. "Arnhemseweg 12\n2994 LA Barendrecht\nThe Netherlands").
+  emailSigAddress      String @default("")
+  /// Directe https-URL's naar keurmerk-logo's (DNV/VCU/SNA…), als JSON-lijst.
+  emailSigBadgesJson   String @default("[]")
+  /// Vertrouwelijkheids-disclaimer onderaan de handtekening.
+  emailSigDisclaimer   String @default("")
   /// TESTMODUS: staat hier een e-mailadres, dan gaat ALLE uitgaande mail (facturen,
   /// herinneringen, …) naar dit adres i.p.v. de echte ontvanger — zo test je veilig
   /// zonder klanten/medewerkers te mailen. Leeg = normaal versturen. Env
