@@ -18,7 +18,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/field";
-import { formatCurrency, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { PersoonVierkant, COMPACT_PERSONEN_DREMPEL } from "@/components/ui/persoon-vierkant";
 import {
   gereedeUrenstaatVanPlaatsingen,
@@ -69,20 +69,6 @@ import {
 const KOPJE = "text-[11px] font-bold uppercase tracking-wide text-ink-400";
 /** Vanaf hoeveel mensen het zoekveld verschijnt (daaronder scan je gewoon). */
 const ZOEK_VANAF = 6;
-
-/** Eén tarief, klein en rechts uitgelijnd — overal even breed, dus scanbaar. */
-function Tarief({ label, waarde }: { label: string; waarde: number }) {
-  return (
-    <span className="hidden shrink-0 text-right sm:block">
-      <span className="block text-[10px] font-bold uppercase tracking-wide text-ink-400">
-        {label}
-      </span>
-      <span className="block text-[13px] font-semibold tabular-nums text-ink-900">
-        {formatCurrency(waarde)}
-      </span>
-    </span>
-  );
-}
 
 /** Eén persoon: kop met naam/status, daaronder een regel per plaatsing. */
 function PersoonKaart({
@@ -159,8 +145,6 @@ function PersoonKaart({
                     : rij.plaatsing.functie}
                 </span>
               </span>
-              <Tarief label="inkoop" waarde={rij.plaatsing.config.costRate} />
-              <Tarief label="verkoop" waarde={rij.plaatsing.config.chargeRate} />
               <ArrowRight className="h-4 w-4 shrink-0 text-ink-300 group-hover:text-brand-600" />
             </button>
           ))
