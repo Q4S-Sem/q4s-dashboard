@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Activity,
+  Bell,
   CalendarDays,
   ListTodo,
   ClipboardList,
@@ -94,7 +95,7 @@ export function NotificationCenter({ data }: { data: Notifications }) {
               : "border-transparent text-ink-400 hover:bg-ink-100 hover:text-ink-900",
         )}
       >
-        <Activity className="h-[18px] w-[18px]" />
+        <Bell className="h-[18px] w-[18px]" />
         {urgent > 0 && (
           <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold tabular-nums text-white ring-2 ring-white">
             {urgent > 99 ? "99+" : urgent}
