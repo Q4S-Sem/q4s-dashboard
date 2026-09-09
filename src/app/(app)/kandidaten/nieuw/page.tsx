@@ -13,11 +13,12 @@ export default function NieuweKandidaatPage() {
       <BackLink href="/kandidaten">
         Terug naar kandidaten
       </BackLink>
-      <PageHeader title="Nieuwe kandidaat" description="Voeg een nieuwe kandidaat toe." />
+      <PageHeader title="Nieuwe kandidaat" description="Lees een CV automatisch in, of vul de gegevens handmatig in." />
       <CandidateForm
         action={createCandidate}
         submitLabel="Kandidaat opslaan"
         cancelHref="/kandidaten"
+        showCvIntake
       />
     </div>
   );

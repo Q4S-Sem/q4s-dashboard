@@ -19,6 +19,7 @@ import {
   MAX_PHOTO_BYTES,
   PHOTO_MIME_TYPES,
 } from "@/lib/uploads";
+import { extractCandidateFields, CvExtractError, type CandidateFields } from "@/lib/cv-extract";
 
 const CandidateSchema = z.object({
   firstName: z.string().min(1, "Voornaam is verplicht"),
@@ -218,11 +219,29 @@ export async function createCandidate(
   const parsed = parseForm(CandidateSchema, formData);
   if (!parsed.success) return parsed.state;
 
+  // Optioneel meegestuurd CV-bestand (uit de "CV inlezen"-flow) meteen koppelen.
+  const file = formData.get("cvFile");
+  let cvMeta: {
+    cvFileName: string;
+    cvOriginalName: string;
+    cvMimeType: string;
+    cvSize: number;
+  } | null = null;
+  if (file instanceof File && file.size > 0 && file.size <= MAX_UPLOAD_BYTES) {
+    const fileName = await saveCvUpload(file);
+    cvMeta = {
+      cvFileName: fileName,
+      cvOriginalName: file.name,
+      cvMimeType: file.type || "application/octet-stream",
+      cvSize: file.size,
+    };
+  }
+
   // Manually-added candidates are MANUAL. WEBSITE/TALENTPOOL candidates are
   // created via their own public actions and must keep that source on edit —
   // so `source` is intentionally NOT part of the shared edit payload.
   const created = await db.candidate.create({
-    data: { ...toData(parsed.data), source: "MANUAL" },
+    data: { ...toData(parsed.data), source: "MANUAL", ...(cvMeta ?? {}) },
   });
   revalidatePath("/kandidaten");
   redirect(`/kandidaten/${created.id}`);
@@ -362,4 +381,34 @@ export async function deletePhoto(formData: FormData) {
   revalidatePath("/kandidaten");
   revalidatePath(`/kandidaten/${id}`);
   redirect(`/kandidaten/${id}`);
+}
+
+// ---------- CV automatisch uitlezen (talentpool) ----------
+
+export type CvReadResult =
+  | { ok: true; fields: CandidateFields }
+  | { ok: false; error: string };
+
+/**
+ * Lees een geüpload CV (PDF/Word/afbeelding) uit tot talentpool-kandidaatvelden.
+ * Wordt aangeroepen vanuit het "Nieuwe kandidaat"-formulier zodat de recruiter de
+ * gevonden gegevens nog kan controleren en corrigeren vóór opslaan. Slaat zelf
+ * niets op — puur uitlezen.
+ */
+export async function readCvFields(formData: FormData): Promise<CvReadResult> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "Geen bestand ontvangen." };
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return { ok: false, error: "Dit bestand is te groot." };
+  }
+  try {
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const fields = await extractCandidateFields(bytes, file.name, file.type || "");
+    return { ok: true, fields };
+  } catch (err) {
+    if (err instanceof CvExtractError) return { ok: false, error: err.message };
+    return { ok: false, error: "Het CV kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in." };
+  }
 }

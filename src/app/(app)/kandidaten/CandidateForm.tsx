@@ -3,8 +3,10 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import type { Candidate } from "@prisma/client";
+import { Sparkles, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { Dropzone } from "@/components/ui/dropzone";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -14,6 +16,7 @@ import {
   CANDIDATE_INTERVIEW_STATUSES,
 } from "@/lib/domain";
 import { emptyFormState, type FormState } from "@/lib/form";
+import { readCvFields } from "./actions";
 
 /** Format a Date to yyyy-mm-dd for a date-input default value. */
 function di(d: Date | null | undefined): string {
@@ -27,58 +30,163 @@ export function CandidateForm({
   candidate,
   submitLabel,
   cancelHref,
+  /** Toon de "CV inlezen"-blok bovenaan (alleen bij een nieuwe kandidaat). */
+  showCvIntake = false,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   candidate?: Candidate;
   submitLabel: string;
   cancelHref: string;
+  showCvIntake?: boolean;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
-  const [availability, setAvailability] = useState(
-    candidate?.availability ?? "ONBEKEND",
-  );
-  const [interviewStatus, setInterviewStatus] = useState(
-    candidate?.interviewStatus ?? "NONE",
-  );
+
+  // Gecontroleerde velden zodat de AI-uitlezing ze kan invullen. Startwaarden uit
+  // de kandidaat (bij bewerken) of leeg (bij nieuw).
+  const [firstName, setFirstName] = useState(candidate?.firstName ?? "");
+  const [lastName, setLastName] = useState(candidate?.lastName ?? "");
+  const [email, setEmail] = useState(candidate?.email ?? "");
+  const [phone, setPhone] = useState(candidate?.phone ?? "");
+  const [discipline, setDiscipline] = useState(candidate?.discipline ?? "");
+  const [location, setLocation] = useState(candidate?.location ?? "");
+  const [headline, setHeadline] = useState(candidate?.headline ?? "");
+  const [linkedinUrl, setLinkedinUrl] = useState(candidate?.linkedinUrl ?? "");
+  const [availability, setAvailability] = useState(candidate?.availability ?? "ONBEKEND");
+  const [interviewStatus, setInterviewStatus] = useState(candidate?.interviewStatus ?? "NONE");
+
+  // CV-inlezen-status
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [reading, setReading] = useState(false);
+  const [cvError, setCvError] = useState<string | null>(null);
+  const [cvDone, setCvDone] = useState(false);
+
+  async function leesCv() {
+    if (!cvFile) return;
+    setReading(true);
+    setCvError(null);
+    setCvDone(false);
+    try {
+      const fd = new FormData();
+      fd.set("file", cvFile);
+      const res = await readCvFields(fd);
+      if (!res.ok) {
+        setCvError(res.error);
+        return;
+      }
+      const f = res.fields;
+      // Alleen invullen wat de AI vond; bestaande waarden niet met leeg overschrijven.
+      if (f.firstName) setFirstName(f.firstName);
+      if (f.lastName) setLastName(f.lastName);
+      if (f.email) setEmail(f.email);
+      if (f.phone) setPhone(f.phone);
+      if (f.discipline) setDiscipline(f.discipline);
+      if (f.location) setLocation(f.location);
+      if (f.headline) setHeadline(f.headline);
+      if (f.linkedinUrl) setLinkedinUrl(f.linkedinUrl);
+      setCvDone(true);
+    } catch {
+      setCvError("Het CV kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in.");
+    } finally {
+      setReading(false);
+    }
+  }
+
+  // Het CV-bestand meesturen bij opslaan, zodat het meteen aan de kandidaat hangt.
+  function onSubmit(fd: FormData) {
+    if (cvFile) fd.set("cvFile", cvFile);
+    return formAction(fd);
+  }
 
   return (
-    <form action={formAction}>
+    <form action={onSubmit}>
       {candidate && <input type="hidden" name="id" value={candidate.id} />}
+
+      {/* CV inlezen — automatische invulling (alleen bij nieuwe kandidaat) */}
+      {showCvIntake && (
+        <Card className="mb-6">
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-50 text-brand-600">
+                <Sparkles className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <h2 className="text-[15px] font-bold text-ink-900">CV automatisch inlezen</h2>
+                <p className="text-sm text-ink-500">
+                  Sleep een CV (PDF, Word of foto) hierheen. De AI leest naam, contactgegevens,
+                  functie en discipline uit en vult het formulier hieronder — controleer het nog even
+                  vóór je opslaat. Het CV wordt meteen aan de kandidaat gekoppeld.
+                </p>
+              </div>
+            </div>
+
+            <Dropzone
+              name="cvIntakeFile"
+              accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,application/pdf"
+              label="Sleep een CV hierheen of klik om te selecteren"
+              hint="PDF, Word (.docx) of een duidelijke foto/scan"
+              onFilesChange={(files) => {
+                setCvFile(files[0] ?? null);
+                setCvDone(false);
+                setCvError(null);
+              }}
+            />
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={leesCv}
+                disabled={!cvFile || reading}
+                className={buttonVariants()}
+              >
+                {reading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Bezig met inlezen…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" /> CV inlezen
+                  </>
+                )}
+              </button>
+              {cvDone && !cvError && (
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+                  <CheckCircle2 className="h-4 w-4" /> Ingelezen — controleer de velden hieronder
+                </span>
+              )}
+            </div>
+
+            {cvError && (
+              <p className="flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {cvError}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardContent className="space-y-5">
           {state.error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {state.error}
-            </p>
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
           )}
 
           {/* Compacte velden — vullen de volle breedte in 2/3 kolommen */}
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             <Field label="Voornaam" htmlFor="firstName" required error={e.firstName}>
-              <Input
-                id="firstName"
-                name="firstName"
-                defaultValue={candidate?.firstName ?? ""}
-                required
-              />
+              <Input id="firstName" name="firstName" value={firstName} onChange={(ev) => setFirstName(ev.target.value)} required />
             </Field>
             <Field label="Achternaam" htmlFor="lastName" required error={e.lastName}>
-              <Input
-                id="lastName"
-                name="lastName"
-                defaultValue={candidate?.lastName ?? ""}
-                required
-              />
+              <Input id="lastName" name="lastName" value={lastName} onChange={(ev) => setLastName(ev.target.value)} required />
             </Field>
             <Field label="E-mail" htmlFor="email" error={e.email}>
-              <Input id="email" name="email" type="email" defaultValue={candidate?.email ?? ""} />
+              <Input id="email" name="email" type="email" value={email} onChange={(ev) => setEmail(ev.target.value)} />
             </Field>
             <Field label="Telefoon" htmlFor="phone" error={e.phone}>
-              <Input id="phone" name="phone" defaultValue={candidate?.phone ?? ""} />
+              <Input id="phone" name="phone" value={phone} onChange={(ev) => setPhone(ev.target.value)} />
             </Field>
             <Field label="Discipline" htmlFor="discipline" error={e.discipline}>
-              <Select id="discipline" name="discipline" defaultValue={candidate?.discipline ?? ""}>
+              <Select id="discipline" name="discipline" defaultValue={discipline} key={`disc-${discipline}`} onValueChange={setDiscipline}>
                 <option value="">— kies —</option>
                 {DISCIPLINES.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -88,12 +196,7 @@ export function CandidateForm({
               </Select>
             </Field>
             <Field label="Locatie" htmlFor="location" error={e.location}>
-              <Input
-                id="location"
-                name="location"
-                placeholder="Bijv. Rotterdam"
-                defaultValue={candidate?.location ?? ""}
-              />
+              <Input id="location" name="location" placeholder="Bijv. Rotterdam" value={location} onChange={(ev) => setLocation(ev.target.value)} />
             </Field>
             <Field
               label="Beoordeling"
@@ -135,12 +238,7 @@ export function CandidateForm({
                 hint="Vanaf welke datum is deze kandidaat inzetbaar?"
                 error={e.availableFrom}
               >
-                <Input
-                  id="availableFrom"
-                  name="availableFrom"
-                  type="date"
-                  defaultValue={di(candidate?.availableFrom)}
-                />
+                <Input id="availableFrom" name="availableFrom" type="date" defaultValue={di(candidate?.availableFrom)} />
               </Field>
             )}
             <Field
@@ -164,12 +262,7 @@ export function CandidateForm({
             </Field>
             {interviewStatus !== "NONE" && (
               <Field label="Interviewdatum" htmlFor="interviewDate" error={e.interviewDate}>
-                <Input
-                  id="interviewDate"
-                  name="interviewDate"
-                  type="date"
-                  defaultValue={di(candidate?.interviewDate)}
-                />
+                <Input id="interviewDate" name="interviewDate" type="date" defaultValue={di(candidate?.interviewDate)} />
               </Field>
             )}
           </div>
@@ -181,7 +274,8 @@ export function CandidateForm({
                 id="headline"
                 name="headline"
                 placeholder="Bijv. NDT UT/RT Level 2 inspecteur"
-                defaultValue={candidate?.headline ?? ""}
+                value={headline}
+                onChange={(ev) => setHeadline(ev.target.value)}
               />
             </Field>
             <Field label="LinkedIn-URL" htmlFor="linkedinUrl" error={e.linkedinUrl}>
@@ -190,7 +284,8 @@ export function CandidateForm({
                 name="linkedinUrl"
                 type="url"
                 placeholder="https://www.linkedin.com/in/…"
-                defaultValue={candidate?.linkedinUrl ?? ""}
+                value={linkedinUrl}
+                onChange={(ev) => setLinkedinUrl(ev.target.value)}
               />
             </Field>
           </div>

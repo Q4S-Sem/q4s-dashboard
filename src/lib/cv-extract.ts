@@ -1,6 +1,8 @@
 import mammoth from "mammoth";
+import { z } from "zod";
 import { aiJSON, aiJSONFromFile, isVisionConfigured, readyPersonalDataTextProvider } from "./ai";
 import { redactBsn } from "./pii";
+import { DISCIPLINES } from "./domain";
 import {
   CV_EXTRACT_PROMPT,
   CV_EXTRACT_SYSTEM,
@@ -133,6 +135,148 @@ export async function extractCvProfile(
   if (!parsed.success) {
     throw new CvExtractError(
       "De AI gaf een onverwacht antwoord op dit CV. Probeer het opnieuw, of vul het profiel handmatig in.",
+    );
+  }
+  return parsed.data;
+}
+
+// ---------------------------------------------------------------------------
+// KANDIDAAT-VELDEN uit een CV (voor de talentpool "Nieuwe kandidaat"-flow).
+//
+// De brede extractCvProfile() hierboven levert het CV-opmaakprofiel (voor het
+// klant-CV), maar mist juist de talentpool-contactvelden (voornaam/achternaam
+// gesplitst, e-mail, telefoon, discipline). Deze functie haalt precies die velden
+// op, zodat het "Nieuwe kandidaat"-formulier zich automatisch invult.
+// ---------------------------------------------------------------------------
+
+const DISCIPLINE_VALUES = DISCIPLINES.map((d) => d.value);
+
+export const candidateFieldsSchema = z.object({
+  firstName: z.string().nullish().transform((v) => v?.trim() || null),
+  lastName: z.string().nullish().transform((v) => v?.trim() || null),
+  email: z.string().nullish().transform((v) => v?.trim() || null),
+  phone: z.string().nullish().transform((v) => v?.trim() || null),
+  discipline: z
+    .string()
+    .nullish()
+    .transform((v) => (v && DISCIPLINE_VALUES.includes(v) ? v : null)),
+  headline: z.string().nullish().transform((v) => v?.trim() || null),
+  location: z.string().nullish().transform((v) => v?.trim() || null),
+  linkedinUrl: z.string().nullish().transform((v) => v?.trim() || null),
+});
+
+export type CandidateFields = z.infer<typeof candidateFieldsSchema>;
+
+const CANDIDATE_AI_SCHEMA: Record<string, unknown> = {
+  type: "object",
+  properties: {
+    firstName: { type: ["string", "null"] },
+    lastName: { type: ["string", "null"] },
+    email: { type: ["string", "null"] },
+    phone: { type: ["string", "null"] },
+    discipline: { type: ["string", "null"] },
+    headline: { type: ["string", "null"] },
+    location: { type: ["string", "null"] },
+    linkedinUrl: { type: ["string", "null"] },
+  },
+  required: ["firstName", "lastName", "email", "phone", "discipline", "headline", "location", "linkedinUrl"],
+  additionalProperties: false,
+};
+
+const CANDIDATE_SYSTEM =
+  "Je haalt contactgegevens en het vakgebied van één persoon uit een CV, voor een " +
+  "recruitmentdatabase in de staalbouw/inspectie. Antwoord uitsluitend met de gevraagde velden. " +
+  "Verzin niets: staat een veld niet in het CV, geef dan null.";
+
+const CANDIDATE_PROMPT =
+  "Haal deze velden uit het CV:\n" +
+  "- firstName: alleen de voornaam.\n" +
+  "- lastName: de achternaam (incl. tussenvoegsel zoals 'van der').\n" +
+  "- email: e-mailadres.\n" +
+  "- phone: telefoonnummer zoals vermeld.\n" +
+  "- location: woonplaats/regio.\n" +
+  "- headline: korte functietitel (bijv. 'QA/QC Inspector' of '6G TIG-lasser'); leid af uit de meest recente functie als hij er niet staat.\n" +
+  "- linkedinUrl: LinkedIn-profiel-URL indien vermeld.\n" +
+  `- discipline: kies EXACT één van deze codes als het past, anders null: ${DISCIPLINES.map((d) => `${d.value} (${d.label})`).join(", ")}.`;
+
+/**
+ * Bestand → talentpool-kandidaatvelden. Zelfde AVG-regels en bestandsroutes als
+ * {@link extractCvProfile}: PDF/afbeelding via vision, Word via lokale tekst +
+ * AVG-veilige tekst-AI (nooit DeepSeek), BSN gestript. Gooit {@link CvExtractError}
+ * met leesbare NL-tekst bij een niet-ondersteund bestand of ontbrekende AI-config.
+ */
+export async function extractCandidateFields(
+  bytes: Buffer,
+  fileName: string,
+  mimeType: string,
+): Promise<CandidateFields> {
+  const kind = cvSourceKind(fileName, mimeType);
+  if (!kind) {
+    const isOldWord = /\.(doc|rtf|odt)$/i.test(fileName);
+    throw new CvExtractError(
+      isOldWord
+        ? "Dit is een oud Word-formaat (.doc). Open het in Word en sla het op als .docx of PDF."
+        : "Alleen PDF, Word (.docx) of een afbeelding van een CV kunnen uitgelezen worden.",
+    );
+  }
+
+  let raw: unknown;
+
+  if (kind === "docx") {
+    const provider = readyPersonalDataTextProvider();
+    if (!provider) {
+      throw new CvExtractError(
+        "Om Word-CV's uit te lezen is een Anthropic-sleutel (of een lokale Ollama) nodig. " +
+          "Zet een Anthropic-sleutel in de Instellingen-hub, of upload het CV als PDF.",
+      );
+    }
+    let plain: string;
+    try {
+      plain = await docxToText(bytes);
+    } catch {
+      throw new CvExtractError("Dit Word-bestand kon niet gelezen worden. Sla het opnieuw op als .docx of PDF.");
+    }
+    if (plain.length < 40) {
+      throw new CvExtractError(
+        "Dit Word-bestand bevat nauwelijks tekst — staat het CV er als afbeelding in? Sla het dan op als PDF.",
+      );
+    }
+    const safe = redactBsn(plain.slice(0, 60_000));
+    raw = await aiJSON<unknown>({
+      system: CANDIDATE_SYSTEM,
+      prompt: `${CANDIDATE_PROMPT}\n\n--- CV-TEKST ---\n${safe}`,
+      schema: CANDIDATE_AI_SCHEMA,
+      schemaName: "candidate_fields",
+      provider,
+      personalData: true,
+      maxTokens: 1500,
+      effort: "low",
+    });
+  } else {
+    if (!isVisionConfigured()) {
+      throw new CvExtractError(
+        "Om PDF's te lezen is een Gemini- of Anthropic-sleutel nodig. Zet die in de Instellingen-hub, " +
+          "of upload het CV als Word (.docx).",
+      );
+    }
+    raw = await aiJSONFromFile<unknown>({
+      system: CANDIDATE_SYSTEM,
+      prompt: CANDIDATE_PROMPT,
+      schema: CANDIDATE_AI_SCHEMA,
+      schemaName: "candidate_fields",
+      file: {
+        base64: bytes.toString("base64"),
+        mediaType: kind === "pdf" ? "application/pdf" : mimeType || "image/jpeg",
+      },
+      maxTokens: 1500,
+      effort: "low",
+    });
+  }
+
+  const parsed = candidateFieldsSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new CvExtractError(
+      "De AI gaf een onverwacht antwoord op dit CV. Probeer het opnieuw, of vul de velden handmatig in.",
     );
   }
   return parsed.data;
