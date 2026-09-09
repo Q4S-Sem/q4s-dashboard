@@ -1,6 +1,12 @@
 import mammoth from "mammoth";
 import { z } from "zod";
-import { aiJSON, aiJSONFromFile, isVisionConfigured, readyPersonalDataTextProvider } from "./ai";
+import {
+  aiJSON,
+  aiJSONFromFile,
+  geminiJSONText,
+  isVisionConfigured,
+  readyCvTextRoute,
+} from "./ai";
 import { redactBsn } from "./pii";
 import { DISCIPLINES } from "./domain";
 import {
@@ -20,7 +26,7 @@ import {
  *  - Word (.docx)   → eerst lokaal naar tekst via mammoth, dan naar de tekst-AI.
  *
  * AVG: een CV is een persoonsgegeven. De tekst-route gaat daarom NOOIT naar DeepSeek
- * (China) — alleen naar Anthropic of een lokale Ollama (zie readyPersonalDataTextProvider),
+ * (China) — alleen naar Anthropic, een lokale Ollama, of Gemini (zie readyCvTextRoute),
  * en een eventueel BSN wordt eruit gestript vóór verzending. Zie [[q4s-compliance-nen-avg]].
  *
  * Let op het verschil met de bestaande CV-import (website/actions.ts), die alleen
@@ -31,6 +37,63 @@ import {
 async function docxToText(bytes: Buffer): Promise<string> {
   const { value } = await mammoth.extractRawText({ buffer: bytes });
   return value.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/**
+ * Word (.docx) → AVG-veilig JSON. Leest het document lokaal naar tekst, stript een
+ * eventueel BSN en stuurt het naar een toegestane route: Anthropic, lokale Ollama,
+ * of Gemini (Google — verwerkt hier al PII-PDF-CV's, dus onder dezelfde grondslag).
+ * NOOIT DeepSeek. Gooit {@link CvExtractError} met leesbare NL-tekst als er geen
+ * route beschikbaar is of het document geen leesbare tekst bevat.
+ */
+async function extractFromDocx<T>(
+  bytes: Buffer,
+  ai: { system: string; prompt: string; schema: Record<string, unknown>; schemaName: string; maxTokens: number },
+): Promise<T> {
+  const route = readyCvTextRoute();
+  if (!route) {
+    throw new CvExtractError(
+      "Om Word-CV's uit te lezen is een Gemini-, Anthropic- of lokale Ollama-sleutel nodig. " +
+        "DeepSeek wordt hiervoor bewust niet gebruikt (een CV bevat persoonsgegevens). " +
+        "Zet een sleutel in de Instellingen-hub, of upload het CV als PDF.",
+    );
+  }
+  let plain: string;
+  try {
+    plain = await docxToText(bytes);
+  } catch {
+    throw new CvExtractError(
+      "Dit Word-bestand kon niet gelezen worden. Sla het opnieuw op als .docx of PDF.",
+    );
+  }
+  if (plain.length < 40) {
+    throw new CvExtractError(
+      "Dit Word-bestand bevat nauwelijks tekst — staat het CV er als afbeelding in? Sla het dan op als PDF.",
+    );
+  }
+  // Dataminimalisatie: een eventueel BSN mag niet mee naar de AI-provider.
+  const safe = redactBsn(plain.slice(0, 60_000));
+  const prompt = `${ai.prompt}\n\n--- CV-TEKST ---\n${safe}`;
+
+  if (route === "gemini") {
+    return geminiJSONText<T>({
+      system: ai.system,
+      prompt,
+      schema: ai.schema,
+      maxTokens: ai.maxTokens,
+    });
+  }
+  // Anthropic of lokale Ollama — via de bestaande tekst-route met PII-blokkade.
+  return aiJSON<T>({
+    system: ai.system,
+    prompt,
+    schema: ai.schema,
+    schemaName: ai.schemaName,
+    provider: route,
+    personalData: true,
+    maxTokens: ai.maxTokens,
+    effort: "low",
+  });
 }
 
 export type CvSourceKind = "pdf" | "image" | "docx";
@@ -73,40 +136,12 @@ export async function extractCvProfile(
   let raw: unknown;
 
   if (kind === "docx") {
-    // Een CV bevat persoonsgegevens → alleen een AVG-veilige tekst-provider
-    // (Anthropic of lokale Ollama), NOOIT DeepSeek (China).
-    const provider = readyPersonalDataTextProvider();
-    if (!provider) {
-      throw new CvExtractError(
-        "Om Word-CV's uit te lezen is een Anthropic-sleutel (of een lokale Ollama) nodig. " +
-          "DeepSeek wordt hiervoor bewust niet gebruikt, omdat een CV persoonsgegevens bevat " +
-          "en buiten de EU zou belanden. Zet een Anthropic-sleutel in de Instellingen-hub, of upload het CV als PDF.",
-      );
-    }
-    let plain: string;
-    try {
-      plain = await docxToText(bytes);
-    } catch {
-      throw new CvExtractError(
-        "Dit Word-bestand kon niet gelezen worden. Sla het opnieuw op als .docx of PDF.",
-      );
-    }
-    if (plain.length < 40) {
-      throw new CvExtractError(
-        "Dit Word-bestand bevat nauwelijks tekst — staat het CV er als afbeelding in? Sla het dan op als PDF.",
-      );
-    }
-    // Dataminimalisatie: een eventueel BSN mag niet mee naar de AI-provider.
-    const safe = redactBsn(plain.slice(0, 60_000));
-    raw = await aiJSON<unknown>({
+    raw = await extractFromDocx<unknown>(bytes, {
       system: CV_EXTRACT_SYSTEM,
-      prompt: `${CV_EXTRACT_PROMPT}\n\n--- CV-TEKST ---\n${safe}`,
+      prompt: CV_EXTRACT_PROMPT,
       schema: CV_PROFILE_AI_SCHEMA,
       schemaName: "cv_profile",
-      provider,
-      personalData: true,
       maxTokens: 8000,
-      effort: "low",
     });
   } else {
     if (!isVisionConfigured()) {
@@ -223,34 +258,12 @@ export async function extractCandidateFields(
   let raw: unknown;
 
   if (kind === "docx") {
-    const provider = readyPersonalDataTextProvider();
-    if (!provider) {
-      throw new CvExtractError(
-        "Om Word-CV's uit te lezen is een Anthropic-sleutel (of een lokale Ollama) nodig. " +
-          "Zet een Anthropic-sleutel in de Instellingen-hub, of upload het CV als PDF.",
-      );
-    }
-    let plain: string;
-    try {
-      plain = await docxToText(bytes);
-    } catch {
-      throw new CvExtractError("Dit Word-bestand kon niet gelezen worden. Sla het opnieuw op als .docx of PDF.");
-    }
-    if (plain.length < 40) {
-      throw new CvExtractError(
-        "Dit Word-bestand bevat nauwelijks tekst — staat het CV er als afbeelding in? Sla het dan op als PDF.",
-      );
-    }
-    const safe = redactBsn(plain.slice(0, 60_000));
-    raw = await aiJSON<unknown>({
+    raw = await extractFromDocx<unknown>(bytes, {
       system: CANDIDATE_SYSTEM,
-      prompt: `${CANDIDATE_PROMPT}\n\n--- CV-TEKST ---\n${safe}`,
+      prompt: CANDIDATE_PROMPT,
       schema: CANDIDATE_AI_SCHEMA,
       schemaName: "candidate_fields",
-      provider,
-      personalData: true,
       maxTokens: 1500,
-      effort: "low",
     });
   } else {
     if (!isVisionConfigured()) {

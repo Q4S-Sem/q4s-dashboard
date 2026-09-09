@@ -175,6 +175,21 @@ export function readyPersonalDataTextProvider(): AiProvider | null {
   return null;
 }
 
+/**
+ * AVG-veilige route voor CV-TEKST (uit een Word-document). Naast Anthropic/Ollama
+ * mag hier ook Gemini (Google): deze app stuurt PII-PDF-CV's al naar Gemini via de
+ * vision-route, dus dezelfde tekst valt onder dezelfde grondslag. Zo hoeft de
+ * gebruiker niet én een Gemini- (voor PDF) én een Anthropic-sleutel (voor Word) te
+ * hebben — één van beide volstaat. NOOIT DeepSeek. Geeft de te gebruiken route terug.
+ */
+export type CvTextRoute = "anthropic" | "ollama" | "gemini";
+export function readyCvTextRoute(): CvTextRoute | null {
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  if (activeTextProvider() === "ollama" || activeTextProviderFast() === "ollama") return "ollama";
+  if (process.env.GEMINI_API_KEY) return "gemini";
+  return null;
+}
+
 /** True wanneer PDF's/afbeeldingen uitgelezen kunnen worden (Gemini, Anthropic of
  *  OpenRouter). Los van de tekst-AI: gebruik dit om document-extractie-features te gaten. */
 export function isVisionConfigured(): boolean {
@@ -879,7 +894,65 @@ async function geminiExtractFile<T>(opts: FileExtractOpts): Promise<T> {
   return parseJson<T>(text);
 }
 
-// Niet elk OpenRouter-vision-model slikt elk bestandstype: veel modellen lezen
+/**
+ * Gemini (Google) — TEKST → JSON. Zelfde provider en sleutel als de PDF/beeld-
+ * route hierboven, maar met platte tekst i.p.v. een bestand. Bestaat zodat
+ * PERSOONSGEGEVENS uit een Word-CV (lokaal naar tekst met mammoth) via dezelfde
+ * AVG-route kunnen als een PDF-CV: Google verwerkt hier al PII-PDF's, dus tekst
+ * naar Gemini valt onder dezelfde grondslag — en NOOIT naar DeepSeek (China).
+ * Alleen aanroepen als er een GEMINI_API_KEY is.
+ */
+export async function geminiJSONText<T>(opts: {
+  system: string;
+  prompt: string;
+  schema: Record<string, unknown>;
+  maxTokens?: number;
+}): Promise<T> {
+  await ensureAiKeysLoaded();
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error("Gemini is niet geconfigureerd. Zet GEMINI_API_KEY in je .env.");
+  }
+  const system = `${opts.system}\n\nAntwoord UITSLUITEND met geldige JSON die exact voldoet aan dit JSON-schema (geen tekst eromheen, geen uitleg, geen markdown):\n${JSON.stringify(opts.schema)}`;
+  let res: Response;
+  try {
+    res = await fetch(`${GEMINI_BASE_URL}/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: "user", parts: [{ text: opts.prompt }] }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: opts.maxTokens ?? 4000,
+          responseMimeType: "application/json",
+        },
+      }),
+    });
+  } catch {
+    throw new Error(`Gemini niet bereikbaar op ${GEMINI_BASE_URL}.`);
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Gemini-fout (${res.status})${body ? `: ${body.slice(0, 200)}` : ""}.`);
+  }
+  const data = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+  };
+  await recordAiUsage({
+    provider: "gemini",
+    model: GEMINI_MODEL,
+    kind: "text",
+    promptTokens: data.usageMetadata?.promptTokenCount,
+    completionTokens: data.usageMetadata?.candidatesTokenCount,
+  });
+  const text = (data.candidates?.[0]?.content?.parts ?? [])
+    .map((p) => p.text ?? "")
+    .join("")
+    .trim();
+  return parseJson<T>(text);
+}
 // alleen afbeeldingen, geen application/pdf. Die afwijzing komt als een 400/404/415
 // met "no endpoints found that support…"/"does not support image input"-achtige
 // tekst terug — dan wijzen we de gebruiker naar OPENROUTER_VISION_MODEL i.p.v. een
