@@ -204,7 +204,7 @@ const HUB_LIST: NavHub[] = [
     icon: FileUser,
     items: [
       { href: "/cv", label: "Overzicht", icon: FileText, exact: true },
-      { href: "/website/cv-inbox", label: "Binnengekomen CV's", icon: Inbox, exact: true },
+      { href: "/website/cv-inbox", label: "Inkomende CV's", icon: Inbox, exact: true },
       { href: "/website/cv-inbox/matches", label: "CV-matches", icon: Target },
       { href: "/socials/cv-generator", label: "CV-generator", icon: FileUser },
     ],

@@ -99,7 +99,7 @@ export default async function WebsitePage() {
         />
         <HubCard
           icon={<Inbox className="h-6 w-6" />}
-          title="Binnengekomen CV's"
+          title="Inkomende CV's"
           description="Elke sollicitatie met CV vanaf de website. Sorteer, filter en zet een interessante kandidaat met één klik als lead in de CRM-pijplijn."
           href="/website/cv-inbox"
           cta="Naar CV's"

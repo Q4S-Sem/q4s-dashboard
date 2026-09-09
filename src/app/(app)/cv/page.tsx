@@ -64,7 +64,7 @@ export default async function CvHubPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <HubCard
           icon={<Inbox className="h-6 w-6" />}
-          title="Binnengekomen CV's"
+          title="Inkomende CV's"
           description="Elk CV vanaf de website en uit de cv@q4s.nl-mailbox. Filter op discipline of beschikbaarheid en zet een interessante kandidaat met één klik als lead in de CRM-pijplijn."
           href="/website/cv-inbox"
           cta="Naar de inbox"

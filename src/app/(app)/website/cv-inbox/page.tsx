@@ -18,7 +18,7 @@ import {
 import { CvsList, type CvRow } from "./CvsList";
 import { EmailInboxPanel } from "./EmailInboxPanel";
 
-export const metadata = { title: "Binnengekomen CV's" };
+export const metadata = { title: "Inkomende CV's" };
 export const dynamic = "force-dynamic";
 
 export default async function WebsiteCvsPage({
@@ -96,7 +96,7 @@ export default async function WebsiteCvsPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Binnengekomen CV's"
+        title="Inkomende CV's"
         description="CV's vanuit de website én de cv@q4s.nl-mailbox — op één plek. Filter op discipline, bron of beschikbaarheid en zet een interessante kandidaat met één klik als lead in de CRM-pijplijn."
         actions={
           <>
