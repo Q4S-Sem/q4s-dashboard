@@ -55,6 +55,7 @@ export function CandidateForm({
   const [linkedinUrl, setLinkedinUrl] = useState(candidate?.linkedinUrl ?? "");
   const [availability, setAvailability] = useState(candidate?.availability ?? "ONBEKEND");
   const [interviewStatus, setInterviewStatus] = useState(candidate?.interviewStatus ?? "NONE");
+  const [notes, setNotes] = useState(candidate?.notes ?? "");
 
   // CV-inlezen-status
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -86,6 +87,11 @@ export function CandidateForm({
       if (f2.location) setLocation(f2.location);
       if (f2.headline) setHeadline(f2.headline);
       if (f2.linkedinUrl) setLinkedinUrl(f2.linkedinUrl);
+      // Werkervaring is het belangrijkste: zet de samenvatting in Notities als die
+      // nog leeg is (nooit bestaande notities overschrijven).
+      if (f2.experienceSummary) {
+        setNotes((prev) => (prev.trim() ? prev : f2.experienceSummary as string));
+      }
       setCvDone(true);
     } catch {
       setCvError("Het CV kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in.");
@@ -297,7 +303,7 @@ export function CandidateForm({
           </div>
 
           <Field label="Notities" htmlFor="notes" error={e.notes}>
-            <Textarea id="notes" name="notes" defaultValue={candidate?.notes ?? ""} />
+            <Textarea id="notes" name="notes" rows={7} value={notes} onChange={(ev) => setNotes(ev.target.value)} />
           </Field>
         </CardContent>
         <CardFooter className="flex justify-end gap-2">

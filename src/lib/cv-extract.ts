@@ -207,6 +207,15 @@ export const candidateFieldsSchema = z.object({
   headline: z.string().nullish().transform((v) => v?.trim() || null),
   location: z.string().nullish().transform((v) => v?.trim() || null),
   linkedinUrl: z.string().nullish().transform((v) => v?.trim() || null),
+  yearsExperience: z
+    .union([z.number(), z.string()])
+    .nullish()
+    .transform((v) => {
+      if (v == null || v === "") return null;
+      const n = typeof v === "number" ? v : parseInt(String(v).replace(/[^\d]/g, ""), 10);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    }),
+  experienceSummary: z.string().nullish().transform((v) => v?.trim() || null),
 });
 
 export type CandidateFields = z.infer<typeof candidateFieldsSchema>;
@@ -222,15 +231,30 @@ const CANDIDATE_AI_SCHEMA: Record<string, unknown> = {
     headline: { type: ["string", "null"] },
     location: { type: ["string", "null"] },
     linkedinUrl: { type: ["string", "null"] },
+    yearsExperience: { type: ["integer", "null"] },
+    experienceSummary: { type: ["string", "null"] },
   },
-  required: ["firstName", "lastName", "email", "phone", "discipline", "headline", "location", "linkedinUrl"],
+  required: [
+    "firstName",
+    "lastName",
+    "email",
+    "phone",
+    "discipline",
+    "headline",
+    "location",
+    "linkedinUrl",
+    "yearsExperience",
+    "experienceSummary",
+  ],
   additionalProperties: false,
 };
 
 const CANDIDATE_SYSTEM =
-  "Je haalt contactgegevens en het vakgebied van één persoon uit een CV, voor een " +
-  "recruitmentdatabase in de staalbouw/inspectie. Antwoord uitsluitend met de gevraagde velden. " +
-  "Verzin niets: staat een veld niet in het CV, geef dan null.";
+  "Je haalt de gegevens van één kandidaat uit een CV, voor een recruitmentdatabase in de " +
+  "staalbouw/inspectie (QA/QC, lassers, fitters, NDO/NDT). WERKERVARING IS HET BELANGRIJKSTE: " +
+  "recruiters beslissen op basis daarvan of iemand geschikt is. Vat de werkervaring dus concreet " +
+  "en volledig samen. Antwoord uitsluitend met de gevraagde velden. Verzin niets: staat een veld " +
+  "niet in het CV, geef dan null (voor experienceSummary: samenvatten mag, verzinnen niet).";
 
 const CANDIDATE_PROMPT =
   "Haal deze velden uit het CV:\n" +
@@ -241,6 +265,14 @@ const CANDIDATE_PROMPT =
   "- location: woonplaats/regio.\n" +
   "- headline: korte functietitel (bijv. 'QA/QC Inspector' of '6G TIG-lasser'); leid af uit de meest recente functie als hij er niet staat.\n" +
   "- linkedinUrl: LinkedIn-profiel-URL indien vermeld.\n" +
+  "- yearsExperience: totaal aantal jaren relevante werkervaring als geheel getal; niet af te leiden = null.\n" +
+  "- experienceSummary: DIT IS HET BELANGRIJKSTE VELD. Een heldere, feitelijke samenvatting van de " +
+  "werkervaring in het Nederlands, zodat een recruiter in één oogopslag ziet wat iemand kan. Structuur:\n" +
+  "  • begin met 1 zin over profiel/specialisatie en totaal aantal jaren ervaring;\n" +
+  "  • daarna per relevante functie een regel: 'Werkgever — Rol (periode): concrete taken, projecten, " +
+  "materialen/normen (bijv. ASME, ISO 9606, EN 1090), sectoren (offshore, petrochemie, staalbouw)'.\n" +
+  "  Nieuwste functie eerst. Noem concrete certificaten/normen/lasprocessen waar ze in het CV staan. " +
+  "Verzin niets; alleen wat er echt staat. Laat leeg (null) als er geen werkervaring in het CV staat.\n" +
   `- discipline: kies EXACT één van deze codes als het past, anders null: ${DISCIPLINES.map((d) => `${d.value} (${d.label})`).join(", ")}.`;
 
 /**

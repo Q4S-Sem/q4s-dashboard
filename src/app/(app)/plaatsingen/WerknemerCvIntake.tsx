@@ -2,14 +2,10 @@
 
 import { useState } from "react";
 import { Sparkles, Loader2, CheckCircle2, AlertTriangle, FileText, X } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { DISCIPLINES } from "@/lib/domain";
 import { readCvFields } from "../kandidaten/actions";
 import { CvPreviewButton } from "@/components/cv-preview-button";
-
-// Subtiele schuine streepjes op de sleepzone (zoals de Dropzone-component).
-const STRIPES =
-  "repeating-linear-gradient(45deg, rgba(148,163,184,0.14) 0, rgba(148,163,184,0.14) 1px, transparent 1px, transparent 9px)";
+import { Dropzone } from "@/components/ui/dropzone";
 
 /** Zet een uncontrolled input/textarea op waarde en trigger React's change. */
 function setField(id: string, value: string | null) {
@@ -32,7 +28,6 @@ function setField(id: string, value: string | null) {
  */
 export function WerknemerCvIntake() {
   const [file, setFile] = useState<File | null>(null);
-  const [dragOver, setDragOver] = useState(false);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -108,41 +103,13 @@ export function WerknemerCvIntake() {
         </div>
       </div>
 
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="Sleep een CV hierheen of klik om te selecteren"
-        onClick={() => document.getElementById("cvIntakePicker")?.click()}
-        onKeyDown={(ev) => {
-          if (ev.key === "Enter" || ev.key === " ") {
-            ev.preventDefault();
-            document.getElementById("cvIntakePicker")?.click();
-          }
-        }}
-        onDragOver={(ev) => {
-          ev.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(ev) => {
-          ev.preventDefault();
-          setDragOver(false);
-          if (ev.dataTransfer.files.length) choose(ev.dataTransfer.files[0]);
-        }}
-        style={dragOver ? undefined : { backgroundImage: STRIPES }}
-        className={cn(
-          "mt-3 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-6 py-6 text-center transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400",
-          dragOver ? "border-brand-400 bg-brand-50" : "border-ink-300 bg-white/70 hover:border-brand-400 hover:bg-brand-50",
-        )}
-      >
-        <p className="text-sm font-medium text-ink-700">Sleep een CV hierheen of klik om te selecteren</p>
-        <p className="text-xs text-ink-400">PDF, Word (.docx) of een duidelijke foto/scan</p>
-        <input
-          id="cvIntakePicker"
-          type="file"
+      <div className="mt-3">
+        <Dropzone
+          name="cvIntakePicker"
           accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,application/pdf"
-          className="hidden"
-          onChange={(ev) => choose(ev.target.files?.[0] ?? null)}
+          label="Sleep een CV hierheen of klik om te selecteren"
+          hint="PDF, Word (.docx) of een duidelijke foto/scan"
+          onFilesChange={(files) => choose(files[0] ?? null)}
         />
       </div>
 
