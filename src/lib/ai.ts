@@ -182,11 +182,12 @@ export function readyPersonalDataTextProvider(): AiProvider | null {
  * gebruiker niet én een Gemini- (voor PDF) én een Anthropic-sleutel (voor Word) te
  * hebben — één van beide volstaat. NOOIT DeepSeek. Geeft de te gebruiken route terug.
  */
-export type CvTextRoute = "anthropic" | "ollama" | "gemini";
+export type CvTextRoute = "anthropic" | "ollama" | "gemini" | "openrouter";
 export function readyCvTextRoute(): CvTextRoute | null {
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   if (activeTextProvider() === "ollama" || activeTextProviderFast() === "ollama") return "ollama";
   if (process.env.GEMINI_API_KEY) return "gemini";
+  if (process.env.HERMES_API_KEY) return "openrouter";
   return null;
 }
 
@@ -953,7 +954,77 @@ export async function geminiJSONText<T>(opts: {
     .trim();
   return parseJson<T>(text);
 }
-// alleen afbeeldingen, geen application/pdf. Die afwijzing komt als een 400/404/415
+// (openrouterJSONText hieronder toegevoegd)
+
+/**
+ * OpenRouter — TEKST → JSON via de OpenAI-compatibele chat-completions API, op je
+ * bestaande OpenRouter-tegoed (HERMES_API_KEY). Gebruikt het vision-model
+ * (OPENROUTER_VISION_MODEL, standaard google/gemini-2.5-flash) omdat dat een goed,
+ * goedkoop model is dat instructies volgt. Bestaat zodat CV-TEKST (uit een Word-
+ * document) via OpenRouter kan — de gebruiker heeft alleen een OpenRouter-sleutel.
+ * Alleen aanroepen als er een HERMES_API_KEY is.
+ */
+export async function openrouterJSONText<T>(opts: {
+  system: string;
+  prompt: string;
+  schema: Record<string, unknown>;
+  maxTokens?: number;
+}): Promise<T> {
+  await ensureAiKeysLoaded();
+  const key = process.env.HERMES_API_KEY;
+  if (!key) {
+    throw new Error(
+      "OpenRouter is niet geconfigureerd. Zet de Hermes-sleutel in Instellingen of HERMES_API_KEY in je .env.",
+    );
+  }
+  const system = `${opts.system}\n\nAntwoord UITSLUITEND met geldige JSON die exact voldoet aan dit JSON-schema (geen tekst eromheen, geen uitleg, geen markdown):\n${JSON.stringify(opts.schema)}`;
+  const base = hermesBaseUrl();
+  let res: Response;
+  try {
+    res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${key}`,
+        "x-title": "Q4S Dashboard",
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_VISION_MODEL,
+        stream: false,
+        temperature: 0.1,
+        max_tokens: opts.maxTokens ?? 4000,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: opts.prompt },
+        ],
+      }),
+    });
+  } catch {
+    throw new Error(`OpenRouter niet bereikbaar op ${base}.`);
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`OpenRouter-fout (${res.status})${body ? `: ${body.slice(0, 200)}` : ""}.`);
+  }
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    error?: { code?: number; message?: string };
+  };
+  if (data.error) {
+    throw new Error(`OpenRouter-fout (${data.error.code ?? 400}): ${data.error.message ?? ""}.`);
+  }
+  await recordAiUsage({
+    provider: "hermes",
+    model: OPENROUTER_VISION_MODEL,
+    kind: "text",
+    promptTokens: data.usage?.prompt_tokens,
+    completionTokens: data.usage?.completion_tokens,
+  });
+  return parseJson<T>((data.choices?.[0]?.message?.content ?? "").trim());
+}
+// Niet elk OpenRouter-vision-model slikt elk bestandstype: veel modellen lezen
 // met "no endpoints found that support…"/"does not support image input"-achtige
 // tekst terug — dan wijzen we de gebruiker naar OPENROUTER_VISION_MODEL i.p.v. een
 // kale statuscode. Puur (geen env/fetch) zodat het te testen is.

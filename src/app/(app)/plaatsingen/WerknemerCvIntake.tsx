@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Sparkles, Loader2, CheckCircle2, AlertTriangle, FileText, X } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DISCIPLINES } from "@/lib/domain";
 import { readCvFields } from "../kandidaten/actions";
@@ -52,33 +51,36 @@ export function WerknemerCvIntake() {
     setDone(false);
     setError(null);
     pushToCvUpload(f);
+    // Direct automatisch inlezen — geen knop meer nodig.
+    if (f) void lees(f);
   }
 
-  async function lees() {
-    if (!file) return;
+  async function lees(f?: File | null) {
+    const target = f ?? file;
+    if (!target) return;
     setReading(true);
     setError(null);
     setDone(false);
     try {
       const fd = new FormData();
-      fd.set("file", file);
+      fd.set("file", target);
       const res = await readCvFields(fd);
       if (!res.ok) {
         setError(res.error);
         return;
       }
-      const f = res.fields;
-      setField("firstName", f.firstName);
-      setField("lastName", f.lastName);
-      setField("email", f.email);
-      setField("phone", f.phone);
+      const fields = res.fields;
+      setField("firstName", fields.firstName);
+      setField("lastName", fields.lastName);
+      setField("email", fields.email);
+      setField("phone", fields.phone);
       // Functie: de placementregel "Functie" (title) staat verderop; vul 'm met de
       // uit het CV afgeleide functietitel als hij nog leeg is.
       const titleEl = document.getElementById("title") as HTMLInputElement | null;
-      if (titleEl && !titleEl.value && f.headline) setField("title", f.headline);
+      if (titleEl && !titleEl.value && fields.headline) setField("title", fields.headline);
       // Discipline is hier een vrij tekstveld met datalist → zet het NL-label.
-      if (f.discipline) {
-        const label = DISCIPLINES.find((d) => d.value === f.discipline)?.label ?? f.discipline;
+      if (fields.discipline) {
+        const label = DISCIPLINES.find((d) => d.value === fields.discipline)?.label ?? fields.discipline;
         setField("discipline", label);
       }
       setDone(true);
@@ -98,9 +100,9 @@ export function WerknemerCvIntake() {
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink-800">CV automatisch inlezen</p>
           <p className="text-xs text-ink-500">
-            Sleep een CV (PDF, Word of foto) hierheen. De AI vult naam, contactgegevens, functie en
-            discipline hieronder in — controleer het nog even. Het CV wordt meteen aan de werknemer
-            gekoppeld.
+            Sleep een CV (PDF, Word of foto) hierheen. De AI leest &apos;m meteen uit en vult naam,
+            contactgegevens, functie en discipline hieronder in — controleer het nog even. Het CV
+            wordt meteen aan de werknemer gekoppeld.
           </p>
         </div>
       </div>
@@ -158,26 +160,24 @@ export function WerknemerCvIntake() {
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={lees}
-          disabled={!file || reading}
-          className={buttonVariants({ size: "sm" })}
-        >
-          {reading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Bezig met inlezen…
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" /> CV inlezen
-            </>
-          )}
-        </button>
-        {done && !error && (
+        {reading && (
+          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600">
+            <Loader2 className="h-4 w-4 animate-spin" /> Bezig met automatisch inlezen…
+          </span>
+        )}
+        {!reading && done && !error && (
           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
             <CheckCircle2 className="h-4 w-4" /> Ingelezen — controleer de velden hieronder
           </span>
+        )}
+        {!reading && file && (
+          <button
+            type="button"
+            onClick={() => lees()}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline"
+          >
+            <Sparkles className="h-4 w-4" /> Opnieuw inlezen
+          </button>
         )}
       </div>
 

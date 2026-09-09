@@ -4,6 +4,7 @@ import {
   aiJSON,
   aiJSONFromFile,
   geminiJSONText,
+  openrouterJSONText,
   isVisionConfigured,
   readyCvTextRoute,
 } from "./ai";
@@ -53,7 +54,7 @@ async function extractFromDocx<T>(
   const route = readyCvTextRoute();
   if (!route) {
     throw new CvExtractError(
-      "Om Word-CV's uit te lezen is een Gemini-, Anthropic- of lokale Ollama-sleutel nodig. " +
+      "Om Word-CV's uit te lezen is een OpenRouter-, Gemini-, Anthropic- of lokale Ollama-sleutel nodig. " +
         "DeepSeek wordt hiervoor bewust niet gebruikt (een CV bevat persoonsgegevens). " +
         "Zet een sleutel in de Instellingen-hub, of upload het CV als PDF.",
     );
@@ -77,6 +78,14 @@ async function extractFromDocx<T>(
 
   if (route === "gemini") {
     return geminiJSONText<T>({
+      system: ai.system,
+      prompt,
+      schema: ai.schema,
+      maxTokens: ai.maxTokens,
+    });
+  }
+  if (route === "openrouter") {
+    return openrouterJSONText<T>({
       system: ai.system,
       prompt,
       schema: ai.schema,

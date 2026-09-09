@@ -61,29 +61,30 @@ export function CandidateForm({
   const [cvError, setCvError] = useState<string | null>(null);
   const [cvDone, setCvDone] = useState(false);
 
-  async function leesCv() {
-    if (!cvFile) return;
+  async function leesCv(f?: File | null) {
+    const target = f ?? cvFile;
+    if (!target) return;
     setReading(true);
     setCvError(null);
     setCvDone(false);
     try {
       const fd = new FormData();
-      fd.set("file", cvFile);
+      fd.set("file", target);
       const res = await readCvFields(fd);
       if (!res.ok) {
         setCvError(res.error);
         return;
       }
-      const f = res.fields;
+      const f2 = res.fields;
       // Alleen invullen wat de AI vond; bestaande waarden niet met leeg overschrijven.
-      if (f.firstName) setFirstName(f.firstName);
-      if (f.lastName) setLastName(f.lastName);
-      if (f.email) setEmail(f.email);
-      if (f.phone) setPhone(f.phone);
-      if (f.discipline) setDiscipline(f.discipline);
-      if (f.location) setLocation(f.location);
-      if (f.headline) setHeadline(f.headline);
-      if (f.linkedinUrl) setLinkedinUrl(f.linkedinUrl);
+      if (f2.firstName) setFirstName(f2.firstName);
+      if (f2.lastName) setLastName(f2.lastName);
+      if (f2.email) setEmail(f2.email);
+      if (f2.phone) setPhone(f2.phone);
+      if (f2.discipline) setDiscipline(f2.discipline);
+      if (f2.location) setLocation(f2.location);
+      if (f2.headline) setHeadline(f2.headline);
+      if (f2.linkedinUrl) setLinkedinUrl(f2.linkedinUrl);
       setCvDone(true);
     } catch {
       setCvError("Het CV kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in.");
@@ -126,33 +127,34 @@ export function CandidateForm({
               label="Sleep een CV hierheen of klik om te selecteren"
               hint="PDF, Word (.docx) of een duidelijke foto/scan"
               onFilesChange={(files) => {
-                setCvFile(files[0] ?? null);
+                const f = files[0] ?? null;
+                setCvFile(f);
                 setCvDone(false);
                 setCvError(null);
+                // Direct automatisch inlezen — geen knop meer nodig.
+                if (f) void leesCv(f);
               }}
             />
 
             <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={leesCv}
-                disabled={!cvFile || reading}
-                className={buttonVariants()}
-              >
-                {reading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Bezig met inlezen…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" /> CV inlezen
-                  </>
-                )}
-              </button>
-              {cvDone && !cvError && (
+              {reading && (
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Bezig met automatisch inlezen…
+                </span>
+              )}
+              {!reading && cvDone && !cvError && (
                 <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
                   <CheckCircle2 className="h-4 w-4" /> Ingelezen — controleer de velden hieronder
                 </span>
+              )}
+              {!reading && cvFile && (
+                <button
+                  type="button"
+                  onClick={() => leesCv()}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline"
+                >
+                  <Sparkles className="h-4 w-4" /> Opnieuw inlezen
+                </button>
               )}
             </div>
 
