@@ -1,54 +1,33 @@
 import Link from "next/link";
-import { Plus, Kanban, Coins, Gauge, CalendarClock, Users2, BarChart3 } from "lucide-react";
+import { Plus, Kanban, Coins, Gauge, CalendarClock } from "lucide-react";
 import { db } from "@/lib/db";
-import { candidatePhotoSrc } from "@/lib/people";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { buttonVariants } from "@/components/ui/button";
-import { formatCurrency, cn } from "@/lib/utils";
-import {
-  APPLICATION_STATUSES,
-  DISCIPLINES,
-  colorFor,
-  labelFor,
-} from "@/lib/domain";
+import { formatCurrency } from "@/lib/utils";
 import {
   currentRecruiterId,
   getCrmSettings,
   getBoardData,
   countDueFollowUps,
 } from "@/lib/crm";
-import { CrmBoards } from "./CrmBoards";
-import type { KanbanColumn, KanbanCard } from "./KanbanBoard";
-import type { DealColumn, DealCard } from "./DealBoard";
+import { DealBoard, type DealColumn, type DealCard } from "./DealBoard";
 
 export const metadata = { title: "CRM" };
 export const dynamic = "force-dynamic";
 
-export default async function CrmPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ scope?: string }>;
-}) {
-  const sp = await searchParams;
+export default async function CrmPage() {
   const recruiterId = await currentRecruiterId();
   const settings = await getCrmSettings(recruiterId);
-  const scope: "mine" | "all" =
-    sp.scope === "all" || sp.scope === "mine" ? sp.scope : settings.defaultScope;
 
-  const dealWhere = scope === "mine" && recruiterId ? { ownerId: recruiterId } : {};
-
-  const [board, openDeals, dueFollowUps, applications] = await Promise.all([
-    getBoardData({ recruiterId, scope, visibleStages: settings.visibleStages }),
+  // Eén gedeelde pipeline: iedereen ziet alle deals (scope = "all").
+  const [board, openDeals, dueFollowUps] = await Promise.all([
+    getBoardData({ recruiterId, scope: "all", visibleStages: settings.visibleStages }),
     db.deal.findMany({
-      where: { ...dealWhere, status: "OPEN" },
+      where: { status: "OPEN" },
       select: { value: true, probability: true },
     }),
-    countDueFollowUps(recruiterId, scope),
-    db.application.findMany({
-      include: { candidate: true, vacancy: true },
-      orderBy: { updatedAt: "desc" },
-    }),
+    countDueFollowUps(recruiterId, "all"),
   ]);
 
   const openCount = openDeals.length;
@@ -77,68 +56,17 @@ export default async function CrmPage({
     noteCount: c.noteCount,
   }));
 
-  // Reference board: de kandidaten-sollicitatiepipeline.
-  const applicationColumns: KanbanColumn[] = APPLICATION_STATUSES.map((s) => ({
-    id: s.value,
-    label: s.label,
-    color: s.color,
-  }));
-  const applicationCards: KanbanCard[] = applications.map((a) => ({
-    id: a.id,
-    columnId: a.status,
-    title: `${a.candidate.firstName} ${a.candidate.lastName}`,
-    subtitle: a.vacancy ? a.vacancy.title : "Open sollicitatie",
-    href: `/sollicitaties/${a.id}`,
-    showAvatar: true,
-    avatarSrc: candidatePhotoSrc(a.candidate),
-    tags: a.candidate.discipline
-      ? [{ label: labelFor(DISCIPLINES, a.candidate.discipline), color: colorFor(DISCIPLINES, a.candidate.discipline) }]
-      : [],
-  }));
-
-  const scopeTab = (value: "mine" | "all", label: string) => (
-    <Link
-      href={`/crm?scope=${value}`}
-      className={cn(
-        "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        scope === value ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
-      )}
-    >
-      {label}
-    </Link>
-  );
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="CRM"
-        description="Het verkoopproces om een kandidaat uit de talentpool bij een eigen klant te plaatsen op een openstaande vacature. Sleep deals tussen de fases; alles wat je doet wordt gelogd."
+        description="Eén gedeelde pipeline om een kandidaat uit de talentpool bij een eigen klant te plaatsen op een openstaande vacature. Sleep deals tussen de fases; alles wat je doet wordt gelogd."
         actions={
-          <>
-            <Link href="/crm/deals/nieuw" className={buttonVariants()}>
-              <Plus className="h-4 w-4" /> Nieuwe deal
-            </Link>
-          </>
+          <Link href="/crm/deals/nieuw" className={buttonVariants()}>
+            <Plus className="h-4 w-4" /> Nieuwe deal
+          </Link>
         }
       />
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1">
-          {scopeTab("mine", "Mijn deals")}
-          {scopeTab("all", "Team")}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/crm/opvolging" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            <CalendarClock className="h-4 w-4" /> Opvolging
-          </Link>
-          <Link href="/crm/contacten" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            <Users2 className="h-4 w-4" /> Contacten
-          </Link>
-          <Link href="/crm/inzichten" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            <BarChart3 className="h-4 w-4" /> Inzichten
-          </Link>
-        </div>
-      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Open deals" value={openCount} icon={<Kanban className="h-5 w-5" />} accent="brand" />
@@ -159,12 +87,7 @@ export default async function CrmPage({
         />
       </div>
 
-      <CrmBoards
-        dealColumns={dealColumns}
-        dealCards={dealCards}
-        applicationColumns={applicationColumns}
-        applicationCards={applicationCards}
-      />
+      <DealBoard columns={dealColumns} cards={dealCards} />
     </div>
   );
 }
