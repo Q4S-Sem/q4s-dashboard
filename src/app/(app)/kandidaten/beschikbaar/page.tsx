@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { BackLink } from "@/components/back-link";
 import type { Candidate } from "@prisma/client";
 import {
   UserCheck,
@@ -211,10 +210,6 @@ export default async function BeschikbaarPage({
 
   return (
     <div className="space-y-6">
-      <BackLink href="/kandidaten">
-        Terug naar talentpool
-      </BackLink>
-
       <PageHeader
         title="Beschikbaarheid"
         description="Schakel tussen beschikbaar, binnenkort, niet beschikbaar en overige — zo blijft het overzichtelijk."
