@@ -148,18 +148,10 @@ export default async function HandtekeningPage({
             <div className="mt-4">
               <CopySignatureButton html={copyHtml} text={copyText} />
             </div>
-            <div className="mt-3 space-y-1.5 text-xs text-ink-400">
-              <p>
-                <strong className="font-medium text-ink-600">Kopieer als afbeelding</strong> zet de
-                handtekening VAST: het wordt één plaatje dat niemand meer kan aanpassen. Plak dit in
-                Outlook of Gmail (Instellingen → Handtekening). De links zijn dan niet klikbaar.
-              </p>
-              <p>
-                <strong className="font-medium text-ink-600">Kopieer (links)</strong> houdt de links
-                klikbaar, maar dan laten Outlook/Gmail de tekst nog bewerken — dat kan met opgemaakte
-                tekst niet worden tegengehouden.
-              </p>
-            </div>
+            <p className="mt-3 text-xs text-ink-400">
+              Klik op <strong className="font-medium text-ink-600">Kopieer handtekening</strong> en plak
+              &apos;m in Outlook of Gmail (Instellingen → Handtekening) — logo, links en opmaak gaan mee.
+            </p>
           </CardContent>
         </Card>
       </div>
