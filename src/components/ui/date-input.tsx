@@ -468,6 +468,9 @@ export function DateInput({
             required={required}
             value={text}
             placeholder={withTime ? "dd-mm-jjjj  uu:mm" : "dd-mm-jjjj"}
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
             onChange={(ev) => setText(ev.target.value)}
             onFocus={() => !disabled && setOpen(true)}
             onBlur={() => {

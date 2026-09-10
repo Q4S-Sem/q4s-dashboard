@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Building2, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { TextCombobox } from "@/components/ui/text-combobox";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatDate } from "@/lib/utils";
@@ -90,10 +91,10 @@ export default async function PlaatsingenTab({
               <input type="hidden" name="candidateId" value={candidate.id} />
               <div className="grid items-end gap-3 sm:grid-cols-12">
                 <Field label="Bedrijf" htmlFor="company" required className="sm:col-span-5">
-                  <Input
+                  <TextCombobox
                     id="company"
                     name="company"
-                    list="company-suggestions"
+                    options={companySuggestions}
                     required
                     placeholder="Bijv. Damen Shipyards"
                   />
@@ -121,11 +122,6 @@ export default async function PlaatsingenTab({
                   <Plus className="h-4 w-4" /> Plaatsing toevoegen
                 </SubmitButton>
               </div>
-              <datalist id="company-suggestions">
-                {companySuggestions.map((co) => (
-                  <option key={co} value={co} />
-                ))}
-              </datalist>
             </form>
         </CardContent>
       </Card>

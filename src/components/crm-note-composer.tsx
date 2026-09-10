@@ -36,19 +36,19 @@ export function CrmNoteComposer({
 
       <div className="flex flex-wrap items-end gap-3">
         <Field label="Type" htmlFor="type" className="w-40">
-          <Select id="type" name="type" defaultValue="NOTE">
+          <Select id="type" name="type" defaultValue="NOTE" tintText>
             {CRM_NOTE_MANUAL_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
+              <option key={t.value} value={t.value} data-color={t.color}>
                 {t.label}
               </option>
             ))}
           </Select>
         </Field>
         <Field label="Gevoel" htmlFor="sentiment" className="w-36">
-          <Select id="sentiment" name="sentiment" defaultValue="">
+          <Select id="sentiment" name="sentiment" defaultValue="" tintText>
             <option value="">—</option>
             {CRM_SENTIMENTS.map((s) => (
-              <option key={s.value} value={s.value}>
+              <option key={s.value} value={s.value} data-color={s.color}>
                 {s.label}
               </option>
             ))}

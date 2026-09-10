@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  Upload,
   FileText,
   FileUser,
   FileDown,
@@ -14,9 +13,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { Field } from "@/components/ui/field";
 import { formatDate } from "@/lib/utils";
 import { uploadCv, deleteCv } from "../../../actions";
+import { CvUploadForm } from "./CvUploadForm";
 import { profileFromCandidateCv } from "../../../../socials/cv-generator/actions";
 import { getCandidate } from "../data";
 
@@ -96,28 +95,7 @@ export default async function CvTab({
           </CardContent>
         ) : (
           <CardContent>
-            <form
-              action={uploadCv}
-              className="grid items-end gap-3 sm:grid-cols-12"
-            >
-              <input type="hidden" name="candidateId" value={candidate.id} />
-              <Field label="Bestand" htmlFor="cv-file" className="sm:col-span-9">
-                <input
-                  id="cv-file"
-                  name="file"
-                  type="file"
-                  required
-                  aria-label="CV kiezen"
-                  title="CV kiezen"
-                  className="block w-full text-sm text-ink-600 file:mr-3 file:rounded-md file:border-0 file:bg-ink-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-ink-800"
-                />
-              </Field>
-              <div className="sm:col-span-3">
-                <SubmitButton className="w-full" pendingLabel="Uploaden…">
-                  <Upload className="h-4 w-4" /> Upload CV
-                </SubmitButton>
-              </div>
-            </form>
+            <CvUploadForm action={uploadCv} candidateId={candidate.id} />
           </CardContent>
         )}
       </Card>

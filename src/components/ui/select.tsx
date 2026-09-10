@@ -20,6 +20,18 @@ const DOT_CLASS: Record<string, string> = {
   orange: "bg-brand-600",
 };
 
+/** BadgeColor-token → tekstkleur, voor `tintText` (label krijgt de kleur). */
+const TEXT_CLASS: Record<string, string> = {
+  slate: "text-ink-600",
+  blue: "text-blue-600",
+  green: "text-emerald-600",
+  amber: "text-amber-600",
+  red: "text-red-600",
+  violet: "text-violet-600",
+  cyan: "text-cyan-600",
+  orange: "text-brand-600",
+};
+
 /** Flatten an option's children (e.g. `{firstName} {lastName}`) into one label. */
 function labelOf(children: React.ReactNode): string {
   if (children == null || children === false) return "";
@@ -98,6 +110,7 @@ export function Select({
   className,
   children,
   onValueChange,
+  tintText = false,
   ...rest
 }: {
   id?: string;
@@ -108,6 +121,8 @@ export function Select({
   className?: string;
   children?: React.ReactNode;
   onValueChange?: (value: string) => void;
+  /** Kleur de LABELTEKST (niet alleen het stipje) op basis van `data-color`. */
+  tintText?: boolean;
   "aria-label"?: string;
 }) {
   const options = React.useMemo(() => readOptions(children), [children]);
@@ -301,7 +316,14 @@ export function Select({
                   {o.color && DOT_CLASS[o.color] && (
                     <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT_CLASS[o.color])} />
                   )}
-                  <span className="truncate">{o.label}</span>
+                  <span
+                    className={cn(
+                      "truncate",
+                      tintText && !green && !selected && o.color && TEXT_CLASS[o.color],
+                    )}
+                  >
+                    {o.label}
+                  </span>
                 </span>
                 {selected && (
                   <Check
@@ -335,7 +357,14 @@ export function Select({
           {current?.color && DOT_CLASS[current.color] && (
             <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT_CLASS[current.color])} />
           )}
-          <span className="truncate">{current?.label ?? "—"}</span>
+          <span
+            className={cn(
+              "truncate",
+              tintText && current?.color && current.value && TEXT_CLASS[current.color] + " font-medium",
+            )}
+          >
+            {current?.label ?? "—"}
+          </span>
         </span>
         <ChevronsUpDown className="h-4 w-4 shrink-0 text-ink-300" />
       </button>

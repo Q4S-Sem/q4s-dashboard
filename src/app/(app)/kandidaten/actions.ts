@@ -303,6 +303,25 @@ export async function uploadCv(formData: FormData) {
   }
 
   const fileName = await saveCvUpload(file as File);
+
+  // Werkervaring automatisch uitlezen en invullen als die nog leeg is, zodat de
+  // uitgelezen ervaring meteen op de kandidaat verschijnt (Overzicht → Werkervaring).
+  // Nooit fataal: mislukt het uitlezen, dan blijft de upload gewoon staan.
+  let experienceSummary: string | null = null;
+  try {
+    const current = await db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { experienceSummary: true },
+    });
+    if (!current?.experienceSummary?.trim()) {
+      const bytes = Buffer.from(await (file as File).arrayBuffer());
+      const fields = await extractCandidateFields(bytes, (file as File).name, (file as File).type || "");
+      if (fields.experienceSummary) experienceSummary = fields.experienceSummary;
+    }
+  } catch (err) {
+    console.error("uploadCv: automatische werkervaring-uitlezing mislukt:", err);
+  }
+
   await db.candidate.update({
     where: { id: candidateId },
     data: {
@@ -310,6 +329,7 @@ export async function uploadCv(formData: FormData) {
       cvOriginalName: (file as File).name,
       cvMimeType: (file as File).type || "application/octet-stream",
       cvSize: (file as File).size,
+      ...(experienceSummary ? { experienceSummary } : {}),
     },
   });
 
