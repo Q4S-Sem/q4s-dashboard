@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
  * Verwijder-/bevestigknop met een rustige in-app bevestiging (geen native
  * confirm()). Onomkeerbare acties krijgen standaard een klein prullenbak-icoon
  * als trigger — een grote rode knop is te makkelijk per ongeluk aan te klikken.
- * In het venster geldt de huisstijl: doorgaan = groen, annuleren = rood.
+ * In het venster geldt de huisstijl: annuleren = neutrale outline, de bevestiging
+ * volgt de variant (verwijderen = rood, de actie die data kwijtraakt).
  */
 export function ConfirmSubmit({
   action,
@@ -98,26 +99,30 @@ export function ConfirmSubmit({
         createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div
-              className="fixed inset-0 bg-ink-900/50"
+              className="animate-overlay-in fixed inset-0 bg-ink-900/50 backdrop-blur-sm"
               aria-hidden
               onClick={() => setOpen(false)}
             />
             <div
               role="alertdialog"
               aria-modal="true"
-              className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-ink-200 bg-white shadow-2xl"
+              className="animate-dialog-in relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-[0_24px_60px_-15px_rgb(0_0_0/0.35)]"
             >
-              <div className="flex items-start gap-3 px-6 pb-5 pt-6">
+              <div className="flex items-start gap-3.5 px-6 pb-5 pt-6">
                 <span
                   className={cn(
-                    "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
                     isDanger ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600",
                   )}
                 >
-                  <AlertTriangle className="h-4 w-4" />
+                  {isDanger ? (
+                    <Trash2 className="h-[18px] w-[18px]" />
+                  ) : (
+                    <AlertTriangle className="h-[18px] w-[18px]" />
+                  )}
                 </span>
-                <div className="min-w-0">
-                  <h2 className="text-[15px] font-semibold leading-snug text-ink-900">
+                <div className="min-w-0 pt-0.5">
+                  <h2 className="text-base font-semibold leading-snug text-ink-900">
                     {message}
                   </h2>
                   <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
@@ -128,7 +133,7 @@ export function ConfirmSubmit({
 
               <form
                 action={action}
-                className="flex justify-end gap-2 border-t border-ink-100 bg-ink-50/60 px-6 py-4"
+                className="flex justify-end gap-2.5 border-t border-ink-100 bg-ink-50/60 px-6 py-4"
               >
                 {id && <input type="hidden" name="id" value={id} />}
                 {hidden &&
@@ -139,15 +144,11 @@ export function ConfirmSubmit({
                   ref={cancelRef}
                   type="button"
                   onClick={() => setOpen(false)}
-                  className={buttonVariants({
-                    variant: "outline",
-                    size: "md",
-                    className: "border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800",
-                  })}
+                  className={buttonVariants({ variant: "outline", size: "md" })}
                 >
                   Annuleren
                 </button>
-                <SubmitButton variant="success" size="md" pendingLabel="Bezig…">
+                <SubmitButton variant={cv} size="md" pendingLabel="Bezig…">
                   {confirmText}
                 </SubmitButton>
               </form>
