@@ -134,6 +134,10 @@ export function renderSignatureHtml(d: SignatureData): string {
       )}" alt="Q4S Project Partners" width="120" style="display:block;border:0;width:120px;height:auto;"></td>`
     : "";
 
+  const addressCell = addressBlock
+    ? `<td style="padding:0 0 0 22px;border-left:1px solid ${LINE};vertical-align:top;">${addressBlock}</td>`
+    : "";
+
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:${INK};">
     <tr><td style="padding:0 0 12px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -141,9 +145,13 @@ export function renderSignatureHtml(d: SignatureData): string {
         <td style="padding:0 0 0 ${d.logoSrc ? "22px" : "0"};vertical-align:middle;">
           <div style="color:${INK};font-size:17px;font-weight:700;line-height:1.3;">${esc(d.name) || "&nbsp;"}</div>
           ${d.role ? `<div style="color:${MUTED};font-size:13px;line-height:1.4;padding-bottom:8px;">${esc(d.role)}</div>` : ""}
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="vertical-align:top;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
+            </td>
+            ${addressCell}
+          </tr></table>
         </td>
-        ${addressBlock ? `<td style="padding:0 0 0 34px;vertical-align:middle;">${addressBlock}</td>` : ""}
       </tr></table>
     </td></tr>
     <tr><td style="border-top:1px solid ${LINE};font-size:0;line-height:0;">&nbsp;</td></tr>
