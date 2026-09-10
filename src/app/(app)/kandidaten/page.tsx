@@ -142,11 +142,11 @@ export default async function KandidatenPage({
       {/* Snelkoppeling naar de map met beschikbare kandidaten */}
       <Link
         href="/kandidaten/beschikbaar"
-        className="group flex items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 transition-colors hover:bg-emerald-100"
+        className="group flex items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 transition-colors hover:bg-emerald-100"
       >
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-600 ring-1 ring-emerald-200">
-            <UserCheck className="h-5 w-5" />
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-600 ring-1 ring-emerald-200">
+            <UserCheck className="h-4 w-4" />
           </span>
           <div>
             <p className="font-semibold text-emerald-900">Beschikbare kandidaten</p>
