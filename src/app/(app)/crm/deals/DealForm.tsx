@@ -87,7 +87,7 @@ export function DealForm({
               {/* Sectie: de kans */}
               <section className="space-y-4">
                 <h2 className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-brand-700">
-                  <Building2 className="h-4 w-4" /> De kans
+                  <Building2 className="h-4 w-4" /> De vacature
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field label="Titel" htmlFor="title" required error={e.title}>
@@ -303,7 +303,7 @@ export function DealForm({
 
                 <div>
                   <p className="text-base font-bold text-ink-900">
-                    {title || <span className="text-ink-300">Titel van de deal</span>}
+                    {title || <span className="text-ink-300">Titel van de vacature</span>}
                   </p>
                   <p className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-500">
                     <Building2 className="h-3.5 w-3.5 text-ink-400" />
@@ -346,7 +346,7 @@ export function DealForm({
                 </dl>
 
                 <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
-                  Dit voorbeeld werkt live mee terwijl je invult — zo zie je meteen hoe de lead in de pipeline verschijnt.
+                  Dit voorbeeld werkt live mee terwijl je invult — zo zie je meteen hoe de vacature verschijnt.
                 </p>
               </CardContent>
             </Card>

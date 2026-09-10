@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { BackLink } from "@/components/back-link";
 import {
   Building2, Briefcase, Kanban, Users2, Search, Sparkles, MapPin,
-  Phone, Mail, Star, Receipt, ArrowRight, GitBranchPlus, Target,
+  Phone, Mail, Star, Receipt, ArrowRight, GitBranchPlus,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,7 +85,7 @@ export default async function BedrijfWerkruimtePage({
         actions={
           <>
             <Link href={`/crm/deals/nieuw?company=${encodeURIComponent(client.companyName)}`} className={buttonVariants({ variant: "outline" })}>
-              <Target className="h-4 w-4" /> Nieuwe kans
+              <Briefcase className="h-4 w-4" /> Nieuwe vacature
             </Link>
             <Link href={`/klanten/${client.id}`} className={buttonVariants({ variant: "outline" })}>
               <Receipt className="h-4 w-4" /> Facturatie & gegevens

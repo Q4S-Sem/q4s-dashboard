@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Briefcase, Building2, Coins, Users2, Target, MapPin, CalendarClock, ArrowRight, GitBranchPlus } from "lucide-react";
+import { Plus, Briefcase, Building2, Coins, Users2, MapPin, CalendarClock, ArrowRight, GitBranchPlus } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -10,17 +10,17 @@ import { StatusBadge, Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { DISCIPLINES, type BadgeColor } from "@/lib/domain";
 
-export const metadata = { title: "Kansen" };
+export const metadata = { title: "Vacatures" };
 export const dynamic = "force-dynamic";
 
 /**
- * Kansen = openstaande vacature-leads bij bedrijven waar (nog) GEEN kandidaat aan
- * gekoppeld is. Dit is de "voorsprong": je hoort bij een bedrijfsbezoek dat er een
- * project/vacature aankomt en legt het hier vast, vóór je iemand zoekt. Zodra je
- * een kandidaat koppelt, verschijnt de deal op het pipeline-bord.
+ * Vacatures = openstaande vacature-leads bij bedrijven waar (nog) GEEN kandidaat
+ * aan gekoppeld is. Dit is de "voorsprong": je hoort bij een bedrijfsbezoek dat er
+ * een project/vacature aankomt en legt het hier vast, vóór je iemand zoekt. Zodra
+ * je een kandidaat koppelt, verschijnt de deal op het pipeline-bord.
  */
-export default async function KansenPage() {
-  const kansen = await db.deal.findMany({
+export default async function VacaturesPage() {
+  const vacatures = await db.deal.findMany({
     where: { status: "OPEN", candidateId: null },
     include: {
       stage: true,
@@ -31,41 +31,41 @@ export default async function KansenPage() {
     orderBy: [{ expectedCloseDate: "asc" }, { createdAt: "desc" }],
   });
 
-  const totalValue = kansen.reduce((s, k) => s + k.value, 0);
-  const totalPositions = kansen.reduce((s, k) => s + k.positions, 0);
+  const totalValue = vacatures.reduce((s, k) => s + k.value, 0);
+  const totalPositions = vacatures.reduce((s, k) => s + k.positions, 0);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Kansen"
-        description="Bedrijven waar (binnenkort) een vacature ingevuld moet worden — je voorsprong. Leg een kans vast na een bezoek of tip, nog vóór je een kandidaat zoekt. Koppel later een kandidaat en de kans stroomt door naar de pipeline."
+        title="Vacatures"
+        description="Bedrijven waar (binnenkort) een vacature ingevuld moet worden — je voorsprong. Leg een vacature vast na een bezoek of tip, nog vóór je een kandidaat zoekt. Koppel later een kandidaat en de vacature stroomt door naar de pipeline."
         actions={
           <Link href="/crm/deals/nieuw" className={buttonVariants()}>
-            <Plus className="h-4 w-4" /> Nieuwe kans
+            <Plus className="h-4 w-4" /> Nieuwe vacature
           </Link>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Openstaande kansen" value={kansen.length} icon={<Target className="h-5 w-5" />} accent="brand" />
+        <StatCard label="Openstaande vacatures" value={vacatures.length} icon={<Briefcase className="h-5 w-5" />} accent="brand" />
         <StatCard label="Te vullen posities" value={totalPositions} icon={<Users2 className="h-5 w-5" />} accent="violet" />
         <StatCard label="Verwachte waarde" value={formatCurrency(totalValue)} icon={<Coins className="h-5 w-5" />} accent="green" />
       </div>
 
-      {kansen.length === 0 ? (
+      {vacatures.length === 0 ? (
         <EmptyState
-          icon={<Target className="h-6 w-6" />}
-          title="Nog geen kansen"
-          description="Leg je eerste kans vast: een bedrijf waar een vacature aankomt. Zo mis je geen voorsprong meer."
+          icon={<Briefcase className="h-6 w-6" />}
+          title="Nog geen vacatures"
+          description="Leg je eerste vacature vast: een bedrijf waar een vacature aankomt. Zo mis je geen voorsprong meer."
           action={
             <Link href="/crm/deals/nieuw" className={buttonVariants()}>
-              <Plus className="h-4 w-4" /> Nieuwe kans
+              <Plus className="h-4 w-4" /> Nieuwe vacature
             </Link>
           }
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {kansen.map((k) => {
+          {vacatures.map((k) => {
             const overdue = k.expectedCloseDate && k.expectedCloseDate.getTime() < Date.now();
             return (
               <Card key={k.id} className="flex flex-col p-4">
