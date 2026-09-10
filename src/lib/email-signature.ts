@@ -125,7 +125,7 @@ export function renderSignatureHtml(d: SignatureData): string {
       : "";
 
   const disclaimer = d.disclaimer
-    ? `<tr><td style="padding:11px 0 0;color:#9ca3af;font-size:10px;line-height:1.55;">${esc(d.disclaimer)}</td></tr>`
+    ? `<tr><td style="padding:11px 0 0;"><div style="width:520px;max-width:520px;color:#9ca3af;font-size:10px;line-height:1.55;">${esc(d.disclaimer)}</div></td></tr>`
     : "";
 
   const logoCell = d.logoSrc
