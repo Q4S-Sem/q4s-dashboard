@@ -70,7 +70,8 @@ export function CopySignatureButton({ html, text }: { html: string; text: string
       /* niet kritisch */
     }
 
-    const opts = { pixelRatio: 2, backgroundColor: "#ffffff", cacheBust: true } as const;
+    // pixelRatio hoog zodat de afbeelding groot en scherp is (retina/print-kwaliteit).
+    const opts = { pixelRatio: 3, backgroundColor: "#ffffff", cacheBust: true } as const;
     // Warm-up: de eerste render kan half leeg zijn; die gooien we weg.
     await toBlob(node, opts);
     const rect = node.getBoundingClientRect();
