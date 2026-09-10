@@ -9,13 +9,30 @@ import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
 import { DISCIPLINES } from "@/lib/domain";
+import { BedrijvenFilters } from "./BedrijvenFilters";
 
 export const metadata = { title: "Onze bedrijven" };
 export const dynamic = "force-dynamic";
 
-export default async function BedrijvenPage() {
+export default async function BedrijvenPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; filter?: string }>;
+}) {
+  const sp = await searchParams;
+  const q = sp.q?.trim() || "";
+  const filter = sp.filter || "";
+
   // Onze eigen klanten met hun openstaande vacatures en lopende deals.
   const clients = await db.client.findMany({
+    where: q
+      ? {
+          OR: [
+            { companyName: { contains: q } },
+            { city: { contains: q } },
+          ],
+        }
+      : undefined,
     orderBy: { companyName: "asc" },
     include: {
       vacancies: {
@@ -27,9 +44,18 @@ export default async function BedrijvenPage() {
     },
   });
 
+  // Statusfilter na de counts (afgeleid, niet direct in de query).
+  const filtered = clients.filter((c) => {
+    if (filter === "open-vacancy") return c.vacancies.length > 0;
+    if (filter === "open-deal") return c._count.deals > 0;
+    if (filter === "placements") return c._count.placements > 0;
+    return true;
+  });
+
   const totalOpenVacancies = clients.reduce((s, c) => s + c.vacancies.length, 0);
   const totalOpenDeals = clients.reduce((s, c) => s + c._count.deals, 0);
   const withOpenVacancy = clients.filter((c) => c.vacancies.length > 0).length;
+  const hasFilter = Boolean(q || filter);
 
   return (
     <div className="space-y-6">
@@ -49,7 +75,7 @@ export default async function BedrijvenPage() {
         <StatCard label="Lopende deals" value={totalOpenDeals} icon={<Kanban className="h-5 w-5" />} accent="violet" />
       </div>
 
-      {clients.length === 0 ? (
+      {clients.length === 0 && !hasFilter ? (
         <EmptyState
           icon={<Building2 className="h-6 w-6" />}
           title="Nog geen bedrijven"
@@ -62,8 +88,25 @@ export default async function BedrijvenPage() {
         />
       ) : (
         <>
+          <BedrijvenFilters q={q} filter={filter} />
+
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon={<Building2 className="h-6 w-6" />}
+              title="Geen bedrijven gevonden"
+              description="Pas je zoekopdracht of filter aan."
+              action={
+                <Link href="/opdrachtgevers" className={buttonVariants({ variant: "outline" })}>
+                  <Plus className="h-4 w-4" /> Filters wissen
+                </Link>
+              }
+            />
+          ) : (
+            <>
           <p className="text-xs text-ink-400">
-            {withOpenVacancy} van de {clients.length} bedrijven met een openstaande vacature
+            {hasFilter
+              ? `${filtered.length} van de ${clients.length} bedrijven`
+              : `${withOpenVacancy} van de ${clients.length} bedrijven met een openstaande vacature`}
           </p>
           <Card>
             <Table>
@@ -76,7 +119,7 @@ export default async function BedrijvenPage() {
                 </TR>
               </THead>
               <TBody>
-                {clients.map((c) => (
+                {filtered.map((c) => (
                   <TR key={c.id}>
                     <TD>
                       <RowLink href={`/opdrachtgevers/${c.id}`}>{c.companyName}</RowLink>
@@ -120,6 +163,8 @@ export default async function BedrijvenPage() {
               </TBody>
             </Table>
           </Card>
+            </>
+          )}
         </>
       )}
     </div>
