@@ -7,7 +7,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { getCompanySettings } from "@/lib/settings";
-import { emailLogoDataUri } from "@/lib/email";
+import { emailLogoDataUri, defaultBadgeDataUris } from "@/lib/email";
 import { currentUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import {
@@ -43,7 +43,13 @@ export default async function HandtekeningPage({
     : null;
 
   const sig = signatureFromSettings(settings, logo, account);
-  const badgesText = sig.badges.join("\n");
+  // Standaard staan de Q4S-keurmerken (DNV/VCU/SNA) al ingebed. Heeft het bedrijf
+  // eigen badge-URL's ingevuld, dan winnen die; anders tonen we de ingebedde set.
+  const customBadges = sig.badges;
+  const defaultBadges = defaultBadgeDataUris();
+  sig.badges = customBadges.length ? customBadges : defaultBadges;
+  // In het tekstvak tonen we alleen echte URL's (geen ingebedde data-URI's).
+  const badgesText = customBadges.filter((b) => !b.startsWith("data:")).join("\n");
 
   const previewDoc = renderSignatureDocument(sig);
   const copyHtml = renderSignatureHtml(sig);
@@ -127,7 +133,7 @@ export default async function HandtekeningPage({
                 <Field
                   label="Keurmerk-logo's"
                   htmlFor="badges"
-                  hint="Eén afbeeldings-URL (https://…) per regel, bijv. DNV / VCU / SNA. Laat leeg als je geen logo's wilt tonen."
+                  hint="DNV, VCU en SNA staan standaard al in de handtekening. Wil je andere logo's? Zet dan hier één afbeelding-URL (https://…) per regel — die vervangen de standaardset."
                 >
                   <Textarea
                     id="badges"

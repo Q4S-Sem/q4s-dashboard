@@ -18,6 +18,24 @@ export function emailLogoDataUri(): string | null {
   return b ? `data:image/png;base64,${b.toString("base64")}` : null;
 }
 
+/** De standaard keurmerk-logo's (DNV / VCU / SNA) als data-URI's, ingebed vanuit
+ *  public/email/badges. Data-URI zodat ze betrouwbaar renderen in Outlook/Gmail
+ *  én in het voorbeeld — geen externe hosting nodig. Ontbrekende bestanden worden
+ *  stilletjes overgeslagen. */
+export function defaultBadgeDataUris(): string[] {
+  const files = ["dnv.png", "vcu.png", "sna.png"];
+  const out: string[] = [];
+  for (const f of files) {
+    try {
+      const b = fs.readFileSync(path.join(process.cwd(), "public", "email", "badges", f));
+      out.push(`data:image/png;base64,${b.toString("base64")}`);
+    } catch {
+      // bestand ontbreekt → overslaan
+    }
+  }
+  return out;
+}
+
 /** De Content-ID waarnaar de mailtemplate verwijst voor het ingebedde logo. */
 export const LOGO_CID = "q4slogo";
 
