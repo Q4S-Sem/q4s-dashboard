@@ -139,6 +139,7 @@ export function renderSignatureHtml(d: SignatureData): string {
     : "";
 
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:${INK};">
+    <tr><td style="padding:0 0 14px;color:${INK};font-size:13px;line-height:1.5;">Met vriendelijke groet,</td></tr>
     <tr><td style="padding:0 0 10px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
         ${logoCell}
@@ -170,6 +171,8 @@ export function renderSignatureDocument(d: SignatureData): string {
 /** Plain-text variant, voor de tekstversie van dashboard-mails. */
 export function renderSignatureText(d: SignatureData): string {
   return [
+    "Met vriendelijke groet,",
+    "",
     d.name,
     d.role,
     d.phone,
