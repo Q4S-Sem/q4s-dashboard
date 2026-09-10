@@ -118,6 +118,44 @@ export function cvSourceKind(fileName: string, mimeType: string): CvSourceKind |
   return null;
 }
 
+/**
+ * Herken het bestandstype aan de MAGISCHE BYTES. Nodig als een bestand van een
+ * andere pagina in het sleepvak belandt (bijv. een PDF uit een mail- of browser-
+ * preview): dat komt vaak binnen als "application/octet-stream" zonder .pdf in de
+ * naam, waardoor {@link cvSourceKind} het niet herkent. De inhoud liegt niet.
+ */
+export function sniffSourceKind(bytes: Buffer): CvSourceKind | null {
+  if (bytes.length < 4) return null;
+  // PDF: "%PDF"
+  if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) return "pdf";
+  // PNG: 89 50 4E 47
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "image";
+  // JPEG: FF D8 FF
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image";
+  // GIF: "GIF8"
+  if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return "image";
+  // WEBP: "RIFF"...."WEBP"
+  if (
+    bytes.length >= 12 &&
+    bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+    bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+  ) {
+    return "image";
+  }
+  // DOCX/ZIP: "PK\x03\x04" — een .docx is een zip. We herkennen 'm hier alleen als
+  // de naam of mediatype dat ook zegt (een kale zip is geen CV), dus niet hier.
+  return null;
+}
+
+/** Bestandstype op naam/mediatype, met de inhoud (magische bytes) als terugval. */
+export function resolveSourceKind(
+  bytes: Buffer,
+  fileName: string,
+  mimeType: string,
+): CvSourceKind | null {
+  return cvSourceKind(fileName, mimeType) ?? sniffSourceKind(bytes);
+}
+
 /** Foutmelding voor de recruiter — geen stacktrace, wel een uitweg. */
 export class CvExtractError extends Error {}
 
@@ -131,7 +169,7 @@ export async function extractCvProfile(
   fileName: string,
   mimeType: string,
 ): Promise<CvProfileData> {
-  const kind = cvSourceKind(fileName, mimeType);
+  const kind = resolveSourceKind(bytes, fileName, mimeType);
 
   if (!kind) {
     const isOldWord = /\.(doc|rtf|odt)$/i.test(fileName);
@@ -286,7 +324,7 @@ export async function extractCandidateFields(
   fileName: string,
   mimeType: string,
 ): Promise<CandidateFields> {
-  const kind = cvSourceKind(fileName, mimeType);
+  const kind = resolveSourceKind(bytes, fileName, mimeType);
   if (!kind) {
     const isOldWord = /\.(doc|rtf|odt)$/i.test(fileName);
     throw new CvExtractError(

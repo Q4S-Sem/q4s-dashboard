@@ -49,33 +49,83 @@ export function Dropzone({
     update(Array.from(dt.files));
   }
 
+  /** Haal een URL op en maak er een File van. */
+  async function fileFromUrl(url: string): Promise<File | null> {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      let name = "bijlage";
+      try {
+        name = decodeURIComponent(new URL(url, window.location.href).pathname.split("/").pop() || "") || "bijlage";
+      } catch {
+        /* laat 'bijlage' staan */
+      }
+      return new File([blob], name, { type: blob.type || "application/octet-stream" });
+    } catch {
+      // Cross-origin/afgeschermde bron (of een data:-URL die faalt): overslaan.
+      return null;
+    }
+  }
+
   /**
-   * Sleep-bron uitpakken. Naast echte bestanden (OS/verkenner/tweede scherm en de
-   * meeste mailbijlagen) ook een gesleepte AFBEELDING/LINK uit een webpagina of
-   * webmail-preview: die komt binnen als een URL (uri-list/text), die we ophalen
-   * en tot een File maken. Zo lukt "direct vanuit de mail erin slepen" ook.
+   * Sleep-bron uitpakken, van meest- naar minst-betrouwbaar. Zo lukt "direct
+   * vanuit de mail erin slepen" voor WEBMAIL (Gmail/Outlook-web) en bijlagen die
+   * als bestand meekomen:
+   *  1. dtIn.files — echte bestanden (verkenner, tweede scherm, veel bijlagen).
+   *  2. DataTransferItems.getAsFile() — vangt bestanden die soms niet in .files
+   *     komen (o.a. gesleepte afbeeldingen uit webmail-previews).
+   *  3. text/html — webmail zet een gesleepte bijlage vaak als <img src>/<a href>;
+   *     we pakken de eerste http(s)-bron en halen die op.
+   *  4. text/uri-list of text/plain — een kale URL.
+   *
+   * NB: bijlagen uit de Outlook-DESKTOP-app kan een browser niet ontvangen (het
+   * OS levert die als "virtueel bestand" dat browsers niet vrijgeven). Sleep die
+   * dan eerst naar je bureaublad, of gebruik webmail.
    */
   async function handleDataTransfer(dtIn: DataTransfer) {
+    // 1. Echte bestanden.
     if (dtIn.files && dtIn.files.length) {
       applyFiles(dtIn.files);
       return;
     }
-    const uri =
-      dtIn.getData("text/uri-list") ||
-      dtIn.getData("text/plain") ||
-      "";
+
+    // 2. Items → getAsFile (vangt wat .files mist).
+    if (dtIn.items && dtIn.items.length) {
+      const picked: File[] = [];
+      for (const item of Array.from(dtIn.items)) {
+        if (item.kind === "file") {
+          const f = item.getAsFile();
+          if (f && f.size > 0) picked.push(f);
+        }
+      }
+      if (picked.length) {
+        applyFiles(picked);
+        return;
+      }
+    }
+
+    // 3. text/html van webmail: pak de eerste http(s)- of data-bron.
+    const html = dtIn.getData("text/html");
+    if (html) {
+      const m =
+        html.match(/<(?:img|a)[^>]+(?:src|href)\s*=\s*["']([^"']+)["']/i) ?? null;
+      const cand = m?.[1];
+      if (cand && /^(https?:|data:)/i.test(cand)) {
+        const file = await fileFromUrl(cand);
+        if (file) {
+          applyFiles([file]);
+          return;
+        }
+      }
+    }
+
+    // 4. Kale URL.
+    const uri = dtIn.getData("text/uri-list") || dtIn.getData("text/plain") || "";
     const url = uri.split(/\s+/).find((l) => /^https?:\/\//i.test(l))?.trim();
-    if (!url) return;
-    try {
-      const res = await fetch(url);
-      if (!res.ok) return;
-      const blob = await res.blob();
-      const name =
-        decodeURIComponent(new URL(url).pathname.split("/").pop() || "") || "bijlage";
-      const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
-      applyFiles([file]);
-    } catch {
-      // Cross-origin/afgeschermde bron: stil negeren, gebruiker kan nog klikken/kiezen.
+    if (url) {
+      const file = await fileFromUrl(url);
+      if (file) applyFiles([file]);
     }
   }
 
