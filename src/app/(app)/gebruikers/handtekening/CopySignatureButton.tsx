@@ -70,8 +70,10 @@ export function CopySignatureButton({ html, text }: { html: string; text: string
       /* niet kritisch */
     }
 
-    // pixelRatio hoog zodat de afbeelding groot en scherp is (retina/print-kwaliteit).
-    const opts = { pixelRatio: 3, backgroundColor: "#ffffff", cacheBust: true } as const;
+    // pixelRatio 1 zodat de afbeelding exact hetzelfde formaat heeft als de
+    // "Kopieer (links)"-versie: evenveel pixels als de handtekening op scherm,
+    // dus Outlook/Gmail tonen 'm op dezelfde grootte (niet vergroot).
+    const opts = { pixelRatio: 1, backgroundColor: "#ffffff", cacheBust: true } as const;
     // Warm-up: de eerste render kan half leeg zijn; die gooien we weg.
     await toBlob(node, opts);
     const rect = node.getBoundingClientRect();
