@@ -135,10 +135,7 @@ export default async function HandtekeningPage({
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between gap-3">
-              <span>Jouw handtekening</span>
-              <CopySignatureButton html={copyHtml} text={copyText} />
-            </CardTitle>
+            <CardTitle>Jouw handtekening</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-hidden rounded-lg border border-ink-200 bg-white">
@@ -148,11 +145,21 @@ export default async function HandtekeningPage({
                 className="h-[360px] w-full border-0"
               />
             </div>
-            <p className="mt-3 text-xs text-ink-400">
-              Kopieer de handtekening en plak &apos;m in Outlook of Gmail (Instellingen → Handtekening) —
-              logo, links en opmaak gaan mee. Elk account heeft zo zijn eigen handtekening. Keurmerk-logo&apos;s
-              tonen alleen als je er publieke URL&apos;s van hebt ingevuld.
-            </p>
+            <div className="mt-4">
+              <CopySignatureButton html={copyHtml} text={copyText} />
+            </div>
+            <div className="mt-3 space-y-1.5 text-xs text-ink-400">
+              <p>
+                <strong className="font-medium text-ink-600">Kopieer als afbeelding</strong> zet de
+                handtekening VAST: het wordt één plaatje dat niemand meer kan aanpassen. Plak dit in
+                Outlook of Gmail (Instellingen → Handtekening). De links zijn dan niet klikbaar.
+              </p>
+              <p>
+                <strong className="font-medium text-ink-600">Kopieer (links)</strong> houdt de links
+                klikbaar, maar dan laten Outlook/Gmail de tekst nog bewerken — dat kan met opgemaakte
+                tekst niet worden tegengehouden.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
