@@ -71,6 +71,17 @@ export function GebruikerForm({
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Telefoon" htmlFor="phone" error={e.phone} hint="Komt op de e-mailhandtekening.">
+              <Input
+                id="phone"
+                name="phone"
+                defaultValue={user?.phone ?? ""}
+                placeholder="+31 (0)6 12 34 56 78"
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Rol" htmlFor="role" error={e.role}>
               <Select id="role" name="role" defaultValue={user?.role ?? "GEBRUIKER"}>
                 {APP_USER_ROLES.map((r) => (

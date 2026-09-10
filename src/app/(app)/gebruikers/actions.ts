@@ -12,6 +12,7 @@ const UserSchema = z.object({
   name: z.string().min(1, "Naam is verplicht"),
   email: z.string().min(1, "E-mail is verplicht").email("Geen geldig e-mailadres"),
   jobTitle: z.string().optional(),
+  phone: z.string().optional(),
   role: z.enum(APP_USER_ROLE_VALUES).default("GEBRUIKER"),
   password: z.string().optional(),
 });
@@ -32,6 +33,7 @@ export async function createUser(
         name: parsed.data.name,
         email: parsed.data.email.trim().toLowerCase(),
         jobTitle: parsed.data.jobTitle?.trim() || null,
+        phone: parsed.data.phone?.trim() || null,
         role: parsed.data.role,
         active,
         passwordHash: pw ? hashPassword(pw) : null,
@@ -62,6 +64,7 @@ export async function updateUser(
     name: string;
     email: string;
     jobTitle: string | null;
+    phone: string | null;
     role: string;
     active: boolean;
     passwordHash?: string;
@@ -69,6 +72,7 @@ export async function updateUser(
     name: parsed.data.name,
     email: parsed.data.email.trim().toLowerCase(),
     jobTitle: parsed.data.jobTitle?.trim() || null,
+    phone: parsed.data.phone?.trim() || null,
     role: parsed.data.role,
     active,
   };

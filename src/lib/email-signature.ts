@@ -28,10 +28,10 @@ export type SignatureData = {
   logoSrc: string;
 };
 
-const INK = "#1c1c1e";
-const MUTED = "#6b7280";
-const LINK = "#1d4ed8";
-const LINE = "#e5e7eb";
+const INK = "#000000";
+const MUTED = "#4b4b4b";
+const LINK = "#000000";
+const LINE = "#d4d4d4";
 
 function esc(s: string): string {
   return String(s ?? "")
@@ -45,7 +45,7 @@ function esc(s: string): string {
 /** Kleine inline SVG-icoontjes (telefoon/mail/web/pin) als data-URI, zodat ze
  *  altijd meekomen zonder externe hosting. */
 function icon(path: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
 
@@ -138,8 +138,8 @@ export function renderSignatureHtml(d: SignatureData): string {
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
         ${logoCell}
         <td style="padding:0 0 0 ${d.logoSrc ? "22px" : "0"};vertical-align:middle;">
-          <div style="color:${INK};font-size:16px;font-weight:700;line-height:1.3;">${esc(d.name) || "&nbsp;"}</div>
-          ${d.role ? `<div style="color:${MUTED};font-size:13px;line-height:1.4;padding-bottom:6px;">${esc(d.role)}</div>` : ""}
+          <div style="color:${INK};font-size:17px;font-weight:700;line-height:1.25;letter-spacing:.3px;text-transform:uppercase;">${esc(d.name) || "&nbsp;"}</div>
+          ${d.role ? `<div style="color:${MUTED};font-size:12px;line-height:1.4;padding-bottom:8px;letter-spacing:.4px;text-transform:uppercase;">${esc(d.role)}</div>` : ""}
           <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
         </td>
         ${addressBlock ? `<td style="padding:0 0 0 34px;vertical-align:middle;">${addressBlock}</td>` : ""}
@@ -175,7 +175,11 @@ export function renderSignatureText(d: SignatureData): string {
     .join("\n");
 }
 
-/** Bouw de SignatureData uit de opgeslagen bedrijfsinstellingen. */
+/** Bouw de SignatureData uit de bedrijfsinstellingen én — indien meegegeven —
+ *  het ingelogde account. Naam/functie/telefoon/e-mail horen bij de PERSOON
+ *  (elk account zijn eigen handtekening); adres, website, keurmerken, KvK en
+ *  disclaimer zijn bedrijfsbreed. De company-brede emailSig*-velden blijven een
+ *  terugval voor accounts die (nog) niets ingevuld hebben. */
 export function signatureFromSettings(
   s: {
     emailSigName?: string;
@@ -190,8 +194,18 @@ export function signatureFromSettings(
     phone?: string;
     email?: string;
     website?: string;
+    address?: string;
+    postalCode?: string;
+    city?: string;
+    country?: string;
   },
   logoSrc: string,
+  user?: {
+    name?: string | null;
+    jobTitle?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  } | null,
 ): SignatureData {
   let badges: string[] = [];
   try {
@@ -200,16 +214,28 @@ export function signatureFromSettings(
   } catch {
     badges = [];
   }
+  // Adres: expliciete handtekening-tekst wint; anders opgebouwd uit het echte
+  // bedrijfsadres (Instellingen). Zo verzinnen we nooit een adres.
+  const companyAddress = [
+    s.address?.trim(),
+    [s.postalCode?.trim(), s.city?.trim()].filter(Boolean).join("  "),
+    s.country?.trim(),
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const address = (s.emailSigAddress || "").trim() || companyAddress;
   return {
-    name: s.emailSigName?.trim() || "",
-    role: s.emailSigRole?.trim() || "",
-    phone: s.emailSigPhone?.trim() || s.phone?.trim() || "",
-    email: s.emailSigEmail?.trim() || s.email?.trim() || "",
+    // Persoonlijk (account) → anders de bedrijfsbrede terugval.
+    name: user?.name?.trim() || s.emailSigName?.trim() || "",
+    role: user?.jobTitle?.trim() || s.emailSigRole?.trim() || "",
+    phone: user?.phone?.trim() || s.emailSigPhone?.trim() || s.phone?.trim() || "",
+    email: user?.email?.trim() || s.emailSigEmail?.trim() || s.email?.trim() || "",
+    // Bedrijfsbreed.
     website: s.emailSigWebsite?.trim() || s.website?.trim() || "www.q4s.nl",
-    addressLines: (s.emailSigAddress || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
+    addressLines: address.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
     badges,
     kvk: s.kvkNumber?.trim() || "",
-    disclaimer: s.emailSigDisclaimer?.trim() || "",
+    disclaimer: s.emailSigDisclaimer?.trim() || DEFAULT_SIG_DISCLAIMER,
     logoSrc,
   };
 }

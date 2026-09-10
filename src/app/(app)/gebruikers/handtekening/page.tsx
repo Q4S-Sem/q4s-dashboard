@@ -4,8 +4,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import { getCompanySettings } from "@/lib/settings";
 import { emailLogoDataUri } from "@/lib/email";
+import { currentUser } from "@/lib/session";
+import { db } from "@/lib/db";
 import {
   signatureFromSettings,
   renderSignatureDocument,
@@ -28,7 +32,17 @@ export default async function HandtekeningPage({
   const settings = await getCompanySettings();
   const logo = emailLogoDataUri() ?? "";
 
-  const sig = signatureFromSettings(settings, logo);
+  // Naam/functie/telefoon/e-mail komen van het ingelogde account, zodat iedereen
+  // zijn EIGEN handtekening klaar heeft staan.
+  const sessionUser = await currentUser();
+  const account = sessionUser
+    ? await db.appUser.findUnique({
+        where: { id: sessionUser.id },
+        select: { name: true, jobTitle: true, phone: true, email: true },
+      })
+    : null;
+
+  const sig = signatureFromSettings(settings, logo, account);
   const badgesText = sig.badges.join("\n");
 
   const previewDoc = renderSignatureDocument(sig);
@@ -41,7 +55,7 @@ export default async function HandtekeningPage({
 
       <PageHeader
         title="E-mailhandtekening"
-        description="Eén centrale Q4S-handtekening. Vul de gegevens in, kopieer 'm en plak in Outlook of Gmail — zo blijft elke mail hetzelfde."
+        description="Jouw persoonlijke Q4S-handtekening. Naam, functie en telefoon komen van je account; adres, keurmerken en disclaimer zijn bedrijfsbreed. Kopieer 'm naar Outlook of Gmail."
       />
 
       {opgeslagen === "1" && (
@@ -51,75 +65,99 @@ export default async function HandtekeningPage({
       )}
 
       <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
-        <form action={saveSignature}>
+        <div className="space-y-6">
+          {/* Persoonlijke gegevens — komen uit het account. */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-brand-600" /> Gegevens
+                <Mail className="h-4 w-4 text-brand-600" /> Jouw gegevens
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Naam" htmlFor="name">
-                  <Input id="name" name="name" defaultValue={sig.name} placeholder="Paul Boomsma" />
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <span className="text-xs font-medium uppercase tracking-wide text-ink-400">Naam</span>
+                  <p className="text-sm text-ink-800">{sig.name || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-medium uppercase tracking-wide text-ink-400">Functie</span>
+                  <p className="text-sm text-ink-800">{sig.role || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-medium uppercase tracking-wide text-ink-400">Telefoon</span>
+                  <p className="text-sm text-ink-800">{sig.phone || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-medium uppercase tracking-wide text-ink-400">E-mail</span>
+                  <p className="text-sm text-ink-800">{sig.email || "—"}</p>
+                </div>
+              </div>
+              <p className="text-xs text-ink-400">
+                Dit staat op jouw persoonlijke handtekening. Kloppen deze gegevens niet? Laat een
+                beheerder je naam, functie of telefoon aanpassen bij{" "}
+                <Link href="/gebruikers" className="underline">
+                  Gebruikers
+                </Link>
+                .
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Bedrijfsbrede gegevens — gedeeld door iedereen. */}
+          <form action={saveSignature}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Bedrijfsgegevens (voor iedereen)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <Field label="Adres" htmlFor="address" hint="Eén regel per adresregel. Leeg = het bedrijfsadres uit Instellingen.">
+                  <Textarea
+                    id="address"
+                    name="address"
+                    rows={3}
+                    defaultValue={sig.addressLines.join("\n")}
+                    placeholder={"Straat 12\n1234 AB Plaats\nThe Netherlands"}
+                  />
                 </Field>
-                <Field label="Functie" htmlFor="role">
-                  <Input id="role" name="role" defaultValue={sig.role} placeholder="QA/QC Manager | Verkoop" />
-                </Field>
-                <Field label="Telefoon" htmlFor="phone">
-                  <Input id="phone" name="phone" defaultValue={sig.phone} placeholder="+31 (0)6 2864 1249" />
-                </Field>
-                <Field label="E-mail" htmlFor="email">
-                  <Input id="email" name="email" defaultValue={sig.email} placeholder="paul.boomsma@q4s.nl" />
-                </Field>
+
                 <Field label="Website" htmlFor="website">
                   <Input id="website" name="website" defaultValue={sig.website} placeholder="www.q4s.nl" />
                 </Field>
-              </div>
 
-              <Field label="Adres" htmlFor="address" hint="Eén regel per adresregel.">
-                <Textarea
-                  id="address"
-                  name="address"
-                  rows={3}
-                  defaultValue={sig.addressLines.join("\n")}
-                  placeholder={"Arnhemseweg 12\n2994 LA Barendrecht\nThe Netherlands"}
-                />
-              </Field>
+                <Field
+                  label="Keurmerk-logo's"
+                  htmlFor="badges"
+                  hint="Eén afbeeldings-URL (https://…) per regel, bijv. DNV / VCU / SNA. Laat leeg als je geen logo's wilt tonen."
+                >
+                  <Textarea
+                    id="badges"
+                    name="badges"
+                    rows={3}
+                    defaultValue={badgesText}
+                    placeholder={"https://…/dnv.png\nhttps://…/vcu.png"}
+                  />
+                </Field>
 
-              <Field
-                label="Keurmerk-logo's"
-                htmlFor="badges"
-                hint="Eén afbeeldings-URL (https://…) per regel, bijv. DNV / VCU / SNA. Laat leeg als je geen logo's wilt tonen."
-              >
-                <Textarea
-                  id="badges"
-                  name="badges"
-                  rows={3}
-                  defaultValue={badgesText}
-                  placeholder={"https://…/dnv.png\nhttps://…/vcu.png"}
-                />
-              </Field>
-
-              <Field label="Disclaimer" htmlFor="disclaimer" hint="Vertrouwelijkheidsmelding onderaan.">
-                <Textarea
-                  id="disclaimer"
-                  name="disclaimer"
-                  rows={4}
-                  defaultValue={sig.disclaimer || DEFAULT_SIG_DISCLAIMER}
-                />
-              </Field>
-            </CardContent>
-            <CardFooter>
-              <SubmitButton>Opslaan</SubmitButton>
-            </CardFooter>
-          </Card>
-        </form>
+                <Field label="Disclaimer" htmlFor="disclaimer" hint="Vertrouwelijkheidsmelding onderaan.">
+                  <Textarea
+                    id="disclaimer"
+                    name="disclaimer"
+                    rows={4}
+                    defaultValue={sig.disclaimer || DEFAULT_SIG_DISCLAIMER}
+                  />
+                </Field>
+              </CardContent>
+              <CardFooter>
+                <SubmitButton>Opslaan</SubmitButton>
+              </CardFooter>
+            </Card>
+          </form>
+        </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between gap-3">
-              <span>Voorbeeld</span>
+              <span>Jouw handtekening</span>
               <CopySignatureButton html={copyHtml} text={copyText} />
             </CardTitle>
           </CardHeader>
@@ -133,7 +171,7 @@ export default async function HandtekeningPage({
             </div>
             <p className="mt-3 text-xs text-ink-400">
               Kopieer de handtekening en plak &apos;m in Outlook of Gmail (Instellingen → Handtekening) —
-              logo, links en opmaak gaan mee. Zo gebruikt iedereen dezelfde Q4S-handtekening. Keurmerk-logo&apos;s
+              logo, links en opmaak gaan mee. Elk account heeft zo zijn eigen handtekening. Keurmerk-logo&apos;s
               tonen alleen als je er publieke URL&apos;s van hebt ingevuld.
             </p>
           </CardContent>

@@ -1402,6 +1402,8 @@ model AppUser {
   role         String   @default("GEBRUIKER")
   /// Optional job title / function for context.
   jobTitle     String?
+  /// Telefoonnummer van deze medewerker — o.a. voor de e-mailhandtekening.
+  phone        String?
   active       Boolean  @default(true)
   lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
