@@ -417,6 +417,13 @@ export async function readCvFields(formData: FormData): Promise<CvReadResult> {
     return { ok: true, fields };
   } catch (err) {
     if (err instanceof CvExtractError) return { ok: false, error: err.message };
-    return { ok: false, error: "Het CV kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in." };
+    // Toon de échte reden (bijv. een OpenRouter-fout) i.p.v. een nietszeggende
+    // tekst, zodat je meteen ziet wat er misgaat en het gericht kunt oplossen.
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("readCvFields mislukt:", err);
+    return {
+      ok: false,
+      error: `Het CV kon niet uitgelezen worden: ${detail}. Probeer het opnieuw of vul handmatig in.`,
+    };
   }
 }

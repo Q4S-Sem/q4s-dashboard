@@ -9,6 +9,7 @@ import {
   readyCvTextRoute,
 } from "./ai";
 import { redactBsn } from "./pii";
+import { ensureAiKeysLoaded } from "./ai-keys";
 import { DISCIPLINES } from "./domain";
 import {
   CV_EXTRACT_PROMPT,
@@ -324,6 +325,9 @@ export async function extractCandidateFields(
   fileName: string,
   mimeType: string,
 ): Promise<CandidateFields> {
+  // Serverless: laad de dashboard-sleutels (o.a. OpenRouter) in process.env vóór
+  // de route-keuze — anders vindt readyCvTextRoute() een net-toegevoegde sleutel niet.
+  await ensureAiKeysLoaded();
   const kind = resolveSourceKind(bytes, fileName, mimeType);
   if (!kind) {
     const isOldWord = /\.(doc|rtf|odt)$/i.test(fileName);
