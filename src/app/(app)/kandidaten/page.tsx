@@ -218,18 +218,22 @@ export default async function KandidatenPage({
               return (
                 <div
                   key={c.id}
-                  className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 transition-colors hover:bg-ink-50/60"
+                  className="group relative flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 transition-colors hover:bg-ink-50/60"
                 >
+                  {/* Hele rij klikbaar → dossier. Ligt achter de knoppen (z-0);
+                      de interactieve controls staan met z-10 erboven. */}
+                  <Link
+                    href={`/kandidaten/${c.id}`}
+                    aria-label={`${c.firstName} ${c.lastName} openen`}
+                    className="absolute inset-0 z-0"
+                  />
                   {/* Persoon: avatar + naam + discipline */}
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <div className="pointer-events-none relative z-10 flex min-w-0 flex-1 items-center gap-3">
                     <Avatar {...person(c)} size="sm" className={cn("ring-2", ringByRating(c.rating))} />
                     <div className="min-w-0">
-                      <Link
-                        href={`/kandidaten/${c.id}`}
-                        className="block truncate text-sm font-semibold text-ink-900 hover:text-brand-600"
-                      >
+                      <span className="block truncate text-sm font-semibold text-ink-900 group-hover:text-brand-600">
                         {c.firstName} {c.lastName}
-                      </Link>
+                      </span>
                       <div className="flex items-center gap-1.5 truncate text-xs text-ink-500">
                         {c.headline && <span className="truncate">{c.headline}</span>}
                         {c.discipline && (
@@ -243,22 +247,22 @@ export default async function KandidatenPage({
 
                   {/* Contact — verschijnt vanaf lg, vaste breedte zodat de
                       statuskolommen rechts netjes uitgelijnd blijven */}
-                  <div className="hidden w-[300px] shrink-0 items-center justify-end gap-x-3 text-xs text-ink-500 lg:flex">
+                  <div className="relative z-10 hidden w-[300px] shrink-0 items-center justify-end gap-x-3 text-xs text-ink-500 lg:flex">
                     {c.location && (
-                      <span className="inline-flex min-w-0 items-center gap-1" title={c.location}>
+                      <span className="pointer-events-none inline-flex min-w-0 items-center gap-1" title={c.location}>
                         <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-400" />
                         <span className="max-w-[110px] truncate">{c.location}</span>
                       </span>
                     )}
                     {companies.length > 0 && (
-                      <span className="inline-flex items-center gap-1" title={`Geplaatst bij ${companies.join(", ")}`}>
+                      <span className="pointer-events-none inline-flex items-center gap-1" title={`Geplaatst bij ${companies.join(", ")}`}>
                         <Badge color="violet">{companies[0]}</Badge>
                         {companies.length > 1 && (
                           <span className="text-ink-400">+{companies.length - 1}</span>
                         )}
                       </span>
                     )}
-                    <span className="inline-flex items-center gap-1 text-ink-400" title={`${c._count.applications} sollicitatie(s)`}>
+                    <span className="pointer-events-none inline-flex items-center gap-1 text-ink-400" title={`${c._count.applications} sollicitatie(s)`}>
                       <ClipboardList className="h-3.5 w-3.5" /> {c._count.applications}
                     </span>
                     <span className="flex items-center gap-1.5">
@@ -302,7 +306,7 @@ export default async function KandidatenPage({
                   </div>
 
                   {/* Statussen — compact naast elkaar */}
-                  <div className="flex items-center gap-2">
+                  <div className="relative z-10 flex items-center gap-2">
                     <RatingSelect id={c.id} value={c.rating} className="w-36" />
                     <AvailabilitySelect id={c.id} value={c.availability} className="w-36" />
                     <InterviewSelect id={c.id} value={c.interviewStatus} className="w-32" />
