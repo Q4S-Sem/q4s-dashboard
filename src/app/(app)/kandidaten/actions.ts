@@ -250,11 +250,13 @@ export async function createCandidate(
   // Manually-added candidates are MANUAL. WEBSITE/TALENTPOOL candidates are
   // created via their own public actions and must keep that source on edit —
   // so `source` is intentionally NOT part of the shared edit payload.
-  const created = await db.candidate.create({
+  await db.candidate.create({
     data: { ...toData(parsed.data), source: "MANUAL", ...(cvMeta ?? {}) },
   });
   revalidatePath("/kandidaten");
-  redirect(`/kandidaten/${created.id}`);
+  // Na het aanmaken terug naar de talentpool-lijst (niet naar het dossier van de
+  // nieuwe kandidaat) — de recruiter wil daar verder werken/de volgende toevoegen.
+  redirect("/kandidaten");
 }
 
 export async function updateCandidate(
