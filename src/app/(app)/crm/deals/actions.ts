@@ -194,6 +194,42 @@ export async function reopenDeal(formData: FormData) {
   revalidatePath(`/crm/deals/${id}`);
 }
 
+/**
+ * Deze plaatsing gaat niet door, maar de kandidaat blijft goed — sluit de deal
+ * (als verloren, reden "andere vacature gezocht") en stuur de recruiter terug
+ * naar de talentpool om dezelfde persoon op een nieuwe vacature in de pipeline
+ * te zetten. Zo verdwijnt de deal uit het open bord zonder de kandidaat af te
+ * schrijven.
+ */
+export async function rematchDeal(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const stage = await db.crmStage.findFirst({
+    where: { isLost: true },
+    orderBy: { order: "asc" },
+  });
+  const recruiterId = await currentRecruiterId();
+  await db.deal.update({
+    where: { id },
+    data: {
+      status: "LOST",
+      ...(stage ? { stageId: stage.id, probability: 0 } : {}),
+      lostReason: "Andere vacature gezocht",
+      closedAt: new Date(),
+      nextFollowUpAt: null,
+    },
+  });
+  await logNote({
+    type: "SYSTEM",
+    dealId: id,
+    authorId: recruiterId,
+    body: "Deze plaatsing ging niet door — kandidaat gaat naar een andere vacature.",
+  });
+  revalidatePath("/crm");
+  revalidatePath(`/crm/deals/${id}`);
+  redirect("/kandidaten");
+}
+
 // --- The notitieblok (chat) -------------------------------------------------
 
 const NoteSchema = z.object({

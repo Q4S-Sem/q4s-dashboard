@@ -1,17 +1,19 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Pencil, Star, CalendarClock, CheckCircle2, MessageSquare } from "lucide-react";
+import { Pencil, Star, CalendarClock, CheckCircle2, MessageSquare, ArrowRight, Mail, Phone } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { Avatar } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { CrmNotesTimeline, type TimelineNote } from "@/components/crm-notes-timeline";
 import { CrmNoteComposer } from "@/components/crm-note-composer";
+import { person } from "@/lib/people";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { DEAL_STATUSES, DEAL_SOURCES, DISCIPLINES, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
+import { DEAL_STATUSES, DEAL_SOURCES, DISCIPLINES, CANDIDATE_RATINGS, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
 import { deleteDeal, togglePinNote, deleteNote, completeDealFollowUp, addDealNote } from "../actions";
 import { CloseDealButtons } from "../CloseDealButtons";
 
@@ -49,7 +51,6 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
     include: {
       stage: true,
       owner: true,
-      targetClient: true,
       client: true,
       vacancy: true,
       primaryContact: true,
@@ -60,6 +61,17 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
     },
   });
   if (!deal) notFound();
+
+  // Gekoppelde kandidaat (Deal.candidateId heeft geen relatie in het schema).
+  const candidate = deal.candidateId
+    ? await db.candidate.findUnique({
+        where: { id: deal.candidateId },
+        select: {
+          id: true, firstName: true, lastName: true, headline: true, discipline: true,
+          location: true, email: true, phone: true, rating: true, photoFileName: true,
+        },
+      })
+    : null;
 
   const notes: TimelineNote[] = deal.crmNotes.map((n) => ({
     id: n.id,
@@ -85,6 +97,11 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
       <PageHeader
         title={deal.title}
         description={[deal.company, deal.discipline ? labelFor(DISCIPLINES, deal.discipline) : null].filter(Boolean).join(" · ")}
+        leading={
+          candidate ? (
+            <Avatar {...person(candidate)} size="lg" className="ring-2 ring-ink-200" />
+          ) : undefined
+        }
         actions={
           <>
             <StatusBadge options={DEAL_STATUSES} value={deal.status} />
@@ -100,6 +117,59 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
       />
 
       <CloseDealButtons dealId={deal.id} status={deal.status} />
+
+      {/* Kandidaat-kaart — dezelfde stijl als de talentpool, met snelkoppeling naar het dossier */}
+      {candidate && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center gap-4 py-4">
+            <Avatar {...person(candidate)} size="md" className="ring-2 ring-ink-200" />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/kandidaten/${candidate.id}`}
+                  className="text-base font-semibold text-ink-900 hover:text-brand-700"
+                >
+                  {candidate.firstName} {candidate.lastName}
+                </Link>
+                {candidate.discipline && (
+                  <StatusBadge options={DISCIPLINES} value={candidate.discipline} />
+                )}
+                <StatusBadge options={CANDIDATE_RATINGS} value={candidate.rating} />
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-500">
+                {candidate.headline && <span className="truncate">{candidate.headline}</span>}
+                {candidate.location && <span>{candidate.location}</span>}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {candidate.phone && (
+                <a
+                  href={`tel:${candidate.phone}`}
+                  title={`Bel ${candidate.firstName}`}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors hover:bg-emerald-200"
+                >
+                  <Phone className="h-4 w-4" />
+                </a>
+              )}
+              {candidate.email && (
+                <a
+                  href={`mailto:${candidate.email}`}
+                  title={`Mail ${candidate.firstName}`}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200"
+                >
+                  <Mail className="h-4 w-4" />
+                </a>
+              )}
+              <Link
+                href={`/kandidaten/${candidate.id}`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Profiel <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {deal.status === "LOST" && deal.lostReason && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -146,16 +216,6 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
             <Detail label="Bron" value={labelFor(DEAL_SOURCES, deal.source)} />
             <Detail label="Verwachte sluitdatum" value={deal.expectedCloseDate ? formatDate(deal.expectedCloseDate) : null} />
             <Detail label="Aangemaakt" value={formatDate(deal.createdAt)} />
-            <Detail
-              label="Opdrachtgever"
-              value={
-                deal.targetClient ? (
-                  <Link href={`/opdrachtgevers/${deal.targetClient.id}`} className="text-brand-700 hover:underline">
-                    {deal.targetClient.name}
-                  </Link>
-                ) : null
-              }
-            />
             <Detail
               label="Klant"
               value={
