@@ -322,5 +322,5 @@ export async function createDealFromCandidate(
 
   revalidatePath("/crm");
   revalidatePath("/kandidaten");
-  redirect(`/crm/deals/${created.id}`);
+  redirect("/crm");
 }
