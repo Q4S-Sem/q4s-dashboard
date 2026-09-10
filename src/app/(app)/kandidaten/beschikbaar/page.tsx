@@ -2,7 +2,6 @@ import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import type { Candidate } from "@prisma/client";
 import {
-  ArrowLeft,
   UserCheck,
   Search,
   CalendarClock,
@@ -11,6 +10,7 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -216,21 +216,10 @@ export default async function BeschikbaarPage({
       </BackLink>
 
       {/* Hero — eigen, herkenbare pagina voor beschikbare mensen */}
-      <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6">
-        <div className="flex items-center gap-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-            <UserCheck className="h-6 w-6" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold text-ink-900">
-              Beschikbare kandidaten
-            </h1>
-            <p className="mt-0.5 text-sm text-ink-600">
-              De mensen die nu of binnenkort inzetbaar zijn — direct te plaatsen bij een klant.
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Beschikbaar"
+        description="De mensen die nu of binnenkort inzetbaar zijn — direct te plaatsen bij een klant."
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Totaal inzetbaar" value={candidates.length} icon={<UserCheck className="h-5 w-5" />} accent="green" />
