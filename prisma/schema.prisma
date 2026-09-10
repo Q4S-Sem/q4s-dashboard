@@ -1027,6 +1027,10 @@ model Candidate {
   interviewDate  DateTime?
   /// Vrije notities bij het interview met Q4S (indruk, afspraken, aandachtspunten).
   interviewNotes String?
+  /// Samenvatting van de werkervaring (door de AI uit het CV gehaald, door de
+  /// recruiter te corrigeren). Los van `notes`, zodat de vrije aantekeningen van
+  /// de recruiter niet vervuild raken met de CV-inhoud.
+  experienceSummary String?
   /// Attribution: the tracked-link token / campaign source (bron) a Talentpool
   /// signup came in through. Used for per-campaign analytics.
   sourceDetail   String?

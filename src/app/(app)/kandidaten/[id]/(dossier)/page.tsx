@@ -7,6 +7,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { formatDate } from "@/lib/utils";
 import { DISCIPLINES, CANDIDATE_SOURCES, CANDIDATE_AVAILABILITY } from "@/lib/domain";
 import { InterviewSelect } from "../../InterviewSelect";
+import { ExperienceView } from "../../ExperienceView";
 import { saveCandidateInterviewDetails } from "../../actions";
 import { getCandidate } from "./data";
 
@@ -112,6 +113,21 @@ export default async function OverzichtTab({
           </dl>
         </CardContent>
       </Card>
+
+      {/* Werkervaring — nette weergave, los van de vrije notities */}
+      {candidate.experienceSummary && candidate.experienceSummary.trim() && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Werkervaring</CardTitle>
+            <span className="text-sm text-ink-400">
+              Samengevat uit het CV — controleer en pas aan via Bewerken.
+            </span>
+          </CardHeader>
+          <CardContent>
+            <ExperienceView summary={candidate.experienceSummary} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

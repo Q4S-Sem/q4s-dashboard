@@ -59,6 +59,7 @@ export function CandidateForm({
   const [availableFrom, setAvailableFrom] = useState(di(candidate?.availableFrom));
   const [interviewStatus, setInterviewStatus] = useState(candidate?.interviewStatus ?? "NONE");
   const [interviewDate, setInterviewDate] = useState(di(candidate?.interviewDate));
+  const [experienceSummary, setExperienceSummary] = useState(candidate?.experienceSummary ?? "");
   const [notes, setNotes] = useState(candidate?.notes ?? "");
 
   // --- Concept blijft bewaard (alleen bij een NIEUWE kandidaat) ------------------
@@ -92,6 +93,7 @@ export function CandidateForm({
           if (d.availableFrom) setAvailableFrom(d.availableFrom);
           if (d.interviewStatus) setInterviewStatus(d.interviewStatus);
           if (d.interviewDate) setInterviewDate(d.interviewDate);
+          if (d.experienceSummary) setExperienceSummary(d.experienceSummary);
           if (d.notes) setNotes(d.notes);
           setRestoredHint(true);
         }
@@ -117,7 +119,7 @@ export function CandidateForm({
       const draft = {
         firstName, lastName, email, phone, discipline, location, headline,
         linkedinUrl, rating, availability, availableFrom, interviewStatus,
-        interviewDate, notes,
+        interviewDate, experienceSummary, notes,
       };
       const hasData = Object.values(draft).some(
         (v) => v && v !== "ONBEKEND" && v !== "NONE",
@@ -130,7 +132,7 @@ export function CandidateForm({
   }, [
     isNew, isPending, firstName, lastName, email, phone, discipline, location,
     headline, linkedinUrl, rating, availability, availableFrom, interviewStatus,
-    interviewDate, notes,
+    interviewDate, experienceSummary, notes,
   ]);
 
   /** Gooi het hele (nieuwe-kandidaat) formulier leeg + verwijder het concept. */
@@ -148,6 +150,7 @@ export function CandidateForm({
     setAvailableFrom("");
     setInterviewStatus("NONE");
     setInterviewDate("");
+    setExperienceSummary("");
     setNotes("");
     setRestoredHint(false);
     setCvFile(null);
@@ -190,10 +193,11 @@ export function CandidateForm({
       if (f2.location) setLocation(f2.location);
       if (f2.headline) setHeadline(f2.headline);
       if (f2.linkedinUrl) setLinkedinUrl(f2.linkedinUrl);
-      // Werkervaring is het belangrijkste: zet de samenvatting in Notities als die
-      // nog leeg is (nooit bestaande notities overschrijven).
+      // Werkervaring is het belangrijkste: zet de samenvatting in het eigen
+      // Werkervaring-veld (nooit bestaande inhoud overschrijven). Notities blijft
+      // vrij voor de recruiter.
       if (f2.experienceSummary) {
-        setNotes((prev) => (prev.trim() ? prev : f2.experienceSummary as string));
+        setExperienceSummary((prev) => (prev.trim() ? prev : f2.experienceSummary as string));
       }
       setCvDone(true);
     } catch {
@@ -425,8 +429,29 @@ export function CandidateForm({
             </Field>
           </div>
 
-          <Field label="Notities" htmlFor="notes" error={e.notes}>
-            <Textarea id="notes" name="notes" rows={7} value={notes} onChange={(ev) => setNotes(ev.target.value)} />
+          <Field
+            label="Werkervaring"
+            htmlFor="experienceSummary"
+            hint="Wordt automatisch uit het CV gehaald. Elke functie op een eigen regel met '•' ervoor — controleer en corrigeer gerust."
+            error={e.experienceSummary}
+          >
+            <Textarea
+              id="experienceSummary"
+              name="experienceSummary"
+              rows={8}
+              value={experienceSummary}
+              onChange={(ev) => setExperienceSummary(ev.target.value)}
+              placeholder={"Bijv.\nJunior NDT/QC Inspector met circa 2 jaar ervaring in NDO (UT, MT, VT).\n• Werkgever — Rol (periode): concrete taken, projecten, normen.\n• Werkgever — Rol (periode): …"}
+            />
+          </Field>
+
+          <Field
+            label="Notities"
+            htmlFor="notes"
+            hint="Vrije aantekeningen voor de recruiter — losse opmerkingen, afspraken of aandachtspunten."
+            error={e.notes}
+          >
+            <Textarea id="notes" name="notes" rows={5} value={notes} onChange={(ev) => setNotes(ev.target.value)} placeholder="Bijv. gebeld op 3 mei — wil richting offshore, min. €X, referentie volgt." />
           </Field>
         </CardContent>
         <CardFooter className="flex flex-wrap justify-end gap-2">

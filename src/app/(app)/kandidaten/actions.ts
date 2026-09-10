@@ -35,6 +35,7 @@ const CandidateSchema = z.object({
   availableFrom: z.coerce.date().optional(),
   interviewStatus: z.enum(CANDIDATE_INTERVIEW_STATUS_VALUES).default("NONE"),
   interviewDate: z.coerce.date().optional(),
+  experienceSummary: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -63,6 +64,7 @@ function toData(data: z.infer<typeof CandidateSchema>) {
         ? null
         : (data.interviewDate ??
           (data.interviewStatus === "DONE" ? new Date() : null)),
+    experienceSummary: data.experienceSummary ?? null,
     notes: data.notes ?? null,
   };
 }
