@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Upload } from "lucide-react";
+import { useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Dropzone } from "@/components/ui/dropzone";
-import { SubmitButton } from "@/components/ui/submit-button";
 
 /**
  * CV-upload op het kandidaatdossier in dezelfde sleep-hierheen-stijl als de rest
- * van de app (de gedeelde Dropzone). Slepen of klikken vult dezelfde verborgen
- * file-input; de bestaande `uploadCv` server-actie blijft ongewijzigd. De
- * upload-knop is pas actief zodra er een bestand gekozen is.
+ * van de app (de gedeelde Dropzone). Zodra je een bestand sleept of kiest, wordt
+ * het METEEN geüpload — geen aparte knop meer. De bestaande `uploadCv`
+ * server-actie blijft ongewijzigd; we versturen het formulier zelf.
  */
 export function CvUploadForm({
   action,
@@ -18,23 +17,30 @@ export function CvUploadForm({
   action: (formData: FormData) => void | Promise<void>;
   candidateId: string;
 }) {
-  const [hasFile, setHasFile] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   return (
-    <form action={action} className="space-y-4">
+    <form ref={formRef} action={action} className="space-y-3">
       <input type="hidden" name="candidateId" value={candidateId} />
       <Dropzone
         name="file"
         accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,application/pdf"
         label="Sleep een CV hierheen of klik om te selecteren"
         hint="PDF, Word (.docx) of een duidelijke foto/scan — de werkervaring wordt automatisch uitgelezen"
-        onFilesChange={(files) => setHasFile(files.length > 0)}
+        onFilesChange={(files) => {
+          // Meteen uploaden zodra er een bestand binnenkomt (geen knop nodig).
+          if (files.length > 0 && !uploading) {
+            setUploading(true);
+            formRef.current?.requestSubmit();
+          }
+        }}
       />
-      <div className="flex justify-end">
-        <SubmitButton disabled={!hasFile} pendingLabel="Uploaden…">
-          <Upload className="h-4 w-4" /> Upload CV
-        </SubmitButton>
-      </div>
+      {uploading && (
+        <p className="flex items-center gap-2 text-sm font-medium text-ink-600">
+          <Loader2 className="h-4 w-4 animate-spin" /> CV wordt geüpload en uitgelezen…
+        </p>
+      )}
     </form>
   );
 }
