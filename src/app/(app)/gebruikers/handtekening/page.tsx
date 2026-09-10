@@ -42,7 +42,27 @@ export default async function HandtekeningPage({
       })
     : null;
 
-  const sig = signatureFromSettings(settings, logo, account);
+  // De telefoon/functie beheer je op de medewerkerspagina (Gegevens & contract).
+  // Zoek daarom het medewerker-record op via het e-mailadres van het account en
+  // gebruik dát als bron; val terug op het account als er geen medewerker is.
+  const employee = account?.email
+    ? await db.employee.findUnique({
+        where: { email: account.email.toLowerCase() },
+        select: { firstName: true, lastName: true, jobTitle: true, phone: true },
+      })
+    : null;
+
+  const signer = {
+    name:
+      account?.name ||
+      [employee?.firstName, employee?.lastName].filter(Boolean).join(" ") ||
+      "",
+    jobTitle: employee?.jobTitle || account?.jobTitle || "",
+    phone: employee?.phone || account?.phone || "",
+    email: account?.email || "",
+  };
+
+  const sig = signatureFromSettings(settings, logo, signer);
   // Standaard staan de Q4S-keurmerken (DNV/VCU/SNA) al ingebed. Heeft het bedrijf
   // eigen badge-URL's ingevuld, dan winnen die; anders tonen we de ingebedde set.
   const customBadges = sig.badges;
@@ -99,12 +119,12 @@ export default async function HandtekeningPage({
                 </div>
               </div>
               <p className="text-xs text-ink-400">
-                Dit staat op jouw persoonlijke handtekening. Kloppen deze gegevens niet? Laat een
-                beheerder je naam, functie of telefoon aanpassen bij{" "}
-                <Link href="/gebruikers" className="underline">
-                  Gebruikers
+                Dit staat op jouw persoonlijke handtekening. Functie en telefoon komen van je
+                medewerkerskaart (Gegevens &amp; contract). Kloppen ze niet? Pas ze aan bij{" "}
+                <Link href="/medewerkers" className="underline">
+                  Medewerkers
                 </Link>
-                .
+                . Naam en e-mail komen van je account (Gebruikers).
               </p>
             </CardContent>
           </Card>
