@@ -40,7 +40,7 @@ export default async function VacaturesPage() {
         title="Vacatures"
         description="Bedrijven waar (binnenkort) een vacature ingevuld moet worden — je voorsprong. Leg een vacature vast na een bezoek of tip, nog vóór je een kandidaat zoekt. Koppel later een kandidaat en de vacature stroomt door naar de pipeline."
         actions={
-          <Link href="/crm/deals/nieuw" className={buttonVariants()}>
+          <Link href="/crm/vacatures/nieuw" className={buttonVariants()}>
             <Plus className="h-4 w-4" /> Nieuwe vacature
           </Link>
         }
@@ -58,7 +58,7 @@ export default async function VacaturesPage() {
           title="Nog geen vacatures"
           description="Leg je eerste vacature vast: een bedrijf waar een vacature aankomt. Zo mis je geen voorsprong meer."
           action={
-            <Link href="/crm/deals/nieuw" className={buttonVariants()}>
+            <Link href="/crm/vacatures/nieuw" className={buttonVariants()}>
               <Plus className="h-4 w-4" /> Nieuwe vacature
             </Link>
           }

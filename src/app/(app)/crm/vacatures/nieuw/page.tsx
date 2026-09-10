@@ -1,13 +1,13 @@
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/ui/page-header";
-import { DealForm } from "../DealForm";
-import { createDeal } from "../actions";
-import { loadDealFormOptions } from "../options";
+import { DealForm } from "../../deals/DealForm";
+import { createDeal } from "../../deals/actions";
+import { loadDealFormOptions } from "../../deals/options";
 
 export const metadata = { title: "Nieuwe vacature" };
 export const dynamic = "force-dynamic";
 
-export default async function NewDealPage({
+export default async function NewVacaturePage({
   searchParams,
 }: {
   searchParams: Promise<{ company?: string }>;

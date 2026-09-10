@@ -84,7 +84,7 @@ export default async function BedrijfWerkruimtePage({
         }
         actions={
           <>
-            <Link href={`/crm/deals/nieuw?company=${encodeURIComponent(client.companyName)}`} className={buttonVariants({ variant: "outline" })}>
+            <Link href={`/crm/vacatures/nieuw?company=${encodeURIComponent(client.companyName)}`} className={buttonVariants({ variant: "outline" })}>
               <Briefcase className="h-4 w-4" /> Nieuwe vacature
             </Link>
             <Link href={`/klanten/${client.id}`} className={buttonVariants({ variant: "outline" })}>
