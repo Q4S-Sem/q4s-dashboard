@@ -1,7 +1,4 @@
-import Link from "next/link";
-import { BackLink } from "@/components/back-link";
 import {
-  ArrowLeft,
   BarChart3,
   AlertTriangle,
   AlertCircle,
@@ -58,48 +55,22 @@ function WeakPointRow({ wp }: { wp: WeakPoint }) {
   );
 }
 
-export default async function InzichtenPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ scope?: string }>;
-}) {
-  const sp = await searchParams;
+export default async function InzichtenPage() {
   const recruiterId = await currentRecruiterId();
   const settings = await getCrmSettings(recruiterId);
-  const scope: "mine" | "all" =
-    sp.scope === "all" || sp.scope === "mine" ? sp.scope : settings.defaultScope;
+  // Inzichten zijn altijd algemeen/team-breed — geen Mijn cijfers/Team-schakelaar.
+  const scope = "all" as const;
 
   const ins = await getInsights({ recruiterId, scope, staleAfterDays: settings.staleAfterDays });
   const maxFunnel = Math.max(1, ...ins.funnel.map((f) => f.count));
   const totalSentiment = ins.sentiment.positive + ins.sentiment.neutral + ins.sentiment.negative;
 
-  const scopeTab = (value: "mine" | "all", label: string) => (
-    <Link
-      href={`/crm/inzichten?scope=${value}`}
-      className={cn(
-        "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        scope === value ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
-      )}
-    >
-      {label}
-    </Link>
-  );
-
   return (
     <div className="space-y-6">
-      <BackLink href="/crm">
-        Terug naar CRM
-      </BackLink>
-
       <PageHeader
         title="Inzichten"
         description="Terugkoppeling uit alles wat je vastlegt: waar staat de pipeline, en — belangrijker — waar liggen de zwakke punten?"
       />
-
-      <div className="inline-flex gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1">
-        {scopeTab("mine", "Mijn cijfers")}
-        {scopeTab("all", "Team")}
-      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Open deals" value={ins.totalOpen} icon={<Kanban className="h-5 w-5" />} accent="brand" />
