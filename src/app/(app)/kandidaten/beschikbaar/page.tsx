@@ -255,8 +255,8 @@ export default async function BeschikbaarPage({
                 aria-label="Zoeken"
               />
             </div>
-            <Select name="discipline" defaultValue={discipline} aria-label="Industrie">
-              <option value="">Alle industrieën</option>
+            <Select name="discipline" defaultValue={discipline} aria-label="Discipline">
+              <option value="">Alle disciplines</option>
               {DISCIPLINES.map((d) => (
                 <option key={d.value} value={d.value} data-color={d.color}>
                   {d.label}

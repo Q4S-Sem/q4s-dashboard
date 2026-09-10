@@ -80,9 +80,9 @@ export function KandidatenFilters({
           <Select
             defaultValue={discipline}
             onValueChange={(v) => apply({ discipline: v })}
-            aria-label="Industrie"
+            aria-label="Discipline"
           >
-            <option value="">Alle industrieën</option>
+            <option value="">Alle disciplines</option>
             {disciplines.map((d) => (
               <option key={d.value} value={d.value} data-color={d.color}>
                 {d.label}

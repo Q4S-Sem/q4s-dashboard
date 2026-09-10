@@ -15,8 +15,6 @@ export type BadgeColor =
 
 /** The sectors Q4S specialises in. */
 export const DISCIPLINES: Option[] = [
-  { value: "QA", label: "QA — Quality Assurance", color: "blue" },
-  { value: "QC", label: "QC — Quality Control", color: "cyan" },
   { value: "QA_QC", label: "QA/QC", color: "blue" },
   { value: "HSEQ", label: "HSEQ", color: "green" },
   { value: "CIVIL", label: "Civil", color: "amber" },
