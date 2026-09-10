@@ -54,6 +54,12 @@ export default async function CrmPage() {
     nextFollowUpAt: c.nextFollowUpAt ? c.nextFollowUpAt.toISOString() : null,
     lastActivityAt: c.lastActivityAt ? c.lastActivityAt.toISOString() : null,
     noteCount: c.noteCount,
+    candidateName: c.candidateName,
+    candidatePhoto: c.candidatePhoto,
+    candidateHeadline: c.candidateHeadline,
+    candidateLocation: c.candidateLocation,
+    candidateRating: c.candidateRating,
+    vacancyTitle: c.vacancyTitle,
   }));
 
   return (

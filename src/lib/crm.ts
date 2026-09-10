@@ -2,6 +2,7 @@ import "server-only";
 import type { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { currentUser } from "./session";
+import { candidatePhotoSrc } from "./people";
 import {
   DEFAULT_CRM_STAGES,
   labelFor,
@@ -210,6 +211,14 @@ export type BoardCard = {
   nextFollowUpAt: Date | null;
   lastActivityAt: Date | null;
   noteCount: number;
+  /** Gekoppelde talentpool-kandidaat (voor de kaart op het bord). */
+  candidateId: string | null;
+  candidateName: string | null;
+  candidatePhoto: string | null;
+  candidateHeadline: string | null;
+  candidateLocation: string | null;
+  candidateRating: string | null;
+  vacancyTitle: string | null;
 };
 
 export type BoardData = {
@@ -239,30 +248,54 @@ export async function getBoardData(opts: {
     where: scopeWhere(opts.recruiterId, opts.scope),
     include: {
       owner: { select: { name: true } },
+      vacancy: { select: { title: true } },
       crmNotes: { select: { createdAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
       _count: { select: { crmNotes: true } },
     },
     orderBy: [{ fitScore: "desc" }, { updatedAt: "desc" }],
   });
 
+  // Gekoppelde kandidaten in één batch ophalen (Deal.candidateId heeft geen relatie).
+  const candidateIds = [...new Set(deals.map((d) => d.candidateId).filter((x): x is string => !!x))];
+  const candidateRows = candidateIds.length
+    ? await db.candidate.findMany({
+        where: { id: { in: candidateIds } },
+        select: {
+          id: true, firstName: true, lastName: true, headline: true,
+          location: true, rating: true, photoFileName: true,
+        },
+      })
+    : [];
+  const candMap = new Map(candidateRows.map((c) => [c.id, c]));
+
   const cards: BoardCard[] = deals
     .filter((d) => visibleIds.has(d.stageId))
-    .map((d) => ({
-      id: d.id,
-      columnId: d.stageId,
-      title: d.title,
-      company: d.company,
-      discipline: d.discipline,
-      value: d.value,
-      positions: d.positions,
-      fitScore: d.fitScore,
-      status: d.status,
-      ownerId: d.ownerId,
-      ownerName: d.owner?.name ?? null,
-      nextFollowUpAt: d.nextFollowUpAt,
-      lastActivityAt: d.crmNotes[0]?.createdAt ?? null,
-      noteCount: d._count.crmNotes,
-    }));
+    .map((d) => {
+      const cand = d.candidateId ? candMap.get(d.candidateId) : null;
+      return {
+        id: d.id,
+        columnId: d.stageId,
+        title: d.title,
+        company: d.company,
+        discipline: d.discipline,
+        value: d.value,
+        positions: d.positions,
+        fitScore: d.fitScore,
+        status: d.status,
+        ownerId: d.ownerId,
+        ownerName: d.owner?.name ?? null,
+        nextFollowUpAt: d.nextFollowUpAt,
+        lastActivityAt: d.crmNotes[0]?.createdAt ?? null,
+        noteCount: d._count.crmNotes,
+        candidateId: cand?.id ?? null,
+        candidateName: cand ? `${cand.firstName} ${cand.lastName}` : null,
+        candidatePhoto: cand ? candidatePhotoSrc(cand) : null,
+        candidateHeadline: cand?.headline ?? null,
+        candidateLocation: cand?.location ?? null,
+        candidateRating: cand?.rating ?? null,
+        vacancyTitle: d.vacancy?.title ?? null,
+      };
+    });
 
   const totalValue = cards
     .filter((c) => c.status === "OPEN")

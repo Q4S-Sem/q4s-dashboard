@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Star, MessageSquare, User, CalendarClock, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Star, MessageSquare, User, CalendarClock, Users, MapPin, GripVertical, Briefcase, ArrowRight } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge, StatusBadge } from "@/components/ui/badge";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
-import { DISCIPLINES, colorFor, labelFor, type BadgeColor } from "@/lib/domain";
+import { DISCIPLINES, CANDIDATE_RATINGS, colorFor, labelFor, type BadgeColor } from "@/lib/domain";
 import { moveDeal } from "./actions";
 
 export type DealColumn = {
@@ -28,6 +29,12 @@ export type DealCard = {
   nextFollowUpAt: string | null;
   lastActivityAt: string | null;
   noteCount: number;
+  candidateName: string | null;
+  candidatePhoto: string | null;
+  candidateHeadline: string | null;
+  candidateLocation: string | null;
+  candidateRating: string | null;
+  vacancyTitle: string | null;
 };
 
 const ACCENT: Record<BadgeColor, string> = {
@@ -108,7 +115,7 @@ export function DealBoard({
               if (id) move(id, col.id);
             }}
             className={cn(
-              "flex w-72 shrink-0 flex-col rounded-xl border bg-ink-50/60 transition-colors",
+              "flex w-80 shrink-0 flex-col rounded-xl border bg-ink-50/60 transition-colors",
               overCol === col.id ? "border-brand-400 bg-brand-50/40" : "border-ink-200",
             )}
           >
@@ -137,6 +144,7 @@ export function DealBoard({
               ) : (
                 colCards.map((card) => {
                   const overdue = isOverdue(card.nextFollowUpAt);
+                  const displayName = card.candidateName ?? card.title;
                   return (
                     <div
                       key={card.id}
@@ -148,79 +156,113 @@ export function DealBoard({
                       }}
                       onDragEnd={() => setDragId(null)}
                       className={cn(
-                        "group cursor-grab rounded-lg border border-ink-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing",
+                        "group rounded-xl border border-ink-200 bg-white shadow-sm transition-shadow hover:shadow-md",
                         dragId === card.id && "opacity-50",
                       )}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <Link
-                          href={`/crm/deals/${card.id}`}
-                          className="block font-medium text-ink-900 hover:text-brand-700"
-                        >
-                          {card.title}
-                        </Link>
+                      {/* Sleep-strook bovenaan — hier pak je de kaart vast */}
+                      <div className="flex cursor-grab items-center gap-1 rounded-t-xl border-b border-ink-100 bg-ink-50/70 px-2 py-1 text-[11px] text-ink-400 active:cursor-grabbing">
+                        <GripVertical className="h-3.5 w-3.5" />
+                        <span>Sleep naar een andere fase</span>
                         {card.fitScore > 0 && (
-                          <span className="mt-0.5 inline-flex shrink-0 items-center gap-0.5" title={`Fit ${card.fitScore}/5`}>
+                          <span className="ml-auto inline-flex items-center gap-0.5" title={`Fit ${card.fitScore}/5`}>
                             {Array.from({ length: 5 }).map((_, i) => (
                               <Star
                                 key={i}
-                                className={cn(
-                                  "h-3 w-3",
-                                  i < card.fitScore ? "fill-amber-400 text-amber-400" : "text-ink-200",
-                                )}
+                                className={cn("h-3 w-3", i < card.fitScore ? "fill-amber-400 text-amber-400" : "text-ink-200")}
                               />
                             ))}
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-ink-500">{card.company}</p>
 
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        {card.discipline && (
-                          <Badge color={colorFor(DISCIPLINES, card.discipline)}>
-                            {labelFor(DISCIPLINES, card.discipline)}
-                          </Badge>
-                        )}
-                        {card.value > 0 && (
-                          <span className="text-xs font-semibold tabular-nums text-ink-700">
-                            {formatCurrency(card.value)}
-                          </span>
-                        )}
-                        {card.positions > 1 && (
-                          <span className="inline-flex items-center gap-0.5 text-[11px] text-ink-400">
-                            <Users className="h-3 w-3" /> {card.positions}
-                          </span>
-                        )}
-                      </div>
+                      <div className="p-3">
+                        {/* Persoon: avatar + naam + headline */}
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={displayName} src={card.candidatePhoto} size="sm" className="ring-2 ring-ink-100" />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-ink-900">{displayName}</p>
+                            {card.candidateHeadline && (
+                              <p className="truncate text-xs text-ink-500">{card.candidateHeadline}</p>
+                            )}
+                          </div>
+                        </div>
 
-                      <div className="mt-2 flex items-center justify-between gap-2 border-t border-ink-100 pt-2 text-[11px] text-ink-400">
-                        <span className="inline-flex items-center gap-1 truncate">
-                          {card.ownerName ? (
-                            <>
-                              <User className="h-3 w-3 shrink-0" />
-                              <span className="truncate">{card.ownerName}</span>
-                            </>
-                          ) : (
-                            <span className="text-ink-300">Geen eigenaar</span>
+                        {/* Bedrijf + vacature */}
+                        <div className="mt-2.5 space-y-1 text-xs text-ink-600">
+                          <p className="flex items-center gap-1.5 truncate">
+                            <Briefcase className="h-3.5 w-3.5 shrink-0 text-ink-400" />
+                            <span className="truncate font-medium text-ink-700">{card.company}</span>
+                          </p>
+                          {card.vacancyTitle && (
+                            <p className="truncate pl-5 text-ink-500" title={card.vacancyTitle}>
+                              {card.vacancyTitle}
+                            </p>
                           )}
-                        </span>
-                        <span className="flex shrink-0 items-center gap-2">
-                          <span className="inline-flex items-center gap-0.5" title="Notities">
-                            <MessageSquare className="h-3 w-3" /> {card.noteCount}
-                          </span>
-                          {card.nextFollowUpAt && (
-                            <span
-                              className={cn(
-                                "inline-flex items-center gap-0.5",
-                                overdue ? "font-semibold text-red-600" : "text-ink-400",
-                              )}
-                              title="Opvolgen op"
-                            >
-                              <CalendarClock className="h-3 w-3" />
-                              {formatDate(card.nextFollowUpAt)}
+                          {card.candidateLocation && (
+                            <p className="flex items-center gap-1.5 truncate text-ink-500">
+                              <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-400" />
+                              <span className="truncate">{card.candidateLocation}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Badges: discipline · beoordeling · waarde */}
+                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                          {card.discipline && (
+                            <Badge color={colorFor(DISCIPLINES, card.discipline)}>
+                              {labelFor(DISCIPLINES, card.discipline)}
+                            </Badge>
+                          )}
+                          {card.candidateRating && (
+                            <StatusBadge options={CANDIDATE_RATINGS} value={card.candidateRating} />
+                          )}
+                          {card.value > 0 && (
+                            <span className="text-xs font-semibold tabular-nums text-ink-700">
+                              {formatCurrency(card.value)}
                             </span>
                           )}
-                        </span>
+                          {card.positions > 1 && (
+                            <span className="inline-flex items-center gap-0.5 text-[11px] text-ink-400">
+                              <Users className="h-3 w-3" /> {card.positions}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Footer: eigenaar + notities + opvolging, en een duidelijke Openen-knop */}
+                        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-ink-100 pt-2 text-[11px] text-ink-400">
+                          <span className="inline-flex items-center gap-1 truncate">
+                            {card.ownerName ? (
+                              <>
+                                <User className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{card.ownerName}</span>
+                              </>
+                            ) : (
+                              <span className="text-ink-300">Geen eigenaar</span>
+                            )}
+                          </span>
+                          <span className="flex shrink-0 items-center gap-2">
+                            <span className="inline-flex items-center gap-0.5" title="Notities">
+                              <MessageSquare className="h-3 w-3" /> {card.noteCount}
+                            </span>
+                            {card.nextFollowUpAt && (
+                              <span
+                                className={cn("inline-flex items-center gap-0.5", overdue ? "font-semibold text-red-600" : "text-ink-400")}
+                                title="Opvolgen op"
+                              >
+                                <CalendarClock className="h-3 w-3" />
+                                {formatDate(card.nextFollowUpAt)}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+
+                        <Link
+                          href={`/crm/deals/${card.id}`}
+                          className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+                        >
+                          Openen <ArrowRight className="h-3.5 w-3.5" />
+                        </Link>
                       </div>
                     </div>
                   );
