@@ -6,7 +6,7 @@ import {
   Search,
   CalendarClock,
   Mail,
-  ArrowRight,
+  Eye,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
@@ -125,9 +125,11 @@ function CandidateTable({ candidates }: { candidates: Candidate[] }) {
                 <TD className="relative z-10 text-right">
                   <Link
                     href={`/kandidaten/${c.id}`}
-                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                    title={`Bekijk ${c.firstName} ${c.lastName}`}
+                    aria-label={`Bekijk ${c.firstName} ${c.lastName}`}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
                   >
-                    Bekijk <ArrowRight className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </Link>
                 </TD>
               </TR>
