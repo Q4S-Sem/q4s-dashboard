@@ -21,6 +21,7 @@ export function TextCombobox({
   defaultValue = "",
   required,
   placeholder,
+  onChange,
 }: {
   id?: string;
   name: string;
@@ -28,11 +29,17 @@ export function TextCombobox({
   defaultValue?: string;
   required?: boolean;
   placeholder?: string;
+  onChange?: (value: string) => void;
 }) {
   const [text, setText] = useState(defaultValue);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  function change(value: string) {
+    setText(value);
+    onChange?.(value);
+  }
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -51,7 +58,7 @@ export function TextCombobox({
     : options;
 
   function pick(value: string) {
-    setText(value);
+    change(value);
     setOpen(false);
   }
 
@@ -69,7 +76,7 @@ export function TextCombobox({
         aria-expanded={open}
         aria-autocomplete="list"
         onChange={(e) => {
-          setText(e.target.value);
+          change(e.target.value);
           setActive(0);
           setOpen(true);
         }}

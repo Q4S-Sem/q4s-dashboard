@@ -32,6 +32,8 @@ import { RatingSelect } from "./RatingSelect";
 import { AvailabilitySelect } from "./AvailabilitySelect";
 import { InterviewSelect } from "./InterviewSelect";
 import { KandidatenFilters } from "./KandidatenFilters";
+import { PipelineButton } from "./PipelineButton";
+import { createDealFromCandidate } from "../crm/deals/actions";
 
 export const metadata = { title: "Talentpool" };
 export const dynamic = "force-dynamic";
@@ -86,7 +88,7 @@ export default async function KandidatenPage({
       : {}),
   };
 
-  const [candidates, ratingGroups, availableCount] = await Promise.all([
+  const [candidates, ratingGroups, availableCount, clients, openVacancies] = await Promise.all([
     db.candidate.findMany({
       where,
       include: {
@@ -98,7 +100,17 @@ export default async function KandidatenPage({
     db.candidate.count({
       where: { availability: { in: [...CANDIDATE_AVAILABLE_VALUES] } },
     }),
+    db.client.findMany({ orderBy: { companyName: "asc" }, select: { id: true, companyName: true } }),
+    db.vacancy.findMany({
+      where: { status: { not: "CONCEPT" } },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      select: { id: true, title: true, companyName: true },
+    }),
   ]);
+
+  const pipelineClients = clients.map((c) => ({ id: c.id, name: c.companyName }));
+  const pipelineVacancies = openVacancies.map((v) => ({ id: v.id, title: v.title, company: v.companyName }));
 
   // Rank best first, then alphabetically.
   candidates.sort((a, b) => {
@@ -294,6 +306,13 @@ export default async function KandidatenPage({
                     <RatingSelect id={c.id} value={c.rating} className="w-36" />
                     <AvailabilitySelect id={c.id} value={c.availability} className="w-36" />
                     <InterviewSelect id={c.id} value={c.interviewStatus} className="w-32" />
+                    <PipelineButton
+                      action={createDealFromCandidate}
+                      candidateId={c.id}
+                      candidateName={`${c.firstName} ${c.lastName}`}
+                      clients={pipelineClients}
+                      vacancies={pipelineVacancies}
+                    />
                     <Link
                       href={`/kandidaten/${c.id}`}
                       aria-label={`${c.firstName} ${c.lastName} openen`}

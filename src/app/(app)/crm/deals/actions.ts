@@ -254,3 +254,73 @@ export async function completeDealFollowUp(formData: FormData) {
   revalidatePath("/crm");
   revalidatePath("/crm/opvolging");
 }
+
+// --- Kandidaat in de pipeline zetten ----------------------------------------
+
+const FromCandidateSchema = z.object({
+  candidateId: z.string().min(1, "Onbekende kandidaat"),
+  company: z.string().min(1, "Kies of typ een bedrijf"),
+  clientId: z.string().optional(),
+  vacancyId: z.string().optional(),
+  value: z.coerce.number().min(0).default(0),
+});
+
+/**
+ * Zet een kandidaat uit de talentpool in de deal-pipeline: maak een deal aan in
+ * de eerste open fase, gekoppeld aan de kandidaat, het (eigen) bedrijf en
+ * optioneel de openstaande vacature. Vanaf hier stuurt de recruiter de deal door
+ * de fases. Menselijke beslissing blijft leidend — dit maakt alleen de deal aan.
+ */
+export async function createDealFromCandidate(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const parsed = parseForm(FromCandidateSchema, formData);
+  if (!parsed.success) return parsed.state;
+  const { candidateId, company, clientId, vacancyId, value } = parsed.data;
+
+  const candidate = await db.candidate.findUnique({
+    where: { id: candidateId },
+    select: { firstName: true, lastName: true, discipline: true },
+  });
+  if (!candidate) return { error: "Onbekende kandidaat." };
+
+  // Eerste open fase van de pipeline.
+  const stage = await db.crmStage.findFirst({
+    where: { isWon: false, isLost: false, active: true },
+    orderBy: { order: "asc" },
+  });
+  if (!stage) return { error: "Er is nog geen pipeline-fase ingesteld." };
+
+  const recruiterId = await currentRecruiterId();
+  const naam = `${candidate.firstName} ${candidate.lastName}`.trim();
+
+  const created = await db.deal.create({
+    data: {
+      title: `${naam} → ${company}`,
+      company,
+      discipline: candidate.discipline ?? null,
+      candidateId,
+      clientId: clientId || null,
+      vacancyId: vacancyId || null,
+      stageId: stage.id,
+      status: "OPEN",
+      probability: stage.probability,
+      value,
+      positions: 1,
+      source: "REFERRAL",
+      ownerId: recruiterId,
+    },
+  });
+
+  await logNote({
+    type: "SYSTEM",
+    dealId: created.id,
+    authorId: recruiterId,
+    body: `Kandidaat ${naam} in de pipeline gezet bij ${company}${vacancyId ? " (op een openstaande vacature)" : ""}.`,
+  });
+
+  revalidatePath("/crm");
+  revalidatePath("/kandidaten");
+  redirect(`/crm/deals/${created.id}`);
+}
