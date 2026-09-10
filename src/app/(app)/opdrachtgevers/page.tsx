@@ -79,7 +79,7 @@ export default async function BedrijvenPage() {
                 {clients.map((c) => (
                   <TR key={c.id}>
                     <TD>
-                      <RowLink href={`/klanten/${c.id}`}>{c.companyName}</RowLink>
+                      <RowLink href={`/opdrachtgevers/${c.id}`}>{c.companyName}</RowLink>
                       {c.city && <p className="text-xs text-ink-400">{c.city}</p>}
                     </TD>
                     <TD>

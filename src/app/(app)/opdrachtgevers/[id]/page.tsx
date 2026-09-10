@@ -1,289 +1,276 @@
 import Link from "next/link";
-import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Pencil, Plus, Contact } from "lucide-react";
+import { BackLink } from "@/components/back-link";
+import {
+  Building2, Briefcase, Kanban, Users2, Search, Sparkles, MapPin,
+  Phone, Mail, Star, Receipt, ArrowRight, GitBranchPlus,
+} from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
-import { ConfirmSubmit } from "@/components/confirm-submit";
-import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import { TARGET_STATUSES, APPLICATION_STATUSES, DEAL_STATUSES, type BadgeColor } from "@/lib/domain";
-import { deleteTargetClient } from "../actions";
-import { getActivities } from "@/lib/activities";
-import { ActivityFeed } from "@/components/activity/ActivityFeed";
+import { Avatar } from "@/components/ui/avatar";
+import { person } from "@/lib/people";
+import { cn } from "@/lib/utils";
+import { DISCIPLINES, CANDIDATE_RATINGS } from "@/lib/domain";
+import { NewVacancyButton } from "../NewVacancyButton";
+import { runVacancyMatch } from "../workspace-actions";
+import { quickAddToPipeline } from "../../crm/deals/actions";
 
-export const metadata = { title: "Opdrachtgever" };
+export const metadata = { title: "Bedrijf" };
+export const dynamic = "force-dynamic";
 
-function Detail({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
-        {label}
-      </dt>
-      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
-    </div>
-  );
-}
+const RATING_RING: Record<string, string> = {
+  GOED: "ring-emerald-400",
+  REDELIJK: "ring-amber-400",
+  NIET_MEER: "ring-red-400",
+};
 
-function Stars({ priority }: { priority: number }) {
-  const n = Math.max(1, Math.min(5, priority));
-  return (
-    <span className="text-amber-500" title={`Prioriteit ${n}/5`}>
-      {"★".repeat(n)}
-      <span className="text-ink-200">{"★".repeat(5 - n)}</span>
-    </span>
-  );
-}
-
-export default async function OpdrachtgeverDetailPage({
+export default async function BedrijfWerkruimtePage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ match?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
+  const { match: matchVacancyId } = await searchParams;
 
-  const target = await db.targetClient.findUnique({
+  const client = await db.client.findUnique({
     where: { id },
     include: {
-      vmsConnector: true,
-      deals: { include: { stage: true, owner: { select: { name: true } } }, orderBy: { updatedAt: "desc" } },
-      crmContacts: { orderBy: [{ firstName: "asc" }] },
+      vacancies: {
+        where: { status: { not: "CONCEPT" } },
+        orderBy: { createdAt: "desc" },
+        include: {
+          matches: {
+            orderBy: { score: "desc" },
+            take: 8,
+            include: {
+              candidate: {
+                select: {
+                  id: true, firstName: true, lastName: true, discipline: true,
+                  headline: true, location: true, rating: true, phone: true,
+                  email: true, photoFileName: true,
+                },
+              },
+            },
+          },
+          _count: { select: { deals: { where: { status: "OPEN" } } } },
+        },
+      },
+      _count: { select: { deals: { where: { status: "OPEN" } }, placements: true } },
     },
   });
-  if (!target) notFound();
+  if (!client) notFound();
 
-  const activities = await getActivities("target", target.id);
-
-  const openDealValue = target.deals
-    .filter((d) => d.status === "OPEN")
-    .reduce((s, d) => s + d.value, 0);
-
-  const applications = await db.application.findMany({
-    where: { submittedToId: id },
-    include: { candidate: true, vacancy: true },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
+  const openDeals = client._count.deals;
+  const totalMatches = client.vacancies.reduce((s, v) => s + v.matches.length, 0);
 
   return (
     <div className="space-y-6">
-      <BackLink href="/opdrachtgevers">
-        Terug naar opdrachtgevers
-      </BackLink>
+      <BackLink href="/opdrachtgevers">Terug naar bedrijven</BackLink>
 
       <PageHeader
-        title={target.name}
-        description={target.sector ?? undefined}
+        title={client.companyName}
+        description={[client.city, client.website].filter(Boolean).join(" · ") || undefined}
+        leading={
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-ink-900 text-white">
+            <Building2 className="h-6 w-6" />
+          </span>
+        }
         actions={
           <>
-            <StatusBadge options={TARGET_STATUSES} value={target.status} />
-            <Link
-              href={`/opdrachtgevers/${target.id}/bewerken`}
-              className={buttonVariants({ variant: "outline" })}
-            >
-              <Pencil className="h-4 w-4" /> Bewerken
+            <Link href={`/klanten/${client.id}`} className={buttonVariants({ variant: "outline" })}>
+              <Receipt className="h-4 w-4" /> Facturatie & gegevens
             </Link>
-            <ConfirmSubmit
-              action={deleteTargetClient}
-              id={target.id}
-              message={`Opdrachtgever "${target.name}" verwijderen?`}
-            >
-              Verwijderen
-            </ConfirmSubmit>
+            <NewVacancyButton clientId={client.id} />
           </>
         }
       />
 
-      {error === "in-use" && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          Deze opdrachtgever kan niet verwijderd worden zolang er sollicitaties
-          aan gekoppeld zijn.
-        </p>
-      )}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Openstaande vacatures" value={client.vacancies.length} icon={<Briefcase className="h-5 w-5" />} accent="green" />
+        <StatCard label="Lopende deals" value={openDeals} icon={<Kanban className="h-5 w-5" />} accent="violet" />
+        <StatCard label="Plaatsingen" value={client._count.placements} icon={<Users2 className="h-5 w-5" />} accent="brand" />
+        <StatCard label="Matches klaar" value={totalMatches} icon={<Sparkles className="h-5 w-5" />} accent="amber" />
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Gegevens</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-5 sm:grid-cols-3">
-            <Detail label="Prioriteit" value={<Stars priority={target.priority} />} />
-            <Detail
-              label="Status"
-              value={<StatusBadge options={TARGET_STATUSES} value={target.status} />}
-            />
-            <Detail
-              label="VMS-koppeling"
-              value={
-                target.vmsConnector ? (
-                  <Link
-                    href={`/vms/${target.vmsConnector.id}`}
-                    className="text-brand-700 hover:underline"
-                  >
-                    {target.vmsConnector.name}
-                  </Link>
-                ) : null
-              }
-            />
-            <Detail label="Sector" value={target.sector} />
-            <Detail label="Contactpersoon" value={target.contactName} />
-            <Detail
-              label="Contact-e-mail"
-              value={
-                target.contactEmail ? (
-                  <a
-                    href={`mailto:${target.contactEmail}`}
-                    className="text-brand-700 hover:underline"
-                  >
-                    {target.contactEmail}
-                  </a>
-                ) : null
-              }
-            />
-          </dl>
-          {target.notes && (
-            <div className="mt-5 border-t border-ink-100 pt-4">
-              <p className="whitespace-pre-wrap text-sm text-ink-600">{target.notes}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Vacatures + inline matching — de kern van de werkruimte */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500">
+            Vacatures & matches
+          </h2>
+          <NewVacancyButton clientId={client.id} />
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Voorgestelde kandidaten</CardTitle>
-        </CardHeader>
-        {applications.length === 0 ? (
-          <CardContent className="text-sm text-ink-500">
-            Nog geen kandidaten voorgesteld aan deze opdrachtgever.
-          </CardContent>
+        {client.vacancies.length === 0 ? (
+          <EmptyState
+            icon={<Briefcase className="h-6 w-6" />}
+            title="Nog geen vacatures"
+            description="Plaats een vacature bij dit bedrijf; daarna zoek je met één klik de best passende kandidaten uit de talentpool."
+            action={<NewVacancyButton clientId={client.id} />}
+          />
         ) : (
-          <Table>
-            <THead>
-              <TR className="hover:bg-transparent">
-                <TH>Kandidaat</TH>
-                <TH>Vacature</TH>
-                <TH>Voorgesteld</TH>
-                <TH>Status</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {applications.map((a) => (
-                <TR key={a.id}>
-                  <TD>
-                    <Link
-                      href={`/kandidaten/${a.candidate.id}`}
-                      className="font-medium text-ink-900 hover:text-brand-700"
-                    >
-                      {a.candidate.firstName} {a.candidate.lastName}
-                    </Link>
-                  </TD>
-                  <TD>{a.vacancy?.title ?? "—"}</TD>
-                  <TD>{a.submittedAt ? formatDate(a.submittedAt) : "—"}</TD>
-                  <TD>
-                    <StatusBadge options={APPLICATION_STATUSES} value={a.status} />
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+          client.vacancies.map((v) => {
+            const justMatched = matchVacancyId === v.id;
+            return (
+              <Card key={v.id} id={`vac-${v.id}`} className={cn(justMatched && "ring-2 ring-brand-200")}>
+                <CardHeader>
+                  <div className="min-w-0">
+                    <CardTitle className="flex items-center gap-2">
+                      <Link href={`/vacatures/${v.id}`} className="truncate hover:text-brand-700">
+                        {v.title}
+                      </Link>
+                      {v.discipline && <StatusBadge options={DISCIPLINES} value={v.discipline} />}
+                    </CardTitle>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
+                      {v.location && (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" /> {v.location}
+                        </span>
+                      )}
+                      {v._count.deals > 0 && (
+                        <span className="inline-flex items-center gap-1">
+                          <Kanban className="h-3.5 w-3.5" /> {v._count.deals} in pipeline
+                        </span>
+                      )}
+                      {v.lastMatchedAt && (
+                        <span className="text-ink-400">
+                          {v.matches.length} match{v.matches.length === 1 ? "" : "es"}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <form action={runVacancyMatch}>
+                    <input type="hidden" name="vacancyId" value={v.id} />
+                    <input type="hidden" name="clientId" value={client.id} />
+                    <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>
+                      <Search className="h-4 w-4" /> {v.lastMatchedAt ? "Opnieuw matchen" : "Zoek match"}
+                    </button>
+                  </form>
+                </CardHeader>
+
+                {v.matches.length === 0 ? (
+                  <CardContent className="text-sm text-ink-500">
+                    {v.lastMatchedAt
+                      ? "Geen passende kandidaten gevonden. Voeg kandidaten toe aan de talentpool of pas de functie-eisen aan."
+                      : "Nog niet gezocht — klik op “Zoek match” om de talentpool te doorzoeken."}
+                  </CardContent>
+                ) : (
+                  <CardContent className="space-y-2">
+                    {v.matches.map((m) => {
+                      const c = m.candidate;
+                      const pct = Math.round(m.score * 100);
+                      return (
+                        <div
+                          key={m.id}
+                          className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-ink-100 bg-white p-2.5"
+                        >
+                          {/* Kandidaat */}
+                          <Link
+                            href={`/kandidaten/${c.id}`}
+                            className="flex min-w-0 flex-1 items-center gap-3"
+                          >
+                            <Avatar {...person(c)} size="sm" className={cn("ring-2", RATING_RING[c.rating] ?? "ring-ink-200")} />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-ink-900">
+                                {c.firstName} {c.lastName}
+                              </p>
+                              <p className="truncate text-xs text-ink-500">
+                                {c.headline || (c.discipline ? DISCIPLINES.find((d) => d.value === c.discipline)?.label : "")}
+                              </p>
+                            </div>
+                          </Link>
+
+                          {/* Score + reden */}
+                          <div className="w-40 shrink-0">
+                            <div className="flex items-center justify-between text-[11px] text-ink-500">
+                              <span className="font-semibold text-ink-700">{pct}% match</span>
+                              <StatusBadge options={CANDIDATE_RATINGS} value={c.rating} />
+                            </div>
+                            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-ink-100">
+                              <div
+                                className={cn(
+                                  "h-full rounded-full",
+                                  pct >= 70 ? "bg-emerald-500" : pct >= 45 ? "bg-amber-500" : "bg-ink-300",
+                                )}
+                                style={{ width: `${Math.max(6, pct)}%` }}
+                              />
+                            </div>
+                            {m.reason && (
+                              <p className="mt-1 truncate text-[11px] text-ink-400" title={m.reason}>
+                                {m.reason}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Acties */}
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            {c.phone ? (
+                              <a
+                                href={`tel:${c.phone}`}
+                                title={`Bel ${c.firstName}`}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors hover:bg-emerald-200"
+                              >
+                                <Phone className="h-4 w-4" />
+                              </a>
+                            ) : (
+                              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300" title="Geen telefoonnummer">
+                                <Phone className="h-4 w-4" />
+                              </span>
+                            )}
+                            {c.email ? (
+                              <a
+                                href={`mailto:${c.email}`}
+                                title={`Mail ${c.firstName}`}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200"
+                              >
+                                <Mail className="h-4 w-4" />
+                              </a>
+                            ) : (
+                              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300" title="Geen e-mailadres">
+                                <Mail className="h-4 w-4" />
+                              </span>
+                            )}
+                            <form action={quickAddToPipeline}>
+                              <input type="hidden" name="candidateId" value={c.id} />
+                              <input type="hidden" name="clientId" value={client.id} />
+                              <input type="hidden" name="vacancyId" value={v.id} />
+                              <input type="hidden" name="returnTo" value={`/opdrachtgevers/${client.id}`} />
+                              <button
+                                type="submit"
+                                title={`${c.firstName} in de pipeline zetten`}
+                                className={buttonVariants({ variant: "outline", size: "sm" })}
+                              >
+                                <GitBranchPlus className="h-4 w-4" /> In pipeline
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                )}
+              </Card>
+            );
+          })
         )}
-      </Card>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Deals (CRM){openDealValue > 0 && <span className="ml-2 text-xs font-normal text-ink-400">open: {formatCurrency(openDealValue)}</span>}
-          </CardTitle>
-          <Link href="/crm/deals/nieuw" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            <Plus className="h-4 w-4" /> Nieuwe deal
-          </Link>
-        </CardHeader>
-        {target.deals.length === 0 ? (
-          <CardContent className="text-sm text-ink-500">
-            Nog geen deals voor deze opdrachtgever. Start een deal om het verkoopproces te volgen.
-          </CardContent>
-        ) : (
-          <Table>
-            <THead>
-              <TR className="hover:bg-transparent">
-                <TH>Deal</TH>
-                <TH>Fase</TH>
-                <TH>Eigenaar</TH>
-                <TH className="text-right">Waarde</TH>
-                <TH>Status</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {target.deals.map((d) => (
-                <TR key={d.id}>
-                  <TD>
-                    <Link href={`/crm/deals/${d.id}`} className="font-medium text-ink-900 hover:text-brand-700">
-                      {d.title}
-                    </Link>
-                  </TD>
-                  <TD>
-                    <Badge color={(d.stage.color as BadgeColor) ?? "slate"}>{d.stage.name}</Badge>
-                  </TD>
-                  <TD>{d.owner?.name ?? "—"}</TD>
-                  <TD className="text-right tabular-nums">{formatCurrency(d.value)}</TD>
-                  <TD>
-                    <StatusBadge options={DEAL_STATUSES} value={d.status} />
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-        )}
-      </Card>
-
-      {target.crmContacts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Contact className="h-4 w-4 text-ink-400" /> Contactpersonen
-            </CardTitle>
-            <Link href="/crm/contacten/nieuw" className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <Plus className="h-4 w-4" /> Nieuw contact
-            </Link>
-          </CardHeader>
-          <Table>
-            <THead>
-              <TR className="hover:bg-transparent">
-                <TH>Naam</TH>
-                <TH>Functie</TH>
-                <TH>E-mail</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {target.crmContacts.map((c) => (
-                <TR key={c.id}>
-                  <TD>
-                    <Link href={`/crm/contacten/${c.id}`} className="font-medium text-ink-900 hover:text-brand-700">
-                      {c.firstName} {c.lastName ?? ""}
-                    </Link>
-                  </TD>
-                  <TD>{c.jobTitle ?? "—"}</TD>
-                  <TD>{c.email ?? "—"}</TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-        </Card>
-      )}
-
-      <ActivityFeed
-        entityType="target"
-        entityId={target.id}
-        path={`/opdrachtgevers/${target.id}`}
-        activities={activities}
-      />
+      <p className="flex items-center gap-2 text-xs text-ink-400">
+        <Star className="h-3.5 w-3.5" />
+        Tip: matchen is intern en verstuurt niets. Een kandidaat in de pipeline zetten blijft jouw keuze —
+        daarna beheer je de deal op het{" "}
+        <Link href="/crm" className="inline-flex items-center gap-0.5 text-brand-700 hover:underline">
+          pipeline-bord <ArrowRight className="h-3 w-3" />
+        </Link>
+        .
+      </p>
     </div>
   );
 }

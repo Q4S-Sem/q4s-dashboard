@@ -360,3 +360,78 @@ export async function createDealFromCandidate(
   revalidatePath("/kandidaten");
   redirect("/crm");
 }
+
+const QuickPipelineSchema = z.object({
+  candidateId: z.string().min(1),
+  clientId: z.string().min(1),
+  vacancyId: z.string().optional(),
+  // Waar terug naartoe na afloop (de bedrijfswerkruimte).
+  returnTo: z.string().optional(),
+});
+
+/**
+ * Eén-klik variant: zet een kandidaat direct in de pipeline bij een bekend
+ * bedrijf + (optioneel) vacature — zonder keuzemodal. Gebruikt vanuit de
+ * Bedrijfswerkruimte bij een match. Idempotent: bestaat er al een open deal voor
+ * dezelfde kandidaat+bedrijf, dan wordt er geen tweede aangemaakt.
+ */
+export async function quickAddToPipeline(formData: FormData) {
+  const parsed = parseForm(QuickPipelineSchema, formData);
+  if (!parsed.success) return;
+  const { candidateId, clientId, vacancyId, returnTo } = parsed.data;
+
+  const [candidate, client] = await Promise.all([
+    db.candidate.findUnique({
+      where: { id: candidateId },
+      select: { firstName: true, lastName: true, discipline: true },
+    }),
+    db.client.findUnique({ where: { id: clientId }, select: { companyName: true } }),
+  ]);
+  if (!candidate || !client) return;
+
+  // Al een lopende deal voor deze kandidaat bij dit bedrijf? Dan niets doen.
+  const existing = await db.deal.findFirst({
+    where: { candidateId, clientId, status: "OPEN" },
+    select: { id: true },
+  });
+  const back = returnTo && returnTo.startsWith("/") ? returnTo : "/crm";
+  if (existing) redirect(back);
+
+  const stage = await db.crmStage.findFirst({
+    where: { isWon: false, isLost: false, active: true },
+    orderBy: { order: "asc" },
+  });
+  if (!stage) return;
+
+  const recruiterId = await currentRecruiterId();
+  const naam = `${candidate.firstName} ${candidate.lastName}`.trim();
+
+  const created = await db.deal.create({
+    data: {
+      title: `${naam} → ${client.companyName}`,
+      company: client.companyName,
+      discipline: candidate.discipline ?? null,
+      candidateId,
+      clientId,
+      vacancyId: vacancyId || null,
+      stageId: stage.id,
+      status: "OPEN",
+      probability: stage.probability,
+      value: 0,
+      positions: 1,
+      source: "REFERRAL",
+      ownerId: recruiterId,
+    },
+  });
+
+  await logNote({
+    type: "SYSTEM",
+    dealId: created.id,
+    authorId: recruiterId,
+    body: `Kandidaat ${naam} vanuit een match in de pipeline gezet bij ${client.companyName}${vacancyId ? " (op een openstaande vacature)" : ""}.`,
+  });
+
+  revalidatePath("/crm");
+  revalidatePath(back);
+  redirect(back);
+}
