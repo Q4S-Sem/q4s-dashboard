@@ -1,11 +1,8 @@
 import { Mail } from "lucide-react";
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, Input, Textarea } from "@/components/ui/field";
-import { SubmitButton } from "@/components/ui/submit-button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
 import { getCompanySettings } from "@/lib/settings";
 import { emailLogoDataUri, defaultBadgeDataUris } from "@/lib/email";
 import { currentUser } from "@/lib/session";
@@ -19,6 +16,7 @@ import {
 } from "@/lib/email-signature";
 import { saveSignature } from "./actions";
 import { CopySignatureButton } from "./CopySignatureButton";
+import { SignatureCompanyForm } from "./SignatureCompanyForm";
 
 export const metadata = { title: "E-mailhandtekening" };
 export const dynamic = "force-dynamic";
@@ -66,10 +64,7 @@ export default async function HandtekeningPage({
   // Standaard staan de Q4S-keurmerken (DNV/VCU/SNA) al ingebed. Heeft het bedrijf
   // eigen badge-URL's ingevuld, dan winnen die; anders tonen we de ingebedde set.
   const customBadges = sig.badges;
-  const defaultBadges = defaultBadgeDataUris();
-  sig.badges = customBadges.length ? customBadges : defaultBadges;
-  // In het tekstvak tonen we alleen echte URL's (geen ingebedde data-URI's).
-  const badgesText = customBadges.filter((b) => !b.startsWith("data:")).join("\n");
+  sig.badges = customBadges.length ? customBadges : defaultBadgeDataUris();
 
   const previewDoc = renderSignatureDocument(sig);
   const copyHtml = renderSignatureHtml(sig);
@@ -129,55 +124,13 @@ export default async function HandtekeningPage({
             </CardContent>
           </Card>
 
-          {/* Bedrijfsbrede gegevens — gedeeld door iedereen. */}
-          <form action={saveSignature}>
-            <Card>
-              <CardHeader>
-                <CardTitle>Bedrijfsgegevens (voor iedereen)</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <Field label="Adres" htmlFor="address" hint="Eén regel per adresregel. Leeg = het bedrijfsadres uit Instellingen.">
-                  <Textarea
-                    id="address"
-                    name="address"
-                    rows={3}
-                    defaultValue={sig.addressLines.join("\n")}
-                    placeholder={"Straat 12\n1234 AB Plaats\nThe Netherlands"}
-                  />
-                </Field>
-
-                <Field label="Website" htmlFor="website">
-                  <Input id="website" name="website" defaultValue={sig.website} placeholder="www.q4s.nl" />
-                </Field>
-
-                <Field
-                  label="Keurmerk-logo's"
-                  htmlFor="badges"
-                  hint="DNV, VCU en SNA staan standaard al in de handtekening. Wil je andere logo's? Zet dan hier één afbeelding-URL (https://…) per regel — die vervangen de standaardset."
-                >
-                  <Textarea
-                    id="badges"
-                    name="badges"
-                    rows={3}
-                    defaultValue={badgesText}
-                    placeholder={"https://…/dnv.png\nhttps://…/vcu.png"}
-                  />
-                </Field>
-
-                <Field label="Disclaimer" htmlFor="disclaimer" hint="Vertrouwelijkheidsmelding onderaan.">
-                  <Textarea
-                    id="disclaimer"
-                    name="disclaimer"
-                    rows={4}
-                    defaultValue={sig.disclaimer || DEFAULT_SIG_DISCLAIMER}
-                  />
-                </Field>
-              </CardContent>
-              <CardFooter>
-                <SubmitButton>Opslaan</SubmitButton>
-              </CardFooter>
-            </Card>
-          </form>
+          {/* Bedrijfsbrede gegevens — gedeeld door iedereen, standaard op slot. */}
+          <SignatureCompanyForm
+            action={saveSignature}
+            address={sig.addressLines.join("\n")}
+            website={sig.website}
+            disclaimer={sig.disclaimer || DEFAULT_SIG_DISCLAIMER}
+          />
         </div>
 
         <Card>
