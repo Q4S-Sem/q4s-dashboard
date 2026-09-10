@@ -70,6 +70,14 @@ export async function getNotifications(): Promise<Notifications> {
     mspUnread,
     // Ontvangen facturen die niet kloppen met het plaatsingstarief (afwijking)
     invoiceMismatches,
+    // Opvolging (CRM): deals met een opvolgdatum + contact/kandidaat-notities
+    // met een openstaande opvolgvlag. Gesplitst in te laat / vandaag / later.
+    dealFollowLate,
+    dealFollowToday,
+    dealFollowFuture,
+    noteFollowLate,
+    noteFollowToday,
+    noteFollowFuture,
   ] = await Promise.all([
     db.calendarEvent.count({ where: { status: "PLANNED", start: { lt: startToday } } }),
     db.calendarEvent.count({ where: { status: "PLANNED", start: { gte: startToday, lt: endToday } } }),
@@ -107,6 +115,16 @@ export async function getNotifications(): Promise<Notifications> {
     db.recruiterAlert.count({ where: { read: false } }),
 
     countReceivedDiscrepancies(),
+
+    // Opvolging — deals (opvolgdatum, alleen open deals) gesplitst op datum.
+    db.deal.count({ where: { status: "OPEN", nextFollowUpAt: { lt: startToday } } }),
+    db.deal.count({ where: { status: "OPEN", nextFollowUpAt: { gte: startToday, lt: endToday } } }),
+    db.deal.count({ where: { status: "OPEN", nextFollowUpAt: { gte: endToday } } }),
+    // Opvolging — contact/kandidaat-notities met een openstaande opvolgvlag
+    // (dealId null zodat deal-opvolgingen niet dubbel tellen).
+    db.crmNote.count({ where: { dealId: null, followUpDone: false, followUpAt: { lt: startToday } } }),
+    db.crmNote.count({ where: { dealId: null, followUpDone: false, followUpAt: { gte: startToday, lt: endToday } } }),
+    db.crmNote.count({ where: { dealId: null, followUpDone: false, followUpAt: { gte: endToday } } }),
   ]);
 
   const all: NotifGroup[] = [
@@ -127,6 +145,14 @@ export async function getNotifications(): Promise<Notifications> {
       late: invoiceMismatches,
       today: 0,
       future: 0,
+    },
+    {
+      key: "opvolging",
+      label: "Opvolging",
+      href: "/crm/opvolging",
+      late: dealFollowLate + noteFollowLate,
+      today: dealFollowToday + noteFollowToday,
+      future: dealFollowFuture + noteFollowFuture,
     },
   ];
 
@@ -176,8 +202,8 @@ export function hubActionCounts(badges: NavBadges, notifs: Notifications): Recor
     "/klanten": urgent("certificeringen"),
     // Agenda: afspraken + taken die te laat zijn of vandaag spelen.
     "/agenda": urgent("agenda") + urgent("taken"),
-    // Recruitment: nieuwe sollicitaties die opvolging nodig hebben.
-    "/recruitment": all("sollicitaties"),
+    // Recruitment: nieuwe sollicitaties + openstaande CRM-opvolgingen.
+    "/recruitment": all("sollicitaties") + all("opvolging"),
     // Vacatures: ongelezen meldingen uit de intake (vacaturehub).
     "/website": all("msp"),
   };
