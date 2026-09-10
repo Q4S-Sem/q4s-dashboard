@@ -146,7 +146,7 @@ export function renderSignatureHtml(d: SignatureData): string {
           <div style="color:${INK};font-size:17px;font-weight:700;line-height:1.3;">${esc(d.name) || "&nbsp;"}</div>
           ${d.role ? `<div style="color:${MUTED};font-size:13px;line-height:1.4;padding-bottom:8px;">${esc(d.role)}</div>` : ""}
           <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-            <td style="vertical-align:top;padding:0 4px 0 0;">
+            <td style="vertical-align:top;padding:0 40px 0 0;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
             </td>
             ${addressCell}
