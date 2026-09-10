@@ -17,9 +17,18 @@ export type BadgeColor =
 export const DISCIPLINES: Option[] = [
   { value: "QA", label: "QA — Quality Assurance", color: "blue" },
   { value: "QC", label: "QC — Quality Control", color: "cyan" },
+  { value: "QA_QC", label: "QA/QC", color: "blue" },
+  { value: "HSEQ", label: "HSEQ", color: "green" },
+  { value: "CIVIL", label: "Civil", color: "amber" },
+  { value: "NDO", label: "NDO / NDT", color: "green" },
+  { value: "E_I", label: "E/I", color: "orange" },
+  { value: "WERKVOORBEREIDING", label: "Werkvoorbereiding", color: "violet" },
+  { value: "PROJECT_CONTROLS", label: "Project Controls", color: "cyan" },
+  { value: "PROJECTMANAGEMENT", label: "Projectmanagement", color: "blue" },
+  { value: "COMMISSIONING", label: "Commissioning", color: "amber" },
+  { value: "ENGINEERING", label: "Engineering", color: "violet" },
   { value: "LASSEN", label: "Lassen / Welding", color: "amber" },
   { value: "FITTER", label: "Fitter", color: "violet" },
-  { value: "NDO", label: "NDO / NDT", color: "green" },
   { value: "OVERIG", label: "Overig", color: "slate" },
 ];
 
