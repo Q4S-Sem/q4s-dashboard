@@ -86,7 +86,8 @@ export function DealBoard({
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2">
+    <div className="overflow-x-auto pb-2">
+      <div className="mx-auto flex w-fit gap-4">
       {columns.map((col) => {
         const colCards = cards.filter((c) => c.columnId === col.id);
         const accent = ACCENT[col.color ?? "slate"];
@@ -229,6 +230,7 @@ export function DealBoard({
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
