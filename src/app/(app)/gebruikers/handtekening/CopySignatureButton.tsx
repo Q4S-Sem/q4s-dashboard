@@ -42,11 +42,39 @@ export function CopySignatureButton({ html, text }: { html: string; text: string
     }
   }
 
-  /** Maak een PNG-blob van de handtekening (2× voor scherpte). */
+  /** Maak een PNG-blob van de handtekening (2× voor scherpte). We wachten eerst
+   *  tot alle afbeeldingen (logo + keurmerken) geladen zijn en doen één warm-up-
+   *  render; anders vangt de eerste opname soms een half-geladen, te kleine
+   *  handtekening. De exacte breedte/hoogte geven we mee zodat het formaat gelijk
+   *  is aan het voorbeeld. */
   async function renderBlob(): Promise<Blob | null> {
     const node = stageRef.current;
     if (!node) return null;
-    return toBlob(node, { pixelRatio: 2, backgroundColor: "#ffffff", cacheBust: true });
+
+    // Wacht tot alle <img>'s echt geladen zijn.
+    const imgs = Array.from(node.querySelectorAll("img"));
+    await Promise.all(
+      imgs.map((img) =>
+        img.complete && img.naturalWidth > 0
+          ? Promise.resolve()
+          : new Promise<void>((res) => {
+              img.onload = () => res();
+              img.onerror = () => res();
+            }),
+      ),
+    );
+    // Fonts klaar (indien ondersteund).
+    try {
+      await (document as Document & { fonts?: { ready: Promise<unknown> } }).fonts?.ready;
+    } catch {
+      /* niet kritisch */
+    }
+
+    const opts = { pixelRatio: 2, backgroundColor: "#ffffff", cacheBust: true } as const;
+    // Warm-up: de eerste render kan half leeg zijn; die gooien we weg.
+    await toBlob(node, opts);
+    const rect = node.getBoundingClientRect();
+    return toBlob(node, { ...opts, width: Math.ceil(rect.width), height: Math.ceil(rect.height) });
   }
 
   async function copyImage() {
