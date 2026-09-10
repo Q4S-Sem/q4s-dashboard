@@ -1,9 +1,7 @@
-import Link from "next/link";
-import { Plus, Kanban, Coins, Gauge, CalendarClock } from "lucide-react";
+import { Kanban, Coins, Gauge, CalendarClock } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
-import { buttonVariants } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import {
   currentRecruiterId,
@@ -22,7 +20,7 @@ export default async function CrmPage() {
 
   // Eén gedeelde pipeline: iedereen ziet alle deals (scope = "all").
   const [board, openDeals, dueFollowUps] = await Promise.all([
-    getBoardData({ recruiterId, scope: "all", visibleStages: settings.visibleStages }),
+    getBoardData({ recruiterId, scope: "all", visibleStages: settings.visibleStages, onlyWithCandidate: true }),
     db.deal.findMany({
       where: { status: "OPEN" },
       select: { value: true, probability: true },
@@ -67,11 +65,6 @@ export default async function CrmPage() {
       <PageHeader
         title="CRM"
         description="Eén gedeelde pipeline om een kandidaat uit de talentpool bij een eigen klant te plaatsen op een openstaande vacature. Sleep deals tussen de fases; alles wat je doet wordt gelogd."
-        actions={
-          <Link href="/crm/deals/nieuw" className={buttonVariants()}>
-            <Plus className="h-4 w-4" /> Nieuwe deal
-          </Link>
-        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

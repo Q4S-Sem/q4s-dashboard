@@ -236,6 +236,8 @@ export async function getBoardData(opts: {
   recruiterId: string | null;
   scope: "mine" | "all";
   visibleStages?: string[] | null;
+  /** Alleen deals mét een gekoppelde kandidaat (pipeline-bord = kandidaten). */
+  onlyWithCandidate?: boolean;
 }): Promise<BoardData> {
   const all = await getStages();
   const stages =
@@ -245,7 +247,10 @@ export async function getBoardData(opts: {
   const visibleIds = new Set(stages.map((s) => s.id));
 
   const deals = await db.deal.findMany({
-    where: scopeWhere(opts.recruiterId, opts.scope),
+    where: {
+      ...scopeWhere(opts.recruiterId, opts.scope),
+      ...(opts.onlyWithCandidate ? { candidateId: { not: null } } : {}),
+    },
     include: {
       owner: { select: { name: true } },
       vacancy: { select: { title: true } },

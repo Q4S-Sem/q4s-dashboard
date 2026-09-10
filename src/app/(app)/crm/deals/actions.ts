@@ -83,7 +83,8 @@ export async function createDeal(_prev: FormState, formData: FormData): Promise<
   }
 
   revalidatePath("/crm");
-  redirect(`/crm/deals/${created.id}`);
+  revalidatePath("/crm/kansen");
+  redirect("/crm/kansen");
 }
 
 export async function updateDeal(_prev: FormState, formData: FormData): Promise<FormState> {

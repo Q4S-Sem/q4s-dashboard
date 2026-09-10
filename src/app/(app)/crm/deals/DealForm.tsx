@@ -34,6 +34,7 @@ export function DealForm({
   companies,
   vacancies,
   contacts,
+  defaultCompany,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   deal?: Deal;
@@ -47,13 +48,14 @@ export function DealForm({
   companies: string[];
   vacancies: IdName[];
   contacts: IdName[];
+  defaultCompany?: string;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
 
   // Live velden voor het gekleurde voorbeeld rechts.
   const [title, setTitle] = useState(deal?.title ?? "");
-  const [company, setCompany] = useState(deal?.company ?? "");
+  const [company, setCompany] = useState(deal?.company ?? defaultCompany ?? "");
   const [discipline, setDiscipline] = useState(deal?.discipline ?? "");
   const [stageId, setStageId] = useState(deal?.stageId ?? stages[0]?.id ?? "");
   const [value, setValue] = useState(String(deal?.value ?? 0));

@@ -173,6 +173,7 @@ const HUB_LIST: NavHub[] = [
       { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, section: "Kandidaten" },
       { href: "/sollicitaties", label: "Sollicitaties", icon: ClipboardList, section: "Kandidaten" },
       { href: "/crm", label: "Pipeline", icon: Kanban, section: "CRM" },
+      { href: "/crm/kansen", label: "Kansen", icon: Target, section: "CRM" },
       { href: "/crm/contacten", label: "Contacten", icon: Contact, section: "CRM" },
       { href: "/crm/opvolging", label: "Opvolging", icon: CalendarClock, section: "CRM" },
       { href: "/opdrachtgevers", label: "Onze bedrijven", icon: Factory, section: "CRM" },
