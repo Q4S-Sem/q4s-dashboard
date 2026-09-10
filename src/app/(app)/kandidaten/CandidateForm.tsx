@@ -218,7 +218,7 @@ export function CandidateForm({
             >
               <Select id="rating" name="rating" defaultValue={candidate?.rating ?? "ONBEKEND"}>
                 {CANDIDATE_RATINGS.map((r) => (
-                  <option key={r.value} value={r.value}>
+                  <option key={r.value} value={r.value} data-color={r.color}>
                     {r.label}
                   </option>
                 ))}
@@ -237,7 +237,7 @@ export function CandidateForm({
                 onValueChange={setAvailability}
               >
                 {CANDIDATE_AVAILABILITY.map((a) => (
-                  <option key={a.value} value={a.value}>
+                  <option key={a.value} value={a.value} data-color={a.color}>
                     {a.label}
                   </option>
                 ))}
@@ -266,7 +266,7 @@ export function CandidateForm({
                 onValueChange={setInterviewStatus}
               >
                 {CANDIDATE_INTERVIEW_STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>
+                  <option key={s.value} value={s.value} data-color={s.color}>
                     {s.label}
                   </option>
                 ))}
