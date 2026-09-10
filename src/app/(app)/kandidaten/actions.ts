@@ -220,6 +220,9 @@ export async function createCandidate(
   if (!parsed.success) return parsed.state;
 
   // Optioneel meegestuurd CV-bestand (uit de "CV inlezen"-flow) meteen koppelen.
+  // De upload naar objectopslag/cloud mag de kandidaat-opslag NOOIT laten crashen:
+  // hapert R2 of de cloud-mirror even, dan slaan we de kandidaat gewoon op zonder
+  // CV (die kun je daarna opnieuw uploaden) i.p.v. een serverfout te tonen.
   const file = formData.get("cvFile");
   let cvMeta: {
     cvFileName: string;
@@ -228,13 +231,18 @@ export async function createCandidate(
     cvSize: number;
   } | null = null;
   if (file instanceof File && file.size > 0 && file.size <= MAX_UPLOAD_BYTES) {
-    const fileName = await saveCvUpload(file);
-    cvMeta = {
-      cvFileName: fileName,
-      cvOriginalName: file.name,
-      cvMimeType: file.type || "application/octet-stream",
-      cvSize: file.size,
-    };
+    try {
+      const fileName = await saveCvUpload(file);
+      cvMeta = {
+        cvFileName: fileName,
+        cvOriginalName: file.name,
+        cvMimeType: file.type || "application/octet-stream",
+        cvSize: file.size,
+      };
+    } catch (err) {
+      console.error("CV-upload bij nieuwe kandidaat mislukt (kandidaat wordt zonder CV opgeslagen):", err);
+      cvMeta = null;
+    }
   }
 
   // Manually-added candidates are MANUAL. WEBSITE/TALENTPOOL candidates are
