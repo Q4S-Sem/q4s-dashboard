@@ -8,9 +8,11 @@ import { Field, Input, Textarea, Select } from "@/components/ui/field";
 import { Badge } from "@/components/ui/badge";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
+import { Dropzone } from "@/components/ui/dropzone";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { DISCIPLINES, DEAL_SOURCES, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
-import { Building2, Euro, Users, Star, Link2, StickyNote } from "lucide-react";
+import { Building2, Euro, Users, Star, Link2, StickyNote, Sparkles, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { readVacatureFields } from "./actions";
 
 type IdName = { id: string; label: string };
 type StageOption = { id: string; label: string; color: BadgeColor };
@@ -62,6 +64,47 @@ export function DealForm({
   const [positions, setPositions] = useState(String(deal?.positions ?? 1));
   const [fitScore, setFitScore] = useState(String(deal?.fitScore ?? 0));
   const [source, setSource] = useState(deal?.source ?? "MANUAL");
+  const [notes, setNotes] = useState("");
+
+  // Scanner-status (alleen bij een nieuwe vacature).
+  const isNew = !deal;
+  const [reading, setReading] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanDone, setScanDone] = useState(false);
+
+  async function leesVacature(f: File | null) {
+    if (!f) return;
+    setReading(true);
+    setScanError(null);
+    setScanDone(false);
+    try {
+      const fd = new FormData();
+      fd.set("file", f);
+      const res = await readVacatureFields(fd);
+      if (!res.ok) {
+        setScanError(res.error);
+        return;
+      }
+      const v = res.fields;
+      // Alleen invullen wat de AI vond; bestaande waarden niet met leeg overschrijven.
+      if (v.title) setTitle(v.title);
+      if (v.company) setCompany(v.company);
+      if (v.discipline) {
+        // De AI geeft een enum-waarde terug; toon het bijbehorende label in het vrije veld.
+        setDiscipline(labelFor(DISCIPLINES, v.discipline) || v.discipline);
+      }
+      if (v.positions && v.positions > 0) setPositions(String(v.positions));
+      if (v.value && v.value > 0) setValue(String(v.value));
+      // Functie-eisen + samenvatting samenvoegen in de notitie zodat niets verloren gaat.
+      const blok = [v.requirements, v.notes].map((s) => (s ?? "").trim()).filter(Boolean).join("\n\n");
+      if (blok) setNotes((prev) => (prev.trim() ? prev : blok));
+      setScanDone(true);
+    } catch {
+      setScanError("De vacature kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in.");
+    } finally {
+      setReading(false);
+    }
+  }
 
   const stage = useMemo(() => stages.find((s) => s.id === stageId), [stages, stageId]);
   const fit = Number(fitScore) || 0;
@@ -77,17 +120,69 @@ export function DealForm({
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* ---- Linkerkant: het formulier ---- */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+          {isNew && (
+            <Card className="border-brand-100 bg-gradient-to-br from-brand-50/60 to-transparent">
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
+                    <Sparkles className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-[15px] font-bold text-ink-900">Vacature automatisch inlezen</h2>
+                    <p className="text-sm text-ink-500">
+                      Sleep een vacature (PDF, Word of foto/scan) hierheen. De AI leest titel, bedrijf,
+                      discipline, locatie en eisen uit en vult het formulier hieronder — controleer het
+                      nog even vóór je opslaat.
+                    </p>
+                  </div>
+                </div>
+
+                <Dropzone
+                  name="vacatureScanFile"
+                  accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,application/pdf"
+                  label="Sleep een vacature hierheen of klik om te selecteren"
+                  hint="PDF, Word (.docx) of een duidelijke foto/scan"
+                  onFilesChange={(files) => {
+                    const f = files[0] ?? null;
+                    setScanDone(false);
+                    setScanError(null);
+                    if (f) void leesVacature(f);
+                  }}
+                />
+
+                {reading && (
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Bezig met automatisch inlezen…
+                  </span>
+                )}
+                {!reading && scanDone && !scanError && (
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+                    <CheckCircle2 className="h-4 w-4" /> Ingelezen — controleer de velden hieronder
+                  </span>
+                )}
+                {scanError && (
+                  <p className="flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {scanError}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardContent className="space-y-6">
               {state.error && (
                 <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
               )}
 
-              {/* Sectie: de kans */}
+              {/* Sectie: de vacature */}
               <section className="space-y-4">
-                <h2 className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-brand-700">
-                  <Building2 className="h-4 w-4" /> De vacature
+                <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                    <Building2 className="h-4 w-4" />
+                  </span>
+                  De vacature
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field label="Titel" htmlFor="title" required error={e.title}>
@@ -178,8 +273,11 @@ export function DealForm({
 
               {/* Sectie: waarde & kwalificatie */}
               <section className="space-y-4 border-t border-ink-100 pt-5">
-                <h2 className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-emerald-700">
-                  <Euro className="h-4 w-4" /> Waarde &amp; kwalificatie
+                <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                    <Euro className="h-4 w-4" />
+                  </span>
+                  Waarde &amp; kwalificatie
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-4">
                   <Field label="Waarde (€)" htmlFor="value" hint="Verwachte marge/fee" error={e.value}>
@@ -222,14 +320,19 @@ export function DealForm({
               {/* Sectie: notitie (alleen bij nieuwe deal) */}
               {!deal && (
                 <section className="space-y-4 border-t border-ink-100 pt-5">
-                  <h2 className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-amber-700">
-                    <StickyNote className="h-4 w-4" /> Notitie voor jezelf
+                  <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                      <StickyNote className="h-4 w-4" />
+                    </span>
+                    Notitie voor jezelf
                   </h2>
-                  <Field label="Notitie" htmlFor="notes" hint="Wordt vastgelegd in het notitieblok van de deal" error={e.notes}>
+                  <Field label="Notitie" htmlFor="notes" hint="Wordt vastgelegd in het notitieblok van de vacature — functie-eisen uit de scan komen hier ook terecht" error={e.notes}>
                     <Textarea
                       id="notes"
                       name="notes"
-                      rows={3}
+                      rows={notes ? 6 : 3}
+                      value={notes}
+                      onChange={(ev) => setNotes(ev.target.value)}
                       placeholder="Bijv. Contact via beurs — wil vóór Q3 opschalen. Bellen na de vakantie."
                     />
                   </Field>
@@ -238,8 +341,11 @@ export function DealForm({
 
               {/* Sectie: koppelingen */}
               <section className="space-y-4 border-t border-ink-100 pt-5">
-                <h2 className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-violet-700">
-                  <Link2 className="h-4 w-4" /> Koppelingen <span className="font-normal normal-case text-ink-400">(optioneel)</span>
+                <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                    <Link2 className="h-4 w-4" />
+                  </span>
+                  Koppelingen <span className="font-normal text-ink-400">(optioneel)</span>
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field label="Opdrachtgever" htmlFor="targetClientId" error={e.targetClientId}>

@@ -7,6 +7,41 @@ import { db } from "@/lib/db";
 import { parseForm, type FormState } from "@/lib/form";
 import { DEAL_SOURCE_VALUES, CRM_NOTE_TYPE_VALUES, CRM_SENTIMENT_VALUES } from "@/lib/domain";
 import { currentRecruiterId, logNote } from "@/lib/crm";
+import { extractVacancyFields, CvExtractError, type VacancyFields } from "@/lib/cv-extract";
+
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+
+export type VacancyReadResult =
+  | { ok: true; fields: VacancyFields }
+  | { ok: false; error: string };
+
+/**
+ * Lees een geüploade vacature (PDF/Word/afbeelding/scan) uit tot de velden van
+ * het vacatureformulier. Slaat niets op — puur uitlezen zodat de recruiter de
+ * gevonden gegevens nog kan controleren en aanpassen vóór opslaan.
+ */
+export async function readVacatureFields(formData: FormData): Promise<VacancyReadResult> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "Geen bestand ontvangen." };
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return { ok: false, error: "Dit bestand is te groot." };
+  }
+  try {
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const fields = await extractVacancyFields(bytes, file.name, file.type || "");
+    return { ok: true, fields };
+  } catch (err) {
+    if (err instanceof CvExtractError) return { ok: false, error: err.message };
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("readVacatureFields mislukt:", err);
+    return {
+      ok: false,
+      error: `De vacature kon niet uitgelezen worden: ${detail}. Probeer het opnieuw of vul handmatig in.`,
+    };
+  }
+}
 
 const DealSchema = z.object({
   title: z.string().min(1, "Titel is verplicht"),

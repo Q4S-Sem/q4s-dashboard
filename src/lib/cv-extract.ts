@@ -379,6 +379,131 @@ export async function extractCandidateFields(
 }
 
 // ---------------------------------------------------------------------------
+// Vacature-uitlezing (CRM → Nieuwe vacature)
+// Leest een geüploade vacature (PDF/Word/afbeelding/scan) uit tot de velden van
+// het vacatureformulier, zodat de recruiter ze nog kan controleren vóór opslaan.
+// Zelfde twee routes als de CV-uitlezing (docx lokaal, PDF/afbeelding via vision).
+// ---------------------------------------------------------------------------
+
+const VACANCY_DISCIPLINES = [
+  "QA_QC", "HSEQ", "CIVIL", "NDO", "E_I", "WERKVOORBEREIDING", "PROJECT_CONTROLS",
+  "PROJECTMANAGEMENT", "COMMISSIONING", "ENGINEERING", "LASSEN", "FITTER", "OVERIG",
+] as const;
+
+export type VacancyFields = {
+  title: string;
+  company: string;
+  discipline: string;
+  location: string;
+  positions: number | null;
+  value: number | null;
+  requirements: string;
+  notes: string;
+};
+
+const vacancyFieldsSchema = z.object({
+  title: z.string().nullish().transform((v) => (v ?? "").trim()),
+  company: z.string().nullish().transform((v) => (v ?? "").trim()),
+  discipline: z.enum(VACANCY_DISCIPLINES).nullish().transform((v) => v ?? ""),
+  location: z.string().nullish().transform((v) => (v ?? "").trim()),
+  positions: z.coerce.number().int().min(1).max(999).nullish().transform((v) => v ?? null),
+  value: z.coerce.number().min(0).nullish().transform((v) => v ?? null),
+  requirements: z.string().nullish().transform((v) => (v ?? "").trim()),
+  notes: z.string().nullish().transform((v) => (v ?? "").trim()),
+});
+
+const VACANCY_AI_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    title: { type: "string", description: "Functietitel, bv. 'NDT Inspecteur Level II'" },
+    company: { type: "string", description: "Bedrijf / opdrachtgever, leeg als onbekend" },
+    discipline: { type: "string", enum: VACANCY_DISCIPLINES as unknown as string[] },
+    location: { type: "string", description: "Plaats/regio van de functie" },
+    positions: { type: "number", description: "Aantal te vullen posities (1 als niet vermeld)" },
+    value: { type: "number", description: "Tarief/uurloon of marge in euro, 0 als onbekend" },
+    requirements: { type: "string", description: "Functie-eisen, één eis per regel" },
+    notes: { type: "string", description: "Korte samenvatting / bijzonderheden" },
+  },
+  required: ["title", "company", "discipline", "location", "positions", "value", "requirements", "notes"],
+} as const;
+
+const VACANCY_SYSTEM =
+  "Je bent een recruitment-assistent voor Q4S, een technisch detacheringsbureau in de staalbouw/industrie. " +
+  "Je leest één geüploade vacaturetekst en haalt de kernvelden eruit. Antwoord uitsluitend als JSON in het Nederlands. " +
+  "Verzin niets: laat een veld leeg (of 0/1) als de informatie er niet staat.";
+
+const VACANCY_PROMPT =
+  "Lees deze vacature en vul de velden:\n" +
+  "- title: de functietitel\n" +
+  "- company: het bedrijf/opdrachtgever (leeg als niet genoemd)\n" +
+  "- discipline: kies de best passende uit de enum (OVERIG bij twijfel)\n" +
+  "- location: plaats of regio\n" +
+  "- positions: aantal posities (1 als niet vermeld)\n" +
+  "- value: tarief/uurloon/marge in euro als een getal (0 als onbekend)\n" +
+  "- requirements: de functie-eisen, één eis per regel (korte bullets zonder symbolen)\n" +
+  "- notes: een korte samenvatting of bijzonderheden";
+
+/**
+ * Bestand → vacaturevelden. Gooit {@link CvExtractError} met leesbare NL-tekst bij
+ * een niet-ondersteund bestand of ontbrekende AI-config; de aanroeper vangt dat op.
+ */
+export async function extractVacancyFields(
+  bytes: Buffer,
+  fileName: string,
+  mimeType: string,
+): Promise<VacancyFields> {
+  await ensureAiKeysLoaded();
+  const kind = resolveSourceKind(bytes, fileName, mimeType);
+  if (!kind) {
+    const isOldWord = /\.(doc|rtf|odt)$/i.test(fileName);
+    throw new CvExtractError(
+      isOldWord
+        ? "Dit is een oud Word-formaat (.doc). Open het in Word en sla het op als .docx of PDF."
+        : "Alleen PDF, Word (.docx) of een afbeelding van een vacature kunnen uitgelezen worden.",
+    );
+  }
+
+  let raw: unknown;
+  if (kind === "docx") {
+    raw = await extractFromDocx<unknown>(bytes, {
+      system: VACANCY_SYSTEM,
+      prompt: VACANCY_PROMPT,
+      schema: VACANCY_AI_SCHEMA,
+      schemaName: "vacancy_fields",
+      maxTokens: 1200,
+    });
+  } else {
+    if (!isVisionConfigured()) {
+      throw new CvExtractError(
+        "Om PDF's/afbeeldingen te lezen is een Gemini- of Anthropic-sleutel nodig. Zet die in de Instellingen-hub, " +
+          "of upload de vacature als Word (.docx).",
+      );
+    }
+    raw = await aiJSONFromFile<unknown>({
+      system: VACANCY_SYSTEM,
+      prompt: VACANCY_PROMPT,
+      schema: VACANCY_AI_SCHEMA,
+      schemaName: "vacancy_fields",
+      file: {
+        base64: bytes.toString("base64"),
+        mediaType: kind === "pdf" ? "application/pdf" : mimeType || "image/jpeg",
+      },
+      maxTokens: 1200,
+      effort: "low",
+    });
+  }
+
+  const parsed = vacancyFieldsSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new CvExtractError(
+      "De AI gaf een onverwacht antwoord op deze vacature. Probeer het opnieuw, of vul de velden handmatig in.",
+    );
+  }
+  return parsed.data;
+}
+
+// ---------------------------------------------------------------------------
 // Documentclassificatie (plaatsingen → Documenten-tab)
 // Leest een geüpload bestand en stelt een SOORT + TITEL voor, zodat de gebruiker
 // die niet handmatig hoeft te kiezen. Dezelfde twee routes als hierboven.
