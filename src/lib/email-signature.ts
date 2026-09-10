@@ -67,7 +67,7 @@ const ICON = {
 
 /** Eén contactregel: icoon + (evt. gelinkte) waarde. */
 function contactRow(iconSrc: string, inner: string): string {
-  return `<tr><td style="padding:2px 8px 2px 0;vertical-align:middle;"><img src="${iconSrc}" width="14" height="14" alt="" style="display:block;border:0;"></td><td style="padding:2px 0;vertical-align:middle;color:${INK};font-size:13px;line-height:1.5;">${inner}</td></tr>`;
+  return `<tr><td style="padding:1px 7px 1px 0;vertical-align:middle;"><img src="${iconSrc}" width="12" height="12" alt="" style="display:block;border:0;"></td><td style="padding:1px 0;vertical-align:middle;color:${INK};font-size:12px;line-height:1.45;">${inner}</td></tr>`;
 }
 
 /**
@@ -97,8 +97,8 @@ export function renderSignatureHtml(d: SignatureData): string {
   const addressLines = d.addressLines.filter(Boolean);
   const addressBlock = addressLines.length
     ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td style="padding:2px 8px 2px 0;vertical-align:top;"><img src="${ICON.pin}" width="14" height="14" alt="" style="display:block;border:0;margin-top:2px;"></td>
-        <td style="padding:0;color:${INK};font-size:13px;line-height:1.6;">${addressLines.map(esc).join("<br>")}</td>
+        <td style="padding:1px 7px 1px 0;vertical-align:top;"><img src="${ICON.pin}" width="12" height="12" alt="" style="display:block;border:0;margin-top:2px;"></td>
+        <td style="padding:0;color:${INK};font-size:12px;line-height:1.55;">${addressLines.map(esc).join("<br>")}</td>
       </tr></table>`
     : "";
 
@@ -106,17 +106,17 @@ export function renderSignatureHtml(d: SignatureData): string {
   const badgeImgs = badges
     .map(
       (src) =>
-        `<img src="${esc(src)}" alt="Keurmerk" height="42" style="display:inline-block;border:0;height:42px;width:auto;margin-right:18px;vertical-align:middle;">`,
+        `<img src="${esc(src)}" alt="Keurmerk" height="30" style="display:inline-block;border:0;height:30px;width:auto;margin-right:14px;vertical-align:middle;">`,
     )
     .join("");
 
   const kvkCell = d.kvk
-    ? `<td style="padding:0 0 0 18px;border-left:1px solid ${LINE};color:${MUTED};font-size:12px;vertical-align:middle;">KvK ${esc(d.kvk)}</td>`
+    ? `<td style="padding:0 0 0 14px;border-left:1px solid ${LINE};color:${MUTED};font-size:11px;vertical-align:middle;">KvK ${esc(d.kvk)}</td>`
     : "";
 
   const badgeRow =
     badges.length || d.kvk
-      ? `<tr><td style="padding:14px 0 0;">
+      ? `<tr><td style="padding:11px 0 0;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
             ${badgeImgs ? `<td style="vertical-align:middle;">${badgeImgs}</td>` : ""}
             ${kvkCell}
@@ -125,28 +125,28 @@ export function renderSignatureHtml(d: SignatureData): string {
       : "";
 
   const disclaimer = d.disclaimer
-    ? `<tr><td style="padding:14px 0 0;color:#9ca3af;font-size:11px;line-height:1.6;">${esc(d.disclaimer)}</td></tr>`
+    ? `<tr><td style="padding:11px 0 0;color:#9ca3af;font-size:10px;line-height:1.55;">${esc(d.disclaimer)}</td></tr>`
     : "";
 
   const logoCell = d.logoSrc
-    ? `<td style="padding:0 22px 0 0;vertical-align:middle;border-right:1px solid ${LINE};"><img src="${esc(
+    ? `<td style="padding:0 18px 0 0;vertical-align:middle;border-right:1px solid ${LINE};"><img src="${esc(
         d.logoSrc,
-      )}" alt="Q4S Project Partners" width="120" style="display:block;border:0;width:120px;height:auto;"></td>`
+      )}" alt="Q4S Project Partners" width="96" style="display:block;border:0;width:96px;height:auto;"></td>`
     : "";
 
   const addressCell = addressBlock
-    ? `<td style="padding:0 0 0 28px;border-left:1px solid ${LINE};vertical-align:top;">${addressBlock}</td>`
+    ? `<td style="padding:0 0 0 22px;border-left:1px solid ${LINE};vertical-align:top;">${addressBlock}</td>`
     : "";
 
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:${INK};">
-    <tr><td style="padding:0 0 12px;">
+    <tr><td style="padding:0 0 10px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
         ${logoCell}
-        <td style="padding:0 0 0 ${d.logoSrc ? "22px" : "0"};vertical-align:middle;">
-          <div style="color:${INK};font-size:17px;font-weight:700;line-height:1.3;">${esc(d.name) || "&nbsp;"}</div>
-          ${d.role ? `<div style="color:${MUTED};font-size:13px;line-height:1.4;padding-bottom:8px;">${esc(d.role)}</div>` : ""}
+        <td style="padding:0 0 0 ${d.logoSrc ? "18px" : "0"};vertical-align:middle;">
+          <div style="color:${INK};font-size:15px;font-weight:700;line-height:1.25;">${esc(d.name) || "&nbsp;"}</div>
+          ${d.role ? `<div style="color:${MUTED};font-size:12px;line-height:1.35;padding-bottom:6px;">${esc(d.role)}</div>` : ""}
           <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-            <td style="vertical-align:top;padding:0 40px 0 0;">
+            <td style="vertical-align:top;padding:0 32px 0 0;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
             </td>
             ${addressCell}
