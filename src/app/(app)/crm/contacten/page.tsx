@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { BackLink } from "@/components/back-link";
 import { Users2, Plus, Building2, MessageSquare, HardHat } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -62,7 +61,6 @@ export default async function ContactenPage({
 
     return (
       <div className="space-y-6">
-        <BackLink href="/crm">Terug naar CRM</BackLink>
         <PageHeader
           title="Contacten"
           description="Schakel tussen je klantcontacten en de freelancers (ZZP'ers) die je plaatst."
@@ -116,10 +114,6 @@ export default async function ContactenPage({
 
   return (
     <div className="space-y-6">
-      <BackLink href="/crm">
-        Terug naar CRM
-      </BackLink>
-
       <PageHeader
         title="Contacten"
         description="De mensen achter de opdrachtgevers — inkopers, hiring managers, leidinggevenden. Elk contact heeft z'n eigen notitieblok."
