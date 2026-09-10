@@ -140,9 +140,11 @@ export function CopySignatureButton({ html, text }: { html: string; text: string
       </button>
 
       {/* Verborgen render-podium: de handtekening zoals we die vastleggen. Buiten
-          beeld, maar wél in de DOM zodat html-to-image 'm kan fotograferen. */}
+          beeld, maar wél in de DOM zodat html-to-image 'm kan fotograferen. GEEN
+          padding: zo is de afbeelding exact even groot als de "Kopieer (links)"-
+          versie (die ook geen marge om de handtekening heeft). */}
       <div style={{ position: "fixed", left: "-10000px", top: 0, pointerEvents: "none" }} aria-hidden>
-        <div ref={stageRef} style={{ background: "#ffffff", padding: "20px", display: "inline-block" }}>
+        <div ref={stageRef} style={{ background: "#ffffff", padding: 0, display: "inline-block" }}>
           <div dangerouslySetInnerHTML={{ __html: html }} />
         </div>
       </div>
