@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Candidate } from "@prisma/client";
-import { Sparkles, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Sparkles, Loader2, CheckCircle2, AlertTriangle, Trash2 } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { DateInput } from "@/components/ui/date-input";
 import { Dropzone } from "@/components/ui/dropzone";
 import { CvPreviewButton } from "@/components/cv-preview-button";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -40,7 +41,7 @@ export function CandidateForm({
   cancelHref: string;
   showCvIntake?: boolean;
 }) {
-  const [state, formAction] = useActionState(action, emptyFormState);
+  const [state, formAction, isPending] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
 
   // Gecontroleerde velden zodat de AI-uitlezing ze kan invullen. Startwaarden uit
@@ -53,9 +54,111 @@ export function CandidateForm({
   const [location, setLocation] = useState(candidate?.location ?? "");
   const [headline, setHeadline] = useState(candidate?.headline ?? "");
   const [linkedinUrl, setLinkedinUrl] = useState(candidate?.linkedinUrl ?? "");
+  const [rating, setRating] = useState(candidate?.rating ?? "ONBEKEND");
   const [availability, setAvailability] = useState(candidate?.availability ?? "ONBEKEND");
+  const [availableFrom, setAvailableFrom] = useState(di(candidate?.availableFrom));
   const [interviewStatus, setInterviewStatus] = useState(candidate?.interviewStatus ?? "NONE");
+  const [interviewDate, setInterviewDate] = useState(di(candidate?.interviewDate));
   const [notes, setNotes] = useState(candidate?.notes ?? "");
+
+  // --- Concept blijft bewaard (alleen bij een NIEUWE kandidaat) ------------------
+  // Wat je invult wordt lokaal (op dit apparaat) opgeslagen, zodat je niets
+  // kwijtraakt als je even naar een andere pagina gaat en terugkomt. Bij een
+  // geslaagde opslag verdwijnt het concept vanzelf; met "Wis formulier" gooi je
+  // het handmatig weg. Bij het bewerken van een bestaande kandidaat doen we dit
+  // niet — dan zijn de opgeslagen gegevens al de bron.
+  const isNew = !candidate;
+  const DRAFT_KEY = "q4s-candidate-draft:new";
+  const [restoredHint, setRestoredHint] = useState(false);
+  const hydratedRef = useRef(false);
+
+  // Terugzetten bij binnenkomst (één keer), vóór de opslag-effect gaat draaien.
+  useEffect(() => {
+    if (isNew) {
+      try {
+        const raw = window.localStorage.getItem(DRAFT_KEY);
+        if (raw) {
+          const d = JSON.parse(raw) as Record<string, string>;
+          if (d.firstName) setFirstName(d.firstName);
+          if (d.lastName) setLastName(d.lastName);
+          if (d.email) setEmail(d.email);
+          if (d.phone) setPhone(d.phone);
+          if (d.discipline) setDiscipline(d.discipline);
+          if (d.location) setLocation(d.location);
+          if (d.headline) setHeadline(d.headline);
+          if (d.linkedinUrl) setLinkedinUrl(d.linkedinUrl);
+          if (d.rating) setRating(d.rating);
+          if (d.availability) setAvailability(d.availability);
+          if (d.availableFrom) setAvailableFrom(d.availableFrom);
+          if (d.interviewStatus) setInterviewStatus(d.interviewStatus);
+          if (d.interviewDate) setInterviewDate(d.interviewDate);
+          if (d.notes) setNotes(d.notes);
+          setRestoredHint(true);
+        }
+      } catch {
+        // ongeldige/ontoegankelijke opslag → gewoon leeg beginnen
+      }
+    }
+    hydratedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Bij elke wijziging bewaren; tijdens het verzenden het concept wissen (zodat
+  // een geslaagde opslag geen stale concept achterlaat). Mislukt het verzenden,
+  // dan draait deze effect opnieuw met isPending=false en wordt het concept weer
+  // bewaard, zodat je het alsnog niet kwijt bent.
+  useEffect(() => {
+    if (!isNew || !hydratedRef.current) return;
+    try {
+      if (isPending) {
+        window.localStorage.removeItem(DRAFT_KEY);
+        return;
+      }
+      const draft = {
+        firstName, lastName, email, phone, discipline, location, headline,
+        linkedinUrl, rating, availability, availableFrom, interviewStatus,
+        interviewDate, notes,
+      };
+      const hasData = Object.values(draft).some(
+        (v) => v && v !== "ONBEKEND" && v !== "NONE",
+      );
+      if (hasData) window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      else window.localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // opslag vol/geblokkeerd → nooit het invullen blokkeren
+    }
+  }, [
+    isNew, isPending, firstName, lastName, email, phone, discipline, location,
+    headline, linkedinUrl, rating, availability, availableFrom, interviewStatus,
+    interviewDate, notes,
+  ]);
+
+  /** Gooi het hele (nieuwe-kandidaat) formulier leeg + verwijder het concept. */
+  function wisFormulier() {
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPhone("");
+    setDiscipline("");
+    setLocation("");
+    setHeadline("");
+    setLinkedinUrl("");
+    setRating("ONBEKEND");
+    setAvailability("ONBEKEND");
+    setAvailableFrom("");
+    setInterviewStatus("NONE");
+    setInterviewDate("");
+    setNotes("");
+    setRestoredHint(false);
+    setCvFile(null);
+    setCvDone(false);
+    setCvError(null);
+    try {
+      window.localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // negeren
+    }
+  }
 
   // CV-inlezen-status
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -107,8 +210,26 @@ export function CandidateForm({
   }
 
   return (
-    <form action={onSubmit}>
+    <form action={onSubmit} data-no-persist={isNew ? "" : undefined}>
       {candidate && <input type="hidden" name="id" value={candidate.id} />}
+
+      {/* Concept teruggezet — laat weten dat oude invoer is hersteld + wis-knop */}
+      {isNew && restoredHint && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3">
+          <span className="inline-flex items-center gap-2 text-sm text-ink-700">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-brand-600" />
+            We hebben je eerder ingevulde gegevens teruggezet. Ga gerust verder.
+          </span>
+          <button
+            type="button"
+            onClick={wisFormulier}
+            className={buttonVariants({ variant: "danger", size: "sm" })}
+          >
+            <Trash2 className="h-4 w-4" /> Wis formulier
+          </button>
+        </div>
+      )}
+
 
       {/* CV inlezen — automatische invulling (alleen bij nieuwe kandidaat) */}
       {showCvIntake && (
@@ -216,7 +337,7 @@ export function CandidateForm({
               hint="Rangschik hoe inzetbaar deze kandidaat is voor klanten."
               error={e.rating}
             >
-              <Select id="rating" name="rating" defaultValue={candidate?.rating ?? "ONBEKEND"}>
+              <Select id="rating" name="rating" key={`rating-${rating}`} defaultValue={rating} onValueChange={setRating}>
                 {CANDIDATE_RATINGS.map((r) => (
                   <option key={r.value} value={r.value} data-color={r.color}>
                     {r.label}
@@ -233,7 +354,8 @@ export function CandidateForm({
               <Select
                 id="availability"
                 name="availability"
-                defaultValue={candidate?.availability ?? "ONBEKEND"}
+                key={`avail-${availability}`}
+                defaultValue={availability}
                 onValueChange={setAvailability}
               >
                 {CANDIDATE_AVAILABILITY.map((a) => (
@@ -250,7 +372,7 @@ export function CandidateForm({
                 hint="Vanaf welke datum is deze kandidaat inzetbaar?"
                 error={e.availableFrom}
               >
-                <Input id="availableFrom" name="availableFrom" type="date" defaultValue={di(candidate?.availableFrom)} />
+                <DateInput id="availableFrom" name="availableFrom" value={availableFrom} onValueChange={setAvailableFrom} />
               </Field>
             )}
             <Field
@@ -262,7 +384,8 @@ export function CandidateForm({
               <Select
                 id="interviewStatus"
                 name="interviewStatus"
-                defaultValue={candidate?.interviewStatus ?? "NONE"}
+                key={`iv-${interviewStatus}`}
+                defaultValue={interviewStatus}
                 onValueChange={setInterviewStatus}
               >
                 {CANDIDATE_INTERVIEW_STATUSES.map((s) => (
@@ -274,7 +397,7 @@ export function CandidateForm({
             </Field>
             {interviewStatus !== "NONE" && (
               <Field label="Interviewdatum" htmlFor="interviewDate" error={e.interviewDate}>
-                <Input id="interviewDate" name="interviewDate" type="date" defaultValue={di(candidate?.interviewDate)} />
+                <DateInput id="interviewDate" name="interviewDate" value={interviewDate} onValueChange={setInterviewDate} />
               </Field>
             )}
           </div>
@@ -306,7 +429,17 @@ export function CandidateForm({
             <Textarea id="notes" name="notes" rows={7} value={notes} onChange={(ev) => setNotes(ev.target.value)} />
           </Field>
         </CardContent>
-        <CardFooter className="flex justify-end gap-2">
+        <CardFooter className="flex flex-wrap justify-end gap-2">
+          {isNew && (
+            <button
+              type="button"
+              onClick={wisFormulier}
+              className={buttonVariants({ variant: "ghost", size: "md", className: "mr-auto text-red-600 hover:bg-red-50 hover:text-red-700" })}
+              title="Leeg het formulier en verwijder het bewaarde concept"
+            >
+              <Trash2 className="h-4 w-4" /> Wis formulier
+            </button>
+          )}
           <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>
             Annuleren
           </Link>
