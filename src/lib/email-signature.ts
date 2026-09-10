@@ -12,6 +12,9 @@
 // zodat alles er identiek uitziet.
 // ---------------------------------------------------------------------------
 
+import fs from "node:fs";
+import path from "node:path";
+
 export type SignatureData = {
   name: string;
   role: string;
@@ -42,27 +45,24 @@ function esc(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** Kleine inline SVG-icoontjes (telefoon/mail/web/pin) als data-URI — GEVULD en
- *  volledig zwart, precies zoals in het voorbeeld. Data-URI zodat ze altijd
- *  meekomen zonder externe hosting. */
-function icon(path: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#000000">${path}</svg>`;
-  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+/** De contact-icoontjes (telefoon/mail/web/pin) als PNG-data-URI. PNG omdat
+ *  Outlook/Gmail SVG in mails niet betrouwbaar tonen (dan zie je lege vierkantjes).
+ *  De bestanden staan in public/email/icons; ontbreekt er een, dan valt de regel
+ *  terug op geen icoon. */
+function iconPng(name: string): string {
+  try {
+    const b = fs.readFileSync(path.join(process.cwd(), "public", "email", "icons", `${name}.png`));
+    return `data:image/png;base64,${b.toString("base64")}`;
+  } catch {
+    return "";
+  }
 }
 
 const ICON = {
-  phone: icon(
-    '<path d="M6.62 10.79a15.53 15.53 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24 11.36 11.36 0 0 0 3.57.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.36 11.36 0 0 0 .57 3.57 1 1 0 0 1-.25 1.02l-2.2 2.2z"/>',
-  ),
-  mail: icon(
-    '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 4v10h16V8l-8 5-8-5zm.6-2 7.4 4.6L19.4 6H4.6z"/>',
-  ),
-  web: icon(
-    '<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.93 6h-2.95a15.65 15.65 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.93 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14a7.96 7.96 0 0 1 0-4h3.38a16.6 16.6 0 0 0 0 4H4.26zm.81 2h2.95c.32 1.25.78 2.45 1.38 3.56A8.03 8.03 0 0 1 5.07 16zm2.95-8H5.07a8.03 8.03 0 0 1 4.33-3.56A15.65 15.65 0 0 0 8.02 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82A13.4 13.4 0 0 1 12 19.96zM14.34 14H9.66a14.86 14.86 0 0 1 0-4h4.68a14.86 14.86 0 0 1 0 4zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56zM16.36 14a16.6 16.6 0 0 0 0-4h3.38a7.96 7.96 0 0 1 0 4h-3.38z"/>',
-  ),
-  pin: icon(
-    '<path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>',
-  ),
+  phone: iconPng("phone"),
+  mail: iconPng("mail"),
+  web: iconPng("web"),
+  pin: iconPng("pin"),
 };
 
 /** Eén contactregel: icoon + (evt. gelinkte) waarde. */
