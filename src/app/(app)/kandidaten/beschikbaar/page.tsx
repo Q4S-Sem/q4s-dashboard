@@ -11,7 +11,6 @@ import {
 import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
@@ -23,18 +22,24 @@ import { cn, formatDate } from "@/lib/utils";
 import { person } from "@/lib/people";
 import {
   DISCIPLINES,
-  CANDIDATE_AVAILABLE_VALUES,
-  CANDIDATE_AVAILABILITY_ORDER,
   CANDIDATE_RATING_ORDER,
 } from "@/lib/domain";
 import { RatingSelect } from "../RatingSelect";
 import { AvailabilitySelect } from "../AvailabilitySelect";
 import { PhoneReveal } from "../PhoneReveal";
 
-export const metadata = { title: "Beschikbare kandidaten" };
+export const metadata = { title: "Beschikbaarheid" };
 export const dynamic = "force-dynamic";
 
-type SP = { q?: string; discipline?: string };
+type SP = { q?: string; discipline?: string; status?: string };
+
+/** De vier beschikbaarheids-tabs (statuswaarde → tablabel + kleurstip). */
+const STATUS_TABS = [
+  { key: "BESCHIKBAAR", label: "Beschikbaar", dot: "bg-emerald-500" },
+  { key: "BINNENKORT", label: "Binnenkort", dot: "bg-amber-500" },
+  { key: "NIET_BESCHIKBAAR", label: "Niet", dot: "bg-red-500" },
+  { key: "ONBEKEND", label: "Overige", dot: "bg-ink-300" },
+] as const;
 
 /** Compacte, scanbare tabel met beschikbare kandidaten (één rij per persoon). */
 function CandidateTable({ candidates }: { candidates: Candidate[] }) {
@@ -134,34 +139,6 @@ function CandidateTable({ candidates }: { candidates: Candidate[] }) {
   );
 }
 
-function Section({
-  title,
-  count,
-  dotClass,
-  children,
-}: {
-  title: string;
-  count: number;
-  dotClass: string;
-  children: React.ReactNode;
-}) {
-  if (count === 0) return null;
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} />
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500">
-          {title}
-        </h2>
-        <span className="rounded-sm bg-ink-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-ink-600">
-          {count}
-        </span>
-      </div>
-      {children}
-    </section>
-  );
-}
-
 export default async function BeschikbaarPage({
   searchParams,
 }: {
@@ -170,9 +147,13 @@ export default async function BeschikbaarPage({
   const sp = await searchParams;
   const q = sp.q?.trim() || "";
   const discipline = sp.discipline || "";
+  const activeStatus = STATUS_TABS.some((t) => t.key === sp.status)
+    ? (sp.status as string)
+    : "BESCHIKBAAR";
 
+  // Alle kandidaten die aan zoek/discipline voldoen — we verdelen ze daarna zelf
+  // over de vier beschikbaarheids-tabs (zodat elke tab z'n aantal kan tonen).
   const where = {
-    availability: { in: [...CANDIDATE_AVAILABLE_VALUES] },
     ...(discipline ? { discipline } : {}),
     ...(q
       ? {
@@ -190,12 +171,9 @@ export default async function BeschikbaarPage({
 
   const candidates = await db.candidate.findMany({ where });
 
-  // Nu beschikbaar eerst, dan binnenkort op datum (vroegste eerst), dan op
-  // beoordeling en tot slot alfabetisch.
+  // Binnen een tab: binnenkort op datum (vroegste eerst), dan op beoordeling en
+  // tot slot alfabetisch.
   candidates.sort((a, b) => {
-    const aa = CANDIDATE_AVAILABILITY_ORDER[a.availability] ?? 9;
-    const ba = CANDIDATE_AVAILABILITY_ORDER[b.availability] ?? 9;
-    if (aa !== ba) return aa - ba;
     const at = a.availableFrom?.getTime() ?? Infinity;
     const bt = b.availableFrom?.getTime() ?? Infinity;
     if (at !== bt) return at - bt;
@@ -205,9 +183,29 @@ export default async function BeschikbaarPage({
     return a.lastName.localeCompare(b.lastName);
   });
 
-  const nu = candidates.filter((c) => c.availability === "BESCHIKBAAR");
-  const soon = candidates.filter((c) => c.availability === "BINNENKORT");
+  // Tel per status en pak de rijen voor de actieve tab. Alles wat geen bekende
+  // status heeft valt onder "Overige" (ONBEKEND).
+  const known = new Set<string>(STATUS_TABS.map((t) => t.key));
+  const countFor = (key: string) =>
+    key === "ONBEKEND"
+      ? candidates.filter((c) => !known.has(c.availability) || c.availability === "ONBEKEND").length
+      : candidates.filter((c) => c.availability === key).length;
+  const rows =
+    activeStatus === "ONBEKEND"
+      ? candidates.filter((c) => !known.has(c.availability) || c.availability === "ONBEKEND")
+      : candidates.filter((c) => c.availability === activeStatus);
+
   const hasFilter = Boolean(q || discipline);
+  const activeLabel = STATUS_TABS.find((t) => t.key === activeStatus)?.label ?? "";
+
+  /** Bouw een tab-link die de huidige zoek/discipline behoudt. */
+  const tabHref = (status: string) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (discipline) params.set("discipline", discipline);
+    params.set("status", status);
+    return `/kandidaten/beschikbaar?${params.toString()}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -215,17 +213,10 @@ export default async function BeschikbaarPage({
         Terug naar talentpool
       </BackLink>
 
-      {/* Hero — eigen, herkenbare pagina voor beschikbare mensen */}
       <PageHeader
-        title="Beschikbaar"
-        description="De mensen die nu of binnenkort inzetbaar zijn — direct te plaatsen bij een klant."
+        title="Beschikbaarheid"
+        description="Schakel tussen beschikbaar, binnenkort, niet beschikbaar en overige — zo blijft het overzichtelijk."
       />
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Totaal inzetbaar" value={candidates.length} icon={<UserCheck className="h-5 w-5" />} accent="green" />
-        <StatCard label="Nu beschikbaar" value={nu.length} icon={<UserCheck className="h-5 w-5" />} accent="brand" />
-        <StatCard label="Binnenkort beschikbaar" value={soon.length} icon={<CalendarClock className="h-5 w-5" />} accent="amber" />
-      </div>
 
       {/* Filters — zoekt automatisch bij typen/kiezen, geen knop nodig */}
       <Card>
@@ -234,6 +225,8 @@ export default async function BeschikbaarPage({
             basePath="/kandidaten/beschikbaar"
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_220px_auto]"
           >
+            {/* Behoud de actieve tab tijdens het filteren. */}
+            <input type="hidden" name="status" value={activeStatus} />
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
               <Input
@@ -254,7 +247,7 @@ export default async function BeschikbaarPage({
             </Select>
             <div className="flex gap-2">
               {hasFilter && (
-                <Link href="/kandidaten/beschikbaar" className={buttonVariants({ variant: "outline" })}>
+                <Link href={tabHref(activeStatus)} className={buttonVariants({ variant: "outline" })}>
                   Wissen
                 </Link>
               )}
@@ -263,14 +256,54 @@ export default async function BeschikbaarPage({
         </CardContent>
       </Card>
 
-      {candidates.length === 0 ? (
+      {/* Tabs — schakel tussen de vier beschikbaarheids-statussen */}
+      <nav
+        aria-label="Beschikbaarheid"
+        className="flex items-end gap-1 overflow-x-auto border-b border-ink-200"
+      >
+        {STATUS_TABS.map((t) => {
+          const active = t.key === activeStatus;
+          const count = countFor(t.key);
+          return (
+            <Link
+              key={t.key}
+              href={tabHref(t.key)}
+              scroll={false}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors",
+                active
+                  ? "border-ink-200 border-b-[#fafafa] bg-white text-ink-900"
+                  : "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900",
+              )}
+            >
+              <span className={cn("h-2.5 w-2.5 rounded-full", t.dot)} />
+              {t.label}
+              <span
+                className={cn(
+                  "rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+                  active ? "bg-brand-50 text-brand-700" : "bg-ink-100 text-ink-500",
+                )}
+              >
+                {count}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {rows.length === 0 ? (
         <EmptyState
           icon={<UserCheck className="h-6 w-6" />}
-          title={hasFilter ? "Geen beschikbare kandidaten gevonden" : "Nog geen beschikbare kandidaten"}
+          title={
+            hasFilter
+              ? `Geen kandidaten in "${activeLabel}" gevonden`
+              : `Geen kandidaten met status "${activeLabel}"`
+          }
           description={
             hasFilter
-              ? "Pas je zoekopdracht of filters aan."
-              : "Markeer kandidaten als 'Beschikbaar' of 'Binnenkort beschikbaar' in de talentpool om ze hier te verzamelen."
+              ? "Pas je zoekopdracht of filters aan, of kies een andere tab."
+              : "Zet de beschikbaarheid van een kandidaat in de talentpool om ze hier te zien."
           }
           action={
             <Link href="/kandidaten" className={buttonVariants({ variant: "outline" })}>
@@ -279,14 +312,7 @@ export default async function BeschikbaarPage({
           }
         />
       ) : (
-        <div className="space-y-8">
-          <Section title="Nu beschikbaar" count={nu.length} dotClass="bg-emerald-500">
-            <CandidateTable candidates={nu} />
-          </Section>
-          <Section title="Binnenkort beschikbaar" count={soon.length} dotClass="bg-amber-500">
-            <CandidateTable candidates={soon} />
-          </Section>
-        </div>
+        <CandidateTable candidates={rows} />
       )}
     </div>
   );
