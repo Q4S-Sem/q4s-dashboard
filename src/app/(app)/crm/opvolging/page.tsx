@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { BackLink } from "@/components/back-link";
 import {
-  ArrowLeft,
   CalendarClock,
   CheckCircle2,
   AlertTriangle,
@@ -17,7 +15,6 @@ import { formatDate, cn } from "@/lib/utils";
 import { TASK_PRIORITIES } from "@/lib/domain";
 import {
   currentRecruiterId,
-  getCrmSettings,
   getFollowUpItems,
   startOfToday,
   endOfToday,
@@ -62,16 +59,10 @@ function FollowUpRow({ item, tone }: { item: FollowUpItem; tone: "red" | "amber"
   );
 }
 
-export default async function OpvolgingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ scope?: string }>;
-}) {
-  const sp = await searchParams;
+export default async function OpvolgingPage() {
   const recruiterId = await currentRecruiterId();
-  const settings = await getCrmSettings(recruiterId);
-  const scope: "mine" | "all" =
-    sp.scope === "all" || sp.scope === "mine" ? sp.scope : settings.defaultScope;
+  // Opvolging is altijd algemeen/team-breed — geen Mijn opvolging/Team-schakelaar.
+  const scope = "all" as const;
 
   const [items, tasks] = await Promise.all([
     getFollowUpItems({ recruiterId, scope }),
@@ -88,35 +79,14 @@ export default async function OpvolgingPage({
   const today = items.filter((i) => i.due.getTime() >= startToday && i.due.getTime() <= endToday);
   const upcoming = items.filter((i) => i.due.getTime() > endToday);
 
-  const scopeTab = (value: "mine" | "all", label: string) => (
-    <Link
-      href={`/crm/opvolging?scope=${value}`}
-      className={cn(
-        "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        scope === value ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
-      )}
-    >
-      {label}
-    </Link>
-  );
-
   const nothing = items.length === 0 && tasks.length === 0;
 
   return (
     <div className="space-y-6">
-      <BackLink href="/crm">
-        Terug naar CRM
-      </BackLink>
-
       <PageHeader
         title="Opvolging"
         description="Alles wat een vervolgactie nodig heeft — geplande opvolgingen en openstaande taken. Niets valt tussen wal en schip."
       />
-
-      <div className="inline-flex gap-1 rounded-lg border border-ink-200 bg-ink-50 p-1">
-        {scopeTab("mine", "Mijn opvolging")}
-        {scopeTab("all", "Team")}
-      </div>
 
       {nothing ? (
         <EmptyState
