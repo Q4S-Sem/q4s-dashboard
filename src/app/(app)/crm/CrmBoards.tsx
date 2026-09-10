@@ -1,31 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { Kanban, Factory, ClipboardList } from "lucide-react";
+import { Kanban, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KanbanBoard, type KanbanColumn, type KanbanCard } from "./KanbanBoard";
 import { DealBoard, type DealColumn, type DealCard } from "./DealBoard";
-import { moveTargetClient, moveApplication } from "./actions";
+import { moveApplication } from "./actions";
 
-type Tab = "pipeline" | "opdrachtgevers" | "kandidaten";
+type Tab = "pipeline" | "kandidaten";
 
 /**
  * De CRM-borden onder tabs. Primair: de deal-pipeline (het verkoopproces om een
- * openstaande vacature in te vullen). Daarnaast twee referentieborden:
- * opdrachtgevers-acquisitie en de kandidaten-sollicitatiepipeline.
+ * openstaande vacature bij een eigen klant in te vullen met een kandidaat uit de
+ * talentpool). Daarnaast het referentiebord met de kandidaten-sollicitatiepipeline.
  */
 export function CrmBoards({
   dealColumns,
   dealCards,
-  targetColumns,
-  targetCards,
   applicationColumns,
   applicationCards,
 }: {
   dealColumns: DealColumn[];
   dealCards: DealCard[];
-  targetColumns: KanbanColumn[];
-  targetCards: KanbanCard[];
   applicationColumns: KanbanColumn[];
   applicationCards: KanbanCard[];
 }) {
@@ -33,7 +29,6 @@ export function CrmBoards({
 
   const tabs: { id: Tab; label: string; icon: typeof Kanban; count: number }[] = [
     { id: "pipeline", label: "Deal-pipeline", icon: Kanban, count: dealCards.length },
-    { id: "opdrachtgevers", label: "Opdrachtgevers", icon: Factory, count: targetCards.length },
     { id: "kandidaten", label: "Kandidaten", icon: ClipboardList, count: applicationCards.length },
   ];
 
@@ -69,14 +64,6 @@ export function CrmBoards({
       </div>
 
       {tab === "pipeline" && <DealBoard columns={dealColumns} cards={dealCards} />}
-      {tab === "opdrachtgevers" && (
-        <KanbanBoard
-          columns={targetColumns}
-          cards={targetCards}
-          onMove={moveTargetClient}
-          emptyLabel="Geen opdrachtgevers in deze fase"
-        />
-      )}
       {tab === "kandidaten" && (
         <KanbanBoard
           columns={applicationColumns}

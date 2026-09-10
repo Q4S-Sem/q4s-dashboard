@@ -7,7 +7,6 @@ import { StatCard } from "@/components/ui/stat-card";
 import { buttonVariants } from "@/components/ui/button";
 import { formatCurrency, cn } from "@/lib/utils";
 import {
-  TARGET_STATUSES,
   APPLICATION_STATUSES,
   DISCIPLINES,
   colorFor,
@@ -39,14 +38,13 @@ export default async function CrmPage({
 
   const dealWhere = scope === "mine" && recruiterId ? { ownerId: recruiterId } : {};
 
-  const [board, openDeals, dueFollowUps, targets, applications] = await Promise.all([
+  const [board, openDeals, dueFollowUps, applications] = await Promise.all([
     getBoardData({ recruiterId, scope, visibleStages: settings.visibleStages }),
     db.deal.findMany({
       where: { ...dealWhere, status: "OPEN" },
       select: { value: true, probability: true },
     }),
     countDueFollowUps(recruiterId, scope),
-    db.targetClient.findMany({ orderBy: [{ priority: "desc" }, { name: "asc" }] }),
     db.application.findMany({
       include: { candidate: true, vacancy: true },
       orderBy: { updatedAt: "desc" },
@@ -79,21 +77,7 @@ export default async function CrmPage({
     noteCount: c.noteCount,
   }));
 
-  // Reference boards (unchanged).
-  const targetColumns: KanbanColumn[] = TARGET_STATUSES.map((s) => ({
-    id: s.value,
-    label: s.label,
-    color: s.color,
-  }));
-  const targetCards: KanbanCard[] = targets.map((t) => ({
-    id: t.id,
-    columnId: t.status,
-    title: t.name,
-    subtitle: t.sector,
-    href: `/opdrachtgevers/${t.id}`,
-    stars: t.priority,
-    meta: t.contactName,
-  }));
+  // Reference board: de kandidaten-sollicitatiepipeline.
   const applicationColumns: KanbanColumn[] = APPLICATION_STATUSES.map((s) => ({
     id: s.value,
     label: s.label,
@@ -128,7 +112,7 @@ export default async function CrmPage({
     <div className="space-y-6">
       <PageHeader
         title="CRM"
-        description="Het verkoopproces om openstaande vacatures van opdrachtgevers in te vullen met de juiste mensen. Sleep deals tussen de fases; alles wat je doet wordt gelogd."
+        description="Het verkoopproces om een kandidaat uit de talentpool bij een eigen klant te plaatsen op een openstaande vacature. Sleep deals tussen de fases; alles wat je doet wordt gelogd."
         actions={
           <>
             <Link href="/crm/deals/nieuw" className={buttonVariants()}>
@@ -178,8 +162,6 @@ export default async function CrmPage({
       <CrmBoards
         dealColumns={dealColumns}
         dealCards={dealCards}
-        targetColumns={targetColumns}
-        targetCards={targetCards}
         applicationColumns={applicationColumns}
         applicationCards={applicationCards}
       />
