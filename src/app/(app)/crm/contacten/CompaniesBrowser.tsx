@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Building2, ChevronDown, Plus, Phone, Mail } from "lucide-react";
+import { Search, ChevronDown, Plus, Phone, Mail, Users2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 /** Diacritics-insensitive fold zodat "jose" ook "José" vindt. */
 function fold(s: string): string {
@@ -25,9 +27,10 @@ export type CompanyRow = {
   contacts: CompanyContact[];
 };
 
-function ContactLine({ c }: { c: CompanyContact }) {
+/** Eén contactpersoon-kaart met zichtbaar telefoonnummer + e-mail (klikbaar). */
+function ContactCard({ c }: { c: CompanyContact }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-ink-100 bg-white p-3 transition-shadow hover:shadow-sm">
+    <div className="flex items-start gap-3 rounded-xl border border-ink-100 bg-white p-3">
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-700">
         {c.name.slice(0, 1).toUpperCase()}
       </span>
@@ -73,54 +76,53 @@ function ContactLine({ c }: { c: CompanyContact }) {
   );
 }
 
-function CompanyCard({ company, openByDefault }: { company: CompanyRow; openByDefault: boolean }) {
+/** Eén bedrijf als tabelrij; klik klapt de contactpersonen eronder uit. */
+function CompanyRows({ company, openByDefault }: { company: CompanyRow; openByDefault: boolean }) {
   const [open, setOpen] = useState(openByDefault);
   const count = company.contacts.length;
   const addHref = `/crm/contacten/nieuw?clientId=${company.id}&company=${encodeURIComponent(company.name)}`;
 
   return (
-    <Card className="overflow-hidden">
-      <button
-        type="button"
+    <>
+      <TR
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-ink-50"
+        className="cursor-pointer"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
-          <Building2 className="h-5 w-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-ink-900">{company.name}</span>
-          <span className="block truncate text-xs text-ink-500">
-            {company.city ? `${company.city} · ` : ""}
-            {count === 0 ? "Nog geen contactpersoon" : `${count} contactpersoon${count === 1 ? "" : "en"}`}
-          </span>
-        </span>
-        <ChevronDown
-          className={`h-5 w-5 shrink-0 text-ink-400 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {open && (
-        <div className="border-t border-ink-100 bg-ink-50/40 p-3">
-          {count > 0 && (
-            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-ink-400">
-              Contactpersonen ({count})
-            </p>
+        <TD>
+          <span className="font-medium text-ink-900">{company.name}</span>
+          {company.city && <p className="text-xs text-ink-400">{company.city}</p>}
+        </TD>
+        <TD>
+          {count === 0 ? (
+            <span className="text-sm text-ink-400">Nog geen contactpersoon</span>
+          ) : (
+            <Badge color="violet">{count} {count === 1 ? "contactpersoon" : "contactpersonen"}</Badge>
           )}
-          <div className="grid gap-2 sm:grid-cols-2">
-            {company.contacts.map((c) => (
-              <ContactLine key={c.id} c={c} />
-            ))}
-            <Link
-              href={addHref}
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-ink-300 bg-white px-3 py-3 text-sm font-medium text-ink-600 transition-colors hover:border-brand-400 hover:text-brand-700"
-            >
-              <Plus className="h-4 w-4" /> Contactpersoon toevoegen
-            </Link>
-          </div>
-        </div>
+        </TD>
+        <TD className="text-right">
+          <ChevronDown
+            className={`ml-auto h-5 w-5 text-ink-400 transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </TD>
+      </TR>
+      {open && (
+        <tr>
+          <td colSpan={3} className="bg-ink-50/40 px-4 py-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              {company.contacts.map((c) => (
+                <ContactCard key={c.id} c={c} />
+              ))}
+              <Link
+                href={addHref}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-ink-300 bg-white px-3 py-3 text-sm font-medium text-ink-600 transition-colors hover:border-brand-400 hover:text-brand-700"
+              >
+                <Plus className="h-4 w-4" /> Contactpersoon toevoegen
+              </Link>
+            </div>
+          </td>
+        </tr>
       )}
-    </Card>
+    </>
   );
 }
 
@@ -163,11 +165,24 @@ export function CompaniesBrowser({ companies }: { companies: CompanyRow[] }) {
           Geen bedrijf of contactpersoon gevonden voor “{q}”.
         </p>
       ) : (
-        <div className="grid gap-3">
-          {filtered.map((co) => (
-            <CompanyCard key={co.id} company={co} openByDefault={raw.length > 0} />
-          ))}
-        </div>
+        <Card>
+          <Table>
+            <THead>
+              <TR className="hover:bg-transparent">
+                <TH>Bedrijf</TH>
+                <TH>Contactpersonen</TH>
+                <TH className="w-12 text-right">
+                  <Users2 className="ml-auto h-4 w-4" />
+                </TH>
+              </TR>
+            </THead>
+            <TBody>
+              {filtered.map((co) => (
+                <CompanyRows key={co.id} company={co} openByDefault={raw.length > 0} />
+              ))}
+            </TBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
