@@ -97,7 +97,7 @@ export default async function KlantOverzichtPage({
         />
         <StatCard
           label="Contactpersonen"
-          value={client.contacts.length}
+          value={client.crmContacts.length}
           sub="HR, manager, planner…"
           icon={<Users className="h-5 w-5" />}
           accent="violet"
@@ -192,9 +192,9 @@ export default async function KlantOverzichtPage({
 
       <ContactsCard
         clientId={client.id}
-        contacts={client.contacts.map((c) => ({
+        contacts={client.crmContacts.map((c) => ({
           id: c.id,
-          name: c.name,
+          name: `${c.firstName} ${c.lastName ?? ""}`.trim(),
           role: c.role,
           email: c.email,
           phone: c.phone,

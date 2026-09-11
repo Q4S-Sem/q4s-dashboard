@@ -1767,6 +1767,8 @@ model CrmContact {
   email          String?
   phone          String?
   jobTitle       String?
+  /// Rol bij het bedrijf (CLIENT_CONTACT_ROLES-enum), gebruikt in de klanten-hub.
+  role           String?
   /// Denormalised company name for quick display/search.
   company        String?
   linkedinUrl    String?

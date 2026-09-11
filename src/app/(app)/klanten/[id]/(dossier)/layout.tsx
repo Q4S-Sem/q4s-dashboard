@@ -132,7 +132,7 @@ export default async function KlantDossierLayout({
             seg: "",
             label: "Overzicht",
             icon: <Building2 className="h-4 w-4" />,
-            count: client.contacts.length,
+            count: client.crmContacts.length,
           },
           {
             seg: "plaatsingen",

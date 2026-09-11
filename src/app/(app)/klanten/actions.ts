@@ -145,7 +145,14 @@ export async function deleteClient(formData: FormData) {
   redirect("/klanten");
 }
 
-// ---- Extra contactpersonen (zodat je altijd iemand kunt bereiken) ----
+// ---- Extra contactpersonen (gedeeld met de recruitment-Contacten: CrmContact) ----
+
+/** Splits een vrije naam in voor-/achternaam voor CrmContact. */
+function splitName(full: string): { firstName: string; lastName: string | null } {
+  const parts = full.trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return { firstName: full.trim(), lastName: null };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
 
 export async function addClientContact(formData: FormData) {
   const clientId = String(formData.get("clientId") ?? "");
@@ -153,10 +160,14 @@ export async function addClientContact(formData: FormData) {
   if (!clientId) return;
   if (!name) redirect(`/klanten/${clientId}?error=contact`);
 
-  await db.clientContact.create({
+  const client = await db.client.findUnique({ where: { id: clientId }, select: { companyName: true } });
+  const { firstName, lastName } = splitName(name);
+  await db.crmContact.create({
     data: {
       clientId,
-      name,
+      company: client?.companyName ?? null,
+      firstName,
+      lastName,
       role: String(formData.get("role") ?? "").trim() || null,
       email: String(formData.get("email") ?? "").trim() || null,
       phone: String(formData.get("phone") ?? "").trim() || null,
@@ -164,6 +175,7 @@ export async function addClientContact(formData: FormData) {
     },
   });
   revalidatePath(`/klanten/${clientId}`);
+  revalidatePath("/crm/contacten");
   redirect(`/klanten/${clientId}`);
 }
 
@@ -174,10 +186,12 @@ export async function updateClientContact(formData: FormData) {
   if (!id || !clientId) return;
   if (!name) redirect(`/klanten/${clientId}?error=contact`);
 
-  await db.clientContact.update({
+  const { firstName, lastName } = splitName(name);
+  await db.crmContact.update({
     where: { id },
     data: {
-      name,
+      firstName,
+      lastName,
       role: String(formData.get("role") ?? "").trim() || null,
       email: String(formData.get("email") ?? "").trim() || null,
       phone: String(formData.get("phone") ?? "").trim() || null,
@@ -185,14 +199,17 @@ export async function updateClientContact(formData: FormData) {
     },
   });
   revalidatePath(`/klanten/${clientId}`);
+  revalidatePath("/crm/contacten");
+  revalidatePath(`/crm/contacten/${id}`);
   redirect(`/klanten/${clientId}`);
 }
 
 export async function deleteClientContact(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const clientId = String(formData.get("clientId") ?? "");
-  if (id) await db.clientContact.delete({ where: { id } }).catch(() => {});
+  if (id) await db.crmContact.delete({ where: { id } }).catch(() => {});
   revalidatePath(`/klanten/${clientId}`);
+  revalidatePath("/crm/contacten");
   redirect(`/klanten/${clientId}`);
 }
 

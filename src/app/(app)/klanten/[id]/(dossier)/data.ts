@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 export const getClient = cache(async (id: string) =>
   db.client.findUnique({
     where: { id },
-    include: { contacts: { orderBy: { createdAt: "asc" } } },
+    include: { crmContacts: { orderBy: { createdAt: "asc" } } },
   }),
 );
 
