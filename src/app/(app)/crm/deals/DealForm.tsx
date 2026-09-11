@@ -71,6 +71,10 @@ export function DealForm({
 
   // Scanner-status (alleen bij een nieuwe vacature).
   const isNew = !deal;
+  // Een deal MÉT kandidaat is een pipeline-plaatsing; ZONDER kandidaat een
+  // vacature. Zo toont het bewerkformulier het juiste type (geen vacature-velden
+  // op een plaatsing).
+  const isVacature = isNew || !deal?.candidateId;
   const [reading, setReading] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanDone, setScanDone] = useState(false);
@@ -186,7 +190,7 @@ export function DealForm({
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                     <Building2 className="h-4 w-4" />
                   </span>
-                  De vacature
+                  {isVacature ? "De vacature" : "De plaatsing"}
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field label="Titel" htmlFor="title" required error={e.title}>
@@ -244,28 +248,48 @@ export function DealForm({
                       ))}
                     </Select>
                   </Field>
-                  <Field label="Locatie" htmlFor="location" error={e.location} hint="Standplaats / regio">
-                    <Input
-                      id="location"
-                      name="location"
-                      value={location}
-                      onChange={(ev) => setLocation(ev.target.value)}
-                      placeholder="Bijv. Rotterdam"
-                    />
-                  </Field>
-                  <Field label="Dienstverband" htmlFor="employmentType" error={e.employmentType}>
-                    <Select id="employmentType" name="employmentType" defaultValue={employmentType} onValueChange={setEmploymentType}>
-                      <option value="">— maakt niet uit —</option>
-                      {EMPLOYMENT_TYPES.map((t) => (
-                        <option key={t.value} value={t.value} data-color={t.color}>
-                          {t.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
+                  {isVacature ? (
+                    <>
+                      <Field label="Locatie" htmlFor="location" error={e.location} hint="Standplaats / regio">
+                        <Input
+                          id="location"
+                          name="location"
+                          value={location}
+                          onChange={(ev) => setLocation(ev.target.value)}
+                          placeholder="Bijv. Rotterdam"
+                        />
+                      </Field>
+                      <Field label="Dienstverband" htmlFor="employmentType" error={e.employmentType}>
+                        <Select id="employmentType" name="employmentType" defaultValue={employmentType} onValueChange={setEmploymentType}>
+                          <option value="">— maakt niet uit —</option>
+                          {EMPLOYMENT_TYPES.map((t) => (
+                            <option key={t.value} value={t.value} data-color={t.color}>
+                              {t.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                    </>
+                  ) : (
+                    <Field label="Fase" htmlFor="stageId" error={e.stageId}>
+                      <Select
+                        id="stageId"
+                        name="stageId"
+                        defaultValue={stageId}
+                        onValueChange={setStageId}
+                      >
+                        {stages.map((s) => (
+                          <option key={s.id} value={s.id} data-color={s.color}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                  )}
                 </div>
 
-                {!isNew && (
+                {/* Fase apart tonen bij het bewerken van een vacature (zonder kandidaat) */}
+                {isVacature && !isNew && (
                   <div className="grid gap-5 sm:grid-cols-2">
                     <Field label="Fase" htmlFor="stageId" error={e.stageId}>
                       <Select
@@ -293,14 +317,14 @@ export function DealForm({
                   </span>
                   Waarde &amp; planning
                 </h2>
-                <div className={`grid gap-5 ${isNew ? "sm:grid-cols-2" : "sm:grid-cols-4"}`}>
+                <div className={`grid gap-5 ${isVacature ? "sm:grid-cols-2" : "sm:grid-cols-4"}`}>
                   <Field label="Waarde (€)" htmlFor="value" hint="Verwacht tarief / marge" error={e.value}>
                     <Input id="value" name="value" type="number" min={0} step="100" value={value} onChange={(ev) => setValue(ev.target.value)} />
                   </Field>
                   <Field label="Posities" htmlFor="positions" hint="Aantal plekken" error={e.positions}>
                     <Input id="positions" name="positions" type="number" min={1} value={positions} onChange={(ev) => setPositions(ev.target.value)} />
                   </Field>
-                  {!isNew && (
+                  {!isVacature && (
                     <>
                       <Field label="Fit / warmte" htmlFor="fitScore" hint="Ideale klant?" error={e.fitScore}>
                         <Select id="fitScore" name="fitScore" defaultValue={fitScore} onValueChange={setFitScore}>
@@ -326,7 +350,7 @@ export function DealForm({
                 </div>
 
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field label="Verwachte startdatum" htmlFor="expectedCloseDate" hint="Wanneer moet de plek gevuld zijn" error={e.expectedCloseDate}>
+                  <Field label={isVacature ? "Verwachte startdatum" : "Verwachte sluitdatum"} htmlFor="expectedCloseDate" hint={isVacature ? "Wanneer moet de plek gevuld zijn" : undefined} error={e.expectedCloseDate}>
                     <Input id="expectedCloseDate" name="expectedCloseDate" type="date" defaultValue={toDateValue(deal?.expectedCloseDate)} />
                   </Field>
                   <Field label="Volgende opvolging" htmlFor="nextFollowUpAt" hint="Plan je eerstvolgende actie" error={e.nextFollowUpAt}>
@@ -357,8 +381,8 @@ export function DealForm({
                 </section>
               )}
 
-              {/* Sectie: koppelingen — alleen bij bewerken (schoon nieuw-formulier) */}
-              {!isNew && (
+              {/* Sectie: koppelingen — bij een plaatsing (kandidaat-deal) */}
+              {!isVacature && (
               <section className="space-y-4 border-t border-ink-100 pt-5">
                 <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
@@ -436,7 +460,7 @@ export function DealForm({
                   {disciplineLabel && <Badge color={disciplineColor}>{disciplineLabel}</Badge>}
                   {location.trim() && <Badge color="slate">{location}</Badge>}
                   {employmentType && <Badge color={colorFor(EMPLOYMENT_TYPES, employmentType)}>{labelFor(EMPLOYMENT_TYPES, employmentType)}</Badge>}
-                  {!isNew && stage && <Badge color={stage.color}>{stage.label}</Badge>}
+                  {!isVacature && stage && <Badge color={stage.color}>{stage.label}</Badge>}
                 </div>
 
                 <dl className="space-y-2.5 border-t border-ink-100 pt-3 text-sm">
@@ -452,7 +476,7 @@ export function DealForm({
                     </dt>
                     <dd className="font-semibold tabular-nums text-ink-900">{Number(positions) || 1}</dd>
                   </div>
-                  {!isNew && (
+                  {!isVacature && (
                     <div className="flex items-center justify-between">
                       <dt className="flex items-center gap-1.5 text-ink-500">
                         <Star className="h-3.5 w-3.5 text-amber-500" /> Fit / warmte

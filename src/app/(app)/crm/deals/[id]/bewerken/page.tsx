@@ -16,12 +16,15 @@ export default async function EditDealPage({ params }: { params: Promise<{ id: s
   const [deal, opts] = await Promise.all([db.deal.findUnique({ where: { id } }), loadDealFormOptions()]);
   if (!deal) notFound();
 
+  const isPlaatsing = Boolean(deal.candidateId);
+  const titel = isPlaatsing ? "Plaatsing bewerken" : "Vacature bewerken";
+
   return (
     <div className="space-y-6">
       <BackLink href={`/crm/deals/${deal.id}`}>
         Terug naar deal
       </BackLink>
-      <PageHeader title="Deal bewerken" description={deal.title} />
+      <PageHeader title={titel} description={deal.title} />
       <DealForm
         action={updateDeal}
         deal={deal}
