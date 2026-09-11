@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EditDealPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [deal, opts] = await Promise.all([db.deal.findUnique({ where: { id } }), loadDealFormOptions()]);
+  const [deal, opts] = await Promise.all([db.deal.findUnique({ where: { id } }), loadDealFormOptions(id)]);
   if (!deal) notFound();
 
   const isPlaatsing = Boolean(deal.candidateId);
@@ -37,6 +37,7 @@ export default async function EditDealPage({ params }: { params: Promise<{ id: s
         clients={opts.clients}
         companies={opts.companies}
         vacancies={opts.vacancies}
+        vacatureDeals={opts.vacatureDeals}
         contacts={opts.contacts}
       />
     </div>

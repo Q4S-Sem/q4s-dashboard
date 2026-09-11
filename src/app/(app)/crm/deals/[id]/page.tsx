@@ -75,6 +75,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
       owner: true,
       client: true,
       vacancy: true,
+      vacatureDeal: { select: { id: true, title: true, company: true } },
       primaryContact: true,
       crmNotes: {
         include: { author: { select: { name: true } } },
@@ -256,7 +257,11 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
             <Detail
               label="Vacature"
               value={
-                deal.vacancy ? (
+                deal.vacatureDeal ? (
+                  <Link href={`/crm/deals/${deal.vacatureDeal.id}`} className="text-brand-700 hover:underline">
+                    {deal.vacatureDeal.title}
+                  </Link>
+                ) : deal.vacancy ? (
                   <Link href={`/vacatures/${deal.vacancy.id}`} className="text-brand-700 hover:underline">
                     {deal.vacancy.title}
                   </Link>

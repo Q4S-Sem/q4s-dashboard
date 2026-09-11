@@ -36,6 +36,7 @@ export function DealForm({
   clients,
   companies,
   vacancies,
+  vacatureDeals,
   contacts,
   defaultCompany,
 }: {
@@ -50,6 +51,7 @@ export function DealForm({
   clients: IdName[];
   companies: string[];
   vacancies: IdName[];
+  vacatureDeals: IdName[];
   contacts: IdName[];
   defaultCompany?: string;
 }) {
@@ -471,14 +473,27 @@ export function DealForm({
                       ))}
                     </Select>
                   </Field>
-                  <Field label="Vacature" htmlFor="vacancyId" error={e.vacancyId}>
-                    <Select id="vacancyId" name="vacancyId" defaultValue={deal?.vacancyId ?? ""}>
+                  <Field label="Vacature" htmlFor="vacatureDealId" hint="Koppel deze plaatsing aan een openstaande vacature" error={e.vacatureDealId}>
+                    <Select id="vacatureDealId" name="vacatureDealId" defaultValue={deal?.vacatureDealId ?? ""}>
                       <option value="">— geen —</option>
-                      {vacancies.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.label}
-                        </option>
-                      ))}
+                      {vacatureDeals.length > 0 && (
+                        <optgroup label="Openstaande vacatures">
+                          {vacatureDeals.map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {v.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {vacancies.length > 0 && (
+                        <optgroup label="Gepubliceerde vacatures">
+                          {vacancies.map((v) => (
+                            <option key={v.id} value={`pub:${v.id}`}>
+                              {v.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </Select>
                   </Field>
                   <Field label="Contactpersoon" htmlFor="primaryContactId" error={e.primaryContactId}>

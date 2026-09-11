@@ -34,6 +34,7 @@ export default async function NewVacaturePage({
         clients={opts.clients}
         companies={opts.companies}
         vacancies={opts.vacancies}
+        vacatureDeals={opts.vacatureDeals}
         contacts={opts.contacts}
         defaultCompany={defaultCompany}
       />

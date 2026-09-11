@@ -67,6 +67,7 @@ const DealSchema = z.object({
   targetClientId: z.string().optional(),
   clientId: z.string().optional(),
   vacancyId: z.string().optional(),
+  vacatureDealId: z.string().optional(),
   primaryContactId: z.string().optional(),
   expectedCloseDate: z.coerce.date().optional(),
   nextFollowUpAt: z.coerce.date().optional(),
@@ -97,6 +98,17 @@ async function toData(data: DealData) {
     });
     if (match) clientId = match.id;
   }
+  // "Vacature"-keuze: waarde met prefix "pub:" is een gepubliceerde Vacancy;
+  // anders is het een gekoppelde vacature-deal (Deal). Losse velden zodat beide
+  // soorten koppelingen kloppen.
+  let vacancyId = data.vacancyId ?? null;
+  let vacatureDealId: string | null = null;
+  const vacKeuze = data.vacatureDealId ?? "";
+  if (vacKeuze.startsWith("pub:")) {
+    vacancyId = vacKeuze.slice(4) || null;
+  } else if (vacKeuze) {
+    vacatureDealId = vacKeuze;
+  }
   return {
     payload: {
       title: data.title,
@@ -123,7 +135,8 @@ async function toData(data: DealData) {
       source: data.source,
       targetClientId: data.targetClientId ?? null,
       clientId,
-      vacancyId: data.vacancyId ?? null,
+      vacancyId,
+      vacatureDealId,
       primaryContactId: data.primaryContactId ?? null,
       expectedCloseDate: data.expectedCloseDate ?? null,
       nextFollowUpAt: data.nextFollowUpAt ?? null,

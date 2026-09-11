@@ -1827,6 +1827,9 @@ model Deal {
   clientId         String?
   targetClientId   String?
   vacancyId        String?
+  /// Koppeling naar de vacature-deal (Deal zonder kandidaat) waarvoor deze
+  /// plaatsing is. Zo verschijnt de vacature in de "Vacature"-keuzelijst.
+  vacatureDealId   String?
   /// Als deze lead uit een binnengekomen CV/kandidaat komt (website-instroom).
   candidateId      String?
   primaryContactId String?
@@ -1860,6 +1863,8 @@ model Deal {
   client           Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   targetClient     TargetClient? @relation(fields: [targetClientId], references: [id], onDelete: SetNull)
   vacancy          Vacancy?      @relation(fields: [vacancyId], references: [id], onDelete: SetNull)
+  vacatureDeal     Deal?         @relation("DealVacature", fields: [vacatureDealId], references: [id], onDelete: SetNull)
+  plaatsingen      Deal[]        @relation("DealVacature")
   primaryContact   CrmContact?   @relation(fields: [primaryContactId], references: [id], onDelete: SetNull)
   owner            AppUser?      @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   crmNotes         CrmNote[]
