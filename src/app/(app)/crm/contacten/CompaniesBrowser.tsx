@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Building2, ChevronDown, Plus, Phone, Mail, User } from "lucide-react";
+import { Search, Building2, ChevronDown, Plus, Phone, Mail } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 /** Diacritics-insensitive fold zodat "jose" ook "José" vindt. */
@@ -27,38 +27,47 @@ export type CompanyRow = {
 
 function ContactLine({ c }: { c: CompanyContact }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-100 bg-white px-3 py-2">
-      <Link
-        href={`/crm/contacten/${c.id}`}
-        className="flex min-w-0 items-center gap-2.5 hover:text-brand-700"
-      >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-          <User className="h-4 w-4" />
-        </span>
-        <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-ink-900">{c.name}</span>
-          {c.jobTitle && <span className="block truncate text-xs text-ink-500">{c.jobTitle}</span>}
-        </span>
-      </Link>
-      <div className="flex shrink-0 items-center gap-1.5">
-        {c.phone ? (
-          <a
-            href={`tel:${c.phone.replace(/[^\d+]/g, "")}`}
-            title={`Bel ${c.name} (${c.phone})`}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors hover:bg-emerald-200"
-          >
-            <Phone className="h-4 w-4" />
-          </a>
-        ) : null}
-        {c.email ? (
-          <a
-            href={`mailto:${c.email}`}
-            title={`Mail ${c.name} (${c.email})`}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200"
-          >
-            <Mail className="h-4 w-4" />
-          </a>
-        ) : null}
+    <div className="flex items-start gap-3 rounded-xl border border-ink-100 bg-white p-3 transition-shadow hover:shadow-sm">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-700">
+        {c.name.slice(0, 1).toUpperCase()}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <Link href={`/crm/contacten/${c.id}`} className="text-sm font-semibold text-ink-900 hover:text-brand-700">
+            {c.name}
+          </Link>
+          {c.jobTitle && <span className="text-xs text-ink-500">· {c.jobTitle}</span>}
+        </div>
+        <div className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
+          {c.phone ? (
+            <a
+              href={`tel:${c.phone.replace(/[^\d+]/g, "")}`}
+              className="inline-flex items-center gap-1.5 text-sm text-ink-700 hover:text-emerald-700"
+              title={`Bel ${c.name}`}
+            >
+              <Phone className="h-3.5 w-3.5 text-emerald-600" />
+              <span className="tabular-nums">{c.phone}</span>
+            </a>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-sm text-ink-300">
+              <Phone className="h-3.5 w-3.5" /> —
+            </span>
+          )}
+          {c.email ? (
+            <a
+              href={`mailto:${c.email}`}
+              className="inline-flex items-center gap-1.5 text-sm text-ink-700 hover:text-blue-700"
+              title={`Mail ${c.name}`}
+            >
+              <Mail className="h-3.5 w-3.5 text-blue-600" />
+              <span className="truncate">{c.email}</span>
+            </a>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-sm text-ink-300">
+              <Mail className="h-3.5 w-3.5" /> —
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -92,16 +101,23 @@ function CompanyCard({ company, openByDefault }: { company: CompanyRow; openByDe
       </button>
 
       {open && (
-        <div className="space-y-2 border-t border-ink-100 bg-ink-50/40 p-3">
-          {company.contacts.map((c) => (
-            <ContactLine key={c.id} c={c} />
-          ))}
-          <Link
-            href={addHref}
-            className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:border-brand-400 hover:text-brand-700"
-          >
-            <Plus className="h-4 w-4" /> Contactpersoon toevoegen
-          </Link>
+        <div className="border-t border-ink-100 bg-ink-50/40 p-3">
+          {count > 0 && (
+            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-ink-400">
+              Contactpersonen ({count})
+            </p>
+          )}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {company.contacts.map((c) => (
+              <ContactLine key={c.id} c={c} />
+            ))}
+            <Link
+              href={addHref}
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-ink-300 bg-white px-3 py-3 text-sm font-medium text-ink-600 transition-colors hover:border-brand-400 hover:text-brand-700"
+            >
+              <Plus className="h-4 w-4" /> Contactpersoon toevoegen
+            </Link>
+          </div>
         </div>
       )}
     </Card>
