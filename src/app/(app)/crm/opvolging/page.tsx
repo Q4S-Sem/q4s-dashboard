@@ -5,17 +5,27 @@ import {
   AlertTriangle,
   ListTodo,
   CircleCheck,
+  Briefcase,
+  Building2,
+  MapPin,
+  Users2,
+  ArrowRight,
+  Kanban,
+  GitBranchPlus,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { StatusBadge } from "@/components/ui/badge";
+import { StatusBadge, Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { formatDate, cn } from "@/lib/utils";
-import { TASK_PRIORITIES } from "@/lib/domain";
+import { TASK_PRIORITIES, DISCIPLINES, type BadgeColor } from "@/lib/domain";
 import {
   currentRecruiterId,
   getFollowUpItems,
+  getBoardData,
   startOfToday,
   endOfToday,
   type FollowUpItem,
@@ -64,13 +74,25 @@ export default async function OpvolgingPage() {
   // Opvolging is altijd algemeen/team-breed — geen Mijn opvolging/Team-schakelaar.
   const scope = "all" as const;
 
-  const [items, tasks] = await Promise.all([
+  const [items, tasks, vacatures, board] = await Promise.all([
     getFollowUpItems({ recruiterId, scope }),
     db.task.findMany({
       where: { done: false },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
       take: 50,
     }),
+    // Openstaande vacatures (deals zonder kandidaat) = moeten met een persoon gevuld.
+    db.deal.findMany({
+      where: { status: "OPEN", candidateId: null },
+      include: {
+        stage: true,
+        client: { select: { id: true, companyName: true, city: true } },
+      },
+      orderBy: [{ expectedCloseDate: "asc" }, { createdAt: "desc" }],
+      take: 30,
+    }),
+    // Pipeline-stand: deals mét kandidaat, per fase.
+    getBoardData({ recruiterId, scope, onlyWithCandidate: true }),
   ]);
 
   const startToday = startOfToday().getTime();
@@ -79,23 +101,148 @@ export default async function OpvolgingPage() {
   const today = items.filter((i) => i.due.getTime() >= startToday && i.due.getTime() <= endToday);
   const upcoming = items.filter((i) => i.due.getTime() > endToday);
 
-  const nothing = items.length === 0 && tasks.length === 0;
+  // Pipeline-stand per fase (alleen open deals mét kandidaat).
+  const openCards = board.cards.filter((c) => c.status === "OPEN");
+  const stageBuckets = board.stages.map((s) => ({
+    stage: s,
+    cards: openCards.filter((c) => c.columnId === s.id),
+  }));
+
+  const nothing =
+    items.length === 0 && tasks.length === 0 && vacatures.length === 0 && openCards.length === 0;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Opvolging"
-        description="Alles wat een vervolgactie nodig heeft — geplande opvolgingen en openstaande taken. Niets valt tussen wal en schip."
+        description="Je focus-dashboard: openstaande vacatures die je met de juiste persoon moet vullen, de stand van je pipeline, en alles wat een vervolgactie nodig heeft. Zo zie je precies waar je contact mee moet houden — klanten én werknemers."
       />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Vacatures te vullen" value={vacatures.length} icon={<Briefcase className="h-5 w-5" />} accent="brand" />
+        <StatCard label="Kandidaten in pipeline" value={openCards.length} icon={<Kanban className="h-5 w-5" />} accent="violet" />
+        <StatCard label="Over tijd" value={overdue.length} icon={<AlertTriangle className="h-5 w-5" />} accent={overdue.length > 0 ? "red" : "green"} />
+        <StatCard label="Vandaag op te volgen" value={today.length} icon={<CalendarClock className="h-5 w-5" />} accent="amber" />
+      </div>
 
       {nothing ? (
         <EmptyState
           icon={<CircleCheck className="h-6 w-6" />}
           title="Alles opgevolgd"
-          description="Geen openstaande opvolgingen of taken. Plan een opvolging op een deal of contact om hem hier te zien."
+          description="Geen openstaande vacatures, pipeline-deals of opvolgingen. Zet een vacature in de Vacatures-pagina of plan een opvolging om hier iets te zien."
         />
       ) : (
         <>
+          {/* Vacatures die met de juiste persoon gevuld moeten worden */}
+          {vacatures.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-brand-600" /> Vacatures te vullen ({vacatures.length})
+                </CardTitle>
+                <Link href="/crm/vacatures" className="text-sm text-brand-700 hover:underline">
+                  Alle vacatures
+                </Link>
+              </CardHeader>
+              <ul className="divide-y divide-ink-100">
+                {vacatures.map((v) => {
+                  const overdueDate = v.expectedCloseDate && v.expectedCloseDate.getTime() < Date.now();
+                  return (
+                    <li key={v.id} className="flex items-center gap-3 px-5 py-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                        <Briefcase className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/crm/deals/${v.id}`} className="block truncate font-medium text-ink-900 hover:text-brand-700">
+                          {v.title}
+                        </Link>
+                        <p className="flex items-center gap-2 truncate text-xs text-ink-500">
+                          <span className="inline-flex items-center gap-1">
+                            <Building2 className="h-3.5 w-3.5 text-ink-400" />
+                            {v.client?.companyName ?? v.company}
+                          </span>
+                          {v.client?.city && (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="h-3 w-3 text-ink-400" /> {v.client.city}
+                            </span>
+                          )}
+                          {v.positions > 1 && (
+                            <span className="inline-flex items-center gap-1">
+                              <Users2 className="h-3 w-3 text-ink-400" /> {v.positions} posities
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      {v.discipline && <StatusBadge options={DISCIPLINES} value={v.discipline} />}
+                      {v.expectedCloseDate && (
+                        <span className={cn("hidden items-center gap-1 text-xs font-medium tabular-nums sm:inline-flex", overdueDate ? "text-red-600" : "text-ink-400")} title="Verwachte startdatum">
+                          <CalendarClock className="h-3.5 w-3.5" /> {formatDate(v.expectedCloseDate)}
+                        </span>
+                      )}
+                      <Link
+                        href="/kandidaten"
+                        title="Koppel een kandidaat uit de talentpool"
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}
+                      >
+                        <GitBranchPlus className="h-4 w-4" /> Kandidaat
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          )}
+
+          {/* Pipeline-stand: waar staan de gekoppelde kandidaten */}
+          {openCards.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Kanban className="h-4 w-4 text-violet-600" /> Pipeline-stand ({openCards.length})
+                </CardTitle>
+                <Link href="/crm" className="text-sm text-brand-700 hover:underline">
+                  Naar de pipeline
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {stageBuckets.map(({ stage, cards }) => (
+                    <div key={stage.id} className="rounded-xl border border-ink-100 bg-ink-50/40 p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-ink-800">{stage.name}</span>
+                        <Badge color={(stage.color as BadgeColor) ?? "slate"}>{cards.length}</Badge>
+                      </div>
+                      {cards.length === 0 ? (
+                        <p className="py-2 text-center text-xs text-ink-400">Leeg</p>
+                      ) : (
+                        <ul className="space-y-1.5">
+                          {cards.slice(0, 5).map((c) => (
+                            <li key={c.id}>
+                              <Link
+                                href={`/crm/deals/${c.id}`}
+                                className="block rounded-lg border border-ink-100 bg-white px-2.5 py-1.5 transition-colors hover:border-brand-300 hover:bg-brand-50"
+                              >
+                                <span className="block truncate text-sm font-medium text-ink-900">
+                                  {c.candidateName ?? c.title}
+                                </span>
+                                <span className="block truncate text-xs text-ink-500">{c.company}</span>
+                              </Link>
+                            </li>
+                          ))}
+                          {cards.length > 5 && (
+                            <li className="pt-0.5 text-center text-xs text-ink-400">
+                              +{cards.length - 5} meer
+                            </li>
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {overdue.length > 0 && (
             <Card>
               <CardHeader>
