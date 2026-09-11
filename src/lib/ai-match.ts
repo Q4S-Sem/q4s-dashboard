@@ -225,3 +225,59 @@ export async function matchVacancy(
 
   return { matches, usedAI };
 }
+
+/**
+ * Rangschik de talentpool tegen één CRM-vacature (Deal). Zelfde AI-logica als
+ * matchVacancy maar leest de velden van de Deal. Persisteert NIET (deals hebben
+ * geen VacancyMatch-tabel) — geeft de gerangschikte lijst live terug zodat de
+ * recruiter meteen de beste kandidaat kan koppelen.
+ */
+export async function matchDealCandidates(
+  dealId: string,
+): Promise<{ matches: CandidateMatch[]; usedAI: boolean }> {
+  const deal = await db.deal.findUnique({
+    where: { id: dealId },
+    select: {
+      id: true, title: true, discipline: true, location: true,
+      requirements: true, responsibilities: true, niceToHave: true,
+      certificates: true, experienceText: true,
+    },
+  });
+  if (!deal) return { matches: [], usedAI: false };
+
+  // Bouw een VacancyRow uit de deal-velden (hergebruik van dezelfde ranking).
+  const v: VacancyRow = {
+    id: deal.id,
+    title: deal.title,
+    discipline: deal.discipline,
+    location: deal.location,
+    requirements: [deal.requirements, deal.certificates, deal.experienceText]
+      .filter(Boolean)
+      .join("\n") || null,
+    summary: [deal.responsibilities, deal.niceToHave].filter(Boolean).join("\n") || null,
+    rawText: [deal.title, deal.responsibilities, deal.requirements]
+      .filter(Boolean)
+      .join("\n"),
+  };
+
+  const candidates = await db.candidate.findMany({
+    where: { rating: { not: "NIET_MEER" } },
+    select: {
+      id: true, firstName: true, lastName: true, discipline: true,
+      headline: true, location: true, rating: true, experienceSummary: true,
+    },
+    take: 200,
+  });
+  if (candidates.length === 0) return { matches: [], usedAI: false };
+
+  let matches: CandidateMatch[];
+  let usedAI = false;
+  try {
+    matches = await aiRank(v, candidates);
+    usedAI = true;
+  } catch {
+    matches = candidates.map((c) => ruleScore(v, c));
+  }
+  matches.sort((a, b) => b.score - a.score);
+  return { matches, usedAI };
+}

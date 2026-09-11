@@ -11,7 +11,7 @@ import {
   Users2,
   ArrowRight,
   Kanban,
-  GitBranchPlus,
+  Sparkles,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -183,11 +183,11 @@ export default async function OpvolgingPage() {
                         )}
                       </div>
                       <Link
-                        href="/kandidaten"
-                        title="Koppel een kandidaat uit de talentpool"
-                        className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}
+                        href={`/crm/vacatures/${v.id}/match`}
+                        title="Laat AI de best passende kandidaten uit de talentpool zoeken"
+                        className={cn(buttonVariants({ variant: "primary", size: "sm" }), "shrink-0")}
                       >
-                        <GitBranchPlus className="h-4 w-4" /> Kandidaat
+                        <Sparkles className="h-4 w-4" /> Zoek match
                       </Link>
                     </li>
                   );

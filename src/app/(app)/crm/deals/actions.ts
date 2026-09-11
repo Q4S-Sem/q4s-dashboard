@@ -514,3 +514,50 @@ export async function quickAddToPipeline(formData: FormData) {
   revalidatePath(back);
   redirect(back);
 }
+
+const AssignSchema = z.object({
+  dealId: z.string().min(1),
+  candidateId: z.string().min(1),
+  reason: z.string().optional(),
+  returnTo: z.string().optional(),
+});
+
+/**
+ * Koppel een kandidaat aan een BESTAANDE vacature-deal. De vacature (deal zonder
+ * kandidaat) stroomt hierdoor door naar het pipeline-bord — geen nieuwe deal.
+ */
+export async function assignCandidateToDeal(formData: FormData) {
+  const parsed = parseForm(AssignSchema, formData);
+  if (!parsed.success) return;
+  const { dealId, candidateId, reason, returnTo } = parsed.data;
+
+  const [deal, candidate] = await Promise.all([
+    db.deal.findUnique({ where: { id: dealId }, select: { id: true, candidateId: true, discipline: true } }),
+    db.candidate.findUnique({ where: { id: candidateId }, select: { firstName: true, lastName: true, discipline: true } }),
+  ]);
+  if (!deal || !candidate) return;
+
+  const recruiterId = await currentRecruiterId();
+  const naam = `${candidate.firstName} ${candidate.lastName}`.trim();
+
+  await db.deal.update({
+    where: { id: dealId },
+    data: {
+      candidateId,
+      // Als de vacature nog geen discipline had, neem die van de kandidaat over.
+      ...(deal.discipline ? {} : { discipline: candidate.discipline ?? null }),
+    },
+  });
+
+  await logNote({
+    type: "SYSTEM",
+    dealId,
+    authorId: recruiterId,
+    body: `Kandidaat ${naam} via AI-match aan deze vacature gekoppeld — staat nu in de pipeline.${reason ? ` (${reason})` : ""}`,
+  });
+
+  revalidatePath("/crm");
+  revalidatePath("/crm/vacatures");
+  const back = returnTo && returnTo.startsWith("/") ? returnTo : `/crm/deals/${dealId}`;
+  redirect(back);
+}

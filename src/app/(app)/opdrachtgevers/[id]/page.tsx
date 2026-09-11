@@ -161,8 +161,8 @@ export default async function BedrijfWerkruimtePage({
                   Openen <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
                 {!d.candidateId && (
-                  <Link href="/kandidaten" className={buttonVariants({ variant: "primary", size: "sm" })}>
-                    <GitBranchPlus className="h-4 w-4" /> Kandidaat
+                  <Link href={`/crm/vacatures/${d.id}/match`} className={buttonVariants({ variant: "primary", size: "sm" })}>
+                    <Sparkles className="h-4 w-4" /> Zoek match
                   </Link>
                 )}
               </div>
