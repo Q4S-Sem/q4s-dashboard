@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
-import { Pencil, Star, CalendarClock, CheckCircle2, MessageSquare, ArrowRight, Mail, Phone } from "lucide-react";
+import { Pencil, Star, CalendarClock, CheckCircle2, MessageSquare, ArrowRight, Mail, Phone, History } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -106,6 +106,12 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
     createdAt: n.createdAt,
     authorName: n.author?.name ?? null,
   }));
+
+  // Echte notities (contactmomenten) scheiden van de automatische log
+  // (fasewissels + systeemmeldingen).
+  const LOG_TYPES = ["STAGE_CHANGE", "SYSTEM"];
+  const manualNotes = notes.filter((n) => !LOG_TYPES.includes(n.type));
+  const logNotes = notes.filter((n) => LOG_TYPES.includes(n.type));
 
   const followUpOverdue =
     deal.nextFollowUpAt && new Date(deal.nextFollowUpAt).getTime() <= Date.now();
@@ -305,13 +311,13 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-ink-400" /> Notitieblok
-            <span className="text-xs font-normal text-ink-400">({notes.length})</span>
+            <span className="text-xs font-normal text-ink-400">({manualNotes.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="rounded-lg border border-ink-200 bg-ink-50/60 p-4">
             <CrmNoteComposer
-              key={notes.length}
+              key={manualNotes.length}
               action={addDealNote}
               parentIdName="dealId"
               parentId={deal.id}
@@ -319,7 +325,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
             />
           </div>
           <CrmNotesTimeline
-            notes={notes}
+            notes={manualNotes}
             parentIdName="dealId"
             parentId={deal.id}
             togglePinAction={togglePinNote}
@@ -327,6 +333,29 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
           />
         </CardContent>
       </Card>
+
+      {logNotes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-4 w-4 text-ink-400" /> Activiteitenlog
+              <span className="text-xs font-normal text-ink-400">({logNotes.length})</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Max ~3 zichtbaar; de rest scrollt (elke rij ~64px). */}
+            <div className="max-h-[15rem] overflow-y-auto pr-1">
+              <CrmNotesTimeline
+                notes={logNotes}
+                parentIdName="dealId"
+                parentId={deal.id}
+                togglePinAction={togglePinNote}
+                deleteAction={deleteNote}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
