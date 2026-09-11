@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { Dropzone } from "@/components/ui/dropzone";
+import { TextCombobox } from "@/components/ui/text-combobox";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { DISCIPLINES, DEAL_SOURCES, EMPLOYMENT_TYPES, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
 import { Building2, Euro, Users, Star, Link2, StickyNote, Sparkles, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
@@ -209,20 +210,15 @@ export function DealForm({
                         : "Kies uit je klanten of typ een nieuwe naam"
                     }
                   >
-                    <Input
+                    <TextCombobox
                       id="company"
                       name="company"
-                      value={company}
-                      onChange={(ev) => setCompany(ev.target.value)}
-                      placeholder="Bijv. TenneT"
-                      list="deal-companies"
+                      options={companies}
+                      defaultValue={company}
                       required
+                      placeholder="Bijv. TenneT"
+                      onChange={setCompany}
                     />
-                    <datalist id="deal-companies">
-                      {companies.map((c) => (
-                        <option key={c} value={c} />
-                      ))}
-                    </datalist>
                   </Field>
                 </div>
 
