@@ -181,9 +181,11 @@ export function ContactsTable({
             {filtered.map((c) => (
               <TR key={c.id}>
                 <TD>
-                  <RowLink href={isWerknemer ? `/kandidaten/${c.id}` : `/crm/contacten/${c.id}`}>
-                    {c.name}
-                  </RowLink>
+                  {isWerknemer ? (
+                    <span className="font-medium text-ink-900">{c.name}</span>
+                  ) : (
+                    <RowLink href={`/crm/contacten/${c.id}`}>{c.name}</RowLink>
+                  )}
                 </TD>
                 <TD>{c.jobTitle ?? "—"}</TD>
                 <TD>{c.company ?? "—"}</TD>
