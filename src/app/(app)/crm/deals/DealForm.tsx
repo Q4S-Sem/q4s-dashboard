@@ -92,8 +92,8 @@ export function DealForm({
       if (v.title) setTitle(v.title);
       if (v.company) setCompany(v.company);
       if (v.discipline) {
-        // De AI geeft een enum-waarde terug; toon het bijbehorende label in het vrije veld.
-        setDiscipline(labelFor(DISCIPLINES, v.discipline) || v.discipline);
+        // De AI geeft een enum-waarde terug; die matcht direct de dropdown-optie.
+        setDiscipline(v.discipline);
       }
       if (v.positions && v.positions > 0) setPositions(String(v.positions));
       if (v.value && v.value > 0) setValue(String(v.value));
@@ -231,21 +231,22 @@ export function DealForm({
                     label="Discipline"
                     htmlFor="discipline"
                     error={e.discipline}
-                    hint="Kies er één of typ zelf"
+                    hint="Kies de discipline"
                   >
-                    <Input
+                    <Select
                       id="discipline"
                       name="discipline"
-                      value={discipline}
-                      onChange={(ev) => setDiscipline(ev.target.value)}
-                      placeholder="Bijv. NDT, Piping, Elektro…"
-                      list="deal-disciplines"
-                    />
-                    <datalist id="deal-disciplines">
+                      key={discipline}
+                      defaultValue={discipline}
+                      onValueChange={setDiscipline}
+                    >
+                      <option value="">— kies discipline —</option>
                       {DISCIPLINES.map((d) => (
-                        <option key={d.value} value={d.label} />
+                        <option key={d.value} value={d.value} data-color={d.color}>
+                          {d.label}
+                        </option>
                       ))}
-                    </datalist>
+                    </Select>
                   </Field>
                   <Field label="Locatie" htmlFor="location" error={e.location} hint="Standplaats / regio">
                     <Input
@@ -370,7 +371,8 @@ export function DealForm({
                 </section>
               )}
 
-              {/* Sectie: koppelingen */}
+              {/* Sectie: koppelingen — alleen bij bewerken (schoon nieuw-formulier) */}
+              {!isNew && (
               <section className="space-y-4 border-t border-ink-100 pt-5">
                 <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
@@ -411,6 +413,7 @@ export function DealForm({
                   </Field>
                 </div>
               </section>
+              )}
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
               <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>
