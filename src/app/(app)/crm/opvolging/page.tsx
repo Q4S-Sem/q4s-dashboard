@@ -173,12 +173,16 @@ export default async function OpvolgingPage() {
                           )}
                         </p>
                       </div>
-                      {v.discipline && <StatusBadge options={DISCIPLINES} value={v.discipline} />}
-                      {v.expectedCloseDate && (
-                        <span className={cn("hidden items-center gap-1 text-xs font-medium tabular-nums sm:inline-flex", overdueDate ? "text-red-600" : "text-ink-400")} title="Verwachte startdatum">
-                          <CalendarClock className="h-3.5 w-3.5" /> {formatDate(v.expectedCloseDate)}
-                        </span>
-                      )}
+                      <div className="hidden w-28 shrink-0 justify-end sm:flex">
+                        {v.discipline && <StatusBadge options={DISCIPLINES} value={v.discipline} />}
+                      </div>
+                      <div className="hidden w-24 shrink-0 justify-end sm:flex">
+                        {v.expectedCloseDate && (
+                          <span className={cn("inline-flex items-center gap-1 text-xs font-medium tabular-nums", overdueDate ? "text-red-600" : "text-ink-400")} title="Verwachte startdatum">
+                            <CalendarClock className="h-3.5 w-3.5" /> {formatDate(v.expectedCloseDate)}
+                          </span>
+                        )}
+                      </div>
                       <Link
                         href="/kandidaten"
                         title="Koppel een kandidaat uit de talentpool"
@@ -205,37 +209,39 @@ export default async function OpvolgingPage() {
                 </Link>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="flex gap-3 overflow-x-auto pb-1">
                   {stageBuckets.map(({ stage, cards }) => (
-                    <div key={stage.id} className="rounded-xl border border-ink-100 bg-ink-50/40 p-3">
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-ink-800">{stage.name}</span>
+                    <div key={stage.id} className="flex w-56 shrink-0 flex-col rounded-xl border border-ink-100 bg-ink-50/40">
+                      <div className="flex items-center justify-between border-b border-ink-100 px-3 py-2">
+                        <span className="truncate text-sm font-semibold text-ink-800" title={stage.name}>{stage.name}</span>
                         <Badge color={(stage.color as BadgeColor) ?? "slate"}>{cards.length}</Badge>
                       </div>
-                      {cards.length === 0 ? (
-                        <p className="py-2 text-center text-xs text-ink-400">Leeg</p>
-                      ) : (
-                        <ul className="space-y-1.5">
-                          {cards.slice(0, 5).map((c) => (
-                            <li key={c.id}>
-                              <Link
-                                href={`/crm/deals/${c.id}`}
-                                className="block rounded-lg border border-ink-100 bg-white px-2.5 py-1.5 transition-colors hover:border-brand-300 hover:bg-brand-50"
-                              >
-                                <span className="block truncate text-sm font-medium text-ink-900">
-                                  {c.candidateName ?? c.title}
-                                </span>
-                                <span className="block truncate text-xs text-ink-500">{c.company}</span>
-                              </Link>
-                            </li>
-                          ))}
-                          {cards.length > 5 && (
-                            <li className="pt-0.5 text-center text-xs text-ink-400">
-                              +{cards.length - 5} meer
-                            </li>
-                          )}
-                        </ul>
-                      )}
+                      <div className="flex-1 p-2">
+                        {cards.length === 0 ? (
+                          <p className="py-6 text-center text-xs text-ink-300">Leeg</p>
+                        ) : (
+                          <ul className="space-y-1.5">
+                            {cards.slice(0, 6).map((c) => (
+                              <li key={c.id}>
+                                <Link
+                                  href={`/crm/deals/${c.id}`}
+                                  className="block rounded-lg border border-ink-100 bg-white px-2.5 py-1.5 transition-colors hover:border-brand-300 hover:bg-brand-50"
+                                >
+                                  <span className="block truncate text-sm font-medium text-ink-900">
+                                    {c.candidateName ?? c.title}
+                                  </span>
+                                  <span className="block truncate text-xs text-ink-500">{c.company}</span>
+                                </Link>
+                              </li>
+                            ))}
+                            {cards.length > 6 && (
+                              <li className="pt-0.5 text-center text-xs text-ink-400">
+                                +{cards.length - 6} meer
+                              </li>
+                            )}
+                          </ul>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
