@@ -1798,6 +1798,10 @@ model Deal {
   company          String
   /// One of the Q4S disciplines (DISCIPLINES) or free text.
   discipline       String?
+  /// Standplaats / regio van de vacature.
+  location         String?
+  /// Dienstverband: ZZP | LOONDIENST | UITZEND (EMPLOYMENT_TYPES) of leeg.
+  employmentType   String?
 
   clientId         String?
   targetClientId   String?

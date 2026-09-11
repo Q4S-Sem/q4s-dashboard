@@ -47,8 +47,10 @@ const DealSchema = z.object({
   title: z.string().min(1, "Titel is verplicht"),
   company: z.string().min(1, "Bedrijf is verplicht"),
   discipline: z.string().optional(),
+  location: z.string().optional(),
+  employmentType: z.string().optional(),
   ownerId: z.string().optional(),
-  stageId: z.string().min(1, "Fase is verplicht"),
+  stageId: z.string().optional(),
   value: z.coerce.number().min(0).default(0),
   positions: z.coerce.number().int().min(1).max(999).default(1),
   fitScore: z.coerce.number().int().min(0).max(5).default(0),
@@ -66,15 +68,24 @@ type DealData = z.infer<typeof DealSchema>;
 
 /** Map form data + the chosen stage's semantics into the DB payload. */
 async function toData(data: DealData) {
-  const stage = await db.crmStage.findUnique({ where: { id: data.stageId } });
+  // Fase is optioneel bij een NIEUWE vacature (die gaat nog niet de pipeline in);
+  // dan pakken we automatisch de eerste open fase. Bij bewerken komt de fase mee.
+  const stage = data.stageId
+    ? await db.crmStage.findUnique({ where: { id: data.stageId } })
+    : await db.crmStage.findFirst({
+        where: { isWon: false, isLost: false, active: true },
+        orderBy: { order: "asc" },
+      });
   const status = stage?.isWon ? "WON" : stage?.isLost ? "LOST" : "OPEN";
   return {
     payload: {
       title: data.title,
       company: data.company,
       discipline: data.discipline ?? null,
+      location: data.location ?? null,
+      employmentType: data.employmentType ?? null,
       ownerId: data.ownerId ?? null,
-      stageId: data.stageId,
+      stageId: stage?.id ?? "",
       status,
       probability: stage?.probability ?? 0,
       value: data.value,

@@ -10,7 +10,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { Dropzone } from "@/components/ui/dropzone";
 import { emptyFormState, type FormState } from "@/lib/form";
-import { DISCIPLINES, DEAL_SOURCES, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
+import { DISCIPLINES, DEAL_SOURCES, EMPLOYMENT_TYPES, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
 import { Building2, Euro, Users, Star, Link2, StickyNote, Sparkles, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { readVacatureFields } from "./actions";
 
@@ -59,6 +59,8 @@ export function DealForm({
   const [title, setTitle] = useState(deal?.title ?? "");
   const [company, setCompany] = useState(deal?.company ?? defaultCompany ?? "");
   const [discipline, setDiscipline] = useState(deal?.discipline ?? "");
+  const [location, setLocation] = useState(deal?.location ?? "");
+  const [employmentType, setEmploymentType] = useState(deal?.employmentType ?? "");
   const [stageId, setStageId] = useState(deal?.stageId ?? stages[0]?.id ?? "");
   const [value, setValue] = useState(String(deal?.value ?? 0));
   const [positions, setPositions] = useState(String(deal?.positions ?? 1));
@@ -95,6 +97,7 @@ export function DealForm({
       }
       if (v.positions && v.positions > 0) setPositions(String(v.positions));
       if (v.value && v.value > 0) setValue(String(v.value));
+      if (v.location) setLocation(v.location);
       // Functie-eisen + samenvatting samenvoegen in de notitie zodat niets verloren gaat.
       const blok = [v.requirements, v.notes].map((s) => (s ?? "").trim()).filter(Boolean).join("\n\n");
       if (blok) setNotes((prev) => (prev.trim() ? prev : blok));
@@ -228,7 +231,7 @@ export function DealForm({
                     label="Discipline"
                     htmlFor="discipline"
                     error={e.discipline}
-                    hint="Kies er één of typ zelf — het kan van alles zijn"
+                    hint="Kies er één of typ zelf"
                   >
                     <Input
                       id="discipline"
@@ -244,20 +247,44 @@ export function DealForm({
                       ))}
                     </datalist>
                   </Field>
-                  <Field label="Fase" htmlFor="stageId" required error={e.stageId}>
-                    <Select
-                      id="stageId"
-                      name="stageId"
-                      defaultValue={stageId}
-                      onValueChange={setStageId}
-                    >
-                      {stages.map((s) => (
-                        <option key={s.id} value={s.id} data-color={s.color}>
-                          {s.label}
+                  <Field label="Locatie" htmlFor="location" error={e.location} hint="Standplaats / regio">
+                    <Input
+                      id="location"
+                      name="location"
+                      value={location}
+                      onChange={(ev) => setLocation(ev.target.value)}
+                      placeholder="Bijv. Rotterdam"
+                    />
+                  </Field>
+                  <Field label="Dienstverband" htmlFor="employmentType" error={e.employmentType}>
+                    <Select id="employmentType" name="employmentType" defaultValue={employmentType} onValueChange={setEmploymentType}>
+                      <option value="">— maakt niet uit —</option>
+                      {EMPLOYMENT_TYPES.map((t) => (
+                        <option key={t.value} value={t.value} data-color={t.color}>
+                          {t.label}
                         </option>
                       ))}
                     </Select>
                   </Field>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  {!isNew && (
+                    <Field label="Fase" htmlFor="stageId" error={e.stageId}>
+                      <Select
+                        id="stageId"
+                        name="stageId"
+                        defaultValue={stageId}
+                        onValueChange={setStageId}
+                      >
+                        {stages.map((s) => (
+                          <option key={s.id} value={s.id} data-color={s.color}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                  )}
                   <Field label="Eigenaar (recruiter)" htmlFor="ownerId" error={e.ownerId}>
                     <Select id="ownerId" name="ownerId" defaultValue={deal?.ownerId ?? currentRecruiterId ?? ""}>
                       <option value="">— geen —</option>
@@ -277,38 +304,42 @@ export function DealForm({
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                     <Euro className="h-4 w-4" />
                   </span>
-                  Waarde &amp; kwalificatie
+                  Waarde &amp; planning
                 </h2>
-                <div className="grid gap-5 sm:grid-cols-4">
-                  <Field label="Waarde (€)" htmlFor="value" hint="Verwachte marge/fee" error={e.value}>
+                <div className={`grid gap-5 ${isNew ? "sm:grid-cols-2" : "sm:grid-cols-4"}`}>
+                  <Field label="Waarde (€)" htmlFor="value" hint="Verwacht tarief / marge" error={e.value}>
                     <Input id="value" name="value" type="number" min={0} step="100" value={value} onChange={(ev) => setValue(ev.target.value)} />
                   </Field>
-                  <Field label="Posities" htmlFor="positions" error={e.positions}>
+                  <Field label="Posities" htmlFor="positions" hint="Aantal plekken" error={e.positions}>
                     <Input id="positions" name="positions" type="number" min={1} value={positions} onChange={(ev) => setPositions(ev.target.value)} />
                   </Field>
-                  <Field label="Fit / warmte" htmlFor="fitScore" hint="Ideale klant?" error={e.fitScore}>
-                    <Select id="fitScore" name="fitScore" defaultValue={fitScore} onValueChange={setFitScore}>
-                      <option value="0">Onbeoordeeld</option>
-                      <option value="1">★ (1)</option>
-                      <option value="2">★★ (2)</option>
-                      <option value="3">★★★ (3)</option>
-                      <option value="4">★★★★ (4)</option>
-                      <option value="5">★★★★★ (5)</option>
-                    </Select>
-                  </Field>
-                  <Field label="Bron" htmlFor="source" error={e.source}>
-                    <Select id="source" name="source" defaultValue={source} onValueChange={setSource}>
-                      {DEAL_SOURCES.map((s) => (
-                        <option key={s.value} value={s.value} data-color={s.color}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
+                  {!isNew && (
+                    <>
+                      <Field label="Fit / warmte" htmlFor="fitScore" hint="Ideale klant?" error={e.fitScore}>
+                        <Select id="fitScore" name="fitScore" defaultValue={fitScore} onValueChange={setFitScore}>
+                          <option value="0">Onbeoordeeld</option>
+                          <option value="1">★ (1)</option>
+                          <option value="2">★★ (2)</option>
+                          <option value="3">★★★ (3)</option>
+                          <option value="4">★★★★ (4)</option>
+                          <option value="5">★★★★★ (5)</option>
+                        </Select>
+                      </Field>
+                      <Field label="Bron" htmlFor="source" error={e.source}>
+                        <Select id="source" name="source" defaultValue={source} onValueChange={setSource}>
+                          {DEAL_SOURCES.map((s) => (
+                            <option key={s.value} value={s.value} data-color={s.color}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                    </>
+                  )}
                 </div>
 
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field label="Verwachte sluitdatum" htmlFor="expectedCloseDate" error={e.expectedCloseDate}>
+                  <Field label="Verwachte startdatum" htmlFor="expectedCloseDate" hint="Wanneer moet de plek gevuld zijn" error={e.expectedCloseDate}>
                     <Input id="expectedCloseDate" name="expectedCloseDate" type="date" defaultValue={toDateValue(deal?.expectedCloseDate)} />
                   </Field>
                   <Field label="Volgende opvolging" htmlFor="nextFollowUpAt" hint="Plan je eerstvolgende actie" error={e.nextFollowUpAt}>
@@ -348,16 +379,6 @@ export function DealForm({
                   Koppelingen <span className="font-normal text-ink-400">(optioneel)</span>
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field label="Opdrachtgever" htmlFor="targetClientId" error={e.targetClientId}>
-                    <Select id="targetClientId" name="targetClientId" defaultValue={deal?.targetClientId ?? ""}>
-                      <option value="">— geen —</option>
-                      {targets.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
                   <Field label="Klant (gefactureerd)" htmlFor="clientId" error={e.clientId}>
                     <Select id="clientId" name="clientId" defaultValue={deal?.clientId ?? ""}>
                       <option value="">— geen —</option>
@@ -423,9 +444,10 @@ export function DealForm({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 border-t border-ink-100 pt-3">
-                  {stage && <Badge color={stage.color}>{stage.label}</Badge>}
                   {disciplineLabel && <Badge color={disciplineColor}>{disciplineLabel}</Badge>}
-                  <Badge color={colorFor(DEAL_SOURCES, source)}>{labelFor(DEAL_SOURCES, source)}</Badge>
+                  {location.trim() && <Badge color="slate">{location}</Badge>}
+                  {employmentType && <Badge color={colorFor(EMPLOYMENT_TYPES, employmentType)}>{labelFor(EMPLOYMENT_TYPES, employmentType)}</Badge>}
+                  {!isNew && stage && <Badge color={stage.color}>{stage.label}</Badge>}
                 </div>
 
                 <dl className="space-y-2.5 border-t border-ink-100 pt-3 text-sm">
@@ -441,14 +463,16 @@ export function DealForm({
                     </dt>
                     <dd className="font-semibold tabular-nums text-ink-900">{Number(positions) || 1}</dd>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="flex items-center gap-1.5 text-ink-500">
-                      <Star className="h-3.5 w-3.5 text-amber-500" /> Fit / warmte
-                    </dt>
-                    <dd className="font-semibold text-amber-500">
-                      {fit > 0 ? "★".repeat(fit) + "☆".repeat(5 - fit) : <span className="text-ink-300">onbeoordeeld</span>}
-                    </dd>
-                  </div>
+                  {!isNew && (
+                    <div className="flex items-center justify-between">
+                      <dt className="flex items-center gap-1.5 text-ink-500">
+                        <Star className="h-3.5 w-3.5 text-amber-500" /> Fit / warmte
+                      </dt>
+                      <dd className="font-semibold text-amber-500">
+                        {fit > 0 ? "★".repeat(fit) + "☆".repeat(5 - fit) : <span className="text-ink-300">onbeoordeeld</span>}
+                      </dd>
+                    </div>
+                  )}
                 </dl>
 
                 <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
