@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { BackLink } from "@/components/back-link";
 import {
   Building2, Briefcase, Kanban, Users2, Search, Sparkles, MapPin,
-  Phone, Mail, Star, Receipt, ArrowRight, GitBranchPlus,
+  Phone, Mail, Star, ArrowRight, GitBranchPlus, Plus,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,6 @@ import { Avatar } from "@/components/ui/avatar";
 import { person } from "@/lib/people";
 import { cn } from "@/lib/utils";
 import { DISCIPLINES, CANDIDATE_RATINGS } from "@/lib/domain";
-import { NewVacancyButton } from "../NewVacancyButton";
 import { runVacancyMatch } from "../workspace-actions";
 import { quickAddToPipeline } from "../../crm/deals/actions";
 
@@ -96,15 +95,9 @@ export default async function BedrijfWerkruimtePage({
           </span>
         }
         actions={
-          <>
-            <Link href={`/crm/vacatures/nieuw?company=${encodeURIComponent(client.companyName)}`} className={buttonVariants({ variant: "outline" })}>
-              <Briefcase className="h-4 w-4" /> Nieuwe vacature
-            </Link>
-            <Link href={`/klanten/${client.id}`} className={buttonVariants({ variant: "outline" })}>
-              <Receipt className="h-4 w-4" /> Facturatie & gegevens
-            </Link>
-            <NewVacancyButton clientId={client.id} />
-          </>
+          <Link href={`/crm/vacatures/nieuw?company=${encodeURIComponent(client.companyName)}`} className={buttonVariants()}>
+            <Briefcase className="h-4 w-4" /> Nieuwe vacature
+          </Link>
         }
       />
 
@@ -121,7 +114,9 @@ export default async function BedrijfWerkruimtePage({
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-500">
             Vacatures & matches
           </h2>
-          <NewVacancyButton clientId={client.id} />
+          <Link href={`/crm/vacatures/nieuw?company=${encodeURIComponent(client.companyName)}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Plus className="h-4 w-4" /> Nieuwe vacature
+          </Link>
         </div>
 
         {/* CRM-vacatures (Deal-model) die aan dit bedrijf gekoppeld zijn */}
@@ -176,7 +171,11 @@ export default async function BedrijfWerkruimtePage({
               icon={<Briefcase className="h-6 w-6" />}
               title="Nog geen vacatures"
               description="Plaats een vacature bij dit bedrijf; daarna zoek je met één klik de best passende kandidaten uit de talentpool."
-              action={<NewVacancyButton clientId={client.id} />}
+              action={
+                <Link href={`/crm/vacatures/nieuw?company=${encodeURIComponent(client.companyName)}`} className={buttonVariants()}>
+                  <Plus className="h-4 w-4" /> Nieuwe vacature
+                </Link>
+              }
             />
           ) : null
         ) : (
