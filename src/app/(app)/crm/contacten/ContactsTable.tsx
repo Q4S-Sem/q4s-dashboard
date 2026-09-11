@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, Phone, Mail } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 /** Diacritics-insensitive fold zodat "jose" ook "José" vindt. */
 function fold(s: string): string {
@@ -76,44 +77,48 @@ function MailButton({ email, name }: { email: string | null; name: string }) {
   );
 }
 
-/** Telefoon verborgen achter alleen het icoontje; klik toont het nummer als
- *  belbare tel:-link (niet-belbare/lege waarden vallen netjes terug). */
-function PhoneCell({ phone, name }: { phone: string | null; name: string }) {
+/** Contact-cel: telefoon- en mailknop staan vast rechts; klik op de telefoon
+ *  toont het nummer LINKS ervan zonder dat de knoppen verschuiven. */
+function ContactCell({ phone, email, name }: { phone: string | null; email: string | null; name: string }) {
   const [shown, setShown] = useState(false);
-  if (!phone) return <span className="text-ink-400">—</span>;
+  const href = phone ? telHref(phone) : null;
 
-  if (!shown) {
-    return (
-      <button
-        type="button"
-        onClick={() => setShown(true)}
-        title={`Toon telefoonnummer van ${name}`}
-        aria-label={`Toon telefoonnummer van ${name}`}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors hover:bg-emerald-200"
-      >
-        <Phone className="h-4 w-4" />
-      </button>
-    );
-  }
+  return (
+    <div className="flex items-center justify-end gap-2">
+      {/* Nummer verschijnt links; knoppen blijven op hun plek staan. */}
+      {shown && phone && (
+        href ? (
+          <a href={href} className="mr-1 tabular-nums font-medium text-emerald-700 hover:text-emerald-800" title={`Bel ${name}`}>
+            {phone}
+          </a>
+        ) : (
+          <span className="mr-1 tabular-nums text-ink-500">{phone}</span>
+        )
+      )}
 
-  const href = telHref(phone);
-  if (href) {
-    return (
-      <a
-        href={href}
-        className="inline-flex items-center gap-2 font-medium text-emerald-700 hover:text-emerald-800"
-        title={`Bel ${name}`}
-        aria-label={`Bel ${name} op ${phone}`}
-      >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-          <Phone className="h-3.5 w-3.5" />
+      {phone ? (
+        <button
+          type="button"
+          onClick={() => setShown((s) => !s)}
+          title={shown ? "Verberg telefoonnummer" : `Toon telefoonnummer van ${name}`}
+          aria-label={shown ? "Verberg telefoonnummer" : `Toon telefoonnummer van ${name}`}
+          aria-pressed={shown}
+          className={cn(
+            "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+            shown ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200",
+          )}
+        >
+          <Phone className="h-4 w-4" />
+        </button>
+      ) : (
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300" title={`Geen telefoonnummer bekend voor ${name}`} aria-hidden>
+          <Phone className="h-4 w-4" />
         </span>
-        <span className="tabular-nums">{phone}</span>
-      </a>
-    );
-  }
-  // Waarde aanwezig maar niet belbaar → toon 'm als tekst.
-  return <span className="tabular-nums text-ink-500">{phone}</span>;
+      )}
+
+      <MailButton email={email} name={name} />
+    </div>
+  );
 }
 
 export function ContactsTable({
@@ -171,7 +176,7 @@ export function ContactsTable({
               <TH>Naam</TH>
               <TH>{isWerknemer ? "Discipline" : "Functie"}</TH>
               <TH>{isWerknemer ? "Headline / plaats" : "Bedrijf"}</TH>
-              <TH>Contact</TH>
+              <TH className="text-right">Contact</TH>
               {!isWerknemer && <TH className="text-right">Deals</TH>}
               {!isWerknemer && <TH className="text-right">Notities</TH>}
             </TR>
@@ -189,10 +194,7 @@ export function ContactsTable({
                 <TD>{c.jobTitle ?? "—"}</TD>
                 <TD>{c.company ?? "—"}</TD>
                 <TD className="relative z-10">
-                  <div className="flex items-center gap-2">
-                    <PhoneCell phone={c.phone} name={c.name} />
-                    <MailButton email={c.email} name={c.name} />
-                  </div>
+                  <ContactCell phone={c.phone} email={c.email} name={c.name} />
                 </TD>
                 {!isWerknemer && <TD className="text-right tabular-nums">{c.deals}</TD>}
                 {!isWerknemer && <TD className="text-right tabular-nums">{c.notes}</TD>}
