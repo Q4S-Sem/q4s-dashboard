@@ -13,7 +13,9 @@
     "db:seed-facturatie": "tsx prisma/seed-facturatie.ts",
     "db:seed-ontvangen": "tsx prisma/seed-ontvangen.ts",
     "db:studio": "prisma studio",
-    "db:reset": "tsx prisma/reset.ts"
+    "db:reset": "tsx prisma/reset.ts",
+    "migrate:contacts:dry": "tsx scripts/migrate-client-contacts.ts",
+    "migrate:contacts:apply": "tsx scripts/migrate-client-contacts.ts --apply"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

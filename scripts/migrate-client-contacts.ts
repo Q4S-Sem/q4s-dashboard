@@ -8,9 +8,15 @@
  * Credentials komen uit .env.local (DATABASE_URL) — nooit hardcoded.
  */
 import { PrismaClient } from "@prisma/client";
+import { config } from "dotenv";
+
+// Laad DB-credentials uit .env.local (of .env). Zo hoef je niets te exporteren.
+config({ path: ".env.local" });
+config();
 
 const db = new PrismaClient();
-const MODE = process.env.MODE === "apply" ? "apply" : "dry";
+// MODE=apply of `--apply` als argument = echt migreren; anders dry-run.
+const MODE = process.env.MODE === "apply" || process.argv.includes("--apply") ? "apply" : "dry";
 
 function splitName(full: string): { firstName: string; lastName: string | null } {
   const parts = full.trim().split(/\s+/).filter(Boolean);
