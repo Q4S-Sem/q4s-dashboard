@@ -172,7 +172,6 @@ export function ContactsTable({
               <TH>{isWerknemer ? "Discipline" : "Functie"}</TH>
               <TH>{isWerknemer ? "Headline / plaats" : "Bedrijf"}</TH>
               <TH>Contact</TH>
-              {!isWerknemer && <TH>Eigenaar</TH>}
               {!isWerknemer && <TH className="text-right">Deals</TH>}
               {!isWerknemer && <TH className="text-right">Notities</TH>}
             </TR>
@@ -195,7 +194,6 @@ export function ContactsTable({
                     <MailButton email={c.email} name={c.name} />
                   </div>
                 </TD>
-                {!isWerknemer && <TD>{c.ownerName ?? "—"}</TD>}
                 {!isWerknemer && <TD className="text-right tabular-nums">{c.deals}</TD>}
                 {!isWerknemer && <TD className="text-right tabular-nums">{c.notes}</TD>}
               </TR>

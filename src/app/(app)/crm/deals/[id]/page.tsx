@@ -235,7 +235,6 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-5 sm:grid-cols-3">
-            <Detail label="Eigenaar" value={deal.owner?.name} />
             <Detail label="Fase" value={<Badge color={(deal.stage.color as BadgeColor) ?? "slate"}>{deal.stage.name}</Badge>} />
             <Detail label="Winkans" value={`${deal.probability}%`} />
             <Detail label="Waarde" value={formatCurrency(deal.value)} />

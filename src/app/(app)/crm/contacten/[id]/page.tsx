@@ -107,7 +107,6 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
                 ) : null
               }
             />
-            <Detail label="Eigenaar" value={contact.owner?.name} />
             <Detail
               label="Opdrachtgever"
               value={

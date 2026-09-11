@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Star, MessageSquare, User, CalendarClock, Users, MapPin, GripVertical, Briefcase, ArrowRight } from "lucide-react";
+import { Star, MessageSquare, CalendarClock, Users, MapPin, GripVertical, Briefcase, ArrowRight } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
@@ -229,18 +229,8 @@ export function DealBoard({
                           )}
                         </div>
 
-                        {/* Footer: eigenaar + notities + opvolging, en een duidelijke Openen-knop */}
-                        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-ink-100 pt-2 text-[11px] text-ink-400">
-                          <span className="inline-flex items-center gap-1 truncate">
-                            {card.ownerName ? (
-                              <>
-                                <User className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{card.ownerName}</span>
-                              </>
-                            ) : (
-                              <span className="text-ink-300">Geen eigenaar</span>
-                            )}
-                          </span>
+                        {/* Footer: notities + opvolging, en een duidelijke Openen-knop */}
+                        <div className="mt-2.5 flex items-center justify-end gap-2 border-t border-ink-100 pt-2 text-[11px] text-ink-400">
                           <span className="flex shrink-0 items-center gap-2">
                             <span className="inline-flex items-center gap-0.5" title="Notities">
                               <MessageSquare className="h-3 w-3" /> {card.noteCount}

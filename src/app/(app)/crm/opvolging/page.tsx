@@ -59,9 +59,8 @@ function FollowUpRow({ item, tone }: { item: FollowUpItem; tone: "red" | "amber"
           {item.title}
         </Link>
         {item.subtitle && <p className="truncate text-xs text-ink-500">{item.subtitle}</p>}
-      </div>
-      {item.ownerName && <span className="hidden text-xs text-ink-400 sm:block">{item.ownerName}</span>}
-      <span className={cn("inline-flex items-center gap-1 text-xs font-medium tabular-nums", toneMap[tone])}>
+        </div>
+        <span className={cn("inline-flex items-center gap-1 text-xs font-medium tabular-nums", toneMap[tone])}>
         <CalendarClock className="h-3.5 w-3.5" />
         {formatDate(item.due)}
       </span>
