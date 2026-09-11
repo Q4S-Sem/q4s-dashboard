@@ -57,7 +57,11 @@ export async function updateContact(_prev: FormState, formData: FormData): Promi
   const parsed = parseForm(ContactSchema, formData);
   if (!parsed.success) return parsed.state;
 
-  await db.crmContact.update({ where: { id }, data: toData(parsed.data) });
+  // Eigenaar-veld staat niet meer op het formulier; nooit met leeg overschrijven.
+  const data = toData(parsed.data);
+  const { ownerId: _drop, ...rest } = data;
+
+  await db.crmContact.update({ where: { id }, data: rest });
   revalidatePath("/crm/contacten");
   revalidatePath(`/crm/contacten/${id}`);
   redirect(`/crm/contacten/${id}`);

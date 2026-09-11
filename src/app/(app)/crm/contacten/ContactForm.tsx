@@ -71,28 +71,16 @@ export function ContactForm({
             <Input id="linkedinUrl" name="linkedinUrl" placeholder="https://linkedin.com/in/…" defaultValue={contact?.linkedinUrl ?? ""} />
           </Field>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Eigenaar (recruiter)" htmlFor="ownerId" error={e.ownerId}>
-              <Select id="ownerId" name="ownerId" defaultValue={contact?.ownerId ?? currentRecruiterId ?? ""}>
-                <option value="">— geen —</option>
-                {recruiters.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Bedrijf koppelen" htmlFor="clientId" hint="Zet dit contact bij een van onze bedrijven" error={e.clientId}>
-              <Select id="clientId" name="clientId" defaultValue={contact?.clientId ?? defaultClientId ?? ""}>
-                <option value="">— geen —</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </div>
+          <Field label="Bedrijf koppelen" htmlFor="clientId" hint="Zet dit contact bij een van onze bedrijven" error={e.clientId}>
+            <Select id="clientId" name="clientId" defaultValue={contact?.clientId ?? defaultClientId ?? ""}>
+              <option value="">— geen —</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
 
           <Field label="Notities" htmlFor="notes" hint="Vaste achtergrondinfo. Losse contactmomenten leg je vast in het notitieblok." error={e.notes}>
             <Textarea id="notes" name="notes" defaultValue={contact?.notes ?? ""} />
