@@ -33,8 +33,8 @@ export function CreateTaskModal({ people }: { people: Person[] }) {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} variant="secondary" className="rounded-full">
-        Aanmaken <Plus className="h-4 w-4" />
+      <Button onClick={() => setOpen(true)}>
+        <Plus className="h-4 w-4" /> Aanmaken
       </Button>
 
       {open &&
