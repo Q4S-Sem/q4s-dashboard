@@ -19,9 +19,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatCurrency, cn } from "@/lib/utils";
 import { CRM_NOTE_TYPES, labelFor, type BadgeColor } from "@/lib/domain";
-import { isAIConfigured } from "@/lib/ai";
 import { currentRecruiterId, getCrmSettings, getInsights, type WeakPoint } from "@/lib/crm";
-import { AiAnalysis } from "./AiAnalysis";
 
 export const metadata = { title: "CRM-inzichten" };
 export const dynamic = "force-dynamic";
@@ -262,16 +260,6 @@ export default async function InzichtenPage() {
           </Table>
         </Card>
       )}
-
-      {/* AI analysis */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">AI-analyse</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AiAnalysis scope={scope} configured={isAIConfigured()} />
-        </CardContent>
-      </Card>
 
       {ins.totalOpen === 0 && ins.wonCount === 0 && ins.lostCount === 0 && (
         <EmptyState
