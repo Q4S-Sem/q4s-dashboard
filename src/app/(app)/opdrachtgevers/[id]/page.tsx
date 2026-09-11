@@ -67,8 +67,21 @@ export default async function BedrijfWerkruimtePage({
   });
   if (!client) notFound();
 
+  // Ook CRM-deals/vacatures die aan dit bedrijf hangen (via clientId) — deze staan
+  // los van het Vacancy-model maar horen wél in de werkruimte thuis.
+  const clientDeals = await db.deal.findMany({
+    where: { clientId: id, status: "OPEN" },
+    orderBy: [{ createdAt: "desc" }],
+    include: {
+      stage: { select: { name: true, color: true } },
+    },
+  });
+
   const openDeals = client._count.deals;
   const totalMatches = client.vacancies.reduce((s, v) => s + v.matches.length, 0);
+  // Openstaande vacatures = Vacancy-records + CRM-vacature-deals (zonder kandidaat).
+  const crmVacatures = clientDeals.filter((d) => !d.candidateId).length;
+  const openVacatures = client.vacancies.length + crmVacatures;
 
   return (
     <div className="space-y-6">
@@ -96,7 +109,7 @@ export default async function BedrijfWerkruimtePage({
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Openstaande vacatures" value={client.vacancies.length} icon={<Briefcase className="h-5 w-5" />} accent="green" />
+        <StatCard label="Openstaande vacatures" value={openVacatures} icon={<Briefcase className="h-5 w-5" />} accent="green" />
         <StatCard label="Lopende deals" value={openDeals} icon={<Kanban className="h-5 w-5" />} accent="violet" />
         <StatCard label="Plaatsingen" value={client._count.placements} icon={<Users2 className="h-5 w-5" />} accent="brand" />
         <StatCard label="Matches klaar" value={totalMatches} icon={<Sparkles className="h-5 w-5" />} accent="amber" />
@@ -111,13 +124,61 @@ export default async function BedrijfWerkruimtePage({
           <NewVacancyButton clientId={client.id} />
         </div>
 
+        {/* CRM-vacatures (Deal-model) die aan dit bedrijf gekoppeld zijn */}
+        {clientDeals.map((d) => (
+          <Card key={d.id}>
+            <CardHeader>
+              <div className="min-w-0">
+                <CardTitle className="flex items-center gap-2">
+                  <Link href={`/crm/deals/${d.id}`} className="truncate hover:text-brand-700">
+                    {d.title}
+                  </Link>
+                  {d.discipline && <StatusBadge options={DISCIPLINES} value={d.discipline} />}
+                  {d.candidateId ? (
+                    <Badge color="violet">In pipeline</Badge>
+                  ) : (
+                    <Badge color="amber">Vacature</Badge>
+                  )}
+                </CardTitle>
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
+                  {d.location && (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" /> {d.location}
+                    </span>
+                  )}
+                  {d.positions > 1 && (
+                    <span className="inline-flex items-center gap-1">
+                      <Users2 className="h-3.5 w-3.5" /> {d.positions} posities
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1">
+                    <Kanban className="h-3.5 w-3.5" /> {d.stage.name}
+                  </span>
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Link href={`/crm/deals/${d.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                  Openen <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                {!d.candidateId && (
+                  <Link href="/kandidaten" className={buttonVariants({ variant: "primary", size: "sm" })}>
+                    <GitBranchPlus className="h-4 w-4" /> Kandidaat
+                  </Link>
+                )}
+              </div>
+            </CardHeader>
+          </Card>
+        ))}
+
         {client.vacancies.length === 0 ? (
-          <EmptyState
-            icon={<Briefcase className="h-6 w-6" />}
-            title="Nog geen vacatures"
-            description="Plaats een vacature bij dit bedrijf; daarna zoek je met één klik de best passende kandidaten uit de talentpool."
-            action={<NewVacancyButton clientId={client.id} />}
-          />
+          clientDeals.length === 0 ? (
+            <EmptyState
+              icon={<Briefcase className="h-6 w-6" />}
+              title="Nog geen vacatures"
+              description="Plaats een vacature bij dit bedrijf; daarna zoek je met één klik de best passende kandidaten uit de talentpool."
+              action={<NewVacancyButton clientId={client.id} />}
+            />
+          ) : null
         ) : (
           client.vacancies.map((v) => {
             const justMatched = matchVacancyId === v.id;

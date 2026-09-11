@@ -86,6 +86,17 @@ async function toData(data: DealData) {
         orderBy: { order: "asc" },
       });
   const status = stage?.isWon ? "WON" : stage?.isLost ? "LOST" : "OPEN";
+  // Koppel automatisch aan een bestaande Client als de bedrijfsnaam matcht en er
+  // nog geen expliciete klant gekozen is. Zo verschijnt de vacature/deal ook in
+  // de bedrijfswerkruimte (die op clientId werkt).
+  let clientId = data.clientId ?? null;
+  if (!clientId && data.company.trim()) {
+    const match = await db.client.findFirst({
+      where: { companyName: { equals: data.company.trim() } },
+      select: { id: true },
+    });
+    if (match) clientId = match.id;
+  }
   return {
     payload: {
       title: data.title,
@@ -111,7 +122,7 @@ async function toData(data: DealData) {
       fitScore: data.fitScore,
       source: data.source,
       targetClientId: data.targetClientId ?? null,
-      clientId: data.clientId ?? null,
+      clientId,
       vacancyId: data.vacancyId ?? null,
       primaryContactId: data.primaryContactId ?? null,
       expectedCloseDate: data.expectedCloseDate ?? null,
