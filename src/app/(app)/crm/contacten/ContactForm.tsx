@@ -20,6 +20,8 @@ export function ContactForm({
   recruiters,
   targets,
   clients,
+  defaultClientId,
+  defaultCompany,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   contact?: CrmContact;
@@ -29,6 +31,8 @@ export function ContactForm({
   recruiters: IdName[];
   targets: IdName[];
   clients: IdName[];
+  defaultClientId?: string;
+  defaultCompany?: string;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
@@ -53,7 +57,7 @@ export function ContactForm({
               <Input id="jobTitle" name="jobTitle" placeholder="Bijv. Inkoper / Hiring Manager" defaultValue={contact?.jobTitle ?? ""} />
             </Field>
             <Field label="Bedrijf" htmlFor="company" error={e.company}>
-              <Input id="company" name="company" defaultValue={contact?.company ?? ""} />
+              <Input id="company" name="company" defaultValue={contact?.company ?? defaultCompany ?? ""} />
             </Field>
             <Field label="E-mail" htmlFor="email" error={e.email}>
               <Input id="email" name="email" type="email" defaultValue={contact?.email ?? ""} />
@@ -67,7 +71,7 @@ export function ContactForm({
             <Input id="linkedinUrl" name="linkedinUrl" placeholder="https://linkedin.com/in/…" defaultValue={contact?.linkedinUrl ?? ""} />
           </Field>
 
-          <div className="grid gap-5 sm:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Eigenaar (recruiter)" htmlFor="ownerId" error={e.ownerId}>
               <Select id="ownerId" name="ownerId" defaultValue={contact?.ownerId ?? currentRecruiterId ?? ""}>
                 <option value="">— geen —</option>
@@ -78,18 +82,8 @@ export function ContactForm({
                 ))}
               </Select>
             </Field>
-            <Field label="Opdrachtgever" htmlFor="targetClientId" error={e.targetClientId}>
-              <Select id="targetClientId" name="targetClientId" defaultValue={contact?.targetClientId ?? ""}>
-                <option value="">— geen —</option>
-                {targets.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Klant" htmlFor="clientId" error={e.clientId}>
-              <Select id="clientId" name="clientId" defaultValue={contact?.clientId ?? ""}>
+            <Field label="Bedrijf koppelen" htmlFor="clientId" hint="Zet dit contact bij een van onze bedrijven" error={e.clientId}>
+              <Select id="clientId" name="clientId" defaultValue={contact?.clientId ?? defaultClientId ?? ""}>
                 <option value="">— geen —</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>

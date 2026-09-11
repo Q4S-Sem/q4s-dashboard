@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ContactsTable } from "./ContactsTable";
+import { CompaniesBrowser, type CompanyRow } from "./CompaniesBrowser";
 
 export const metadata = { title: "Contacten" };
 export const dynamic = "force-dynamic";
@@ -17,9 +18,9 @@ export default async function ContactenPage({
   searchParams: Promise<{ type?: string }>;
 }) {
   const sp = await searchParams;
-  const view = sp.type === "freelancers" ? "freelancers" : "klanten";
+  const view = sp.type === "werknemers" ? "werknemers" : "klanten";
 
-  // Segmented toggle bovenaan: schakel tussen klantcontacten en freelancers.
+  // Segmented toggle bovenaan: schakel tussen bedrijfscontacten en werknemers.
   const toggle = (
     <div className="inline-flex rounded-lg border border-ink-200 bg-white p-1 shadow-sm">
       <Link
@@ -32,20 +33,20 @@ export default async function ContactenPage({
         <Building2 className="h-4 w-4" /> Klanten
       </Link>
       <Link
-        href="/crm/contacten?type=freelancers"
+        href="/crm/contacten?type=werknemers"
         className={cn(
           "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-          view === "freelancers" ? "bg-brand-600 text-white shadow-sm" : "text-ink-600 hover:bg-ink-50",
+          view === "werknemers" ? "bg-brand-600 text-white shadow-sm" : "text-ink-600 hover:bg-ink-50",
         )}
       >
-        <HardHat className="h-4 w-4" /> Freelancers
+        <HardHat className="h-4 w-4" /> Werknemers
       </Link>
     </div>
   );
 
-  if (view === "freelancers") {
-    const freelancers = await db.consultant.findMany({
-      where: { active: true },
+  // ---- WERKNEMERS: gekoppeld aan de talentpool (Candidate) ----
+  if (view === "werknemers") {
+    const candidates = await db.candidate.findMany({
       orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
       select: {
         id: true,
@@ -54,8 +55,8 @@ export default async function ContactenPage({
         email: true,
         phone: true,
         discipline: true,
-        companyName: true,
-        city: true,
+        location: true,
+        headline: true,
       },
     });
 
@@ -63,36 +64,36 @@ export default async function ContactenPage({
       <div className="space-y-6">
         <PageHeader
           title="Contacten"
-          description="Schakel tussen je klantcontacten en de freelancers (ZZP'ers) die je plaatst."
+          description="Schakel tussen je bedrijfscontacten en de werknemers uit de talentenpool. E-mail en telefoon komen rechtstreeks uit het kandidaatdossier."
           actions={
-            <Link href="/werknemers/nieuw" className={buttonVariants()}>
-              <Plus className="h-4 w-4" /> Nieuwe freelancer
+            <Link href="/kandidaten/nieuw" className={buttonVariants()}>
+              <Plus className="h-4 w-4" /> Nieuwe werknemer
             </Link>
           }
         />
         {toggle}
-        {freelancers.length === 0 ? (
+        {candidates.length === 0 ? (
           <EmptyState
             icon={<HardHat className="h-6 w-6" />}
-            title="Nog geen freelancers"
-            description="Voeg de ZZP'ers toe die je plaatst, zodat je hun contactgegevens bij de hand hebt."
+            title="Nog geen werknemers"
+            description="Zodra er kandidaten in de talentenpool staan, verschijnen hun contactgegevens hier."
             action={
-              <Link href="/werknemers/nieuw" className={buttonVariants()}>
-                <Plus className="h-4 w-4" /> Nieuwe freelancer
+              <Link href="/kandidaten/nieuw" className={buttonVariants()}>
+                <Plus className="h-4 w-4" /> Nieuwe werknemer
               </Link>
             }
           />
         ) : (
           <ContactsTable
-            variant="freelancers"
-            contacts={freelancers.map((f) => ({
-              id: f.id,
-              name: `${f.firstName} ${f.lastName ?? ""}`.trim(),
-              jobTitle: f.discipline,
-              company: f.companyName ?? f.city,
+            variant="werknemers"
+            contacts={candidates.map((c) => ({
+              id: c.id,
+              name: `${c.firstName} ${c.lastName ?? ""}`.trim(),
+              jobTitle: c.discipline,
+              company: c.headline ?? c.location,
               ownerName: null,
-              phone: f.phone,
-              email: f.email,
+              phone: c.phone,
+              email: c.email,
               deals: 0,
               notes: 0,
             }))}
@@ -102,21 +103,55 @@ export default async function ContactenPage({
     );
   }
 
-  const contacts = await db.crmContact.findMany({
-    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
-    include: {
-      owner: { select: { name: true } },
-      _count: { select: { crmNotes: true, deals: true } },
-    },
-  });
+  // ---- KLANTEN: al onze bedrijven, met contactpersonen eronder ----
+  const [clients, contacts] = await Promise.all([
+    db.client.findMany({
+      orderBy: { companyName: "asc" },
+      select: { id: true, companyName: true, city: true },
+    }),
+    db.crmContact.findMany({
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        jobTitle: true,
+        phone: true,
+        email: true,
+        clientId: true,
+      },
+    }),
+  ]);
 
-  const companies = new Set(contacts.map((c) => (c.company ?? "").trim().toLowerCase()).filter(Boolean));
+  const byClient = new Map<string, CompanyRow["contacts"]>();
+  for (const c of contacts) {
+    if (!c.clientId) continue;
+    const row = {
+      id: c.id,
+      name: `${c.firstName} ${c.lastName ?? ""}`.trim(),
+      jobTitle: c.jobTitle,
+      phone: c.phone,
+      email: c.email,
+    };
+    const arr = byClient.get(c.clientId);
+    if (arr) arr.push(row);
+    else byClient.set(c.clientId, [row]);
+  }
+
+  const companies: CompanyRow[] = clients.map((cl) => ({
+    id: cl.id,
+    name: cl.companyName,
+    city: cl.city,
+    contacts: byClient.get(cl.id) ?? [],
+  }));
+
+  const linkedContacts = contacts.filter((c) => c.clientId).length;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Contacten"
-        description="De mensen achter de opdrachtgevers — inkopers, hiring managers, leidinggevenden. Elk contact heeft z'n eigen notitieblok."
+        description="Al onze bedrijven met hun contactpersonen — inkopers, hiring managers, leidinggevenden. Klik een bedrijf open en zet er de contactgegevens bij."
         actions={
           <Link href="/crm/contacten/nieuw" className={buttonVariants()}>
             <Plus className="h-4 w-4" /> Nieuw contact
@@ -126,44 +161,27 @@ export default async function ContactenPage({
 
       {toggle}
 
-      {contacts.length > 0 && (
+      {companies.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard label="Contacten" value={contacts.length} icon={<Users2 className="h-5 w-5" />} accent="brand" />
-          <StatCard label="Bedrijven" value={companies.size} icon={<Building2 className="h-5 w-5" />} accent="violet" />
+          <StatCard label="Bedrijven" value={companies.length} icon={<Building2 className="h-5 w-5" />} accent="violet" />
+          <StatCard label="Contactpersonen" value={linkedContacts} icon={<Users2 className="h-5 w-5" />} accent="brand" />
           <StatCard
-            label="Vastgelegde momenten"
-            value={contacts.reduce((s, c) => s + c._count.crmNotes, 0)}
+            label="Bedrijven met contact"
+            value={companies.filter((c) => c.contacts.length > 0).length}
             icon={<MessageSquare className="h-5 w-5" />}
             accent="green"
           />
         </div>
       )}
 
-      {contacts.length === 0 ? (
+      {companies.length === 0 ? (
         <EmptyState
-          icon={<Users2 className="h-6 w-6" />}
-          title="Nog geen contacten"
-          description="Voeg de contactpersonen toe bij je opdrachtgevers, zodat je elk gesprek kunt vastleggen."
-          action={
-            <Link href="/crm/contacten/nieuw" className={buttonVariants()}>
-              <Plus className="h-4 w-4" /> Nieuw contact
-            </Link>
-          }
+          icon={<Building2 className="h-6 w-6" />}
+          title="Nog geen bedrijven"
+          description="Zodra er bedrijven in 'Onze bedrijven' staan, verschijnen ze hier om contactpersonen aan te koppelen."
         />
       ) : (
-        <ContactsTable
-          contacts={contacts.map((c) => ({
-            id: c.id,
-            name: `${c.firstName} ${c.lastName ?? ""}`.trim(),
-            jobTitle: c.jobTitle,
-            company: c.company,
-            ownerName: c.owner?.name ?? null,
-            phone: c.phone,
-            email: c.email,
-            deals: c._count.deals,
-            notes: c._count.crmNotes,
-          }))}
-        />
+        <CompaniesBrowser companies={companies} />
       )}
     </div>
   );

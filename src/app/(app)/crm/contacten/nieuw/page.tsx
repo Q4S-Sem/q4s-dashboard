@@ -9,8 +9,12 @@ import { loadContactFormOptions } from "../options";
 export const metadata = { title: "Nieuw contact" };
 export const dynamic = "force-dynamic";
 
-export default async function NewContactPage() {
-  const opts = await loadContactFormOptions();
+export default async function NewContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ clientId?: string; company?: string }>;
+}) {
+  const [opts, sp] = await Promise.all([loadContactFormOptions(), searchParams]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -26,6 +30,8 @@ export default async function NewContactPage() {
         recruiters={opts.recruiters}
         targets={opts.targets}
         clients={opts.clients}
+        defaultClientId={sp.clientId}
+        defaultCompany={sp.company}
       />
     </div>
   );
