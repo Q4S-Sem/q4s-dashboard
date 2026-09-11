@@ -145,6 +145,9 @@ export async function updateDeal(_prev: FormState, formData: FormData): Promise<
 
   const recruiterId = await currentRecruiterId();
   const { payload, stageName } = await toData(parsed.data);
+  // Eigenaar-veld staat niet meer op het formulier; behoud de bestaande eigenaar
+  // (of val terug op de huidige gebruiker) i.p.v. 'm leeg te maken.
+  if (!payload.ownerId) payload.ownerId = existing.ownerId ?? recruiterId;
 
   await db.deal.update({ where: { id }, data: payload });
 

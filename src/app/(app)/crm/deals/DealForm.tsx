@@ -265,8 +265,8 @@ export function DealForm({
                   </Field>
                 </div>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  {!isNew && (
+                {!isNew && (
+                  <div className="grid gap-5 sm:grid-cols-2">
                     <Field label="Fase" htmlFor="stageId" error={e.stageId}>
                       <Select
                         id="stageId"
@@ -281,18 +281,8 @@ export function DealForm({
                         ))}
                       </Select>
                     </Field>
-                  )}
-                  <Field label="Eigenaar (recruiter)" htmlFor="ownerId" error={e.ownerId}>
-                    <Select id="ownerId" name="ownerId" defaultValue={deal?.ownerId ?? currentRecruiterId ?? ""}>
-                      <option value="">— geen —</option>
-                      {recruiters.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                </div>
+                  </div>
+                )}
               </section>
 
               {/* Sectie: waarde & kwalificatie */}
