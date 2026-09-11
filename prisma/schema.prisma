@@ -1802,6 +1802,25 @@ model Deal {
   location         String?
   /// Dienstverband: ZZP | LOONDIENST | UITZEND (EMPLOYMENT_TYPES) of leeg.
   employmentType   String?
+  /// --- Vacaturedetails (recruiter vult in / scanner leest uit) ---
+  /// Uren per week (bijv. 40).
+  hoursPerWeek     Int?
+  /// Duur van de opdracht/contract, vrije tekst (bijv. "6 maanden + optie").
+  durationText     String?
+  /// Tarief- of salarisindicatie die de klant biedt, vrije tekst.
+  rateText         String?
+  /// Gevraagde werkervaring, vrije tekst (bijv. "min. 3 jaar in NDT").
+  experienceText   String?
+  /// Opleidingsniveau, vrije tekst (bijv. "MBO4 / HBO").
+  educationLevel   String?
+  /// Werkzaamheden / taken — één per regel.
+  responsibilities String?
+  /// Functie-eisen (harde eisen) — één per regel.
+  requirements     String?
+  /// Pré / nice-to-have — één per regel.
+  niceToHave       String?
+  /// Vereiste certificaten/diploma's (VCA, lascert., NDT-level) — één per regel.
+  certificates     String?
 
   clientId         String?
   targetClientId   String?

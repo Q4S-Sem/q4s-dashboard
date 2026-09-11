@@ -13,7 +13,7 @@ import { CrmNotesTimeline, type TimelineNote } from "@/components/crm-notes-time
 import { CrmNoteComposer } from "@/components/crm-note-composer";
 import { person } from "@/lib/people";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { DEAL_STATUSES, DEAL_SOURCES, DISCIPLINES, CANDIDATE_RATINGS, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
+import { DEAL_STATUSES, DEAL_SOURCES, DISCIPLINES, EMPLOYMENT_TYPES, CANDIDATE_RATINGS, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
 import { deleteDeal, togglePinNote, deleteNote, completeDealFollowUp, addDealNote } from "../actions";
 import { CloseDealButtons } from "../CloseDealButtons";
 
@@ -25,6 +25,28 @@ function Detail({ label, value }: { label: string; value: React.ReactNode }) {
     <div>
       <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">{label}</dt>
       <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
+    </div>
+  );
+}
+
+/** Meerregelig veld (werkzaamheden/eisen) — regels als opsomming. */
+function TextBlock({ label, text }: { label: string; text: string }) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-ink-400">{label}</p>
+      {lines.length > 1 ? (
+        <ul className="space-y-1">
+          {lines.map((l, i) => (
+            <li key={i} className="flex gap-2 text-sm text-ink-800">
+              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-ink-300" />
+              {l}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-ink-800">{text}</p>
+      )}
     </div>
   );
 }
@@ -249,6 +271,35 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
           </dl>
         </CardContent>
       </Card>
+
+      {/* Vacaturedetails — alleen als er iets is ingevuld */}
+      {!deal.candidateId &&
+        (deal.hoursPerWeek || deal.durationText || deal.rateText || deal.experienceText ||
+          deal.educationLevel || deal.responsibilities || deal.requirements ||
+          deal.niceToHave || deal.certificates || deal.location || deal.employmentType) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Vacaturedetails</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <dl className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+              <Detail label="Locatie" value={deal.location} />
+              <Detail label="Dienstverband" value={deal.employmentType ? labelFor(EMPLOYMENT_TYPES, deal.employmentType) : null} />
+              <Detail label="Uren per week" value={deal.hoursPerWeek ? `${deal.hoursPerWeek} u` : null} />
+              <Detail label="Duur" value={deal.durationText} />
+              <Detail label="Tarief / salaris" value={deal.rateText} />
+              <Detail label="Gevraagde ervaring" value={deal.experienceText} />
+              <Detail label="Opleidingsniveau" value={deal.educationLevel} />
+            </dl>
+            {deal.responsibilities && (
+              <TextBlock label="Werkzaamheden" text={deal.responsibilities} />
+            )}
+            {deal.requirements && <TextBlock label="Functie-eisen" text={deal.requirements} />}
+            {deal.niceToHave && <TextBlock label="Pré" text={deal.niceToHave} />}
+            {deal.certificates && <TextBlock label="Vereiste certificaten" text={deal.certificates} />}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import Link from "next/link";
 import type { Deal } from "@prisma/client";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Dropzone } from "@/components/ui/dropzone";
 import { TextCombobox } from "@/components/ui/text-combobox";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { DISCIPLINES, DEAL_SOURCES, EMPLOYMENT_TYPES, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
-import { Building2, Euro, Users, Star, Link2, StickyNote, Sparkles, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Building2, Euro, Users, Star, Link2, StickyNote, Sparkles, Loader2, CheckCircle2, AlertTriangle, Clock, ListChecks } from "lucide-react";
 import { readVacatureFields } from "./actions";
 
 type IdName = { id: string; label: string };
@@ -68,6 +68,16 @@ export function DealForm({
   const [fitScore, setFitScore] = useState(String(deal?.fitScore ?? 0));
   const [source, setSource] = useState(deal?.source ?? "MANUAL");
   const [notes, setNotes] = useState("");
+  // Uitgebreide vacaturevelden.
+  const [hoursPerWeek, setHoursPerWeek] = useState(deal?.hoursPerWeek ? String(deal.hoursPerWeek) : "");
+  const [durationText, setDurationText] = useState(deal?.durationText ?? "");
+  const [rateText, setRateText] = useState(deal?.rateText ?? "");
+  const [experienceText, setExperienceText] = useState(deal?.experienceText ?? "");
+  const [educationLevel, setEducationLevel] = useState(deal?.educationLevel ?? "");
+  const [responsibilities, setResponsibilities] = useState(deal?.responsibilities ?? "");
+  const [requirements, setRequirements] = useState(deal?.requirements ?? "");
+  const [niceToHave, setNiceToHave] = useState(deal?.niceToHave ?? "");
+  const [certificates, setCertificates] = useState(deal?.certificates ?? "");
 
   // Scanner-status (alleen bij een nieuwe vacature).
   const isNew = !deal;
@@ -94,18 +104,25 @@ export function DealForm({
       }
       const v = res.fields;
       // Alleen invullen wat de AI vond; bestaande waarden niet met leeg overschrijven.
+      const fill = (val: string, setter: Dispatch<SetStateAction<string>>) => {
+        if (val) setter((prev) => (prev.trim() ? prev : val));
+      };
       if (v.title) setTitle(v.title);
       if (v.company) setCompany(v.company);
-      if (v.discipline) {
-        // De AI geeft een enum-waarde terug; die matcht direct de dropdown-optie.
-        setDiscipline(v.discipline);
-      }
-      if (v.positions && v.positions > 0) setPositions(String(v.positions));
-      if (v.value && v.value > 0) setValue(String(v.value));
+      if (v.discipline) setDiscipline(v.discipline);
       if (v.location) setLocation(v.location);
-      // Functie-eisen + samenvatting samenvoegen in de notitie zodat niets verloren gaat.
-      const blok = [v.requirements, v.notes].map((s) => (s ?? "").trim()).filter(Boolean).join("\n\n");
-      if (blok) setNotes((prev) => (prev.trim() ? prev : blok));
+      if (v.employmentType) setEmploymentType(v.employmentType);
+      if (v.positions && v.positions > 0) setPositions(String(v.positions));
+      if (v.hoursPerWeek && v.hoursPerWeek > 0) setHoursPerWeek(String(v.hoursPerWeek));
+      fill(v.durationText, setDurationText);
+      fill(v.rateText, setRateText);
+      fill(v.experienceText, setExperienceText);
+      fill(v.educationLevel, setEducationLevel);
+      fill(v.responsibilities, setResponsibilities);
+      fill(v.requirements, setRequirements);
+      fill(v.niceToHave, setNiceToHave);
+      fill(v.certificates, setCertificates);
+      if (v.notes) setNotes((prev) => (prev.trim() ? prev : v.notes));
       setScanDone(true);
     } catch {
       setScanError("De vacature kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in.");
@@ -359,7 +376,62 @@ export function DealForm({
                 </div>
               </section>
 
-              {/* Sectie: notitie (alleen bij nieuwe deal) */}
+              {/* Sectie: opdrachtdetails (alleen vacature) */}
+              {isVacature && (
+                <section className="space-y-4 border-t border-ink-100 pt-5">
+                  <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                      <Clock className="h-4 w-4" />
+                    </span>
+                    Opdrachtdetails
+                  </h2>
+                  <div className="grid gap-5 sm:grid-cols-3">
+                    <Field label="Uren per week" htmlFor="hoursPerWeek" hint="Bijv. 40" error={e.hoursPerWeek}>
+                      <Input id="hoursPerWeek" name="hoursPerWeek" type="number" min={0} max={168} value={hoursPerWeek} onChange={(ev) => setHoursPerWeek(ev.target.value)} placeholder="40" />
+                    </Field>
+                    <Field label="Duur" htmlFor="durationText" hint="Bijv. 6 maanden + optie" error={e.durationText}>
+                      <Input id="durationText" name="durationText" value={durationText} onChange={(ev) => setDurationText(ev.target.value)} placeholder="Bijv. 6 mnd + optie tot verlenging" />
+                    </Field>
+                    <Field label="Tarief / salaris" htmlFor="rateText" hint="Wat de klant biedt" error={e.rateText}>
+                      <Input id="rateText" name="rateText" value={rateText} onChange={(ev) => setRateText(ev.target.value)} placeholder="Bijv. € 65–75 p/u of € 4.500 p/m" />
+                    </Field>
+                  </div>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field label="Gevraagde ervaring" htmlFor="experienceText" error={e.experienceText}>
+                      <Input id="experienceText" name="experienceText" value={experienceText} onChange={(ev) => setExperienceText(ev.target.value)} placeholder="Bijv. min. 3 jaar in NDT" />
+                    </Field>
+                    <Field label="Opleidingsniveau" htmlFor="educationLevel" error={e.educationLevel}>
+                      <Input id="educationLevel" name="educationLevel" value={educationLevel} onChange={(ev) => setEducationLevel(ev.target.value)} placeholder="Bijv. MBO4 / HBO" />
+                    </Field>
+                  </div>
+                </section>
+              )}
+
+              {/* Sectie: de functie (alleen vacature) */}
+              {isVacature && (
+                <section className="space-y-4 border-t border-ink-100 pt-5">
+                  <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                      <ListChecks className="h-4 w-4" />
+                    </span>
+                    De functie
+                  </h2>
+                  <Field label="Werkzaamheden" htmlFor="responsibilities" hint="Één taak per regel" error={e.responsibilities}>
+                    <Textarea id="responsibilities" name="responsibilities" rows={4} value={responsibilities} onChange={(ev) => setResponsibilities(ev.target.value)} placeholder={"Bijv.\nUitvoeren van NDT-inspecties (UT/RT/MT/PT)\nRapporteren van bevindingen\nBegeleiden van junior inspecteurs"} />
+                  </Field>
+                  <Field label="Functie-eisen" htmlFor="requirements" hint="Harde eisen — één per regel" error={e.requirements}>
+                    <Textarea id="requirements" name="requirements" rows={4} value={requirements} onChange={(ev) => setRequirements(ev.target.value)} placeholder={"Bijv.\nMinimaal 3 jaar ervaring in NDT\nWoonachtig in regio Rotterdam\nBeheersing Nederlands en Engels"} />
+                  </Field>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field label="Pré (nice-to-have)" htmlFor="niceToHave" hint="Één per regel" error={e.niceToHave}>
+                      <Textarea id="niceToHave" name="niceToHave" rows={3} value={niceToHave} onChange={(ev) => setNiceToHave(ev.target.value)} placeholder={"Bijv.\nErvaring in offshore\nRijbewijs B"} />
+                    </Field>
+                    <Field label="Vereiste certificaten" htmlFor="certificates" hint="VCA, lascert., NDT-level — één per regel" error={e.certificates}>
+                      <Textarea id="certificates" name="certificates" rows={3} value={certificates} onChange={(ev) => setCertificates(ev.target.value)} placeholder={"Bijv.\nVCA VOL\nNDT Level II (UT)"} />
+                    </Field>
+                  </div>
+                </section>
+              )}
               {!deal && (
                 <section className="space-y-4 border-t border-ink-100 pt-5">
                   <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">

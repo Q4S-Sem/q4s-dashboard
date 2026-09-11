@@ -395,9 +395,17 @@ export type VacancyFields = {
   company: string;
   discipline: string;
   location: string;
+  employmentType: string;
+  hoursPerWeek: number | null;
+  durationText: string;
+  rateText: string;
+  experienceText: string;
+  educationLevel: string;
   positions: number | null;
-  value: number | null;
+  responsibilities: string;
   requirements: string;
+  niceToHave: string;
+  certificates: string;
   notes: string;
 };
 
@@ -406,9 +414,17 @@ const vacancyFieldsSchema = z.object({
   company: z.string().nullish().transform((v) => (v ?? "").trim()),
   discipline: z.enum(VACANCY_DISCIPLINES).nullish().transform((v) => v ?? ""),
   location: z.string().nullish().transform((v) => (v ?? "").trim()),
+  employmentType: z.enum(["ZZP", "LOONDIENST", "UITZEND"]).nullish().transform((v) => v ?? ""),
+  hoursPerWeek: z.coerce.number().int().min(0).max(168).nullish().transform((v) => v ?? null),
+  durationText: z.string().nullish().transform((v) => (v ?? "").trim()),
+  rateText: z.string().nullish().transform((v) => (v ?? "").trim()),
+  experienceText: z.string().nullish().transform((v) => (v ?? "").trim()),
+  educationLevel: z.string().nullish().transform((v) => (v ?? "").trim()),
   positions: z.coerce.number().int().min(1).max(999).nullish().transform((v) => v ?? null),
-  value: z.coerce.number().min(0).nullish().transform((v) => v ?? null),
+  responsibilities: z.string().nullish().transform((v) => (v ?? "").trim()),
   requirements: z.string().nullish().transform((v) => (v ?? "").trim()),
+  niceToHave: z.string().nullish().transform((v) => (v ?? "").trim()),
+  certificates: z.string().nullish().transform((v) => (v ?? "").trim()),
   notes: z.string().nullish().transform((v) => (v ?? "").trim()),
 });
 
@@ -420,17 +436,29 @@ const VACANCY_AI_SCHEMA = {
     company: { type: "string", description: "Bedrijf / opdrachtgever, leeg als onbekend" },
     discipline: { type: "string", enum: VACANCY_DISCIPLINES as unknown as string[] },
     location: { type: "string", description: "Plaats/regio van de functie" },
+    employmentType: { type: "string", enum: ["ZZP", "LOONDIENST", "UITZEND"], description: "Dienstverband, leeg als onduidelijk" },
+    hoursPerWeek: { type: "number", description: "Uren per week (bv. 40), 0 als niet vermeld" },
+    durationText: { type: "string", description: "Duur van de opdracht, bv. '6 maanden + optie'" },
+    rateText: { type: "string", description: "Tarief- of salarisindicatie, letterlijk zoals vermeld" },
+    experienceText: { type: "string", description: "Gevraagde werkervaring, bv. 'min. 3 jaar'" },
+    educationLevel: { type: "string", description: "Opleidingsniveau, bv. 'MBO4 / HBO'" },
     positions: { type: "number", description: "Aantal te vullen posities (1 als niet vermeld)" },
-    value: { type: "number", description: "Tarief/uurloon of marge in euro, 0 als onbekend" },
-    requirements: { type: "string", description: "Functie-eisen, één eis per regel" },
+    responsibilities: { type: "string", description: "Werkzaamheden/taken, één per regel" },
+    requirements: { type: "string", description: "Harde functie-eisen, één per regel" },
+    niceToHave: { type: "string", description: "Pré / nice-to-have, één per regel" },
+    certificates: { type: "string", description: "Vereiste certificaten/diploma's, één per regel" },
     notes: { type: "string", description: "Korte samenvatting / bijzonderheden" },
   },
-  required: ["title", "company", "discipline", "location", "positions", "value", "requirements", "notes"],
+  required: [
+    "title", "company", "discipline", "location", "employmentType", "hoursPerWeek",
+    "durationText", "rateText", "experienceText", "educationLevel", "positions",
+    "responsibilities", "requirements", "niceToHave", "certificates", "notes",
+  ],
 } as const;
 
 const VACANCY_SYSTEM =
   "Je bent een recruitment-assistent voor Q4S, een technisch detacheringsbureau in de staalbouw/industrie. " +
-  "Je leest één geüploade vacaturetekst en haalt de kernvelden eruit. Antwoord uitsluitend als JSON in het Nederlands. " +
+  "Je leest één geüploade vacaturetekst en haalt alle kernvelden eruit. Antwoord uitsluitend als JSON in het Nederlands. " +
   "Verzin niets: laat een veld leeg (of 0/1) als de informatie er niet staat.";
 
 const VACANCY_PROMPT =
@@ -439,9 +467,17 @@ const VACANCY_PROMPT =
   "- company: het bedrijf/opdrachtgever (leeg als niet genoemd)\n" +
   "- discipline: kies de best passende uit de enum (OVERIG bij twijfel)\n" +
   "- location: plaats of regio\n" +
+  "- employmentType: ZZP, LOONDIENST of UITZEND (leeg als onduidelijk)\n" +
+  "- hoursPerWeek: uren per week als getal (0 als niet vermeld)\n" +
+  "- durationText: duur van de opdracht/contract\n" +
+  "- rateText: tarief- of salarisindicatie, letterlijk\n" +
+  "- experienceText: gevraagde werkervaring\n" +
+  "- educationLevel: opleidingsniveau\n" +
   "- positions: aantal posities (1 als niet vermeld)\n" +
-  "- value: tarief/uurloon/marge in euro als een getal (0 als onbekend)\n" +
-  "- requirements: de functie-eisen, één eis per regel (korte bullets zonder symbolen)\n" +
+  "- responsibilities: werkzaamheden/taken, één korte regel per taak (geen symbolen)\n" +
+  "- requirements: harde functie-eisen, één per regel\n" +
+  "- niceToHave: pré / nice-to-have, één per regel\n" +
+  "- certificates: vereiste certificaten/diploma's, één per regel\n" +
   "- notes: een korte samenvatting of bijzonderheden";
 
 /**
