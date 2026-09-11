@@ -143,11 +143,9 @@ export function DealForm({
     <form action={formAction}>
       {deal && <input type="hidden" name="id" value={deal.id} />}
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* ---- Linkerkant: het formulier ---- */}
-        <div className="lg:col-span-2 space-y-6">
-          {isNew && (
-            <Card className="border-brand-100 bg-gradient-to-br from-brand-50/60 to-transparent">
+      <div className="space-y-6">
+        {isNew && (
+          <Card className="border-brand-100 bg-gradient-to-br from-brand-50/60 to-transparent">
               <CardContent className="space-y-4">
                 <div className="flex items-start gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
@@ -504,69 +502,6 @@ export function DealForm({
               <SubmitButton>{submitLabel}</SubmitButton>
             </CardFooter>
           </Card>
-        </div>
-
-        {/* ---- Rechterkant: het gekleurde live-voorbeeld ---- */}
-        <div className="lg:col-span-1">
-          <div className="lg:sticky lg:top-6 space-y-4">
-            <Card>
-              <CardContent className="space-y-4">
-                <p className="text-[13px] font-bold uppercase tracking-wide text-ink-400">Voorbeeld</p>
-
-                <div>
-                  <p className="text-base font-bold text-ink-900">
-                    {title || <span className="text-ink-300">Titel van de vacature</span>}
-                  </p>
-                  <p className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-500">
-                    <Building2 className="h-3.5 w-3.5 text-ink-400" />
-                    {company || <span className="text-ink-300">Bedrijf / opdrachtgever</span>}
-                    {company.trim() && (
-                      <Badge color={knownCompany ? "green" : "amber"} className="ml-1">
-                        {knownCompany ? "bekende klant" : "nieuw"}
-                      </Badge>
-                    )}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 border-t border-ink-100 pt-3">
-                  {disciplineLabel && <Badge color={disciplineColor}>{disciplineLabel}</Badge>}
-                  {location.trim() && <Badge color="slate">{location}</Badge>}
-                  {employmentType && <Badge color={colorFor(EMPLOYMENT_TYPES, employmentType)}>{labelFor(EMPLOYMENT_TYPES, employmentType)}</Badge>}
-                  {!isVacature && stage && <Badge color={stage.color}>{stage.label}</Badge>}
-                </div>
-
-                <dl className="space-y-2.5 border-t border-ink-100 pt-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <dt className="flex items-center gap-1.5 text-ink-500">
-                      <Euro className="h-3.5 w-3.5 text-emerald-500" /> Waarde
-                    </dt>
-                    <dd className="font-semibold tabular-nums text-ink-900">{euro.format(Number(value) || 0)}</dd>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <dt className="flex items-center gap-1.5 text-ink-500">
-                      <Users className="h-3.5 w-3.5 text-blue-500" /> Posities
-                    </dt>
-                    <dd className="font-semibold tabular-nums text-ink-900">{Number(positions) || 1}</dd>
-                  </div>
-                  {!isVacature && (
-                    <div className="flex items-center justify-between">
-                      <dt className="flex items-center gap-1.5 text-ink-500">
-                        <Star className="h-3.5 w-3.5 text-amber-500" /> Fit / warmte
-                      </dt>
-                      <dd className="font-semibold text-amber-500">
-                        {fit > 0 ? "★".repeat(fit) + "☆".repeat(5 - fit) : <span className="text-ink-300">onbeoordeeld</span>}
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-
-                <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
-                  Dit voorbeeld werkt live mee terwijl je invult — zo zie je meteen hoe de vacature verschijnt.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
       </div>
     </form>
   );
