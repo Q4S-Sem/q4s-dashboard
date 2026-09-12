@@ -86,14 +86,20 @@ export function VacatureFilterList({ vacatures }: { vacatures: VacatureItem[] })
             const due = v.expectedCloseDate ? new Date(v.expectedCloseDate) : null;
             const overdueDate = due && due.getTime() < Date.now();
             return (
-              <li key={v.id} className="flex items-center gap-3 px-5 py-3">
+              <li key={v.id} className="group relative flex items-center gap-3 px-5 py-3 transition-colors hover:bg-brand-50/40">
+                {/* Overlay-link: hele rij klikbaar naar de vacature */}
+                <Link
+                  href={`/crm/deals/${v.id}`}
+                  className="absolute inset-0 z-0"
+                  aria-label={`Open vacature ${v.title}`}
+                />
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                   <Briefcase className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <Link href={`/crm/deals/${v.id}`} className="block truncate font-medium text-ink-900 hover:text-brand-700">
+                  <span className="block truncate font-medium text-ink-900 group-hover:text-brand-700">
                     {v.title}
-                  </Link>
+                  </span>
                   <p className="flex items-center gap-2 truncate text-xs text-ink-500">
                     <span className="inline-flex items-center gap-1">
                       <Building2 className="h-3.5 w-3.5 text-ink-400" />
@@ -111,10 +117,10 @@ export function VacatureFilterList({ vacatures }: { vacatures: VacatureItem[] })
                     )}
                   </p>
                 </div>
-                <div className="hidden w-28 shrink-0 justify-end sm:flex">
+                <div className="relative z-10 hidden w-28 shrink-0 justify-end sm:flex">
                   {v.discipline && <StatusBadge options={DISCIPLINES} value={v.discipline} />}
                 </div>
-                <div className="hidden w-24 shrink-0 justify-end sm:flex">
+                <div className="relative z-10 hidden w-24 shrink-0 justify-end sm:flex">
                   {due && (
                     <span className={cn("inline-flex items-center gap-1 text-xs font-medium tabular-nums", overdueDate ? "text-red-600" : "text-ink-400")} title="Verwachte startdatum">
                       <CalendarClock className="h-3.5 w-3.5" /> {due.toLocaleDateString("nl-NL", { day: "2-digit", month: "short" })}
@@ -124,7 +130,7 @@ export function VacatureFilterList({ vacatures }: { vacatures: VacatureItem[] })
                 <Link
                   href={`/crm/vacatures/${v.id}/match`}
                   title="Laat AI de best passende kandidaten uit de talentpool zoeken"
-                  className={cn(buttonVariants({ variant: "primary", size: "sm" }), "shrink-0")}
+                  className={cn(buttonVariants({ variant: "primary", size: "sm" }), "relative z-10 shrink-0")}
                 >
                   <Sparkles className="h-4 w-4" /> Zoek match
                 </Link>
