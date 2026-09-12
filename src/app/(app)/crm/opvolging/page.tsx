@@ -11,6 +11,7 @@ import {
   Users2,
   Kanban,
   Sparkles,
+  Clock,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +21,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate, cn } from "@/lib/utils";
-import { TASK_PRIORITIES, DISCIPLINES, type BadgeColor } from "@/lib/domain";
+import { TASK_PRIORITIES, DISCIPLINES, EVENT_TYPES, type BadgeColor } from "@/lib/domain";
 import {
   currentRecruiterId,
   getFollowUpItems,
@@ -30,6 +31,7 @@ import {
   type FollowUpItem,
 } from "@/lib/crm";
 import { completeFollowUp, completeTask } from "./actions";
+import { VacatureFilterList } from "./VacatureFilterList";
 
 export const metadata = { title: "Opvolging" };
 export const dynamic = "force-dynamic";
@@ -86,7 +88,7 @@ export default async function OpvolgingPage({
   // Opvolging is altijd algemeen/team-breed — geen Mijn opvolging/Team-schakelaar.
   const scope = "all" as const;
 
-  const [items, tasks, vacatures, board] = await Promise.all([
+  const [items, tasks, vacatures, board, agendaVandaag] = await Promise.all([
     getFollowUpItems({ recruiterId, scope }),
     db.task.findMany({
       where: { done: false },
@@ -105,6 +107,25 @@ export default async function OpvolgingPage({
     }),
     // Pipeline-stand: deals mét kandidaat, per fase.
     getBoardData({ recruiterId, scope, onlyWithCandidate: true }),
+    // Agenda-items van VANDAAG die relevant zijn voor recruitment: gekoppeld aan
+    // een klant/kandidaat/vacature, óf een recruitment-type (gesprek/bezoek/interview).
+    db.calendarEvent.findMany({
+      where: {
+        status: { not: "CANCELLED" },
+        start: { gte: startOfToday(), lte: endOfToday() },
+        OR: [
+          { clientId: { not: null } },
+          { candidateId: { not: null } },
+          { vacancyId: { not: null } },
+          { type: { in: ["CALL", "VISIT", "INTERVIEW", "MEETING"] } },
+        ],
+      },
+      orderBy: { start: "asc" },
+      include: {
+        client: { select: { id: true, companyName: true } },
+        candidate: { select: { id: true, firstName: true, lastName: true } },
+      },
+    }),
   ]);
 
   const startToday = startOfToday().getTime();
@@ -192,7 +213,7 @@ export default async function OpvolgingPage({
             })}
           </nav>
 
-          {/* VACATURES — te vullen met de juiste persoon */}
+          {/* VACATURES — te vullen met de juiste persoon (met filter) */}
           {view === "vacatures" && (
             vacatures.length === 0 ? (
               <EmptyState icon={<Briefcase className="h-6 w-6" />} title="Geen openstaande vacatures" description="Alle vacatures hebben een kandidaat, of leg een nieuwe vacature vast." />
@@ -206,56 +227,20 @@ export default async function OpvolgingPage({
                     Alle vacatures
                   </Link>
                 </CardHeader>
-                <ul className="divide-y divide-ink-100">
-                  {vacatures.map((v) => {
-                    const overdueDate = v.expectedCloseDate && v.expectedCloseDate.getTime() < Date.now();
-                    return (
-                      <li key={v.id} className="flex items-center gap-3 px-5 py-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                          <Briefcase className="h-4 w-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <Link href={`/crm/deals/${v.id}`} className="block truncate font-medium text-ink-900 hover:text-brand-700">
-                            {v.title}
-                          </Link>
-                          <p className="flex items-center gap-2 truncate text-xs text-ink-500">
-                            <span className="inline-flex items-center gap-1">
-                              <Building2 className="h-3.5 w-3.5 text-ink-400" />
-                              {v.client?.companyName ?? v.company}
-                            </span>
-                            {v.client?.city && (
-                              <span className="inline-flex items-center gap-1">
-                                <MapPin className="h-3 w-3 text-ink-400" /> {v.client.city}
-                              </span>
-                            )}
-                            {v.positions > 1 && (
-                              <span className="inline-flex items-center gap-1">
-                                <Users2 className="h-3 w-3 text-ink-400" /> {v.positions} posities
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                        <div className="hidden w-28 shrink-0 justify-end sm:flex">
-                          {v.discipline && <StatusBadge options={DISCIPLINES} value={v.discipline} />}
-                        </div>
-                        <div className="hidden w-24 shrink-0 justify-end sm:flex">
-                          {v.expectedCloseDate && (
-                            <span className={cn("inline-flex items-center gap-1 text-xs font-medium tabular-nums", overdueDate ? "text-red-600" : "text-ink-400")} title="Verwachte startdatum">
-                              <CalendarClock className="h-3.5 w-3.5" /> {formatDate(v.expectedCloseDate)}
-                            </span>
-                          )}
-                        </div>
-                        <Link
-                          href={`/crm/vacatures/${v.id}/match`}
-                          title="Laat AI de best passende kandidaten uit de talentpool zoeken"
-                          className={cn(buttonVariants({ variant: "primary", size: "sm" }), "shrink-0")}
-                        >
-                          <Sparkles className="h-4 w-4" /> Zoek match
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <CardContent>
+                  <VacatureFilterList
+                    vacatures={vacatures.map((v) => ({
+                      id: v.id,
+                      title: v.title,
+                      company: v.company,
+                      clientName: v.client?.companyName ?? null,
+                      city: v.client?.city ?? null,
+                      discipline: v.discipline,
+                      positions: v.positions,
+                      expectedCloseDate: v.expectedCloseDate ? v.expectedCloseDate.toISOString() : null,
+                    }))}
+                  />
+                </CardContent>
               </Card>
             )
           )}
@@ -275,7 +260,7 @@ export default async function OpvolgingPage({
                   </Link>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex gap-3 overflow-x-auto pb-1">
+                  <div className="mx-auto flex w-fit max-w-full gap-3 overflow-x-auto pb-1">
                     {stageBuckets.map(({ stage, cards }) => (
                       <div key={stage.id} className="flex w-56 shrink-0 flex-col rounded-xl border border-ink-100 bg-ink-50/40">
                         <div className="flex items-center justify-between border-b border-ink-100 px-3 py-2">
@@ -336,13 +321,64 @@ export default async function OpvolgingPage({
             )
           )}
 
-          {/* VANDAAG — vandaag op te volgen (+ binnenkort eronder) */}
+          {/* VANDAAG — agenda-afspraken + op te volgen (+ binnenkort eronder) */}
           {view === "vandaag" && (
             <>
+              {/* Recruitment-agenda van vandaag (afspraken gekoppeld aan klant/kandidaat/vacature) */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <CalendarClock className="h-4 w-4 text-amber-500" /> Vandaag ({today.length})
+                    <CalendarClock className="h-4 w-4 text-brand-600" /> Agenda vandaag ({agendaVandaag.length})
+                  </CardTitle>
+                  <Link href="/agenda" className="text-sm text-brand-700 hover:underline">
+                    Naar de agenda
+                  </Link>
+                </CardHeader>
+                {agendaVandaag.length === 0 ? (
+                  <CardContent className="text-sm text-ink-500">
+                    Geen recruitment-afspraken vandaag. Plan een gesprek of bezoek in de agenda.
+                  </CardContent>
+                ) : (
+                  <ul className="divide-y divide-ink-100">
+                    {agendaVandaag.map((e) => {
+                      const linkName =
+                        e.candidate
+                          ? `${e.candidate.firstName ?? ""} ${e.candidate.lastName ?? ""}`.trim()
+                          : e.client?.companyName ?? null;
+                      const typeMeta = EVENT_TYPES.find((t) => t.value === e.type);
+                      return (
+                        <li key={e.id} className="flex items-center gap-3 px-5 py-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                            <Clock className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-ink-900">{e.title}</p>
+                            <p className="flex items-center gap-2 truncate text-xs text-ink-500">
+                              {typeMeta && <StatusBadge options={EVENT_TYPES} value={e.type} />}
+                              {linkName && (
+                                <span className="inline-flex items-center gap-1">
+                                  {e.candidate ? <Users2 className="h-3 w-3 text-ink-400" /> : <Building2 className="h-3 w-3 text-ink-400" />}
+                                  {linkName}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <span className="w-16 text-right text-xs font-medium text-ink-500 tabular-nums">
+                            {e.allDay
+                              ? "Hele dag"
+                              : new Date(e.start).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4 text-amber-500" /> Op te volgen vandaag ({today.length})
                   </CardTitle>
                 </CardHeader>
                 {today.length === 0 ? (
