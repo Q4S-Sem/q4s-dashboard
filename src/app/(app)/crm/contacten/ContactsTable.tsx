@@ -170,7 +170,15 @@ export function ContactsTable({
           Geen contact gevonden voor “{q}”.
         </p>
       ) : (
-        <Table>
+        <Table className="min-w-[52rem] table-fixed">
+          <colgroup>
+            <col />
+            <col className="w-[10rem]" />
+            <col className="w-[14rem]" />
+            <col className={isWerknemer ? "w-[15rem]" : "w-[13rem]"} />
+            {!isWerknemer && <col className="w-[6rem]" />}
+            {!isWerknemer && <col className="w-[6rem]" />}
+          </colgroup>
           <THead>
             <TR className="hover:bg-transparent">
               <TH>Naam</TH>
@@ -191,8 +199,8 @@ export function ContactsTable({
                     <RowLink href={`/crm/contacten/${c.id}`}>{c.name}</RowLink>
                   )}
                 </TD>
-                <TD>{c.jobTitle ?? "—"}</TD>
-                <TD>{c.company ?? "—"}</TD>
+                <TD className="truncate">{c.jobTitle ?? "—"}</TD>
+                <TD className="truncate">{c.company ?? "—"}</TD>
                 <TD className="relative z-10">
                   <ContactCell phone={c.phone} email={c.email} name={c.name} />
                 </TD>
