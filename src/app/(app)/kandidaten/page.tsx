@@ -7,17 +7,15 @@ import {
   UserX,
   UserCheck,
   ChevronRight,
-  MapPin,
   Mail,
   Phone,
-  ClipboardList,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
-import { StatusBadge, Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { person } from "@/lib/people";
 import { cn } from "@/lib/utils";
@@ -214,7 +212,6 @@ export default async function KandidatenPage({
           </p>
           <div className="divide-y divide-ink-100 overflow-hidden rounded-md border border-ink-100 bg-white">
             {candidates.map((c) => {
-              const companies = [...new Set(c.candidatePlacements.map((p) => p.company))];
               return (
                 <div
                   key={c.id}
@@ -247,24 +244,7 @@ export default async function KandidatenPage({
 
                   {/* Contact — verschijnt vanaf lg, vaste breedte zodat de
                       statuskolommen rechts netjes uitgelijnd blijven */}
-                  <div className="relative z-10 hidden w-[300px] shrink-0 items-center justify-end gap-x-3 text-xs text-ink-500 lg:flex">
-                    {c.location && (
-                      <span className="pointer-events-none inline-flex min-w-0 items-center gap-1" title={c.location}>
-                        <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-400" />
-                        <span className="max-w-[110px] truncate">{c.location}</span>
-                      </span>
-                    )}
-                    {companies.length > 0 && (
-                      <span className="pointer-events-none inline-flex items-center gap-1" title={`Geplaatst bij ${companies.join(", ")}`}>
-                        <Badge color="violet">{companies[0]}</Badge>
-                        {companies.length > 1 && (
-                          <span className="text-ink-400">+{companies.length - 1}</span>
-                        )}
-                      </span>
-                    )}
-                    <span className="pointer-events-none inline-flex items-center gap-1 text-ink-400" title={`${c._count.applications} sollicitatie(s)`}>
-                      <ClipboardList className="h-3.5 w-3.5" /> {c._count.applications}
-                    </span>
+                  <div className="relative z-10 hidden w-[110px] shrink-0 items-center justify-end gap-x-3 text-xs text-ink-500 lg:flex">
                     <span className="flex items-center gap-1.5">
                       {c.phone ? (
                         <a

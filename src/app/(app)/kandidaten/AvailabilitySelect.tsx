@@ -18,6 +18,13 @@ const DOT: Record<string, string> = {
   NIET_BESCHIKBAAR: "bg-red-500",
   ONBEKEND: "bg-ink-300",
 };
+/** Korte labels voor de chip + dropdown — kort en duidelijk, niet uitlopend. */
+const SHORT: Record<string, string> = {
+  BESCHIKBAAR: "Beschikbaar",
+  BINNENKORT: "Binnenkort",
+  NIET_BESCHIKBAAR: "Niet beschikbaar",
+  ONBEKEND: "Onbekend",
+};
 
 /**
  * Inline beschikbaarheid-kiezer, gespiegeld aan de RatingSelect. Kiezen slaat
@@ -82,7 +89,7 @@ export function AvailabilitySelect({
   }, [open]);
 
   const label =
-    CANDIDATE_AVAILABILITY.find((a) => a.value === current)?.label ?? "Onbekend";
+    SHORT[current] ?? CANDIDATE_AVAILABILITY.find((a) => a.value === current)?.label ?? "Onbekend";
   const tone = TONE[current] ?? TONE.ONBEKEND;
 
   function choose(v: string) {
@@ -139,7 +146,7 @@ export function AvailabilitySelect({
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50"
             >
               <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[a.value] ?? DOT.ONBEKEND}`} />
-              <span className="flex-1">{a.label}</span>
+              <span className="flex-1">{SHORT[a.value] ?? a.label}</span>
               {current === a.value && <Check className="h-4 w-4 text-emerald-600" />}
             </button>
           ))}

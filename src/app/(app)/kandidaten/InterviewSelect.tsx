@@ -16,6 +16,12 @@ const DOT: Record<string, string> = {
   PLANNED: "bg-amber-500",
   NONE: "bg-ink-300",
 };
+/** Korte labels voor de chip + dropdown — kort en duidelijk, niet uitlopend. */
+const SHORT: Record<string, string> = {
+  NONE: "Nog niet",
+  PLANNED: "Ingepland",
+  DONE: "Interview",
+};
 
 /**
  * Inline interview-status-kiezer (met Q4S), gespiegeld aan de RatingSelect /
@@ -80,7 +86,7 @@ export function InterviewSelect({
   }, [open]);
 
   const label =
-    CANDIDATE_INTERVIEW_STATUSES.find((s) => s.value === current)?.label ?? "Nog niet";
+    SHORT[current] ?? CANDIDATE_INTERVIEW_STATUSES.find((s) => s.value === current)?.label ?? "Nog niet";
   const tone = TONE[current] ?? TONE.NONE;
 
   function choose(v: string) {
@@ -137,7 +143,7 @@ export function InterviewSelect({
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50"
             >
               <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[s.value] ?? DOT.NONE}`} />
-              <span className="flex-1">{s.label}</span>
+              <span className="flex-1">{SHORT[s.value] ?? s.label}</span>
               {current === s.value && <Check className="h-4 w-4 text-emerald-600" />}
             </button>
           ))}

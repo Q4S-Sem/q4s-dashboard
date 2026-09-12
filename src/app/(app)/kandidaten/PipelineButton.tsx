@@ -71,9 +71,10 @@ export function PipelineButton({
         onClick={() => setOpen(true)}
         title={`${candidateName} in de pipeline zetten`}
         aria-label={`${candidateName} in de pipeline zetten`}
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-ink-200 text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-brand-200 bg-brand-50 px-2.5 text-xs font-semibold text-brand-700 transition-colors hover:border-brand-300 hover:bg-brand-100"
       >
         <GitBranchPlus className="h-4 w-4" />
+        In pipeline
       </button>
 
       {mounted &&
