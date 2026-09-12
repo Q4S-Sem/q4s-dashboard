@@ -178,7 +178,7 @@ export default async function ContactenPage({
         <EmptyState
           icon={<Building2 className="h-6 w-6" />}
           title="Nog geen bedrijven"
-          description="Zodra er bedrijven in 'Onze bedrijven' staan, verschijnen ze hier om contactpersonen aan te koppelen."
+          description="Zodra er bedrijven onder 'Klanten' staan, verschijnen ze hier om contactpersonen aan te koppelen."
         />
       ) : (
         <CompaniesBrowser companies={companies} />

@@ -11,7 +11,7 @@ import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table"
 import { DISCIPLINES } from "@/lib/domain";
 import { BedrijvenFilters } from "./BedrijvenFilters";
 
-export const metadata = { title: "Onze bedrijven" };
+export const metadata = { title: "Klanten" };
 export const dynamic = "force-dynamic";
 
 export default async function BedrijvenPage({
@@ -60,7 +60,7 @@ export default async function BedrijvenPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Onze bedrijven"
+        title="Klanten"
         description="De klanten waar Q4S mensen plaatst — met hun openstaande vacatures en lopende deals. Zet vanuit de talentpool een kandidaat in de pipeline bij een van deze bedrijven."
         actions={
           <Link href="/klanten/nieuw" className={buttonVariants()}>
