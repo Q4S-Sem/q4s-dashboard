@@ -29,7 +29,6 @@ function toData(data: z.infer<typeof ContactSchema>) {
     email: data.email ?? null,
     phone: data.phone ?? null,
     jobTitle: data.jobTitle ?? null,
-    company: data.company ?? null,
     linkedinUrl: data.linkedinUrl ?? null,
     ownerId: data.ownerId ?? null,
     targetClientId: data.targetClientId ?? null,
@@ -38,14 +37,22 @@ function toData(data: z.infer<typeof ContactSchema>) {
   };
 }
 
+/** Bedrijfsnaam afleiden uit de gekoppelde klant (geen los tekstveld meer). */
+async function companyFromClient(clientId: string | null | undefined): Promise<string | null> {
+  if (!clientId) return null;
+  const c = await db.client.findUnique({ where: { id: clientId }, select: { companyName: true } });
+  return c?.companyName ?? null;
+}
+
 export async function createContact(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(ContactSchema, formData);
   if (!parsed.success) return parsed.state;
 
   const data = toData(parsed.data);
   if (!data.ownerId) data.ownerId = await currentRecruiterId();
+  const company = await companyFromClient(data.clientId);
 
-  const created = await db.crmContact.create({ data });
+  const created = await db.crmContact.create({ data: { ...data, company } });
   revalidatePath("/crm/contacten");
   redirect(`/crm/contacten/${created.id}`);
 }
@@ -60,8 +67,9 @@ export async function updateContact(_prev: FormState, formData: FormData): Promi
   // Eigenaar-veld staat niet meer op het formulier; nooit met leeg overschrijven.
   const data = toData(parsed.data);
   const { ownerId: _drop, ...rest } = data;
+  const company = await companyFromClient(data.clientId);
 
-  await db.crmContact.update({ where: { id }, data: rest });
+  await db.crmContact.update({ where: { id }, data: { ...rest, company } });
   revalidatePath("/crm/contacten");
   revalidatePath(`/crm/contacten/${id}`);
   redirect(`/crm/contacten/${id}`);

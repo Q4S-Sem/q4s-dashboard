@@ -56,9 +56,6 @@ export function ContactForm({
             <Field label="Functie" htmlFor="jobTitle" error={e.jobTitle}>
               <Input id="jobTitle" name="jobTitle" placeholder="Bijv. Inkoper / Hiring Manager" defaultValue={contact?.jobTitle ?? ""} />
             </Field>
-            <Field label="Bedrijf" htmlFor="company" error={e.company}>
-              <Input id="company" name="company" defaultValue={contact?.company ?? defaultCompany ?? ""} />
-            </Field>
             <Field label="E-mail" htmlFor="email" error={e.email}>
               <Input id="email" name="email" type="email" defaultValue={contact?.email ?? ""} />
             </Field>
