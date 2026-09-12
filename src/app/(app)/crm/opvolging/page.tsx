@@ -260,9 +260,9 @@ export default async function OpvolgingPage({
                   </Link>
                 </CardHeader>
                 <CardContent>
-                  <div className="mx-auto flex w-fit max-w-full gap-3 overflow-x-auto pb-1">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
                     {stageBuckets.map(({ stage, cards }) => (
-                      <div key={stage.id} className="flex w-56 shrink-0 flex-col rounded-xl border border-ink-100 bg-ink-50/40">
+                      <div key={stage.id} className="flex min-h-[9rem] flex-col rounded-xl border border-ink-100 bg-ink-50/40">
                         <div className="flex items-center justify-between border-b border-ink-100 px-3 py-2">
                           <span className="truncate text-sm font-semibold text-ink-800" title={stage.name}>{stage.name}</span>
                           <Badge color={(stage.color as BadgeColor) ?? "slate"}>{cards.length}</Badge>
