@@ -1,0 +1,191 @@
+[
+  {
+    "id": "cmrxaufne001dvuc8m3rfllf4",
+    "name": "ONE-Dyas",
+    "city": "Amsterdam",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaufpk001evuc8e7r6onh2",
+    "name": "OOS Energy",
+    "city": "Goes",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaufrg001fvuc8cq4e5tp8",
+    "name": "Orsted",
+    "city": "",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaufts001gvuc8namkgdsi",
+    "name": "ProRail",
+    "city": "Utrecht",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaufvp001hvuc8fh43f88q",
+    "name": "Repsol",
+    "city": "",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaufxl001ivuc849f0tj7n",
+    "name": "Rijkswaterstaat",
+    "city": "Den Haag",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaufzi001jvuc8grhiqfuk",
+    "name": "Royal IHC",
+    "city": "",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaug1h001kvuc8rhgyoilg",
+    "name": "SBM",
+    "city": "Schiedam",
+    "contact": "Jean Pierre Gascoin",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaug3f001lvuc8hdvnqqu0",
+    "name": "SBM Schiedam",
+    "city": "Schiedam",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaug5c001mvuc8ky0hk1np",
+    "name": "SEW",
+    "city": "Broek op Langedijk",
+    "contact": "Patrick de Best",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaug79001nvuc8mjl9zjhj",
+    "name": "Sif Group",
+    "city": "Roermond",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugba001pvuc8zuicfkxb",
+    "name": "Smulders (BE)",
+    "city": "Arendonk (Belgie)",
+    "contact": "Myriam Bouhaddi",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugd8001qvuc8ufg1dof3",
+    "name": "Spie",
+    "city": "Breda",
+    "contact": "Martin de Jager",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugf5001rvuc88k9qigz5",
+    "name": "Strukton",
+    "city": "Utrecht",
+    "contact": "Andre Pieterson",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugh2001svuc8u3qz2hil",
+    "name": "TAQA",
+    "city": "Alkmaar",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugj0001tvuc8vcyv0c6p",
+    "name": "Team QIS",
+    "city": "Roosendaal",
+    "contact": "Andre Broeke",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugkz001uvuc8sfbhf15y",
+    "name": "Technip Energies",
+    "city": "Zoetermeer",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugmv001vvuc86zpxey23",
+    "name": "Trust Project Services",
+    "city": "Moerdijk",
+    "contact": "Matt van 't Ende",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugou001wvuc898x912ye",
+    "name": "Van Oord",
+    "city": "",
+    "contact": "Daan Makkink",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugyg0021vuc8dya8bhg4",
+    "name": "Vattenfall",
+    "city": "",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugqr001xvuc8gsezbjbq",
+    "name": "VDS",
+    "city": "",
+    "contact": "Jaap de Jonge",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugsn001yvuc8ymvj5pqk",
+    "name": "Vermeer Eemshaven",
+    "city": "Eemshaven",
+    "contact": "J. Hagendijk",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxauguk001zvuc8ljlzfwox",
+    "name": "Verwater",
+    "city": "",
+    "contact": "Marco Otterspeer",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaugwh0020vuc8qjd977ih",
+    "name": "Vestas",
+    "city": "Arnhem",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxauh0e0022vuc84cpxlo01",
+    "name": "Vopak",
+    "city": "Rotterdam",
+    "contact": "Marco van der Hout",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxauh290023vuc847r42nlu",
+    "name": "Wintershall DEA",
+    "city": "",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxauh480024vuc83wabwuom",
+    "name": "Your Welding Engineers BV",
+    "city": "Barendrecht",
+    "contact": "Robin Vogels",
+    "placements": "0"
+  }
+]

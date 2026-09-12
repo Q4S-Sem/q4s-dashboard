@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
-import { Pencil, Star, CalendarClock, CheckCircle2, MessageSquare, ArrowRight, Mail, Phone, History } from "lucide-react";
+import { Pencil, Star, CalendarClock, CheckCircle2, MessageSquare, ArrowRight, Mail, History } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Avatar } from "@/components/ui/avatar";
+import { PhoneButton } from "@/components/ui/phone-button";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
@@ -171,15 +172,7 @@ export default async function DealDetailPage({ params }: { params: Promise<{ id:
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {candidate.phone && (
-                <a
-                  href={`tel:${candidate.phone}`}
-                  title={`Bel ${candidate.firstName}`}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors hover:bg-emerald-200"
-                >
-                  <Phone className="h-4 w-4" />
-                </a>
-              )}
+              <PhoneButton phone={candidate.phone} name={`${candidate.firstName} ${candidate.lastName ?? ""}`.trim()} className="h-9 w-9" />
               {candidate.email && (
                 <a
                   href={`mailto:${candidate.email}`}

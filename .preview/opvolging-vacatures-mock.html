@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; }
+  .wrap { max-width: 1100px; font-size: 14px; color: var(--foreground, #1c1c1e); }
+
+  /* Tabs */
+  .tabs { display: flex; align-items: flex-end; gap: 4px; border-bottom: 1px solid #e5e5e7; margin-bottom: 18px; overflow-x: auto; }
+  .tab { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 500; font-size: 14px;
+         border: 1px solid transparent; border-bottom: none; border-radius: 12px 12px 0 0; color: #6b7280; margin-bottom: -1px; white-space: nowrap; cursor: default; }
+  .tab.active { border-color: #e5e5e7; background: #fff; color: #1c1c1e; }
+  .dot { width: 10px; height: 10px; border-radius: 999px; }
+  .cnt { border-radius: 4px; padding: 1px 6px; font-size: 11px; font-weight: 600; background: #f0f0f2; color: #6b7280; }
+  .tab.active .cnt { background: #eef2ff; color: #4338ca; }
+  .b-brand { background: #6366f1; } .b-violet { background: #8b5cf6; } .b-red { background: #ef4444; }
+  .b-amber { background: #f59e0b; } .b-ink { background: #9ca3af; }
+
+  /* Card + list */
+  .card { border: 1px solid #e5e5e7; border-radius: 16px; background: #fff; overflow: hidden; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #f0f0f2; }
+  .card-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+  .card-title .ic { color: #6366f1; }
+  .link { color: #4338ca; font-size: 13px; text-decoration: none; }
+
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid #f4f4f5; }
+  .row:first-child { border-top: none; }
+  .avatar { width: 36px; height: 36px; border-radius: 10px; background: #eef2ff; color: #6366f1;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .main { min-width: 0; flex: 1; }
+  .title { font-weight: 500; color: #1c1c1e; }
+  .sub { display: flex; gap: 12px; font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .sub span { display: inline-flex; align-items: center; gap: 4px; }
+
+  .disc { width: 112px; display: flex; justify-content: flex-end; flex-shrink: 0; }
+  .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+  .bg-slate { background: #f1f5f9; color: #475569; } .bg-green { background: #dcfce7; color: #15803d; }
+  .bg-amber { background: #fef3c7; color: #b45309; } .bg-blue { background: #dbeafe; color: #1d4ed8; }
+  .bg-violet { background: #ede9fe; color: #6d28d9; }
+
+  .date { width: 96px; display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: #9ca3af; flex-shrink: 0; }
+  .date.late { color: #dc2626; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; background: #1c1c1e; color: #fff; font-size: 13px; font-weight: 500;
+         padding: 7px 12px; border-radius: 8px; flex-shrink: 0; white-space: nowrap; }
+  .btn .ic { color: #fff; }
+
+  .note { font-size: 12px; color: #9ca3af; margin: 12px 2px 0; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="tabs">
+    <div class="tab active"><span class="dot b-brand"></span> Vacatures te vullen <span class="cnt">3</span></div>
+    <div class="tab"><span class="dot b-violet"></span> Pipeline-stand <span class="cnt">1</span></div>
+    <div class="tab"><span class="dot b-red"></span> Over tijd <span class="cnt">0</span></div>
+    <div class="tab"><span class="dot b-amber"></span> Vandaag <span class="cnt">0</span></div>
+    <div class="tab"><span class="dot b-ink"></span> Taken <span class="cnt">0</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">
+        <span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></span>
+        Vacatures te vullen (3)
+      </div>
+      <a class="link" href="#">Alle vacatures</a>
+    </div>
+
+    <!-- Rij 1 -->
+    <div class="row">
+      <div class="avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div>
+      <div class="main">
+        <div class="title">NDT Inspecteur (UT/RT)</div>
+        <div class="sub">
+          <span>🏢 Smart AIS</span>
+          <span>📍 Rotterdam</span>
+          <span>👥 2 posities</span>
+        </div>
+      </div>
+      <div class="disc"><span class="badge bg-green">NDO / NDT</span></div>
+      <div class="date late">⏰ 15 sep</div>
+      <div class="btn"><span class="ic">✦</span> Zoek match</div>
+    </div>
+
+    <!-- Rij 2 -->
+    <div class="row">
+      <div class="avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div>
+      <div class="main">
+        <div class="title">Lasser MIG/MAG</div>
+        <div class="sub">
+          <span>🏢 Allseas</span>
+          <span>📍 Delft</span>
+        </div>
+      </div>
+      <div class="disc"><span class="badge bg-amber">Lassen / Welding</span></div>
+      <div class="date">⏰ 1 okt</div>
+      <div class="btn"><span class="ic">✦</span> Zoek match</div>
+    </div>
+
+    <!-- Rij 3 -->
+    <div class="row">
+      <div class="avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div>
+      <div class="main">
+        <div class="title">QA/QC Engineer</div>
+        <div class="sub">
+          <span>🏢 AkzoNobel</span>
+          <span>📍 Rhoon</span>
+          <span>👥 1 positie</span>
+        </div>
+      </div>
+      <div class="disc"><span class="badge bg-blue">QA/QC</span></div>
+      <div class="date">⏰ 20 okt</div>
+      <div class="btn"><span class="ic">✦</span> Zoek match</div>
+    </div>
+  </div>
+
+  <p class="note">Voorbeeld met fictieve data — zo ziet de tab eruit zodra er openstaande vacatures zijn. Elke rij: titel · bedrijf/plaats/posities · discipline-badge · verwachte startdatum (rood = over tijd) · "Zoek match"-knop (AI zoekt de juiste kandidaat).</p>
+
+</div>
+</body>
+</html>

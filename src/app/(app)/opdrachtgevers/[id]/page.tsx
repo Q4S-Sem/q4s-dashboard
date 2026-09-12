@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { BackLink } from "@/components/back-link";
 import {
   Building2, Briefcase, Kanban, Users2, Search, Sparkles, MapPin,
-  Phone, Mail, Star, ArrowRight, GitBranchPlus, Plus,
+  Mail, Star, ArrowRight, GitBranchPlus, Plus,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
+import { PhoneButton } from "@/components/ui/phone-button";
 import { person } from "@/lib/people";
 import { cn } from "@/lib/utils";
 import { DISCIPLINES, CANDIDATE_RATINGS } from "@/lib/domain";
@@ -274,19 +275,7 @@ export default async function BedrijfWerkruimtePage({
 
                           {/* Acties */}
                           <div className="flex shrink-0 items-center gap-1.5">
-                            {c.phone ? (
-                              <a
-                                href={`tel:${c.phone}`}
-                                title={`Bel ${c.firstName}`}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors hover:bg-emerald-200"
-                              >
-                                <Phone className="h-4 w-4" />
-                              </a>
-                            ) : (
-                              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300" title="Geen telefoonnummer">
-                                <Phone className="h-4 w-4" />
-                              </span>
-                            )}
+                            <PhoneButton phone={c.phone} name={`${c.firstName} ${c.lastName ?? ""}`.trim()} />
                             {c.email ? (
                               <a
                                 href={`mailto:${c.email}`}

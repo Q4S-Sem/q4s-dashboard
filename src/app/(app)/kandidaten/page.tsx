@@ -8,7 +8,6 @@ import {
   UserCheck,
   ChevronRight,
   Mail,
-  Phone,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -17,6 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
+import { PhoneButton } from "@/components/ui/phone-button";
 import { person } from "@/lib/people";
 import { cn } from "@/lib/utils";
 import {
@@ -246,24 +246,7 @@ export default async function KandidatenPage({
                       statuskolommen rechts netjes uitgelijnd blijven */}
                   <div className="relative z-10 hidden w-[110px] shrink-0 items-center justify-end gap-x-3 text-xs text-ink-500 lg:flex">
                     <span className="flex items-center gap-1.5">
-                      {c.phone ? (
-                        <a
-                          href={`tel:${c.phone}`}
-                          title={`Bel ${c.firstName} (${c.phone})`}
-                          aria-label={`Bel ${c.firstName} ${c.lastName}`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors hover:bg-emerald-200"
-                        >
-                          <Phone className="h-4 w-4" />
-                        </a>
-                      ) : (
-                        <span
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300"
-                          title="Geen telefoonnummer bekend"
-                          aria-hidden
-                        >
-                          <Phone className="h-4 w-4" />
-                        </span>
-                      )}
+                      <PhoneButton phone={c.phone} name={`${c.firstName} ${c.lastName}`} />
                       {c.email ? (
                         <a
                           href={`mailto:${c.email}`}

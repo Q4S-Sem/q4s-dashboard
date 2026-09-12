@@ -1,0 +1,191 @@
+[
+  {
+    "id": "cmrxaudpl000dvuc85bsshxgb",
+    "name": "Chane Terminal Nieuwe Maas",
+    "city": "Vondelingenplaat Rotterdam",
+    "contact": "Niek Baan",
+    "placements": "2"
+  },
+  {
+    "id": "cmsd1ib290000lg045shbmrjx",
+    "name": "HSM Smulders",
+    "city": "Krimpen aan den IJssel",
+    "contact": "",
+    "placements": "2"
+  },
+  {
+    "id": "cmryjcsgv0000ie04gppg4pyj",
+    "name": "Mistras Group B.V.",
+    "city": "Spijkenisse",
+    "contact": "Onno de Ooijer",
+    "placements": "1"
+  },
+  {
+    "id": "cmsd40hdc0000l80445d730b9",
+    "name": "Qempower",
+    "city": "Rotterdam",
+    "contact": "",
+    "placements": "1"
+  },
+  {
+    "id": "cmrxaug95001ovuc8iknccegb",
+    "name": "Smart AIS",
+    "city": "Schiedam",
+    "contact": "",
+    "placements": "1"
+  },
+  {
+    "id": "cmrxaud050000vuc846pb10zn",
+    "name": "A lanes",
+    "city": "",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaud2j0001vuc8zaajrl97",
+    "name": "ABB",
+    "city": "Dalfsen",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaud4f0002vuc888b0fb9a",
+    "name": "Air Products",
+    "city": "Botlek Rotterdam",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaud6c0003vuc8dpq7cie8",
+    "name": "AkzoNobel",
+    "city": "Rhoon",
+    "contact": "Rob Remans",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaud8b0004vuc8ngm7nv7q",
+    "name": "Allseas",
+    "city": "Delft",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxauda70005vuc85925krkh",
+    "name": "Alstom",
+    "city": "Ridderkerk",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudc50006vuc858r54dau",
+    "name": "Aplus",
+    "city": "Rotterdam",
+    "contact": "Menno Kielman",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaude20007vuc8hrtd1v9i",
+    "name": "ASK",
+    "city": "",
+    "contact": "Jan Krielaart",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudfz0008vuc8w8tsqgxb",
+    "name": "Ballast Nedam",
+    "city": "",
+    "contact": "Lex Brasum",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudhw0009vuc8rxtvsbn0",
+    "name": "BAM",
+    "city": "",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudjt000avuc8plupjb50",
+    "name": "Boskalis",
+    "city": "",
+    "contact": "Taco Trepstra",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudlt000bvuc88vvyv9yd",
+    "name": "BP",
+    "city": "",
+    "contact": "Pardi Hammerstein",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudnp000cvuc8u17dg4ix",
+    "name": "Bureau Veritas",
+    "city": "",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudrh000evuc8wi5ruum4",
+    "name": "Damen",
+    "city": "Schiedam",
+    "contact": "Kees Vennink",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudtf000fvuc8c0r0b8pq",
+    "name": "Damen Schiedam",
+    "city": "Schiedam",
+    "contact": "Hessel Jan Hijkinga",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudvc000gvuc8td3ihmp8",
+    "name": "Damen Vlissingen",
+    "city": "Ritthem (bij Vlissingen)",
+    "contact": "Bas van den Broek",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudx9000hvuc8awumqvx6",
+    "name": "Dana Petroleum",
+    "city": "'s-Gravenhage (Den Haag)",
+    "contact": "Patrick de Visser",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaudz6000ivuc8w7bauovh",
+    "name": "DCN",
+    "city": "Bergen op Zoom",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaue15000jvuc82cx4nu2v",
+    "name": "DEME",
+    "city": "",
+    "contact": "",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaue32000kvuc8w54oxpy4",
+    "name": "DMJob",
+    "city": "Barendrecht",
+    "contact": "Arie Stoker",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaue4z000lvuc80xj58vsk",
+    "name": "DNV GL",
+    "city": "",
+    "contact": "Chris vd Berg",
+    "placements": "0"
+  },
+  {
+    "id": "cmrxaue6x000mvuc8owhg9v4j",
+    "name": "Energy Resourcing",
+    "city": "",
+    "contact": "",
+    "placements": "0"
+  }
+]
