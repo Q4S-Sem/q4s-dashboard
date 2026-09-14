@@ -5,17 +5,15 @@ import {
   MapPin,
   Sparkles,
   MessageSquarePlus,
-  Send,
   ArrowRight,
   ExternalLink,
   FileText,
+  Rocket,
   Eye,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
-import { EmptyState } from "@/components/ui/empty-state";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { DISCIPLINES, labelFor } from "@/lib/domain";
@@ -33,15 +31,38 @@ function siteUrl(raw: string | undefined | null): string | null {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
-/** Websitestatus van een vacature-deal: afgeleid van de gekoppelde Vacancy. */
-function statusOf(vac: { status: string } | null): { text: string; cls: string } {
-  if (!vac) return { text: "Nog niet klaargezet", cls: "bg-ink-100 text-ink-600" };
-  if (vac.status === "PUBLISHED") return { text: "Live op de site", cls: "bg-emerald-50 text-emerald-700" };
-  if (vac.status === "PAUSED") return { text: "Gepauzeerd", cls: "bg-amber-50 text-amber-700" };
-  return { text: "Concept", cls: "bg-blue-50 text-blue-700" };
+type Bucket = "concept" | "gereed" | "online";
+
+/**
+ * Websitefase van een vacature-deal:
+ *  - concept  = nog geen website-tekst klaar (geen Vacancy, of status CONCEPT)
+ *  - gereed   = website-tekst uitgewerkt, nog niet live (IMPROVED / PAUSED)
+ *  - online   = live op q4s.nl (PUBLISHED)
+ */
+function bucketOf(vac: { status: string } | null): Bucket {
+  if (!vac || vac.status === "CONCEPT") return "concept";
+  if (vac.status === "PUBLISHED") return "online";
+  return "gereed";
 }
 
-export default async function WebsitePage() {
+const TABS: { key: Bucket; label: string; dot: string }[] = [
+  { key: "concept", label: "Concept", dot: "bg-ink-400" },
+  { key: "gereed", label: "Gereed", dot: "bg-blue-500" },
+  { key: "online", label: "Online", dot: "bg-emerald-500" },
+];
+
+const STATUS_LABEL: Record<Bucket, { text: string; cls: string }> = {
+  concept: { text: "Concept", cls: "bg-ink-100 text-ink-600" },
+  gereed: { text: "Gereed voor publicatie", cls: "bg-blue-50 text-blue-700" },
+  online: { text: "Online", cls: "bg-emerald-50 text-emerald-700" },
+};
+
+export default async function WebsitePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const sp = await searchParams;
   const [settings, openDeals] = await Promise.all([
     db.companySettings.findUnique({ where: { id: "default" } }),
     // Alle openstaande vacatures uit de recruitment-hub (deals zonder kandidaat).
@@ -58,12 +79,17 @@ export default async function WebsitePage() {
 
   const url = siteUrl(settings?.website);
 
-  const total = openDeals.length;
-  const live = openDeals.filter((d) => d.vacancy?.status === "PUBLISHED").length;
-  const concept = openDeals.filter(
-    (d) => d.vacancy && d.vacancy.status !== "PUBLISHED",
-  ).length;
-  const todo = openDeals.filter((d) => !d.vacancy).length;
+  // Verrijk met de bucket zodat we niet steeds opnieuw hoeven te bepalen.
+  const rows = openDeals.map((d) => ({ d, bucket: bucketOf(d.vacancy) }));
+  const counts: Record<Bucket, number> = {
+    concept: rows.filter((r) => r.bucket === "concept").length,
+    gereed: rows.filter((r) => r.bucket === "gereed").length,
+    online: rows.filter((r) => r.bucket === "online").length,
+  };
+
+  const validTab = new Set<string>(TABS.map((t) => t.key));
+  const active: Bucket = validTab.has(sp.tab ?? "") ? (sp.tab as Bucket) : "concept";
+  const visible = rows.filter((r) => r.bucket === active);
 
   return (
     <div className="space-y-6">
@@ -85,37 +111,62 @@ export default async function WebsitePage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Vacatures" value={total} sub="uit recruitment" icon={<Briefcase className="h-5 w-5" />} accent="brand" />
-        <StatCard label="Live op de site" value={live} icon={<Sparkles className="h-5 w-5" />} accent="green" />
-        <StatCard label="Concept" value={concept} icon={<FileText className="h-5 w-5" />} accent="slate" />
-        <StatCard label="Nog uit te werken" value={todo} icon={<Send className="h-5 w-5" />} accent={todo > 0 ? "amber" : "slate"} />
-      </div>
-
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="flex-col items-stretch gap-0 pb-0">
+          <CardTitle className="flex items-center gap-2 pb-3">
             <Briefcase className="h-4 w-4 text-brand-600" /> Alle vacatures
+            <Link
+              href="/crm/vacatures"
+              className="ml-auto text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2"
+            >
+              Naar recruitment
+            </Link>
           </CardTitle>
-          <Link href="/crm/vacatures" className="text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">
-            Naar recruitment
-          </Link>
+
+          {/* Tab-switch: Concept · Gereed · Online */}
+          <nav className="-mb-px flex gap-1 border-b border-ink-100">
+            {TABS.map((t) => {
+              const on = t.key === active;
+              return (
+                <Link
+                  key={t.key}
+                  href={`/website?tab=${t.key}`}
+                  scroll={false}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
+                    on
+                      ? "border-brand-600 bg-white text-ink-900"
+                      : "border-transparent text-ink-500 hover:text-ink-800",
+                  )}
+                >
+                  <span className={cn("h-2 w-2 rounded-full", t.dot)} />
+                  {t.label}
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums",
+                      on ? "bg-brand-50 text-brand-700" : "bg-ink-100 text-ink-500",
+                    )}
+                  >
+                    {counts[t.key]}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
         </CardHeader>
 
-        {openDeals.length === 0 ? (
-          <CardContent>
-            <EmptyState
-              icon={<Briefcase className="h-6 w-6" />}
-              title="Geen openstaande vacatures"
-              description="Vacatures die je in de recruitment-hub aanmaakt, verschijnen hier automatisch — klaar om uit te werken voor de website."
-            />
-          </CardContent>
+        {visible.length === 0 ? (
+          <div className="px-5 py-12 text-center text-sm text-ink-500">
+            {active === "concept" && "Geen concepten — alles is al uitgewerkt of nog niet aangemaakt."}
+            {active === "gereed" && "Niets staat klaar voor publicatie. Werk een concept uit met de AI-tekst."}
+            {active === "online" && "Nog niets live op de website. Publiceer een gereed staande vacature."}
+          </div>
         ) : (
           <ul className="divide-y divide-ink-100">
-            {openDeals.map((d) => {
+            {visible.map(({ d, bucket }) => {
               const company = d.client?.companyName ?? d.company;
               const vac = d.vacancy;
-              const status = statusOf(vac);
+              const status = STATUS_LABEL[bucket];
               const disc = d.discipline ? labelFor(DISCIPLINES, d.discipline) : "";
               return (
                 <li key={d.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
@@ -142,9 +193,9 @@ export default async function WebsitePage() {
                         </span>
                       )}
                       {disc && <span className="text-ink-400">{disc}</span>}
-                      {vac?.status === "PUBLISHED" && (
+                      {bucket === "online" && (
                         <span className="inline-flex items-center gap-1 text-ink-400">
-                          <Eye className="h-3.5 w-3.5" /> {vac.views ?? 0}
+                          <Eye className="h-3.5 w-3.5" /> {vac?.views ?? 0}
                         </span>
                       )}
                     </p>
@@ -158,7 +209,15 @@ export default async function WebsitePage() {
                         className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
                         title="Website-tekst bekijken, aanpassen en publiceren"
                       >
-                        <Sparkles className="h-4 w-4" /> Website-tekst
+                        {bucket === "online" ? (
+                          <>
+                            <Sparkles className="h-4 w-4" /> Website-tekst
+                          </>
+                        ) : (
+                          <>
+                            <Rocket className="h-4 w-4" /> Uitwerken & publiceren
+                          </>
+                        )}
                       </Link>
                     ) : (
                       <form action={sendDealToWebsite}>
@@ -181,7 +240,7 @@ export default async function WebsitePage() {
                       <MessageSquarePlus className="h-4 w-4" /> LinkedIn-post
                     </Link>
 
-                    {vac?.status === "PUBLISHED" && vac.slug && (
+                    {bucket === "online" && vac?.slug && (
                       <a
                         href={`/vacature/${vac.slug}`}
                         target="_blank"
