@@ -108,18 +108,30 @@ export function renderSignatureHtml(d: SignatureData): string {
   }
 
   const addressLines = d.addressLines.filter(Boolean);
-  if (addressLines.length) {
-    contactRows.push(
-      contactRow(
-        ICON.pin,
-        `<span style="color:${INK};">${addressLines.map(esc).join("<br>")}</span>`,
-      ),
-    );
-  }
-
-  const contactBlock = contactRows.length
-    ? `<tr><td style="padding:10px 0 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table></td></tr>`
+  const addressRow = addressLines.length
+    ? contactRow(ICON.pin, `<span style="color:${INK};">${addressLines.map(esc).join("<br>")}</span>`)
     : "";
+
+  // Twee kolommen met verticale scheidslijnen: links de contactgegevens
+  // (tel/e-mail/website), rechts het adres. Elke kolom krijgt een streep aan
+  // de linkerkant, precies zoals gevraagd.
+  const contactCell = contactRows.length
+    ? `<td style="padding:0 20px;border-left:2px solid ${LINE};vertical-align:top;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
+      </td>`
+    : "";
+  const addressCell = addressRow
+    ? `<td style="padding:0 20px;border-left:2px solid ${LINE};vertical-align:top;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">${addressRow}</table>
+      </td>`
+    : "";
+
+  const contactBlock =
+    contactCell || addressCell
+      ? `<tr><td style="padding:12px 0 0;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${contactCell}${addressCell}</tr></table>
+        </td></tr>`
+      : "";
 
   const badges = d.badges.filter(Boolean);
   const badgeImgs = badges
