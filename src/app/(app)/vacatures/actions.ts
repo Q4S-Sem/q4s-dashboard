@@ -189,7 +189,10 @@ export async function saveVacancyContent(formData: FormData) {
   revalidatePath(`/vacatures/${id}`);
   revalidatePath("/website");
   revalidatePath("/vacaturehub", "layout");
-  redirect(`/vacatures/${id}?saved=${publish ? "published" : "1"}`);
+  // Na publiceren: meteen door naar de LinkedIn-generator (met deze vacature +
+  // de website-link al ingevuld). Alleen opslaan → terug naar de vacature.
+  if (publish) redirect(`/socials?vac=${id}`);
+  redirect(`/vacatures/${id}?saved=1`);
 }
 
 /** AI: judge whether this vacancy fits the Q4S niche (sets relevance). */

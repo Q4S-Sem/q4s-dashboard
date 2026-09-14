@@ -11,6 +11,7 @@ import { runCvIntakeShortlist } from "@/lib/cv-intake";
 import { aiRefineMatches } from "@/lib/msp";
 import { aiJSONFromFile, isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { mirrorDealToVacancy } from "@/lib/vacancy-mirror";
+import { aiImproveVacancy } from "@/lib/recruitment";
 
 /**
  * Zet een binnengekomen CV/kandidaat als **Lead** in de CRM-pijplijn. Idempotent:
@@ -278,9 +279,19 @@ export async function sendDealToWebsite(formData: FormData) {
   const dealId = String(formData.get("dealId") ?? "");
   if (!dealId) redirect("/website");
   const vacancyId = await mirrorDealToVacancy(dealId);
+  // Meteen de AI-website-tekst laten schrijven, zodat de recruiter op de
+  // review-pagina direct de gegenereerde tekst ziet (accepteren of aanpassen).
+  // Faalt zacht: zonder AI-sleutel blijven de overgenomen velden staan.
+  if (vacancyId) {
+    try {
+      await aiImproveVacancy(vacancyId);
+    } catch {
+      /* geen AI of mislukt — de recruiter kan het op de pagina zelf proberen */
+    }
+  }
   revalidatePath("/website");
   revalidatePath("/website/vacatures");
-  // Ga direct naar de vacature om 'm uit te werken/publiceren; anders terug.
+  // Ga direct naar de vacature om de tekst te controleren/publiceren; anders terug.
   if (vacancyId) redirect(`/vacatures/${vacancyId}`);
   redirect("/website");
 }
