@@ -764,9 +764,9 @@ function AddPopover({ dateKey, onClose }: { dateKey: string; onClose: () => void
 
         <div>
           <label className="mb-1 block text-xs font-medium text-ink-500">Type</label>
-          <Select name="type" defaultValue="MEETING" aria-label="Type">
+          <Select name="type" defaultValue="MEETING" aria-label="Type" tintText>
             {EVENT_TYPES.map((o) => (
-              <option key={o.value} value={o.value}>
+              <option key={o.value} value={o.value} data-color={o.color}>
                 {o.label}
               </option>
             ))}

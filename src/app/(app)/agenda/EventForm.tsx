@@ -74,9 +74,9 @@ export function EventForm({
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Type" htmlFor="type" error={e.type}>
-              <Select id="type" name="type" defaultValue={event?.type ?? "MEETING"}>
+              <Select id="type" name="type" defaultValue={event?.type ?? "MEETING"} tintText>
                 {EVENT_TYPES.map((o) => (
-                  <option key={o.value} value={o.value}>
+                  <option key={o.value} value={o.value} data-color={o.color}>
                     {o.label}
                   </option>
                 ))}
