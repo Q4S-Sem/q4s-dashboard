@@ -120,7 +120,7 @@ export function renderSignatureHtml(d: SignatureData): string {
   // (tel/e-mail/website), rechts het adres. De linkerkolom krijgt een VASTE
   // breedte (COL_W) zodat de streep vóór het adres exact boven de streep vóór
   // KvK uitkomt — die gebruikt dezelfde breedte.
-  const COL_W = 240;
+  const COL_W = 180;
   const contactCell = contactRows.length
     ? `<td style="width:${COL_W}px;padding:0 20px 0 0;vertical-align:top;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
