@@ -13,7 +13,7 @@ import {
   Eye,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
@@ -120,50 +120,48 @@ export default async function WebsitePage({
         }
       />
 
-      <Card>
-        <CardHeader className="flex-col items-stretch gap-0 pb-0">
-          <CardTitle className="flex items-center gap-2 pb-3">
-            <Briefcase className="h-4 w-4 text-brand-600" /> Alle vacatures
+      {/* Tabs — zelfde layout als de Sollicitaties-pagina */}
+      <nav
+        aria-label="Websitestatus"
+        className="flex items-end gap-1 overflow-x-auto border-b border-ink-200"
+      >
+        {TABS.map((t) => {
+          const on = t.key === active;
+          return (
             <Link
-              href="/crm/vacatures"
-              className="ml-auto text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2"
+              key={t.key}
+              href={`/website?tab=${t.key}`}
+              scroll={false}
+              aria-current={on ? "page" : undefined}
+              className={cn(
+                "-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors",
+                on
+                  ? "border-ink-200 border-b-[#fafafa] bg-white text-ink-900"
+                  : "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900",
+              )}
             >
-              Naar recruitment
+              <span className={cn("h-2.5 w-2.5 rounded-full", t.dot)} />
+              {t.label}
+              <span
+                className={cn(
+                  "rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+                  on ? "bg-brand-50 text-brand-700" : "bg-ink-100 text-ink-500",
+                )}
+              >
+                {counts[t.key]}
+              </span>
             </Link>
-          </CardTitle>
+          );
+        })}
+        <Link
+          href="/crm/vacatures"
+          className="ml-auto self-center pb-1 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2"
+        >
+          Naar recruitment
+        </Link>
+      </nav>
 
-          {/* Tab-switch: Concept · Gereed · Online */}
-          <nav className="-mb-px flex gap-1 border-b border-ink-100">
-            {TABS.map((t) => {
-              const on = t.key === active;
-              return (
-                <Link
-                  key={t.key}
-                  href={`/website?tab=${t.key}`}
-                  scroll={false}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
-                    on
-                      ? "border-brand-600 bg-white text-ink-900"
-                      : "border-transparent text-ink-500 hover:text-ink-800",
-                  )}
-                >
-                  <span className={cn("h-2 w-2 rounded-full", t.dot)} />
-                  {t.label}
-                  <span
-                    className={cn(
-                      "rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums",
-                      on ? "bg-brand-50 text-brand-700" : "bg-ink-100 text-ink-500",
-                    )}
-                  >
-                    {counts[t.key]}
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
-        </CardHeader>
-
+      <Card>
         {visible.length === 0 ? (
           <div className="px-5 py-12 text-center text-sm text-ink-500">
             {active === "concept" && "Geen concepten — alles is al uitgewerkt of nog niet aangemaakt."}
