@@ -89,19 +89,12 @@ export function AuthShell({
             )}
           </div>
 
-          {/* Midden: naam, tagline en uitleg */}
+          {/* Midden: tagline en uitleg */}
           <div className="relative max-w-md">
-            <h2 className="text-3xl font-bold tracking-[-0.01em] text-white xl:text-4xl">
-              Q4S Project Partners
-            </h2>
-            <p className="mt-3 text-lg font-medium text-white/70">
+            <p className="text-lg font-medium text-white/70">
               Detacheren. Factureren. Groeien.
             </p>
             <p className="mt-6 text-[15px] leading-relaxed text-white/55">
-              Hét interne platform voor de complete Q4S-operatie — van gecertificeerd
-              staalbouwtalent op de juiste klus tot de factuur die de deur uitgaat.
-            </p>
-            <p className="mt-4 text-[15px] leading-relaxed text-white/55">
               Urenstaten, recruitment, plaatsingen, facturatie en betalingen lopen hier
               samen in één overzicht, zodat je in één oogopslag ziet wat er speelt en
               wat er moet gebeuren — zonder los geknutsel in mappen en mailboxen.
