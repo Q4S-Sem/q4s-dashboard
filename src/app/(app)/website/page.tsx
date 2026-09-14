@@ -71,7 +71,7 @@ export default async function WebsitePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Website"
+        title="Overzicht"
         description="Alles wat richting de publieke website gaat: vacatures publiceren en beheren wat live staat op q4s.nl."
         actions={
           url ? (
