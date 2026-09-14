@@ -10,6 +10,7 @@ import { rematchVacancy } from "@/lib/matching";
 import { runCvIntakeShortlist } from "@/lib/cv-intake";
 import { aiRefineMatches } from "@/lib/msp";
 import { aiJSONFromFile, isAIConfigured, isVisionConfigured } from "@/lib/ai";
+import { mirrorDealToVacancy } from "@/lib/vacancy-mirror";
 
 /**
  * Zet een binnengekomen CV/kandidaat als **Lead** in de CRM-pijplijn. Idempotent:
@@ -266,6 +267,22 @@ export async function startSourcing(formData: FormData) {
   revalidatePath(`/vacatures/${id}`);
   revalidatePath("/website/vacatures");
   redirect("/website/cv-inbox/matches");
+}
+
+/**
+ * Stuur een openstaande recruitment-vacature (Deal) alsnog naar de website: maakt
+ * een Vacancy-concept aan via de mirror. Voor bestaande deals van vóór de auto-
+ * mirror, of als de eerdere spiegeling niet doorliep. Idempotent (mirror her-checkt).
+ */
+export async function sendDealToWebsite(formData: FormData) {
+  const dealId = String(formData.get("dealId") ?? "");
+  if (!dealId) redirect("/website");
+  const vacancyId = await mirrorDealToVacancy(dealId);
+  revalidatePath("/website");
+  revalidatePath("/website/vacatures");
+  // Ga direct naar de vacature om 'm uit te werken/publiceren; anders terug.
+  if (vacancyId) redirect(`/vacatures/${vacancyId}`);
+  redirect("/website");
 }
 
 /** Stop de zoekopdracht: haal de vacature van de CV-matches-pagina. */

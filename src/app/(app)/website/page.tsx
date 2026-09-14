@@ -22,6 +22,10 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import { VACANCY_STATUSES } from "@/lib/domain";
 import { pauseVacancy, resumeVacancy, deleteVacancy } from "../vacatures/actions";
+import { sendDealToWebsite } from "./actions";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { buttonVariants } from "@/components/ui/button";
+import { Briefcase, MapPin, ArrowRight, Send } from "lucide-react";
 
 export const metadata = { title: "Website" };
 
@@ -34,7 +38,7 @@ function siteUrl(raw: string | undefined | null): string | null {
 }
 
 export default async function WebsitePage() {
-  const [settings, vacTotal, vacPublished, cvCount, liveVacancies, viewsAgg] =
+  const [settings, vacTotal, vacPublished, cvCount, liveVacancies, viewsAgg, openDeals] =
     await Promise.all([
       db.companySettings.findUnique({ where: { id: "default" } }),
       db.vacancy.count(),
@@ -49,6 +53,16 @@ export default async function WebsitePage() {
       db.vacancy.aggregate({
         where: { status: "PUBLISHED" },
         _sum: { views: true },
+      }),
+      // Openstaande vacatures uit de recruitment-hub (deals zonder kandidaat).
+      // Recruitment is leidend; hier zie je hun status richting de website.
+      db.deal.findMany({
+        where: { status: "OPEN", candidateId: null },
+        orderBy: [{ createdAt: "desc" }],
+        include: {
+          client: { select: { companyName: true } },
+          vacancy: { select: { id: true, status: true, slug: true } },
+        },
       }),
     ]);
 
@@ -105,6 +119,90 @@ export default async function WebsitePage() {
           cta="Naar CV's"
         />
       </div>
+
+      {/* Openstaande vacatures uit de recruitment-hub */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4 text-brand-600" /> Openstaande vacatures (recruitment)
+          </CardTitle>
+          <Link href="/crm/vacatures" className="text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">
+            Naar recruitment
+          </Link>
+        </CardHeader>
+        {openDeals.length === 0 ? (
+          <CardContent>
+            <EmptyState
+              icon={<Briefcase className="h-6 w-6" />}
+              title="Geen openstaande vacatures"
+              description="Vacatures die je in de recruitment-hub aanmaakt, verschijnen hier automatisch — klaar om naar de website te sturen."
+            />
+          </CardContent>
+        ) : (
+          <Table>
+            <THead>
+              <TR className="hover:bg-transparent">
+                <TH>Vacature</TH>
+                <TH>Bedrijf</TH>
+                <TH>Websitestatus</TH>
+                <TH className="text-right">Actie</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {openDeals.map((d) => {
+                const company = d.client?.companyName ?? d.company;
+                const vac = d.vacancy;
+                const websiteLabel = !vac
+                  ? { text: "Nog niet klaargezet", cls: "bg-ink-100 text-ink-600" }
+                  : vac.status === "PUBLISHED"
+                    ? { text: "Live op de site", cls: "bg-emerald-50 text-emerald-700" }
+                    : vac.status === "PAUSED"
+                      ? { text: "Gepauzeerd", cls: "bg-amber-50 text-amber-700" }
+                      : { text: "Concept", cls: "bg-blue-50 text-blue-700" };
+                return (
+                  <TR key={d.id}>
+                    <TD>
+                      <Link href={`/crm/deals/${d.id}`} className="font-medium text-ink-900 hover:text-brand-700">
+                        {d.title}
+                      </Link>
+                      {d.location && (
+                        <span className="ml-2 inline-flex items-center gap-1 text-xs text-ink-400">
+                          <MapPin className="h-3 w-3" /> {d.location}
+                        </span>
+                      )}
+                    </TD>
+                    <TD className="text-ink-700">{company}</TD>
+                    <TD>
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${websiteLabel.cls}`}>
+                        {websiteLabel.text}
+                      </span>
+                    </TD>
+                    <TD>
+                      <div className="flex items-center justify-end">
+                        {vac ? (
+                          <Link
+                            href={`/vacatures/${vac.id}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+                          >
+                            Uitwerken <ArrowRight className="h-3.5 w-3.5" />
+                          </Link>
+                        ) : (
+                          <form action={sendDealToWebsite}>
+                            <input type="hidden" name="dealId" value={d.id} />
+                            <SubmitButton variant="outline" size="sm" pendingLabel="Bezig…">
+                              <Send className="h-4 w-4" /> Naar website
+                            </SubmitButton>
+                          </form>
+                        )}
+                      </div>
+                    </TD>
+                  </TR>
+                );
+              })}
+            </TBody>
+          </Table>
+        )}
+      </Card>
 
       <Card>
         <CardHeader>
