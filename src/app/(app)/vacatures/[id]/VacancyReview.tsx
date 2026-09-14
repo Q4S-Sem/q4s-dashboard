@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { cn } from "@/lib/utils";
@@ -358,13 +359,31 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
             />
           </Field>
           <Field label="Contractvorm" htmlFor="employmentType">
-            <Input
+            <Select
               id="employmentType"
               name="employmentType"
-              value={employmentType}
-              onChange={(e) => setEmploymentType(e.target.value)}
-              placeholder="Fulltime / ZZP"
-            />
+              defaultValue={employmentType}
+              onValueChange={(val) => setEmploymentType(val)}
+            >
+              <option value="">Kies een contractvorm…</option>
+              <option value="ZZP / Freelance">ZZP / Freelance</option>
+              <option value="Detachering">Detachering</option>
+              <option value="Fulltime">Fulltime</option>
+              <option value="Parttime">Parttime</option>
+              <option value="Tijdelijk">Tijdelijk</option>
+              <option value="Uitzend">Uitzend</option>
+              {employmentType &&
+                ![
+                  "ZZP / Freelance",
+                  "Detachering",
+                  "Fulltime",
+                  "Parttime",
+                  "Tijdelijk",
+                  "Uitzend",
+                ].includes(employmentType) && (
+                  <option value={employmentType}>{employmentType}</option>
+                )}
+            </Select>
           </Field>
           <Field label="Vergoeding" htmlFor="salary">
             <Input
