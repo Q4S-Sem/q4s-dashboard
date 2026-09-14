@@ -67,16 +67,29 @@ const ICON = {
 
 /** Eén contactregel: icoon + (evt. gelinkte) waarde. */
 function contactRow(iconSrc: string, inner: string): string {
-  return `<tr><td style="padding:1px 7px 1px 0;vertical-align:middle;"><img src="${iconSrc}" width="12" height="12" alt="" style="display:block;border:0;"></td><td style="padding:1px 0;vertical-align:middle;color:${INK};font-size:12px;line-height:1.45;">${inner}</td></tr>`;
+  const icon = iconSrc
+    ? `<img src="${iconSrc}" width="14" height="14" alt="" style="display:block;border:0;">`
+    : "";
+  return `<tr><td style="padding:3px 9px 3px 0;vertical-align:top;width:14px;line-height:1;">${icon}</td><td style="padding:3px 0;vertical-align:top;color:${INK};font-size:13px;line-height:1.5;word-break:break-word;">${inner}</td></tr>`;
 }
 
 /**
  * De volledige handtekening als HTML-fragment (zonder <html>/<body>), klaar om
  * in een mail te plakken of in een preview te tonen.
+ *
+ * Layout = één verticale kolom (logo bovenaan, dan naam/functie, dan
+ * telefoon/e-mail/website/adres onder elkaar). Bewust GEEN naast-elkaar-kolommen:
+ * die worden op smalle schermen (mobiel) tot onleesbaar toe samengeperst.
  */
 export function renderSignatureHtml(d: SignatureData): string {
   const contactRows: string[] = [];
-  if (d.phone) contactRows.push(contactRow(ICON.phone, esc(d.phone)));
+  if (d.phone)
+    contactRows.push(
+      contactRow(
+        ICON.phone,
+        `<a href="tel:${esc(d.phone.replace(/\s+/g, ""))}" style="color:${INK};text-decoration:none;white-space:nowrap;">${esc(d.phone)}</a>`,
+      ),
+    );
   if (d.email)
     contactRows.push(
       contactRow(
@@ -95,67 +108,58 @@ export function renderSignatureHtml(d: SignatureData): string {
   }
 
   const addressLines = d.addressLines.filter(Boolean);
-  const addressBlock = addressLines.length
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td style="padding:1px 7px 1px 0;vertical-align:top;"><img src="${ICON.pin}" width="12" height="12" alt="" style="display:block;border:0;margin-top:2px;"></td>
-        <td style="padding:0;color:${INK};font-size:12px;line-height:1.55;">${addressLines.map(esc).join("<br>")}</td>
-      </tr></table>`
+  if (addressLines.length) {
+    contactRows.push(
+      contactRow(
+        ICON.pin,
+        `<span style="color:${INK};">${addressLines.map(esc).join("<br>")}</span>`,
+      ),
+    );
+  }
+
+  const contactBlock = contactRows.length
+    ? `<tr><td style="padding:10px 0 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table></td></tr>`
     : "";
 
   const badges = d.badges.filter(Boolean);
   const badgeImgs = badges
     .map(
       (src) =>
-        `<img src="${esc(src)}" alt="Keurmerk" height="30" style="display:inline-block;border:0;height:30px;width:auto;margin-right:14px;vertical-align:middle;">`,
+        `<img src="${esc(src)}" alt="Keurmerk" height="30" style="display:inline-block;border:0;height:30px;width:auto;margin:0 14px 8px 0;vertical-align:middle;">`,
     )
     .join("");
 
-  const kvkCell = d.kvk
-    ? `<td style="padding:0 0 0 14px;border-left:1px solid ${LINE};color:${MUTED};font-size:11px;vertical-align:middle;">KvK ${esc(d.kvk)}</td>`
+  const kvkLine = d.kvk
+    ? `<div style="color:${MUTED};font-size:12px;line-height:1.5;padding-top:2px;">KvK ${esc(d.kvk)}</div>`
     : "";
 
   const badgeRow =
     badges.length || d.kvk
-      ? `<tr><td style="padding:11px 0 0;">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-            ${badgeImgs ? `<td style="vertical-align:middle;">${badgeImgs}</td>` : ""}
-            ${kvkCell}
-          </tr></table>
+      ? `<tr><td style="padding:14px 0 0;">
+          <div style="font-size:0;line-height:0;">${badgeImgs}</div>
+          ${kvkLine}
         </td></tr>`
       : "";
 
   const disclaimer = d.disclaimer
-    ? `<tr><td style="padding:11px 0 0;"><div style="width:520px;max-width:520px;color:#9ca3af;font-size:10px;line-height:1.55;">${esc(d.disclaimer)}</div></td></tr>`
+    ? `<tr><td style="padding:14px 0 0;"><div style="max-width:560px;color:#9ca3af;font-size:11px;line-height:1.55;">${esc(d.disclaimer)}</div></td></tr>`
     : "";
 
-  const logoCell = d.logoSrc
-    ? `<td style="padding:0 18px 0 0;vertical-align:middle;border-right:1px solid ${LINE};"><img src="${esc(
+  const logoRow = d.logoSrc
+    ? `<tr><td style="padding:0 0 14px;"><img src="${esc(
         d.logoSrc,
-      )}" alt="Q4S Project Partners" width="96" style="display:block;border:0;width:96px;height:auto;"></td>`
+      )}" alt="Q4S Project Partners" width="120" style="display:block;border:0;width:120px;max-width:60%;height:auto;"></td></tr>`
     : "";
 
-  const addressCell = addressBlock
-    ? `<td style="padding:0 0 0 22px;border-left:1px solid ${LINE};vertical-align:top;">${addressBlock}</td>`
-    : "";
-
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:${INK};">
-    <tr><td style="padding:0 0 26px;color:${INK};font-size:13px;line-height:1.5;">Met vriendelijke groet,</td></tr>
-    <tr><td style="padding:0 0 10px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-        ${logoCell}
-        <td style="padding:0 0 0 ${d.logoSrc ? "18px" : "0"};vertical-align:middle;">
-          <div style="color:${INK};font-size:15px;font-weight:700;line-height:1.25;">${esc(d.name) || "&nbsp;"}</div>
-          ${d.role ? `<div style="color:${MUTED};font-size:12px;line-height:1.35;padding-bottom:6px;">${esc(d.role)}</div>` : ""}
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-            <td style="vertical-align:top;padding:0 32px 0 0;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
-            </td>
-            ${addressCell}
-          </tr></table>
-        </td>
-      </tr></table>
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:${INK};max-width:600px;width:100%;">
+    <tr><td style="padding:0 0 22px;color:${INK};font-size:13px;line-height:1.5;">Met vriendelijke groet,</td></tr>
+    ${logoRow}
+    <tr><td style="padding:0;">
+      <div style="color:${INK};font-size:17px;font-weight:700;line-height:1.25;">${esc(d.name) || "&nbsp;"}</div>
+      ${d.role ? `<div style="color:${MUTED};font-size:13px;line-height:1.4;padding-top:2px;">${esc(d.role)}</div>` : ""}
     </td></tr>
-    <tr><td style="border-top:1px solid ${LINE};font-size:0;line-height:0;">&nbsp;</td></tr>
+    ${contactBlock}
+    <tr><td style="padding:16px 0 0;"><div style="border-top:1px solid ${LINE};font-size:0;line-height:0;">&nbsp;</div></td></tr>
     ${badgeRow}
     ${disclaimer}
   </table>`;
