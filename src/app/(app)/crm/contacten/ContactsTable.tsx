@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { Search, Phone, Mail } from "lucide-react";
+import { Search, Mail } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { PhoneButton } from "@/components/ui/phone-button";
 
 /** Diacritics-insensitive fold zodat "jose" ook "José" vindt. */
 function fold(s: string): string {
@@ -15,29 +14,6 @@ function fold(s: string): string {
 /** Alleen de cijfers — voor separator-ongevoelig telefoon-zoeken. */
 function digitsOnly(s: string): string {
   return s.replace(/\D/g, "");
-}
-
-/**
- * Bouw een belbare tel:-link uit een vrij ingevoerd nummer. Handelt de Nederlandse
- * "(0)"-trunknotatie en toestel-/extensie-achtervoegsels af en houdt alleen een
- * LEIDENDE + over. Geeft null terug als er geen belbaar nummer overblijft.
- */
-function telHref(phone: string): string | null {
-  let s = phone.trim();
-  // Toestel/extensie afsplitsen (niet mee-inbellen, wel als ;ext= meegeven).
-  let ext = "";
-  const em = s.match(/(?:\bext\.?|\btoestel\b|\bx\b|,|;)\s*(\d+)/i);
-  if (em) {
-    ext = em[1];
-    s = s.slice(0, em.index);
-  }
-  // "(0)" trunk-prefix schrappen (bijv. +31 (0)6… → +316…).
-  s = s.replace(/\(0\)/g, "");
-  const plus = s.trimStart().startsWith("+") ? "+" : "";
-  const digits = digitsOnly(s);
-  if (!digits) return null;
-  const num = `${plus}${digits}`;
-  return ext ? `tel:${num};ext=${ext}` : `tel:${num}`;
 }
 
 export type ContactRow = {
@@ -77,45 +53,11 @@ function MailButton({ email, name }: { email: string | null; name: string }) {
   );
 }
 
-/** Contact-cel: telefoon- en mailknop staan vast rechts; klik op de telefoon
- *  toont het nummer LINKS ervan zonder dat de knoppen verschuiven. */
+/** Contact-cel: telefoon-pop-up (nummer + bellen/kopiëren) en mailknop, vast rechts. */
 function ContactCell({ phone, email, name }: { phone: string | null; email: string | null; name: string }) {
-  const [shown, setShown] = useState(false);
-  const href = phone ? telHref(phone) : null;
-
   return (
     <div className="flex items-center justify-end gap-2">
-      {/* Nummer verschijnt links; knoppen blijven op hun plek staan. */}
-      {shown && phone && (
-        href ? (
-          <a href={href} className="mr-1 tabular-nums font-medium text-emerald-700 hover:text-emerald-800" title={`Bel ${name}`}>
-            {phone}
-          </a>
-        ) : (
-          <span className="mr-1 tabular-nums text-ink-500">{phone}</span>
-        )
-      )}
-
-      {phone ? (
-        <button
-          type="button"
-          onClick={() => setShown((s) => !s)}
-          title={shown ? "Verberg telefoonnummer" : `Toon telefoonnummer van ${name}`}
-          aria-label={shown ? "Verberg telefoonnummer" : `Toon telefoonnummer van ${name}`}
-          aria-pressed={shown}
-          className={cn(
-            "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
-            shown ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200",
-          )}
-        >
-          <Phone className="h-4 w-4" />
-        </button>
-      ) : (
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300" title={`Geen telefoonnummer bekend voor ${name}`} aria-hidden>
-          <Phone className="h-4 w-4" />
-        </span>
-      )}
-
+      <PhoneButton phone={phone} name={name} />
       <MailButton email={email} name={name} />
     </div>
   );
