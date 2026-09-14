@@ -117,13 +117,15 @@ export function renderSignatureHtml(d: SignatureData): string {
     : "";
 
   // Twee kolommen met verticale scheidslijnen: links de contactgegevens
-  // (tel/e-mail/website), rechts het adres. Elke kolom krijgt een streep aan
-  // de linkerkant, precies zoals gevraagd.
+  // (tel/e-mail/website), rechts het adres. De linkerkolom krijgt een VASTE
+  // breedte (COL_W) zodat de streep vóór het adres exact boven de streep vóór
+  // KvK uitkomt — die gebruikt dezelfde breedte.
+  const COL_W = 240;
   const contactCell = contactRows.length
-    ? `<td style="padding:0 20px;border-left:2px solid ${LINE};vertical-align:top;">
+    ? `<td style="width:${COL_W}px;padding:0 20px 0 0;vertical-align:top;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
       </td>`
-    : "";
+    : `<td style="width:${COL_W}px;padding:0;"></td>`;
   const addressCell = addressRow
     ? `<td style="padding:0 20px;border-left:2px solid ${LINE};vertical-align:top;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">${addressRow}</table>
@@ -131,7 +133,7 @@ export function renderSignatureHtml(d: SignatureData): string {
     : "";
 
   const contactBlock =
-    contactCell || addressCell
+    contactRows.length || addressRow
       ? `<tr><td style="padding:12px 0 0;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${contactCell}${addressCell}</tr></table>
         </td></tr>`
@@ -146,14 +148,14 @@ export function renderSignatureHtml(d: SignatureData): string {
     .join("");
 
   const kvkCell = d.kvk
-    ? `<td style="padding:0 0 0 14px;border-left:2px solid ${LINE};color:${MUTED};font-size:12px;line-height:1.5;vertical-align:middle;white-space:nowrap;">KvK ${esc(d.kvk)}</td>`
+    ? `<td style="padding:0 0 0 20px;border-left:2px solid ${LINE};color:${MUTED};font-size:12px;line-height:1.5;vertical-align:middle;white-space:nowrap;">KvK ${esc(d.kvk)}</td>`
     : "";
 
   const badgeRow =
     badges.length || d.kvk
       ? `<tr><td style="padding:14px 0 0;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-            ${badgeImgs ? `<td style="vertical-align:middle;padding-right:14px;">${badgeImgs}</td>` : ""}
+            <td style="width:${COL_W}px;padding:0 20px 0 0;vertical-align:middle;">${badgeImgs}</td>
             ${kvkCell}
           </tr></table>
         </td></tr>`
