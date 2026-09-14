@@ -6,6 +6,7 @@ import {
   Sparkles,
   MessageSquarePlus,
   ArrowRight,
+  Users,
   ExternalLink,
   FileText,
   Rocket,
@@ -72,7 +73,15 @@ export default async function WebsitePage({
       orderBy: [{ createdAt: "desc" }],
       include: {
         client: { select: { companyName: true } },
-        vacancy: { select: { id: true, status: true, slug: true, views: true } },
+        vacancy: {
+          select: {
+            id: true,
+            status: true,
+            slug: true,
+            views: true,
+            _count: { select: { applications: true } },
+          },
+        },
       },
     }),
   ]);
@@ -239,6 +248,21 @@ export default async function WebsitePage({
                     >
                       <MessageSquarePlus className="h-4 w-4" /> LinkedIn-post
                     </Link>
+
+                    {vac && (
+                      <Link
+                        href={`/website/vacatures/${vac.id}/sollicitaties`}
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                        title="Sollicitaties op deze vacature bekijken"
+                      >
+                        <Users className="h-4 w-4" /> Sollicitaties
+                        {vac._count.applications > 0 && (
+                          <span className="ml-1 rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                            {vac._count.applications}
+                          </span>
+                        )}
+                      </Link>
+                    )}
 
                     {bucket === "online" && vac?.slug && (
                       <a
