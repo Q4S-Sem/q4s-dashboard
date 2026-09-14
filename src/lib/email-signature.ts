@@ -47,11 +47,15 @@ function esc(s: string): string {
 
 /** De contact-icoontjes (telefoon/mail/web/pin) als PNG-data-URI. PNG omdat
  *  Outlook/Gmail SVG in mails niet betrouwbaar tonen (dan zie je lege vierkantjes).
- *  De bestanden staan in public/email/icons; ontbreekt er een, dan valt de regel
- *  terug op geen icoon. */
-function iconPng(name: string): string {
+ *  De bestanden staan in public/email/icons.
+ *
+ *  BELANGRIJK: lees elk bestand via een LETTERLIJK pad. Vercel's file-tracer
+ *  bundelt alleen bestanden waarvan het pad statisch te herleiden is; een
+ *  dynamisch `${name}.png` wordt NIET meegenomen in de serverless-bundle,
+ *  waardoor de icoontjes in productie als kapot vierkantje verschijnen. */
+function readIcon(absPath: string): string {
   try {
-    const b = fs.readFileSync(path.join(process.cwd(), "public", "email", "icons", `${name}.png`));
+    const b = fs.readFileSync(absPath);
     return `data:image/png;base64,${b.toString("base64")}`;
   } catch {
     return "";
@@ -59,10 +63,10 @@ function iconPng(name: string): string {
 }
 
 const ICON = {
-  phone: iconPng("phone"),
-  mail: iconPng("mail"),
-  web: iconPng("web"),
-  pin: iconPng("pin"),
+  phone: readIcon(path.join(process.cwd(), "public", "email", "icons", "phone.png")),
+  mail: readIcon(path.join(process.cwd(), "public", "email", "icons", "mail.png")),
+  web: readIcon(path.join(process.cwd(), "public", "email", "icons", "web.png")),
+  pin: readIcon(path.join(process.cwd(), "public", "email", "icons", "pin.png")),
 };
 
 /** Eén contactregel: icoon + (evt. gelinkte) waarde. */
@@ -141,15 +145,17 @@ export function renderSignatureHtml(d: SignatureData): string {
     )
     .join("");
 
-  const kvkLine = d.kvk
-    ? `<div style="color:${MUTED};font-size:12px;line-height:1.5;padding-top:2px;">KvK ${esc(d.kvk)}</div>`
+  const kvkCell = d.kvk
+    ? `<td style="padding:0 0 0 14px;border-left:2px solid ${LINE};color:${MUTED};font-size:12px;line-height:1.5;vertical-align:middle;white-space:nowrap;">KvK ${esc(d.kvk)}</td>`
     : "";
 
   const badgeRow =
     badges.length || d.kvk
       ? `<tr><td style="padding:14px 0 0;">
-          <div style="font-size:0;line-height:0;">${badgeImgs}</div>
-          ${kvkLine}
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            ${badgeImgs ? `<td style="vertical-align:middle;padding-right:14px;">${badgeImgs}</td>` : ""}
+            ${kvkCell}
+          </tr></table>
         </td></tr>`
       : "";
 
