@@ -2,19 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Trophy, XCircle, RotateCcw, Repeat } from "lucide-react";
+import { Trophy, XCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
-import { closeDeal, reopenDeal, rematchDeal } from "./actions";
+import { closeDeal, reopenDeal } from "./actions";
 
-type Pending = null | "won" | "rematch" | "lost";
+type Pending = null | "won" | "lost";
 
 /**
  * De afsluit-acties van een deal, als één rustige balk. Elke actie opent eerst
  * een pop-up (modal) ter bevestiging voordat hij wordt uitgevoerd:
  *  - Geplaatst (gewonnen)
- *  - Andere vacature — haalt de deal uit de pipeline en stuurt je terug naar de
- *    talentpool om dezelfde kandidaat op een andere vacature te zetten.
  *  - Niet doorgegaan (verloren) — met reden-veld (voedt de inzichten).
  * Gesloten deal: Heropenen.
  */
@@ -37,16 +35,13 @@ export function CloseDealButtons({ dealId, status }: { dealId: string; status: s
 
   return (
     <>
-      {/* Standaardweergave: de drie knoppen */}
+      {/* Standaardweergave: de afsluit-knoppen */}
       <div className="rounded-xl border border-ink-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-ink-500">Rond deze plaatsing af:</p>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="success" size="sm" onClick={() => setPending("won")}>
               <Trophy className="h-4 w-4" /> Geplaatst
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setPending("rematch")}>
-              <Repeat className="h-4 w-4" /> Andere vacature zoeken
             </Button>
             <Button type="button" variant="outline" size="sm" onClick={() => setPending("lost")}>
               <XCircle className="h-4 w-4 text-red-500" /> Niet doorgegaan
@@ -68,22 +63,6 @@ export function CloseDealButtons({ dealId, status }: { dealId: string; status: s
             <input type="hidden" name="outcome" value="WON" />
             <Button type="submit" variant="success" size="sm">
               <Trophy className="h-4 w-4" /> Ja, geplaatst
-            </Button>
-          </form>
-        </ConfirmModal>
-      )}
-
-      {pending === "rematch" && (
-        <ConfirmModal
-          tone="brand"
-          title="Andere vacature zoeken?"
-          message="De deal wordt uit deze pipeline gehaald en je gaat terug naar de talentpool om dezelfde kandidaat op een andere vacature te zetten. De huidige deal wordt gesloten."
-          onClose={() => setPending(null)}
-        >
-          <form action={rematchDeal}>
-            <input type="hidden" name="id" value={dealId} />
-            <Button type="submit" variant="primary" size="sm">
-              <Repeat className="h-4 w-4" /> Ja, andere vacature zoeken
             </Button>
           </form>
         </ConfirmModal>
@@ -133,7 +112,7 @@ function ConfirmModal({
   onClose,
   hideDefaultCancel,
 }: {
-  tone: "success" | "danger" | "brand";
+  tone: "success" | "danger";
   title: string;
   message: string;
   children: React.ReactNode;
@@ -158,9 +137,8 @@ function ConfirmModal({
   const iconBg = {
     success: "bg-emerald-50 text-emerald-600",
     danger: "bg-red-50 text-red-600",
-    brand: "bg-brand-50 text-brand-600",
   }[tone];
-  const Icon = tone === "success" ? Trophy : tone === "danger" ? XCircle : Repeat;
+  const Icon = tone === "success" ? Trophy : XCircle;
 
   if (!mounted) return null;
 
