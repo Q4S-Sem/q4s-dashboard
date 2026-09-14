@@ -193,12 +193,13 @@ const HUB_LIST: NavHub[] = [
     href: "/website",
     icon: FileText,
     items: [
-      { href: "/website", label: "Overzicht", icon: Globe, exact: true, section: "Website" },
-      { href: "/website/vacatures", label: "Op de website", icon: Globe, section: "Website" },
-      { href: "/vacatures", label: "Uitwerken & publiceren", icon: PencilLine, section: "Website" },
-      // De Vacaturehub (MSP/VMS-instroom) staat onder onderhoud — de route blijft
-      // bestaan (met een maintenance-scherm), maar hoort niet in het menu tot we
-      // dit oppakken. Recruitment is nu leidend voor het plaatsen van vacatures.
+      { href: "/website", label: "Vacatures", icon: Briefcase, exact: true, section: "Website" },
+      // Bereikbaar via de acties op de vacaturelijst, niet als los menu-item:
+      // - /website/vacatures  = de oude 'op de website'-tabel
+      // - /vacatures          = de uitwerk/publiceer-pagina per vacature
+      // - /vacaturehub        = MSP-instroom, staat onder onderhoud
+      { href: "/website/vacatures", label: "Op de website", icon: Globe, hidden: true },
+      { href: "/vacatures", label: "Uitwerken & publiceren", icon: PencilLine, hidden: true },
       { href: "/vacaturehub", label: "Vacaturehub", icon: Filter, hidden: true },
     ],
   },

@@ -1,32 +1,29 @@
 import Link from "next/link";
 import {
   Globe,
-  FileText,
+  Briefcase,
+  MapPin,
   Sparkles,
+  MessageSquarePlus,
+  Send,
+  ArrowRight,
   ExternalLink,
+  FileText,
   Eye,
-  Pause,
-  Play,
-  Trash2,
-  Inbox,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { StatusBadge } from "@/components/ui/badge";
-import { ConfirmSubmit } from "@/components/confirm-submit";
-import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { formatDate } from "@/lib/utils";
-import { VACANCY_STATUSES } from "@/lib/domain";
-import { pauseVacancy, resumeVacancy, deleteVacancy } from "../vacatures/actions";
-import { sendDealToWebsite } from "./actions";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
-import { Briefcase, MapPin, ArrowRight, Send } from "lucide-react";
+import { DISCIPLINES, labelFor } from "@/lib/domain";
+import { cn } from "@/lib/utils";
+import { sendDealToWebsite } from "./actions";
 
-export const metadata = { title: "Website" };
+export const metadata = { title: "Vacatures — Website" };
+export const dynamic = "force-dynamic";
 
 /** Turn a stored website value ("www.q4s.nl") into a clickable absolute URL. */
 function siteUrl(raw: string | undefined | null): string | null {
@@ -36,43 +33,43 @@ function siteUrl(raw: string | undefined | null): string | null {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
+/** Websitestatus van een vacature-deal: afgeleid van de gekoppelde Vacancy. */
+function statusOf(vac: { status: string } | null): { text: string; cls: string } {
+  if (!vac) return { text: "Nog niet klaargezet", cls: "bg-ink-100 text-ink-600" };
+  if (vac.status === "PUBLISHED") return { text: "Live op de site", cls: "bg-emerald-50 text-emerald-700" };
+  if (vac.status === "PAUSED") return { text: "Gepauzeerd", cls: "bg-amber-50 text-amber-700" };
+  return { text: "Concept", cls: "bg-blue-50 text-blue-700" };
+}
+
 export default async function WebsitePage() {
-  const [settings, vacTotal, vacPublished, cvCount, liveVacancies, viewsAgg, openDeals] =
-    await Promise.all([
-      db.companySettings.findUnique({ where: { id: "default" } }),
-      db.vacancy.count(),
-      db.vacancy.count({ where: { status: "PUBLISHED" } }),
-      db.candidate.count({ where: { cvFileName: { not: null } } }),
-      // Published + paused — both are managed here; paused are off the public site.
-      db.vacancy.findMany({
-        where: { status: { in: ["PUBLISHED", "PAUSED"] } },
-        orderBy: [{ status: "asc" }, { views: "desc" }, { publishedAt: "desc" }],
-        include: { vmsConnector: { select: { name: true } } },
-      }),
-      db.vacancy.aggregate({
-        where: { status: "PUBLISHED" },
-        _sum: { views: true },
-      }),
-      // Openstaande vacatures uit de recruitment-hub (deals zonder kandidaat).
-      // Recruitment is leidend; hier zie je hun status richting de website.
-      db.deal.findMany({
-        where: { status: "OPEN", candidateId: null },
-        orderBy: [{ createdAt: "desc" }],
-        include: {
-          client: { select: { companyName: true } },
-          vacancy: { select: { id: true, status: true, slug: true } },
-        },
-      }),
-    ]);
+  const [settings, openDeals] = await Promise.all([
+    db.companySettings.findUnique({ where: { id: "default" } }),
+    // Alle openstaande vacatures uit de recruitment-hub (deals zonder kandidaat).
+    // Recruitment is leidend; hier werk je ze uit naar website + LinkedIn.
+    db.deal.findMany({
+      where: { status: "OPEN", candidateId: null },
+      orderBy: [{ createdAt: "desc" }],
+      include: {
+        client: { select: { companyName: true } },
+        vacancy: { select: { id: true, status: true, slug: true, views: true } },
+      },
+    }),
+  ]);
 
   const url = siteUrl(settings?.website);
-  const totalViews = viewsAgg._sum.views ?? 0;
+
+  const total = openDeals.length;
+  const live = openDeals.filter((d) => d.vacancy?.status === "PUBLISHED").length;
+  const concept = openDeals.filter(
+    (d) => d.vacancy && d.vacancy.status !== "PUBLISHED",
+  ).length;
+  const todo = openDeals.filter((d) => !d.vacancy).length;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Overzicht"
-        description="Alles wat richting de publieke website gaat: vacatures publiceren en beheren wat live staat op q4s.nl."
+        title="Vacatures"
+        description="Alle openstaande vacatures uit de recruitment-hub. Werk ze hier uit voor de website en maak er een LinkedIn-post van — recruitment blijft leidend."
         actions={
           url ? (
             <a
@@ -89,205 +86,117 @@ export default async function WebsitePage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Vacatures totaal" value={vacTotal} icon={<FileText className="h-5 w-5" />} accent="brand" />
-        <StatCard label="Live op de site" value={vacPublished} icon={<Sparkles className="h-5 w-5" />} accent="green" />
-        <StatCard label="CV's binnengekomen" value={cvCount} sub="via de website" icon={<Inbox className="h-5 w-5" />} accent="slate" />
-        <StatCard
-          label="Weergaven via website"
-          value={totalViews}
-          sub="kliks op gepubliceerde vacatures"
-          icon={<Eye className="h-5 w-5" />}
-          accent="violet"
-        />
+        <StatCard label="Vacatures" value={total} sub="uit recruitment" icon={<Briefcase className="h-5 w-5" />} accent="brand" />
+        <StatCard label="Live op de site" value={live} icon={<Sparkles className="h-5 w-5" />} accent="green" />
+        <StatCard label="Concept" value={concept} icon={<FileText className="h-5 w-5" />} accent="slate" />
+        <StatCard label="Nog uit te werken" value={todo} icon={<Send className="h-5 w-5" />} accent={todo > 0 ? "amber" : "slate"} />
       </div>
 
-      {/* Openstaande vacatures uit de recruitment-hub */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-brand-600" /> Openstaande vacatures (recruitment)
+            <Briefcase className="h-4 w-4 text-brand-600" /> Alle vacatures
           </CardTitle>
           <Link href="/crm/vacatures" className="text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">
             Naar recruitment
           </Link>
         </CardHeader>
+
         {openDeals.length === 0 ? (
           <CardContent>
             <EmptyState
               icon={<Briefcase className="h-6 w-6" />}
               title="Geen openstaande vacatures"
-              description="Vacatures die je in de recruitment-hub aanmaakt, verschijnen hier automatisch — klaar om naar de website te sturen."
+              description="Vacatures die je in de recruitment-hub aanmaakt, verschijnen hier automatisch — klaar om uit te werken voor de website."
             />
           </CardContent>
         ) : (
-          <Table>
-            <THead>
-              <TR className="hover:bg-transparent">
-                <TH>Vacature</TH>
-                <TH>Bedrijf</TH>
-                <TH>Websitestatus</TH>
-                <TH className="text-right">Actie</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {openDeals.map((d) => {
-                const company = d.client?.companyName ?? d.company;
-                const vac = d.vacancy;
-                const websiteLabel = !vac
-                  ? { text: "Nog niet klaargezet", cls: "bg-ink-100 text-ink-600" }
-                  : vac.status === "PUBLISHED"
-                    ? { text: "Live op de site", cls: "bg-emerald-50 text-emerald-700" }
-                    : vac.status === "PAUSED"
-                      ? { text: "Gepauzeerd", cls: "bg-amber-50 text-amber-700" }
-                      : { text: "Concept", cls: "bg-blue-50 text-blue-700" };
-                return (
-                  <TR key={d.id}>
-                    <TD>
-                      <Link href={`/crm/deals/${d.id}`} className="font-medium text-ink-900 hover:text-brand-700">
+          <ul className="divide-y divide-ink-100">
+            {openDeals.map((d) => {
+              const company = d.client?.companyName ?? d.company;
+              const vac = d.vacancy;
+              const status = statusOf(vac);
+              const disc = d.discipline ? labelFor(DISCIPLINES, d.discipline) : "";
+              return (
+                <li key={d.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
+                  {/* Vacature-info */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        href={`/crm/deals/${d.id}`}
+                        className="truncate font-semibold text-ink-900 hover:text-brand-700"
+                      >
                         {d.title}
                       </Link>
+                      <span className={cn("inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold", status.cls)}>
+                        {status.text}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
+                      <span className="inline-flex items-center gap-1">
+                        <Briefcase className="h-3.5 w-3.5 text-ink-400" /> {company}
+                      </span>
                       {d.location && (
-                        <span className="ml-2 inline-flex items-center gap-1 text-xs text-ink-400">
-                          <MapPin className="h-3 w-3" /> {d.location}
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5 text-ink-400" /> {d.location}
                         </span>
                       )}
-                    </TD>
-                    <TD className="text-ink-700">{company}</TD>
-                    <TD>
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${websiteLabel.cls}`}>
-                        {websiteLabel.text}
-                      </span>
-                    </TD>
-                    <TD>
-                      <div className="flex items-center justify-end">
-                        {vac ? (
-                          <Link
-                            href={`/vacatures/${vac.id}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
-                          >
-                            Uitwerken <ArrowRight className="h-3.5 w-3.5" />
-                          </Link>
-                        ) : (
-                          <form action={sendDealToWebsite}>
-                            <input type="hidden" name="dealId" value={d.id} />
-                            <SubmitButton variant="outline" size="sm" pendingLabel="Bezig…">
-                              <Send className="h-4 w-4" /> Naar website
-                            </SubmitButton>
-                          </form>
-                        )}
-                      </div>
-                    </TD>
-                  </TR>
-                );
-              })}
-            </TBody>
-          </Table>
-        )}
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Live op de website</CardTitle>
-          <Link href="/vacatures" className="text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">
-            Alle vacatures
-          </Link>
-        </CardHeader>
-        {liveVacancies.length === 0 ? (
-          <CardContent>
-            <EmptyState
-              icon={<Globe className="h-6 w-6" />}
-              title="Nog niets gepubliceerd"
-              description="Zodra je een vacature publiceert, verschijnt hij hier én op de publieke website."
-            />
-          </CardContent>
-        ) : (
-          <Table>
-            <THead>
-              <TR className="hover:bg-transparent">
-                <TH>Titel</TH>
-                <TH>Gepubliceerd</TH>
-                <TH>Status</TH>
-                <TH className="text-right">Weergaven</TH>
-                <TH className="text-right">Acties</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {liveVacancies.map((v) => (
-                <TR key={v.id}>
-                  <TD>
-                    <Link
-                      href={`/vacatures/${v.id}`}
-                      className="font-medium text-ink-900 hover:text-brand-700"
-                    >
-                      {v.title}
-                    </Link>
-                    {v.vmsConnector && (
-                      <span className="ml-2 inline-flex items-center rounded-sm bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-500">
-                        via {v.vmsConnector.name}
-                      </span>
-                    )}
-                  </TD>
-                  <TD>{formatDate(v.publishedAt)}</TD>
-                  <TD>
-                    <StatusBadge options={VACANCY_STATUSES} value={v.status} />
-                  </TD>
-                  <TD className="text-right">
-                    <span className="inline-flex items-center gap-1.5 font-medium tabular-nums text-ink-900">
-                      <Eye className="h-3.5 w-3.5 text-ink-400" />
-                      {v.views ?? 0}
-                    </span>
-                  </TD>
-                  <TD>
-                    <div className="flex items-center justify-end gap-1">
-                      {v.status === "PUBLISHED" ? (
-                        <>
-                          <a
-                            href={`/vacature/${v.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
-                            title="Bekijk op de website"
-                          >
-                            Bekijk <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                          <ConfirmSubmit
-                            action={pauseVacancy}
-                            id={v.id}
-                            hidden={{ from: "website" }}
-                            message={`Vacature "${v.title}" pauzeren? Hij gaat direct offline op de website.`}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Pause className="h-4 w-4" /> Pauzeren
-                          </ConfirmSubmit>
-                        </>
-                      ) : (
-                        <ConfirmSubmit
-                          action={resumeVacancy}
-                          id={v.id}
-                          hidden={{ from: "website" }}
-                          message={`Vacature "${v.title}" hervatten? Hij gaat direct weer live op de website.`}
-                          variant="success"
-                          size="sm"
-                        >
-                          <Play className="h-4 w-4" /> Hervatten
-                        </ConfirmSubmit>
+                      {disc && <span className="text-ink-400">{disc}</span>}
+                      {vac?.status === "PUBLISHED" && (
+                        <span className="inline-flex items-center gap-1 text-ink-400">
+                          <Eye className="h-3.5 w-3.5" /> {vac.views ?? 0}
+                        </span>
                       )}
-                      <ConfirmSubmit
-                        action={deleteVacancy}
-                        id={v.id}
-                        message={`Vacature "${v.title}" verwijderen? Dit haalt hem ook direct van de website.`}
-                        variant="ghost"
-                        size="sm"
+                    </p>
+                  </div>
+
+                  {/* Acties — de doorlopende flow: eerst website-tekst, dan LinkedIn */}
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {vac ? (
+                      <Link
+                        href={`/vacatures/${vac.id}`}
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                        title="Website-tekst bekijken, aanpassen en publiceren"
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </ConfirmSubmit>
-                    </div>
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+                        <Sparkles className="h-4 w-4" /> Website-tekst
+                      </Link>
+                    ) : (
+                      <form action={sendDealToWebsite}>
+                        <input type="hidden" name="dealId" value={d.id} />
+                        <SubmitButton size="sm" pendingLabel="AI schrijft…">
+                          <Sparkles className="h-4 w-4" /> Website-tekst maken
+                        </SubmitButton>
+                      </form>
+                    )}
+
+                    <Link
+                      href={vac ? `/socials?vac=${vac.id}` : `/socials`}
+                      className={cn(
+                        buttonVariants({ variant: "outline", size: "sm" }),
+                        !vac && "pointer-events-none opacity-40",
+                      )}
+                      title={vac ? "LinkedIn-post maken met de website-link" : "Zet eerst de website-tekst klaar"}
+                      aria-disabled={!vac}
+                    >
+                      <MessageSquarePlus className="h-4 w-4" /> LinkedIn-post
+                    </Link>
+
+                    {vac?.status === "PUBLISHED" && vac.slug && (
+                      <a
+                        href={`/vacature/${vac.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+                        title="Bekijk op de website"
+                      >
+                        Bekijk <ArrowRight className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </Card>
     </div>
