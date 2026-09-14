@@ -46,6 +46,28 @@ function lines(s: string): string[] {
     .filter(Boolean);
 }
 
+type SalaryPeriod = "uur" | "jaar";
+
+/** Splits een opgeslagen vergoeding ("€ 65–75 p/u") in bedrag + periode. */
+function parseSalary(raw: string): { amount: string; period: SalaryPeriod } {
+  const s = (raw ?? "").trim();
+  const isYear = /\b(per\s*jaar|p\/?j|jaar|jaarsalaris|\/\s*jr?)\b/i.test(s);
+  const period: SalaryPeriod = isYear ? "jaar" : "uur";
+  // Haal de periode-aanduiding weg, hou het bedrag over.
+  const amount = s
+    .replace(/\b(per\s*uur|p\/?\s*u|\/\s*uur|\/\s*u|per\s*jaar|p\/?\s*j|jaarsalaris|\/\s*jaar|\/\s*jr?)\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return { amount, period };
+}
+
+/** Bouwt de vergoeding-string zoals hij op de website komt te staan. */
+function buildSalary(amount: string, period: SalaryPeriod): string {
+  const a = amount.trim();
+  if (!a) return "";
+  return period === "jaar" ? `${a} per jaar` : `${a} p/u`;
+}
+
 function PreviewSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
@@ -173,7 +195,10 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
   const [niceToHave, setNiceToHave] = useState(v.niceToHave);
   const [location, setLocation] = useState(v.location);
   const [employmentType, setEmploymentType] = useState(v.employmentType);
-  const [salary, setSalary] = useState(v.salary);
+  const initialSalary = parseSalary(v.salary);
+  const [salaryAmount, setSalaryAmount] = useState(initialSalary.amount);
+  const [salaryPeriod, setSalaryPeriod] = useState<SalaryPeriod>(initialSalary.period);
+  const salary = buildSalary(salaryAmount, salaryPeriod);
 
   const [preview, setPreview] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
@@ -226,7 +251,11 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
       setNiceToHave((data.niceToHave ?? []).join("\n"));
       if (!location && data.location) setLocation(data.location);
       if (!employmentType && data.employmentType) setEmploymentType(data.employmentType);
-      if (!salary && data.salary) setSalary(data.salary);
+      if (!salaryAmount && data.salary) {
+        const parsed = parseSalary(String(data.salary));
+        setSalaryAmount(parsed.amount || String(data.salary));
+        setSalaryPeriod(parsed.period);
+      }
       setAiDone(true);
       setPreview(true); // toon meteen het resultaat als voorvertoning
     } catch (err) {
@@ -364,14 +393,15 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
               name="employmentType"
               defaultValue={employmentType}
               onValueChange={(val) => setEmploymentType(val)}
+              tintText
             >
               <option value="">Kies een contractvorm…</option>
-              <option value="ZZP / Freelance">ZZP / Freelance</option>
-              <option value="Detachering">Detachering</option>
-              <option value="Fulltime">Fulltime</option>
-              <option value="Parttime">Parttime</option>
-              <option value="Tijdelijk">Tijdelijk</option>
-              <option value="Uitzend">Uitzend</option>
+              <option value="ZZP / Freelance" data-color="violet">ZZP / Freelance</option>
+              <option value="Detachering" data-color="blue">Detachering</option>
+              <option value="Fulltime" data-color="green">Fulltime</option>
+              <option value="Parttime" data-color="cyan">Parttime</option>
+              <option value="Tijdelijk" data-color="amber">Tijdelijk</option>
+              <option value="Uitzend" data-color="orange">Uitzend</option>
               {employmentType &&
                 ![
                   "ZZP / Freelance",
@@ -385,14 +415,28 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                 )}
             </Select>
           </Field>
-          <Field label="Vergoeding" htmlFor="salary">
-            <Input
-              id="salary"
-              name="salary"
-              value={salary}
-              onChange={(e) => setSalary(e.target.value)}
-              placeholder="Marktconform"
-            />
+          <Field label="Vergoeding" htmlFor="salaryAmount">
+            {/* De samengestelde waarde ("€ 65–75 p/u") gaat mee bij opslaan. */}
+            <input type="hidden" name="salary" value={salary} />
+            <div className="flex gap-2">
+              <Input
+                id="salaryAmount"
+                className="flex-1"
+                value={salaryAmount}
+                onChange={(e) => setSalaryAmount(e.target.value)}
+                placeholder="Bijv. € 65–75"
+              />
+              <div className="w-32 shrink-0">
+                <Select
+                  aria-label="Per uur of jaar"
+                  defaultValue={salaryPeriod}
+                  onValueChange={(val) => setSalaryPeriod(val as SalaryPeriod)}
+                >
+                  <option value="uur">Per uur</option>
+                  <option value="jaar">Jaarsalaris</option>
+                </Select>
+              </div>
+            </div>
           </Field>
         </CardContent>
       </Card>
