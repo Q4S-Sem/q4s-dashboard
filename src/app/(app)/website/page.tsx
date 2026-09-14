@@ -14,7 +14,6 @@ import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
-import { HubCard } from "@/components/ui/hub-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
@@ -99,24 +98,6 @@ export default async function WebsitePage() {
           sub="kliks op gepubliceerde vacatures"
           icon={<Eye className="h-5 w-5" />}
           accent="violet"
-        />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <HubCard
-          icon={<FileText className="h-6 w-6" />}
-          title="Vacatures"
-          description="Alle vacatures voor de website — sorteer en filter op status of discipline, publiceer, pauzeer of haal ze offline."
-          href="/website/vacatures"
-          cta="Naar vacatures"
-          newHref="/vacatures/nieuw"
-        />
-        <HubCard
-          icon={<Inbox className="h-6 w-6" />}
-          title="Inkomende CV's"
-          description="Elke sollicitatie met CV vanaf de website. Sorteer, filter en zet een interessante kandidaat met één klik als lead in de CRM-pijplijn."
-          href="/website/cv-inbox"
-          cta="Naar CV's"
         />
       </div>
 
