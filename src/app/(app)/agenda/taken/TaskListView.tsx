@@ -212,7 +212,7 @@ export function TaskListView({ rows, people }: { rows: TaskRowData[]; people: Pe
           <div className="flex items-center gap-1">
             <PagerButton label="«" disabled={current <= 1} onClick={() => setPage(1)} />
             <PagerButton label="‹" disabled={current <= 1} onClick={() => setPage(current - 1)} />
-            <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-ink-900 px-2 text-xs font-semibold text-white">
+            <span className="flex h-8 min-w-8 items-center justify-center rounded-md bg-ink-900 px-2 text-xs font-semibold text-white">
               {current}
             </span>
             <PagerButton label="›" disabled={current >= pageCount} onClick={() => setPage(current + 1)} />
@@ -230,7 +230,7 @@ function PagerButton({ label, disabled, onClick }: { label: string; disabled: bo
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-8 w-8 items-center justify-center rounded-full border border-ink-200 text-ink-500 transition-colors hover:bg-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 text-ink-500 transition-colors hover:bg-ink-100 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {label}
     </button>
