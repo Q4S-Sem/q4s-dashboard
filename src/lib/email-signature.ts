@@ -168,7 +168,7 @@ export function renderSignatureHtml(d: SignatureData): string {
   const logoRow = d.logoSrc
     ? `<tr><td style="padding:0 0 14px;"><img src="${esc(
         d.logoSrc,
-      )}" alt="Q4S Project Partners" width="120" style="display:block;border:0;width:120px;max-width:60%;height:auto;"></td></tr>`
+      )}" alt="Q4S Project Partners" width="90" style="display:block;border:0;width:90px;max-width:45%;height:auto;"></td></tr>`
     : "";
 
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:${INK};max-width:600px;width:100%;">
