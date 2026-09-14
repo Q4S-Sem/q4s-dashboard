@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Trophy, XCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/field";
 import { closeDeal, reopenDeal } from "./actions";
 
 type Pending = null | "won" | "lost";
@@ -72,27 +71,15 @@ export function CloseDealButtons({ dealId, status }: { dealId: string; status: s
         <ConfirmModal
           tone="danger"
           title="Deal sluiten als niet doorgegaan?"
-          message="De deal wordt gesloten als verloren. Geef kort een reden op — die telt mee in de inzichten."
+          message="De deal wordt gesloten als verloren."
           onClose={() => setPending(null)}
-          hideDefaultCancel
         >
-          <form action={closeDeal} className="flex w-full flex-col gap-3">
+          <form action={closeDeal}>
             <input type="hidden" name="id" value={dealId} />
             <input type="hidden" name="outcome" value="LOST" />
-            <Input
-              name="lostReason"
-              placeholder="Waarom ging het niet door? (bijv. prijs, geen match)…"
-              className="h-10 w-full"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setPending(null)}>
-                Annuleren
-              </Button>
-              <Button type="submit" variant="danger" size="sm">
-                Ja, niet doorgegaan
-              </Button>
-            </div>
+            <Button type="submit" variant="danger" size="sm">
+              Ja, niet doorgegaan
+            </Button>
           </form>
         </ConfirmModal>
       )}
