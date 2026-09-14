@@ -6,7 +6,12 @@ import { LinkedInGenerator, type VacancyOption } from "./LinkedInGenerator";
 export const metadata = { title: "LinkedIn-generator" };
 export const dynamic = "force-dynamic";
 
-export default async function SocialsPage() {
+export default async function SocialsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ vac?: string }>;
+}) {
+  const { vac } = await searchParams;
   const [vacancies, settings] = await Promise.all([
     db.vacancy.findMany({
       orderBy: { createdAt: "desc" },
@@ -56,6 +61,7 @@ export default async function SocialsPage() {
       />
       <LinkedInGenerator
         vacancies={options}
+        preselectId={vac}
         defaults={{
           companyName: settings.companyName || "Q4S",
           contactName: "",

@@ -122,10 +122,13 @@ export function LinkedInGenerator({
   vacancies,
   defaults,
   siteUrl,
+  preselectId,
 }: {
   vacancies: VacancyOption[];
   defaults: Defaults;
   siteUrl: string;
+  /** Vacature-id om bij het openen meteen te selecteren + in te vullen. */
+  preselectId?: string;
 }) {
   const [selectedId, setSelectedId] = useState("");
   const [title, setTitle] = useState("");
@@ -184,6 +187,20 @@ export function LinkedInGenerator({
     setVacOpen(false);
     applyVacancy(v.id);
   }
+
+  // Bij binnenkomst met een voorgeselecteerde vacature (bijv. vanaf de
+  // vacaturepagina via ?vac=): meteen invullen. Eén keer, op mount.
+  const didPreselect = useRef(false);
+  useEffect(() => {
+    if (didPreselect.current || !preselectId) return;
+    const v = vacancies.find((x) => x.id === preselectId);
+    if (v) {
+      didPreselect.current = true;
+      setVacQuery(v.title);
+      applyVacancy(v.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectId]);
 
   /** Typen in het titelveld: titel volgt live; bij een exacte titel-match vullen
    *  we meteen de rest in (dan hoef je alleen de titel te typen). */

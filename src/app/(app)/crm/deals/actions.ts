@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { parseForm, type FormState } from "@/lib/form";
 import { DEAL_SOURCE_VALUES, CRM_NOTE_TYPE_VALUES, CRM_SENTIMENT_VALUES } from "@/lib/domain";
 import { currentRecruiterId, logNote } from "@/lib/crm";
+import { mirrorDealToVacancy } from "@/lib/vacancy-mirror";
 import { extractVacancyFields, CvExtractError, type VacancyFields } from "@/lib/cv-extract";
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
@@ -164,6 +165,14 @@ export async function createDeal(_prev: FormState, formData: FormData): Promise<
     body: `Deal aangemaakt in fase "${stageName}".`,
   });
 
+  // Recruitment is leidend: een nieuwe vacature (deal zonder kandidaat) verschijnt
+  // automatisch als CONCEPT in "Op de website" — geen import nodig. Een deal die
+  // al aan een bestaande Vacancy gekoppeld is, spiegelen we niet nog eens; de
+  // mirror-helper her-checkt zelf op kandidaat/bestaande koppeling.
+  if (!payload.vacancyId) {
+    await mirrorDealToVacancy(created.id);
+  }
+
   // Eigen notitie bij het aanmaken meteen vastleggen in het notitieblok.
   const notes = String(formData.get("notes") ?? "").trim();
   if (notes) {
@@ -172,6 +181,8 @@ export async function createDeal(_prev: FormState, formData: FormData): Promise<
 
   revalidatePath("/crm");
   revalidatePath("/crm/vacatures");
+  revalidatePath("/website");
+  revalidatePath("/website/vacatures");
   redirect("/crm/vacatures");
 }
 
