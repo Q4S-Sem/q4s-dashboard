@@ -6,7 +6,6 @@ import {
   CalendarClock,
   Receipt,
   Settings,
-  Megaphone,
   Send,
   Globe,
   FileText,
@@ -181,20 +180,13 @@ const HUB_LIST: NavHub[] = [
     ],
   },
   {
-    label: "Socials",
-    href: "/socials",
-    icon: Megaphone,
-    items: [
-      { href: "/socials", label: "LinkedIn-generator", icon: Sparkles, exact: true },
-    ],
-  },
-  {
     label: "Vacatures",
     href: "/website",
     icon: FileText,
     items: [
       { href: "/website", label: "Vacatures", icon: Briefcase, exact: true, section: "Website" },
       { href: "/sollicitaties", label: "Sollicitaties", icon: Inbox, section: "Website" },
+      { href: "/website/linkedin", label: "LinkedIn-generator", icon: Sparkles, section: "Website" },
       // Bereikbaar via de acties op de vacaturelijst, niet als los menu-item:
       // - /website/vacatures  = de oude 'op de website'-tabel
       // - /vacatures          = de uitwerk/publiceer-pagina per vacature
@@ -252,7 +244,6 @@ const HUB_ORDER = [
   "/recruitment",
   "/website", // Vacatures
   "/cv",
-  "/socials",
   "/evaluaties",
   "/dashboard", // Analytics
   "/data",

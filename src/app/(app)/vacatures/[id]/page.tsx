@@ -226,7 +226,7 @@ export default async function VacatureDetailPage({
             </>
           )}
           <Link
-            href={`/socials?vac=${vacancy.id}`}
+            href={`/website/linkedin?vac=${vacancy.id}`}
             className={buttonVariants({ variant: "outline" })}
           >
             <MessageSquarePlus className="h-4 w-4" /> LinkedIn-post maken

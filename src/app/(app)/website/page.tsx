@@ -236,7 +236,7 @@ export default async function WebsitePage({
                     )}
 
                     <Link
-                      href={vac ? `/socials?vac=${vac.id}` : `/socials`}
+                      href={vac ? `/website/linkedin?vac=${vac.id}` : `/website/linkedin`}
                       className={cn(
                         buttonVariants({ variant: "outline", size: "sm" }),
                         !vac && "pointer-events-none opacity-40",
