@@ -3,23 +3,31 @@ import {
   Globe,
   Briefcase,
   MapPin,
-  Sparkles,
-  MessageSquarePlus,
   ArrowRight,
   Users,
   ExternalLink,
-  FileText,
-  Rocket,
   Eye,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { buttonVariants } from "@/components/ui/button";
 import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 import { sendDealToWebsite } from "./actions";
+
+/** LinkedIn-logo (lucide heeft geen merk-icoon). */
+function LinkedinIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+      <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z" />
+    </svg>
+  );
+}
+
+/** Vierkante icoon-knop (uniform met de outline-knoppen). */
+const iconBtn =
+  "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-700 transition-colors hover:bg-ink-50 hover:text-ink-900";
 
 export const metadata = { title: "Vacatures — Website" };
 export const dynamic = "force-dynamic";
@@ -208,54 +216,60 @@ export default async function WebsitePage({
                     </p>
                   </div>
 
-                  {/* Acties — de doorlopende flow: eerst website-tekst, dan LinkedIn */}
+                  {/* Acties — de doorlopende flow: uitwerken · LinkedIn · sollicitaties */}
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     {vac ? (
                       <Link
                         href={`/vacatures/${vac.id}`}
-                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-                        title="Website-tekst bekijken, aanpassen en publiceren"
+                        className={iconBtn}
+                        title={
+                          bucket === "online"
+                            ? "Website-tekst bekijken en bijwerken"
+                            : "Uitwerken & publiceren op de website"
+                        }
+                        aria-label="Uitwerken & publiceren"
                       >
-                        {bucket === "online" ? (
-                          <>
-                            <Sparkles className="h-4 w-4" /> Website-tekst
-                          </>
-                        ) : (
-                          <>
-                            <Rocket className="h-4 w-4" /> Uitwerken & publiceren
-                          </>
-                        )}
+                        <Globe className="h-4 w-4" />
                       </Link>
                     ) : (
                       <form action={sendDealToWebsite}>
                         <input type="hidden" name="dealId" value={d.id} />
-                        <SubmitButton size="sm" pendingLabel="AI schrijft…">
-                          <Sparkles className="h-4 w-4" /> Website-tekst maken
+                        <SubmitButton
+                          variant="outline"
+                          size="icon"
+                          pendingLabel="…"
+                          title="Website-tekst maken (AI schrijft)"
+                          aria-label="Website-tekst maken"
+                        >
+                          <Globe className="h-4 w-4" />
                         </SubmitButton>
                       </form>
                     )}
 
                     <Link
                       href={vac ? `/website/linkedin?vac=${vac.id}` : `/website/linkedin`}
-                      className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
-                        !vac && "pointer-events-none opacity-40",
-                      )}
-                      title={vac ? "LinkedIn-post maken met de website-link" : "Zet eerst de website-tekst klaar"}
+                      className={cn(iconBtn, !vac && "pointer-events-none opacity-40")}
+                      title={
+                        vac
+                          ? "LinkedIn-post maken — tekst staat meteen klaar in de generator"
+                          : "Zet eerst de website-tekst klaar"
+                      }
+                      aria-label="LinkedIn-post maken"
                       aria-disabled={!vac}
                     >
-                      <MessageSquarePlus className="h-4 w-4" /> LinkedIn-post
+                      <LinkedinIcon className="h-4 w-4" />
                     </Link>
 
                     {vac && (
                       <Link
                         href={`/website/vacatures/${vac.id}/sollicitaties`}
-                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                        className={cn(iconBtn, "relative")}
                         title="Sollicitaties op deze vacature bekijken"
+                        aria-label="Sollicitaties"
                       >
-                        <Users className="h-4 w-4" /> Sollicitaties
+                        <Users className="h-4 w-4" />
                         {vac._count.applications > 0 && (
-                          <span className="ml-1 rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                          <span className="absolute -right-1.5 -top-1.5 min-w-[16px] rounded-full bg-brand-600 px-1 py-0.5 text-center text-[10px] font-bold leading-none text-white">
                             {vac._count.applications}
                           </span>
                         )}
