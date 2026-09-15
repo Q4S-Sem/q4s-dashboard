@@ -232,11 +232,23 @@ export function LinkedInGenerator({
   }
 
   const selectedVacancy = vacancies.find((v) => v.id === selectedId);
-  const vacQ = vacQuery.trim().toLowerCase();
-  const vacMatches = (vacQ ? vacancies.filter((v) => v.title.toLowerCase().includes(vacQ)) : vacancies)
+  // Zoeken: accent-ongevoelig en per woord — "ndt test" vindt "TEST — NDT
+  // Inspecteur (UT/RT)". Een letterlijke substring-match voelde als een kapotte
+  // filter zodra je woordvolgorde of leestekens net anders typte.
+  const fold = (s: string) =>
+    s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  const vacQ = fold(vacQuery.trim());
+  const words = vacQ.split(/\s+/).filter(Boolean);
+  const vacMatches = (words.length
+    ? vacancies.filter((v) => {
+        const hay = fold(`${v.title} ${v.discipline} ${v.location}`);
+        return words.every((w) => hay.includes(w));
+      })
+    : vacancies
+  )
     .slice()
     .sort((a, b) => (a.status === "PUBLISHED" ? 0 : 1) - (b.status === "PUBLISHED" ? 0 : 1))
-    .slice(0, 8);
+    .slice(0, 10);
   const base = (origin || "").replace(/\/+$/, "");
   const applyUrl = selectedVacancy?.slug
     ? `${base}/vacature/${selectedVacancy.slug}`
@@ -314,7 +326,15 @@ export function LinkedInGenerator({
                 aria-label="Typ een vacaturetitel"
                 className={INPUT_CLS}
               />
-              <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+              <button
+                type="button"
+                onClick={() => setVacOpen((o) => !o)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
+                aria-label="Vacaturelijst openen"
+                tabIndex={-1}
+              >
+                <ChevronsUpDown className="h-4 w-4" />
+              </button>
 
               {vacOpen && (vacMatches.length > 0 || vacQ) && (
                 <ul className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 text-sm shadow-lg">
