@@ -201,6 +201,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
   const salary = buildSalary(salaryAmount, salaryPeriod);
 
   const [preview, setPreview] = useState(false);
+  const [confirmPublish, setConfirmPublish] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiDone, setAiDone] = useState(false);
@@ -468,11 +469,10 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
           <SubmitButton variant="outline" pendingLabel="Opslaan…">
             <Save className="h-4 w-4" /> Alleen opslaan
           </SubmitButton>
-          <SubmitButton
+          <Button
+            type="button"
             variant="success"
-            name="publish"
-            value="1"
-            pendingLabel={v.isPublished ? "Bijwerken…" : "Publiceren…"}
+            onClick={() => setConfirmPublish(true)}
             disabled={!complete && !v.isPublished}
             title={
               complete
@@ -482,9 +482,45 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
           >
             <Rocket className="h-4 w-4" />
             {v.isPublished ? "Opslaan & site bijwerken" : "Opslaan & op de website zetten"}
-          </SubmitButton>
+          </Button>
         </div>
       </div>
+
+      {/* Bevestiging vóór publiceren */}
+      {confirmPublish && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/40 p-4 backdrop-blur-sm"
+          onClick={() => setConfirmPublish(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-base font-semibold text-ink-900">
+              {v.isPublished ? "Site bijwerken?" : "Op de website zetten?"}
+            </h2>
+            <p className="mt-2 text-sm text-ink-600">
+              {v.isPublished
+                ? "Weet je het zeker? De wijzigingen worden opgeslagen en de live vacaturepagina wordt direct bijgewerkt."
+                : "Weet je het zeker? De vacature wordt opgeslagen en komt direct live op q4s.nl te staan."}
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setConfirmPublish(false)}>
+                Annuleren
+              </Button>
+              <SubmitButton
+                variant="success"
+                name="publish"
+                value="1"
+                pendingLabel={v.isPublished ? "Bijwerken…" : "Publiceren…"}
+              >
+                <Rocket className="h-4 w-4" />
+                {v.isPublished ? "Ja, bijwerken" : "Ja, publiceren"}
+              </SubmitButton>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Voorvertoning-pop-up */}
       {preview && (
