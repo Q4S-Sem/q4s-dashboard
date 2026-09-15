@@ -172,7 +172,7 @@ export function renderSignatureHtml(d: SignatureData): string {
     : "";
 
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:${INK};max-width:600px;width:100%;">
-    <tr><td style="padding:0 0 22px;color:${INK};font-size:13px;line-height:1.5;">Met vriendelijke groet,</td></tr>
+    <tr><td style="padding:0 0 22px;color:${INK};font-size:15px;line-height:1.5;">Met vriendelijke groet,</td></tr>
     ${logoRow}
     <tr><td style="padding:0;">
       <div style="color:${INK};font-size:17px;font-weight:700;line-height:1.25;">${esc(d.name) || "&nbsp;"}</div>
