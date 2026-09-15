@@ -205,10 +205,14 @@ export function disciplineLabelOf(discipline: string): string {
   return label && label !== "—" ? label : d;
 }
 
-/** Bouw de LinkedIn-post in het vaste Q4S-format (met Unicode-vet/cursief + emoji's). */
+// Vaste Q4S-contactgegevens voor vacatureposts (Gjil). Deze staan ALTIJD onder
+// de post — ook als een aanroeper per ongeluk niets meegeeft.
+export const Q4S_CONTACT_PHONE = "+31 6 83859566";
+export const Q4S_CONTACT_EMAIL = "cv@q4s.nl";
+
+/** Bouw de LinkedIn-post in het vaste Q4S-format (met Unicode-vet + emoji's). */
 export function buildLinkedinPost(inp: PostInput): string {
   const title = inp.title.trim() || "Nieuwe vacature";
-  const empl = inp.employmentType.trim();
   const discipline = disciplineLabelOf(inp.discipline);
   const loc = inp.location.trim();
   const company = inp.companyName.trim() || "Q4S";
@@ -221,69 +225,57 @@ export function buildLinkedinPost(inp: PostInput): string {
 
   const L: string[] = [];
 
-  // Kop — vet, met de meta-regel eronder zodat locatie/dienstverband meteen zichtbaar
-  // zijn zonder dat de titel wordt volgeplakt met haakjes.
-  L.push(`📍 ${boldize(`Gezocht: ${title}`)}`);
-  const meta = [discipline, loc, empl, salary].filter(Boolean).join("  ·  ");
-  if (meta) L.push(italicize(meta));
+  // Kop — vet met 📍, zoals het vaste voorbeeld: "📍 Gezocht: Voorman / NDO".
+  const kop = discipline && !title.toLowerCase().includes(discipline.toLowerCase())
+    ? `Gezocht: ${title} / ${discipline}`
+    : `Gezocht: ${title}`;
+  L.push(`📍 ${boldize(kop)}`);
   L.push("");
 
-  // Pakkende intro — cursief: het is de pitch, geen opsomming. Zo scheidt hij zich
-  // visueel van de blokken eronder zonder een kopje nodig te hebben.
-  //
-  // HARD op 2 zinnen: een geplakte vacature opent vaak met een alinea van vijf
-  // regels die de rol nóg eens uitlegt — terwijl "Wat ga je doen?" daar direct onder
-  // staat. Dat is dubbelop én het duurst denkbare deel van de post (cursief = elke
-  // letter telt dubbel). De rest van de tekst raakt niets kwijt.
+  // Korte intro als GEWONE tekst (goed leesbaar, zoals het voorbeeld) — max 2
+  // zinnen; de blokken eronder vertellen de rest.
   if (summary) {
-    L.push(italicize(firstSentences(stripFormatting(summary), 2)));
+    L.push(firstSentences(stripFormatting(summary), 2));
   } else {
     L.push(
-      italicize(
-        `Voor een mooie en uitdagende functie${discipline ? ` binnen ${discipline}` : ""}${
-          loc ? ` in ${loc}` : ""
-        } zoeken wij bij ${company} versterking!`,
-      ),
+      `Voor een technisch project${loc ? ` in de regio ${loc}` : ""} zijn wij op zoek naar een ervaren ${title.toLowerCase()}${
+        discipline ? ` met een sterke achtergrond in ${discipline}` : ""
+      }.`,
     );
   }
   L.push("");
 
-  // Wat ga je doen? — 🔧 werkzaamheden.
+  // Wat ga je doen? — vetgedrukt kopje, 🔹 per taak.
   if (resp.length) {
-    L.push(`🔧 ${boldize("Wat ga je doen?")}`);
-    // Ook hier autoBold: normen als "EN 1090" horen net zo goed vet in een
-    // werkzaamheid als in een eis. Reeds vette stukken (respLine boldize't het
-    // kernwoord vóór het streepje) zijn geen ASCII meer en blijven ongemoeid.
+    L.push(boldize("Wat ga je doen?"));
     for (const r of resp) L.push(`🔹 ${autoBold(respLine(r))}`);
     L.push("");
   }
 
-  // Wat neem je mee? — ✅ eisen (met auto-vette normen/acroniemen).
+  // Wat vragen wij? — vetgedrukt kopje, ✅ per eis (met auto-vette normen/acroniemen).
   if (reqs.length) {
-    L.push(`✅ ${boldize("Wat neem je mee?")}`);
+    L.push(boldize("Wat vragen wij?"));
     for (const r of reqs) {
       if (isSublabel(r)) {
         // Tussenkopje: vet, zonder vinkje, met een witregel ervoor zodat het los komt.
         L.push("");
         L.push(boldize(r.replace(/:\s*$/, "")));
       } else {
-        L.push(`▪️ ${autoBold(md(r))}`);
+        L.push(`✅ ${autoBold(md(r))}`);
       }
     }
     L.push("");
   }
 
-  // Wie ben jij? — persoonsprofiel als lopende tekst; een opsomming van
-  // karaktereigenschappen leest als een boodschappenlijst.
+  // Wie ben jij? — persoonsprofiel als lopende tekst.
   if (profile) {
-    L.push(`🙋 ${boldize("Wie ben jij?")}`);
+    L.push(boldize("Wie ben jij?"));
     L.push(autoBold(md(profile)));
     L.push("");
   }
 
-  // Wat bieden wij? — de ingevulde punten. Alleen als er niets staat vallen we terug
-  // op de vaste Q4S-punten: eerder stonden die er ALTIJD, waardoor de echte tekst
-  // van de vacature ("langdurig project", "loondienst") stilletjes verdween.
+  // Wat bieden wij? — de ingevulde punten; anders (alleen bij een salaris) een
+  // nette terugval zodat de echte vacaturetekst nooit stilletjes verdwijnt.
   const offerLines = offer.length
     ? offer
     : salary
@@ -294,23 +286,21 @@ export function buildLinkedinPost(inp: PostInput): string {
         ]
       : [];
   if (offerLines.length) {
-    L.push(`🎁 ${boldize("Wat bieden wij?")}`);
+    L.push(boldize("Wat bieden wij?"));
     for (const o of offerLines) L.push(`🔹 ${autoBold(respLine(o))}`);
     L.push("");
   }
 
-  // Interesse.
-  L.push(`📩 ${boldize("Interesse of de gouden tip?")}`);
-  L.push(
-    `Ben jij beschikbaar${empl ? ` voor ${empl}` : ""}? Of ken je de perfecte kandidaat in je netwerk? Neem dan direct contact met ons op!`,
-  );
-  if (inp.applyUrl.trim()) L.push(`👉 Direct reageren: ${inp.applyUrl.trim()}`);
+  // Interesse — vast blok zoals het voorbeeld.
+  L.push(boldize("Interesse of ken je iemand?"));
+  L.push("Neem gerust contact op!");
+  if (inp.applyUrl.trim()) L.push(`👉 ${inp.applyUrl.trim()}`);
   L.push("");
 
-  // Contact — alleen het label "Telefoon:"/"E-mail:" is vet; de waarden blijven
-  // gewone tekst zodat e-mail en telefoon op LinkedIn klikbaar/kopieerbaar zijn.
-  if (inp.contactPhone.trim()) L.push(`📞 ${boldize("Telefoon:")} ${inp.contactPhone.trim()}`);
-  if (inp.contactEmail.trim()) L.push(`📧 ${boldize("E-mail:")} ${inp.contactEmail.trim()}`);
+  // Contact — ALTIJD Gjils nummer + cv@q4s.nl (terugval op de vaste waarden als
+  // een aanroeper niets meegeeft). Kaal zonder labels: klikbaar/kopieerbaar.
+  L.push(`📞 ${inp.contactPhone.trim() || Q4S_CONTACT_PHONE}`);
+  L.push(`📧 ${inp.contactEmail.trim() || Q4S_CONTACT_EMAIL}`);
   const contactName = inp.contactName.trim();
   if (contactName) L.push(`🤝 ${contactName} · ${company}`);
   L.push("");

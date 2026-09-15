@@ -5,13 +5,12 @@ import {
   Copy,
   Check,
   Wand2,
-  Share2,
   ClipboardPaste,
   ChevronsUpDown,
   Search,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, Textarea } from "@/components/ui/field";
+import { Textarea } from "@/components/ui/field";
 import {
   buildLinkedinPost,
   disciplineLabelOf,
@@ -280,143 +279,148 @@ export function LinkedInGenerator({
   }, [draft]);
 
   return (
-    <div className="space-y-8">
-      {/* LinkedIn */}
-      <section className="space-y-4">
-        <h2 className="flex items-center gap-2 text-lg font-bold text-ink-900">
-          <Share2 className="h-5 w-5 text-brand-600" /> LinkedIn
-        </h2>
-        <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+      {/* Links: vacature kiezen of plakken */}
+      <div className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Wand2 className="h-5 w-5 text-brand-600" /> Vacaturegegevens
+              <Search className="h-5 w-5 text-brand-600" /> Kies een vacature
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Snelste manier: plak de hele vacature → wij vullen alles + maken de post. */}
-            <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4">
-              <Field
-                label="Plak de vacaturetekst"
-                htmlFor="raw"
-                hint="Plak de hele vacature — wij herkennen de kopjes en maken er automatisch de LinkedIn-post van. Die staat meteen rechts klaar en kun je daar nog bijschaven."
-              >
-                <Textarea
-                  id="raw"
-                  value={rawText}
-                  onChange={(e) => setRawText(e.target.value)}
-                  rows={5}
-                  placeholder={"Plak hier de volledige vacaturetekst…\n\n(titel, ‘Wat ga je doen?’, ‘Wat neem je mee?’, eisen — allemaal in één keer)"}
-                />
-              </Field>
-              <div className="mt-2 flex items-center justify-between gap-3">
-                <p className="text-xs text-brand-700">
-                  {parsed ? "Omgezet — de post staat rechts klaar." : "Één klik en de post staat rechts klaar."}
-                </p>
-                <button
-                  type="button"
-                  onClick={parseRaw}
-                  disabled={!rawText.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <ClipboardPaste className="h-4 w-4" /> Omzetten naar LinkedIn-post
-                </button>
-              </div>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-ink-600">
+              Typ de titel van een vacature van de website — de post staat rechts
+              meteen klaar in het vaste Q4S-format.
+            </p>
+            <div ref={vacRef} className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+              <input
+                id="vac"
+                type="text"
+                value={vacQuery}
+                onChange={(e) => onVacInput(e.target.value)}
+                onFocus={() => setVacOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && vacOpen && vacMatches.length > 0) {
+                    e.preventDefault();
+                    pickVacancy(vacMatches[0]);
+                  } else if (e.key === "Escape") {
+                    setVacOpen(false);
+                  }
+                }}
+                placeholder="Bijv. Kwaliteitsinspecteur Staalbouw…"
+                autoComplete="off"
+                aria-label="Typ een vacaturetitel"
+                className={INPUT_CLS}
+              />
+              <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+
+              {vacOpen && (vacMatches.length > 0 || vacQ) && (
+                <ul className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 text-sm shadow-lg">
+                  {vacMatches.map((v) => (
+                    <li key={v.id}>
+                      <button
+                        type="button"
+                        onClick={() => pickVacancy(v)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-ink-50"
+                      >
+                        {v.status === "PUBLISHED" ? (
+                          <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
+                            live
+                          </span>
+                        ) : (
+                          <span className="rounded-sm bg-ink-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-ink-500">
+                            concept
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1 truncate">{v.title}</span>
+                        {selectedId === v.id && <Check className="h-4 w-4 shrink-0 text-brand-600" />}
+                      </button>
+                    </li>
+                  ))}
+                  {vacMatches.length === 0 && (
+                    <li className="px-3 py-2 text-ink-400">Geen vacature met deze titel op de website.</li>
+                  )}
+                </ul>
+              )}
             </div>
-
-            <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-ink-400">
-              <span className="h-px flex-1 bg-ink-200" /> of typ een titel <span className="h-px flex-1 bg-ink-200" />
-            </div>
-
-            <Field
-              label="Vacaturetitel van de website"
-              htmlFor="vac"
-              hint="Typ de titel van een vacature die live staat — kies 'm uit de lijst en de hele post wordt gemaakt."
-            >
-              <div ref={vacRef} className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-                <input
-                  id="vac"
-                  type="text"
-                  value={vacQuery}
-                  onChange={(e) => onVacInput(e.target.value)}
-                  onFocus={() => setVacOpen(true)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && vacOpen && vacMatches.length > 0) {
-                      e.preventDefault();
-                      pickVacancy(vacMatches[0]);
-                    } else if (e.key === "Escape") {
-                      setVacOpen(false);
-                    }
-                  }}
-                  placeholder="Bijv. Kwaliteitsinspecteur Staalbouw…"
-                  autoComplete="off"
-                  aria-label="Typ een vacaturetitel"
-                  className={INPUT_CLS}
-                />
-                <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-
-                {vacOpen && (vacMatches.length > 0 || vacQ) && (
-                  <ul className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-ink-200 bg-white py-1 text-sm shadow-lg">
-                    {vacMatches.map((v) => (
-                      <li key={v.id}>
-                        <button
-                          type="button"
-                          onClick={() => pickVacancy(v)}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-ink-50"
-                        >
-                          {v.status === "PUBLISHED" ? (
-                            <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
-                              live
-                            </span>
-                          ) : (
-                            <span className="rounded-sm bg-ink-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-ink-500">
-                              concept
-                            </span>
-                          )}
-                          <span className="min-w-0 flex-1 truncate">{v.title}</span>
-                          {selectedId === v.id && <Check className="h-4 w-4 shrink-0 text-brand-600" />}
-                        </button>
-                      </li>
-                    ))}
-                    {vacMatches.length === 0 && (
-                      <li className="px-3 py-2 text-ink-400">Geen vacature met deze titel op de website.</li>
-                    )}
-                  </ul>
-                )}
-              </div>
-            </Field>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Share2 className="h-5 w-5 text-brand-600" /> LinkedIn-post (vast Q4S-format)
+              <ClipboardPaste className="h-5 w-5 text-brand-600" /> Of plak een vacaturetekst
             </CardTitle>
-            <CopyButton text={draft} label="Kopieer post" />
           </CardHeader>
           <CardContent className="space-y-3">
             <Textarea
-              ref={postRef}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              className="min-h-[60vh] resize-y overflow-hidden text-sm leading-relaxed"
-              aria-label="LinkedIn-post — bewerkbaar"
-              spellCheck={false}
+              id="raw"
+              value={rawText}
+              onChange={(e) => setRawText(e.target.value)}
+              rows={7}
+              placeholder={"Plak hier de volledige vacaturetekst…\n\n(titel, ‘Wat ga je doen?’, ‘Wat vragen wij?’ — allemaal in één keer)"}
             />
-
-            <CharCounter text={draft} />
-
-            <p className="text-xs text-ink-400">
-              Je kunt de tekst hierboven zelf nog bijschaven. Vet is écht vet op LinkedIn (Unicode-tekens), en{" "}
-              <strong>Kopieer post</strong> neemt alle opmaak exact mee. Plak direct op LinkedIn.
-            </p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-ink-500">
+                {parsed ? "Omgezet — de post staat rechts klaar." : "Wij herkennen de kopjes automatisch."}
+              </p>
+              <button
+                type="button"
+                onClick={parseRaw}
+                disabled={!rawText.trim()}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Wand2 className="h-4 w-4" /> Omzetten
+              </button>
+            </div>
           </CardContent>
         </Card>
-        </div>
-      </section>
 
+        <div className="rounded-xl border border-ink-200 bg-ink-50 p-4 text-xs leading-relaxed text-ink-600">
+          <p className="font-semibold text-ink-800">Vast Q4S-format</p>
+          <p className="mt-1">
+            📍 Vette titel · korte intro · <strong>Wat ga je doen?</strong> (🔹) ·{" "}
+            <strong>Wat vragen wij?</strong> (✅) · <strong>Wat bieden wij?</strong> ·
+            contact (📞 +31 6 83859566 · 📧 cv@q4s.nl) · hashtags. Vet is écht vet op
+            LinkedIn en kopieert exact mee.
+          </p>
+        </div>
+      </div>
+
+      {/* Rechts: de post als LinkedIn-voorvertoning */}
+      <div className="space-y-3">
+        <div className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm">
+          {/* LinkedIn-achtige kop */}
+          <div className="flex items-center gap-3 border-b border-ink-100 px-5 py-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink-900 text-sm font-bold text-white">
+              Q4S
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="truncate text-sm font-semibold text-ink-900">{defaults.companyName || "Q4S"}</p>
+              <p className="text-xs text-ink-400">Vacature · zo ziet je post eruit op LinkedIn</p>
+            </div>
+            <CopyButton text={draft} label="Kopieer post" />
+          </div>
+
+          <Textarea
+            ref={postRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="min-h-[55vh] resize-y overflow-hidden rounded-none border-0 px-5 py-4 text-[15px] leading-relaxed shadow-none focus-visible:ring-0"
+            aria-label="LinkedIn-post — bewerkbaar"
+            spellCheck={false}
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 bg-ink-50/60 px-5 py-3">
+            <CharCounter text={draft} />
+            <p className="text-xs text-ink-400">
+              Bijschaven mag — <strong>Kopieer post</strong> neemt alle opmaak exact mee.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
