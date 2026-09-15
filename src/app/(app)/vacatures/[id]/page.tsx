@@ -2,11 +2,8 @@ import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import {
-  ArrowLeft,
   ExternalLink,
   Pencil,
-  Sparkles,
-  Filter,
   Users,
   Target,
   MessageSquarePlus,
@@ -29,13 +26,10 @@ import {
 } from "@/lib/domain";
 import { isAIConfigured } from "@/lib/ai";
 import { formatDate, formatDateLong } from "@/lib/utils";
-import { CopyButton } from "../CopyButton";
 import { VacancyReview } from "./VacancyReview";
 import {
   deleteVacancy,
-  improveVacancy,
   unpublishVacancy,
-  filterRelevance,
   rematchVacancyMatches,
 } from "../actions";
 import { startSourcing } from "../../website/actions";
@@ -85,14 +79,6 @@ export default async function VacatureDetailPage({
   const aiReady = isAIConfigured();
   const company = vacancy.client?.companyName ?? vacancy.companyName ?? null;
   const isPublished = vacancy.status === "PUBLISHED";
-  const hasImproved = Boolean(vacancy.improvedText);
-  // Publishable as soon as there's website content (structured sections or full text).
-  const hasContent = Boolean(
-    vacancy.improvedText ||
-      vacancy.summary ||
-      vacancy.responsibilities ||
-      vacancy.requirements,
-  );
 
   return (
     <div className="space-y-6">
@@ -108,23 +94,47 @@ export default async function VacatureDetailPage({
         actions={
           <>
             <StatusBadge options={VACANCY_STATUSES} value={vacancy.status} />
+            {isPublished && (
+              <Link
+                href={`/vacature/${vacancy.slug}`}
+                target="_blank"
+                className={buttonVariants({ variant: "outline", size: "icon" })}
+                title="Bekijk de publieke pagina"
+                aria-label="Bekijk de publieke pagina"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Link>
+            )}
             {vacancy.sourcing ? (
-              <Link href="/website/cv-inbox/matches" className={buttonVariants({ variant: "outline" })}>
-                <Target className="h-4 w-4" /> Op matchpagina
+              <Link
+                href="/website/cv-inbox/matches"
+                className={buttonVariants({ variant: "outline", size: "icon" })}
+                title="Op matchpagina"
+                aria-label="Op matchpagina"
+              >
+                <Target className="h-4 w-4" />
               </Link>
             ) : (
               <form action={startSourcing}>
                 <input type="hidden" name="vacancyId" value={vacancy.id} />
-                <SubmitButton pendingLabel="Bezig…">
-                  <Users className="h-4 w-4" /> Ik zoek kandidaten
+                <SubmitButton
+                  variant="outline"
+                  size="icon"
+                  pendingLabel="…"
+                  title="Ik zoek kandidaten — zet op de matchpagina"
+                  aria-label="Ik zoek kandidaten"
+                >
+                  <Users className="h-4 w-4" />
                 </SubmitButton>
               </form>
             )}
             <Link
               href={`/vacatures/${vacancy.id}/bewerken`}
-              className={buttonVariants({ variant: "outline" })}
+              className={buttonVariants({ variant: "outline", size: "icon" })}
+              title="Bewerken"
+              aria-label="Bewerken"
             >
-              <Pencil className="h-4 w-4" /> Bewerken
+              <Pencil className="h-4 w-4" />
             </Link>
             <ConfirmSubmit
               action={deleteVacancy}
@@ -185,54 +195,21 @@ export default async function VacatureDetailPage({
         }}
       />
 
-      {/* Overige acties rond publicatie en beoordeling */}
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-2">
-          {aiReady && (
-            <form action={filterRelevance}>
+      {/* Live-status: van de site halen (de rest van de acties zit in de kop en de editor) */}
+      {isPublished && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm text-ink-600">
+              🟢 Live op de website
+              {vacancy.publishedAt ? ` sinds ${formatDateLong(vacancy.publishedAt)}` : ""}
+            </span>
+            <form action={unpublishVacancy}>
               <input type="hidden" name="id" value={vacancy.id} />
-              <SubmitButton variant="outline" pendingLabel="AI is bezig…">
-                <Filter className="h-4 w-4" /> Beoordeel relevantie (AI)
-              </SubmitButton>
+              <SubmitButton variant="outline" size="sm">Van de site halen</SubmitButton>
             </form>
-          )}
-          {aiReady && hasContent && (
-            <form action={improveVacancy}>
-              <input type="hidden" name="id" value={vacancy.id} />
-              <SubmitButton variant="outline" pendingLabel="AI is bezig…">
-                <Sparkles className="h-4 w-4" />
-                {hasImproved ? "Volledige tekst opnieuw laten schrijven" : "Volledige tekst laten schrijven"}
-              </SubmitButton>
-            </form>
-          )}
-          {isPublished && (
-            <>
-              <Link
-                href={`/vacature/${vacancy.slug}`}
-                target="_blank"
-                className={buttonVariants({ variant: "outline" })}
-              >
-                <ExternalLink className="h-4 w-4" /> Bekijk publieke pagina
-              </Link>
-              <form action={unpublishVacancy}>
-                <input type="hidden" name="id" value={vacancy.id} />
-                <SubmitButton variant="outline">Van de site halen</SubmitButton>
-              </form>
-              {vacancy.publishedAt && (
-                <span className="text-xs text-ink-500">
-                  live sinds {formatDateLong(vacancy.publishedAt)}
-                </span>
-              )}
-            </>
-          )}
-          <Link
-            href={`/website/linkedin?vac=${vacancy.id}`}
-            className={buttonVariants({ variant: "outline" })}
-          >
-            <MessageSquarePlus className="h-4 w-4" /> LinkedIn-post maken
-          </Link>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Meta-gegevens */}
       <Card>
@@ -424,47 +401,6 @@ export default async function VacatureDetailPage({
           </CardContent>
         )}
       </Card>
-
-      {/* Samenvatting */}
-      {vacancy.summary && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Samenvatting</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-ink-700">{vacancy.summary}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Verbeterde vacaturetekst */}
-      {vacancy.improvedText && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Verbeterde vacaturetekst</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap text-sm text-ink-700">
-              {vacancy.improvedText}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* LinkedIn-post */}
-      {vacancy.linkedinPost && (
-        <Card>
-          <CardHeader>
-            <CardTitle>LinkedIn-post</CardTitle>
-            <CopyButton text={vacancy.linkedinPost} label="Kopieer post" />
-          </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap text-sm text-ink-700">
-              {vacancy.linkedinPost}
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
