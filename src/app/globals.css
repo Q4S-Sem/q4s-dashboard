@@ -126,6 +126,35 @@
   }
 }
 
+/* Cascade: kaarten die broertjes zijn in hetzelfde raster komen ná elkaar op
+   in plaats van allemaal tegelijk — dat geeft elke overzichtspagina de
+   Studio Admin-instap zonder per pagina delays te zetten. Een inline
+   animation-delay (zoals op het dashboard) wint altijd van deze regels. */
+.grid > .animate-card-in:nth-child(2),
+.grid > * > .animate-card-in:nth-child(2) {
+  animation-delay: 60ms;
+}
+.grid > .animate-card-in:nth-child(3),
+.grid > * > .animate-card-in:nth-child(3) {
+  animation-delay: 120ms;
+}
+.grid > .animate-card-in:nth-child(4),
+.grid > * > .animate-card-in:nth-child(4) {
+  animation-delay: 180ms;
+}
+.grid > .animate-card-in:nth-child(5),
+.grid > * > .animate-card-in:nth-child(5) {
+  animation-delay: 240ms;
+}
+.grid > .animate-card-in:nth-child(6),
+.grid > * > .animate-card-in:nth-child(6) {
+  animation-delay: 300ms;
+}
+.grid > .animate-card-in:nth-child(n + 7),
+.grid > * > .animate-card-in:nth-child(n + 7) {
+  animation-delay: 360ms;
+}
+
 @keyframes diagonal-glow {
   0% {
     transform: translate3d(-30%, -30%, 0) scale(0.9);

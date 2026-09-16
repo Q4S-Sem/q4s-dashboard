@@ -29,7 +29,7 @@ export function StatCard({
   className?: string;
 }) {
   return (
-    <Card className={cn("group relative overflow-hidden transition-shadow hover:shadow-md", className)}>
+    <Card className={cn("group relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md", className)}>
       <div className="flex items-start justify-between gap-3 p-5">
         <div className="min-w-0">
           <p className="text-[13px] font-medium text-ink-500">{label}</p>
