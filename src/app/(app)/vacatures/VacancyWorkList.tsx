@@ -21,6 +21,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { FolderTabBar, FolderTab } from "@/components/dossier-tabs";
 import { cn, formatDate } from "@/lib/utils";
 import { publishVacancy, pauseVacancy, resumeVacancy } from "./actions";
+import { publicVacancyUrl } from "@/lib/public-site";
 
 export type WorkVacancy = {
   id: string;
@@ -149,7 +150,7 @@ function Row({ v }: { v: WorkVacancy }) {
         {stage === "live" && (
           <>
             <a
-              href={`/vacature/${v.slug}`}
+              href={publicVacancyUrl(v.slug)}
               target="_blank"
               rel="noopener noreferrer"
               className={buttonVariants({ variant: "outline", size: "sm" })}

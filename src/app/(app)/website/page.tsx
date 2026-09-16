@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { sendDealToWebsite } from "./actions";
 import { pauseVacancy, resumeVacancy } from "../vacatures/actions";
 import { CloudOff, CloudUpload } from "lucide-react";
+import { publicVacancyUrl } from "@/lib/public-site";
 
 /** LinkedIn-logo (lucide heeft geen merk-icoon). */
 function LinkedinIcon({ className }: { className?: string }) {
@@ -274,7 +275,7 @@ export default async function WebsitePage({
 
                     {bucket === "online" && vac?.slug && (
                       <a
-                        href={`/vacature/${vac.slug}`}
+                        href={publicVacancyUrl(vac.slug)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"

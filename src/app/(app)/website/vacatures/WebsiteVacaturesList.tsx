@@ -10,6 +10,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { VACANCY_STATUSES } from "@/lib/domain";
 import { pauseVacancy, resumeVacancy, deleteVacancy } from "../../vacatures/actions";
 import { startSourcing } from "../actions";
+import { publicVacancyUrl } from "@/lib/public-site";
 
 export type VacancyRow = {
   id: string;
@@ -102,7 +103,7 @@ export function WebsiteVacaturesList({ rows }: { rows: VacancyRow[] }) {
           {r.status === "PUBLISHED" ? (
             <>
               <a
-                href={`/vacature/${r.slug}`}
+                href={publicVacancyUrl(r.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"

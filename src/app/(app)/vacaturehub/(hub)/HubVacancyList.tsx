@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { DISCIPLINES, VACANCY_STATUSES, VACANCY_RELEVANCE } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
 import { aiFilterOne, setRelevance } from "../actions";
+import { publicVacancyUrl } from "@/lib/public-site";
 
 export type HubVacancy = {
   id: string;
@@ -121,7 +122,7 @@ function Row({ v, mode, back }: { v: HubVacancy; mode: HubListMode; back: string
           <>
             {v.status === "PUBLISHED" ? (
               <a
-                href={`/vacature/${v.slug}`}
+                href={publicVacancyUrl(v.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 hover:text-emerald-800"

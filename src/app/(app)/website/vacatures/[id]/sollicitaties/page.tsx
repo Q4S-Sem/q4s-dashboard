@@ -23,6 +23,7 @@ import { APPLICATION_STATUSES, DISCIPLINES, labelFor } from "@/lib/domain";
 import { person } from "@/lib/people";
 import { formatDate, cn } from "@/lib/utils";
 import { setVacancyApplicationStatus } from "./actions";
+import { publicVacancyUrl } from "@/lib/public-site";
 
 export const metadata = { title: "Sollicitaties — Vacature" };
 export const dynamic = "force-dynamic";
@@ -86,7 +87,7 @@ export default async function VacancyApplicationsPage({
             </Link>
             {isLive && vacancy.slug && (
               <a
-                href={`/vacature/${vacancy.slug}`}
+                href={publicVacancyUrl(vacancy.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(buttonVariants({ variant: "outline", size: "sm" }))}

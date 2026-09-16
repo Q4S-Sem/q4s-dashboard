@@ -34,6 +34,7 @@ import {
 } from "../actions";
 import { startSourcing } from "../../website/actions";
 import { createCandidateLinkedOutreach } from "../../berichten/actions";
+import { publicVacancyUrl } from "@/lib/public-site";
 
 export const metadata = { title: "Vacature" };
 
@@ -96,7 +97,7 @@ export default async function VacatureDetailPage({
             <StatusBadge options={VACANCY_STATUSES} value={vacancy.status} />
             {isPublished && (
               <Link
-                href={`/vacature/${vacancy.slug}`}
+                href={publicVacancyUrl(vacancy.slug)}
                 target="_blank"
                 className={buttonVariants({ variant: "outline", size: "icon" })}
                 title="Bekijk de publieke pagina"
@@ -168,7 +169,7 @@ export default async function VacatureDetailPage({
       {saved === "published" && (
         <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           Opgeslagen en live op de website.{" "}
-          <Link href={`/vacature/${vacancy.slug}`} target="_blank" className="font-medium underline">
+          <Link href={publicVacancyUrl(vacancy.slug)} target="_blank" className="font-medium underline">
             Bekijk de pagina
           </Link>
           .
