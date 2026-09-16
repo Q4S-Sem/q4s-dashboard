@@ -2,6 +2,7 @@ import Link from "next/link";
 import * as React from "react";
 import { ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
+import { Sparkline } from "./Sparkline";
 
 // Kleurrijke, Odoo-achtige dashboard-bouwstenen. BEWUST alleen op /dashboard —
 // de rest van de app houdt de neutrale zwarte huisstijl. Elke kleur is een
@@ -95,12 +96,20 @@ export function SectionCard({
   deltaPct,
   hint,
   href,
+  spark,
+  sparkColor,
+  delay,
 }: {
   label: string;
   value: React.ReactNode;
   deltaPct?: number | null;
   hint?: React.ReactNode;
   href?: string;
+  /** Maandreeks voor een mini-trendlijn onderin de kaart. */
+  spark?: number[];
+  sparkColor?: string;
+  /** Cascade: animatievertraging in ms voor de kaart-entrance. */
+  delay?: number;
 }) {
   const up = (deltaPct ?? 0) >= 0;
   const inner = (
@@ -126,14 +135,16 @@ export function SectionCard({
         {value}
       </p>
       {hint && <p className="mt-1.5 text-[13px] text-ink-400">{hint}</p>}
+      {spark && spark.length >= 2 && <Sparkline values={spark} color={sparkColor} />}
     </div>
   );
   return (
     <div
       className={cn(
-        "rounded-lg border border-ink-200 bg-white p-5 shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_1px_2px_-1px_rgb(0_0_0/0.06)]",
+        "animate-card-in rounded-lg border border-ink-200 bg-white p-5 shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_1px_2px_-1px_rgb(0_0_0/0.06)]",
         href && "transition-shadow hover:shadow-md",
       )}
+      style={delay ? { animationDelay: `${delay}ms` } : undefined}
     >
       {href ? (
         <Link href={href} className="block">
@@ -288,7 +299,10 @@ export function MiniBar({
       {/* Balk krimpt mee (met een minimum) zodat het bedrag rechts altijd binnen
           de kaart past en niet meer buiten het vak valt. */}
       <div className="h-2.5 min-w-[2rem] flex-1 overflow-hidden rounded-full bg-ink-100">
-        <div className={cn("h-full rounded-full transition-all", BAR[color])} style={{ width: `${pct}%` }} />
+        <div
+          className={cn("animate-bar-in h-full origin-left rounded-full transition-all", BAR[color])}
+          style={{ width: `${pct}%` }}
+        />
       </div>
       <span className="shrink-0 whitespace-nowrap text-right text-sm font-semibold tabular-nums text-ink-900">
         {display ?? value}

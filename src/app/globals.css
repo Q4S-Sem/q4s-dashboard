@@ -66,6 +66,10 @@
   /* Bevestigingsvenster — overlay vervaagt in, het venster schaalt zacht op. */
   --animate-overlay-in: overlay-in 0.18s ease-out both;
   --animate-dialog-in: dialog-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* Dashboard — sparklines tekenen zichzelf in bij het laden. */
+  --animate-spark-draw: spark-draw 0.9s 0.3s ease-out both;
+  /* Dashboard — balkjes (pipeline/top-klanten) schuiven uit bij het laden. */
+  --animate-bar-in: bar-in 0.7s 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes overlay-in {
@@ -96,6 +100,29 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Sparkline tekent zichzelf in: pathLength=100 op het pad maakt de dash-maat
+   schaalvrij, ongeacht de echte padlengte. */
+@keyframes spark-draw {
+  from {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Balkje schuift van links uit naar zijn breedte (transform, geen width-anim). */
+@keyframes bar-in {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
   }
 }
 
@@ -131,7 +158,9 @@
   .animate-fade-up,
   .animate-card-in,
   .animate-overlay-in,
-  .animate-dialog-in {
+  .animate-dialog-in,
+  .animate-spark-draw,
+  .animate-bar-in {
     animation: none !important;
   }
 }

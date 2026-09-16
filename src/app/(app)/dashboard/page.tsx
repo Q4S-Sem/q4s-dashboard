@@ -44,6 +44,7 @@ import { DashboardChart } from "./DashboardChart";
 import { DashboardPie } from "./DashboardPie";
 import { DashboardLine } from "./DashboardLine";
 import { KpiTile, SectionCard, SectionHeading, HubTile, MiniBar, ResultRow, type DashColor } from "./_kpi";
+import { CountUpValue } from "./CountUpValue";
 import { invoicingOverview, pendingWorkByConsultant, companyCostsThisYear } from "@/lib/facturatie";
 import { dashboardComposition } from "@/lib/dashboard-analytics";
 import type { ReactNode } from "react";
@@ -420,34 +421,42 @@ export default async function DashboardPage({
       </div>
 
       {/* Kerncijfers (periode) — Studio Admin-stijl statuskaarten met delta t.o.v.
-          de vorige periode. */}
+          de vorige periode, mini-trendlijn per maand en tellende cijfers. */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SectionCard
           label={`Omzet ${shortLabel}`}
-          value={formatCurrency(periodOmzet)}
+          value={<CountUpValue value={periodOmzet} />}
           deltaPct={deltaPct(periodOmzet, prevOmzet)}
           hint={`van ${formatCurrency(prevOmzet)} · vorige periode`}
           href="/totaaloverzicht"
+          spark={months.map((m) => round2(m.omzet))}
+          sparkColor="blue"
+          delay={0}
         />
         <SectionCard
           label={`Marge ${shortLabel}`}
-          value={formatCurrency(periodMarge)}
+          value={<CountUpValue value={periodMarge} />}
           deltaPct={deltaPct(periodMarge, prevMarge)}
           hint={`van ${formatCurrency(prevMarge)} · ${periodMargePct}% marge`}
           href="/totaaloverzicht"
+          spark={months.map((m) => round2(m.marge))}
+          sparkColor="emerald"
+          delay={70}
         />
         <SectionCard
           label={`Plaatsingen ${shortLabel}`}
-          value={periodPlacements.length}
+          value={<CountUpValue value={periodPlacements.length} format="number" />}
           deltaPct={deltaPct(periodPlacements.length, prevPlacementsCount)}
           hint={`van ${prevPlacementsCount} · vorige periode`}
           href="/plaatsingen"
+          delay={140}
         />
         <SectionCard
           label={`Werknemers ${shortLabel}`}
-          value={periodConsultants}
+          value={<CountUpValue value={periodConsultants} format="number" />}
           hint={`${periodClients} klanten`}
           href="/medewerkers"
+          delay={210}
         />
       </div>
 
