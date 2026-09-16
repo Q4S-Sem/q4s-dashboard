@@ -47,6 +47,7 @@ import { KpiTile, SectionCard, SectionHeading, HubTile, MiniBar, ResultRow, type
 import { CountUpValue } from "./CountUpValue";
 import { invoicingOverview, pendingWorkByConsultant, companyCostsThisYear } from "@/lib/facturatie";
 import { dashboardComposition } from "@/lib/dashboard-analytics";
+import { currentUser } from "@/lib/session";
 import type { ReactNode } from "react";
 
 export const metadata = { title: "Analytics" };
@@ -153,6 +154,12 @@ export default async function DashboardPage({
   const periodLabel = isYear ? `${year}` : `Q${qNum} ${year}`;
   const shortLabel = isYear ? `${year}` : `Q${qNum}`;
   const soon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 60);
+  // Vandaag-venster + start van de lopende ISO-week (maandag) voor de
+  // begroetingskaarten bovenaan.
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const isoWeekStart = new Date(todayStart);
+  isoWeekStart.setDate(isoWeekStart.getDate() - ((isoWeekStart.getDay() + 6) % 7));
 
   const [
     periodBillable,
@@ -226,6 +233,10 @@ export default async function DashboardPage({
     recentInvoices,
     recentApplications,
     applicationsByStatus,
+    readyInvoices,
+    paidThisWeek,
+    todayTasks,
+    me,
   ] = await Promise.all([
     db.certificate.findMany({ where: { expiryDate: { not: null } }, select: { expiryDate: true, consultantId: true } }),
     db.application.count({ where: { status: { in: ["NEW", "SCREENING", "PROPOSED"] } } }),
@@ -255,6 +266,21 @@ export default async function DashboardPage({
       where: { createdAt: { gte: periodStart, lt: periodEnd } },
       _count: { _all: true },
     }),
+    // Verzendmap: vrijgegeven verkoopfacturen die klaarstaan om te versturen.
+    db.invoice.findMany({ where: { status: "READY" }, select: { total: true } }),
+    // Betaald in de lopende ISO-week (ma t/m nu).
+    db.invoice.findMany({
+      where: { status: "PAID", paidDate: { gte: isoWeekStart } },
+      select: { total: true },
+    }),
+    // Agenda-taken van vandaag (open TODO's met een tijd vandaag).
+    db.activity.findMany({
+      where: { kind: "TODO", done: false, dueAt: { gte: todayStart, lt: todayEnd } },
+      orderBy: { dueAt: "asc" },
+      take: 5,
+      select: { id: true, body: true, dueAt: true, type: true },
+    }),
+    currentUser(),
   ]);
 
   // ---- Activiteits-heatmap (laatste ~53 weken, altijd het lopende venster) ----
@@ -380,6 +406,67 @@ export default async function DashboardPage({
     { label: "Vacatures live op de website", value: String(vacPublished), href: "/website", tone: vacPublished ? "blue" : "amber" },
   ];
 
+  // ---- "Nu te doen": de belangrijkste acties van vandaag, afgeleid uit de
+  // bestaande signalen — met een directe actieknop per regel (mockup-stijl).
+  type Todo = { key: string; title: string; sub: string; href: string; cta: string; tone: DashColor; primary?: boolean };
+  const todos: Todo[] = [];
+  if (pendingConsultants.length > 0) {
+    todos.push({
+      key: "verwerken",
+      title: `Week verwerken: ${pendingConsultants.length} medewerker${pendingConsultants.length === 1 ? "" : "s"} met goedgekeurde uren`,
+      sub: "Week verwerken · urenstaten klaar voor facturatie",
+      href: "/verwerken/nieuw", cta: "Start", tone: "blue", primary: true,
+    });
+  }
+  if (overdueInvoices.length > 0) {
+    todos.push({
+      key: "overdue",
+      title: `${overdueInvoices.length} factu${overdueInvoices.length === 1 ? "ur is" : "ren zijn"} over de vervaldatum (${formatCurrency(overdueAmount)})`,
+      sub: "Betaalmonitor · herinnering staat klaar",
+      href: "/betaalmonitor", cta: "Bekijk", tone: "amber",
+    });
+  }
+  if (certAlerts > 0) {
+    todos.push({
+      key: "certs",
+      title: `${certAlerts} certifica${certAlerts === 1 ? "at" : "ten"} (bijna) verlopen`,
+      sub: "Certificeringen · hercertificering plannen",
+      href: "/certificeringen", cta: "Plan", tone: "amber",
+    });
+  }
+  if (submittedCount > 0) {
+    todos.push({
+      key: "uren",
+      title: `${submittedCount} urensta${submittedCount === 1 ? "at wacht" : "ten wachten"} op goedkeuring`,
+      sub: "Urenregistratie · controleren en goedkeuren",
+      href: "/uren", cta: "Controleer", tone: "violet",
+    });
+  }
+  if (openApplications > 0) {
+    todos.push({
+      key: "sollicitaties",
+      title: `${openApplications} open sollicitatie${openApplications === 1 ? "" : "s"} in de pipeline`,
+      sub: "Sollicitaties · screenen of voorstellen",
+      href: "/sollicitaties", cta: "Review", tone: "violet",
+    });
+  }
+  if (expensesNewCount > 0) {
+    todos.push({
+      key: "declaraties",
+      title: `${expensesNewCount} declaratie${expensesNewCount === 1 ? "" : "s"} te beoordelen`,
+      sub: "Declaraties · goedkeuren of afwijzen",
+      href: "/declaraties", cta: "Beoordeel", tone: "emerald",
+    });
+  }
+  const topTodos = todos.slice(0, 5);
+
+  // Facturatie deze week (echte stand): verzendmap, wacht op controle, betaald.
+  const readyTotal = round2(readyInvoices.reduce((s, i) => s + i.total, 0));
+  const paidWeekTotal = round2(paidThisWeek.reduce((s, i) => s + i.total, 0));
+  const timeFmt = new Intl.DateTimeFormat("nl-NL", { hour: "2-digit", minute: "2-digit" });
+  const greeting = now.getHours() < 12 ? "Goedemorgen" : now.getHours() < 18 ? "Goedemiddag" : "Goedenavond";
+  const firstName = me?.name?.split(" ")[0] ?? "";
+
   const periodBtn = (label: string, active: boolean, param: string) => (
     <Link
       href={`/dashboard?q=${param}&year=${year}`}
@@ -394,9 +481,17 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      {/* Periodefilter — heel jaar of per kwartaal */}
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-400">Periode</span>
+      {/* Kop: persoonlijke begroeting (mockup-stijl) + periodefilter rechts */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-ink-900">
+            {greeting}{firstName ? `, ${firstName}` : ""}
+          </h1>
+          <p className="mt-0.5 text-sm text-ink-400">
+            Dit speelt er vandaag. Begin bovenaan bij &quot;Nu te doen&quot;.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5">
           {periodBtn("Heel jaar", isYear, "all")}
           {QUARTERS.map((qq) => periodBtn(`Q${qq.value}`, !isYear && qNum === Number(qq.value), qq.value))}
@@ -417,6 +512,7 @@ export default async function DashboardPage({
           ) : (
             <span className="cursor-not-allowed p-1.5 text-ink-200"><ChevronRight className="h-4 w-4" /></span>
           )}
+        </div>
         </div>
       </div>
 
@@ -458,6 +554,116 @@ export default async function DashboardPage({
           href="/medewerkers"
           delay={210}
         />
+      </div>
+
+      {/* Nu te doen + Facturatie deze week / Vandaag — mockup-layout met echte
+          data. De takenlijst verdwijnt vanzelf als alles is afgehandeld. */}
+      <div className="grid gap-4 lg:grid-cols-[1.55fr_1fr]">
+        <Card className="self-start">
+          <CardHeader>
+            <CardTitle>Nu te doen</CardTitle>
+            <Link href="/dashboard/te-doen" className="text-sm font-medium text-ink-500 hover:text-ink-900">Alles bekijken</Link>
+          </CardHeader>
+          {topTodos.length === 0 ? (
+            <CardContent className="pb-5 text-sm text-ink-500">
+              Niets dringends. Alles is afgehandeld.
+            </CardContent>
+          ) : (
+            <div className="divide-y divide-ink-100">
+              {topTodos.map((t) => (
+                <div key={t.key} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
+                  <span
+                    className={cn(
+                      "h-2 w-2 shrink-0 rounded-full",
+                      t.tone === "blue" && "bg-blue-500",
+                      t.tone === "amber" && "bg-amber-500",
+                      t.tone === "violet" && "bg-violet-500",
+                      t.tone === "emerald" && "bg-emerald-500",
+                    )}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13.5px] font-semibold text-ink-900">{t.title}</p>
+                    <p className="truncate text-xs text-ink-400">{t.sub}</p>
+                  </div>
+                  <Link
+                    href={t.href}
+                    className={cn(
+                      "shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
+                      t.primary
+                        ? "bg-ink-900 text-white hover:bg-ink-700"
+                        : "border border-ink-200 bg-white text-ink-700 hover:bg-ink-50",
+                    )}
+                  >
+                    {t.cta}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <div className="grid gap-4 self-start">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-emerald-700">
+                <span className="h-2.5 w-2.5 rounded-sm bg-emerald-600" /> Facturatie deze week
+              </CardTitle>
+              <Link href="/facturen" className="text-sm font-medium text-ink-500 hover:text-ink-900">Naar facturen</Link>
+            </CardHeader>
+            <div className="divide-y divide-ink-100">
+              <Link href="/verzenden" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
+                <div>
+                  <p className="text-[13.5px] font-semibold text-ink-900">Klaar om te versturen</p>
+                  <p className="text-xs text-ink-400">Verzendmap</p>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11.5px] font-bold text-blue-700">{readyInvoices.length} factu{readyInvoices.length === 1 ? "ur" : "ren"}</span>
+                  <span className="text-[13.5px] font-bold tabular-nums text-ink-900">{formatCurrency(readyTotal)}</span>
+                </div>
+              </Link>
+              <Link href="/verwerken/nieuw" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
+                <div>
+                  <p className="text-[13.5px] font-semibold text-ink-900">Klaar om te verwerken</p>
+                  <p className="text-xs text-ink-400">Week verwerken</p>
+                </div>
+                <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11.5px] font-bold text-amber-700">{pendingConsultants.length} medewerker{pendingConsultants.length === 1 ? "" : "s"}</span>
+              </Link>
+              <Link href="/betalingen" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
+                <div>
+                  <p className="text-[13.5px] font-semibold text-ink-900">Betaald deze week</p>
+                  <p className="text-xs text-ink-400">Betalingen</p>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11.5px] font-bold text-emerald-700">{paidThisWeek.length} factu{paidThisWeek.length === 1 ? "ur" : "ren"}</span>
+                  <span className="text-[13.5px] font-bold tabular-nums text-ink-900">{formatCurrency(paidWeekTotal)}</span>
+                </div>
+              </Link>
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-indigo-700">
+                <span className="h-2.5 w-2.5 rounded-sm bg-indigo-600" /> Vandaag
+              </CardTitle>
+              <Link href="/agenda" className="text-sm font-medium text-ink-500 hover:text-ink-900">Naar agenda</Link>
+            </CardHeader>
+            {todayTasks.length === 0 ? (
+              <CardContent className="pb-5 text-sm text-ink-500">Geen geplande taken vandaag.</CardContent>
+            ) : (
+              <div className="divide-y divide-ink-100">
+                {todayTasks.map((t) => (
+                  <Link key={t.id} href="/agenda/taken" className="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
+                    <span className="mt-0.5 shrink-0 rounded-full bg-ink-50 px-2.5 py-0.5 text-[11.5px] font-bold tabular-nums text-ink-600">
+                      {t.dueAt ? timeFmt.format(t.dueAt) : "—"}
+                    </span>
+                    <p className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-ink-900">{t.body}</p>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
 
       {/* Chart + Verbeterpunten */}

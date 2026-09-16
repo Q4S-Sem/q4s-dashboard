@@ -24,10 +24,6 @@ function HubNav({
 }) {
   const pathname = usePathname();
 
-  // Vaste icoonkleur per item — nu monochrome/rustig (Studio Admin-stijl).
-  const colorByHref = new Map<string, string>();
-  hub.items.forEach((it) => colorByHref.set(it.href, "text-ink-400"));
-
   // Only the most specific matching item lights up, so a nested route like
   // /kandidaten/beschikbaar highlights "Beschikbaar" and not its parent
   // "Talentpool" (/kandidaten) as well.
@@ -54,35 +50,33 @@ function HubNav({
         {groups.map((group, gi) => (
           <div key={gi}>
             {group.section && (
-              <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-400">
+              <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-500">
                 {group.section}
               </div>
             )}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {group.items.map((item) => {
               const active = item.href === activeHref;
               const Icon = item.icon;
               const count = item.badge ? (badges?.[item.badge] ?? 0) : 0;
-              const iconColor = colorByHref.get(item.href) ?? "text-ink-400";
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    // Elk item is een omlijnde pill (zoals de Werkplekken-knop).
-                    // Bij klikken/actief tilt hij een klein stukje omhoog én wordt
-                    // hij donkerder — vandaar transition-all + -translate-y.
-                    "relative flex items-center gap-3 rounded-lg border px-3 py-2 text-[13px] font-medium shadow-sm transition-all duration-150 active:translate-y-0",
+                    // Donkere zijbalk (mockup-stijl): rustige vlakke items, het
+                    // actieve item is een wit gevuld blok.
+                    "relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors duration-150",
                     active
-                      ? "-translate-y-0.5 border-brand-700 bg-brand-700 text-white shadow-md"
-                      : "border-ink-200 bg-white text-ink-600 hover:-translate-y-0.5 hover:border-ink-300 hover:bg-ink-50 hover:text-ink-900",
+                      ? "bg-white text-ink-900 shadow-sm"
+                      : "text-ink-300 hover:bg-white/10 hover:text-white",
                   )}
                 >
                   <Icon
                     className={cn(
                       "h-[18px] w-[18px] shrink-0",
-                      active ? "text-white" : iconColor,
+                      active ? "text-ink-900" : "text-ink-400",
                     )}
                   />
                   <span className="min-w-0 flex-1 truncate">{item.label}</span>
@@ -90,7 +84,7 @@ function HubNav({
                     <span
                       className={cn(
                         "inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums",
-                        active ? "bg-white/20 text-white" : "bg-ink-200 text-ink-700",
+                        active ? "bg-ink-100 text-ink-700" : "bg-white/15 text-ink-100",
                       )}
                     >
                       {count}
@@ -204,15 +198,16 @@ export function AppShell({
         </div>
       </header>
 
-      {/* Contextual sidebar — only inside an app */}
+      {/* Contextual sidebar — only inside an app. Donker (mockup-stijl):
+          antraciet vlak, witte actieve pill, logo bovenin. */}
       {hub && (
-        <aside className="hidden border-r border-ink-200 bg-white no-print min-[900px]:fixed min-[900px]:bottom-0 min-[900px]:top-14 min-[900px]:flex min-[900px]:w-60 min-[900px]:flex-col">
+        <aside className="hidden bg-ink-800 no-print min-[900px]:fixed min-[900px]:bottom-0 min-[900px]:top-14 min-[900px]:flex min-[900px]:w-60 min-[900px]:flex-col">
           <HubNav hub={hub} badges={badges} />
           {user && (
-            <div className="flex items-center gap-2.5 border-t border-ink-200 px-3 py-3">
+            <div className="flex items-center gap-2.5 border-t border-white/10 px-3 py-3">
               <Avatar name={user.name} size="sm" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-semibold text-ink-900">{user.name}</p>
+                <p className="truncate text-[13px] font-semibold text-white">{user.name}</p>
                 <p className="truncate text-[11px] text-ink-400">
                   {user.role === "ADMIN" ? "Beheerder" : "Gebruiker"}
                 </p>
@@ -221,7 +216,7 @@ export function AppShell({
                 <button
                   type="submit"
                   title="Uitloggen"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-900"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-400 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   <LogOut className="h-4 w-4" />
                   <span className="sr-only">Uitloggen</span>
@@ -236,14 +231,14 @@ export function AppShell({
       {hub && open && (
         <div className="fixed inset-0 z-40 min-[900px]:hidden no-print">
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white">
-            <div className="flex items-center justify-between border-b border-ink-200 px-5 py-3">
-              <span className="text-[15px] font-semibold text-ink-900">{hub.label}</span>
+          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-ink-800">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
+              <span className="text-[15px] font-semibold text-white">{hub.label}</span>
               <button
                 type="button"
                 aria-label="Menu sluiten"
                 onClick={() => setOpen(false)}
-                className="rounded-sm p-2 text-ink-600 hover:bg-ink-100"
+                className="rounded-sm p-2 text-ink-300 hover:bg-white/10 hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>
