@@ -143,7 +143,9 @@ export const CLIENT_CONTACT_ROLE_VALUES = CLIENT_CONTACT_ROLES.map((d) => d.valu
 
 export const VACANCY_STATUSES: Option[] = [
   { value: "CONCEPT", label: "Concept", color: "slate" },
-  { value: "IMPROVED", label: "AI-verbeterd", color: "blue" },
+  // Bewust géén "AI-verbeterd" meer: de tekst is gewoon klaar voor de site,
+  // hoe hij tot stand kwam hoeft geen (blauw) etiket.
+  { value: "IMPROVED", label: "Gereed", color: "slate" },
   { value: "PUBLISHED", label: "Gepubliceerd", color: "green" },
   { value: "PAUSED", label: "Gepauzeerd", color: "amber" },
 ];

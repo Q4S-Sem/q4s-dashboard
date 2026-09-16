@@ -290,21 +290,41 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
             <span className="text-sm text-ink-500">
               {done} van {checks.length} onderdelen
             </span>
-            <Button type="button" variant="outline" size="sm" onClick={() => setPreview(true)}>
-              <Eye className="h-4 w-4" /> Voorbeeld
-            </Button>
+            <button
+              type="button"
+              onClick={() => setPreview(true)}
+              title="Voorbeeld bekijken"
+              aria-label="Voorbeeld bekijken"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* AI-retouche: bewust een eigen, opvallende vorm — een violet
+              gradient-pil die nergens anders in de app voorkomt. De rest van
+              de acties is juist rustig (icoon-knoppen). */}
           <div className="flex flex-wrap items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/50 p-3">
-            <Button type="button" onClick={improveWithAI} disabled={aiBusy || !aiReady}>
-              <Sparkles className="h-4 w-4" />
+            <button
+              type="button"
+              onClick={improveWithAI}
+              disabled={aiBusy || !aiReady}
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-200 transition-all hover:shadow-lg hover:shadow-violet-300 hover:brightness-110 active:translate-y-px disabled:pointer-events-none disabled:opacity-40"
+            >
+              <Sparkles className={cn("h-4 w-4", aiBusy && "animate-pulse")} />
               {aiBusy ? "AI is bezig…" : "Laat AI uitschrijven"}
-            </Button>
+            </button>
             {before && !aiBusy && (
-              <Button type="button" variant="outline" onClick={undoAI}>
-                <RotateCcw className="h-4 w-4" /> Terug naar vorige tekst
-              </Button>
+              <button
+                type="button"
+                onClick={undoAI}
+                title="Terug naar vorige tekst"
+                aria-label="Terug naar vorige tekst"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
             )}
             <p className="min-w-40 flex-1 text-xs text-ink-600">
               De AI schrijft de originele tekst om naar Over de functie, Werkzaamheden,
@@ -462,12 +482,26 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
             </span>
           ))}
         </div>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row">
-          <Button type="button" variant="outline" onClick={() => setPreview(true)}>
-            <Eye className="h-4 w-4" /> Voorbeeld
-          </Button>
-          <SubmitButton variant="outline" pendingLabel="Opslaan…">
-            <Save className="h-4 w-4" /> Alleen opslaan
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          {/* Rustige icoon-acties; alleen publiceren houdt een tekstknop. */}
+          <button
+            type="button"
+            onClick={() => setPreview(true)}
+            title="Voorbeeld bekijken"
+            aria-label="Voorbeeld bekijken"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+          <SubmitButton
+            variant="outline"
+            size="icon"
+            pendingLabel="…"
+            title="Alleen opslaan (nog niet publiceren)"
+            aria-label="Alleen opslaan"
+            className="h-10 w-10 rounded-lg"
+          >
+            <Save className="h-4 w-4" />
           </SubmitButton>
           <Button
             type="button"
