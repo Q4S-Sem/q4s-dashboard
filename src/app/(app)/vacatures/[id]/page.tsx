@@ -82,7 +82,7 @@ export default async function VacatureDetailPage({
 
   return (
     <div className="space-y-6">
-      <BackLink href="/vacatures">
+      <BackLink href="/website">
         Terug naar vacatures
       </BackLink>
 

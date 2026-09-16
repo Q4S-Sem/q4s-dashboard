@@ -163,12 +163,6 @@ export default async function WebsitePage({
             </Link>
           );
         })}
-        <Link
-          href="/crm/vacatures"
-          className="ml-auto self-center pb-1 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2"
-        >
-          Naar recruitment
-        </Link>
       </nav>
 
       <Card>
