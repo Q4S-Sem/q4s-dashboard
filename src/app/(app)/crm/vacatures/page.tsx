@@ -139,7 +139,7 @@ export default async function VacaturesPage({
               <Card key={k.id} className="flex flex-col p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <Link href={`/crm/deals/${k.id}`} className="block truncate font-semibold text-ink-900 hover:text-brand-700">
+                    <Link href={`/crm/vacatures/${k.id}`} className="block truncate font-semibold text-ink-900 hover:text-brand-700">
                       {k.title}
                     </Link>
                     <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-ink-500">
@@ -185,7 +185,7 @@ export default async function VacaturesPage({
 
                 <div className="mt-2.5 flex items-center gap-2">
                   <Link
-                    href={`/crm/deals/${k.id}`}
+                    href={`/crm/vacatures/${k.id}`}
                     className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1 justify-center")}
                   >
                     Openen <ArrowRight className="h-3.5 w-3.5" />
@@ -212,7 +212,7 @@ export default async function VacaturesPage({
                   <GitBranchPlus className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <Link href={`/crm/deals/${k.id}`} className="block truncate font-medium text-ink-900 hover:text-brand-700">
+                  <Link href={`/crm/vacatures/${k.id}`} className="block truncate font-medium text-ink-900 hover:text-brand-700">
                     {k.title}
                   </Link>
                   <p className="flex items-center gap-2 truncate text-xs text-ink-500">
@@ -231,7 +231,7 @@ export default async function VacaturesPage({
                   {k.discipline && <StatusBadge options={DISCIPLINES} value={k.discipline} />}
                 </div>
                 <Badge color={(k.stage.color as BadgeColor) ?? "slate"}>{k.stage.name}</Badge>
-                <Link href={`/crm/deals/${k.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}>
+                <Link href={`/crm/vacatures/${k.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}>
                   Openen <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </li>

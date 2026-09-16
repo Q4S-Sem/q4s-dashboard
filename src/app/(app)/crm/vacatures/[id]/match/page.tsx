@@ -64,7 +64,7 @@ export default async function VacatureMatchPage({
 
   return (
     <div className="space-y-6">
-      <BackLink href={`/crm/deals/${deal.id}`}>Terug naar de vacature</BackLink>
+      <BackLink href={`/crm/vacatures/${deal.id}`}>Terug naar de vacature</BackLink>
 
       <PageHeader
         title={`AI-match: ${deal.title}`}

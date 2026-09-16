@@ -216,6 +216,13 @@ export async function updateDeal(_prev: FormState, formData: FormData): Promise<
   revalidatePath("/crm");
   revalidatePath(`/crm/deals/${id}`);
   revalidatePath("/crm/inzichten");
+  // Terug naar waar je vandaan kwam: het vacature-bewerkscherm stuurt een
+  // returnTo mee (bijv. /crm/vacatures/<id>), anders de gewone deal-pagina.
+  const returnTo = String(formData.get("returnTo") ?? "");
+  if (returnTo.startsWith("/crm/")) {
+    revalidatePath(returnTo);
+    redirect(returnTo);
+  }
   redirect(`/crm/deals/${id}`);
 }
 

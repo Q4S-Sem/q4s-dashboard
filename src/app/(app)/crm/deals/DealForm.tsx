@@ -29,6 +29,7 @@ export function DealForm({
   deal,
   submitLabel,
   cancelHref,
+  returnTo,
   currentRecruiterId,
   stages,
   recruiters,
@@ -44,6 +45,8 @@ export function DealForm({
   deal?: Deal;
   submitLabel: string;
   cancelHref: string;
+  /** Waar de server-actie na opslaan heen stuurt (default: de deal-pagina). */
+  returnTo?: string;
   currentRecruiterId: string | null;
   stages: StageOption[];
   recruiters: IdName[];
@@ -144,6 +147,7 @@ export function DealForm({
   return (
     <form action={formAction}>
       {deal && <input type="hidden" name="id" value={deal.id} />}
+      {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
 
       <div className="space-y-6">
         {isNew && (
