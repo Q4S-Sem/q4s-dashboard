@@ -6,14 +6,32 @@ import { db } from "@/lib/db";
 import { APPLICATION_STATUS_VALUES } from "@/lib/domain";
 import { createSuccessPostForPlacement } from "@/lib/socials";
 
+/**
+ * Sollicitaties zijn op twee plekken zichtbaar: /sollicitaties (Recruitment)
+ * en /website/sollicitaties (Website). Elk formulier stuurt zijn `base` mee
+ * zodat je na een actie in dezelfde werkplek blijft.
+ */
+function baseOf(formData: FormData): string {
+  const base = String(formData.get("base") ?? "");
+  return base === "/website/sollicitaties" ? base : "/sollicitaties";
+}
+
+function revalidateBoth(id?: string) {
+  for (const b of ["/sollicitaties", "/website/sollicitaties"]) {
+    revalidatePath(b);
+    if (id) revalidatePath(`${b}/${id}`);
+  }
+}
+
 // Move an application to an explicit status from the workflow buttons.
 export async function setApplicationStatus(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+  const base = baseOf(formData);
 
   const status = String(formData.get("status") ?? "");
   if (!APPLICATION_STATUS_VALUES.includes(status)) {
-    redirect(`/sollicitaties/${id}?error=status`);
+    redirect(`${base}/${id}?error=status`);
   }
 
   const prev = await db.application.findUnique({
@@ -30,19 +48,19 @@ export async function setApplicationStatus(formData: FormData) {
     revalidatePath("/socials");
   }
 
-  revalidatePath("/sollicitaties");
-  revalidatePath(`/sollicitaties/${id}`);
-  redirect(`/sollicitaties/${id}`);
+  revalidateBoth(id);
+  redirect(`${base}/${id}`);
 }
 
 // Propose a candidate to an opdrachtgever (TargetClient).
 export async function submitApplication(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+  const base = baseOf(formData);
 
   const submittedToId = String(formData.get("submittedToId") ?? "");
   if (!submittedToId) {
-    redirect(`/sollicitaties/${id}?error=opdrachtgever`);
+    redirect(`${base}/${id}?error=opdrachtgever`);
   }
 
   await db.application.update({
@@ -53,29 +71,29 @@ export async function submitApplication(formData: FormData) {
       status: "PROPOSED",
     },
   });
-  revalidatePath("/sollicitaties");
-  revalidatePath(`/sollicitaties/${id}`);
-  redirect(`/sollicitaties/${id}`);
+  revalidateBoth(id);
+  redirect(`${base}/${id}`);
 }
 
 // Re-open a closed application back to the start of the pipeline.
 export async function reopenApplication(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+  const base = baseOf(formData);
   await db.application.update({ where: { id }, data: { status: "NEW" } });
-  revalidatePath("/sollicitaties");
-  revalidatePath(`/sollicitaties/${id}`);
-  redirect(`/sollicitaties/${id}`);
+  revalidateBoth(id);
+  redirect(`${base}/${id}`);
 }
 
 export async function deleteApplication(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+  const base = baseOf(formData);
   try {
     await db.application.delete({ where: { id } });
   } catch {
-    redirect(`/sollicitaties/${id}?error=in-use`);
+    redirect(`${base}/${id}?error=in-use`);
   }
-  revalidatePath("/sollicitaties");
-  redirect("/sollicitaties");
+  revalidateBoth();
+  redirect(base);
 }

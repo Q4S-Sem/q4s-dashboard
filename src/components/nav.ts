@@ -185,7 +185,7 @@ const HUB_LIST: NavHub[] = [
     icon: FileText,
     items: [
       { href: "/website", label: "Vacatures", icon: Briefcase, exact: true, section: "Website" },
-      { href: "/sollicitaties", label: "Sollicitaties", icon: Inbox, section: "Website" },
+      { href: "/website/sollicitaties", label: "Sollicitaties", icon: Inbox, section: "Website" },
       { href: "/website/linkedin", label: "LinkedIn-generator", icon: Sparkles, section: "Website" },
       // Bereikbaar via de acties op de vacaturelijst, niet als los menu-item:
       // - /website/vacatures  = de oude 'op de website'-tabel
