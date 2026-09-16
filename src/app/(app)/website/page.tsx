@@ -15,6 +15,8 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 import { sendDealToWebsite } from "./actions";
+import { pauseVacancy, resumeVacancy } from "../vacatures/actions";
+import { CloudOff, CloudUpload } from "lucide-react";
 
 /** LinkedIn-logo (lucide heeft geen merk-icoon). */
 function LinkedinIcon({ className }: { className?: string }) {
@@ -286,6 +288,38 @@ export default async function WebsitePage({
                       >
                         Bekijk <ArrowRight className="h-3.5 w-3.5" />
                       </a>
+                    )}
+
+                    {/* Online/offline schakelen: een live vacature is met één klik
+                        van de site te halen en net zo makkelijk weer terug te
+                        zetten (status PAUSED <-> PUBLISHED, tekst blijft staan). */}
+                    {vac && bucket === "online" && (
+                      <form action={pauseVacancy}>
+                        <input type="hidden" name="id" value={vac.id} />
+                        <input type="hidden" name="from" value="website" />
+                        <SubmitButton
+                          variant="outline"
+                          size="sm"
+                          pendingLabel="…"
+                          title="Direct van de website halen — de tekst blijft bewaard en je kunt hem altijd terugzetten"
+                        >
+                          <CloudOff className="h-4 w-4" /> Offline halen
+                        </SubmitButton>
+                      </form>
+                    )}
+                    {vac && bucket === "gereed" && (
+                      <form action={resumeVacancy}>
+                        <input type="hidden" name="id" value={vac.id} />
+                        <input type="hidden" name="from" value="website" />
+                        <SubmitButton
+                          variant="success"
+                          size="sm"
+                          pendingLabel="…"
+                          title="Zet deze vacature (weer) live op q4s.nl"
+                        >
+                          <CloudUpload className="h-4 w-4" /> Online zetten
+                        </SubmitButton>
+                      </form>
                     )}
                   </div>
                 </li>
