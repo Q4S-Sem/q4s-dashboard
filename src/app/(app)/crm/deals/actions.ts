@@ -8,6 +8,7 @@ import { parseForm, type FormState } from "@/lib/form";
 import { DEAL_SOURCE_VALUES, CRM_NOTE_TYPE_VALUES, CRM_SENTIMENT_VALUES } from "@/lib/domain";
 import { currentRecruiterId, logNote } from "@/lib/crm";
 import { mirrorDealToVacancy } from "@/lib/vacancy-mirror";
+import { withMarktconformFallback } from "@/lib/markttarief";
 import { extractVacancyFields, CvExtractError, type VacancyFields } from "@/lib/cv-extract";
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
@@ -119,7 +120,9 @@ async function toData(data: DealData) {
       employmentType: data.employmentType ?? null,
       hoursPerWeek: data.hoursPerWeek ?? null,
       durationText: data.durationText ?? null,
-      rateText: data.rateText ?? null,
+      // Leeg tarief? Dan altijd een marktconforme indicatie per discipline,
+      // duidelijk gelabeld — nooit een lege "Tarief / salaris" op de vacature.
+      rateText: withMarktconformFallback(data.rateText, data.discipline ?? null),
       experienceText: data.experienceText ?? null,
       educationLevel: data.educationLevel ?? null,
       responsibilities: data.responsibilities ?? null,

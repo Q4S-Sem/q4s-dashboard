@@ -14,6 +14,7 @@ import { CrmNotesTimeline, type TimelineNote } from "@/components/crm-notes-time
 import { CrmNoteComposer } from "@/components/crm-note-composer";
 import { person } from "@/lib/people";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { withMarktconformFallback } from "@/lib/markttarief";
 import { DEAL_STATUSES, DEAL_SOURCES, DISCIPLINES, EMPLOYMENT_TYPES, CANDIDATE_RATINGS, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
 import { deleteDeal, togglePinNote, deleteNote, completeDealFollowUp, addDealNote } from "./actions";
 import { CloseDealButtons } from "./CloseDealButtons";
@@ -299,7 +300,7 @@ export async function DealDetail({
               <Detail label="Dienstverband" value={deal.employmentType ? labelFor(EMPLOYMENT_TYPES, deal.employmentType) : null} />
               <Detail label="Uren per week" value={deal.hoursPerWeek ? `${deal.hoursPerWeek} u` : null} />
               <Detail label="Duur" value={deal.durationText} />
-              <Detail label="Tarief / salaris" value={deal.rateText} />
+              <Detail label="Tarief / salaris" value={withMarktconformFallback(deal.rateText, deal.discipline)} />
               <Detail label="Gevraagde ervaring" value={deal.experienceText} />
               <Detail label="Opleidingsniveau" value={deal.educationLevel} />
             </dl>

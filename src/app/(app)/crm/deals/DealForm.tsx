@@ -396,7 +396,7 @@ export function DealForm({
                     <Field label="Duur" htmlFor="durationText" hint="Bijv. 6 maanden + optie" error={e.durationText}>
                       <Input id="durationText" name="durationText" value={durationText} onChange={(ev) => setDurationText(ev.target.value)} placeholder="Bijv. 6 mnd + optie tot verlenging" />
                     </Field>
-                    <Field label="Tarief / salaris" htmlFor="rateText" hint="Wat de klant biedt" error={e.rateText}>
+                    <Field label="Tarief / salaris" htmlFor="rateText" hint="Leeg = marktconforme indicatie" error={e.rateText}>
                       <Input id="rateText" name="rateText" value={rateText} onChange={(ev) => setRateText(ev.target.value)} placeholder="Bijv. € 65–75 p/u of € 4.500 p/m" />
                     </Field>
                   </div>
