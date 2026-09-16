@@ -231,6 +231,8 @@ export const OPPORTUNITY_POTENTIAL_VALUES = OPPORTUNITY_POTENTIAL.map((d) => d.v
 export const DOCUMENT_CATEGORIES: Option[] = [
   { value: "CONTRACT", label: "Contract", color: "blue" },
   { value: "ID", label: "Identiteitsbewijs", color: "violet" },
+  { value: "KVK", label: "KvK-uittreksel", color: "blue" },
+  { value: "BETAALBEWIJS", label: "Betaalbewijs", color: "green" },
   { value: "CERTIFICAAT", label: "Certificaat", color: "green" },
   { value: "CV", label: "CV", color: "cyan" },
   { value: "EVALUATIE", label: "Evaluatie", color: "amber" },

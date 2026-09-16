@@ -129,6 +129,7 @@ const HUB_LIST: NavHub[] = [
       { href: "/betalingen", label: "Betalingen (SEPA)", icon: Banknote, section: "Facturen & betalingen" },
       { href: "/totaaloverzicht", label: "Rapportage", icon: TrendingUp, section: "Overzicht & admin" },
       { href: "/boekhouding", label: "Boekhouding & BTW", icon: Scale, section: "Overzicht & admin" },
+      { href: "/boekhouding/steekproef", label: "Steekproef (Kiwa)", icon: ShieldCheck, section: "Overzicht & admin" },
       { href: "/verwerken/archief", label: "Archief", icon: Archive, section: "Overzicht & admin" },
       { href: "/instellingen", label: "Instellingen", icon: Settings, section: "Overzicht & admin" },
     ],
