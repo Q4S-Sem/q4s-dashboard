@@ -189,7 +189,8 @@ const HUB_LIST: NavHub[] = [
       { href: "/website/sollicitaties", label: "Sollicitaties", icon: Inbox, section: "Website" },
       { href: "/website/linkedin", label: "LinkedIn-generator", icon: Sparkles, section: "Website" },
       // Bereikbaar via de acties op de vacaturelijst, niet als los menu-item:
-      // - /website/vacatures  = de oude 'op de website'-tabel
+      // - /website/vacatures  = redirect naar /crm/vacatures; subroute
+      //   /website/vacatures/[id]/sollicitaties toont sollicitaties per vacature
       // - /vacatures          = de uitwerk/publiceer-pagina per vacature
       // - /vacaturehub        = MSP-instroom, staat onder onderhoud
       { href: "/website/vacatures", label: "Op de website", icon: Globe, hidden: true },

@@ -99,7 +99,7 @@ export default async function CvMatchesPage({
         description="Je actieve zoekopdrachten. Zet op een vacature “Ik zoek kandidaten” en die komt hier te staan. Klik op “Zoek match” en de AI zoekt de best passende kandidaten uit je CV-database — bel ze of zet ze met één klik als lead in het CRM."
         actions={
           <>
-            <Link href="/website/vacatures" className={buttonVariants({ variant: "outline" })}>
+            <Link href="/crm/vacatures" className={buttonVariants({ variant: "outline" })}>
               <Briefcase className="h-4 w-4" /> Vacatures
             </Link>
             {searches.length > 0 && (
@@ -134,7 +134,7 @@ export default async function CvMatchesPage({
               description="Ga naar een vacature en klik op “Ik zoek kandidaten”. De vacature komt dan hier te staan en je kunt met één klik de best passende CV's uit je database zoeken."
               action={
                 <div className="flex flex-wrap justify-center gap-2">
-                  <Link href="/website/vacatures" className={buttonVariants()}>
+                  <Link href="/crm/vacatures" className={buttonVariants()}>
                     <Briefcase className="h-4 w-4" /> Naar vacatures
                   </Link>
                   <Link href="/website/cv-inbox/importeren" className={buttonVariants({ variant: "outline" })}>
