@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EyeOff, FileDown, FileUser, Sparkles } from "lucide-react";
+import { Eye, EyeOff, FileDown, FileUser, Sparkles } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -26,7 +26,7 @@ export default async function CvGeneratorPage() {
           </CardTitle>
           <span className="text-sm text-ink-400 text-right">
             Upload het CV zoals je het kreeg. De AI leest het uit, jij kijkt het na, en daarna
-            rolt het Q4S-CV eruit als PDF en Word.
+            rolt het Q4S-CV eruit als PDF.
           </span>
         </CardHeader>
         <CardContent>
@@ -94,6 +94,15 @@ export default async function CvGeneratorPage() {
                   <TD>{formatDate(p.updatedAt)}</TD>
                   <TD>
                     <div className="flex gap-1.5">
+                      <Link
+                        href={`/socials/cv-generator/${p.id}/print`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={buttonVariants({ variant: "ghost", size: "sm" })}
+                        title="Voorbeeld bekijken"
+                      >
+                        <Eye className="h-3.5 w-3.5" /> Voorbeeld
+                      </Link>
                       <a
                         href={`/socials/cv-generator/${p.id}/pdf`}
                         target="_blank"
@@ -101,12 +110,6 @@ export default async function CvGeneratorPage() {
                         className={buttonVariants({ variant: "ghost", size: "sm" })}
                       >
                         <FileDown className="h-3.5 w-3.5" /> PDF
-                      </a>
-                      <a
-                        href={`/socials/cv-generator/${p.id}/docx`}
-                        className={buttonVariants({ variant: "ghost", size: "sm" })}
-                      >
-                        <FileDown className="h-3.5 w-3.5" /> Word
                       </a>
                     </div>
                   </TD>

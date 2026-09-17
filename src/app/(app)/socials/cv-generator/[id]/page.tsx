@@ -53,7 +53,7 @@ export default async function CvProfileReviewPage({
 
       <PageHeader
         title="Q4S-CV nakijken"
-        description="De AI heeft dit uit het CV gelezen. Controleer het en pas aan — daarna download je het als PDF of Word."
+        description="De AI heeft dit uit het CV gelezen. Controleer het en pas aan — daarna download je het als PDF."
         actions={
           <ConfirmSubmit
             action={deleteCvProfile}
@@ -118,12 +118,6 @@ export default async function CvProfileReviewPage({
               className={buttonVariants({ variant: "outline" })}
             >
               <FileDown className="h-4 w-4" /> PDF-download
-            </a>
-            <a
-              href={`/socials/cv-generator/${profile.id}/docx`}
-              className={buttonVariants({ variant: "outline" })}
-            >
-              <FileDown className="h-4 w-4" /> Word
             </a>
           </div>
         </CardContent>
