@@ -141,9 +141,6 @@ export async function EvaluatiesList({
       <Card>
         <CardContent className="space-y-3 py-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="w-16 text-xs font-semibold uppercase tracking-wide text-ink-400">
-              Kwartaal
-            </span>
             <FilterPill active={!quarter} href={hrefWith(basePath, sp, { quarter: undefined })}>
               Alle
             </FilterPill>
