@@ -56,21 +56,25 @@ export default async function CvGeneratorPage() {
             </THead>
             <TBody>
               {profiles.map((p) => (
-                <TR key={p.id}>
+                <TR key={p.id} className="cursor-pointer">
                   <TD>
+                    {/* Hele rij klikbaar naar het bewerk-scherm; knoppen hieronder
+                        staan met z-10 erbovenop zodat die apart klikbaar blijven. */}
                     <Link
                       href={`/socials/cv-generator/${p.id}`}
-                      className="font-medium text-ink-900 hover:text-brand-700"
-                    >
+                      className="absolute inset-0 z-0"
+                      aria-label={`${p.fullName} bewerken`}
+                    />
+                    <span className="font-medium text-ink-900 group-hover:text-brand-700">
                       {p.fullName}
-                    </Link>
+                    </span>
                   </TD>
                   <TD>{p.headline ?? "—"}</TD>
                   <TD>
                     {p.candidate ? (
                       <Link
                         href={`/kandidaten/${p.candidate.id}`}
-                        className="text-ink-600 hover:text-brand-700"
+                        className="relative z-10 text-ink-600 hover:text-brand-700"
                       >
                         {p.candidate.firstName} {p.candidate.lastName}
                       </Link>
@@ -89,7 +93,7 @@ export default async function CvGeneratorPage() {
                   </TD>
                   <TD>{formatDate(p.updatedAt)}</TD>
                   <TD>
-                    <div className="flex gap-1.5">
+                    <div className="relative z-10 flex gap-1.5">
                       <Link
                         href={`/socials/cv-generator/${p.id}/print`}
                         target="_blank"
