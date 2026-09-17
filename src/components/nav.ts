@@ -244,7 +244,7 @@ const HUB_ORDER = [
   "/agenda",
   "/recruitment",
   "/website", // Vacatures
-  "/cv",
+  "/website/cv-inbox", // CV's
   "/evaluaties",
   "/dashboard", // Analytics
   "/data",
