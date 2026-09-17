@@ -294,7 +294,6 @@ export function buildLinkedinPost(inp: PostInput): string {
   // Interesse — vast blok zoals het voorbeeld.
   L.push(boldize("Interesse of ken je iemand?"));
   L.push("Neem gerust contact op!");
-  if (inp.applyUrl.trim()) L.push(`👉 ${inp.applyUrl.trim()}`);
   L.push("");
 
   // Contact — ALTIJD Gjils nummer + cv@q4s.nl (terugval op de vaste waarden als
