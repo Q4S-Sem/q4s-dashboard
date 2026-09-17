@@ -12,9 +12,6 @@
 // zodat alles er identiek uitziet.
 // ---------------------------------------------------------------------------
 
-import fs from "node:fs";
-import path from "node:path";
-
 export type SignatureData = {
   name: string;
   role: string;
@@ -45,28 +42,18 @@ function esc(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** De contact-icoontjes (telefoon/mail/web/pin) als PNG-data-URI. PNG omdat
- *  Outlook/Gmail SVG in mails niet betrouwbaar tonen (dan zie je lege vierkantjes).
- *  De bestanden staan in public/email/icons.
+/** De contact-icoontjes (telefoon/mail/web/pin) als inline PNG-data-URI.
+ *  PNG omdat Outlook/Gmail SVG in mails niet betrouwbaar tonen.
  *
- *  BELANGRIJK: lees elk bestand via een LETTERLIJK pad. Vercel's file-tracer
- *  bundelt alleen bestanden waarvan het pad statisch te herleiden is; een
- *  dynamisch `${name}.png` wordt NIET meegenomen in de serverless-bundle,
- *  waardoor de icoontjes in productie als kapot vierkantje verschijnen. */
-function readIcon(absPath: string): string {
-  try {
-    const b = fs.readFileSync(absPath);
-    return `data:image/png;base64,${b.toString("base64")}`;
-  } catch {
-    return "";
-  }
-}
-
+ *  Eerder werden deze via fs.readFileSync gelezen, maar Vercel's serverless
+ *  file-tracer neemt public/-bestanden niet betrouwbaar mee in de bundle.
+ *  Daarom staan ze nu als compile-time constanten: klein (~500-1000 bytes)
+ *  en gegarandeerd beschikbaar in elke omgeving. */
 const ICON = {
-  phone: readIcon(path.join(process.cwd(), "public", "email", "icons", "phone.png")),
-  mail: readIcon(path.join(process.cwd(), "public", "email", "icons", "mail.png")),
-  web: readIcon(path.join(process.cwd(), "public", "email", "icons", "web.png")),
-  pin: readIcon(path.join(process.cwd(), "public", "email", "icons", "pin.png")),
+  phone: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAAACXBIWXMAAAsTAAALEwEAmpwYAAABS0lEQVRYhe2XvUoDQRRGT2xs1MLgGyjiE/iXJ1ERLaxCtAxYBfIMgrgJiCA+hIiksPARUthoHRDBKkhk4C4MwyQTZPfOIHvgNsv+HO7e+XYWKiqKZwE4AtqeagErKGNkJjMq0xa6DAi9agu1AkJv2kLHAaEvoKYp1AgITYBNTaG1OYTOUOYjIHStLXQXELpIabAzCU9VTBp/e2T6MWRyHlLojM2uJfMDbJEAT5bUQDsQfexId3KpExIgs4RGwEZsoboTlEM5FpUGMHbmaTG2VNOJgUGgUyYizoEr4BRYL0Oq60gNp8yUkel5gvVTrnmR7+FSGVIjWX01S8ZeCLPKdLCw1zd2bv4s4TmvjKkOBbIPvDsPsDNLXciwCtz8QaQ0oZxt4DElIVvsfsrWJYpQzjJwCNx65swuc04U6sCe7ESb8lt+kMLuoeL/8Qseod+zZTiIbAAAAABJRU5ErkJggg==",
+  mail: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAAACXBIWXMAAAsTAAALEwEAmpwYAAABOElEQVRYhe2XIUsEQRSAPxUOVAwWERGbySIIdpvFaLWb/As2z3jRevHq1Wsmk9UiGFwFgweXRNSRhbeij5ndub259cL74JWdN/M+Hm/YXTAMo1lawCXwBLgpRwa0pWaQdgMiTkVeM0gTnXEqnsuEdHIPWCMdq8AV8KXqRAs54BU4A+YnEJkDToCXQI2xhJzENbBTQ2YbGFScHSV0BDyoZ+9AB1iOEFkEzoE3z+06riOUsyS34EOt3QOHJeccAHdqz6fMz0qgVpRQwS5w42l1H9j8yYJ1oOvJuwX2+ctEQjkLMtwjlTcETiWGam0ke/K9pBYq2Ah0wde9LcIkEyrwDf3voa0iuZAeej20/yJUsCcxDlMVqoMJVWEdqsI6lKRDWcQrwSWOx1n7yL8oE2qJVDYrv0GGYZCYbxbSa6o7utxEAAAAAElFTkSuQmCC",
+  web: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAAACXBIWXMAAAsTAAALEwEAmpwYAAACfUlEQVRYhe2XT2+MURTGf+1sOmz8XdKdBeMLoOz9iT9TtkR9A9WwqAVphJa0JVgJK20qURtEojakbBpfYaSY+gRK25GbnFee3Ny57/vOjE4TfZKbzHuec848c+95zz0D6/gPUAAOAreBWWAB+GVrwWwjQI/5/jMUgcvAD6CWcTmBAxbbUpwB5nMI8dcXoLcVQjqBG4Ev+A4sy/NbW8nzsvlozAowZDkbFjPpJf0KnAWOi+03UAL22ufE7nzOAd+8HBONivJ3xonbbNw7sY9LzD2xz5htCzDl5XI7lbtmNMF9oMO4knc0OyWu2zvK3WZ3sQ+84ytnFVP0CnhSxDhcFe5VIP618INi7/B2yhV6VxZBVyRo3rZc8Vn40JtzWvg5j9sEVIR3LSGKQs4+U2tyVdOa56FVFFOzdSAm6E4bBA3HBH0Ux8MBflz4i5E8/eI3FuCPCv8hJkjrZ0eAfyJ8XyRPn/g9DvDdXh3VxaI4hl7JF8KfiOQ5JX7TAX6D8D+zCgrd0NPCn4zkKYvf8wC/MaugNXdks+J4JMCPCe8Ktx4uid9ogD8m/PuYoJE2vPY3Y4J62iBoX0xQwcbO1RJTzTIbDaRcrnMpl2uv8J88bpsNeVma618UbTRIgqa88WMwZfx4KbybHBJ0em2jknX8SH6lG6KS4IeytXsiA5prFUvC7xIxj8S+ktLHgnBjpp73M2CrcTNiv1vnrntjtu3ezrh1La+Y5FdNeIncwH6+zpBf8oZ812suWOFqjqfN/vMY8o4vy9+gpYAQl+N6M2IUZa/Q865KIzWThi67Eqo5+0x/nrepEXTa2Dlsw1XVpoRF++xst4D9rTqedaxp/AH9b/DjbryQEgAAAABJRU5ErkJggg==",
+  pin: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAAACXBIWXMAAAsTAAALEwEAmpwYAAABhUlEQVRYhe2XsUrDUBSGPwRFbC2oo0MrPoDgQ5TgpC6C1FWp9gmc3PQBBAd9A0W7iG6KswpugtpFQQeLtAgOUZQLNxACuTfmnrRD+8GBkpzz34+Q3CbQp0fIAyvAEXAPfOpSvw+Biu7JnAFgHXgDfi31ClT1TCbkgZMEItE6BQrSMkPAVQqZoC6BQUmhPQeZoHalZGaAHwEhlTErIVS3LOQD17p8S++xq8wo8GVY4AIohvqL+lhcv8rKuQjNGcIfY8LV0/hkmPNchNYMwepcHFXD3KqL0KYhuGyYKxvmVGZqahlcoQ0XIc8Q3NA3fRR1Xz2kvLJWxoFvyw5cCvVP6WNx/SprDEfOLXuLWuQGuLXIqzpDgIrALh3UsoRQDmgLyLRdN8UwOwJC2wgyAbQcZFo6Q5QtByE1K04BeEkh8xyzX4mwmEJonoyp//N9OnMmgWYCmabu7QgLCYSW6DAHBpl9usCw/g+LytwBI3SJEvAekvkApukynv7a8F3flyWp6erTe/wB53t8pe+HF8wAAAAASUVORK5CYII=",
 };
 
 /** Eén contactregel: icoon + (evt. gelinkte) waarde. */
