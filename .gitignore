@@ -62,3 +62,4 @@ Klant Gegevens/
 
 # Interne scripts/plannen buiten git
 .hermes/
+graphify-out/
