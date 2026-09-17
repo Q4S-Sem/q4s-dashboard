@@ -7,7 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { DISCIPLINES, labelFor } from "@/lib/domain";
+import { DISCIPLINES, CANDIDATE_SOURCES, CANDIDATE_AVAILABILITY, labelFor } from "@/lib/domain";
+import { CvInboxFilters } from "./CvInboxFilters";
 import { isVisionConfigured } from "@/lib/ai";
 import {
   isMailboxConnected,
@@ -26,6 +27,10 @@ export default async function WebsiteCvsPage({
 }: {
   searchParams: Promise<{
     bron?: string;
+    q?: string;
+    discipline?: string;
+    source?: string;
+    availability?: string;
     import?: string;
     n?: string;
     skip?: string;
@@ -35,10 +40,25 @@ export default async function WebsiteCvsPage({
 }) {
   const sp = await searchParams;
   const bron: "website" | "email" = sp.bron === "email" ? "email" : "website";
+  const q = sp.q?.trim() || "";
+  const discipline = sp.discipline || "";
+  const source = sp.source || "";
+  const availability = sp.availability || "";
+  const where = {
+    cvFileName: { not: null },
+    source: source || (bron === "email" ? "EMAIL" : { not: "EMAIL" }),
+    ...(discipline ? { discipline } : {}),
+    ...(availability ? { availability } : {}),
+    ...(q ? { OR: [
+      { firstName: { contains: q } }, { lastName: { contains: q } },
+      { email: { contains: q } }, { location: { contains: q } },
+      { headline: { contains: q } },
+    ] } : {}),
+  };
 
   const [candidates, websiteCount, emailCount] = await Promise.all([
     db.candidate.findMany({
-      where: { cvFileName: { not: null }, source: bron === "email" ? "EMAIL" : { not: "EMAIL" } },
+      where,
       orderBy: { createdAt: "desc" },
     }),
     db.candidate.count({ where: { cvFileName: { not: null }, source: { not: "EMAIL" } } }),
@@ -157,6 +177,17 @@ export default async function WebsiteCvsPage({
           tokensPerCv={SCAN_TOKENS_PER_CV}
         />
       )}
+
+      <CvInboxFilters
+        q={q}
+        discipline={discipline}
+        source={source}
+        availability={availability}
+        bron={bron}
+        disciplines={DISCIPLINES}
+        sources={CANDIDATE_SOURCES}
+        availabilities={CANDIDATE_AVAILABILITY}
+      />
 
       {rows.length === 0 ? (
         <Card>

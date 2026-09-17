@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FileText, ExternalLink, ArrowRight, CheckCircle2 } from "lucide-react";
-import { SmartList, type SmartColumn, type SmartFilter, type SmartGroup } from "@/components/smart-list";
+import { SmartList, type SmartColumn } from "@/components/smart-list";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate, cn } from "@/lib/utils";
@@ -23,22 +23,6 @@ export type CvRow = {
   cvHref: string | null;
   dealId: string | null;
 };
-
-/** Bouw filter-opties uit de waarden die echt voorkomen (met nette labels). */
-function optionsFrom(
-  rows: CvRow[],
-  value: (r: CvRow) => string,
-  label: (r: CvRow) => string,
-): { value: string; label: string }[] {
-  const m = new Map<string, string>();
-  for (const r of rows) {
-    const v = value(r);
-    if (v && !m.has(v)) m.set(v, label(r) || v);
-  }
-  return [...m.entries()]
-    .map(([v, l]) => ({ value: v, label: l }))
-    .sort((a, b) => a.label.localeCompare(b.label, "nl"));
-}
 
 export function CvsList({ rows }: { rows: CvRow[] }) {
   const columns: SmartColumn<CvRow>[] = [
@@ -132,30 +116,10 @@ export function CvsList({ rows }: { rows: CvRow[] }) {
     },
   ];
 
-  const filters: SmartFilter<CvRow>[] = [
-    { key: "discipline", label: "Disciplines", value: (r) => r.disciplineRaw, options: optionsFrom(rows, (r) => r.disciplineRaw, (r) => r.disciplineLabel) },
-    { key: "source", label: "Bronnen", value: (r) => r.source, options: CANDIDATE_SOURCES.map((o) => ({ value: o.value, label: o.label })) },
-    { key: "availability", label: "Beschikbaarheid", value: (r) => r.availability, options: CANDIDATE_AVAILABILITY.map((o) => ({ value: o.value, label: o.label })) },
-    { key: "crm", label: "CRM-status", value: (r) => (r.dealId ? "in" : "out"), options: [
-      { value: "out", label: "Nog niet in CRM" },
-      { value: "in", label: "Al lead in CRM" },
-    ] },
-  ];
-
-  const groups: SmartGroup<CvRow>[] = [
-    { key: "discipline", label: "Discipline", value: (r) => r.disciplineRaw || "—", display: (r) => r.disciplineLabel || "Zonder discipline" },
-    { key: "source", label: "Bron", value: (r) => r.source, display: (r) => CANDIDATE_SOURCES.find((o) => o.value === r.source)?.label ?? r.source },
-    { key: "availability", label: "Beschikbaarheid", value: (r) => r.availability, display: (r) => CANDIDATE_AVAILABILITY.find((o) => o.value === r.availability)?.label ?? r.availability },
-  ];
-
   return (
     <SmartList
       rows={rows}
       columns={columns}
-      search={(r) => `${r.name} ${r.email} ${r.disciplineLabel} ${r.location} ${r.headline}`}
-      searchPlaceholder="Zoek op naam, discipline, plaats…"
-      filters={filters}
-      groups={groups}
       initialSort={{ key: "createdAt", dir: "desc" }}
       emptyLabel="Nog geen CV's binnengekomen."
     />

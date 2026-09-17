@@ -4,6 +4,7 @@ import { ArrowLeft, Upload, FileText, Files, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Field, Input, Select } from "@/components/ui/field";
+import { Dropzone } from "@/components/ui/dropzone";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { DISCIPLINES, CANDIDATE_AVAILABILITY } from "@/lib/domain";
@@ -12,8 +13,7 @@ import { importCv, importCvsBulk } from "../../actions";
 
 export const metadata = { title: "CV's importeren" };
 
-const ACCEPT =
-  ".pdf,.doc,.docx,.rtf,.odt,.txt,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.webp";
+const ACCEPT = ".pdf,.docx,.png,.jpg,.jpeg,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 const ERRORS: Record<string, string> = {
   naam: "Vul minstens een naam in.",
@@ -63,9 +63,7 @@ export default async function CvImporterenPage({
               </Field>
             </div>
 
-            <Field label="CV-bestand" htmlFor="file" required hint="PDF, Word, Excel, tekst of afbeelding — max 15 MB.">
-              <Input id="file" name="file" type="file" accept={ACCEPT} required />
-            </Field>
+            <Dropzone name="file" accept={ACCEPT} label="Sleep je CV hierheen of klik om te selecteren" hint="PDF, Word (.docx) of afbeelding — max 15 MB" />
 
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Discipline" htmlFor="discipline" hint="Verbetert het matchen op vacatures.">
@@ -123,13 +121,7 @@ export default async function CvImporterenPage({
         </CardHeader>
         <form action={importCvsBulk}>
           <CardContent className="space-y-5">
-            <Field
-              label="Selecteer meerdere bestanden"
-              htmlFor="files"
-              hint="Namen worden uit de bestandsnaam gehaald (bv. “Jan de Vries CV.pdf”). Je kunt ze daarna per kandidaat aanvullen."
-            >
-              <Input id="files" name="files" type="file" accept={ACCEPT} multiple required />
-            </Field>
+            <Dropzone name="files" accept={ACCEPT} multiple label="Sleep je CV's hierheen of klik om meerdere te selecteren" hint="PDF, Word (.docx) of afbeeldingen — max 15 MB per bestand" />
 
             {aiOn ? (
               <label className="flex items-start gap-2.5 rounded-lg border border-ink-200 bg-ink-50/60 px-3 py-2.5 text-sm text-ink-700">
