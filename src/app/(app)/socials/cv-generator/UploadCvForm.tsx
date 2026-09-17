@@ -98,12 +98,6 @@ export function UploadCvForm({
             </>
           )}
         </div>
-        <p className="mt-1.5 text-xs text-ink-400">
-          🔒 CV&apos;s worden standaard geanonimiseerd: achternaam wordt een initiaal en Q4S staat als enige contact op het CV.
-        </p>
-        <p className="mt-1 text-xs text-ink-400">
-          👁 CV&apos;s worden standaard geanonimiseerd: achternaam wordt een initiaal en Q4S staat als enige contact op het CV. Per CV uit te zetten in het volgende scherm.
-        </p>
       </div>
 
       <BezigMelding />
