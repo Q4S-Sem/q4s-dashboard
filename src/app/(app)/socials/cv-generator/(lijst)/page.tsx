@@ -31,11 +31,6 @@ export default async function CvGeneratorPage() {
         </CardHeader>
         <CardContent>
           <UploadCvForm action={startCvProfile} />
-          <p className="mt-3 flex items-start gap-1.5 text-xs text-ink-500">
-            <EyeOff className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-400" />
-            CV&apos;s worden standaard geanonimiseerd: achternaam wordt een initiaal en Q4S staat
-            als enige contact op het CV. Per CV uit te zetten in het volgende scherm.
-          </p>
         </CardContent>
       </Card>
 
