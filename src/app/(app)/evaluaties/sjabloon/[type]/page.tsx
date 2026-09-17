@@ -32,6 +32,7 @@ export default async function EvaluatieSjabloonPage({
       <PrintBar
         terug={vel.def.listPath}
         uitleg="Blanco formulier — printen, of “Opslaan als PDF” om te mailen."
+        iconOnly
       />
 
       <div className="flex justify-center pb-10">
