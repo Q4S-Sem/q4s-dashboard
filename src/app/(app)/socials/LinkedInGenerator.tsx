@@ -398,15 +398,6 @@ export function LinkedInGenerator({
           </CardContent>
         </Card>
 
-        <div className="rounded-xl border border-ink-200 bg-ink-50 p-4 text-xs leading-relaxed text-ink-600">
-          <p className="font-semibold text-ink-800">Vast Q4S-format</p>
-          <p className="mt-1">
-            📍 Vette titel · korte intro · <strong>Wat ga je doen?</strong> (🔹) ·{" "}
-            <strong>Wat vragen wij?</strong> (✅) · <strong>Wat bieden wij?</strong> ·
-            contact (📞 +31 6 83859566 · 📧 cv@q4s.nl) · hashtags. Vet is écht vet op
-            LinkedIn en kopieert exact mee.
-          </p>
-        </div>
       </div>
 
       {/* Rechts: de post als LinkedIn-voorvertoning */}
