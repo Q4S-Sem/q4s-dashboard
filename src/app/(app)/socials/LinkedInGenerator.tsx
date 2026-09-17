@@ -331,28 +331,28 @@ export function LinkedInGenerator({
   ];
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+    <div className="grid gap-6 xl:grid-cols-2">
       {/* Links: bron kiezen via tabs */}
       <div className="relative z-20 space-y-4">
         <Card>
-          <div className="border-b border-ink-100">
-            <nav className="flex">
+          <div className="px-4 pt-4">
+            <div className="inline-flex w-full rounded-lg bg-ink-100 p-1">
               {tabs.map((t) => (
                 <button
                   key={t.key}
                   type="button"
                   onClick={() => setTab(t.key)}
-                  className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-3 text-xs font-semibold transition-colors ${
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold transition-all ${
                     tab === t.key
-                      ? "border-b-2 border-brand-600 text-brand-700"
-                      : "text-ink-400 hover:text-ink-700"
+                      ? "bg-white text-ink-900 shadow-sm"
+                      : "text-ink-500 hover:text-ink-700"
                   }`}
                 >
                   {t.icon}
                   {t.label}
                 </button>
               ))}
-            </nav>
+            </div>
           </div>
 
           <CardContent className="space-y-3 pt-4">
@@ -522,7 +522,7 @@ export function LinkedInGenerator({
             ref={postRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="min-h-[55vh] resize-y overflow-hidden rounded-none border-0 px-5 py-4 text-[15px] leading-relaxed shadow-none focus-visible:ring-0"
+            className="min-h-[35vh] resize-y overflow-hidden rounded-none border-0 px-5 py-4 text-[15px] leading-relaxed shadow-none focus-visible:ring-0"
             aria-label="LinkedIn-post — bewerkbaar"
             spellCheck={false}
           />
