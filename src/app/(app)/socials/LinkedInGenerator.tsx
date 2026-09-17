@@ -293,7 +293,7 @@ export function LinkedInGenerator({
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
       {/* Links: vacature kiezen of plakken */}
-      <div className="space-y-4">
+      <div className="relative z-20 space-y-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
