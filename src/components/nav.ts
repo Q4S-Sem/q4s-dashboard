@@ -229,6 +229,7 @@ const HUB_LIST: NavHub[] = [
     items: [
       { href: "/gebruikers", label: "Gebruikers", icon: UserCog, exact: true, section: "Toegang" },
       { href: "/gebruikers/handtekening", label: "E-mailhandtekening", icon: Mail, section: "Toegang" },
+      { href: "/gebruikers/audit", label: "Audit (Kiwa)", icon: ShieldCheck, section: "Compliance" },
       { href: "/gebruikers/api-sleutels", label: "API-sleutels", icon: KeyRound, section: "AI" },
       { href: "/gebruikers/tokenverbruik", label: "Tokenverbruik", icon: BarChart3, section: "AI" },
     ],
