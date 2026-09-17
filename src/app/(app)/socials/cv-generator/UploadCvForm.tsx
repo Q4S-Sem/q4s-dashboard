@@ -60,15 +60,15 @@ export function UploadCvForm({
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{state.error}</p>
       )}
 
-      <div className="grid items-end gap-4 sm:grid-cols-12">
-        <div className="sm:col-span-9">
+      <div className="space-y-4">
+        <div>
           <label className="mb-1.5 block text-sm font-medium text-ink-700">Oud CV</label>
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={onDrop}
             onClick={() => fileRef.current?.click()}
-            className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-8 text-center transition-colors ${
+            className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-12 text-center transition-colors ${
               dragOver
                 ? "border-brand-500 bg-brand-50"
                 : "border-ink-200 bg-ink-50/50 hover:border-ink-300 hover:bg-ink-50"
@@ -84,7 +84,7 @@ export function UploadCvForm({
               onChange={onFileChange}
               className="hidden"
             />
-            <FileText className="h-7 w-7 text-ink-300" />
+            <FileText className="h-8 w-8 text-ink-300" />
             {fileName ? (
               <p className="text-sm font-medium text-ink-800">{fileName}</p>
             ) : (
@@ -99,11 +99,14 @@ export function UploadCvForm({
             )}
           </div>
           <p className="mt-1.5 text-xs text-ink-400">
-            🔒 CV's worden standaard geanonimiseerd: achternaam wordt een initiaal en Q4S staat als enige contact op het CV.
+            🔒 CV&apos;s worden standaard geanonimiseerd: achternaam wordt een initiaal en Q4S staat als enige contact op het CV.
+          </p>
+          <p className="mt-1 text-xs text-ink-400">
+            👁 CV&apos;s worden standaard geanonimiseerd: achternaam wordt een initiaal en Q4S staat als enige contact op het CV. Per CV uit te zetten in het volgende scherm.
           </p>
         </div>
-        <div className="sm:col-span-3">
-          <SubmitButton className="w-full" pendingLabel="AI leest CV…">
+        <div className="flex justify-end">
+          <SubmitButton className="bg-ink-900 text-white hover:bg-ink-800 px-8 py-3 text-base" pendingLabel="AI leest CV…">
             <Sparkles className="h-4 w-4" /> Uitlezen
           </SubmitButton>
         </div>

@@ -20,11 +20,11 @@ export default async function CvGeneratorPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <CardTitle className="flex items-center gap-2 shrink-0">
             <Sparkles className="h-4 w-4 text-ink-400" /> Nieuw Q4S-CV
           </CardTitle>
-          <span className="text-sm text-ink-400">
+          <span className="text-sm text-ink-400 text-right">
             Upload het CV zoals je het kreeg. De AI leest het uit, jij kijkt het na, en daarna
             rolt het Q4S-CV eruit als PDF en Word.
           </span>
