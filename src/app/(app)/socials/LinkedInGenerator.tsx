@@ -278,13 +278,13 @@ export function LinkedInGenerator({
   const words = vacQ.split(/\s+/).filter(Boolean);
   const vacMatches = (words.length
     ? vacancies.filter((v) => {
+        if (v.status !== "PUBLISHED") return false;
         const hay = fold(`${v.title} ${v.discipline} ${v.location}`);
         return words.every((w) => hay.includes(w));
       })
-    : vacancies
+    : vacancies.filter((v) => v.status === "PUBLISHED")
   )
     .slice()
-    .sort((a, b) => (a.status === "PUBLISHED" ? 0 : 1) - (b.status === "PUBLISHED" ? 0 : 1))
     .slice(0, 10);
 
   const base = (origin || "").replace(/\/+$/, "");
@@ -402,15 +402,6 @@ export function LinkedInGenerator({
                             onClick={() => pickVacancy(v)}
                             className="flex w-full items-center gap-2 px-3 py-2 text-left text-ink-700 hover:bg-ink-50"
                           >
-                            {v.status === "PUBLISHED" ? (
-                              <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
-                                live
-                              </span>
-                            ) : (
-                              <span className="rounded-sm bg-ink-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-ink-500">
-                                concept
-                              </span>
-                            )}
                             <span className="min-w-0 flex-1 truncate">{v.title}</span>
                             {selectedId === v.id && <Check className="h-4 w-4 shrink-0 text-brand-600" />}
                           </button>
