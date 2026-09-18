@@ -62,7 +62,22 @@ export type SessionUser = {
   name: string;
   email: string;
   role: string;
+  /** Toegestane hub-hrefs (leeg = geen, bij een GEBRUIKER). ADMIN negeert dit. */
+  allowedHubs: string[];
+  /** Toegestane pagina-hrefs binnen toegestane hubs. */
+  allowedPages: string[];
 };
+
+/** Parse een JSON-array uit de database; kapotte/lege waarde → lege lijst. */
+function parseHrefList(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const v: unknown = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
 
 export async function currentUser(): Promise<SessionUser | null> {
   const token = (await cookies()).get(COOKIE)?.value;
@@ -70,8 +85,23 @@ export async function currentUser(): Promise<SessionUser | null> {
   if (!userId) return null;
   const user = await db.appUser.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true, role: true, active: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      active: true,
+      allowedHubs: true,
+      allowedPages: true,
+    },
   });
   if (!user || !user.active) return null;
-  return { id: user.id, name: user.name, email: user.email, role: user.role };
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    allowedHubs: parseHrefList(user.allowedHubs),
+    allowedPages: parseHrefList(user.allowedPages),
+  };
 }

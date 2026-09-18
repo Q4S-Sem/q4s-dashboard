@@ -17,6 +17,31 @@ const UserSchema = z.object({
   password: z.string().optional(),
 });
 
+/**
+ * Normaliseer de rechten-JSON uit het formulier tot een schone string-array-JSON.
+ * Kapotte invoer → "[]". Bij een ADMIN slaan we bewust lege lijsten op (die rol
+ * ziet toch alles), zodat er geen verouderde selectie blijft hangen.
+ */
+function cleanHrefJson(raw: FormDataEntryValue | null): string {
+  if (typeof raw !== "string") return "[]";
+  try {
+    const v: unknown = JSON.parse(raw);
+    if (!Array.isArray(v)) return "[]";
+    const list = v.filter((x): x is string => typeof x === "string");
+    return JSON.stringify([...new Set(list)]);
+  } catch {
+    return "[]";
+  }
+}
+
+function readAccess(formData: FormData, role: string): { allowedHubs: string; allowedPages: string } {
+  if (role === "ADMIN") return { allowedHubs: "[]", allowedPages: "[]" };
+  return {
+    allowedHubs: cleanHrefJson(formData.get("allowedHubs")),
+    allowedPages: cleanHrefJson(formData.get("allowedPages")),
+  };
+}
+
 export async function createUser(
   _prev: FormState,
   formData: FormData,
@@ -26,6 +51,7 @@ export async function createUser(
 
   const active = formData.get("active") === "on";
   const pw = parsed.data.password?.trim();
+  const access = readAccess(formData, parsed.data.role);
 
   try {
     await db.appUser.create({
@@ -37,6 +63,8 @@ export async function createUser(
         role: parsed.data.role,
         active,
         passwordHash: pw ? hashPassword(pw) : null,
+        allowedHubs: access.allowedHubs,
+        allowedPages: access.allowedPages,
       },
     });
   } catch {
@@ -59,6 +87,7 @@ export async function updateUser(
 
   const active = formData.get("active") === "on";
   const pw = parsed.data.password?.trim();
+  const access = readAccess(formData, parsed.data.role);
 
   const data: {
     name: string;
@@ -67,6 +96,8 @@ export async function updateUser(
     phone: string | null;
     role: string;
     active: boolean;
+    allowedHubs: string;
+    allowedPages: string;
     passwordHash?: string;
   } = {
     name: parsed.data.name,
@@ -75,6 +106,8 @@ export async function updateUser(
     phone: parsed.data.phone?.trim() || null,
     role: parsed.data.role,
     active,
+    allowedHubs: access.allowedHubs,
+    allowedPages: access.allowedPages,
   };
   // Only change the password when a new one is entered.
   if (pw) data.passwordHash = hashPassword(pw);

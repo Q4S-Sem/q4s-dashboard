@@ -1494,6 +1494,15 @@ model AppUser {
   passwordHash String?
   /// ADMIN | GEBRUIKER  (see APP_USER_ROLES)
   role         String   @default("GEBRUIKER")
+  /// Toegangsrechten voor een GEBRUIKER (ADMIN ziet altijd alles, ongeacht deze velden).
+  /// JSON-array van hub-hrefs die deze gebruiker mag zien (bijv. ["/klanten","/agenda"]).
+  /// Leeg = geen enkele hub zichtbaar (bewust: nieuwe gebruiker ziet niets tot je iets aanvinkt).
+  allowedHubs  String   @default("")
+  /// JSON-array van pagina-hrefs (menu-items) die expliciet zijn toegestaan. Binnen
+  /// een toegestane hub: staan er pagina's van die hub in deze lijst, dan ziet de
+  /// gebruiker ALLEEN die pagina's; staat er geen enkele pagina van die hub in, dan
+  /// ziet hij ALLE pagina's van die (toegestane) hub.
+  allowedPages String   @default("")
   /// Optional job title / function for context.
   jobTitle     String?
   /// Telefoonnummer van deze medewerker — o.a. voor de e-mailhandtekening.

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, Home, LogOut, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { hubForPath, itemIsActive, type NavHub, type NavItem } from "./nav";
+import { hubForPath, itemIsActive, visibleItems, accessibleHubs, type NavHub, type NavItem, type UserAccess } from "./nav";
 import { ConnectionStatus } from "./connection-status";
 import { NotificationCenter } from "./notification-center";
 import { AskAi } from "./ask-ai";
@@ -17,10 +17,12 @@ function HubNav({
   hub,
   onNavigate,
   badges,
+  access,
 }: {
   hub: NavHub;
   onNavigate?: () => void;
   badges?: Record<string, number>;
+  access?: UserAccess | null;
 }) {
   const pathname = usePathname();
 
@@ -36,9 +38,10 @@ function HubNav({
   // Group consecutive items by their optional section heading. `hidden` items
   // horen wel bij de hub (zijbalk + BackLink-label) maar niet in het menu; ze
   // vallen hier weg, vóór het groeperen, zodat een lege sectie ook geen kopje
-  // achterlaat.
+  // achterlaat. Daarna nog filteren op de toegangsrechten van de gebruiker.
+  const allowed = visibleItems(hub, access);
   const groups: { section?: string; items: NavItem[] }[] = [];
-  for (const item of hub.items.filter((it) => !it.hidden)) {
+  for (const item of allowed.filter((it) => !it.hidden)) {
     const last = groups[groups.length - 1];
     if (last && last.section === item.section) last.items.push(item);
     else groups.push({ section: item.section, items: [item] });
@@ -110,11 +113,18 @@ export function AppShell({
   children: React.ReactNode;
   badges?: Record<string, number>;
   notifications?: Notifications;
-  user?: { name: string; role: string } | null;
+  user?: { name: string; role: string; allowedHubs?: string[]; allowedPages?: string[] } | null;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const hub = hubForPath(pathname);
+  const access: UserAccess | null = user
+    ? { role: user.role, allowedHubs: user.allowedHubs ?? [], allowedPages: user.allowedPages ?? [] }
+    : null;
+  const rawHub = hubForPath(pathname);
+  // Een gebruiker zonder toegang tot deze hub krijgt geen zijbalk te zien; de
+  // server-guard (layout) stuurt hem toch al weg, dit voorkomt een flits.
+  const allowedHubHrefs = new Set(accessibleHubs(access).map((h) => h.href));
+  const hub = rawHub && (access === null || allowedHubHrefs.has(rawHub.href)) ? rawHub : null;
   const isHome = pathname === "/";
   const HubIcon = hub?.icon;
 
@@ -202,7 +212,7 @@ export function AppShell({
           blok; rustige grijze secties. */}
       {hub && (
         <aside className="hidden border-r border-ink-200 bg-white no-print min-[900px]:fixed min-[900px]:bottom-0 min-[900px]:top-14 min-[900px]:flex min-[900px]:w-60 min-[900px]:flex-col">
-          <HubNav hub={hub} badges={badges} />
+          <HubNav hub={hub} badges={badges} access={access} />
           {user && (
             <div className="flex items-center gap-2.5 border-t border-ink-200 px-3 py-3">
               <Avatar name={user.name} size="sm" />
@@ -243,7 +253,7 @@ export function AppShell({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <HubNav hub={hub} badges={badges} onNavigate={() => setOpen(false)} />
+            <HubNav hub={hub} badges={badges} access={access} onNavigate={() => setOpen(false)} />
           </aside>
         </div>
       )}

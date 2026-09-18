@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { AppShell } from "@/components/app-shell";
 import { FormAutosave } from "@/components/form-autosave";
 import { OfflineGuard } from "@/components/offline-guard";
@@ -10,6 +11,7 @@ import { getNavBadges } from "@/lib/facturatie";
 import { getNotifications } from "@/lib/notifications";
 import { currentUser, authRequired } from "@/lib/session";
 import { ensureAiKeysLoaded } from "@/lib/ai-keys";
+import { canAccessPath, firstAllowedHubHref } from "@/components/nav";
 
 export default async function AppLayout({
   children,
@@ -19,6 +21,16 @@ export default async function AppLayout({
   const user = await currentUser();
   // Inloggen is (voorlopig) optioneel: alleen afdwingen als AUTH_REQUIRED aan staat.
   if (!user && authRequired()) redirect("/login");
+
+  // Toegangsrechten afdwingen (server-side): een GEBRUIKER mag alleen de hubs en
+  // pagina's zien die hem zijn toegewezen. ADMIN (en de situatie zonder account)
+  // ziet alles. Het pad komt uit de header die proxy.ts zet.
+  if (user && user.role !== "ADMIN") {
+    const pathname = (await headers()).get("x-pathname") ?? "";
+    if (pathname && !canAccessPath(pathname, user)) {
+      redirect(firstAllowedHubHref(user));
+    }
+  }
 
   // Hydrateer de in het dashboard opgeslagen AI-sleutels uit de DB in process.env
   // vóór de pagina rendert. Serverless-instances die bij een cold start de sleutels

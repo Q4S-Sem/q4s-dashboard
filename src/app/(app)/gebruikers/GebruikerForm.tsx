@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import type { AppUser } from "@prisma/client";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -9,6 +9,8 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { APP_USER_ROLES } from "@/lib/domain";
+import type { NavTreeHub } from "@/components/nav";
+import { AccessPicker } from "./AccessPicker";
 
 export function GebruikerForm({
   action,
@@ -16,6 +18,9 @@ export function GebruikerForm({
   isSelf,
   submitLabel,
   cancelHref,
+  navTree,
+  initialHubs,
+  initialPages,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   user?: AppUser;
@@ -24,9 +29,13 @@ export function GebruikerForm({
   isSelf?: boolean;
   submitLabel: string;
   cancelHref: string;
+  navTree: NavTreeHub[];
+  initialHubs: string[];
+  initialPages: string[];
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
+  const [role, setRole] = useState(user?.role ?? "GEBRUIKER");
 
   return (
     <form action={formAction}>
@@ -83,7 +92,7 @@ export function GebruikerForm({
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Rol" htmlFor="role" error={e.role}>
-              <Select id="role" name="role" defaultValue={user?.role ?? "GEBRUIKER"}>
+              <Select id="role" name="role" defaultValue={user?.role ?? "GEBRUIKER"} onValueChange={setRole}>
                 {APP_USER_ROLES.map((r) => (
                   <option key={r.value} value={r.value}>
                     {r.label}
@@ -122,6 +131,27 @@ export function GebruikerForm({
             />
             Actief — deze medewerker mag inloggen
           </label>
+
+          {/* Toegang: alleen relevant voor een GEBRUIKER; een Beheerder ziet alles.
+              De verborgen inputs blijven altijd in de DOM zodat het formulier ze
+              meestuurt — bij ADMIN als lege selectie. */}
+          {role === "ADMIN" ? (
+            <>
+              <input type="hidden" name="allowedHubs" value="[]" />
+              <input type="hidden" name="allowedPages" value="[]" />
+              <p className="rounded-lg bg-violet-50 px-4 py-3 text-sm text-violet-800">
+                Een <strong>Beheerder</strong> heeft toegang tot alle werkplekken en pagina&apos;s.
+              </p>
+            </>
+          ) : (
+            <div>
+              <p className="mb-1.5 block text-[13px] font-medium text-ink-600">Toegang tot werkplekken &amp; pagina&apos;s</p>
+              <p className="mb-3 text-xs text-ink-400">
+                Vink aan welke werkplekken deze gebruiker mag zien. Klap een werkplek open om de zichtbare pagina&apos;s te beperken.
+              </p>
+              <AccessPicker tree={navTree} initialHubs={initialHubs} initialPages={initialPages} />
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
           <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>

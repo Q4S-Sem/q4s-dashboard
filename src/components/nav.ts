@@ -305,3 +305,93 @@ export function hubForPath(pathname: string): NavHub | null {
 
   return beste;
 }
+
+// ===================== TOEGANGSRECHTEN (per gebruiker) =====================
+//
+// Een ADMIN ziet alles. Een GEBRUIKER ziet alleen de hubs die je hebt
+// aangevinkt, en binnen zo'n hub alleen de aangevinkte pagina's — of álle
+// pagina's van die hub als je er geen enkele los hebt aangevinkt.
+
+export type UserAccess = {
+  role: string;
+  /** Hub-hrefs die zichtbaar zijn (bijv. ["/klanten", "/agenda"]). */
+  allowedHubs: string[];
+  /** Pagina-hrefs (menu-items) die expliciet zijn toegestaan. */
+  allowedPages: string[];
+};
+
+/** Ziet deze gebruiker álles? (ADMIN, of geen auth/geen accountcontext). */
+export function isFullAccess(access: UserAccess | null | undefined): boolean {
+  return !access || access.role === "ADMIN";
+}
+
+/** Mag deze gebruiker deze hub (werkplek) zien? */
+export function canSeeHub(hub: NavHub, access: UserAccess | null | undefined): boolean {
+  if (isFullAccess(access)) return true;
+  return access!.allowedHubs.includes(hub.href);
+}
+
+/**
+ * De items van een hub die deze gebruiker mag zien. Verborgen items (hidden)
+ * blijven bij de hub horen maar tellen niet mee voor het menu — die filtert de
+ * app-shell zelf al weg. Regel: is er minstens één pagina van deze hub expliciet
+ * toegestaan, dan ALLEEN die; anders alle pagina's van de (toegestane) hub.
+ */
+export function visibleItems(hub: NavHub, access: UserAccess | null | undefined): NavItem[] {
+  if (isFullAccess(access)) return hub.items;
+  const hubPageHrefs = hub.items.map((it) => it.href);
+  const explicit = access!.allowedPages.filter((p) => hubPageHrefs.includes(p));
+  if (explicit.length === 0) return hub.items;
+  return hub.items.filter((it) => explicit.includes(it.href));
+}
+
+/** De hubs die op het startscherm/menu zichtbaar zijn voor deze gebruiker. */
+export function accessibleHubs(access: UserAccess | null | undefined): NavHub[] {
+  if (isFullAccess(access)) return HUBS;
+  return HUBS.filter((h) => canSeeHub(h, access));
+}
+
+/**
+ * Mag deze gebruiker dit pad openen? Gebruikt door de server-side route-guard.
+ * Onbekende paden (geen hub) zijn toegestaan — die vallen buiten dit rechtenmodel
+ * (bijv. /login, / , eigen account). Een pad binnen een hub mag alleen als de hub
+ * is toegestaan én (indien er expliciete pagina's zijn) het item daarbij zit.
+ */
+export function canAccessPath(pathname: string, access: UserAccess | null | undefined): boolean {
+  if (isFullAccess(access)) return true;
+  const hub = hubForPath(pathname);
+  if (!hub) return true; // geen hub → buiten het model (home, login, account)
+  if (!canSeeHub(hub, access)) return false;
+
+  const hubPageHrefs = hub.items.map((it) => it.href);
+  const explicit = access!.allowedPages.filter((p) => hubPageHrefs.includes(p));
+  if (explicit.length === 0) return true; // hele hub toegestaan
+
+  // Alleen de toegestane pagina's (en hun subroutes) binnen deze hub.
+  return explicit.some((href) => pathname === href || pathname.startsWith(`${href}/`));
+}
+
+/** Waar sturen we een gebruiker heen als hij géén toegang heeft tot het gevraagde pad. */
+export function firstAllowedHubHref(access: UserAccess | null | undefined): string {
+  const hubs = accessibleHubs(access);
+  return hubs[0]?.href ?? "/geen-toegang";
+}
+
+/**
+ * Serialiseerbare weergave van de navigatie voor de rechten-kiezer in het
+ * gebruikersformulier: alleen hrefs + labels (geen icoon-componenten, want die
+ * kunnen niet van een server- naar een client-component reizen). Verborgen items
+ * doen niet mee — die kies je niet los.
+ */
+export type NavTreeItem = { href: string; label: string; section?: string };
+export type NavTreeHub = { href: string; label: string; items: NavTreeItem[] };
+
+export function navTree(): NavTreeHub[] {
+  return HUBS.map((h) => ({
+    href: h.href,
+    label: h.label,
+    items: h.items
+      .filter((it) => !it.hidden)
+      .map((it) => ({ href: it.href, label: it.label, section: it.section })),
+  }));
+}

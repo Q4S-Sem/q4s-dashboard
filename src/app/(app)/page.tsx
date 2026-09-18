@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArrowUpRight, type LucideIcon } from "lucide-react";
-import { HUBS } from "@/components/nav";
+import { accessibleHubs } from "@/components/nav";
 import { getNavBadges } from "@/lib/facturatie";
 import { getNotifications, hubActionCounts } from "@/lib/notifications";
+import { currentUser } from "@/lib/session";
 
 export const metadata = { title: "Start" };
 export const dynamic = "force-dynamic"; // live tellingen van openstaande acties
@@ -57,9 +58,12 @@ function AppCard({
 }
 
 export default async function StartPage() {
-  const [badges, notifications] = await Promise.all([getNavBadges(), getNotifications()]);
+  const [badges, notifications, user] = await Promise.all([getNavBadges(), getNotifications(), currentUser()]);
   const counts = hubActionCounts(badges, notifications);
   const open = Object.values(counts).reduce((a, b) => a + b, 0);
+
+  // Alleen de werkplekken tonen waar deze gebruiker toegang toe heeft (ADMIN: alles).
+  const hubs = accessibleHubs(user);
 
   return (
     <div className="mx-auto max-w-6xl pt-2 sm:pt-4">
@@ -76,7 +80,7 @@ export default async function StartPage() {
 
       {/* Linksuitgelijnd kaartraster — vult de breedte, geen losse gecentreerde iconen. */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {HUBS.map((h) => (
+        {hubs.map((h) => (
           <AppCard
             key={h.href}
             href={h.href}

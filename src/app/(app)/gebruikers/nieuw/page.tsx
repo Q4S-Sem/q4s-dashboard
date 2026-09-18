@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { navTree } from "@/components/nav";
 import { GebruikerForm } from "../GebruikerForm";
 import { createUser } from "../actions";
 
@@ -9,7 +10,7 @@ export const metadata = { title: "Nieuwe gebruiker" };
 
 export default function NieuweGebruikerPage() {
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <BackLink href="/gebruikers">
         Terug naar gebruikers
       </BackLink>
@@ -21,6 +22,9 @@ export default function NieuweGebruikerPage() {
         action={createUser}
         submitLabel="Gebruiker opslaan"
         cancelHref="/gebruikers"
+        navTree={navTree()}
+        initialHubs={[]}
+        initialPages={[]}
       />
     </div>
   );
