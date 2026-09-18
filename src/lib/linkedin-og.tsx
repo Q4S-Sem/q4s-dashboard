@@ -41,6 +41,57 @@ const BORDER = "#e4e4e0";
 const BLOCK = "#17181a"; // off-black accentblok (Q4S), i.p.v. groen
 const HAIR_W = "rgba(255,255,255,0.10)";
 
+/** Subtiel blueprint-motief per vakgebied, als lichtgrijze line-art SVG.
+ *  Wordt groot en flauw rechtsonder in het witte contentblok gezet — een
+ *  vaste, betrouwbare grafische achtergrond die past bij de functie. */
+function disciplineMotif(discipline: string): string {
+  const d = discipline.toLowerCase();
+  const S = "#e9e9e4"; // lichtgrijze lijnkleur
+  let inner = "";
+  if (/(las|weld|fitter|ndo|ndt)/.test(d)) {
+    // Lasnaad / bevel — zigzag naad tussen twee platen
+    inner = `
+      <path d="M40 300 L200 300 L240 210 L280 300 L320 210 L360 300 L400 210 L440 300 L560 300" fill="none" stroke="${S}" stroke-width="6"/>
+      <line x1="40" y1="330" x2="560" y2="330" stroke="${S}" stroke-width="6"/>
+      <line x1="40" y1="180" x2="560" y2="180" stroke="${S}" stroke-width="6"/>`;
+  } else if (/(civil|engineer|werkvoorber|fabri)/.test(d)) {
+    // Constructie / vakwerkligger
+    inner = `
+      <line x1="40" y1="120" x2="560" y2="120" stroke="${S}" stroke-width="6"/>
+      <line x1="40" y1="380" x2="560" y2="380" stroke="${S}" stroke-width="6"/>
+      <path d="M40 380 L140 120 L240 380 L340 120 L440 380 L540 120" fill="none" stroke="${S}" stroke-width="6"/>`;
+  } else if (/(qa|qc|hseq|kwaliteit|safety|veilig)/.test(d)) {
+    // Schild met vinkje
+    inner = `
+      <path d="M300 90 L470 150 V300 C470 380 390 430 300 460 C210 430 130 380 130 300 V150 Z" fill="none" stroke="${S}" stroke-width="6"/>
+      <path d="M230 280 L290 340 L390 210" fill="none" stroke="${S}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>`;
+  } else if (/(e\/i|e_i|elektro|instrument)/.test(d)) {
+    // Circuit-lijnen met knooppunten
+    inner = `
+      <path d="M40 260 H180 M260 260 H420 M500 260 H560" fill="none" stroke="${S}" stroke-width="6"/>
+      <rect x="180" y="230" width="80" height="60" fill="none" stroke="${S}" stroke-width="6"/>
+      <rect x="420" y="230" width="80" height="60" fill="none" stroke="${S}" stroke-width="6"/>
+      <circle cx="120" cy="260" r="14" fill="none" stroke="${S}" stroke-width="6"/>
+      <circle cx="540" cy="260" r="14" fill="none" stroke="${S}" stroke-width="6"/>`;
+  } else if (/(project|commission|controls|management)/.test(d)) {
+    // Flow / knooppunten
+    inner = `
+      <circle cx="120" cy="250" r="34" fill="none" stroke="${S}" stroke-width="6"/>
+      <circle cx="320" cy="150" r="34" fill="none" stroke="${S}" stroke-width="6"/>
+      <circle cx="320" cy="350" r="34" fill="none" stroke="${S}" stroke-width="6"/>
+      <circle cx="520" cy="250" r="34" fill="none" stroke="${S}" stroke-width="6"/>
+      <path d="M150 235 L292 165 M150 265 L292 335 M348 165 L490 235 M348 335 L490 265" fill="none" stroke="${S}" stroke-width="6"/>`;
+  } else {
+    // Standaard: concentrische ringen
+    inner = `
+      <circle cx="300" cy="260" r="220" fill="none" stroke="${S}" stroke-width="6"/>
+      <circle cx="300" cy="260" r="150" fill="none" stroke="${S}" stroke-width="6"/>
+      <circle cx="300" cy="260" r="80" fill="none" stroke="${S}" stroke-width="6"/>`;
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="500" viewBox="0 0 600 500">${inner}</svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
 const FONT_SPEC = [
   { name: "Inter", weight: 400 as const, style: "normal" as const },
   { name: "Inter", weight: 600 as const, style: "normal" as const },
@@ -269,9 +320,14 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
             boxShadow: "0 20px 50px -34px rgba(0,0,0,0.30)",
           }}
         >
-          {/* Subtiele staal/blueprint-geometrie rechtsonder (lichtgrijs) */}
-          <div style={{ position: "absolute", right: -180, bottom: -220, width: 560, height: 560, borderRadius: 9999, border: `1px solid ${BORDER}`, display: "flex" }} />
-          <div style={{ position: "absolute", right: -90, bottom: -140, width: 360, height: 360, borderRadius: 9999, border: `1px solid #eeeeea`, display: "flex" }} />
+          {/* Subtiel blueprint-motief per vakgebied, flauw rechtsonder */}
+          <img
+            src={disciplineMotif(c.discipline)}
+            width={600}
+            height={500}
+            alt=""
+            style={{ position: "absolute", right: -40, bottom: -50, opacity: 0.85, display: "flex" }}
+          />
 
           {/* Groot aanhalingsteken */}
           <div style={{ display: "flex", flexShrink: 0, fontSize: quoteSize, lineHeight: 0.8, fontWeight: 700, color: "#dcdcd6", fontFamily: "Inter", zIndex: 2 }}>
