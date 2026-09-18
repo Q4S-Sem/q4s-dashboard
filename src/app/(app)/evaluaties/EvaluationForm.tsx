@@ -7,6 +7,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { PersonCombobox } from "@/components/ui/person-combobox";
 import { TextAutocomplete } from "@/components/ui/text-autocomplete";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { emptyFormState, type FormState } from "@/lib/form";
@@ -154,6 +155,7 @@ export function EvaluationForm({
   // Evaluatie inlener), elk met hun eigen type. Bij bewerken staat het type ook
   // vast. De keuze is dus niet meer aanpasbaar in het formulier zelf.
   const lockType = Boolean(e?.type ?? defaults.type);
+  const [status, setStatus] = useState(e?.status ?? "CONCEPT");
   const answers = e?.answers ?? {};
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -251,13 +253,21 @@ export function EvaluationForm({
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Status">
-            <Select name="status" defaultValue={e?.status ?? "CONCEPT"}>
-              {EVALUATION_STATUSES.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select
+                name="status"
+                defaultValue={e?.status ?? "CONCEPT"}
+                onValueChange={setStatus}
+                className="flex-1"
+              >
+                {EVALUATION_STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </Select>
+              <StatusBadge options={EVALUATION_STATUSES} value={status} />
+            </div>
           </Field>
           <Field label="Jaar">
             <Input type="number" name="year" min={2000} max={2100} defaultValue={e?.year ?? defaults.year} />

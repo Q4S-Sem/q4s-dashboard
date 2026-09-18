@@ -391,7 +391,7 @@ export const EVALUATION_TYPES: Option[] = [
 ];
 
 export const EVALUATION_STATUSES: Option[] = [
-  { value: "CONCEPT", label: "Concept", color: "amber" },
+  { value: "CONCEPT", label: "Concept", color: "orange" },
   { value: "DEFINITIEF", label: "Definitief", color: "green" },
 ];
 
