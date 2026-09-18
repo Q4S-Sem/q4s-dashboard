@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
-import { Pencil, Star, CalendarClock, CheckCircle2, MessageSquare, ArrowRight, Mail, History } from "lucide-react";
+import { Pencil, Star, CalendarClock, CheckCircle2, MessageSquare, ArrowRight, Mail, History, Image as ImageIcon } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -149,6 +149,11 @@ export async function DealDetail({
             <Link href={`${basePath}/${deal.id}/bewerken`} className={buttonVariants({ variant: "outline" })}>
               <Pencil className="h-4 w-4" /> Bewerken
             </Link>
+            {isVacatureContext && (
+              <Link href={`${basePath}/${deal.id}/linkedin`} className={buttonVariants({ variant: "outline" })}>
+                <ImageIcon className="h-4 w-4" /> LinkedIn-afbeelding
+              </Link>
+            )}
             <ConfirmSubmit action={deleteDeal} id={deal.id} message={`Deal "${deal.title}" verwijderen?`}>
               Verwijderen
             </ConfirmSubmit>
