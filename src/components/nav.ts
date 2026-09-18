@@ -153,7 +153,7 @@ const HUB_LIST: NavHub[] = [
     icon: ClipboardCheck,
     items: [
       { href: "/evaluaties/vcu", label: "VG Evaluatie", icon: ClipboardCheck, section: "Formulieren" },
-      { href: "/evaluaties/inlener", label: "Evaluatie Inlener", icon: ClipboardList, section: "Formulieren" },
+      { href: "/evaluaties/inlener", label: "Inlener Evaluatie", icon: ClipboardList, section: "Formulieren" },
     ],
   },
   {

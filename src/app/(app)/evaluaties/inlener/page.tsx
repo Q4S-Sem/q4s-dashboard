@@ -12,7 +12,7 @@ export default async function InlenerEvaluatiesPage({
     <EvaluatiesList
       type="UITZENDKRACHT"
       basePath="/evaluaties/inlener"
-      title="Evaluatie Inlener"
+      title="Inlener Evaluatie"
       description="De uitzendkracht beoordeelt de inlener en de werkplek. Gesorteerd op kwartaal."
       sp={sp}
     />
