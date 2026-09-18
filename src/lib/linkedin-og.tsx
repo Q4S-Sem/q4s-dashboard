@@ -41,6 +41,105 @@ const BORDER = "#e4e4e0";
 const BLOCK = "#17181a"; // off-black accentblok (Q4S), i.p.v. groen
 const HAIR_W = "rgba(255,255,255,0.10)";
 
+const FONT_SPEC = [
+  { name: "Inter", weight: 400 as const, style: "normal" as const },
+  { name: "Inter", weight: 600 as const, style: "normal" as const },
+  { name: "Inter", weight: 700 as const, style: "normal" as const },
+];
+
+/** Rendert de CARROUSEL-COVER (1080x1080): groot aantal in een cirkel +
+ *  "nieuwe opdrachten", logo linksonder. Zelfde formaat als de referentie,
+ *  maar in Q4S-huisstijl (off-black i.p.v. groen). */
+export async function renderLinkedInCover(searchParams: URLSearchParams): Promise<ImageResponse> {
+  const { logoWhite, interReg, interSemi, interBold } = await loadAssets();
+  const count = (searchParams.get("count") || "3").trim();
+  const kicker = (searchParams.get("kicker") || "Nieuwe opdrachten in de wereld van staalbouw").trim();
+  const line1 = (searchParams.get("line1") || "nieuwe").trim();
+  const line2 = (searchParams.get("line2") || "opdrachten").trim();
+  const pages = (searchParams.get("pages") || "").trim();
+
+  const numSize = count.length >= 3 ? 150 : count.length === 2 ? 200 : 250;
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: CARD_W,
+          height: CARD_H,
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: BLOCK,
+          backgroundImage: "linear-gradient(135deg, #26272b 0%, #17181a 55%, #0c0c0e 100%)",
+          color: "#fff",
+          fontFamily: "Inter",
+          padding: "70px 76px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* Blueprint/staal-geometrie rechtsonder */}
+        <div style={{ position: "absolute", right: -220, bottom: -280, width: 760, height: 760, borderRadius: 9999, border: `1px solid ${HAIR_W}`, display: "flex" }} />
+        <div style={{ position: "absolute", right: -120, bottom: -180, width: 520, height: 520, borderRadius: 9999, border: "1px solid rgba(255,255,255,0.06)", display: "flex" }} />
+        <div style={{ position: "absolute", right: 90, bottom: 120, width: 210, height: 210, borderRadius: 40, background: "linear-gradient(135deg,#3a3a42,#17181a)", transform: "rotate(22deg)", display: "flex" }} />
+
+        {/* Kicker-balk bovenaan */}
+        <div style={{ display: "flex", alignItems: "center", zIndex: 2 }}>
+          <div style={{ display: "flex", width: 4, height: 30, backgroundColor: "#fff", borderRadius: 2, marginRight: 18 }} />
+          <div style={{ display: "flex", fontSize: 24, fontWeight: 600, color: "#d7d7dc" }}>
+            {kicker}
+            {pages ? <span style={{ color: "rgba(255,255,255,0.4)", marginLeft: 14 }}>{`• ${pages}`}</span> : null}
+          </div>
+        </div>
+
+        {/* Midden: nummer-cirkel + kop */}
+        <div style={{ display: "flex", alignItems: "center", flex: 1, zIndex: 2 }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", alignItems: "flex-start" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 300,
+                  height: 300,
+                  borderRadius: 9999,
+                  backgroundColor: "#fff",
+                  color: BLOCK,
+                  fontSize: numSize,
+                  fontWeight: 700,
+                  letterSpacing: -6,
+                  flexShrink: 0,
+                }}
+              >
+                {count}
+              </div>
+              <div style={{ display: "flex", fontSize: 118, fontWeight: 700, letterSpacing: -3, color: "#fff", marginLeft: 34, marginTop: 78 }}>
+                {line1}
+              </div>
+            </div>
+            <div style={{ display: "flex", fontSize: 118, fontWeight: 700, letterSpacing: -3, color: "#fff", marginTop: -6 }}>
+              {line2}
+            </div>
+          </div>
+        </div>
+
+        {/* Logo linksonder */}
+        <div style={{ display: "flex", zIndex: 2 }}>
+          <img src={logoWhite} height={64} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
+        </div>
+      </div>
+    ),
+    {
+      width: CARD_W,
+      height: CARD_H,
+      fonts: FONT_SPEC.map((f) => ({
+        ...f,
+        data: f.weight === 400 ? interReg : f.weight === 600 ? interSemi : interBold,
+      })),
+    },
+  );
+}
+
 /** Rendert de LinkedIn-vacaturekaart (1080x1080) uit URL-query params.
  *  Lichte Q4S-stijl: witte infokaart + chips + off-black citaatblok.
  *  Gedeeld door de CRM- en website-routes zodat het beeld overal identiek is. */
