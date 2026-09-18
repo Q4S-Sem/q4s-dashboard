@@ -26,9 +26,12 @@ async function loadAssets() {
   return assets;
 }
 
-const INK = "#141416";
-const MUTED = "#b7b7bd";
-const LINE = "rgba(255,255,255,0.10)";
+// Monochroom huisstijl: off-black canvas (nooit puur #000), wit + grijstinten.
+const BG = "#121214";
+const MUTED = "#9a9aa2";
+const FAINT = "rgba(255,255,255,0.62)";
+const HAIR = "rgba(255,255,255,0.12)";
+const HAIR_SOFT = "rgba(255,255,255,0.07)";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -36,8 +39,7 @@ export async function GET(req: Request) {
   const { logo, interReg, interSemi, interBold } = await loadAssets();
 
   // Titel schaalt mee met lengte zodat lange functietitels netjes blijven passen.
-  const titleSize = c.title.length > 34 ? 68 : c.title.length > 24 ? 80 : 92;
-
+  const titleSize = c.title.length > 40 ? 62 : c.title.length > 30 ? 74 : c.title.length > 20 ? 86 : 96;
   const metaItems = [c.location, c.hours, c.duration].filter(Boolean);
 
   return new ImageResponse(
@@ -48,136 +50,179 @@ export async function GET(req: Request) {
           height: CARD_H,
           display: "flex",
           flexDirection: "column",
-          backgroundColor: INK,
+          backgroundColor: BG,
           color: "#fff",
-          padding: "72px 76px",
           fontFamily: "Inter",
           position: "relative",
         }}
       >
-        {/* Decoratieve organische vormen (rechtsonder + linksboven) */}
-        <div
-          style={{
-            position: "absolute",
-            right: -180,
-            bottom: -200,
-            width: 620,
-            height: 620,
-            borderRadius: 9999,
-            background: "linear-gradient(135deg, #3a3a42 0%, #141416 72%)",
-            border: "1px solid rgba(255,255,255,0.06)",
-            display: "flex",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            left: -120,
-            top: 300,
-            width: 300,
-            height: 300,
-            borderRadius: 9999,
-            background: "linear-gradient(135deg, #2a2a32 0%, #141416 80%)",
-            opacity: 0.7,
-            display: "flex",
-          }}
-        />
-
-        {/* Header: logo + badge */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 2 }}>
-          <img src={logo} height={70} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
-          {c.badge ? (
-            <div
-              style={{
-                display: "flex",
-                border: `2px solid ${LINE}`,
-                backgroundColor: "rgba(255,255,255,0.05)",
-                color: "#fff",
-                fontSize: 20,
-                fontWeight: 700,
-                letterSpacing: 3,
-                padding: "12px 22px",
-                borderRadius: 100,
-              }}
-            >
-              {c.badge}
-            </div>
-          ) : null}
+        {/* --- Betekenisvolle decoratie: engineering-grid + blueprint-geometrie --- */}
+        {/* Verticale hairlines over de hele kaart (subtiel constructieraster). */}
+        <div style={{ position: "absolute", inset: 0, display: "flex", justifyContent: "space-between", padding: "0 132px" }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} style={{ width: 1, height: "100%", backgroundColor: HAIR_SOFT, display: "flex" }} />
+          ))}
         </div>
+        {/* Grote outline-ringen rechtsonder — verwijzen naar een staalknooppunt. */}
+        <div
+          style={{
+            position: "absolute",
+            right: -260,
+            bottom: -300,
+            width: 720,
+            height: 720,
+            borderRadius: 9999,
+            border: `1px solid ${HAIR}`,
+            display: "flex",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            right: -150,
+            bottom: -190,
+            width: 500,
+            height: 500,
+            borderRadius: 9999,
+            border: `1px solid ${HAIR_SOFT}`,
+            display: "flex",
+          }}
+        />
+        {/* Diagonale spant-lijn rechtsboven. */}
+        <div
+          style={{
+            position: "absolute",
+            right: -40,
+            top: 150,
+            width: 520,
+            height: 1,
+            backgroundColor: HAIR_SOFT,
+            transform: "rotate(38deg)",
+            transformOrigin: "right center",
+            display: "flex",
+          }}
+        />
 
-        {/* Body */}
-        <div style={{ display: "flex", flexDirection: "column", marginTop: 64, flex: 1, zIndex: 2 }}>
-          <div style={{ display: "flex", fontSize: 23, fontWeight: 700, letterSpacing: 4, color: MUTED, textTransform: "uppercase" }}>
-            {c.discipline}
-          </div>
-          <div style={{ display: "flex", fontSize: titleSize, fontWeight: 700, lineHeight: 1.03, letterSpacing: -1.5, marginTop: 18, marginBottom: 28 }}>
-            {c.title}
+        {/* Buitenmarge / inhoud */}
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "76px 84px", zIndex: 2 }}>
+          {/* Header: logo + categorie-label */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <img src={logo} height={68} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
+            {c.badge ? (
+              <div
+                style={{
+                  display: "flex",
+                  border: `1px solid ${HAIR}`,
+                  color: FAINT,
+                  fontSize: 19,
+                  fontWeight: 600,
+                  letterSpacing: 4,
+                  padding: "11px 22px",
+                  borderRadius: 8,
+                }}
+              >
+                {c.badge}
+              </div>
+            ) : null}
           </div>
 
-          {metaItems.length > 0 ? (
-            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", fontSize: 26, color: "#d5d5da", fontWeight: 500 }}>
-              {metaItems.map((m, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center" }}>
-                  {i > 0 ? <span style={{ color: "rgba(255,255,255,0.28)", margin: "0 14px" }}>•</span> : null}
-                  <span>{m}</span>
+          {/* Titelblok met editoriale accent-rule links */}
+          <div style={{ display: "flex", marginTop: 70 }}>
+            <div style={{ width: 4, backgroundColor: "#fff", marginRight: 30, borderRadius: 2, display: "flex" }} />
+            <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+              <div style={{ display: "flex", fontSize: 22, fontWeight: 600, letterSpacing: 5, color: MUTED, textTransform: "uppercase" }}>
+                {c.discipline}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: titleSize,
+                  fontWeight: 700,
+                  lineHeight: 1.0,
+                  letterSpacing: -2,
+                  marginTop: 20,
+                }}
+              >
+                {c.title}
+              </div>
+
+              {/* Meta-regel: hairline-scheidingen i.p.v. dots */}
+              {metaItems.length > 0 ? (
+                <div style={{ display: "flex", alignItems: "center", marginTop: 30 }}>
+                  {metaItems.map((m, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center" }}>
+                      {i > 0 ? <div style={{ width: 1, height: 24, backgroundColor: HAIR, margin: "0 22px", display: "flex" }} /> : null}
+                      <span style={{ fontSize: 25, color: "#d7d7dc", fontWeight: 500 }}>{m}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : null}
             </div>
-          ) : null}
+          </div>
 
+          {/* Intro */}
           {c.intro ? (
-            <div style={{ display: "flex", fontSize: 29, lineHeight: 1.5, color: "#e6e6ea", marginTop: 40, marginBottom: 8, maxWidth: 860 }}>
+            <div style={{ display: "flex", fontSize: 28, lineHeight: 1.5, color: "#e7e7ec", marginTop: 44, maxWidth: 880 }}>
               {c.intro}
             </div>
           ) : null}
 
-          {/* Punten */}
-          <div style={{ display: "flex", flexDirection: "column", marginTop: c.intro ? 34 : 44, gap: 22 }}>
+          {/* Punten met hairline-scheiding */}
+          <div style={{ display: "flex", flexDirection: "column", marginTop: c.intro ? 40 : 56 }}>
             {c.points.map((p, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center" }}>
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  paddingTop: i === 0 ? 0 : 22,
+                  marginTop: i === 0 ? 0 : 22,
+                  borderTop: i === 0 ? "0px solid transparent" : `1px solid ${HAIR_SOFT}`,
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    width: 52,
-                    height: 52,
+                    width: 46,
+                    height: 46,
                     borderRadius: 9999,
                     backgroundColor: "#fff",
-                    color: INK,
-                    fontSize: 26,
+                    color: BG,
+                    fontSize: 23,
                     fontWeight: 700,
-                    marginRight: 24,
+                    marginRight: 26,
                     flexShrink: 0,
                   }}
                 >
                   {i + 1}
                 </div>
-                <div style={{ display: "flex", fontSize: 29, fontWeight: 600, color: "#fff", maxWidth: 820 }}>{p}</div>
+                <div style={{ display: "flex", fontSize: 28, fontWeight: 600, color: "#fff", maxWidth: 840 }}>{p}</div>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Footer / CTA */}
-        {c.cta ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              borderTop: `1px solid ${LINE}`,
-              paddingTop: 32,
-              marginTop: 24,
-              fontSize: 25,
-              fontWeight: 700,
-              color: "#fff",
-              zIndex: 2,
-            }}
-          >
-            {c.cta}
-            <span style={{ marginLeft: 12 }}>→</span>
-          </div>
-        ) : null}
+          {/* Footer / CTA */}
+          {c.cta ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderTop: `1px solid ${HAIR}`,
+                paddingTop: 30,
+                marginTop: "auto",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", fontSize: 24, fontWeight: 600, color: "#fff" }}>
+                {c.cta}
+                <span style={{ marginLeft: 12 }}>→</span>
+              </div>
+              <div style={{ display: "flex", fontSize: 22, fontWeight: 600, letterSpacing: 2, color: MUTED }}>q4s.nl</div>
+            </div>
+          ) : null}
+        </div>
       </div>
     ),
     {
