@@ -66,7 +66,7 @@ export function LinkedInEditor({
   const canAddPoint = data.points.length < 4;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
+    <div className="grid gap-8 lg:grid-cols-[1fr_440px]">
       {/* Formulier */}
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
@@ -160,7 +160,7 @@ export function LinkedInEditor({
 
       {/* Live voorbeeld — compact, vast rechts */}
       <div className="lg:sticky lg:top-20 lg:self-start">
-        <div className="mx-auto w-full max-w-[300px] overflow-hidden rounded-xl border border-ink-200 bg-ink-100 shadow-sm">
+        <div className="mx-auto w-full max-w-[440px] overflow-hidden rounded-xl border border-ink-200 bg-ink-100 shadow-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
