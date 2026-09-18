@@ -19,9 +19,9 @@ export type LinkedInCardData = {
 export const DEFAULT_CTA = "Interesse of ken je iemand? Reageer via Q4S Project Partners";
 export const DEFAULT_BADGE = "NIEUWE OPDRACHT";
 
-/** Vaste afmeting: LinkedIn portret (neemt maximale ruimte in de feed). */
+/** Vaste afmeting: LinkedIn feed-vierkant. */
 export const CARD_W = 1080;
-export const CARD_H = 1350;
+export const CARD_H = 1080;
 
 function fmtDateNL(d: Date | null | undefined): string {
   if (!d) return "";

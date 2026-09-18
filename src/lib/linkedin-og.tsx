@@ -32,7 +32,7 @@ async function loadAssets() {
 }
 
 // Lichte huisstijl: off-white canvas, witte kaarten, off-black accentblok.
-const PAGE = "#eef0ee";
+const PAGE = "#ffffff";
 const CARD = "#ffffff";
 const INK = "#17181a";
 const INK_SOFT = "#5c5c62";
@@ -252,33 +252,35 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
           </div>
         ) : null}
 
-        {/* --- Off-black citaatblok --- */}
+        {/* --- Wit contentblok (pitch + punten) --- */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             flex: 1,
-            backgroundColor: BLOCK,
+            backgroundColor: CARD,
+            border: `1px solid ${BORDER}`,
             borderRadius: 26,
             marginTop: chips.length > 0 ? 0 : 24,
             marginBottom: 48,
-            padding: chips.length > 0 ? "60px 72px 56px" : "64px 72px 56px",
+            padding: chips.length > 0 ? "60px 64px 52px" : "60px 64px 52px",
             position: "relative",
             overflow: "hidden",
+            boxShadow: "0 20px 50px -34px rgba(0,0,0,0.30)",
           }}
         >
-          {/* Subtiele staal/blueprint-geometrie rechtsonder */}
-          <div style={{ position: "absolute", right: -180, bottom: -220, width: 560, height: 560, borderRadius: 9999, border: `1px solid ${HAIR_W}`, display: "flex" }} />
-          <div style={{ position: "absolute", right: -90, bottom: -140, width: 360, height: 360, borderRadius: 9999, border: `1px solid rgba(255,255,255,0.06)`, display: "flex" }} />
+          {/* Subtiele staal/blueprint-geometrie rechtsonder (lichtgrijs) */}
+          <div style={{ position: "absolute", right: -180, bottom: -220, width: 560, height: 560, borderRadius: 9999, border: `1px solid ${BORDER}`, display: "flex" }} />
+          <div style={{ position: "absolute", right: -90, bottom: -140, width: 360, height: 360, borderRadius: 9999, border: `1px solid #eeeeea`, display: "flex" }} />
 
           {/* Groot aanhalingsteken */}
-          <div style={{ display: "flex", flexShrink: 0, fontSize: quoteSize, lineHeight: 0.8, fontWeight: 700, color: "rgba(255,255,255,0.22)", fontFamily: "Inter", zIndex: 2 }}>
+          <div style={{ display: "flex", flexShrink: 0, fontSize: quoteSize, lineHeight: 0.8, fontWeight: 700, color: "#dcdcd6", fontFamily: "Inter", zIndex: 2 }}>
             &#8220;
           </div>
 
           {/* Intro / pitch */}
           {intro ? (
-            <div style={{ display: "flex", flexShrink: 0, fontSize: introSize, lineHeight: introLh, color: "#f2f2f4", fontWeight: 500, marginTop: 14, maxWidth: 880, zIndex: 2 }}>
+            <div style={{ display: "flex", flexShrink: 0, fontSize: introSize, lineHeight: introLh, color: INK, fontWeight: 500, marginTop: 14, maxWidth: 880, zIndex: 2 }}>
               {intro}
             </div>
           ) : null}
@@ -296,8 +298,8 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
                       width: pointNum,
                       height: pointNum,
                       borderRadius: 9999,
-                      backgroundColor: "#fff",
-                      color: BLOCK,
+                      backgroundColor: INK,
+                      color: "#fff",
                       fontSize: pointNum === 42 ? 21 : 19,
                       fontWeight: 700,
                       marginRight: 22,
@@ -306,17 +308,17 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
                   >
                     {i + 1}
                   </div>
-                  <div style={{ display: "flex", fontSize: pointSize, fontWeight: 600, color: "#fff", maxWidth: 820 }}>{p}</div>
+                  <div style={{ display: "flex", fontSize: pointSize, fontWeight: 600, color: INK, maxWidth: 820 }}>{p}</div>
                 </div>
               ))}
             </div>
           ) : null}
 
           {/* Footer: logo + CTA */}
-          <div style={{ display: "flex", flexShrink: 0, alignItems: "flex-end", justifyContent: "space-between", marginTop: "auto", paddingTop: 36, zIndex: 2 }}>
-            <img src={logoWhite} height={54} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
+          <div style={{ display: "flex", flexShrink: 0, alignItems: "flex-end", justifyContent: "space-between", marginTop: "auto", paddingTop: 36, borderTop: `1px solid ${BORDER}`, zIndex: 2 }}>
+            <img src={logoBlack} height={54} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
             {c.cta ? (
-              <div style={{ display: "flex", alignItems: "center", fontSize: 22, fontWeight: 600, color: "#e7e7ec", maxWidth: 520, textAlign: "right" }}>
+              <div style={{ display: "flex", alignItems: "center", fontSize: 22, fontWeight: 600, color: INK_SOFT, maxWidth: 520, textAlign: "right" }}>
                 {c.cta}
                 <span style={{ marginLeft: 10 }}>&#8594;</span>
               </div>

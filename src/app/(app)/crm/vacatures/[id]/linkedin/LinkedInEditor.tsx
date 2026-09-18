@@ -145,7 +145,7 @@ export function LinkedInEditor({
         <div className="flex gap-2 pt-1">
           <Button onClick={download} disabled={downloading} className="flex-1 justify-center">
             {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            {downloading ? "Bezig…" : "Download PNG (1080×1350)"}
+            {downloading ? "Bezig…" : "Download PNG (1080×1080)"}
           </Button>
           <a
             href={previewUrl}
@@ -165,11 +165,11 @@ export function LinkedInEditor({
           <img
             src={previewUrl}
             alt="LinkedIn-voorbeeld"
-            className="block aspect-[4/5] w-full"
+            className="block aspect-square w-full"
           />
         </div>
         <p className="mt-2 text-center text-xs text-ink-400">
-          Voorbeeld · 1080×1350
+          Voorbeeld · 1080×1080
         </p>
       </div>
     </div>
