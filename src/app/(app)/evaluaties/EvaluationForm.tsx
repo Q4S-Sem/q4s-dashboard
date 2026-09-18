@@ -150,6 +150,10 @@ export function EvaluationForm({
   const fe = state.fieldErrors ?? {};
   const [type, setType] = useState(e?.type ?? defaults.type ?? "VCU");
   const def = getFormDef(type);
+  // Het soort formulier ligt vast: er zijn twee aparte pagina's (VG-evaluatie en
+  // Evaluatie inlener), elk met hun eigen type. Bij bewerken staat het type ook
+  // vast. De keuze is dus niet meer aanpasbaar in het formulier zelf.
+  const lockType = Boolean(e?.type ?? defaults.type);
   const answers = e?.answers ?? {};
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -223,13 +227,26 @@ export function EvaluationForm({
             />
           </Field>
           <Field label="Soort formulier" required>
-            <Select name="type" defaultValue={type} onValueChange={setType}>
-              {EVAL_FORM_LIST.map((f) => (
-                <option key={f.type} value={f.type}>
-                  {f.shortLabel}
-                </option>
-              ))}
-            </Select>
+            {lockType ? (
+              <>
+                <input type="hidden" name="type" value={type} />
+                <div
+                  className="flex h-10 items-center rounded-lg border border-ink-200 bg-ink-50 px-3 text-sm text-ink-600"
+                  aria-readonly
+                  title="Het soort formulier ligt vast — kies vanuit de VG-evaluatie- of Evaluatie inlener-pagina."
+                >
+                  {def.shortLabel}
+                </div>
+              </>
+            ) : (
+              <Select name="type" defaultValue={type} onValueChange={setType}>
+                {EVAL_FORM_LIST.map((f) => (
+                  <option key={f.type} value={f.type}>
+                    {f.shortLabel}
+                  </option>
+                ))}
+              </Select>
+            )}
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
