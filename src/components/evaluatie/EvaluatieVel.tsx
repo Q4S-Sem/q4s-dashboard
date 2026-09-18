@@ -287,18 +287,18 @@ function maatvoering(def: EvalFormDef): React.CSSProperties {
   const mix = (ruim: number, dicht: number) => +(ruim + (dicht - ruim) * t).toFixed(3);
 
   return {
-    "--ev-font": `${mix(8.8, 7.7)}pt`,
-    "--ev-rij": `${mix(1.4, 0.5)}mm`,
-    "--ev-sectie": `${mix(3.8, 2.1)}mm`,
-    "--ev-balk": `${mix(1.6, 1.1)}mm`,
+    "--ev-font": `${mix(8.8, 7.6)}pt`,
+    "--ev-rij": `${mix(1.4, 0.35)}mm`,
+    "--ev-sectie": `${mix(3.8, 1.5)}mm`,
+    "--ev-balk": `${mix(1.6, 0.9)}mm`,
     // Ruimte om te schrijven — op een blanco formulier is dat het halve product.
-    "--ev-schrijf": `${mix(5, 3.7)}mm`,
+    "--ev-schrijf": `${mix(5, 3.2)}mm`,
     // Bij het dichte formulier is dit bewust krap: het is de RESERVE voor een lege
     // regel, en een ingevulde toelichting van twee regels moet er ook nog bij
     // passen zonder dat het vel over de rand loopt.
     "--ev-toelichting": `${mix(16, 4.6)}mm`,
-    "--ev-hok": `${mix(3.8, 3.2)}mm`,
-    "--ev-kop": `${mix(9, 6.7)}mm`,
+    "--ev-hok": `${mix(3.8, 3.0)}mm`,
+    "--ev-kop": `${mix(9, 5.2)}mm`,
   } as React.CSSProperties;
 }
 
