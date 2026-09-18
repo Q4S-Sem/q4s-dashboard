@@ -448,7 +448,11 @@ function evCss(breedte: number, hoogte: number, marge: number): string {
 @media print {
   @page { size: A4; margin: 0; }
   html, body { margin: 0; padding: 0; background: #ffffff; }
-  .ev-vel { box-shadow: none; }
+  /* Niet de volle 297mm forceren: een blok van exact één paginahoogte rondt bij
+     het printen vaak een fractie naar boven af, waardoor de voetregel op een
+     tweede, vrijwel lege pagina belandt. Zonder die dwang wordt het vel precies
+     zo hoog als de inhoud en past een kort formulier (VG-evaluatie) op één A4. */
+  .ev-vel { box-shadow: none; min-height: 0; }
   /* Achtergrondkleuren moeten mee de printer in, anders valt de hele huisstijl weg. */
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
