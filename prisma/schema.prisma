@@ -82,6 +82,7 @@ model Consultant {
   evaluations      Evaluation[]
   expenses         Expense[]
   timesheetReminders TimesheetReminder[]
+  contracts        Contract[]
   employee         Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
   @@index([discipline])
@@ -293,6 +294,7 @@ model Placement {
   purchaseLines PurchaseInvoiceLine[]
   inboxItems   TimesheetInbox[]
   timesheetCorrections TimesheetCorrection[]
+  contracts    Contract[]
 
   @@index([consultantId])
   @@index([clientId])
@@ -1152,6 +1154,94 @@ model CandidatePlacement {
   candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
   @@index([candidateId])
+}
+
+/// Overeenkomst van opdracht (Q4S ↔ ZZP-opdrachtnemer).
+///
+/// De vaste juridische tekst (de door de Belastingdienst goedgekeurde
+/// modelartikelen) staat NIET in de database — die zit in de renderer
+/// (src/lib/contract-doc.ts), zodat elk contract woordelijk gelijkluidend blijft
+/// aan de modelovereenkomst. Hier staan alleen de VARIABELE velden die de
+/// gebruiker per contract invult, plus de koppeling naar de opdrachtnemer
+/// (Consultant) en optioneel de plaatsing waar het contract bij hoort.
+model Contract {
+  id           String   @id @default(cuid())
+  /// Doorlopend contractnummer voor de referentie op het document (bijv. Q4S-OVO-2025-001).
+  number       String?  @unique
+  /// De opdrachtnemer (ZZP'er) — verplicht: hieraan hangt het contract in het dossier.
+  consultantId String
+  /// Optioneel de plaatsing (persoon bij klant) waar dit contract bij hoort.
+  placementId  String?
+
+  // ---- Opdrachtnemer (art. partijen) — snapshot op het moment van opstellen ----
+  contractorName    String
+  contractorAddress String @default("")
+  contractorKvk     String @default("")
+  contractorVat     String @default("")
+
+  // ---- Opdracht (overwegingen + art. 1) ----
+  /// Vakgebied Opdrachtgever (overweging a).
+  fieldOfWork       String @default("Quality & Inspection Services")
+  /// Behoefte Opdrachtgever (overweging b).
+  serviceNeed       String @default("Quality Management & Inspection Services")
+  /// De Derde / eindklant / project (overweging c).
+  thirdParty        String @default("")
+  /// De werkzaamheden (art. 1.1).
+  workDescription   String @default("")
+
+  // ---- Duur (art. 3) ----
+  startDate         DateTime?
+  endDate           DateTime?
+  /// Vrije-tekst projectduur, bijv. "4 maanden met verlenging" (art. 3.1, alternatief).
+  projectDuration   String @default("")
+  /// Opzegtermijn (art. 5.1), bijv. "twee (2) weken".
+  noticePeriod      String @default("twee (2) weken")
+
+  // ---- Vergoeding (art. 6) — vrije tekst per cel, want de bron doet dat ook ----
+  rateDay           String @default("")
+  rateShift         String @default("")
+  rateSaturday      String @default("")
+  rateSunday        String @default("")
+  rateOffshore      String @default("")
+  rateOvertime      String @default("")
+  overtimeApplies   String @default("")
+  rateDayFixed      String @default("")
+  dayBasedOnHours   String @default("")
+  kmRate            String @default("")
+  /// BTW verlegd? true = "Ja" op het contract (reverse charge).
+  vatReverseCharge  Boolean @default(true)
+  invoiceEmail      String @default("admin@q4s.nl")
+  paymentTermDays   Int    @default(30)
+
+  // ---- Verzekering (art. 8) ----
+  insuranceCover    String @default("€ 2.500.000,-")
+
+  // ---- Aanvullende Q4S-artikelen (niet-conflicterend met het model) ----
+  includeConfidentiality Boolean @default(true)
+  includeGdpr            Boolean @default(true)
+  includeIp              Boolean @default(true)
+
+  // ---- Ondertekening ----
+  /// Naam ondertekenaar Opdrachtgever (Q4S).
+  signerClient      String @default("P. Boomsma")
+  signPlaceClient   String @default("Barendrecht")
+  /// Naam ondertekenaar Opdrachtnemer.
+  signerContractor  String @default("")
+  signPlaceContractor String @default("")
+  signDate          DateTime?
+
+  /// DRAFT | FINAL | SIGNED — waar het contract in zijn leven staat.
+  status       String   @default("DRAFT")
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  placement    Placement? @relation(fields: [placementId], references: [id], onDelete: SetNull)
+
+  @@index([consultantId])
+  @@index([placementId])
+  @@index([status])
 }
 
 /// A candidate's application to a vacancy, tracked as a pipeline and optionally

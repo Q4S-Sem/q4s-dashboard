@@ -11,6 +11,7 @@ import {
   StickyNote,
   CalendarRange,
   MapPin,
+  ScrollText,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
@@ -114,6 +115,12 @@ export default async function PlaatsingDossierLayout({
             label: "Documenten",
             icon: <FileText className="h-4 w-4" />,
             count: placement.consultant.documents.length,
+          },
+          {
+            seg: "contracten",
+            label: "Contracten",
+            icon: <ScrollText className="h-4 w-4" />,
+            count: counts.contracts,
           },
           {
             seg: "notities",

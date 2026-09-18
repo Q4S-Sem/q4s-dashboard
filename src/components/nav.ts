@@ -39,6 +39,7 @@ import {
   ClipboardCheck,
   ShieldCheck,
   Award,
+  ScrollText,
   UserCog,
   ReceiptText,
   Archive,
@@ -141,6 +142,7 @@ const HUB_LIST: NavHub[] = [
     items: [
       { href: "/klanten", label: "Klanten", icon: Building2, section: "Klanten" },
       { href: "/plaatsingen", label: "Plaatsingen", icon: Briefcase, section: "Plaatsingen" },
+      { href: "/contracten", label: "Contracten", icon: ScrollText, section: "Plaatsingen" },
       { href: "/medewerkers", label: "Medewerkers", icon: IdCard, section: "Medewerkers" },
       { href: "/certificeringen", label: "Certificeringen", icon: Award, section: "Medewerkers" },
     ],

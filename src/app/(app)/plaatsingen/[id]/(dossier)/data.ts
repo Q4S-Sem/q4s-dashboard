@@ -26,11 +26,12 @@ export const getTimesheets = cache(async (id: string) =>
 
 /** Aantallen op de mapjes in de tabbalk. */
 export const getDossierCounts = cache(async (id: string) => {
-  const [timesheets, notes] = await Promise.all([
+  const [timesheets, notes, contracts] = await Promise.all([
     db.timesheet.count({ where: { placementId: id } }),
     db.activity.count({ where: { entityType: "placement", entityId: id } }),
+    db.contract.count({ where: { placementId: id } }),
   ]);
-  return { timesheets, notes };
+  return { timesheets, notes, contracts };
 });
 
 /** Totaal geregistreerde uren over alle urenstaten van deze plaatsing. */

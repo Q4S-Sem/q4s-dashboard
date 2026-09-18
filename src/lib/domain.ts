@@ -179,6 +179,15 @@ export const SOCIAL_POST_STATUSES: Option[] = [
 export const SOCIAL_PLATFORM_VALUES = SOCIAL_PLATFORMS.map((d) => d.value) as [string, ...string[]];
 export const SOCIAL_POST_STATUS_VALUES = SOCIAL_POST_STATUSES.map((d) => d.value) as [string, ...string[]];
 
+/** Levensfase van een Overeenkomst van opdracht (Contract). */
+export const CONTRACT_STATUSES: Option[] = [
+  { value: "DRAFT", label: "Concept", color: "amber" },
+  { value: "FINAL", label: "Definitief", color: "blue" },
+  { value: "SIGNED", label: "Getekend", color: "green" },
+];
+export const CONTRACT_STATUS_VALUES = CONTRACT_STATUSES.map((d) => d.value) as [string, ...string[]];
+
+
 /** Recruitment channels a tracked link can target (broader than post platforms:
  *  includes WhatsApp/TikTok). Used by PostLink.channel + the talentpool analytics. */
 export const RECRUITMENT_CHANNELS: Option[] = [
