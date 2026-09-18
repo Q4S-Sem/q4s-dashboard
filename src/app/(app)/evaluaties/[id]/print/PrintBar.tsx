@@ -15,13 +15,20 @@ export function PrintBar({
   terug,
   uitleg,
   iconOnly,
+  panel,
 }: {
   terug: string;
   uitleg?: string;
   iconOnly?: boolean;
+  /** Panel-modus: geen sticky/negatieve marges — de balk zit bovenin een
+   *  vaste-hoogte layout waar alleen de inhoud eronder scrollt. */
+  panel?: boolean;
 }) {
+  const shell = panel
+    ? "no-print flex shrink-0 flex-wrap items-center gap-3 border-b border-ink-200 bg-white px-4 py-3 shadow-sm sm:px-6"
+    : "no-print sticky top-14 z-20 -mx-4 mb-6 flex flex-wrap items-center gap-3 border-b border-ink-200 bg-white px-4 py-3 shadow-sm sm:-mx-6 sm:px-6";
   return (
-    <div className="no-print sticky top-14 z-20 -mx-4 mb-6 flex flex-wrap items-center gap-3 border-b border-ink-200 bg-white px-4 py-3 shadow-sm sm:-mx-6 sm:px-6">
+    <div className={shell}>
       <Link href={terug} className={buttonVariants({ variant: "outline", size: "sm" })}>
         <ArrowLeft className="h-4 w-4" /> Terug
       </Link>

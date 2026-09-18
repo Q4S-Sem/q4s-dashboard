@@ -28,29 +28,39 @@ export default async function EvaluatieSjabloonPage({
   const vel = await loadEvaluatieSjabloon(sleutel);
 
   return (
-    <div className="ev-print-pagina">
+    <div className="ev-print-pagina ev-sjabloon-shell -mx-4 -my-6 flex flex-col overflow-hidden sm:-mx-6 lg:-mx-8 lg:-my-8">
       <PrintBar
         terug={vel.def.listPath}
         uitleg="Blanco formulier — printen, of “Opslaan als PDF” om te mailen."
         iconOnly
+        panel
       />
 
-      <div className="flex justify-center pb-10">
-        <EvaluatieVel
-          def={vel.def}
-          accent={vel.accent}
-          logoSrc={vel.logoSrc}
-          bedrijfsregel={vel.bedrijfsregel}
-          className="ev-schaduw"
-        />
+      {/* Alleen dit deel scrollt; de balk hierboven blijft staan. */}
+      <div className="ev-sjabloon-scroll flex-1 overflow-y-auto">
+        <div className="flex justify-center px-4 py-8">
+          <EvaluatieVel
+            def={vel.def}
+            accent={vel.accent}
+            logoSrc={vel.logoSrc}
+            bedrijfsregel={vel.bedrijfsregel}
+            className="ev-schaduw"
+          />
+        </div>
       </div>
 
       <style>{`
+        /* Vult exact de ruimte onder de app-header (h-14 = 3.5rem), zodat de
+           pagina zelf niet scrollt en de balk dus niet meebeweegt. */
+        .ev-sjabloon-shell { height: calc(100dvh - 3.5rem); }
         .ev-schaduw > .ev-vel {
           box-shadow: 0 18px 50px -24px rgb(0 0 0 / 0.45);
           border: 1px solid #e7e7e5;
         }
         @media print {
+          /* Bij printen valt de vaste-hoogte/scroll weg: het hele vel moet mee. */
+          .ev-sjabloon-shell { height: auto !important; overflow: visible !important; display: block !important; }
+          .ev-sjabloon-scroll { overflow: visible !important; }
           body * { visibility: hidden !important; }
           .ev-print-pagina, .ev-print-pagina * { visibility: visible !important; }
           .ev-print-pagina { position: absolute; inset: 0; margin: 0; padding: 0; }
