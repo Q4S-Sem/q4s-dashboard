@@ -111,9 +111,11 @@ export async function EvaluatiesList({
                 beheerpagina. */}
             <Link
               href={`/evaluaties/sjabloon/${type.toLowerCase()}`}
-              className={buttonVariants({ variant: "outline" })}
+              className={buttonVariants({ variant: "outline", size: "icon" })}
+              title="Blanco formulier printen"
+              aria-label="Blanco formulier printen"
             >
-              <Printer className="h-4 w-4" /> Blanco formulier
+              <Printer className="h-4 w-4" />
             </Link>
             <Link href={`/evaluaties/nieuw?type=${type}`} className={buttonVariants()}>
               <Plus className="h-4 w-4" /> Nieuwe evaluatie

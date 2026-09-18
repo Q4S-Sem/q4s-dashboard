@@ -12,7 +12,7 @@ export default async function VcuEvaluatiesPage({
     <EvaluatiesList
       type="VCU"
       basePath="/evaluaties/vcu"
-      title="VG-evaluatie (inlener → uitzendkracht)"
+      title="VG Evaluatie"
       description="VG-evaluatieformulier (VCU): de inlener beoordeelt de uitzendkracht. Gesorteerd op kwartaal."
       sp={sp}
     />
