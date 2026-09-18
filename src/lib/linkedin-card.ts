@@ -61,6 +61,32 @@ export function cardDefaultsFromDeal(deal: Pick<
   };
 }
 
+/** Leidt kaart-inhoud af uit een website-vacature (Vacancy-model). */
+export function cardDefaultsFromVacancy(v: {
+  title: string;
+  discipline?: string | null;
+  location?: string | null;
+  employmentType?: string | null;
+  salary?: string | null;
+  responsibilities?: string | null;
+  summary?: string | null;
+}): LinkedInCardData {
+  const disc = v.discipline ? labelFor(DISCIPLINES, v.discipline) : "Opdracht";
+  const points = splitPoints(v.responsibilities).slice(0, 4);
+  const intro = (v.summary || "").trim();
+  return {
+    discipline: disc,
+    title: v.title,
+    location: v.location || "",
+    hours: v.employmentType || "",
+    duration: v.salary || "",
+    intro: intro.length > 220 ? intro.slice(0, 217).trimEnd() + "…" : intro,
+    points,
+    cta: DEFAULT_CTA,
+    badge: DEFAULT_BADGE,
+  };
+}
+
 /** Zet de kaart-data om in URL-query params voor de OG-route. */
 export function cardToParams(d: LinkedInCardData): URLSearchParams {
   const p = new URLSearchParams();

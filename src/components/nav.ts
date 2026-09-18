@@ -3,6 +3,7 @@ import {
   HardHat,
   Building2,
   Briefcase,
+  Image as ImageIcon,
   CalendarClock,
   Receipt,
   Settings,
@@ -190,6 +191,7 @@ const HUB_LIST: NavHub[] = [
       { href: "/website", label: "Vacatures", icon: Briefcase, exact: true, section: "Website" },
       { href: "/website/sollicitaties", label: "Sollicitaties", icon: Inbox, section: "Website" },
       { href: "/website/linkedin", label: "LinkedIn-generator", icon: Sparkles, section: "Website" },
+      { href: "/website/linkedin-afbeelding", label: "LinkedIn-afbeelding", icon: ImageIcon, section: "Website" },
       // Bereikbaar via de acties op de vacaturelijst, niet als los menu-item:
       // - /website/vacatures  = redirect naar /crm/vacatures; subroute
       //   /website/vacatures/[id]/sollicitaties toont sollicitaties per vacature
