@@ -1,17 +1,20 @@
 import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { PageHeader } from "@/components/ui/page-header";
-import { LinkedInGenerator, type VacancyOption } from "../../socials/LinkedInGenerator";
+import { cardDefaultsFromVacancy, type LinkedInCardData } from "@/lib/linkedin-card";
+import type { VacancyOption } from "../../socials/LinkedInGenerator";
+import type { VacancyImageOption } from "./LinkedInImagePicker";
+import { LinkedInTabs } from "./LinkedInTabs";
 
-export const metadata = { title: "LinkedIn-generator" };
+export const metadata = { title: "LinkedIn" };
 export const dynamic = "force-dynamic";
 
 export default async function WebsiteLinkedInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ vac?: string }>;
+  searchParams: Promise<{ vac?: string; view?: string }>;
 }) {
-  const { vac } = await searchParams;
+  const { vac, view } = await searchParams;
   const [vacancies, settings] = await Promise.all([
     db.vacancy.findMany({
       orderBy: { createdAt: "desc" },
@@ -39,7 +42,7 @@ export default async function WebsiteLinkedInPage({
     return rank(a.status) - rank(b.status);
   });
 
-  const options: VacancyOption[] = sorted.map((v) => ({
+  const textOptions: VacancyOption[] = sorted.map((v) => ({
     id: v.id,
     title: v.title,
     discipline: v.discipline ?? "",
@@ -53,16 +56,25 @@ export default async function WebsiteLinkedInPage({
     status: v.status,
   }));
 
+  const imageOptions: VacancyImageOption[] = sorted.map((v) => ({
+    id: v.id,
+    label: v.title,
+    status: v.status,
+    card: cardDefaultsFromVacancy(v) as LinkedInCardData,
+  }));
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="LinkedIn-vacaturegenerator"
-        description="Genereer in één klik een vacaturepost in het vaste Q4S-format — tekst én beeld altijd hetzelfde, zodat iedereen meteen ziet: dat is Q4S."
+        title="LinkedIn"
+        description="Maak in het vaste Q4S-format een LinkedIn-post: schakel tussen de vacaturetekst en de afbeelding."
       />
-      <LinkedInGenerator
-        vacancies={options}
+      <LinkedInTabs
+        initialView={view === "afbeelding" ? "afbeelding" : "tekst"}
         preselectId={vac}
-        defaults={{
+        textOptions={textOptions}
+        imageOptions={imageOptions}
+        textDefaults={{
           companyName: settings.companyName || "Q4S",
           contactName: "",
           // Vaste recruitment-contactgegevens voor vacatureposts.
@@ -70,6 +82,7 @@ export default async function WebsiteLinkedInPage({
           contactPhone: "+31 6 83859566",
         }}
         siteUrl={process.env.NEXT_PUBLIC_SITE_URL ?? ""}
+        ogBase="/website/linkedin-afbeelding/og"
       />
     </div>
   );
