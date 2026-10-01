@@ -19,6 +19,8 @@ import {
 import { explorerConfig } from "@/lib/cloud";
 import { graphList, veiligPad, type DriveItem } from "@/lib/onedrive";
 import { matchtZoek } from "@/components/ui/tabel-zoek";
+import { db } from "@/lib/db";
+import { DOCUMENT_CATEGORIES } from "@/lib/domain";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { nieuweMap, uploadNaarMap } from "./actions";
@@ -60,9 +62,9 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
   const pad = veiligPad(sp.pad);
   const cfg = await explorerConfig();
 
-  if (!cfg) return <NietGekoppeld />;
-
-  const lijst = await graphList(cfg, pad);
+  // Zonder OneDrive: dezelfde verkenner over de eigen dashboard-documenten
+  // (map per soort → map per werknemer → bestanden).
+  const lijst = cfg ? await graphList(cfg, pad) : await dashboardMap(pad);
   const items = lijst.ok ? lijst.items.filter((i) => matchtZoek(sp.q, i.name)) : [];
   const delen = pad ? pad.split("/") : [];
   const href = (p: string) => (p ? `/data?pad=${encodeURIComponent(p)}` : "/data");
@@ -73,8 +75,15 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-ink-900">Data</h1>
-          <p className="text-[13px] text-ink-400">De Q4S-OneDrive — wat je hier doet, staat ook in OneDrive</p>
+          <p className="text-[13px] text-ink-400">
+            {cfg ? "De Q4S-OneDrive — wat je hier doet, staat ook in OneDrive" : "Alle documenten uit de dossiers, per map"}
+          </p>
         </div>
+        {!cfg && (
+          <Link href="/data/cloud" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Cloud className="h-4 w-4" /> OneDrive koppelen
+          </Link>
+        )}
       </div>
 
       {/* Werkbalk: terug, kruimelpad, zoeken, nieuwe map, uploaden */}
@@ -101,7 +110,7 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
         </form>
         <nav aria-label="Pad" className="flex min-w-0 flex-1 flex-wrap items-center gap-1 text-[13px]">
           <Link href="/data" className="flex items-center gap-1 rounded px-1.5 py-1 text-ink-600 hover:bg-ink-100">
-            <Home className="h-3.5 w-3.5" /> OneDrive
+            <Home className="h-3.5 w-3.5" /> {cfg ? "OneDrive" : "Documenten"}
           </Link>
           {delen.map((d, i) => (
             <span key={i} className="flex items-center gap-1">
@@ -115,6 +124,7 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
             </span>
           ))}
         </nav>
+        {cfg && (<>
         <details className="relative">
           <summary className={cn(buttonVariants({ variant: "outline", size: "sm" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
             <FolderPlus className="h-4 w-4" /> Nieuwe map
@@ -136,6 +146,7 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
             <button className={buttonVariants({ size: "sm" })}>Uploaden</button>
           </form>
         </details>
+        </>)}
       </div>
 
       {sp.geupload && Number(sp.geupload) > 0 && (
@@ -150,13 +161,13 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
 
       {!lijst.ok ? (
         <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">
-          OneDrive kon niet gelezen worden: {lijst.error}
+          Kon de map niet lezen: {lijst.error}
         </p>
       ) : items.length === 0 ? (
         <p className="py-16 text-center text-sm text-ink-400">{sp.q ? "Niets gevonden in deze map." : "Deze map is leeg."}</p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6">
-          {items.map((it) => {
+          {items.map((it: Item) => {
             const { Icon, kleur } = icoon(it);
             const inhoud = (
               <>
@@ -165,8 +176,9 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
                   {it.name}
                 </span>
                 <span className="mt-0.5 text-xs text-ink-400">
-                  {it.isFolder ? `${it.childCount ?? 0} items` : grootte(it.size)}
+                  {it.isFolder ? `${it.childCount ?? 0} ${it.childCount === 1 ? "item" : "items"}` : grootte(it.size)}
                 </span>
+                {it.sub && <span className="mt-0.5 line-clamp-1 text-xs text-ink-400">{it.sub}</span>}
               </>
             );
             const kaart = "flex flex-col items-center rounded-lg border border-ink-200 bg-white px-3 py-5 text-center transition hover:border-ink-300 hover:shadow-sm";
@@ -187,17 +199,53 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
   );
 }
 
-function NietGekoppeld() {
-  return (
-    <div className="mx-auto max-w-2xl space-y-4 py-10 text-center">
-      <Cloud className="mx-auto h-12 w-12 text-ink-300" />
-      <h1 className="text-xl font-semibold text-ink-900">OneDrive is nog niet gekoppeld</h1>
-      <p className="text-sm text-ink-500">
-        Zodra de koppeling staat, zie je hier dezelfde mappen als in OneDrive en komt alles wat je uploadt ook daar te staan.
-      </p>
-      <Link href="/data/cloud" className={buttonVariants({})}>
-        Koppeling instellen
-      </Link>
-    </div>
-  );
+type Item = DriveItem & { sub?: string };
+
+/** De eigen dashboard-documenten als mappen: "" → soorten, "Contract" → werknemers, "Contract/Jan Jansen" → bestanden. */
+async function dashboardMap(pad: string): Promise<{ ok: true; items: Item[] } | { ok: false; error: string }> {
+  const [soortLabel, persoon] = pad.split("/");
+  const soort = DOCUMENT_CATEGORIES.find((c) => c.label === soortLabel);
+  if (soortLabel && !soort) return { ok: false, error: "Deze map bestaat niet." };
+
+  const docs = await db.document.findMany({
+    where: soort ? { category: soort.value } : {},
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      category: true,
+      title: true,
+      originalName: true,
+      size: true,
+      createdAt: true,
+      consultant: { select: { firstName: true, lastName: true } },
+    },
+  });
+  const naam = (d: (typeof docs)[number]) => `${d.consultant.firstName} ${d.consultant.lastName}`.trim();
+  const map = (name: string, aantal: number): Item => ({
+    id: name, name, isFolder: true, size: 0, childCount: aantal, modified: null, webUrl: null,
+  });
+
+  if (!soort) {
+    return { ok: true, items: DOCUMENT_CATEGORIES.map((c) => map(c.label, docs.filter((d) => d.category === c.value).length)) };
+  }
+  if (!persoon) {
+    const tel = new Map<string, number>();
+    for (const d of docs) tel.set(naam(d), (tel.get(naam(d)) ?? 0) + 1);
+    return { ok: true, items: [...tel].map(([n, a]) => map(n, a)).sort((a, b) => a.name.localeCompare(b.name, "nl")) };
+  }
+  return {
+    ok: true,
+    items: docs
+      .filter((d) => naam(d) === persoon)
+      .map((d) => ({
+        id: d.id,
+        name: d.originalName || d.title,
+        isFolder: false,
+        size: d.size,
+        childCount: null,
+        modified: d.createdAt.toISOString(),
+        webUrl: `/api/documents/${d.id}`,
+        sub: d.title !== d.originalName ? d.title : undefined,
+      })),
+  };
 }
