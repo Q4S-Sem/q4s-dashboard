@@ -41,6 +41,8 @@ export type RenderedPng = PngImage & {
   pageRotate: QuarterTurn;
   /** Wat de heuristiek (of een opgelegde `forceExtraRotation`) er bovenop deed. */
   extraRotation: QuarterTurn;
+  /** Aantal pagina's in de PDF (alleen pagina 1 is gerenderd). */
+  pageCount: number;
 };
 
 /** Een kwartslag; iets anders draaien we bewust niet (geen deskew). */
@@ -430,6 +432,7 @@ export async function renderPdfFirstPageToPng(
         rotation,
         pageRotate,
         extraRotation,
+        pageCount: doc.numPages,
       };
     } finally {
       page.cleanup();

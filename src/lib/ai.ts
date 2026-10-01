@@ -113,6 +113,12 @@ export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
 export const OPENROUTER_VISION_MODEL =
   process.env.OPENROUTER_VISION_MODEL ?? "google/gemini-2.5-flash";
 
+// "Zwaar geschut": alleen ingezet als de snelle uitlezing twijfelt of niet klopt
+// (zie FileExtractOpts.retryIf). Kost ~10× zoveel, maar draait zelden.
+export const OPENROUTER_VISION_MODEL_STRONG =
+  process.env.OPENROUTER_VISION_MODEL_STRONG ?? "google/gemini-2.5-pro";
+export const GEMINI_MODEL_STRONG = process.env.GEMINI_MODEL_STRONG ?? "gemini-pro-latest";
+
 type Tier = "main" | "fast";
 
 /** A provider is usable if it's Ollama (local/free) or a cloud provider with a key. */
@@ -540,6 +546,15 @@ type FileExtractOpts = {
   schemaName?: string;
   maxTokens?: number;
   effort?: "low" | "medium" | "high";
+  /**
+   * Zelfcontrole op het resultaat van het snelle model. Geeft dit een reden terug
+   * (bv. "dagtotalen ≠ weektotaal"), dan leest het STERKE model het document
+   * opnieuw — met die reden erbij. Een fout/ongeldige JSON telt ook als twijfel.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  retryIf?: (result: any) => string | null;
+  /** Intern: welk model (snel/sterk). */
+  strong?: boolean;
 };
 
 /**
@@ -808,6 +823,13 @@ async function visionFile(file: {
     );
     return file;
   }
+  // ponytail: we rasteren alleen pagina 1. Meerdere pagina's (CV, factuur met
+  // bijlage) → het originele PDF, zodat het model ALLE pagina's ziet. Upgrade: elke
+  // pagina rasteren en als losse beelden meesturen als multi-page scans fout gaan.
+  if (png.pageCount > 1) {
+    console.info(`[vision] PDF heeft ${png.pageCount} pagina's — origineel gaat mee zodat alles gelezen wordt.`);
+    return file;
+  }
   console.info(
     `[vision] PDF zelf gerasterd naar PNG ${png.width}×${png.height} (pdfjs, rotatie ${png.rotation}°) — scherper dan de interne render van het model.`,
   );
@@ -835,9 +857,33 @@ export async function aiJSONFromFile<T>(opts: FileExtractOpts): Promise<T> {
     system: `${opts.system}\n\nTAAL: geef alle vrije tekst (opmerkingen, notities, samenvattingen, toelichtingen) ALTIJD in het NEDERLANDS terug, ook als het brondocument in een andere taal is. Feitelijke waarden (namen, nummers, codes) neem je letterlijk over.`,
   };
   const p = visionProvider();
-  if (p === "gemini") return geminiExtractFile<T>(dutch);
-  if (p === "openrouter") return openrouterExtractFile<T>(dutch);
-  return anthropicExtractFile<T>(dutch);
+  const run = (o: FileExtractOpts) =>
+    p === "gemini" ? geminiExtractFile<T>(o) : p === "openrouter" ? openrouterExtractFile<T>(o) : anthropicExtractFile<T>(o);
+
+  // Eerst het snelle model; twijfelt het of klopt de zelfcontrole niet, dan leest
+  // het sterke model hetzelfde document nog een keer, mét de reden erbij.
+  let reden: string | null;
+  try {
+    const snel = await run(dutch);
+    reden = opts.retryIf?.(snel) ?? null;
+    if (!reden) return snel;
+  } catch (e) {
+    reden = e instanceof Error ? e.message : String(e);
+  }
+  console.info(`[vision] tweede lezing met het sterke model: ${reden}`);
+  return run({
+    ...dutch,
+    strong: true,
+    maxTokens: Math.max(dutch.maxTokens ?? 4000, 8000),
+    prompt: `${dutch.prompt}\n\nLET OP — een eerste uitlezing was onbetrouwbaar (${reden}). Lees het document opnieuw, heel nauwkeurig, cel voor cel en regel voor regel. Controleer zelf dat de optellingen kloppen met de totalen op het document voordat je antwoordt.`,
+  });
+}
+
+/** Leesbaar model per provider, snel of sterk. */
+function visionModel(p: VisionProvider, strong?: boolean): string {
+  if (p === "gemini") return strong ? GEMINI_MODEL_STRONG : GEMINI_MODEL;
+  if (p === "openrouter") return strong ? OPENROUTER_VISION_MODEL_STRONG : OPENROUTER_VISION_MODEL;
+  return strong ? AI_MODEL : AI_MODEL_FAST;
 }
 
 /** Gemini (Google) — leest PDF's + afbeeldingen native, zeer goedkoop. */
@@ -849,7 +895,7 @@ async function geminiExtractFile<T>(opts: FileExtractOpts): Promise<T> {
   const system = `${opts.system}\n\nAntwoord UITSLUITEND met geldige JSON die exact voldoet aan dit JSON-schema (geen tekst eromheen, geen uitleg, geen markdown):\n${JSON.stringify(opts.schema)}`;
   let res: Response;
   try {
-    res = await fetch(`${GEMINI_BASE_URL}/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+    res = await fetch(`${GEMINI_BASE_URL}/v1beta/models/${visionModel("gemini", opts.strong)}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({
@@ -883,7 +929,7 @@ async function geminiExtractFile<T>(opts: FileExtractOpts): Promise<T> {
   };
   await recordAiUsage({
     provider: "gemini",
-    model: GEMINI_MODEL,
+    model: visionModel("gemini", opts.strong),
     kind: "vision",
     promptTokens: data.usageMetadata?.promptTokenCount,
     completionTokens: data.usageMetadata?.candidatesTokenCount,
@@ -1072,7 +1118,7 @@ async function openrouterExtractFile<T>(opts: FileExtractOpts): Promise<T> {
         "x-title": "Q4S Dashboard",
       },
       body: JSON.stringify({
-        model: OPENROUTER_VISION_MODEL,
+        model: visionModel("openrouter", opts.strong),
         stream: false,
         temperature: 0.1,
         max_tokens: opts.maxTokens ?? 4000,
@@ -1111,7 +1157,7 @@ async function openrouterExtractFile<T>(opts: FileExtractOpts): Promise<T> {
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(
-      openrouterVisionErrorMessage(res.status, body, opts.file.mediaType, OPENROUTER_VISION_MODEL),
+      openrouterVisionErrorMessage(res.status, body, opts.file.mediaType, visionModel("openrouter", opts.strong)),
     );
   }
   const data = (await res.json()) as {
@@ -1126,13 +1172,13 @@ async function openrouterExtractFile<T>(opts: FileExtractOpts): Promise<T> {
         data.error.code ?? 400,
         data.error.message ?? "",
         opts.file.mediaType,
-        OPENROUTER_VISION_MODEL,
+        visionModel("openrouter", opts.strong),
       ),
     );
   }
   await recordAiUsage({
     provider: "hermes",
-    model: OPENROUTER_VISION_MODEL,
+    model: visionModel("openrouter", opts.strong),
     kind: "vision",
     promptTokens: data.usage?.prompt_tokens,
     completionTokens: data.usage?.completion_tokens,
@@ -1154,7 +1200,7 @@ async function anthropicExtractFile<T>(opts: FileExtractOpts): Promise<T> {
         source: { type: "base64", media_type: opts.file.mediaType, data: opts.file.base64 },
       };
   const params = {
-    model: AI_MODEL_FAST,
+    model: visionModel("anthropic", opts.strong),
     max_tokens: opts.maxTokens ?? 4000,
     output_config: {
       format: {
@@ -1176,7 +1222,7 @@ async function anthropicExtractFile<T>(opts: FileExtractOpts): Promise<T> {
   const usage = (res as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
   await recordAiUsage({
     provider: "anthropic",
-    model: AI_MODEL_FAST,
+    model: visionModel("anthropic", opts.strong),
     kind: "vision",
     promptTokens: usage?.input_tokens,
     completionTokens: usage?.output_tokens,

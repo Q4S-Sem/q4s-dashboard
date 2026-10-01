@@ -21,6 +21,22 @@ import { distributeDayHours, resolveWeekStart, round2, formatHours } from "@/lib
 // week wordt gesorteerd (de week komt uit de staat zelf, niet uit de mail).
 // ---------------------------------------------------------------------------
 
+/**
+ * Zelfcontrole op een uitgelezen urenstaat: reden om het sterke model te laten
+ * herlezen, of null als het klopt. Exporteerd voor de test.
+ */
+export function twijfelUrenstaat(d: Partial<Extracted> | null | undefined): string | null {
+  if (!d || !Array.isArray(d.days)) return "geen dagregels teruggekregen";
+  if (d.confidence === "low") return "het model was zelf onzeker";
+  const som = Math.round(d.days.reduce((s, x) => s + (Number(x?.hours) || 0), 0) * 100) / 100;
+  const opgegeven = Number(d.reportedTotalHours) || 0;
+  if (opgegeven > 0 && Math.abs(som - opgegeven) > 0.25)
+    return `de dagen tellen op tot ${som} u, maar op de staat staat ${opgegeven} u`;
+  if (som === 0 && !(Number(d.overtimeHours) > 0)) return "geen enkel uur gevonden";
+  if (d.days.some((x) => Number(x?.hours) > 24)) return "een dag met meer dan 24 uur";
+  return null;
+}
+
 type Extracted = {
   name: string;
   weekStartDate: string;
@@ -296,6 +312,7 @@ export async function runInboxExtraction(id: string): Promise<void> {
         file: { base64: await readInboxBase64(item.fileName), mediaType },
         maxTokens: 2500,
         effort: "medium",
+        retryIf: twijfelUrenstaat,
       });
 
   // Bepaal de maandag robuust: het AI-model kan het JAAR verkeerd gokken (een staat

@@ -209,6 +209,12 @@ export async function extractCvProfile(
       },
       maxTokens: 8000,
       effort: "low",
+      retryIf: (r: { fullName?: unknown; experience?: unknown[] } | null) =>
+        !String(r?.fullName ?? "").trim()
+          ? "geen naam gevonden"
+          : !Array.isArray(r?.experience) || r.experience.length === 0
+            ? "geen werkervaring gevonden"
+            : null,
     });
   }
 
@@ -366,6 +372,8 @@ export async function extractCandidateFields(
       },
       maxTokens: 1500,
       effort: "low",
+      retryIf: (r: { firstName?: unknown; lastName?: unknown } | null) =>
+        !String(r?.firstName ?? "").trim() || !String(r?.lastName ?? "").trim() ? "geen volledige naam gevonden" : null,
     });
   }
 

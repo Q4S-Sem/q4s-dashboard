@@ -52,6 +52,24 @@ export type InvoiceExtracted = {
   mentionsAttachment: boolean;
 };
 
+/**
+ * Zelfcontrole op een uitgelezen ZZP-factuur: reden om het sterke model te laten
+ * herlezen, of null als het klopt.
+ */
+export function twijfelFactuur(d: Partial<InvoiceExtracted> | null | undefined): string | null {
+  if (!d) return "geen resultaat";
+  const n = (v: unknown) => Number(v) || 0;
+  if (n(d.confidence) > 0 && n(d.confidence) < 0.6) return "het model was zelf onzeker";
+  if (n(d.totalAmount) <= 0 && n(d.amountExclVat) <= 0) return "geen bedrag gevonden";
+  if (!String(d.name ?? "").trim()) return "geen afzender gevonden";
+  // excl + btw moet het totaal zijn (op een euro na).
+  if (n(d.amountExclVat) > 0 && n(d.totalAmount) > 0 && !d.vatShifted) {
+    const verschil = Math.abs(n(d.amountExclVat) + n(d.vatAmount) - n(d.totalAmount));
+    if (verschil > 1) return `excl. btw + btw ≠ totaal (${verschil.toFixed(2)} verschil)`;
+  }
+  return null;
+}
+
 const EXTRACT_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -414,6 +432,7 @@ export async function extractReceivedInvoiceFromFile(input: {
         file: { base64: input.base64, mediaType },
         maxTokens: 2500,
         effort: "medium",
+        retryIf: twijfelFactuur,
       });
     }
 
