@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { inkoopVervaldatum, vervalLabel } from "../src/lib/facturatie-lijsten";
+import { betaalPlanning, inkoopVervaldatum, vervalLabel } from "../src/lib/facturatie-lijsten";
 
 const NU = new Date(2026, 9, 8, 15, 30); // do 8 okt 2026, middag
 
@@ -21,4 +21,21 @@ test("inkoopvervaldatum = factuurdatum + termijn", () => {
   const d = inkoopVervaldatum(new Date(2026, 9, 1), 30)!;
   assert.equal(d.getDate(), 31);
   assert.equal(inkoopVervaldatum(null, 30), null);
+});
+
+test("betaalPlanning: te laat / binnen 7 dagen / later, zonder betaald en afwijking", () => {
+  const rij = (dag: number, status = "APPROVED", matched: boolean | null = true) => ({
+    status,
+    matched,
+    amount: 100,
+    issueDate: new Date(2026, 8, dag), // september; termijn 30 → vervalt in oktober
+  });
+  const p = betaalPlanning(
+    [rij(1), rij(10), rij(20), rij(1, "PAID"), rij(1, "APPROVED", false), rij(1, "NEW")],
+    30,
+    NU, // 8 okt
+  );
+  assert.deepEqual(p.teLaat, { aantal: 2, bedrag: 200 }); // 1 sep → 1 okt (APPROVED + NEW)
+  assert.deepEqual(p.dezeWeek, { aantal: 1, bedrag: 100 }); // 10 sep → 10 okt
+  assert.deepEqual(p.later, { aantal: 1, bedrag: 100 }); // 20 sep → 20 okt
 });

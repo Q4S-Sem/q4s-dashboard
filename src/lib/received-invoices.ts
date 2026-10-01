@@ -183,6 +183,8 @@ export type ReceivedRow = {
   amount: number; // gefactureerd incl BTW
   status: string;
   paidDate: Date | null;
+  /** Gezet zodra de factuur in SnelStart is geboekt (slot tegen dubbel boeken). */
+  snelstartId: string | null;
   hasFile: boolean;
   mailed: boolean; // is de medewerker al gemaild over de afwijking?
   mailedAt: Date | null;
@@ -247,6 +249,7 @@ export async function listReceivedInvoices(): Promise<ReceivedRow[]> {
       amount: inv.amount,
       status: inv.status,
       paidDate: inv.paidDate,
+      snelstartId: inv.snelstartId,
       hasFile: Boolean(inv.fileName),
       mailed: Boolean(inv.discrepancyMailedAt),
       mailedAt: inv.discrepancyMailedAt,

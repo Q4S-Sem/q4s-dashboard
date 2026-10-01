@@ -103,6 +103,7 @@ export default async function DossierPage({
   if (!dossier) notFound();
 
   const { row, checks, comparison, akkoorden, accepteerReden, geld } = dossier;
+  const afwijkend = comparison.filter((r) => !r.ok);
   const akkoordSet = new Set(akkoorden);
   const fouten = checks.filter((c) => c.level === "error");
   const openWaarschuwingen = checks.filter(
@@ -311,10 +312,12 @@ export default async function DossierPage({
 
         {/* RECHTS: vergelijking + controles */}
         <div className="space-y-4">
+          {/* Alleen tonen wat AFWIJKT — klopt alles, dan is deze tabel ruis. */}
+          {afwijkend.length > 0 && (
           <Card className="overflow-hidden">
             <CardHeader className="py-3">
-              <CardTitle className="text-sm">Urenstaat ↔ factuur ↔ contract</CardTitle>
-              <span className="text-xs text-ink-400">rood = wijkt af</span>
+              <CardTitle className="text-sm">Wat wijkt af</CardTitle>
+              <span className="text-xs text-ink-400">urenstaat ↔ factuur ↔ contract</span>
             </CardHeader>
             <table className="w-full border-collapse text-[13px]">
               <thead className="border-b border-ink-100 bg-ink-50/50 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-400">
@@ -326,7 +329,7 @@ export default async function DossierPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-100">
-                {comparison.map((rij) => (
+                {afwijkend.map((rij) => (
                   <tr key={rij.key}>
                     <td className="px-4 py-1.5 text-ink-700">{rij.label}</td>
                     <td className="px-4 py-1.5 text-right tabular-nums text-ink-700">
@@ -348,6 +351,7 @@ export default async function DossierPage({
               </tbody>
             </table>
           </Card>
+          )}
 
           <Card className="overflow-hidden">
             <CardHeader className="py-3">

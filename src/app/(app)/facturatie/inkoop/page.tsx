@@ -5,19 +5,17 @@ import {
   CheckCircle2,
   Download,
   FileSearch,
-  FileText,
   Info,
   Layers,
   Receipt,
   ReceiptText,
   RotateCcw,
+  Send,
   Upload,
-  Wallet,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
 import { StatusVerdeling } from "@/components/ui/status-verdeling";
 import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -35,6 +33,7 @@ import { EXPENSE_CATEGORIES, EXPENSE_STATUSES, RECEIVED_INVOICE_STATUSES } from 
 import { cn, formatCurrency, formatDate, formatHours, round2, startOfISOWeek } from "@/lib/utils";
 import { parseWeek, ymd } from "@/lib/week-nav";
 import { listReceivedInvoices } from "@/lib/received-invoices";
+import { ZZP_PAYMENT_TERM_DAYS } from "@/lib/betalingen";
 import { getCompanySettings } from "@/lib/settings";
 import { isAdminSession } from "@/lib/session";
 import {
@@ -52,13 +51,16 @@ import {
   isInkoopBetaalbaar,
   inkoopVervaldatum,
   vervalLabel,
+  betaalPlanning,
+  type BetaalPlanning,
   type InkoopTab,
   type VervalLabel,
 } from "@/lib/facturatie-lijsten";
 import { BankImport } from "./BankImport";
 import { DiscrepancyMailButton } from "./DiscrepancyMailButton";
 import { ExpenseStatusSelect } from "./ExpenseStatusSelect";
-import { resetWeekVanuitFactuur, setReceivedStatus } from "./actions";
+import { pushReceivedInvoiceToSnelStart, resetWeekVanuitFactuur, setReceivedStatus } from "./actions";
+import { isSnelStartConnected, snelStartMessage } from "@/lib/snelstart";
 import { createManualExpense, deleteExpense, uploadExpenses } from "./declaraties-actions";
 
 // ---------------------------------------------------------------------------
@@ -110,6 +112,7 @@ type SP = {
   afgeboekt?: string;
   overgeslagen?: string;
   fout?: string;
+  snelstart?: string;
 };
 
 export default async function InkoopPage({ searchParams }: { searchParams: Promise<SP> }) {
@@ -134,8 +137,8 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
   ]);
 
   const facturen = alleFacturen.filter((r) => inWeek(r.issueDate));
-  // Betaaltermijn voor ZZP-facturen: de standaardtermijn uit Instellingen.
-  const termijn = settings.defaultPaymentTermDays ?? 30;
+  // Betaaltermijn ZZP-facturen: dezelfde als SnelStart-boeking en SEPA gebruiken.
+  const termijn = ZZP_PAYMENT_TERM_DAYS;
   const tellingen = inkoopTellingen(facturen);
   const rows = facturen.filter(
     (r) => hoortBijInkoopTab(r, tab) && matchtZoek(sp.q, r.consultantName, r.number),
@@ -200,12 +203,11 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
   // SEPA gaat ALTIJD over alles wat betaalbaar is — niet over wat de week-balk
   // toont. Zelfde grens als `buildSepaForPayables`: goedgekeurd, geen afwijking.
   const betaalbaar = alleFacturen.filter(isInkoopBetaalbaar);
-  const teBetalenBedrag = round2(betaalbaar.reduce((s, r) => s + r.amount, 0));
   const heeftEigenIban = Boolean(settings.iban?.trim());
 
-  const afwijkingBedrag = round2(
-    facturen.filter((r) => inkoopBucket(r) === "afwijking").reduce((s, r) => s + r.amount, 0),
-  );
+  // Planning over ALLE weken: een openstaande betaling mag nooit wegvallen.
+  const planning = betaalPlanning(alleFacturen, termijn, now);
+  const snelstartAan = isSnelStartConnected();
   const betaaldBedrag = round2(
     facturen.filter((r) => inkoopBucket(r) === "betaald").reduce((s, r) => s + r.amount, 0),
   );
@@ -289,6 +291,19 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
           verwijderd.
         </p>
       )}
+      {sp.snelstart && (() => {
+        const m = snelStartMessage(sp.snelstart);
+        return m ? (
+          <p
+            className={cn(
+              "rounded-sm border px-3 py-2 text-[13px]",
+              m.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700",
+            )}
+          >
+            {m.text}
+          </p>
+        ) : null;
+      })()}
       {sp.verwijderd && (
         <p className="rounded-sm border border-ink-200 bg-ink-50 px-3 py-2 text-[13px] text-ink-600">
           De ontvangen factuur is verwijderd.
@@ -338,38 +353,16 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
         </p>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Te controleren"
-          value={tellingen.controleren}
-          sub="eerst nakijken, dan goedkeuren"
-          icon={<FileText className="h-4 w-4" />}
-          accent={tellingen.controleren > 0 ? "amber" : "slate"}
-        />
-        <StatCard
-          label="Te betalen (goedgekeurd)"
-          value={formatCurrency(teBetalenBedrag)}
-          sub={`${betaalbaar.length} factu${betaalbaar.length === 1 ? "ur" : "ren"} · alle weken`}
-          icon={<Banknote className="h-4 w-4" />}
-          accent="green"
-        />
-        <StatCard
-          label="Afwijking"
-          value={formatCurrency(afwijkingBedrag)}
-          sub={
-            tellingen.afwijking > 0
-              ? `${tellingen.afwijking} wacht${tellingen.afwijking === 1 ? "" : "en"} op een aangepaste factuur`
-              : "geen verschillen open"
-          }
-          icon={<AlertTriangle className="h-4 w-4" />}
-          accent={tellingen.afwijking > 0 ? "red" : "slate"}
-        />
-        <StatCard
+      {/* In één oogopslag: wat moet er wanneer betaald worden. */}
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <BetaalTegel label="Te laat" sub="vervaldatum voorbij" vak={planning.teLaat} toon="rood" />
+        <BetaalTegel label="Binnen 7 dagen" sub="nu inplannen" vak={planning.dezeWeek} toon="oranje" />
+        <BetaalTegel label="Later" sub="nog ruim de tijd" vak={planning.later} toon="grijs" />
+        <BetaalTegel
           label="Betaald"
-          value={formatCurrency(betaaldBedrag)}
-          sub={`${tellingen.betaald} van ${tellingen.alles} in beeld`}
-          icon={<Wallet className="h-4 w-4" />}
-          accent="slate"
+          sub={`${tellingen.betaald} factu${tellingen.betaald === 1 ? "ur" : "ren"}`}
+          vak={{ aantal: tellingen.betaald, bedrag: betaaldBedrag }}
+          toon="groen"
         />
       </div>
 
@@ -434,6 +427,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
                   <TH>Controle</TH>
                   <TH>Uitbetalen?</TH>
                   <TH>Status</TH>
+                  <TH>SnelStart</TH>
                   <TH className="text-right">Acties</TH>
                 </TR>
               </THead>
@@ -528,6 +522,25 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
                       </TD>
                       <TD>
                         <StatusBadge options={RECEIVED_INVOICE_STATUSES} value={r.status} />
+                      </TD>
+                      <TD>
+                        {r.snelstartId ? (
+                          <Badge color="green">Geboekt</Badge>
+                        ) : r.status === "APPROVED" || r.status === "PAID" ? (
+                          snelstartAan && isAdmin ? (
+                            <form action={pushReceivedInvoiceToSnelStart}>
+                              <input type="hidden" name="id" value={r.id} />
+                              <input type="hidden" name="terug" value="lijst" />
+                              <SubmitButton variant="outline" size="sm" pendingLabel="Boeken…">
+                                <Send className="h-3.5 w-3.5" /> Boeken
+                              </SubmitButton>
+                            </form>
+                          ) : (
+                            <span className="text-xs text-ink-400">nog niet geboekt</span>
+                          )
+                        ) : (
+                          <span className="text-xs text-ink-300">—</span>
+                        )}
                       </TD>
                       <TD>
                         <div className="flex items-center justify-end gap-1">
@@ -819,6 +832,39 @@ function DeclaratiesTab({
         </strong>{" "}
         zodra het geld eruit is.
       </p>
+    </div>
+  );
+}
+
+const BETAAL_TOON = {
+  rood: { rand: "border-red-200", tekst: "text-red-700" },
+  oranje: { rand: "border-amber-200", tekst: "text-amber-700" },
+  grijs: { rand: "border-ink-200", tekst: "text-ink-900" },
+  groen: { rand: "border-emerald-200", tekst: "text-emerald-700" },
+};
+
+function BetaalTegel({
+  label,
+  sub,
+  vak,
+  toon,
+}: {
+  label: string;
+  sub: string;
+  vak: BetaalPlanning["teLaat"];
+  toon: keyof typeof BETAAL_TOON;
+}) {
+  const t = BETAAL_TOON[toon];
+  const leeg = vak.aantal === 0;
+  return (
+    <div className={cn("rounded-lg border bg-white px-3 py-2", leeg ? "border-ink-200" : t.rand)}>
+      <span className="block text-[11px] font-semibold uppercase tracking-wide text-ink-400">{label}</span>
+      <span className={cn("block text-lg font-semibold tabular-nums", leeg ? "text-ink-300" : t.tekst)}>
+        {formatCurrency(vak.bedrag)}
+      </span>
+      <span className="block text-xs text-ink-400">
+        {vak.aantal} factu{vak.aantal === 1 ? "ur" : "ren"} · {sub}
+      </span>
     </div>
   );
 }

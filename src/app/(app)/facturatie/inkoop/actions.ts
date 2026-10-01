@@ -100,9 +100,12 @@ export async function sendDiscrepancyMail(
 export async function pushReceivedInvoiceToSnelStart(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) redirect(LIJST);
+  // Vanuit de lijst terug naar de lijst; anders naar de detailpagina.
+  const terug = formData.get("terug") === "lijst" ? `${LIJST}?tab=alles` : detail(id);
+  const naar = (code: string) => `${terug}${terug.includes("?") ? "&" : "?"}snelstart=${encodeURIComponent(code)}`;
 
-  if (!(await isAdminSession())) redirect(`${detail(id)}?snelstart=geen-rechten`);
-  if (!isSnelStartConnected()) redirect(`${detail(id)}?snelstart=niet-gekoppeld`);
+  if (!(await isAdminSession())) redirect(naar("geen-rechten"));
+  if (!isSnelStartConnected()) redirect(naar("niet-gekoppeld"));
 
   const inv = await db.receivedInvoice.findUnique({
     where: { id },
@@ -113,7 +116,7 @@ export async function pushReceivedInvoiceToSnelStart(formData: FormData) {
     },
   });
   if (!inv) redirect(LIJST);
-  if (inv.snelstartId) redirect(`${detail(id)}?snelstart=al-geboekt`);
+  if (inv.snelstartId) redirect(naar("al-geboekt"));
 
   const res = await pushExpense(
     receivedInvoiceBooking(
@@ -136,7 +139,7 @@ export async function pushReceivedInvoiceToSnelStart(formData: FormData) {
       ZZP_PAYMENT_TERM_DAYS,
     ),
   );
-  if (!res.ok) redirect(`${detail(id)}?snelstart=${encodeURIComponent(res.error)}`);
+  if (!res.ok) redirect(naar(res.error));
 
   await db.receivedInvoice.update({
     where: { id },
@@ -145,7 +148,7 @@ export async function pushReceivedInvoiceToSnelStart(formData: FormData) {
 
   herlaad();
   revalidatePath(detail(id));
-  redirect(`${detail(id)}?snelstart=ok`);
+  redirect(naar("ok"));
 }
 
 /** Verwijder een geregistreerde factuur (+ het geüploade bestand). */

@@ -200,3 +200,32 @@ export function inkoopVervaldatum(issueDate: Date | null, termijnDagen: number):
   d.setDate(d.getDate() + termijnDagen);
   return d;
 }
+
+export type BetaalPlanning = Record<"teLaat" | "dezeWeek" | "later", { aantal: number; bedrag: number }>;
+
+/**
+ * Wat moet er wanneer betaald worden? Alleen openstaande facturen zonder
+ * afwijking (afwijking = eerst een nieuwe factuur). Vervaldatum = factuurdatum
+ * + termijn; zonder factuurdatum telt hij als "later".
+ */
+export function betaalPlanning<T extends InkoopRij & { amount: number; issueDate: Date | null }>(
+  rows: T[],
+  termijnDagen: number,
+  now: Date,
+): BetaalPlanning {
+  const p: BetaalPlanning = {
+    teLaat: { aantal: 0, bedrag: 0 },
+    dezeWeek: { aantal: 0, bedrag: 0 },
+    later: { aantal: 0, bedrag: 0 },
+  };
+  for (const r of rows) {
+    const b = inkoopBucket(r);
+    if (b === "betaald" || b === "afwijking") continue;
+    const due = inkoopVervaldatum(r.issueDate, termijnDagen);
+    const dagen = due ? dagNummer(due) - dagNummer(now) : Infinity;
+    const vak = dagen < 0 ? p.teLaat : dagen <= 7 ? p.dezeWeek : p.later;
+    vak.aantal++;
+    vak.bedrag = Math.round((vak.bedrag + r.amount) * 100) / 100;
+  }
+  return p;
+}
