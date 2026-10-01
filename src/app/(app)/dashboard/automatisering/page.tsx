@@ -109,7 +109,7 @@ export default async function AutomatiseringPage({
                   <p className="flex flex-wrap items-center gap-2 font-medium text-ink-900">
                     {r.name}
                     <Badge color="blue">{triggerLabel(r.trigger)}</Badge>
-                    {r.trigger !== "INVOICE_OVERDUE" && (
+                    {!["INVOICE_OVERDUE", "DOSSIER_INCOMPLETE"].includes(r.trigger) && (
                       <span className="text-xs font-normal text-ink-400">binnen {r.thresholdDays} dgn</span>
                     )}
                   </p>

@@ -2,6 +2,9 @@
 // veilig in client-componenten (RuleForm) gebruikt kan worden. De engine met db
 // staat in src/lib/automation.ts (server-only) en her-exporteert deze.
 
+import { EVALUATION_TYPE_VALUES } from "./domain";
+import { checkDossiers, type DossierPerson } from "./dossier-check";
+
 export const AUTOMATION_TRIGGERS = [
   {
     value: "CERT_EXPIRING",
@@ -50,6 +53,22 @@ export const AUTOMATION_TRIGGERS = [
     thresholdWord: "interview binnen (dagen)",
     entity: "kandidaat",
     vars: "{name} = kandidaat · {date} = interviewdatum · {days} = dagen tot/na het interview · {when} = 'over N dagen' / 'vandaag' / 'N dagen geleden' · {thresholdDays} = drempel · {status} = type herinnering · {sourceKey} = unieke broncode",
+  },
+  {
+    value: "EVALUATION_DUE",
+    label: "Kwartaalevaluatie ontbreekt (VCU / inlener)",
+    desc: "Actieve plaatsingen zonder VG- of inlener-evaluatie in het lopende kwartaal",
+    thresholdWord: "plaatsing loopt al minstens (dagen)",
+    entity: "plaatsing",
+    vars: "{name} = medewerker · {client} = inlener · {quarter} = kwartaal (bijv. Q4 2026) · {date} = startdatum plaatsing · {status} = type review · {sourceKey} = unieke broncode",
+  },
+  {
+    value: "DOSSIER_INCOMPLETE",
+    label: "Dossier onvolledig (NEN 4400 / Kiwa)",
+    desc: "Actieve medewerkers met een ontbrekend of verlopen verplicht dossierstuk",
+    thresholdWord: "n.v.t. (drempel = 0)",
+    entity: "medewerker",
+    vars: "{name} = persoon · {missing} = ontbrekende of verlopen stukken · {count} = aantal · {status} = ernst · {sourceKey} = unieke broncode",
   },
 ] as const;
 
@@ -349,6 +368,182 @@ export function buildInterviewReminderTasks({
   });
 }
 
+/** A review-only task emitted for an active placement without a quarterly evaluation. */
+export type EvaluationDueTask = {
+  entityType: "placement";
+  entityId: string;
+  sourceKey: string;
+  body: string;
+};
+
+type PlacementForEvaluationDue = {
+  id: string;
+  consultantId: string;
+  clientId: string | null;
+  startDate: Date;
+  consultant: { firstName: string; lastName: string };
+  client: { companyName: string } | null;
+};
+
+type EvaluationForPeriod = {
+  consultantId: string;
+  clientId: string | null;
+  type: string;
+  year: number;
+  quarter: number;
+};
+
+/**
+ * Jaar + kwartaal (1..4) van een moment, in UTC. Bewust niet de lokale tijdzone:
+ * een run op een kwartaalgrens moet op elke server hetzelfde kwartaal opleveren,
+ * anders verschuift de bronsleutel van de taak mee met de servertijd.
+ */
+export function currentEvaluationPeriod(now: Date): { year: number; quarter: number } {
+  return { year: now.getUTCFullYear(), quarter: Math.floor(now.getUTCMonth() / 3) + 1 };
+}
+
+function evaluationDueSourceKey(placementId: string, year: number, quarter: number): string {
+  return `evaluation:${placementId}:${year}Q${quarter}`;
+}
+
+function fillEvaluationDueTemplate(template: string, values: Record<string, string>): string {
+  return template.replace(
+    /\{(name|client|quarter|date|number|status|sourceKey|thresholdDays)\}/g,
+    (_, key: string) => values[key] ?? "",
+  );
+}
+
+/**
+ * Build internal review tasks for every ACTIVE placement that still misses a
+ * quarterly evaluation (VG-evaluatie of evaluatie inlener) in the current quarter.
+ * Toerekening: een evaluatie dekt een plaatsing als die van dezelfde medewerker is
+ * én bij dezelfde inlener hoort; staat de inlener als vrije tekst in de evaluatie
+ * (geen clientId) of hangt de plaatsing nog zonder bedrijf, dan is dat niet hard te
+ * koppelen en geven we de medewerker het voordeel van de twijfel — liever een taak
+ * missen dan onterecht blijven porren. `thresholdDays` is een respijt: een plaatsing
+ * die nog maar net loopt hoeft dit kwartaal nog geen evaluatie te hebben. De
+ * sourceKey is per plaatsing + kwartaal, dus herhaalde runs blijven idempotent en
+ * elk nieuw kwartaal komt er één nieuwe taak. Deze functie heeft geen bijwerkingen:
+ * ze kan geen evaluatie aanmaken of versturen en geen status wijzigen.
+ */
+export function buildEvaluationDueTasks({
+  now,
+  thresholdDays,
+  template,
+  placements,
+  evaluations,
+}: {
+  now: Date;
+  thresholdDays: number;
+  template: string;
+  placements: PlacementForEvaluationDue[];
+  evaluations: EvaluationForPeriod[];
+}): EvaluationDueTask[] {
+  const today = startOfUtcDay(now);
+  const { year, quarter } = currentEvaluationPeriod(now);
+  const quarterLabel = `Q${quarter} ${year}`;
+
+  // Per medewerker de inleners die dit kwartaal al geëvalueerd zijn ("*" = een
+  // evaluatie zonder gekoppelde klant, die dekt al zijn plaatsingen).
+  const evaluatedClients = new Map<string, Set<string>>();
+  for (const evaluation of evaluations) {
+    if (!(EVALUATION_TYPE_VALUES as readonly string[]).includes(evaluation.type)) continue;
+    if (evaluation.year !== year || evaluation.quarter !== quarter) continue;
+    const clients = evaluatedClients.get(evaluation.consultantId) ?? new Set<string>();
+    clients.add(evaluation.clientId ?? "*");
+    evaluatedClients.set(evaluation.consultantId, clients);
+  }
+
+  return placements.flatMap((placement) => {
+    const runningDays = Math.floor(
+      (today.getTime() - startOfUtcDay(placement.startDate).getTime()) / 86_400_000,
+    );
+    if (runningDays < thresholdDays) return [];
+
+    const clients = evaluatedClients.get(placement.consultantId);
+    if (clients && (clients.has("*") || !placement.clientId || clients.has(placement.clientId))) {
+      return [];
+    }
+
+    const sourceKey = evaluationDueSourceKey(placement.id, year, quarter);
+    return [
+      {
+        entityType: "placement" as const,
+        entityId: placement.id,
+        sourceKey,
+        body: fillEvaluationDueTemplate(template, {
+          name: `${placement.consultant.firstName} ${placement.consultant.lastName}`.trim(),
+          client: placement.client?.companyName ?? "geen bedrijf gekoppeld",
+          quarter: quarterLabel,
+          date: formatComplianceDate(placement.startDate),
+          number: "",
+          status: "KWARTAALEVALUATIE ONTBREEKT",
+          sourceKey,
+          thresholdDays: String(thresholdDays),
+        }),
+      },
+    ];
+  });
+}
+
+/** A review-only task emitted for a person whose personnel file misses a required item. */
+export type DossierIncompleteTask = {
+  entityType: "consultant" | "employee";
+  entityId: string;
+  sourceKey: string;
+  body: string;
+};
+
+function dossierSourceKey(personId: string, missingKeys: string[]): string {
+  return `dossier:${personId}:${missingKeys.join("+")}`;
+}
+
+function fillDossierTemplate(template: string, values: Record<string, string>): string {
+  return template.replace(
+    /\{(name|missing|count|date|number|status|sourceKey)\}/g,
+    (_, key: string) => values[key] ?? "",
+  );
+}
+
+/**
+ * Build internal review tasks for personnel files that are not audit-proof: per
+ * persoon één taak met de stukken die ontbreken of verlopen zijn (zie
+ * DOSSIER_REQUIREMENTS in ./dossier-check). De sourceKey bevat de gesorteerde set
+ * ontbrekende stukken, dus herhaalde runs blijven idempotent terwijl een dossier
+ * dat deels is bijgewerkt een nieuwe, kleinere taak krijgt. Deze functie heeft geen
+ * bijwerkingen: ze kan geen document opvragen, niets mailen en geen status wijzigen.
+ */
+export function buildDossierIncompleteTasks({
+  now,
+  template,
+  people,
+}: {
+  now: Date;
+  template: string;
+  people: DossierPerson[];
+}): DossierIncompleteTask[] {
+  return checkDossiers(people, now).flatMap((check) => {
+    if (check.issues.length === 0) return [];
+    const sourceKey = dossierSourceKey(check.id, check.missingKeys);
+    return [
+      {
+        entityType: check.kind,
+        entityId: check.id,
+        sourceKey,
+        body: fillDossierTemplate(template, {
+          name: check.name,
+          missing: check.issues.map((item) => item.label).join(", "),
+          count: String(check.issues.length),
+          date: "",
+          number: "",
+          status: check.status === "red" ? "DOSSIER NIET AUDITPROOF" : "DOSSIER VRAAGT AANDACHT",
+          sourceKey,
+        }),
+      },
+    ];
+  });
+}
+
 /** Kant-en-klare voorbeeldregels (één-klik toevoegen). */
 export const AUTOMATION_PRESETS = [
   {
@@ -401,6 +596,24 @@ export const AUTOMATION_PRESETS = [
     taskType: "TASK",
     template:
       "{status}: interview met {name} op {date} ({when}; drempel {thresholdDays} dagen; bron: {sourceKey}). Handmatige recruiter-opvolging nodig; geen bericht, agenda-uitnodiging of statuswijziging is automatisch uitgevoerd.",
+    dueOffsetDays: 0,
+  },
+  {
+    name: "Kwartaalevaluatie ontbreekt (VCU / inlener)",
+    trigger: "EVALUATION_DUE",
+    thresholdDays: 14,
+    taskType: "TASK",
+    template:
+      "{status}: Kwartaalevaluatie {quarter} ontbreekt voor {name} bij {client} (plaatsing sinds {date}; bron: {sourceKey}). Handmatig een evaluatie opstellen en bespreken; er is niets automatisch aangemaakt of verstuurd.",
+    dueOffsetDays: 0,
+  },
+  {
+    name: "Dossier onvolledig (NEN 4400 / Kiwa)",
+    trigger: "DOSSIER_INCOMPLETE",
+    thresholdDays: 0,
+    taskType: "TASK",
+    template:
+      "{status}: dossier van {name} mist {count} verplicht(e) stuk(ken) — {missing} (bron: {sourceKey}). Handmatige dossier-review nodig; er is niets opgevraagd, gemaild of gewijzigd.",
     dueOffsetDays: 0,
   },
 ] as const;

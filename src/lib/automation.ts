@@ -2,9 +2,13 @@ import { db } from "./db";
 import {
   AUTOMATION_PRESETS,
   buildCertificateComplianceTasks,
+  buildDossierIncompleteTasks,
+  buildEvaluationDueTasks,
   buildInterviewReminderTasks,
   buildStalledRecruitmentTasks,
+  currentEvaluationPeriod,
 } from "./automation-defs";
+import { loadDossierPeople } from "./dossier-data";
 import { formatDate } from "./utils";
 
 // Automatische acties (Odoo `base_automation`-stijl): tijd-gebaseerde regels die
@@ -168,6 +172,45 @@ export async function runAutomations(): Promise<{ total: number; perRule: RunRes
           thresholdDays: rule.thresholdDays,
           template: rule.template,
           candidates,
+        });
+      } else if (rule.trigger === "EVALUATION_DUE") {
+        // Kwartaalevaluaties (VCU / inlener): per ACTIEVE plaatsing een review-taak
+        // als er dit kwartaal nog geen evaluatie ligt. Alleen een interne TODO op de
+        // plaatsing — er wordt niets gemaild, geen evaluatie aangemaakt en geen
+        // plaatsing-, medewerker- of evaluatiestatus gewijzigd.
+        const { year, quarter } = currentEvaluationPeriod(now);
+        const [placements, evaluations] = await Promise.all([
+          db.placement.findMany({
+            where: { status: "ACTIVE" },
+            select: {
+              id: true,
+              consultantId: true,
+              clientId: true,
+              startDate: true,
+              consultant: { select: { firstName: true, lastName: true } },
+              client: { select: { companyName: true } },
+            },
+          }),
+          db.evaluation.findMany({
+            where: { year, quarter },
+            select: { consultantId: true, clientId: true, type: true, year: true, quarter: true },
+          }),
+        ]);
+        tasks = buildEvaluationDueTasks({
+          now,
+          thresholdDays: rule.thresholdDays,
+          template: rule.template,
+          placements,
+          evaluations,
+        });
+      } else if (rule.trigger === "DOSSIER_INCOMPLETE") {
+        // Dossiercheck (NEN 4400 / Kiwa): per persoon één review-taak met de
+        // verplichte stukken die ontbreken of verlopen zijn. Alleen een interne
+        // TODO; er wordt niets opgevraagd, gemaild of in het dossier gewijzigd.
+        tasks = buildDossierIncompleteTasks({
+          now,
+          template: rule.template,
+          people: await loadDossierPeople(),
         });
       }
 

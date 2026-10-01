@@ -143,7 +143,15 @@ export function EvaluationForm({
   /** Per medewerker de gegevens van hun actieve plaatsing (klant, functie, locatie). */
   prefills?: Record<string, EvalPrefill>;
   evaluation?: EvaluationFormData;
-  defaults: { year: number; quarter: number; type?: string };
+  /** `consultantId`/`prefill` komen uit een plaatsing (?placementId=…): persoon en
+   *  kopgegevens staan dan al klaar, maar blijven gewoon aanpasbaar. */
+  defaults: {
+    year: number;
+    quarter: number;
+    type?: string;
+    consultantId?: string;
+    prefill?: EvalPrefill;
+  };
   cancelHref: string;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
@@ -164,9 +172,14 @@ export function EvaluationForm({
   const setScore = (key: string, v: number) => setScoreMap((m) => ({ ...m, [key]: v }));
 
   // Automatisch overgenomen kopgegevens (alleen als die velden nog leeg zijn).
-  const [prefill, setPrefill] = useState<EvalPrefill | null>(null);
+  const [prefill, setPrefill] = useState<EvalPrefill | null>(e ? null : defaults.prefill ?? null);
   const [prefillFrom, setPrefillFrom] = useState<string>("");
   const headerVal = (k: HeaderKey) => (e ? e[k] : (prefill?.[k] ?? ""));
+  // Bij bewerken staat de persoon vast; bij nieuw kan hij uit een plaatsing komen.
+  const presetConsultantId = e?.consultantId ?? defaults.consultantId;
+  const presetConsultantName = presetConsultantId
+    ? consultants.find((c) => c.id === presetConsultantId)?.name ?? ""
+    : "";
 
   /** Neem klant/functie/locatie over uit de actieve plaatsing van deze persoon. */
   function applyPrefill(personId: string | null) {
@@ -219,10 +232,8 @@ export function EvaluationForm({
               name="consultantId"
               createName="newConsultantName"
               people={consultants}
-              defaultId={e?.consultantId}
-              defaultName={
-                e ? consultants.find((c) => c.id === e.consultantId)?.name ?? "" : ""
-              }
+              defaultId={presetConsultantId}
+              defaultName={presetConsultantName}
               required
               placeholder="Typ of kies een medewerker…"
               onSelect={(p) => applyPrefill(p?.id ?? null)}
