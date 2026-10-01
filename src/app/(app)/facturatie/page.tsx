@@ -165,31 +165,53 @@ export default async function FacturatiePage({
         }
       />
 
-      {/* Rode melding: deadline voorbij en iemand heeft nog NIETS gestuurd. */}
+      {/* Rode melding: deadline voorbij en iemand heeft nog NIETS gestuurd.
+          Eén regel; de namen klap je uit als een nette lijst per persoon. */}
       {teLaat.length > 0 && (
-        <div role="alert" className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-[13px] text-red-800">
-          <p className="flex items-center gap-2 font-semibold">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            {teLaat.length === 1 ? "1 persoon heeft" : `${teLaat.length} personen hebben`} na de deadline ({DEADLINE_LABEL}) nog niets ingeleverd
-          </p>
-          <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 pl-6">
-            {teLaat.map((t) => (
-              <li key={`${t.naam}-${t.klantNaam ?? ""}`}>
-                {t.href ? (
-                  <Link href={t.href} className="underline underline-offset-2 hover:text-red-950">
-                    {t.naam}
-                  </Link>
-                ) : (
-                  t.naam
-                )}
-                <span className="text-red-700/80">
-                  {" "}· {t.weken.length === 1 ? "week" : "weken"} {t.weken.join(", ")}
-                  {t.klantNaam ? ` · ${t.klantNaam}` : ""}
-                </span>
-              </li>
-            ))}
+        <details role="alert" className="group overflow-hidden rounded-lg border border-red-200 bg-red-50">
+          <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm text-red-800 [&::-webkit-details-marker]:hidden">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <AlertTriangle className="h-4 w-4" />
+            </span>
+            <span className="flex-1">
+              <strong className="font-semibold">
+                {teLaat.length === 1 ? "1 persoon" : `${teLaat.length} personen`} te laat
+              </strong>
+              <span className="text-red-700/80"> — deadline {DEADLINE_LABEL} verstreken, nog niets ingeleverd</span>
+            </span>
+            <span className="text-xs font-medium text-red-700 group-open:hidden">Toon namen</span>
+            <span className="hidden text-xs font-medium text-red-700 group-open:inline">Verberg</span>
+          </summary>
+          <ul className="grid gap-px border-t border-red-200 bg-red-200 sm:grid-cols-2 xl:grid-cols-3">
+            {teLaat.map((t) => {
+              const inhoud = (
+                <>
+                  <PersoonVierkant naam={t.naam} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-medium text-ink-900">{t.naam}</span>
+                    <span className="block truncate text-xs text-ink-400">{t.klantNaam ?? "geen klant"}</span>
+                  </span>
+                  <span className="flex shrink-0 gap-1">
+                    {t.weken.map((w) => (
+                      <Badge key={w} color="red">wk {w}</Badge>
+                    ))}
+                  </span>
+                </>
+              );
+              return (
+                <li key={`${t.naam}-${t.klantNaam ?? ""}`} className="bg-white">
+                  {t.href ? (
+                    <Link href={t.href} className="flex items-center gap-3 px-4 py-2.5 hover:bg-red-50/60">
+                      {inhoud}
+                    </Link>
+                  ) : (
+                    <span className="flex items-center gap-3 px-4 py-2.5">{inhoud}</span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
-        </div>
+        </details>
       )}
 
       {/* Melding na een actie — kort en feitelijk, nooit geraden. */}
