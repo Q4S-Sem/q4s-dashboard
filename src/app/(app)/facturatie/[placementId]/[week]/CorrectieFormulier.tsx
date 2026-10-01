@@ -40,7 +40,7 @@ export function CorrectieFormulier({
   const [state, action] = useActionState<CorrectieState, FormData>(bewaarCorrecties, {});
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-3">
       <input type="hidden" name="placementId" value={placementId} />
       <input type="hidden" name="week" value={week} />
 
@@ -53,7 +53,7 @@ export function CorrectieFormulier({
             <label
               key={dag.iso}
               className={cn(
-                "rounded-sm border px-1.5 pb-1.5 pt-1 text-center",
+                "rounded-md border px-1 pb-0.5 pt-1 text-center",
                 dag.weekend ? "border-ink-200 bg-ink-50" : "border-ink-200 bg-white",
               )}
             >
@@ -67,12 +67,12 @@ export function CorrectieFormulier({
                 defaultValue={invoer.dagUren[i]}
                 disabled={vergrendeld}
                 aria-label={`Uren ${dag.label} ${dag.iso}`}
-                className="mt-0.5 border-0 px-1 py-1 text-center tabular-nums focus:ring-0"
+                className="h-7 border-0 bg-transparent px-1 py-0 text-center tabular-nums shadow-none focus:ring-0"
               />
             </label>
           ))}
         </div>
-        <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:max-w-sm">
           <label className="block">
             <span className="mb-1 block text-[13px] font-medium text-ink-600">Overuren</span>
             <Input
@@ -109,7 +109,7 @@ export function CorrectieFormulier({
               weekoverzicht; daarna zijn de velden hier te corrigeren.
             </p>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
               <Veld label="Factuurnummer" name="factuurNummer" value={invoer.factuurNummer} disabled={vergrendeld} />
               <Veld label="Factuurdatum" name="factuurDatum" value={invoer.factuurDatum} type="date" disabled={vergrendeld} />
               <Veld label="Periode van" name="factuurPeriodeStart" value={invoer.factuurPeriodeStart} type="date" disabled={vergrendeld} />

@@ -64,7 +64,7 @@ export function DossierDocument({
               onClick={() => setTab(t.key)}
               aria-current={actief ? "page" : undefined}
               className={cn(
-                "inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold transition-colors",
+                "inline-flex items-center gap-2 px-4 py-2 text-[13px] font-semibold transition-colors",
                 actief
                   ? "text-ink-900 shadow-[inset_0_-2px_0_0_var(--color-brand-600,#171717)]"
                   : "text-ink-400 hover:text-ink-700",
@@ -76,7 +76,7 @@ export function DossierDocument({
         })}
       </div>
 
-      <div className="p-4">
+      <div className="p-3">
         {tab === "timesheet" &&
           (timesheet ? (
             <DocumentViewer
@@ -105,12 +105,7 @@ export function DossierDocument({
 
         {tab === "mail" &&
           (mail ? (
-            <dl
-              className={cn(
-                "space-y-3 overflow-auto rounded-md border border-ink-100 bg-ink-50/40 p-4 text-[13px]",
-                HOOGTE,
-              )}
-            >
+            <dl className="space-y-3 rounded-md border border-ink-100 bg-ink-50/40 p-4 text-[13px]">
               <Regel label="Afzender" waarde={mail.sender ?? "handmatig toegevoegd (geen mail)"} />
               <Regel label="Onderwerp" waarde={mail.subject ?? "—"} />
               <Regel label="Ontvangen" waarde={mail.receivedAtLabel ?? "—"} />
@@ -125,13 +120,9 @@ export function DossierDocument({
 }
 
 function Leeg({ tekst }: { tekst: string }) {
+  // Geen document = geen 560px lege vlakte; een korte regel volstaat.
   return (
-    <div
-      className={cn(
-        "flex items-center justify-center rounded-md border border-dashed border-ink-200 bg-ink-50/40 px-8 text-center text-[13px] text-ink-400",
-        HOOGTE,
-      )}
-    >
+    <div className="flex min-h-24 items-center justify-center rounded-md border border-dashed border-ink-200 bg-ink-50/40 px-6 py-6 text-center text-[13px] text-ink-400">
       {tekst}
     </div>
   );
