@@ -292,6 +292,92 @@ export default async function FacturatiePage({
         })}
       </nav>
 
+      {/* Eerst bestanden erin, dan de lijst met freelancers. */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <UploadPaneel week={week.key} />
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileQuestion className="h-4 w-4 text-ink-400" /> Niet gekoppeld
+            </CardTitle>
+            <span className="text-xs text-ink-400">
+              {losseUploads.length === 0
+                ? "alles is aan een persoon gekoppeld"
+                : `${losseUploads.length} bestand${losseUploads.length === 1 ? "" : "en"}`}
+            </span>
+          </CardHeader>
+          <CardContent>
+            {losseUploads.length === 0 ? (
+              <p className="text-[13px] text-ink-400">
+                Er staan geen losse bestanden open. Komt een naam niet overeen met iemand in het
+                dossier, dan verschijnt het bestand hier met een keuzelijst.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {losseUploads.map((los) => (
+                  <li key={los.id} className="rounded-sm border border-ink-200 bg-white p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <span className="min-w-0">
+                        <a
+                          href={los.src}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block truncate text-[13px] font-semibold text-ink-900 underline underline-offset-2 hover:text-brand-700"
+                          title={los.originalName}
+                        >
+                          {los.originalName}
+                        </a>
+                        <span className="mt-0.5 block text-xs text-ink-500">
+                          {los.soort === "timesheet" ? "Urenstaat" : "Factuur"}
+                          {los.gelezenNaam ? ` · gelezen naam: ${los.gelezenNaam}` : ""}
+                        </span>
+                      </span>
+                      <Badge color={los.soort === "timesheet" ? "blue" : "amber"}>
+                        {los.soort === "timesheet" ? "uren" : "factuur"}
+                      </Badge>
+                    </div>
+                    {los.reden && <p className="mt-1.5 text-xs text-ink-500">{los.reden}</p>}
+                    <div className="mt-2.5 flex flex-wrap items-end gap-2">
+                      <form action={koppelLosseUpload} className="flex flex-1 items-end gap-2">
+                        <input type="hidden" name="id" value={los.id} />
+                        <input type="hidden" name="soort" value={los.soort} />
+                        <input type="hidden" name="week" value={week.key} />
+                        <Select
+                          name="consultantId"
+                          defaultValue=""
+                          className="min-w-[12rem] flex-1"
+                          aria-label="Kies de persoon"
+                        >
+                          <option value="">Kies de persoon…</option>
+                          {personen.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.naam}
+                            </option>
+                          ))}
+                        </Select>
+                        <SubmitButton variant="outline" size="sm" pendingLabel="Koppelen…">
+                          Koppelen
+                        </SubmitButton>
+                      </form>
+                      <ConfirmSubmit
+                        action={verwijderLosseUpload}
+                        id={los.id}
+                        hidden={{ soort: los.soort, week: week.key }}
+                        message="Deze upload verwijderen?"
+                        description="Het bestand verdwijnt. Er is nog niets geboekt, dus er gaat geen administratie verloren."
+                      >
+                        Verwijderen
+                      </ConfirmSubmit>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-ink-100 p-4">
           <div className="min-w-0 flex-1">
@@ -408,91 +494,6 @@ export default async function FacturatiePage({
           </Table>
         )}
       </Card>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <UploadPaneel week={week.key} />
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileQuestion className="h-4 w-4 text-ink-400" /> Niet gekoppeld
-            </CardTitle>
-            <span className="text-xs text-ink-400">
-              {losseUploads.length === 0
-                ? "alles is aan een persoon gekoppeld"
-                : `${losseUploads.length} bestand${losseUploads.length === 1 ? "" : "en"}`}
-            </span>
-          </CardHeader>
-          <CardContent>
-            {losseUploads.length === 0 ? (
-              <p className="text-[13px] text-ink-400">
-                Er staan geen losse bestanden open. Komt een naam niet overeen met iemand in het
-                dossier, dan verschijnt het bestand hier met een keuzelijst.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {losseUploads.map((los) => (
-                  <li key={los.id} className="rounded-sm border border-ink-200 bg-white p-3">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <span className="min-w-0">
-                        <a
-                          href={los.src}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block truncate text-[13px] font-semibold text-ink-900 underline underline-offset-2 hover:text-brand-700"
-                          title={los.originalName}
-                        >
-                          {los.originalName}
-                        </a>
-                        <span className="mt-0.5 block text-xs text-ink-500">
-                          {los.soort === "timesheet" ? "Urenstaat" : "Factuur"}
-                          {los.gelezenNaam ? ` · gelezen naam: ${los.gelezenNaam}` : ""}
-                        </span>
-                      </span>
-                      <Badge color={los.soort === "timesheet" ? "blue" : "amber"}>
-                        {los.soort === "timesheet" ? "uren" : "factuur"}
-                      </Badge>
-                    </div>
-                    {los.reden && <p className="mt-1.5 text-xs text-ink-500">{los.reden}</p>}
-                    <div className="mt-2.5 flex flex-wrap items-end gap-2">
-                      <form action={koppelLosseUpload} className="flex flex-1 items-end gap-2">
-                        <input type="hidden" name="id" value={los.id} />
-                        <input type="hidden" name="soort" value={los.soort} />
-                        <input type="hidden" name="week" value={week.key} />
-                        <Select
-                          name="consultantId"
-                          defaultValue=""
-                          className="min-w-[12rem] flex-1"
-                          aria-label="Kies de persoon"
-                        >
-                          <option value="">Kies de persoon…</option>
-                          {personen.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.naam}
-                            </option>
-                          ))}
-                        </Select>
-                        <SubmitButton variant="outline" size="sm" pendingLabel="Koppelen…">
-                          Koppelen
-                        </SubmitButton>
-                      </form>
-                      <ConfirmSubmit
-                        action={verwijderLosseUpload}
-                        id={los.id}
-                        hidden={{ soort: los.soort, week: week.key }}
-                        message="Deze upload verwijderen?"
-                        description="Het bestand verdwijnt. Er is nog niets geboekt, dus er gaat geen administratie verloren."
-                      >
-                        Verwijderen
-                      </ConfirmSubmit>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       <p className="text-xs text-ink-400">
         Niets op dit scherm wordt automatisch verstuurd of betaald. Een week gaat alleen vooruit met
