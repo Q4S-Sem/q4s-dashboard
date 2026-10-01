@@ -89,10 +89,14 @@ export async function uploadBestanden(
   formData: FormData,
 ): Promise<UploadState> {
   const weekKey = resolveWeek(tekst(formData, "week"), new Date()).key;
-  const soort = tekst(formData, "soort") === "FACTUUR" ? "FACTUUR" : "TIMESHEET";
-  const bestanden = formData
-    .getAll("file")
-    .filter((f): f is File => f instanceof File && f.size > 0);
+  // Twee sleepvlakken in één formulier: "file" = urenstaten, "factuur" = ZZP-facturen.
+  // Elk bestand wordt op de naam die de AI leest aan de juiste persoon gekoppeld.
+  const echt = (naam: string) =>
+    formData.getAll(naam).filter((f): f is File => f instanceof File && f.size > 0);
+  const bestanden = [
+    ...echt("file").map((file) => ({ file, soort: "TIMESHEET" as const })),
+    ...echt("factuur").map((file) => ({ file, soort: "FACTUUR" as const })),
+  ];
 
   if (bestanden.length === 0) return { error: "Kies of sleep eerst één of meer bestanden." };
 
@@ -100,7 +104,7 @@ export async function uploadBestanden(
   const fouten: string[] = [];
   let gelukt = 0;
 
-  for (const file of bestanden) {
+  for (const { file, soort } of bestanden) {
     if (file.size > MAX_UPLOAD_BYTES) {
       fouten.push(
         `${file.name}: te groot (max. ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB).`,

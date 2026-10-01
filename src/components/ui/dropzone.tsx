@@ -22,6 +22,7 @@ export function Dropzone({
   hint,
   className,
   onFilesChange,
+  compact = false,
 }: {
   name?: string;
   accept?: string;
@@ -30,6 +31,8 @@ export function Dropzone({
   hint?: string;
   className?: string;
   onFilesChange?: (files: File[]) => void;
+  /** Lager sleepvlak, voor twee naast elkaar. */
+  compact?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -165,7 +168,8 @@ export function Dropzone({
         }}
         style={dragOver ? undefined : { backgroundImage: STRIPES }}
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400",
+          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 text-center transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400",
+          compact ? "py-5" : "py-10",
           dragOver
             ? "border-brand-400 bg-brand-50"
             : "border-ink-300 bg-ink-100 hover:border-ink-400 hover:bg-ink-50",
