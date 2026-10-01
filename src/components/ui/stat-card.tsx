@@ -19,6 +19,9 @@ export function StatCard({
   sub,
   icon,
   accent = "brand",
+  progress,
+  detail,
+  detailSub,
   className,
 }: {
   label: string;
@@ -26,6 +29,11 @@ export function StatCard({
   sub?: React.ReactNode;
   icon?: React.ReactNode;
   accent?: Accent;
+  /** 0..1 — toont een voortgangsbalk onder de waarde. */
+  progress?: number;
+  /** Uitleg-regel onder de balk, met optioneel een grijze tweede regel. */
+  detail?: React.ReactNode;
+  detailSub?: React.ReactNode;
   className?: string;
 }) {
   return (
@@ -49,6 +57,20 @@ export function StatCard({
           </div>
         )}
       </div>
+      {(progress !== undefined || detail) && (
+        <div className="-mt-1 px-5 pb-5">
+          {progress !== undefined && (
+            <div className="h-1.5 overflow-hidden rounded-full bg-ink-100" role="presentation">
+              <div
+                className={cn("h-full rounded-full", accent === "red" ? "bg-red-600" : "bg-ink-900")}
+                style={{ width: `${Math.round(Math.min(1, Math.max(0, progress)) * 100)}%` }}
+              />
+            </div>
+          )}
+          {detail && <p className="mt-3 text-[13px] text-ink-700">{detail}</p>}
+          {detailSub && <p className="mt-0.5 text-xs text-ink-400">{detailSub}</p>}
+        </div>
+      )}
     </Card>
   );
 }

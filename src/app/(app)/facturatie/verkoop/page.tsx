@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, Clock, Download, Receipt, Send } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { StatusVerdeling } from "@/components/ui/status-verdeling";
+import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { WeekBalk } from "@/components/week-balk";
@@ -29,9 +31,29 @@ import { VerkoopLijst, type VerkoopFactuurRij } from "./VerkoopLijst";
 // ---------------------------------------------------------------------------
 
 export const metadata = { title: "Verkoopfacturen" };
+const VERKOOP_ICOON: Record<VerkoopTab, React.ReactNode> = {
+  alles: <Layers className="h-5 w-5" />,
+  concept: <FilePen className="h-5 w-5" />,
+  klaar: <Send className="h-5 w-5" />,
+  verzonden: <Clock className="h-5 w-5" />,
+  telaat: <AlertTriangle className="h-5 w-5" />,
+  betaald: <CheckCircle2 className="h-5 w-5" />,
+  geannuleerd: <Ban className="h-5 w-5" />,
+};
+const VERKOOP_TOON: Record<VerkoopTab, "slate" | "blue" | "green" | "amber" | "red" | "violet"> = {
+  alles: "slate",
+  concept: "amber",
+  klaar: "violet",
+  verzonden: "blue",
+  telaat: "slate",
+  betaald: "green",
+  geannuleerd: "slate",
+};
+
 export const dynamic = "force-dynamic";
 
 type SP = {
+  q?: string;
   tab?: string;
   week?: string;
   /** Alleen de facturen van één klant (de link vanaf Klanten). */
@@ -149,7 +171,9 @@ export default async function VerkoopfacturenPage({
   }));
 
   const tellingen = verkoopTellingen(alle, now);
-  const rows = alle.filter((r) => hoortBijVerkoopTab(r, tab, now));
+  const rows = alle.filter(
+    (r) => hoortBijVerkoopTab(r, tab, now) && matchtZoek(sp.q, r.number, r.clientName),
+  );
 
   const omzet = round2(
     alle.filter((i) => i.status !== "CANCELLED").reduce((s, i) => s + i.total, 0),
@@ -166,6 +190,7 @@ export default async function VerkoopfacturenPage({
     if (key !== "alles") p.set("tab", key);
     if (weekParam) p.set("week", weekParam);
     if (klantFilter) p.set("client", klantFilter.id);
+    if (sp.q) p.set("q", sp.q);
     const qs = p.toString();
     return qs ? `/facturatie/verkoop?${qs}` : "/facturatie/verkoop";
   };
@@ -262,29 +287,28 @@ export default async function VerkoopfacturenPage({
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {VERKOOP_TABS.map((t) => (
-          <Link
-            key={t.key}
-            href={tabHref(t.key)}
-            scroll={false}
-            aria-current={tab === t.key ? "page" : undefined}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
-              tab === t.key
-                ? "border-brand-600 bg-brand-600 text-white"
-                : "border-ink-200 bg-white text-ink-700 hover:border-ink-300 hover:bg-ink-50",
-            )}
-          >
-            {t.label}
-            <span className={cn("tabular-nums", tab === t.key ? "text-white/80" : "text-ink-400")}>
-              {tellingen[t.key]}
-            </span>
-          </Link>
-        ))}
-      </div>
+      <StatusVerdeling
+        title="Facturen per status"
+        items={VERKOOP_TABS.map((t) => ({
+          key: t.key,
+          label: t.label,
+          count: tellingen[t.key],
+          icon: VERKOOP_ICOON[t.key],
+          tone: t.key === "telaat" && tellingen.telaat > 0 ? "red" : VERKOOP_TOON[t.key],
+          href: tabHref(t.key),
+          active: tab === t.key,
+        }))}
+      />
 
       <Card className="overflow-hidden">
+        <div className="border-b border-ink-100 p-4">
+          <TabelZoek
+            basePath="/facturatie/verkoop"
+            q={sp.q}
+            placeholder="Zoek op factuurnummer of klant…"
+            behoud={{ tab: tab === "alles" ? undefined : tab, week: weekParam || undefined, client: klantFilter?.id }}
+          />
+        </div>
         {rows.length === 0 ? (
           <EmptyState
             className="border-0"
@@ -301,7 +325,7 @@ export default async function VerkoopfacturenPage({
                 ? monday
                   ? `Er staat geen factuur met een factuurdatum in ${formatWeekLabel(monday).toLowerCase()}. Blader met de week-balk of kies "Alle weken".`
                   : "Verkoopfacturen ontstaan in Week verwerken: leg een groene week vast en het concept komt hier te staan."
-                : "Kies een ander tabblad — of een andere week."
+                : "Kies een andere status, pas de zoekterm aan of kies een andere week."
             }
             action={
               <Link href="/facturatie" className={buttonVariants({ variant: "outline" })}>

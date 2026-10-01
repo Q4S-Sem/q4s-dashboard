@@ -4,9 +4,12 @@ import {
   Banknote,
   CheckCircle2,
   Download,
+  FileSearch,
   FileText,
   Info,
+  Layers,
   Receipt,
+  ReceiptText,
   RotateCcw,
   Upload,
   Wallet,
@@ -15,6 +18,8 @@ import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { StatusVerdeling } from "@/components/ui/status-verdeling";
+import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -67,9 +72,27 @@ import { createManualExpense, deleteExpense, uploadExpenses } from "./declaratie
 // ---------------------------------------------------------------------------
 
 export const metadata = { title: "Inkoop & betalingen" };
+const INKOOP_ICOON: Record<InkoopTab, React.ReactNode> = {
+  controleren: <FileSearch className="h-5 w-5" />,
+  tebetalen: <Banknote className="h-5 w-5" />,
+  betaald: <CheckCircle2 className="h-5 w-5" />,
+  afwijking: <AlertTriangle className="h-5 w-5" />,
+  alles: <Layers className="h-5 w-5" />,
+  declaraties: <ReceiptText className="h-5 w-5" />,
+};
+const INKOOP_TOON: Record<InkoopTab, "slate" | "blue" | "green" | "amber" | "red" | "violet"> = {
+  controleren: "amber",
+  tebetalen: "blue",
+  betaald: "green",
+  afwijking: "slate",
+  alles: "slate",
+  declaraties: "violet",
+};
+
 export const dynamic = "force-dynamic";
 
 type SP = {
+  q?: string;
   tab?: string;
   week?: string;
   reset?: string;
@@ -102,7 +125,9 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
 
   const facturen = alleFacturen.filter((r) => inWeek(r.issueDate));
   const tellingen = inkoopTellingen(facturen);
-  const rows = facturen.filter((r) => hoortBijInkoopTab(r, tab));
+  const rows = facturen.filter(
+    (r) => hoortBijInkoopTab(r, tab) && matchtZoek(sp.q, r.consultantName, r.number),
+  );
 
   // Cashflow-bescherming: heeft de klant al betaald voor de uren die we aan deze
   // freelancer moeten uitbetalen? Alleen-lezen signaal — het blokkeert niets,
@@ -199,6 +224,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
   const tabHref = (key: InkoopTab) => {
     const p = new URLSearchParams({ tab: key });
     if (weekParam) p.set("week", weekParam);
+    if (sp.q) p.set("q", sp.q);
     return `/facturatie/inkoop?${p.toString()}`;
   };
 
@@ -335,29 +361,18 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {INKOOP_TABS.map((t) => (
-          <Link
-            key={t.key}
-            href={tabHref(t.key)}
-            scroll={false}
-            aria-current={tab === t.key ? "page" : undefined}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
-              tab === t.key
-                ? "border-brand-600 bg-brand-600 text-white"
-                : "border-ink-200 bg-white text-ink-700 hover:border-ink-300 hover:bg-ink-50",
-            )}
-          >
-            {t.label}
-            {t.key !== "declaraties" && (
-              <span className={cn("tabular-nums", tab === t.key ? "text-white/80" : "text-ink-400")}>
-                {tellingen[t.key as keyof typeof tellingen]}
-              </span>
-            )}
-          </Link>
-        ))}
-      </div>
+      <StatusVerdeling
+        title="Facturen per status"
+        items={INKOOP_TABS.map((t) => ({
+          key: t.key,
+          label: t.label,
+          count: t.key === "declaraties" ? declaraties.length : tellingen[t.key as keyof typeof tellingen],
+          icon: INKOOP_ICOON[t.key],
+          tone: t.key === "afwijking" && tellingen.afwijking > 0 ? "red" : INKOOP_TOON[t.key],
+          href: tabHref(t.key),
+          active: tab === t.key,
+        }))}
+      />
 
       {toonDeclaraties ? (
         <DeclaratiesTab
@@ -367,6 +382,14 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
         />
       ) : (
         <Card className="overflow-hidden">
+          <div className="border-b border-ink-100 p-4">
+            <TabelZoek
+              basePath="/facturatie/inkoop"
+              q={sp.q}
+              placeholder="Zoek op freelancer of factuurnummer…"
+              behoud={{ tab: tab === "controleren" ? undefined : tab, week: weekParam || undefined }}
+            />
+          </div>
           {rows.length === 0 ? (
             <EmptyState
               className="border-0"
