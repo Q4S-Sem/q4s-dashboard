@@ -12,6 +12,8 @@ import {
   Clock,
   Briefcase,
   Users2,
+  MessageSquarePlus,
+  AlertTriangle,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Avatar } from "@/components/ui/avatar";
@@ -28,9 +30,15 @@ import { cn, formatDate } from "@/lib/utils";
 import { DISCIPLINES, CANDIDATE_AVAILABILITY, VACANCY_STATUSES, labelFor } from "@/lib/domain";
 import { isAIConfigured } from "@/lib/ai";
 import { runCvMatching, searchMatchesForVacancy, stopSourcing, convertCvToLead } from "../../actions";
+import { createCandidateLinkedOutreach } from "../../../berichten/actions";
 
 export const metadata = { title: "CV-matches" };
 export const dynamic = "force-dynamic";
+
+/** Foutmeldingen die een actie op deze pagina kan terugkoppelen. */
+const ERRORS: Record<string, string> = {
+  match: "Het zoeken naar matches is niet gelukt — er is niets aan de matchlijst veranderd. Probeer het opnieuw; blijft het misgaan, controleer dan de AI-sleutel bij Instellingen.",
+};
 
 function telHref(phone: string | null): string | null {
   if (!phone) return null;
@@ -46,9 +54,10 @@ function scoreClass(pct: number): string {
 export default async function CvMatchesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ matched?: string }>;
+  searchParams: Promise<{ matched?: string; error?: string }>;
 }) {
-  const { matched } = await searchParams;
+  const { matched, error } = await searchParams;
+  const errorMessage = error ? ERRORS[error] : null;
   const aiOn = isAIConfigured();
 
   const searches = await db.vacancy.findMany({
@@ -113,6 +122,12 @@ export default async function CvMatchesPage({
         }
       />
 
+      {errorMessage && (
+        <p className="flex items-start gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </p>
+      )}
       {matched !== undefined && (
         <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           Matches bijgewerkt{aiOn ? " met AI-verfijning" : ""}.
@@ -211,6 +226,7 @@ export default async function CvMatchesPage({
                           <TH className="text-right">Match</TH>
                           <TH>Beschikbaar</TH>
                           <TH>Waarom</TH>
+                          <TH className="text-right">Bericht</TH>
                           <TH className="text-right">CRM</TH>
                         </TR>
                       </THead>
@@ -254,6 +270,23 @@ export default async function CvMatchesPage({
                               </TD>
                               <TD>
                                 {m.reason ? <span className="line-clamp-2 text-xs text-ink-500">{m.reason}</span> : <span className="text-ink-300">—</span>}
+                              </TD>
+                              <TD className="text-right">
+                                {/* Maakt alleen een CONCEPT aan (met de vacature + de
+                                    matchreden al ingevuld) en opent het ter controle.
+                                    Er wordt niets verstuurd of goedgekeurd. */}
+                                <form action={createCandidateLinkedOutreach}>
+                                  <input type="hidden" name="candidateId" value={c.id} />
+                                  <input type="hidden" name="vacancyId" value={v.id} />
+                                  <SubmitButton
+                                    variant="outline"
+                                    size="sm"
+                                    pendingLabel="Concept…"
+                                    title={`Maak een goed te keuren concept-bericht voor ${name} bij ${v.title}`}
+                                  >
+                                    <MessageSquarePlus className="h-4 w-4" /> Concept-bericht
+                                  </SubmitButton>
+                                </form>
                               </TD>
                               <TD className="text-right">
                                 {dealId ? (

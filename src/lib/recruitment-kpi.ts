@@ -276,6 +276,20 @@ export function countStalledItems({
   };
 }
 
+/**
+ * De afkapdatum waarvóór een `updatedAt` als "stilgevallen" geldt. Precies
+ * dezelfde regel als countStalledItems hierboven, maar als grens in plaats van
+ * als telling — zo kan een database-query (`updatedAt: { lt: … }`) de stilgevallen
+ * records ophalen zonder eerst de hele tabel te hoeven inlezen.
+ *
+ * `daysBetween(updatedAt, now) > thresholdDays` is equivalent aan
+ * `updatedAt < stalledBefore(now, thresholdDays)`: de grens ligt op een hele
+ * UTC-dag, dus het tijdstip binnen de dag doet aan geen van beide kanten mee.
+ */
+export function stalledBefore(now: Date, thresholdDays: number): Date {
+  return new Date(startOfUtcDay(now).getTime() - thresholdDays * 86_400_000);
+}
+
 // ---------- Knelpunten ----------
 
 export type BottleneckStage = {

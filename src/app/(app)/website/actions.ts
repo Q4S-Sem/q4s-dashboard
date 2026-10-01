@@ -8,8 +8,9 @@ import { DISCIPLINES, labelFor, CANDIDATE_AVAILABILITY_VALUES } from "@/lib/doma
 import { saveCvUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
 import { rematchVacancy } from "@/lib/matching";
 import { runCvIntakeShortlist } from "@/lib/cv-intake";
+import { aiExtractCvFields, isReadableCvName, nameFromCvFilename } from "@/lib/cv-import";
 import { aiRefineMatches } from "@/lib/msp";
-import { aiJSONFromFile, isAIConfigured, isVisionConfigured } from "@/lib/ai";
+import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { mirrorDealToVacancy } from "@/lib/vacancy-mirror";
 import { aiImproveVacancy } from "@/lib/recruitment";
 
@@ -76,74 +77,8 @@ export async function shortlistCv(formData: FormData) {
 }
 
 // --- Handmatig CV's importeren -----------------------------------------------
-
-/** Toegestane CV-bestandstypen: alleen wat cv-extract echt kan uitlezen. */
-const CV_EXTENSIONS = new Set([".pdf", ".docx", ".png", ".jpg", ".jpeg", ".webp"]);
-function isAllowedCv(file: File): boolean {
-  const m = file.name.toLowerCase().match(/\.[a-z0-9]+$/);
-  return m ? CV_EXTENSIONS.has(m[0]) : false;
-}
-
-/** Haal een fatsoenlijke voor-/achternaam uit een bestandsnaam als er verder
- *  niets bekend is (bv. "Jan_de_Vries_CV_2025.pdf" → Jan / de Vries). */
-function nameFromFilename(name: string): { firstName: string; lastName: string } {
-  let base = name.replace(/\.[a-z0-9]+$/i, "").replace(/[_\-.]+/g, " ");
-  base = base.replace(/\b(cv|curriculum vitae|resume|resum[ée]|sollicitatie|q4s)\b/gi, " ");
-  base = base.replace(/\b(19|20)\d{2}\b/g, " ").replace(/\s+/g, " ").trim();
-  const parts = base.split(" ").filter(Boolean);
-  if (parts.length === 0) return { firstName: "Onbekend", lastName: "" };
-  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
-  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
-}
-
-const CV_EXTRACT_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    firstName: { type: ["string", "null"] },
-    lastName: { type: ["string", "null"] },
-    discipline: { type: ["string", "null"] },
-    email: { type: ["string", "null"] },
-    phone: { type: ["string", "null"] },
-    headline: { type: ["string", "null"] },
-  },
-  required: ["firstName", "lastName", "discipline", "email", "phone", "headline"],
-} as const;
-
-type CvExtract = {
-  firstName: string | null;
-  lastName: string | null;
-  discipline: string | null;
-  email: string | null;
-  phone: string | null;
-  headline: string | null;
-};
-
-/** Best-effort: lees naam/discipline/contact uit een PDF of afbeelding via AI.
- *  Word/Excel worden overgeslagen (geen native extractie) → null. */
-async function aiExtractCvFields(file: File): Promise<CvExtract | null> {
-  if (!isVisionConfigured()) return null;
-  const type = file.type;
-  let mediaType = "";
-  if (type.includes("pdf") || file.name.toLowerCase().endsWith(".pdf")) mediaType = "application/pdf";
-  else if (/^image\/(png|jpe?g|gif|webp)$/.test(type)) mediaType = type;
-  else return null;
-  try {
-    const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
-    return await aiJSONFromFile<CvExtract>({
-      system:
-        "Je leest CV's van technische kandidaten (QA/QC, lassers, fitters, NDO/NDT). Geef alleen wat echt op het CV staat; verzin niets.",
-      prompt:
-        "Haal uit dit CV: voornaam, achternaam, discipline/vakgebied, e-mail, telefoon en een korte functietitel (headline). Onbekende velden = null.",
-      schema: CV_EXTRACT_SCHEMA,
-      file: { base64, mediaType },
-      maxTokens: 500,
-      effort: "low",
-    });
-  } catch {
-    return null;
-  }
-}
+// De bestandstype-check, de naam-uit-bestandsnaam en de AI-velduitlezing staan in
+// @/lib/cv-import, zodat de postvak-intake (gemailde CV's) exact dezelfde weg loopt.
 
 /** Eén CV handmatig importeren: bestand + naam (+ optionele velden) → kandidaat
  *  met het CV eraan, bron = IMPORT. Zoekt meteen matches op openstaande vacatures. */
@@ -155,7 +90,7 @@ export async function importCv(formData: FormData) {
   if (!firstName && !lastName) redirect("/website/cv-inbox/importeren?error=naam");
   if (!(file instanceof File) || file.size === 0) redirect("/website/cv-inbox/importeren?error=bestand");
   if (file.size > MAX_UPLOAD_BYTES) redirect("/website/cv-inbox/importeren?error=groot");
-  if (!isAllowedCv(file)) redirect("/website/cv-inbox/importeren?error=type");
+  if (!isReadableCvName(file.name)) redirect("/website/cv-inbox/importeren?error=type");
 
   const availabilityRaw = String(formData.get("availability") ?? "ONBEKEND");
   const availability = CANDIDATE_AVAILABILITY_VALUES.includes(availabilityRaw) ? availabilityRaw : "ONBEKEND";
@@ -199,18 +134,22 @@ export async function importCvsBulk(formData: FormData) {
   let skipped = 0;
   const ids: string[] = [];
   for (const file of files) {
-    if (file.size > MAX_UPLOAD_BYTES || !isAllowedCv(file)) {
+    if (file.size > MAX_UPLOAD_BYTES || !isReadableCvName(file.name)) {
       skipped++;
       continue;
     }
-    let { firstName, lastName } = nameFromFilename(file.name);
+    let { firstName, lastName } = nameFromCvFilename(file.name);
     let discipline: string | null = null;
     let email: string | null = null;
     let phone: string | null = null;
     let headline: string | null = null;
 
     if (useAi) {
-      const ex = await aiExtractCvFields(file);
+      const ex = await aiExtractCvFields({
+        bytes: new Uint8Array(await file.arrayBuffer()),
+        name: file.name,
+        mime: file.type,
+      });
       if (ex) {
         if (ex.firstName?.trim()) firstName = ex.firstName.trim();
         if (ex.lastName?.trim()) lastName = ex.lastName.trim();
@@ -304,18 +243,23 @@ export async function stopSourcing(formData: FormData) {
 }
 
 /** "Zoek match": doorzoek de hele kandidaten-/CV-database voor deze ene vacature
- *  (regelmatch + AI-verfijning als AI ingesteld is). Blijft op de matchpagina. */
+ *  (regelmatch + AI-verfijning als AI ingesteld is). Blijft op de matchpagina.
+ *  Een mislukte zoekactie wordt NIET stil ingeslikt: de pagina krijgt ?error=match
+ *  terug, zodat je niet naar een onveranderde lijst zit te kijken zonder te weten
+ *  dat er niets is gebeurd. */
 export async function searchMatchesForVacancy(formData: FormData) {
   const id = String(formData.get("vacancyId") ?? "");
   if (!id) return;
+  let failed = false;
   try {
     const n = await rematchVacancy(id);
     if (isAIConfigured() && n > 0) await aiRefineMatches(id);
     await db.vacancy.update({ where: { id }, data: { lastMatchedAt: new Date(), sourcing: true } });
   } catch {
-    // best-effort
+    failed = true;
   }
   revalidatePath("/website/cv-inbox/matches");
+  if (failed) redirect("/website/cv-inbox/matches?error=match");
 }
 
 /**

@@ -954,7 +954,7 @@ model VmsConnector {
 /// levering of fout. Gevoed door de pijplijn; zichtbaar op /msp + het belletje.
 model RecruiterAlert {
   id             String   @id @default(cuid())
-  /// VACANCY_RELEVANT | MATCHES_FOUND | PUBLISHED | POST_READY | VACANCY_IRRELEVANT | SYNC | ERROR (ALERT_TYPES)
+  /// CV_SHORTLIST | CANDIDATE_REAPPLIED | VACANCY_RELEVANT | MATCHES_FOUND | PUBLISHED | POST_READY | VACANCY_IRRELEVANT | SYNC | ERROR (ALERT_TYPES)
   type           String   @default("VACANCY_RELEVANT")
   title          String
   body           String?
@@ -2204,6 +2204,8 @@ model MailIntakeLog {
   timesheets Int      @default(0)
   /// Aantal herkende factuur-bijlagen (nog handmatig te verwerken — fase 2).
   invoices   Int      @default(0)
+  /// Aantal CV-bijlagen dat als kandidaat in de CV-inbox is gezet (review-only).
+  cvs        Int      @default(0)
   /// Aantal overige/niet-herkende bijlagen.
   others     Int      @default(0)
   processedAt DateTime @default(now())

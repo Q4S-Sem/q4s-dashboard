@@ -5,6 +5,13 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { parseForm, type FormState } from "@/lib/form";
 import { saveCvUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
+import {
+  attachCvToExistingCandidate,
+  candidateDedupeKeys,
+  findDuplicateCandidate,
+  hasDedupeKey,
+  recordCandidateReapplication,
+} from "@/lib/candidate-dedupe";
 
 const ApplySchema = z.object({
   firstName: z.string().min(1, "Voornaam is verplicht"),
@@ -52,24 +59,50 @@ export async function applyToVacancy(
     }
   }
 
-  const candidate = await db.candidate.create({
-    data: {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email ?? null,
-      phone: data.phone ?? null,
-      discipline: data.discipline ?? null,
-      source: "WEBSITE",
-      cvFileName,
-      cvOriginalName,
-      cvMimeType,
-      cvSize,
-    },
-  });
+  // Al bekend op e-mail of telefoon? Dan komt deze sollicitatie onder het
+  // BESTAANDE dossier te hangen; bestaande kandidaatgegevens blijven staan en de
+  // recruiter krijgt een review-only melding.
+  const keys = candidateDedupeKeys({ email: data.email, phone: data.phone });
+  const duplicate = hasDedupeKey(keys) ? await findDuplicateCandidate(keys) : null;
+
+  let candidateId: string;
+  if (duplicate) {
+    candidateId = duplicate.id;
+    const attached = cvFileName
+      ? await attachCvToExistingCandidate(duplicate.id, {
+          cvFileName,
+          cvOriginalName,
+          cvMimeType,
+          cvSize,
+        })
+      : false;
+    await recordCandidateReapplication({
+      candidate: duplicate,
+      origin: `de vacature ${vacancy.title}`,
+      unattachedCvName: cvFileName && !attached ? cvOriginalName : null,
+      message: data.motivation ?? null,
+    });
+  } else {
+    const created = await db.candidate.create({
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email ?? null,
+        phone: data.phone ?? null,
+        discipline: data.discipline ?? null,
+        source: "WEBSITE",
+        cvFileName,
+        cvOriginalName,
+        cvMimeType,
+        cvSize,
+      },
+    });
+    candidateId = created.id;
+  }
 
   await db.application.create({
     data: {
-      candidateId: candidate.id,
+      candidateId,
       vacancyId,
       status: "NEW",
       motivation: data.motivation ?? null,

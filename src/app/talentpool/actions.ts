@@ -8,6 +8,13 @@ import { parseForm, type FormState } from "@/lib/form";
 import { saveCvUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
 import { rematchCandidate } from "@/lib/matching";
 import { rateLimited } from "@/lib/ratelimit";
+import {
+  attachCvToExistingCandidate,
+  candidateDedupeKeys,
+  findDuplicateCandidate,
+  hasDedupeKey,
+  recordCandidateReapplication,
+} from "@/lib/candidate-dedupe";
 
 // Length caps matter here because this is the ONE truly public, unauthenticated
 // form — they bound per-row storage and the matching tokenizer cost.
@@ -118,29 +125,56 @@ export async function captureTalentLead(
   if (data.motivation) noteParts.push(data.motivation);
   noteParts.push(`Aangemeld via Talentpool${bron ? ` — bron: ${bron}` : ""}`);
 
-  const candidate = await db.candidate.create({
-    data: {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email ?? null,
-      phone: data.phone ?? null,
-      discipline: data.discipline ?? null,
-      headline: data.headline ?? null,
-      location: data.location ?? null,
-      source: "TALENTPOOL",
-      sourceDetail: bron || null,
-      notes: noteParts.join("\n\n"),
-      cvFileName,
-      cvOriginalName,
-      cvMimeType,
-      cvSize,
-    },
-  });
+  // Al bekend op e-mail of telefoon? Dan is dit een bestaand talentpool-lid dat
+  // zich opnieuw aanmeldt. Het bestaande dossier (inclusief `notes` en bron)
+  // blijft volledig staan; de aanmelding zelf komt als review-only melding bij de
+  // recruiter terecht.
+  const keys = candidateDedupeKeys({ email: data.email, phone: data.phone });
+  const duplicate = hasDedupeKey(keys) ? await findDuplicateCandidate(keys) : null;
+
+  let candidateId: string;
+  if (duplicate) {
+    candidateId = duplicate.id;
+    const attached = cvFileName
+      ? await attachCvToExistingCandidate(duplicate.id, {
+          cvFileName,
+          cvOriginalName,
+          cvMimeType,
+          cvSize,
+        })
+      : false;
+    await recordCandidateReapplication({
+      candidate: duplicate,
+      origin: `de talentpool${bron ? ` (bron: ${bron})` : ""}`,
+      unattachedCvName: cvFileName && !attached ? cvOriginalName : null,
+      message: data.motivation ?? null,
+    });
+  } else {
+    const created = await db.candidate.create({
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email ?? null,
+        phone: data.phone ?? null,
+        discipline: data.discipline ?? null,
+        headline: data.headline ?? null,
+        location: data.location ?? null,
+        source: "TALENTPOOL",
+        sourceDetail: bron || null,
+        notes: noteParts.join("\n\n"),
+        cvFileName,
+        cvOriginalName,
+        cvMimeType,
+        cvSize,
+      },
+    });
+    candidateId = created.id;
+  }
 
   // Auto-match against all relevant vacancies — best-effort so a matching hiccup
   // never loses the lead.
   try {
-    await rematchCandidate(candidate.id);
+    await rematchCandidate(candidateId);
   } catch {
     // ignore — the member is saved; matching can be re-run later.
   }

@@ -5,6 +5,13 @@ import { isMultipartUploadWithinLimit, isUploadWithinLimit } from "@/lib/upload-
 import { DISCIPLINES, CANDIDATE_AVAILABILITY } from "@/lib/domain";
 import { corsHeaders } from "@/lib/public-api";
 import { clientIp, rateLimited } from "@/lib/ratelimit";
+import {
+  attachCvToExistingCandidate,
+  candidateDedupeKeys,
+  findDuplicateCandidate,
+  hasDedupeKey,
+  recordCandidateReapplication,
+} from "@/lib/candidate-dedupe";
 
 /**
  * Publiek sollicitatie-/CV-endpoint voor de website (q4s.nl).
@@ -142,23 +149,49 @@ export async function POST(req: Request) {
     }
   }
 
-  const candidate = await db.candidate.create({
-    data: {
-      firstName,
-      lastName,
-      email: email || null,
-      phone: phone || null,
-      discipline: coerceDiscipline(discipline),
-      location: location || null,
-      availability: coerceAvailability(availability),
-      source: "WEBSITE",
-      cvFileName,
-      cvOriginalName,
-      cvMimeType,
-      cvSize,
-      notes: motivation || null,
-    },
-  });
+  // Al bekend op e-mail of telefoon? Dan hangen we deze inzending aan het
+  // BESTAANDE dossier in plaats van een tweede kandidaat aan te maken. Bestaande
+  // gegevens blijven onaangeroerd; de recruiter krijgt er een melding over.
+  const keys = candidateDedupeKeys({ email, phone });
+  const duplicate = hasDedupeKey(keys) ? await findDuplicateCandidate(keys) : null;
+
+  let candidateId: string;
+  if (duplicate) {
+    candidateId = duplicate.id;
+    const attached = cvFileName
+      ? await attachCvToExistingCandidate(duplicate.id, {
+          cvFileName,
+          cvOriginalName,
+          cvMimeType,
+          cvSize,
+        })
+      : false;
+    await recordCandidateReapplication({
+      candidate: duplicate,
+      origin: "het sollicitatieformulier op de website",
+      unattachedCvName: cvFileName && !attached ? cvOriginalName : null,
+      message: motivation || null,
+    });
+  } else {
+    const created = await db.candidate.create({
+      data: {
+        firstName,
+        lastName,
+        email: email || null,
+        phone: phone || null,
+        discipline: coerceDiscipline(discipline),
+        location: location || null,
+        availability: coerceAvailability(availability),
+        source: "WEBSITE",
+        cvFileName,
+        cvOriginalName,
+        cvMimeType,
+        cvSize,
+        notes: motivation || null,
+      },
+    });
+    candidateId = created.id;
+  }
 
   // Optioneel: aan een specifieke gepubliceerde vacature koppelen.
   if (vacancySlug) {
@@ -166,7 +199,7 @@ export async function POST(req: Request) {
     if (vac && vac.status === "PUBLISHED") {
       await db.application.create({
         data: {
-          candidateId: candidate.id,
+          candidateId,
           vacancyId: vac.id,
           status: "NEW",
           motivation: motivation || null,
@@ -175,5 +208,5 @@ export async function POST(req: Request) {
     }
   }
 
-  return Response.json({ ok: true, id: candidate.id }, { status: 200, headers });
+  return Response.json({ ok: true, id: candidateId }, { status: 200, headers });
 }

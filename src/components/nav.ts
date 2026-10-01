@@ -172,6 +172,7 @@ const HUB_LIST: NavHub[] = [
     href: "/recruitment",
     icon: Sparkles,
     items: [
+      { href: "/recruitment", label: "Cockpit", icon: LayoutDashboard, exact: true },
       { href: "/kandidaten", label: "Talentpool", icon: Users, section: "Kandidaten" },
       { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, section: "Kandidaten" },
       { href: "/sollicitaties", label: "Sollicitaties", icon: ClipboardList, section: "Kandidaten" },

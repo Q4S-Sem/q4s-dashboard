@@ -188,42 +188,70 @@ export async function matchVacancy(
   });
   if (!vacancy) return { matches: [], usedAI: false };
 
-  const candidates = await db.candidate.findMany({
-    // Niet-inzetbare kandidaten niet voorstellen.
-    where: { rating: { not: "NIET_MEER" } },
-    select: {
-      id: true, firstName: true, lastName: true, discipline: true,
-      headline: true, location: true, rating: true, experienceSummary: true,
-    },
-    take: 200,
-  });
+  const candidates = await loadCandidatesForVacancy(vacancy.discipline);
   if (candidates.length === 0) return { matches: [], usedAI: false };
 
-  let matches: CandidateMatch[];
+  let matches: CandidateMatch[] = [];
   let usedAI = false;
   try {
     matches = await aiRank(vacancy, candidates);
-    usedAI = true;
+    // Een leeg AI-antwoord is géén geslaagde ranking — val terug op de regels.
+    usedAI = matches.length > 0;
   } catch {
+    matches = [];
+  }
+  if (matches.length === 0) {
     matches = candidates.map((c) => ruleScore(vacancy, c));
+    usedAI = false;
   }
 
   matches.sort((a, b) => b.score - a.score);
 
   // Bewaar de matches met een zinvolle score (>= 0.3) zodat de kaart de ranking
   // toont zonder opnieuw te draaien; oude matches voor deze vacature opschonen.
-  const keep = matches.filter((m) => m.score >= 0.3);
-  await db.$transaction([
-    db.vacancyMatch.deleteMany({ where: { vacancyId } }),
-    ...keep.map((m) =>
-      db.vacancyMatch.create({
-        data: { vacancyId, candidateId: m.candidateId, score: m.score, reason: m.reason },
-      }),
-    ),
-    db.vacancy.update({ where: { id: vacancyId }, data: { lastMatchedAt: new Date() } }),
-  ]);
+  // Dat opschonen gebeurt ALLEEN als er echt een ranking uit is gekomen: leverden
+  // zowel de AI als de regelscore niets op, dan is de bestaande lijst beter dan
+  // een lege lijst en blijft hij staan.
+  if (matches.length > 0) {
+    const keep = matches.filter((m) => m.score >= 0.3);
+    await db.$transaction([
+      db.vacancyMatch.deleteMany({ where: { vacancyId } }),
+      ...keep.map((m) =>
+        db.vacancyMatch.create({
+          data: { vacancyId, candidateId: m.candidateId, score: m.score, reason: m.reason },
+        }),
+      ),
+    ]);
+  }
+  await db.vacancy.update({ where: { id: vacancyId }, data: { lastMatchedAt: new Date() } });
 
   return { matches, usedAI };
+}
+
+/**
+ * De kandidaten die tegen deze vacature worden gerangschikt. Staat er een
+ * discipline op de vacature, dan wordt daar eerst op voorgeselecteerd — anders
+ * vulde een willekeurige greep van 200 rijen (zonder sortering) het AI-prompt met
+ * mensen uit een heel ander vakgebied. Levert die voorselectie niemand op, dan
+ * alsnog de hele talentpool; in beide gevallen de laatst bijgewerkte eerst.
+ */
+async function loadCandidatesForVacancy(discipline: string | null): Promise<CandidateRow[]> {
+  const query = {
+    select: {
+      id: true, firstName: true, lastName: true, discipline: true,
+      headline: true, location: true, rating: true, experienceSummary: true,
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 200,
+  } as const;
+  // Niet-inzetbare kandidaten niet voorstellen.
+  const base = { rating: { not: "NIET_MEER" } };
+
+  if (discipline) {
+    const sameDiscipline = await db.candidate.findMany({ where: { ...base, discipline }, ...query });
+    if (sameDiscipline.length > 0) return sameDiscipline;
+  }
+  return db.candidate.findMany({ where: base, ...query });
 }
 
 /**
