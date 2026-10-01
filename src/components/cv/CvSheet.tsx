@@ -1,12 +1,15 @@
 import type { CvDoc } from "@/lib/cv-doc";
-import {
-  CV_SECTIONS,
-  SIDEBAR_SECTIONS,
-  readableOn,
-  shade,
-  type CvSectionKey,
-  type CvTemplate,
-} from "@/lib/cv-template";
+import { readableOn, type CvSectionKey, type CvTemplate } from "@/lib/cv-template";
+
+/** Vaste volgorde + Engelse koppen, gelijk aan de PDF (cv-pdf.ts). */
+const SECTIES: { key: CvSectionKey; label: string }[] = [
+  { key: "summary", label: "Professional Profile" },
+  { key: "skills", label: "Core Expertise" },
+  { key: "certificates", label: "Certifications" },
+  { key: "experience", label: "Professional Experience" },
+  { key: "education", label: "Education" },
+  { key: "languages", label: "Languages" },
+];
 
 /**
  * Het Q4S-CV zoals het op papier komt: één A4-vel, opgebouwd uit dezelfde CvDoc
@@ -52,16 +55,11 @@ export function CvSheet({
 }) {
   const accent = template.accent;
   const opAccent = readableOn(accent);
-  const zacht = shade(accent, 0.92);
-  const rand = shade(accent, 0.78);
 
   // Foto alleen bij een niet-geanonimiseerd CV: een pasfoto maakt het
   // anonimiseren zinloos.
   const toonFoto = template.showPhoto && Boolean(photoSrc) && !doc.anonymized;
-  const tweeKolommen = template.layout === "TWEE_KOLOMS";
-
-  const labelVan = (k: CvSectionKey) =>
-    CV_SECTIONS.find((s) => s.key === k)?.label ?? k;
+  const labelVan = (k: CvSectionKey) => SECTIES.find((s) => s.key === k)?.label ?? k;
 
   /** Heeft deze sectie inhoud? Lege secties horen niet op een CV. */
   const gevuld = (k: CvSectionKey): boolean => {
@@ -144,29 +142,16 @@ export function CvSheet({
           </ul>
         )}
 
-        {k === "skills" &&
-          (template.showSkillBars ? (
-            <div className="cv-balken">
-              {doc.skills.map((s, i) => (
-                <div key={i} className="cv-balk-rij">
-                  <span className="cv-balk-label">{s}</span>
-                  <span className="cv-balk-spoor" style={{ background: rand }}>
-                    {/* Geen verzonnen niveaus: de balk is een accentstreep op
-                        volle breedte, puur als visueel ritme. */}
-                    <span className="cv-balk-vulling" style={{ background: accent }} />
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="cv-chips">
-              {doc.skills.map((s, i) => (
-                <span key={i} className="cv-chip" style={{ background: zacht, color: "#111110" }}>
-                  {s}
-                </span>
-              ))}
-            </div>
-          ))}
+        {k === "skills" && (
+          <ul className="cv-expertise">
+            {doc.skills.map((sk, i) => (
+              <li key={i}>
+                <span className="cv-bullet-blok" style={{ background: accent }} />
+                <span>{sk}</span>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {k === "languages" && (
           <ul className="cv-talen">
@@ -182,22 +167,27 @@ export function CvSheet({
     );
   }
 
-  const zijkolom = tweeKolommen
-    ? template.sectionOrder.filter((k) => SIDEBAR_SECTIONS.includes(k) && gevuld(k))
-    : [];
-  const hoofdkolom = template.sectionOrder.filter(
-    (k) => !zijkolom.includes(k) && gevuld(k),
-  );
+  const secties = SECTIES.map((s) => s.key).filter(gevuld);
 
   return (
     <div className={className}>
       <style>{cvCss(A4_BREEDTE, A4_HOOGTE, MARGE)}</style>
 
       <article className="cv-vel" data-cv-sheet>
-        {/* Kopbalk in de accentkleur. Linksboven de kandidaat (pasfoto), rechts
-            klein het merk van de afzender — doorzichtig op de balk, zonder wit
-            vlak eromheen. */}
-        <header className="cv-kop" style={{ background: accent, color: opAccent }}>
+        {/* Witte kop: label links, groot logo rechts. */}
+        <header className="cv-kop">
+          <div className="cv-label">
+            <span className="cv-label-streep" style={{ background: accent }} />
+            Q4S CANDIDATE PROFILE
+          </div>
+          {template.showLogo && logoSrc && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoSrc} alt="Q4S Project Partners" className="cv-logo" />
+          )}
+        </header>
+
+        {/* Naamstreep in de accentkleur (standaard Q4S-zwart). */}
+        <div className="cv-streep" style={{ background: accent, color: opAccent }}>
           {toonFoto && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={photoSrc as string} alt="" className="cv-foto" />
@@ -207,55 +197,23 @@ export function CvSheet({
             {doc.headline && <p className="cv-functie">{doc.headline}</p>}
             {doc.metaLine && <p className="cv-meta">{doc.metaLine}</p>}
           </div>
-          {template.showLogo && logoSrc && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={logoSrc}
-              alt="Q4S Project Partners"
-              className="cv-logo"
-              // Het bestand is zwarte inkt met doorzichtige gaten. `brightness(0)`
-              // maakt alles vlak zwart, `invert(1)` daarna vlak wit — de gaten
-              // blijven gaten. Zo hoeft er maar één logobestand te zijn en volgt de
-              // kleur automatisch het accent.
-              style={{ filter: opAccent === "#ffffff" ? "brightness(0) invert(1)" : "brightness(0)" }}
-            />
-          )}
-        </header>
-
-        <div className={tweeKolommen ? "cv-body cv-body-twee" : "cv-body"}>
-          <main className="cv-hoofd">
-            {hoofdkolom.map((k) => (
-              <Sectie key={k} k={k} />
-            ))}
-          </main>
-
-          {tweeKolommen && (
-            <aside className="cv-zij" style={{ background: shade(accent, 0.955) }}>
-              <section className="cv-sectie">
-                <SectieKop titel={doc.contactLabel} accent={accent} />
-                <ul className="cv-contact">
-                  {doc.contactLines.map((r, i) => (
-                    <li key={i}>{r}</li>
-                  ))}
-                </ul>
-              </section>
-              {zijkolom.map((k) => (
-                <Sectie key={k} k={k} />
-              ))}
-            </aside>
-          )}
         </div>
 
-        {!tweeKolommen && (
-          <section className="cv-sectie cv-contact-breed">
-            <SectieKop titel={doc.contactLabel} accent={accent} />
+        <main className="cv-body">
+          {secties.map((k) => (
+            <Sectie key={k} k={k} />
+          ))}
+          <section className="cv-sectie cv-contact-blok" style={{ borderColor: accent }}>
+            <strong>{doc.contactLabel}</strong>
             <p className="cv-tekst">{doc.contactLines.join("  ·  ")}</p>
           </section>
-        )}
+        </main>
 
+        {/* ponytail: HTML-vel toont alleen "Page 1"; echte paginanummers per vel
+            zitten in de PDF-download (cv-pdf.ts). */}
         <footer className="cv-voet">
-          <span>{doc.footerLine}</span>
-          {template.footerNote && <span className="cv-voet-note">{template.footerNote}</span>}
+          <span>Q4S Project Partners | {doc.displayName}</span>
+          <span>Page 1</span>
         </footer>
       </article>
     </div>
@@ -278,64 +236,37 @@ function cvCss(breedte: number, hoogte: number, marge: number): string {
   box-sizing: border-box;
 }
 
-/* ---- Kopbalk ---- */
+/* ---- Witte kop + naamstreep ---- */
 .cv-kop {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6mm;
-  padding: ${marge - 1}mm ${marge}mm ${marge - 2}mm;
+  padding: 7mm ${marge}mm;
 }
-/* Vierkant, in lijn met de rechte hoeken van de huisstijl — en met de pasfoto
-   in de PDF-download, zodat beide documenten hetzelfde ogen. */
+.cv-label { font-size: 10pt; font-weight: 700; letter-spacing: 0.16em; color: #171717; }
+.cv-label-streep { display: block; width: 9mm; height: 0.8mm; margin-bottom: 2mm; }
+.cv-logo { height: 22mm; width: auto; display: block; }
+.cv-streep {
+  display: flex;
+  align-items: center;
+  gap: 6mm;
+  padding: 5mm ${marge}mm;
+}
 .cv-foto {
-  width: 25mm;
-  height: 25mm;
+  width: 20mm;
+  height: 20mm;
   object-fit: cover;
   flex: 0 0 auto;
-  border: 1mm solid #ffffff;
+  border: 0.9mm solid #ffffff;
 }
 .cv-kop-tekst { flex: 1 1 auto; min-width: 0; }
-.cv-naam {
-  margin: 0;
-  font-size: 21pt;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.1;
-}
-.cv-functie {
-  margin: 1.2mm 0 0;
-  font-size: 12pt;
-  font-weight: 600;
-  opacity: 0.95;
-}
-.cv-meta {
-  margin: 1.6mm 0 0;
-  font-size: 8.6pt;
-  opacity: 0.85;
-}
-/* Klein en in de rechterbovenhoek: het merk hoort hier bij de afzender, niet bij
-   de kandidaat. De hoogte klopt één op één, want q4s-logo.png is op de inkt
-   bijgesneden (geen lege rand meer in het bestand). */
-.cv-logo {
-  flex: 0 0 auto;
-  align-self: flex-start;
-  height: 8mm;
-  width: auto;
-  display: block;
-}
+.cv-naam { margin: 0; font-size: 22pt; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+.cv-functie { margin: 1.2mm 0 0; font-size: 11.5pt; font-weight: 600; }
+.cv-meta { margin: 1.4mm 0 0; font-size: 8.6pt; opacity: 0.75; }
 
 /* ---- Body ---- */
-.cv-body { flex: 1 1 auto; display: block; padding: ${marge - 2}mm ${marge}mm 0; }
-.cv-body-twee {
-  display: grid;
-  grid-template-columns: 1fr 62mm;
-  gap: 8mm;
-  padding-right: 0;
-}
-.cv-zij {
-  padding: ${marge - 4}mm ${marge}mm ${marge - 4}mm 6mm;
-  align-self: stretch;
-}
+.cv-body { flex: 1 1 auto; padding: 6mm ${marge}mm 0; }
 
 /* ---- Secties ---- */
 .cv-sectie { margin-bottom: 5mm; break-inside: avoid; }
@@ -380,32 +311,31 @@ function cvCss(breedte: number, hoogte: number, marge: number): string {
 }
 .cv-cert-meta { display: block; font-size: 8.2pt; color: #787873; }
 
-/* ---- Vaardigheden ---- */
-.cv-balken { display: flex; flex-direction: column; gap: 1.5mm; }
-.cv-balk-label { display: block; font-size: 8.8pt; margin-bottom: 0.5mm; }
-.cv-balk-spoor { display: block; height: 1.4mm; border-radius: 1mm; overflow: hidden; }
-.cv-balk-vulling { display: block; height: 100%; width: 100%; border-radius: 1mm; }
-.cv-chips { display: flex; flex-wrap: wrap; gap: 1.6mm; }
-.cv-chip { padding: 0.8mm 2.2mm; border-radius: 0.8mm; font-size: 8.4pt; }
+/* ---- Core Expertise ---- */
+.cv-expertise { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1mm 8mm; }
+.cv-expertise li { display: flex; gap: 2.4mm; }
+.cv-bullet-blok { flex: 0 0 auto; width: 1.1mm; height: 1.1mm; margin-top: 1.8mm; }
 
 /* ---- Talen & contact ---- */
-.cv-talen, .cv-contact { list-style: none; margin: 0; padding: 0; }
+.cv-talen { list-style: none; margin: 0; padding: 0; }
 .cv-talen li { display: flex; justify-content: space-between; gap: 3mm; margin-bottom: 1mm; }
 .cv-taal-niveau { color: #787873; font-size: 8.4pt; }
-.cv-contact li { margin-bottom: 1mm; word-break: break-word; }
-.cv-contact-breed { padding: 0 ${marge}mm; }
+.cv-contact-blok { background: #efefef; border-left: 1mm solid; padding: 3.5mm 5mm; }
 
 /* ---- Voettekst ---- */
 .cv-voet {
   margin-top: auto;
-  padding: 4mm ${marge}mm ${marge - 5}mm;
+  margin-left: ${marge}mm;
+  margin-right: ${marge}mm;
+  padding: 3mm 0 ${marge - 5}mm;
+  border-top: 0.2mm solid #d9d9db;
   font-size: 7.4pt;
+  font-weight: 600;
   color: #787873;
   display: flex;
   justify-content: space-between;
   gap: 6mm;
 }
-.cv-voet-note { text-align: right; }
 
 /* ---- Printen ---- */
 @media print {

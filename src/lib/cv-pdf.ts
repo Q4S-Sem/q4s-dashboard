@@ -15,24 +15,16 @@ import type { CvDoc } from "./cv-doc";
  *
  * DE VIER BESLISSINGEN DIE DE REST VERKLAREN
  *
- * 1. KOPBALK: FOTO LINKS, LOGO KLEIN RECHTSBOVEN. De linkerbovenhoek is de plek
- *    waar een lezer een gezicht verwacht, dus die is van de kandidaat; het merk van
- *    de afzender staat klein in de tegenoverliggende hoek. Het logo staat direct op
- *    de balk, zonder wit vlak: in de omgekeerde (witte) versie, want het beeldmerk
- *    is één kleur inkt met gaten en het accent zou anders door het hart schijnen.
+ * 1. WITTE KOP, DAARONDER DE ZWARTE NAAMSTREEP. Linksboven "Q4S CANDIDATE
+ *    PROFILE", rechts groot het (zwarte) logo op wit. Daaronder één streep in de
+ *    accentkleur met naam + functietitel (en pasfoto als die mag). Voet per pagina:
+ *    "Q4S Project Partners | naam" links, "Page n" rechts.
  *
- * 2. VOLGORDE VOLGT DE BESLISBOOM VAN DE OPDRACHTGEVER, niet de CV-conventie. Hij
- *    stelt eerst een binaire vraag ("mag deze man überhaupt op mijn werk?" →
- *    certificaten) en pas daarna een graduele ("hoe goed is hij?" → ervaring).
- *    Certificaten staan daarom vóór werkervaring: een diskwalificerend criterium op
- *    pagina 2 kost een plaatsing van iemand die wél kwalificeert.
+ * 2. VASTE VOLGORDE: Professional Profile → Core Expertise → Certifications →
+ *    Professional Experience (daarna Education/Languages/contact als die er zijn).
+ *    Certificaten blijven vóór werkervaring: dat is de ja/nee-vraag van de klant.
  *
- * 3. DE FUNCTIETITEL IS GROTER DAN DE NAAM. Op een geanonimiseerd bureau-CV is
- *    "Michał W." het mínst informatieve veld op de pagina: de klant zoekt een 6G
- *    TIG-lasser, geen persoon. De naam staat er wel vol en leesbaar boven — hij is
- *    het opschrift, niet de kop.
- *
- * 4. DE PAGINA WORDT ACTIEF GEVULD. Twee meetronden vooraf (zie onderaan) bepalen
+ * 3. DE PAGINA WORDT ACTIEF GEVULD. Twee meetronden vooraf (zie onderaan) bepalen
  *    of het ritme aangehaald moet worden om een pagina te winnen, of juist opgerekt
  *    om te voorkomen dat een mager CV als een half formulier oogt.
  */
@@ -60,26 +52,22 @@ const CHIP_BG = rgb(0.937, 0.937, 0.941);
 // ON_BAND / ON_BAND_SOFT staan niet hier maar in renderCvPdf: wat leesbaar is op
 // de kopbalk hangt af van de accentkleur uit de CV-vormgeving.
 
-// Kopbalk: ~12,5% van de paginahoogte. Krap om de pasfoto (70pt) heen — genoeg
-// voor een herkenbaar gezicht, weinig genoeg dat een printer er niet op leegloopt
-// en dat er onder de balk een volle pagina overblijft.
-const BAND_H = 106;
-// Vervolgpagina's dragen nu ook het logo, dus iets hoger dan een pure tekstbalk.
-const BAND2_H = 40;
+// Pagina 1: witte kop (label + groot logo), daaronder de naamstreep.
+const HEAD_H = 104;
+const STRIPE_H = 74;
+// Vervolgpagina's: dezelfde witte kop, kleiner, zonder streep.
+const HEAD2_H = 56;
 
-/**
- * Logohoogte, klein in de rechterbovenhoek. Dit is een herkenningsmerk, geen
- * leesbare wordmark: "PROJECT PARTNERS" is ~7% van de beeldhoogte en valt op deze
- * maat weg. Dat is bewust — de afzender staat voluit in de voettekst en in het
- * contactblok. Maten gelden hier één op één, want `public/logo/cv/q4s-logo.png` is
- * op de inkt bijgesneden (zie getCvLogoFile).
- */
-const LOGO_H = 30;
-const LOGO2_H = 20;
+/** Logo groot rechtsboven op wit; `q4s-logo.png` is op de inkt bijgesneden. */
+const LOGO_H = 62;
+const LOGO2_H = 28;
 
-/** Pasfoto linksboven: vierkant, in lijn met de rechte hoeken van de huisstijl. */
-const PHOTO = 70;
-const PHOTO_RAND = 3;
+/** Pasfoto in de naamstreep: vierkant, wit kadertje. */
+const PHOTO = 56;
+const PHOTO_RAND = 2.5;
+
+/** Voettekst links op elke pagina. */
+const FOOT_BRAND = "Q4S Project Partners";
 
 // Ondergrens voor content; laat lucht boven de voetlijn (die ligt op M-5).
 const BOTTOM = M + 8;
@@ -142,14 +130,15 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
   pdf.setCreator(doc.companyName);
   pdf.setSubject(doc.headline || "CV");
 
-  // Alles wat óp de kopbalk staat — tekst, logo, het kadertje om de pasfoto —
+  // Alles wat óp de naamstreep staat — tekst en het kadertje om de pasfoto —
   // volgt de accentkleur. Zonder dat verdwijnt de hele kop zodra iemand in de
   // CV-vormgeving een lichte kleur kiest.
   const bandWit = readableOn(opties.accent ?? DEFAULT_ACCENT) === "#ffffff";
   const ON_BAND = bandWit ? rgb(1, 1, 1) : rgb(0.07, 0.07, 0.06);
   const ON_BAND_SOFT = bandWit ? rgb(0.74, 0.74, 0.75) : rgb(0.36, 0.36, 0.35);
 
-  const logoImg = opties.showLogo === false ? null : await embedLogo(pdf, bandWit);
+  // Logo staat op wit → altijd de zwarte versie.
+  const logoImg = opties.showLogo === false ? null : await embedLogo(pdf, false);
   // Een pasfoto op een geanonimiseerd CV maakt het anonimiseren zinloos.
   const photoImg =
     opties.showPhoto === false || doc.anonymized ? null : await embedPhoto(pdf, opties.photo);
@@ -224,11 +213,6 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
     }
   };
 
-  const trackedWidth = (s: string, size: number, f: PDFFont, tracking: number) => {
-    const t = sanitizePdfText(s, uni);
-    return [...t].reduce((w, ch) => w + f.widthOfTextAtSize(ch, size) + tracking, 0) - tracking;
-  };
-
   const line = (x1: number, yy: number, x2: number, thickness: number, color = LINE) => {
     if (pass.dry || !page) return;
     page.drawLine({ start: { x: x1, y: yy }, end: { x: x2, y: yy }, thickness, color });
@@ -261,42 +245,37 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
     return logoW;
   };
 
-  /**
-   * Pagina 1: de accentbalk met linksboven de kandidaat (pasfoto + wie hij is) en
-   * rechtsboven klein het merk van de afzender. Alles wat een opdrachtgever nodig
-   * heeft om te beslissen of hij verder leest, staat zo boven de vouw.
-   *
-   * De contactgegevens staan bewust NIET hier maar in het blok onderaan: het label
-   * "Contact via Q4S Project Partners" is zo breed dat de functietitel ernaast werd
-   * afgekapt ("Allround lasser ·…") — en juist die titel is de match-sleutel.
-   */
-  const drawBand = () => {
-    rect(0, H - BAND_H, W, BAND_H, BRAND);
-
-    // Bovenkant gelijk met die van de pasfoto: de balk leest dan als één rij.
-    const badgeW = drawLogoBadge(RIGHT, H - (BAND_H - PHOTO) / 2, LOGO_H);
+  /** Witte kop: "Q4S CANDIDATE PROFILE" links, logo rechts. */
+  const drawHead = (headH: number, logoH: number, labelSize: number) => {
+    const yTop = H - (headH - logoH) / 2;
+    drawLogoBadge(RIGHT, yTop, logoH);
     if (!logoImg) {
-      // Geen (of een SVG-)logo: pdf-lib kan alleen PNG/JPG → tekst-wordmark, zodat
-      // er nooit een CV zonder afzender uitgaat.
-      textR(doc.companyName, RIGHT, H - 36, 12, fonts.bold, ON_BAND);
-      textR("PROJECT PARTNERS", RIGHT, H - 48, 6.5, fonts.semibold, ON_BAND_SOFT);
+      // Geen (of een SVG-)logo: pdf-lib kan alleen PNG/JPG → tekst-wordmark.
+      textR(doc.companyName, RIGHT, yTop - 14, 14, fonts.bold, INK);
+      textR("PROJECT PARTNERS", RIGHT, yTop - 26, 6.5, fonts.semibold, MUTED);
     }
+    const baseline = H - headH / 2 - labelSize * 0.36;
+    line(M, baseline + labelSize + 6, M + 26, 2.2, BRAND);
+    textTracked("Q4S CANDIDATE PROFILE", M, baseline, labelSize, fonts.bold, INK, labelSize * 0.16);
+  };
+
+  /** Pagina 1: witte kop + zwarte streep met (foto), naam en functietitel. */
+  const drawBand = () => {
+    drawHead(HEAD_H, LOGO_H, 10);
+    const top = H - HEAD_H;
+    rect(0, top - STRIPE_H, W, STRIPE_H, BRAND);
 
     let textX = M;
     if (photoImg) {
-      const y0 = H - BAND_H + (BAND_H - PHOTO) / 2;
-      // Bijsnijden zonder vervorming. pdf-lib kent geen clip-pad, dus: de foto
-      // ruim genoeg tekenen om het vierkant te vullen, en wat erbuiten valt
-      // wegschilderen met de balkkleur. Kan alleen omdat de balk één vlakke kleur
-      // is — staat er ooit een verloop achter, dan moet dit anders.
+      const y0 = top - STRIPE_H + (STRIPE_H - PHOTO) / 2;
+      // Bijsnijden zonder vervorming: pdf-lib kent geen clip-pad, dus ruim tekenen
+      // en de rand wegschilderen met de streepkleur (kan alleen op een vlakke kleur).
       const schaal = Math.max(PHOTO / photoImg.width, PHOTO / photoImg.height);
       const dw = photoImg.width * schaal;
       const dh = photoImg.height * schaal;
       const dx = M + (PHOTO - dw) / 2;
       const dy = y0 + (PHOTO - dh) / 2;
-      if (!pass.dry && page) {
-        page.drawImage(photoImg, { x: dx, y: dy, width: dw, height: dh });
-      }
+      if (!pass.dry && page) page.drawImage(photoImg, { x: dx, y: dy, width: dw, height: dh });
       const over = (x: number, yy: number, w: number, h: number) => {
         if (w > 0.01 && h > 0.01) rect(x, yy, w, h, BRAND);
       };
@@ -304,71 +283,34 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
       over(dx, dy, dw, y0 - dy);
       over(dx, y0, M - dx, PHOTO);
       over(M + PHOTO, y0, dx + dw - (M + PHOTO), PHOTO);
-
-      // Wit kadertje eromheen — nu pas, anders schildert het masker het weg.
       const r = PHOTO_RAND;
       rect(M - r, y0 + PHOTO, PHOTO + r * 2, r, ON_BAND);
       rect(M - r, y0 - r, PHOTO + r * 2, r, ON_BAND);
       rect(M - r, y0, r, PHOTO, ON_BAND);
       rect(M + PHOTO, y0, r, PHOTO, ON_BAND);
-
-      textX = M + PHOTO + 20;
+      textX = M + PHOTO + 18;
     }
 
-    // Naam / functietitel / meta, optisch gecentreerd in de balk. De tekst stopt
-    // vóór het logovlak, anders schuift een lange functietitel eronder.
-    const textW = RIGHT - textX - (badgeW > 0 ? badgeW + 18 : 0);
-    const capName = TYPE.name * 0.73;
-    const capHead = TYPE.headline * 0.73;
+    const textW = RIGHT - textX;
+    const capName = 22 * 0.73;
+    const capHead = 11.5 * 0.73;
     const capMeta = TYPE.bandMeta * 0.73;
-    const stackH = capName + 9 + capHead + 8 + capMeta;
-    const stackTop = H - (BAND_H - stackH) / 2;
-
-    const yName = stackTop - capName;
-    text(truncateText(doc.displayName, fonts.semibold, TYPE.name, textW, uni), textX, yName, TYPE.name, fonts.semibold, ON_BAND_SOFT);
+    const stackH = capName + 9 + capHead + (doc.metaLine ? 8 + capMeta : 0);
+    const yName = top - (STRIPE_H - stackH) / 2 - capName;
+    text(truncateText(doc.displayName, fonts.bold, 22, textW, uni), textX, yName, 22, fonts.bold, ON_BAND);
     const yHead = yName - 9 - capHead;
     if (doc.headline) {
-      text(truncateText(doc.headline, fonts.bold, TYPE.headline, textW, uni), textX, yHead, TYPE.headline, fonts.bold, ON_BAND);
+      text(truncateText(doc.headline, fonts.semibold, 11.5, textW, uni), textX, yHead, 11.5, fonts.semibold, ON_BAND);
     }
     if (doc.metaLine) {
-      text(
-        truncateText(doc.metaLine, fonts.regular, TYPE.bandMeta, textW, uni),
-        textX,
-        yHead - 8 - capMeta,
-        TYPE.bandMeta,
-        fonts.regular,
-        ON_BAND_SOFT,
-      );
+      text(truncateText(doc.metaLine, fonts.regular, TYPE.bandMeta, textW, uni), textX, yHead - 8 - capMeta, TYPE.bandMeta, fonts.regular, ON_BAND_SOFT);
     }
   };
 
-  /**
-   * Vervolgpagina's: dezelfde balk, maar plat. Links de kandidaat — raakt pagina 2
-   * los op het bureau van de klant, dan is het vel anders niet meer toe te wijzen —
-   * en rechts hetzelfde kleine logo als op pagina 1, zodat elk vel apart nog van
-   * Q4S is. De wordmark eronder is op deze maat niet leesbaar; dat mag, de afzender
-   * staat voluit in de voettekst.
-   */
+  /** Vervolgpagina's: dezelfde witte kop, kleiner, met een dunne lijn eronder. */
   const drawBand2 = () => {
-    rect(0, H - BAND2_H, W, BAND2_H, BRAND);
-    const badgeW = drawLogoBadge(RIGHT, H - (BAND2_H - LOGO2_H) / 2, LOGO2_H);
-    const baseline = H - BAND2_H / 2 - TYPE.small * 0.36;
-    const ruimte = CONTENT_W - (badgeW > 0 ? badgeW + 20 : 0);
-
-    const naam = truncateText(doc.displayName, fonts.bold, TYPE.small, ruimte, uni);
-    text(naam, M, baseline, TYPE.small, fonts.bold, ON_BAND);
-    if (doc.headline) {
-      const x = M + fonts.bold.widthOfTextAtSize(sanitizePdfText(naam, uni), TYPE.small);
-      const rest = `  ·  ${doc.headline}`;
-      text(
-        truncateText(rest, fonts.regular, TYPE.small, ruimte - (x - M), uni),
-        x,
-        baseline,
-        TYPE.small,
-        fonts.regular,
-        ON_BAND_SOFT,
-      );
-    }
+    drawHead(HEAD2_H, LOGO2_H, 8);
+    line(M, H - HEAD2_H, RIGHT, 0.5);
   };
 
   // ---- pagina-mechaniek -----------------------------------------------------
@@ -381,10 +323,10 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
     }
     if (pageCount === 1) {
       drawBand();
-      y = H - BAND_H - 30;
+      y = H - HEAD_H - STRIPE_H - 16;
     } else {
       drawBand2();
-      y = H - BAND2_H - 30;
+      y = H - HEAD2_H - 30;
     }
   };
 
@@ -436,30 +378,18 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
   // ---- secties --------------------------------------------------------------
 
   /**
-   * Profielschets als lead-alinea zónder kop: hij hoort bij de kopbalk, niet in de
-   * rij secties. Breedte ~430pt i.p.v. de volle 491: op 10,25pt is dat ~72 tekens
-   * per regel, binnen het leesbare bereik (45–75). Volle breedte gaf ~86.
-   *
-   * NIET afkappen. Een eerdere versie hield hier 4 regels over en gooide de rest
-   * weg — maar de recruiter heeft die tekst zelf in het review-scherm gezet; stil
-   * verdwijnen is erger dan een langer CV. De meetronden vangen de lengte op.
+   * Professional Profile: wie hij is, wat hij gedaan heeft en waar hij goed in is.
+   * NIET afkappen — de recruiter heeft deze tekst zelf in het review-scherm gezet.
    */
   const drawSummary = () => {
     if (!doc.summary) return;
-    // Vaste afstand, GEEN gap(): de pitch hoort bij de kop. Zou hij meedelen in de
-    // opvul-lucht, dan drijft hij op een kort CV los van de balk waar hij bij hoort.
-    y -= 2;
-    const width = 430;
     const lead = leadLead();
-    const lines = wrapText(doc.summary, fonts.regular, TYPE.lead, width, uni);
-    const blockH = lines.length * lead;
-    // Dunne verticale streep links: markeert de alinea als citaat/pitch.
-    rect(M, y - blockH + 11, 1.5, blockH - 3, LINE);
-    for (const l of lines) {
-      ensure(lead);
-      text(l, M + 14, y, TYPE.lead, fonts.regular, INK);
-      y -= lead;
+    sectionTitle("Professional Profile", lead * 2);
+    for (const alinea of doc.summary.split(/\n\s*\n/)) {
+      paragraph(alinea.replace(/\s+/g, " ").trim(), TYPE.lead, INK, lead);
+      y -= 4;
     }
+    y += 4 + lead - 10;
   };
 
   /**
@@ -470,7 +400,7 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
   const drawCertificates = () => {
     if (!doc.certificates.length) return;
     const rowH = (c: (typeof doc.certificates)[number]) => (c.issuer ? 13 + 11 + itemGap() : 13 + itemGap());
-    sectionTitle("Certificaten & kwalificaties", rowH(doc.certificates[0]));
+    sectionTitle("Certifications", rowH(doc.certificates[0]));
 
     doc.certificates.forEach((c, i) => {
       ensure(rowH(c));
@@ -490,33 +420,30 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
     y += itemGap() - 2;
   };
 
-  /** Vaktechnische skills: samen met de certificaten één kwalificatieblok. */
+  /** Core Expertise: twee kolommen met een vierkant blokje per punt. */
   const drawSkills = () => {
     if (!doc.skills.length) return;
-    const chipH = 17;
-    const gapX = 5;
-    const gapY = 5;
-    const padX = 7;
-    // Inter cap-height ≈ 0,73em: zo staat de tekst optisch gecentreerd i.p.v. op een
-    // magisch getal.
-    const capOffset = (chipH - TYPE.chip * 0.73) / 2;
-
-    sectionTitle("Vaktechnische skills", chipH);
-    let x = M;
-    ensure(chipH);
-    for (const skill of doc.skills) {
-      const label = truncateText(skill, fonts.semibold, TYPE.chip, CONTENT_W - padX * 2, uni);
-      const w = fonts.semibold.widthOfTextAtSize(label, TYPE.chip) + padX * 2;
-      if (x + w > RIGHT) {
-        x = M;
-        y -= chipH + gapY;
-        ensure(chipH);
-      }
-      rect(x, y - capOffset, w, chipH, CHIP_BG);
-      text(label, x + padX, y, TYPE.chip, fonts.semibold, INK);
-      x += w + gapX;
+    const colGap = 24;
+    const colW = (CONTENT_W - colGap) / 2;
+    const bl = bulletLead();
+    const wrap = (sk: string) => wrapText(sk, fonts.regular, TYPE.bullet, colW - 14, uni);
+    const rows: string[][][] = [];
+    for (let i = 0; i < doc.skills.length; i += 2) {
+      rows.push(doc.skills.slice(i, i + 2).map(wrap));
     }
-    y -= chipH - 4;
+    const rowH = (r: string[][]) => Math.max(...r.map((c) => c.length)) * bl + 3;
+
+    sectionTitle("Core Expertise", rowH(rows[0]));
+    for (const r of rows) {
+      ensure(rowH(r));
+      r.forEach((lines, c) => {
+        const x = M + c * (colW + colGap);
+        rect(x + 1, y + 2, 3, 3, BRAND);
+        lines.forEach((l, i) => text(l, x + 14, y - i * bl, TYPE.bullet, fonts.regular, INK));
+      });
+      y -= rowH(r);
+    }
+    y += 3 + bl - 10;
   };
 
   /**
@@ -535,8 +462,8 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
 
   const drawExperience = () => {
     if (!doc.experience.length) return;
-    // Vervolgpagina's hebben zelf een balk (~68pt incl. lucht); zoveel past er hoogstens op.
-    const pageAvail = H - BAND2_H - 30 - BOTTOM;
+    // Zoveel past er hoogstens op een vervolgpagina.
+    const pageAvail = H - HEAD2_H - 30 - BOTTOM;
     /** Wat een functieblok minimaal nodig heeft vóórdat het mag breken. Past het blok
      *  sowieso nooit op één pagina (heel lange bullet-lijst), dan mág het breken —
      *  maar nooit vóór de eerste bullet. */
@@ -545,7 +472,7 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
       return h <= pageAvail ? h : 13 + 13 + 13;
     };
 
-    sectionTitle("Werkervaring", need(doc.experience[0]));
+    sectionTitle("Professional Experience", need(doc.experience[0]));
 
     for (const job of doc.experience) {
       ensure(need(job));
@@ -588,7 +515,7 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
 
   const drawEducation = () => {
     if (!doc.education.length) return;
-    sectionTitle("Opleiding", 13 + 11);
+    sectionTitle("Education", 13 + 11);
     for (const ed of doc.education) {
       ensure(13 + 11);
       const periodW = ed.period
@@ -634,7 +561,7 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
     ensure(20);
     line(M, y + 7, M + 26, 2.2, BRAND);
     y -= TYPE.section;
-    textTracked("TALEN", M, y, TYPE.section, fonts.bold, BRAND, 0.9);
+    textTracked("LANGUAGES", M, y, TYPE.section, fonts.bold, BRAND, 0.9);
     text(label, M + 104, y, TYPE.sub + 0.5, fonts.regular, INK);
     // Cursor voorbij de regel zetten: anders tekent het blok hieronder er bovenop.
     y -= 13;
@@ -687,8 +614,8 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
     gapUnits = 0;
     newPage();
     drawSummary();
-    drawCertificates();
     drawSkills();
+    drawCertificates();
     drawExperience();
     drawEducation();
     drawLanguages();
@@ -743,20 +670,17 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
   layout({ dry: false, gapExtra, density });
 
   // ---- voettekst ------------------------------------------------------------
-  const total = pages.length;
   pages.forEach((p, i) => {
     const footY = M - 18;
     p.drawLine({ start: { x: M, y: footY + 13 }, end: { x: RIGHT, y: footY + 13 }, thickness: 0.5, color: LINE });
-    // Alleen de afzender: de anonimiseer-melding en de contactgegevens staan al in
-    // het blok erboven, en dezelfde regel twee keer op één A4 is ruis.
-    p.drawText(truncateText(doc.companyName, fonts.regular, TYPE.foot, CONTENT_W - 40, uni), {
+    p.drawText(truncateText(`${FOOT_BRAND} | ${doc.displayName}`, fonts.semibold, TYPE.foot, CONTENT_W - 60, uni), {
       x: M,
       y: footY,
       size: TYPE.foot,
       font: fonts.semibold,
       color: MUTED,
     });
-    const nr = `${i + 1} / ${total}`;
+    const nr = `Page ${i + 1}`;
     p.drawText(nr, {
       x: RIGHT - fonts.regular.widthOfTextAtSize(nr, TYPE.foot),
       y: footY,

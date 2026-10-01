@@ -182,7 +182,7 @@ export const CV_EXTRACT_PROMPT =
   "- headline: korte functietitel (bijv. 'QA/QC Inspector' of '6G TIG-lasser'). Staat die er niet, leid hem af uit de meest recente functie.\n" +
   "- location: woonplaats/regio.\n" +
   "- availability: alleen als het CV iets over beschikbaarheid zegt.\n" +
-  "- summary: 2 tot 4 zinnen profielschets. Staat er geen profieltekst, vat dan de werkervaring feitelijk samen.\n" +
+  "- summary: professioneel profiel van 4 tot 6 zinnen: wie de kandidaat is, wat hij heeft gedaan (sectoren, projecten, jaren), wat hij nu doet en waar hij sterk in is. Alleen op basis van wat er op het CV staat.\n" +
   "- yearsExperience: totaal aantal jaren relevante werkervaring als geheel getal; niet af te leiden = null.\n" +
   "- skills: vaktechnische vaardigheden, methodes, materialen, normen en software. Losse trefwoorden, geen zinnen.\n" +
   "- languages: taal + niveau zoals vermeld.\n" +
