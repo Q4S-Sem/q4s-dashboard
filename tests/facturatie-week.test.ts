@@ -38,10 +38,10 @@ test("de maandag, zondag en het weeknummer kloppen", () => {
   assert.equal(week.mondayParam, "2026-09-28");
 });
 
-test("de deadline is de maandag 12:00 ná de gewerkte week", () => {
+test("de deadline is de dinsdag 12:00 ná de gewerkte week", () => {
   const week = resolveWeek("2026-W40", VANDAAG);
-  assert.equal(week.deadline.getDay(), 1);
-  assert.equal(week.deadline.getDate(), 5);
+  assert.equal(week.deadline.getDay(), 2);
+  assert.equal(week.deadline.getDate(), 6);
   assert.equal(week.deadline.getMonth(), 9);
   assert.equal(week.deadline.getHours(), 12);
 });

@@ -64,7 +64,7 @@ export type WeekSlotInfo = {
   year: number;
   monday: Date;
   sunday: Date;
-  /** Maandag 12:00 ná de gewerkte week. */
+  /** Dinsdag 12:00 ná de gewerkte week. */
   deadline: Date;
   /** "Week 40 · 2026" */
   label: string;
@@ -457,6 +457,32 @@ function factuurHoortBijWeek(inv: ReceivedRow, week: WeekSlotInfo): boolean {
  * heeft (die komt als FOUT "geen actieve plaatsing" bovendrijven in plaats van
  * stil te verdwijnen).
  */
+/** Iemand met een actieve plaatsing die na de deadline nog niets heeft gestuurd. */
+export type TeLaat = { naam: string; klantNaam: string | null; href: string | null; weekLabel: string };
+
+/**
+ * Wie heeft na de deadline (DEADLINE_LABEL) nog NIETS ingeleverd? Kijkt naar de
+ * twee laatst afgesloten weken, los van de week die op het scherm staat — op
+ * dinsdagmiddag kijk je naar de nieuwe week, maar de rode melding gaat over de
+ * vorige.
+ */
+export async function getTeLaat(now: Date = new Date()): Promise<TeLaat[]> {
+  const uit: TeLaat[] = [];
+  for (const terug of [1, 2]) {
+    const dag = new Date(now);
+    dag.setDate(dag.getDate() - 7 * terug);
+    const week = resolveWeek(null, dag);
+    if (now.getTime() <= week.deadline.getTime()) continue;
+    const { rows } = await getWeekOverview(week.key, now);
+    for (const r of rows) {
+      if (r.status === "NIET_INGELEVERD") {
+        uit.push({ naam: r.naam, klantNaam: r.klantNaam, href: r.href, weekLabel: `week ${week.isoWeek}` });
+      }
+    }
+  }
+  return uit;
+}
+
 export async function getWeekOverview(
   weekParam: string | null | undefined,
   now: Date = new Date(),

@@ -46,12 +46,12 @@ import { evaluateMargin } from "./facturatie-detecties";
 // Vaste afspraken
 // ===========================================================================
 
-/** De inleverdeadline: maandag ná de gewerkte week. */
-export const DEADLINE_WEEKDAG = 1;
+/** De inleverdeadline: dinsdag ná de gewerkte week. */
+export const DEADLINE_WEEKDAG = 2;
 /** …om 12:00 's middags. */
 export const DEADLINE_UUR = 12;
 /** Hoe de deadline op het scherm heet. */
-export const DEADLINE_LABEL = "maandag 12:00";
+export const DEADLINE_LABEL = "dinsdag 12:00";
 
 /** Afrondingsverschillen mogen door; een heel uur (≥ €30) nooit. */
 export const TOLERANTIE_EUR = 1;
@@ -65,12 +65,12 @@ export const DAG_UREN_NORM = 8;
 export const WEEK_UREN_NORM = 40;
 
 /**
- * De maandag 12:00 ná de gewerkte week. `weekMonday` is de maandag VAN de
- * gewerkte week, dus de deadline ligt precies zeven dagen later.
+ * De dinsdag 12:00 ná de gewerkte week. `weekMonday` is de maandag VAN de
+ * gewerkte week, dus de deadline ligt zes dagen na de zondag.
  */
 export function weekDeadline(weekMonday: Date): Date {
   const d = startOfISOWeek(weekMonday);
-  d.setDate(d.getDate() + 7);
+  d.setDate(d.getDate() + 6 + DEADLINE_WEEKDAG);
   d.setHours(DEADLINE_UUR, 0, 0, 0);
   return d;
 }

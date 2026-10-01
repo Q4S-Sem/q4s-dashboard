@@ -18,7 +18,8 @@ import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table"
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { WeekBalk } from "@/components/week-balk";
-import { getWeekOverview, type WeekRow, type WeekStats } from "@/lib/facturatie-week";
+import { getTeLaat, getWeekOverview, type WeekRow, type WeekStats } from "@/lib/facturatie-week";
+import { DEADLINE_LABEL } from "@/lib/facturatie-checks";
 import { cn, formatDate, formatHours } from "@/lib/utils";
 import { ymd } from "@/lib/week-nav";
 import { UploadPaneel } from "./UploadPaneel";
@@ -75,7 +76,7 @@ function DocCel({ status }: { status: "ontvangen" | "ontbreekt" | "nvt" }) {
 }
 
 /** De statusbadge van een regel, met het aantal fouten erin. */
-function StatusCel({ row }: { row: WeekRow }) {
+function StatusCel({ row, teLaat }: { row: WeekRow; teLaat: boolean }) {
   return (
     <span className="flex flex-wrap items-center gap-1">
       {row.gefactureerd ? (
@@ -87,7 +88,7 @@ function StatusCel({ row }: { row: WeekRow }) {
       ) : row.status === "WACHT" ? (
         <Badge color="amber">Wacht op factuur</Badge>
       ) : row.status === "NIET_INGELEVERD" ? (
-        <Badge color="slate">Niet ingeleverd</Badge>
+        <Badge color={teLaat ? "red" : "slate"}>{teLaat ? "Te laat — niets ontvangen" : "Niet ingeleverd"}</Badge>
       ) : (
         <Badge color="green">{row.vastgelegd ? "Verwerkt" : "Klaar"}</Badge>
       )}
@@ -113,8 +114,9 @@ export default async function FacturatiePage({
   }>;
 }) {
   const sp = await searchParams;
-  const overzicht = await getWeekOverview(sp.week);
+  const [overzicht, teLaat] = await Promise.all([getWeekOverview(sp.week), getTeLaat()]);
   const { week, rows, stats, losseUploads, personen } = overzicht;
+  const deadlineVerstreken = Date.now() > week.deadline.getTime();
 
   const filter = (FILTERS.find((f) => f.key === sp.filter)?.key ?? "alles") as Filter;
   const zichtbaar = rows.filter((r) => hoortBijFilter(r, filter));
@@ -141,6 +143,30 @@ export default async function FacturatiePage({
           <WeekBalk basePath="/facturatie" week={week.mondayParam} currentWeek={ymd(new Date())} />
         }
       />
+
+      {/* Rode melding: deadline voorbij en iemand heeft nog NIETS gestuurd. */}
+      {teLaat.length > 0 && (
+        <div role="alert" className="rounded-sm border border-red-300 bg-red-50 px-4 py-3 text-[13px] text-red-800">
+          <p className="flex items-center gap-2 font-semibold">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            {teLaat.length === 1 ? "1 persoon heeft" : `${teLaat.length} personen hebben`} na de deadline ({DEADLINE_LABEL}) nog niets ingeleverd
+          </p>
+          <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 pl-6">
+            {teLaat.map((t) => (
+              <li key={`${t.naam}-${t.weekLabel}`}>
+                {t.href ? (
+                  <Link href={t.href} className="underline underline-offset-2 hover:text-red-950">
+                    {t.naam}
+                  </Link>
+                ) : (
+                  t.naam
+                )}
+                <span className="text-red-700/80"> · {t.weekLabel}{t.klantNaam ? ` · ${t.klantNaam}` : ""}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Melding na een actie — kort en feitelijk, nooit geraden. */}
       {Number.isFinite(verwerkt) && sp.verwerkt !== undefined && (
@@ -212,9 +238,9 @@ export default async function FacturatiePage({
         <StatCard
           label="Niets ingeleverd"
           value={stats.nietIngeleverd}
-          sub={`deadline ma 12:00 · ${formatDate(week.deadline)}`}
+          sub={`deadline ${DEADLINE_LABEL} · ${formatDate(week.deadline)}`}
           icon={<CircleSlash className="h-4 w-4" />}
-          accent="slate"
+          accent={deadlineVerstreken && stats.nietIngeleverd > 0 ? "red" : "slate"}
         />
       </div>
 
@@ -319,7 +345,7 @@ export default async function FacturatiePage({
                     {row.uren === null ? <span className="text-ink-300">—</span> : formatHours(row.uren)}
                   </TD>
                   <TD>
-                    <StatusCel row={row} />
+                    <StatusCel row={row} teLaat={deadlineVerstreken} />
                   </TD>
                   <TD className="max-w-[22rem]">
                     {row.problemen.length > 0 ? (
@@ -329,7 +355,7 @@ export default async function FacturatiePage({
                           ` · +${row.aantalFouten - row.problemen.length} meer`}
                       </span>
                     ) : row.status === "NIET_INGELEVERD" ? (
-                      <span className="text-[13px] text-ink-500">
+                      <span className={cn("text-[13px]", deadlineVerstreken ? "font-medium text-red-700" : "text-ink-500")}>
                         Niets ontvangen · deadline {formatDate(week.deadline)}
                       </span>
                     ) : row.status === "WACHT" ? (

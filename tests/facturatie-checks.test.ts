@@ -23,7 +23,7 @@ import { formatCurrency } from "../src/lib/utils";
 /** Maandag van ISO-week 40 van 2026 (gecontroleerd: 28-09-2026 is een maandag). */
 const MAANDAG = new Date(2026, 8, 28);
 const WEEK_KEY = "2026-W40";
-/** Ruim binnen de deadline (dinsdag ná de gewerkte week is te laat; dit is tijdens). */
+/** Ruim binnen de deadline (dinsdag 12:00 ná de gewerkte week). */
 const NU = new Date(2026, 9, 5, 9, 0, 0);
 
 function dag(offset: number): string {
@@ -143,15 +143,15 @@ function rij(rows: ComparisonRow[], key: string): ComparisonRow {
 // Deadline + losse hulpstukken
 // ===========================================================================
 
-test("deadline is de maandag 12:00 ná de gewerkte week", () => {
+test("deadline is de dinsdag 12:00 ná de gewerkte week", () => {
   const d = weekDeadline(MAANDAG);
-  assert.equal(d.getDay(), 1, "moet een maandag zijn");
-  assert.equal(d.getDate(), 5);
+  assert.equal(d.getDay(), 2, "moet een dinsdag zijn");
+  assert.equal(d.getDate(), 6);
   assert.equal(d.getMonth(), 9); // oktober
   assert.equal(d.getFullYear(), 2026);
   assert.equal(d.getHours(), 12);
   assert.equal(d.getMinutes(), 0);
-  assert.match(DEADLINE_LABEL, /maandag/);
+  assert.match(DEADLINE_LABEL, /dinsdag/);
 });
 
 test("bevoegde ondertekenaars worden uit één komma-veld gelezen", () => {
@@ -216,7 +216,7 @@ test("de vergelijkingstabel bevat de regels uit het ontwerp", () => {
 // ===========================================================================
 
 test("niets ingeleverd = NIET_INGELEVERD, met de verstreken deadline als waarschuwing", () => {
-  const input = { ...basis(), timesheet: null, invoice: null, now: new Date(2026, 9, 6, 9, 0) };
+  const input = { ...basis(), timesheet: null, invoice: null, now: new Date(2026, 9, 7, 9, 0) };
   const res = evaluateFacturatieWeek(input);
   assert.equal(res.status, "NIET_INGELEVERD");
   assert.equal(check(res.checks, "timesheet-tijdig").level, "warn");
@@ -464,8 +464,8 @@ test("dezelfde dag al op een andere urenstaat is een fout", () => {
 
 test("na de deadline ingeleverd is alleen een waarschuwing", () => {
   const input = basis();
-  input.timesheet!.receivedAt = new Date(2026, 9, 6, 9, 0);
-  input.now = new Date(2026, 9, 6, 10, 0);
+  input.timesheet!.receivedAt = new Date(2026, 9, 6, 13, 0); // di 13:00, net te laat
+  input.now = new Date(2026, 9, 7, 10, 0);
   const c = check(evaluateFacturatieWeek(input).checks, "timesheet-tijdig");
   assert.equal(c.level, "warn");
   assert.equal(evaluateFacturatieWeek(input).status, "KLAAR");
@@ -889,4 +889,10 @@ test("dezelfde invoer geeft altijd exact dezelfde uitkomst (puur en deterministi
   const a = evaluateFacturatieWeek(basis());
   const b = evaluateFacturatieWeek(basis());
   assert.deepEqual(a, b);
+});
+
+test("dinsdag 11:59 is op tijd, dinsdag 12:01 is te laat", () => {
+  const leeg = { ...basis(), timesheet: null, invoice: null };
+  assert.equal(check(evaluateFacturatieWeek({ ...leeg, now: new Date(2026, 9, 6, 11, 59) }).checks, "timesheet-tijdig").level, "ok");
+  assert.equal(check(evaluateFacturatieWeek({ ...leeg, now: new Date(2026, 9, 6, 12, 1) }).checks, "timesheet-tijdig").level, "warn");
 });
