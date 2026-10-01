@@ -14,15 +14,14 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
+import { PaginaKop } from "@/components/ui/filter-tegels";
+import { DashboardChart } from "../../dashboard/DashboardChart";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
-import { Select } from "@/components/ui/field";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { buttonVariants } from "@/components/ui/button";
-import { QUARTERS } from "@/lib/domain";
 import { cn, formatCurrency, formatDate, formatHours, formatPercent } from "@/lib/utils";
 import { btwOverview, periodToRange } from "@/lib/boekhouding";
 import { invoicingOverview } from "@/lib/facturatie";
@@ -284,56 +283,51 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
     }
   }
 
-  const jaren = Array.from({ length: maxJaar - START_JAAR + 1 }, (_, i) => START_JAAR + i);
   const btwTeBetalen = btw.saldo >= 0;
+  const periodeHref = (j: number, k: number | null) =>
+    `/facturatie/rapportage?jaar=${j}&kwartaal=${k ?? "jaar"}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Facturatie"
-        title="Rapportage"
-        description={`Omzet, inkoop, marge en btw over ${range.label.toLowerCase()} — plus wie telkens dezelfde fout maakt.`}
-        actions={
-          <form method="get" className="flex flex-wrap items-end gap-2">
-            <div>
-              <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-400">
-                Jaar
-              </span>
-              <Select name="jaar" defaultValue={String(jaar)} aria-label="Jaar" className="w-28">
-                {jaren.map((y) => (
-                  <option key={y} value={String(y)}>
-                    {y}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-400">
-                Periode
-              </span>
-              <Select
-                name="kwartaal"
-                defaultValue={kwartaal ? String(kwartaal) : "jaar"}
-                aria-label="Periode"
-                className="w-40"
-              >
-                {QUARTERS.map((q) => (
-                  <option key={q.value} value={q.value}>
-                    {q.label}
-                  </option>
-                ))}
-                <option value="jaar">Heel jaar</option>
-              </Select>
-            </div>
-            <button type="submit" className={buttonVariants({ variant: "secondary" })}>
-              Toon
-            </button>
-          </form>
-        }
-      />
+    <div className="space-y-4">
+      <PaginaKop
+        titel="Rapportage"
+        sub={`${range.label} · omzet, inkoop, marge en btw — plus wie telkens dezelfde fout maakt`}
+      >
+        {/* Periode als knoppen: één klik, geen formulier. */}
+        <div className="flex items-center gap-1 rounded-lg border border-ink-200 bg-white p-1">
+          <Link
+            href={periodeHref(Math.max(jaar - 1, START_JAAR), kwartaal)}
+            className="flex h-8 items-center rounded-md px-2 text-[13px] font-medium text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+            aria-label="Vorig jaar"
+          >
+            ‹
+          </Link>
+          <span className="px-1 text-[13px] font-semibold tabular-nums text-ink-900">{jaar}</span>
+          <Link
+            href={periodeHref(Math.min(jaar + 1, maxJaar), kwartaal)}
+            className="flex h-8 items-center rounded-md px-2 text-[13px] font-medium text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+            aria-label="Volgend jaar"
+          >
+            ›
+          </Link>
+          {[1, 2, 3, 4, null].map((k) => (
+            <Link
+              key={k ?? "jaar"}
+              href={periodeHref(jaar, k)}
+              aria-current={kwartaal === k ? "page" : undefined}
+              className={cn(
+                "h-8 rounded-md px-2.5 text-[13px] font-medium leading-8",
+                kwartaal === k ? "bg-ink-900 text-white" : "text-ink-600 hover:bg-ink-100",
+              )}
+            >
+              {k ? `Q${k}` : "Jaar"}
+            </Link>
+          ))}
+        </div>
+      </PaginaKop>
 
-      {/* Van omzet naar marge */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      {/* KPI-rij */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Omzet (ex btw)"
           value={formatCurrency(inv.omzet)}
@@ -354,6 +348,7 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
           sub={`${formatPercent(inv.margePct)} van de omzet`}
           icon={<TrendingUp className="h-4 w-4" />}
           accent="violet"
+          progress={Math.max(0, Math.min(1, inv.margePct / 100))}
         />
         <StatCard
           label="Nog te ontvangen"
@@ -366,82 +361,89 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
           icon={<Coins className="h-4 w-4" />}
           accent={inv.overdue > 0 ? "red" : "slate"}
         />
-        <StatCard
-          label="Nog te betalen"
-          value={formatCurrency(inv.teBetalen)}
-          sub={`${inv.teBetalenCount} goedgekeurde freelancerfacturen`}
-          icon={<Coins className="h-4 w-4" />}
-          accent="slate"
-        />
       </div>
 
-      {/* Btw-indicatie */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Scale className="h-4 w-4 text-ink-400" /> Btw — {range.label}
-          </CardTitle>
-          <span className="text-xs text-ink-400">
-            Een management-indicatie ter voorbereiding, geen officiële aangifte.
-          </span>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-3">
-          <StatCard
-            label="Verschuldigde btw"
-            value={formatCurrency(btw.verschuldigd)}
-            sub={`over ${formatCurrency(btw.verkoop.net)} omzet · ${btw.verkoop.count} facturen`}
-            accent="amber"
-          />
-          <StatCard
-            label="Voorbelasting (terug)"
-            value={formatCurrency(btw.voorbelasting)}
-            sub={`uit ${btw.voorbelastingBronnen.length} ${btw.voorbelastingBronnen.length === 1 ? "bron" : "bronnen"}`}
-            accent="green"
-          />
-          <StatCard
-            label={btwTeBetalen ? "Te betalen aan Belastingdienst" : "Terug te vorderen"}
-            value={formatCurrency(Math.abs(btw.saldo))}
-            sub={btwTeBetalen ? "verschuldigd − voorbelasting" : "voorbelasting − verschuldigd"}
-            accent={btwTeBetalen ? "red" : "green"}
-          />
-        </CardContent>
-        {(btw.concepten.salesCount > 0 ||
-          btw.onbekendeBtw.count > 0 ||
-          btw.nietAftrekbaar.count > 0) && (
-          <CardContent className="space-y-2 pt-0">
-            {btw.concepten.salesCount > 0 && (
-              <p className="rounded-sm border border-ink-200 bg-ink-50 px-3 py-2 text-[13px] text-ink-600">
-                <strong>
-                  {btw.concepten.salesCount} concept-
-                  {btw.concepten.salesCount === 1 ? "verkoopfactuur" : "verkoopfacturen"}
-                </strong>{" "}
-                ({formatCurrency(btw.concepten.salesVat)} btw) tellen nog niet mee — pas als je ze
-                verstuurt.
-              </p>
-            )}
-            {btw.onbekendeBtw.count > 0 && (
-              <p className="rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-900">
-                <strong>
-                  {btw.onbekendeBtw.count} {btw.onbekendeBtw.count === 1 ? "post" : "posten"} zonder
-                  btw-bedrag
-                </strong>{" "}
-                ({formatCurrency(btw.onbekendeBtw.grossTotal)} incl.) — vul de btw aan, anders mis je
-                die voorbelasting.
-              </p>
-            )}
-            {btw.nietAftrekbaar.count > 0 && (
-              <p className="rounded-sm border border-ink-200 bg-ink-50 px-3 py-2 text-[13px] text-ink-600">
-                {btw.nietAftrekbaar.count} niet-aftrekbare{" "}
-                {btw.nietAftrekbaar.count === 1 ? "bon" : "bonnen"} — hun btw (
-                {formatCurrency(btw.nietAftrekbaar.vatExcluded)}) telt bewust <em>niet</em> mee.
-              </p>
-            )}
+      {/* Grafiek + geld onderweg */}
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-ink-400" /> Omzet, inkoop en marge
+            </CardTitle>
+            <span className="text-xs text-ink-400">laatste 12 maanden, ex btw</span>
+          </CardHeader>
+          <CardContent>
+            <DashboardChart data={inv.perMonth.map((m) => ({ month: m.label, omzet: m.omzet, inkoop: m.inkoop, marge: m.marge }))} />
           </CardContent>
-        )}
-      </Card>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Scale className="h-4 w-4 text-ink-400" /> Geld onderweg
+            </CardTitle>
+            <span className="text-xs text-ink-400">{range.label}</span>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Balk
+              label="Nog te ontvangen"
+              waarde={inv.openstaand}
+              deel={inv.overdue}
+              deelLabel={`${formatCurrency(inv.overdue)} te laat`}
+              kleur="bg-red-500"
+            />
+            <Balk
+              label="Nog te betalen aan freelancers"
+              waarde={inv.teBetalen}
+              sub={`${inv.teBetalenCount} goedgekeurde facturen`}
+            />
+            <div className="border-t border-ink-100 pt-3">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-400">Btw-indicatie</p>
+              <dl className="space-y-1.5 text-[13px]">
+                <div className="flex justify-between">
+                  <dt className="text-ink-500">Verschuldigd</dt>
+                  <dd className="tabular-nums text-ink-900">{formatCurrency(btw.verschuldigd)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-ink-500">Voorbelasting</dt>
+                  <dd className="tabular-nums text-ink-900">− {formatCurrency(btw.voorbelasting)}</dd>
+                </div>
+                <div className="flex justify-between border-t border-ink-100 pt-1.5 font-semibold">
+                  <dt>{btwTeBetalen ? "Te betalen" : "Terug te vorderen"}</dt>
+                  <dd className={cn("tabular-nums", btwTeBetalen ? "text-red-700" : "text-emerald-700")}>
+                    {formatCurrency(Math.abs(btw.saldo))}
+                  </dd>
+                </div>
+              </dl>
+              {(btw.concepten.salesCount > 0 || btw.onbekendeBtw.count > 0 || btw.nietAftrekbaar.count > 0) && (
+                <ul className="mt-3 space-y-1 text-xs text-ink-500">
+                  {btw.concepten.salesCount > 0 && (
+                    <li>
+                      {btw.concepten.salesCount} concept{btw.concepten.salesCount === 1 ? "" : "en"} (
+                      {formatCurrency(btw.concepten.salesVat)} btw) telt pas mee na versturen.
+                    </li>
+                  )}
+                  {btw.onbekendeBtw.count > 0 && (
+                    <li className="text-amber-700">
+                      {btw.onbekendeBtw.count} post{btw.onbekendeBtw.count === 1 ? "" : "en"} zonder btw-bedrag (
+                      {formatCurrency(btw.onbekendeBtw.grossTotal)} incl.) — vul aan.
+                    </li>
+                  )}
+                  {btw.nietAftrekbaar.count > 0 && (
+                    <li>
+                      {btw.nietAftrekbaar.count} niet-aftrekbare bon{btw.nietAftrekbaar.count === 1 ? "" : "nen"} (
+                      {formatCurrency(btw.nietAftrekbaar.vatExcluded)}) telt bewust niet mee.
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Marge per klant / per freelancer */}
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -748,6 +750,37 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
         Dit is een management-overzicht ter controle, geen officiële btw-aangifte. Verlegde btw,
         buitenlandse leveranciers, intracommunautaire leveringen en privégebruik vallen erbuiten.
       </p>
+    </div>
+  );
+}
+
+/** Eén regel "budget"-stijl: label + bedrag, met een balk die het deel toont (bv. te laat). */
+function Balk({
+  label,
+  waarde,
+  deel,
+  deelLabel,
+  sub,
+  kleur = "bg-ink-900",
+}: {
+  label: string;
+  waarde: number;
+  deel?: number;
+  deelLabel?: string;
+  sub?: string;
+  kleur?: string;
+}) {
+  const pct = deel !== undefined && waarde > 0 ? Math.min(100, Math.round((deel / waarde) * 100)) : 100;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[13px] text-ink-500">{label}</span>
+        <span className="text-[15px] font-semibold tabular-nums text-ink-900">{formatCurrency(waarde)}</span>
+      </div>
+      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ink-100">
+        <div className={cn("h-full rounded-full", waarde > 0 ? kleur : "bg-transparent")} style={{ width: `${pct}%` }} />
+      </div>
+      <p className="mt-1 text-xs text-ink-400">{deelLabel && deel ? deelLabel : sub ?? (deel !== undefined ? "alles op tijd" : "")}</p>
     </div>
   );
 }

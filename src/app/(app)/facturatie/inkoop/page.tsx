@@ -15,8 +15,7 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
-import { StatusVerdeling } from "@/components/ui/status-verdeling";
+import { FilterTegels, PaginaKop } from "@/components/ui/filter-tegels";
 import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge, StatusBadge } from "@/components/ui/badge";
@@ -28,9 +27,10 @@ import { Input, Select } from "@/components/ui/field";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { ReceivedInvoicePreviewButton } from "@/components/received-invoice-preview-button";
-import { WeekBalk } from "@/components/week-balk";
+import { weekSlotVanDatum } from "@/lib/week-koppeling";
+import { WeekStrip } from "../WeekStrip";
 import { EXPENSE_CATEGORIES, EXPENSE_STATUSES, RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
-import { cn, formatCurrency, formatDate, formatHours, round2, startOfISOWeek } from "@/lib/utils";
+import { cn, formatCurrency, formatDate, formatHours, formatWeekLabel, round2 } from "@/lib/utils";
 import { parseWeek, ymd } from "@/lib/week-nav";
 import { listReceivedInvoices } from "@/lib/received-invoices";
 import { ZZP_PAYMENT_TERM_DAYS } from "@/lib/betalingen";
@@ -78,12 +78,12 @@ import { createManualExpense, deleteExpense, uploadExpenses } from "./declaratie
 
 export const metadata = { title: "Inkoop & betalingen" };
 const INKOOP_ICOON: Record<InkoopTab, React.ReactNode> = {
-  controleren: <FileSearch className="h-5 w-5" />,
-  tebetalen: <Banknote className="h-5 w-5" />,
-  betaald: <CheckCircle2 className="h-5 w-5" />,
-  afwijking: <AlertTriangle className="h-5 w-5" />,
-  alles: <Layers className="h-5 w-5" />,
-  declaraties: <ReceiptText className="h-5 w-5" />,
+  controleren: <FileSearch className="h-3.5 w-3.5" />,
+  tebetalen: <Banknote className="h-3.5 w-3.5" />,
+  betaald: <CheckCircle2 className="h-3.5 w-3.5" />,
+  afwijking: <AlertTriangle className="h-3.5 w-3.5" />,
+  alles: <Layers className="h-3.5 w-3.5" />,
+  declaraties: <ReceiptText className="h-3.5 w-3.5" />,
 };
 const INKOOP_TOON: Record<InkoopTab, "slate" | "blue" | "green" | "amber" | "red" | "violet"> = {
   controleren: "amber",
@@ -243,32 +243,30 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Facturatie"
-        title="Inkoop & betalingen"
-        description="De facturen die freelancers zelf sturen, hun declaraties en de afstemming met de bank. Q4S maakt zelf geen inkoopfactuur — hun factuur ís de inkoop."
-        actions={
-          <a
-            href="/api/betalingen/sepa"
-            className={buttonVariants({
-              variant: betaalbaar.length > 0 && heeftEigenIban ? "primary" : "outline",
-            })}
-            aria-disabled={betaalbaar.length === 0 || !heeftEigenIban}
-            title="Download een pain.001-bestand met alle goedgekeurde betalingen"
-          >
-            <Download className="h-4 w-4" /> SEPA-bestand ({betaalbaar.length})
-          </a>
-        }
-      />
-
-      <WeekBalk
-        basePath="/facturatie/inkoop"
-        week={weekParam}
-        currentWeek={ymd(startOfISOWeek(now))}
-        extraParams={{ tab }}
-        allWeeks
-      />
+    <div className="space-y-4">
+      <PaginaKop
+        titel="Inkoop & betalingen"
+        sub={`${monday ? formatWeekLabel(monday) : "Alle weken"} · wat we aan ZZP'ers moeten betalen, en wanneer`}
+      >
+        <WeekStrip
+          basePath="/facturatie/inkoop"
+          huidig={weekSlotVanDatum(weekParam)?.key ?? null}
+          vandaag={ymd(now)}
+          alleWeken
+          extra={{ tab: tab === "controleren" ? undefined : tab, q: sp.q }}
+        />
+        <a
+          href="/api/betalingen/sepa"
+          className={buttonVariants({
+            variant: betaalbaar.length > 0 && heeftEigenIban ? "primary" : "outline",
+            size: "sm",
+          })}
+          aria-disabled={betaalbaar.length === 0 || !heeftEigenIban}
+          title="Download een pain.001-bestand met alle goedgekeurde betalingen"
+        >
+          <Download className="h-4 w-4" /> SEPA ({betaalbaar.length})
+        </a>
+      </PaginaKop>
 
       {sp.reset === "ok" && (
         <p className="flex items-start gap-2 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
@@ -366,17 +364,21 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
         />
       </div>
 
-      <StatusVerdeling
-        title="Facturen per status"
-        items={INKOOP_TABS.map((t) => ({
-          key: t.key,
-          label: t.label,
-          count: t.key === "declaraties" ? declaraties.length : tellingen[t.key as keyof typeof tellingen],
-          icon: INKOOP_ICOON[t.key],
-          tone: t.key === "afwijking" && tellingen.afwijking > 0 ? "red" : INKOOP_TOON[t.key],
-          href: tabHref(t.key),
-          active: tab === t.key,
-        }))}
+      <FilterTegels
+        label="Filter op status"
+        items={INKOOP_TABS.map((t) => {
+          const aantal = t.key === "declaraties" ? declaraties.length : tellingen[t.key as keyof typeof tellingen];
+          return {
+            key: t.key,
+            label: t.label,
+            waarde: t.key === "declaraties" && !toonDeclaraties ? "—" : aantal,
+            icon: INKOOP_ICOON[t.key],
+            toon: INKOOP_TOON[t.key],
+            rood: t.key === "afwijking" && tellingen.afwijking > 0,
+            href: tabHref(t.key),
+            actief: tab === t.key,
+          };
+        })}
       />
 
       {toonDeclaraties ? (

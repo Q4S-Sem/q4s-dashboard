@@ -2,14 +2,13 @@ import Link from "next/link";
 import { AlertTriangle, Ban, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
-import { StatusVerdeling } from "@/components/ui/status-verdeling";
+import { FilterTegels, PaginaKop } from "@/components/ui/filter-tegels";
 import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
-import { WeekBalk } from "@/components/week-balk";
-import { cn, formatCurrency, formatWeekLabel, round2, startOfISOWeek } from "@/lib/utils";
+import { weekSlotVanDatum } from "@/lib/week-koppeling";
+import { WeekStrip } from "../WeekStrip";
+import { cn, formatCurrency, formatWeekLabel, round2 } from "@/lib/utils";
 import { parseWeek, ymd } from "@/lib/week-nav";
 import {
   VERKOOP_TABS,
@@ -32,13 +31,13 @@ import { VerkoopLijst, type VerkoopFactuurRij } from "./VerkoopLijst";
 
 export const metadata = { title: "Verkoopfacturen" };
 const VERKOOP_ICOON: Record<VerkoopTab, React.ReactNode> = {
-  alles: <Layers className="h-5 w-5" />,
-  concept: <FilePen className="h-5 w-5" />,
-  klaar: <Send className="h-5 w-5" />,
-  verzonden: <Clock className="h-5 w-5" />,
-  telaat: <AlertTriangle className="h-5 w-5" />,
-  betaald: <CheckCircle2 className="h-5 w-5" />,
-  geannuleerd: <Ban className="h-5 w-5" />,
+  alles: <Layers className="h-3.5 w-3.5" />,
+  concept: <FilePen className="h-3.5 w-3.5" />,
+  klaar: <Send className="h-3.5 w-3.5" />,
+  verzonden: <Clock className="h-3.5 w-3.5" />,
+  telaat: <AlertTriangle className="h-3.5 w-3.5" />,
+  betaald: <CheckCircle2 className="h-3.5 w-3.5" />,
+  geannuleerd: <Ban className="h-3.5 w-3.5" />,
 };
 const VERKOOP_TOON: Record<VerkoopTab, "slate" | "blue" | "green" | "amber" | "red" | "violet"> = {
   alles: "slate",
@@ -184,7 +183,6 @@ export default async function VerkoopfacturenPage({
   const teLaatBedrag = round2(
     alle.filter((i) => i.weergave === "OVERDUE").reduce((s, i) => s + i.total, 0),
   );
-  const betaald = round2(alle.filter((i) => i.status === "PAID").reduce((s, i) => s + i.total, 0));
 
   const m = melding(sp);
   const tabHref = (key: VerkoopTab) => {
@@ -198,29 +196,26 @@ export default async function VerkoopfacturenPage({
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Facturatie"
-        title="Verkoopfacturen"
-        description="Alles wat naar klanten gaat, in één lijst: concept nakijken, klaarzetten en versturen. Niets gaat vanzelf de deur uit."
-        actions={
-          <a
-            href="/api/facturen/export"
-            className={buttonVariants({ variant: "outline" })}
-            title="Download alle facturen als ZIP voor de boekhouder"
-          >
-            <Download className="h-4 w-4" /> Export voor boekhouder
-          </a>
-        }
-      />
-
-      <WeekBalk
-        basePath="/facturatie/verkoop"
-        week={weekParam}
-        currentWeek={ymd(startOfISOWeek(now))}
-        extraParams={{ tab: tab === "alles" ? undefined : tab, client: klantFilter?.id }}
-        allWeeks
-      />
+    <div className="space-y-4">
+      <PaginaKop
+        titel="Verkoopfacturen"
+        sub={`${monday ? formatWeekLabel(monday) : "Alle weken"} · ${formatCurrency(omzet)} gefactureerd · ${formatCurrency(openstaand)} openstaand`}
+      >
+        <WeekStrip
+          basePath="/facturatie/verkoop"
+          huidig={weekSlotVanDatum(weekParam)?.key ?? null}
+          vandaag={ymd(now)}
+          alleWeken
+          extra={{ tab: tab === "alles" ? undefined : tab, client: klantFilter?.id, q: sp.q }}
+        />
+        <a
+          href="/api/facturen/export"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+          title="Download alle facturen als ZIP voor de boekhouder"
+        >
+          <Download className="h-4 w-4" /> Export
+        </a>
+      </PaginaKop>
 
       {klantFilter && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-ink-200 bg-ink-50 px-4 py-2.5 text-[13px]">
@@ -254,51 +249,17 @@ export default async function VerkoopfacturenPage({
         </p>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Gefactureerd (incl. btw)"
-          value={formatCurrency(omzet)}
-          sub={`${tellingen.alles} factu${tellingen.alles === 1 ? "ur" : "ren"}${monday ? ` · ${formatWeekLabel(monday).toLowerCase()}` : ""}`}
-          icon={<Receipt className="h-4 w-4" />}
-          accent="slate"
-        />
-        <StatCard
-          label="Klaar om te verzenden"
-          value={tellingen.klaar}
-          sub={tellingen.concept > 0 ? `${tellingen.concept} nog als concept` : "geen concepten open"}
-          icon={<Send className="h-4 w-4" />}
-          accent={tellingen.klaar > 0 ? "green" : "slate"}
-        />
-        <StatCard
-          label="Openstaand bij klanten"
-          value={formatCurrency(openstaand)}
-          sub={`${tellingen.verzonden} verzonden, nog niet betaald`}
-          icon={<Clock className="h-4 w-4" />}
-          accent="amber"
-        />
-        <StatCard
-          label="Te laat"
-          value={formatCurrency(teLaatBedrag)}
-          sub={
-            tellingen.telaat > 0
-              ? `${tellingen.telaat} factu${tellingen.telaat === 1 ? "ur" : "ren"} over de vervaldatum`
-              : `alles op tijd · ${formatCurrency(betaald)} binnen`
-          }
-          icon={<AlertTriangle className="h-4 w-4" />}
-          accent={tellingen.telaat > 0 ? "red" : "slate"}
-        />
-      </div>
-
-      <StatusVerdeling
-        title="Facturen per status"
-        items={VERKOOP_TABS.map((t) => ({
+      <FilterTegels
+        label="Filter op status"
+        items={VERKOOP_TABS.filter((t) => t.key !== "geannuleerd" || tellingen.geannuleerd > 0).map((t) => ({
           key: t.key,
-          label: t.label,
-          count: tellingen[t.key],
+          label: t.key === "telaat" && teLaatBedrag > 0 ? `Te laat · ${formatCurrency(teLaatBedrag)}` : t.label,
+          waarde: tellingen[t.key],
           icon: VERKOOP_ICOON[t.key],
-          tone: t.key === "telaat" && tellingen.telaat > 0 ? "red" : VERKOOP_TOON[t.key],
+          toon: VERKOOP_TOON[t.key],
+          rood: t.key === "telaat" && tellingen.telaat > 0,
           href: tabHref(t.key),
-          active: tab === t.key,
+          actief: tab === t.key,
         }))}
       />
 
