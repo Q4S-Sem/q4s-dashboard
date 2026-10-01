@@ -112,11 +112,13 @@ export async function graphUpload(
   remotePath: string,
   bytes: Uint8Array,
   contentType?: string,
+  /** true = `remotePath` is vanaf de root van de drive (bestandsverkenner), niet onder rootFolder. */
+  vanafRoot = false,
 ): Promise<GraphUploadResult> {
   const token = await getToken(cfg);
   if (!token) return { ok: false, error: "Geen toegangstoken — controleer tenant/client/secret." };
 
-  const encPath = encodePath(`${cfg.rootFolder}/${remotePath}`);
+  const encPath = encodePath(vanafRoot ? remotePath : `${cfg.rootFolder}/${remotePath}`);
   const base = driveBase(cfg);
   try {
     if (bytes.byteLength <= SMALL_MAX) {
@@ -165,6 +167,102 @@ export async function graphUpload(
       start = end;
     }
     return { ok: true, webUrl: lastBody?.webUrl };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bestandsverkenner: de BESTAANDE mappen van de drive bekijken en erin werken.
+// Paden zijn vanaf de root van de drive ("" = root, "Contracten Q4S/2026").
+// ---------------------------------------------------------------------------
+
+export type DriveItem = {
+  id: string;
+  name: string;
+  isFolder: boolean;
+  size: number;
+  /** Aantal items in een map. */
+  childCount: number | null;
+  modified: string | null;
+  /** Opent het bestand/de map in OneDrive/Office online. */
+  webUrl: string | null;
+};
+
+/** Een pad uit de URL veilig maken: geen "..", geen lege of verboden segmenten. */
+export function veiligPad(raw: string | null | undefined): string {
+  return String(raw ?? "")
+    .split("/")
+    .map((s) => s.replace(/[\\:*?"<>|]/g, "").trim())
+    .filter((s) => s && s !== "." && s !== "..")
+    .join("/");
+}
+
+function itemUrl(cfg: CloudConfig, pad: string): string {
+  const p = encodePath(pad);
+  return p ? `${driveBase(cfg)}/root:/${p}:` : `${driveBase(cfg)}/root`;
+}
+
+/** De inhoud van één map (mappen eerst, dan op naam). */
+export async function graphList(
+  cfg: CloudConfig,
+  pad: string,
+): Promise<{ ok: true; items: DriveItem[] } | { ok: false; error: string }> {
+  const token = await getToken(cfg);
+  if (!token) return { ok: false, error: "Geen toegangstoken — controleer tenant/client/secret." };
+  const items: DriveItem[] = [];
+  let url: string | undefined =
+    `${itemUrl(cfg, pad)}/children?$top=200&$select=id,name,size,folder,file,webUrl,lastModifiedDateTime`;
+  try {
+    // ponytail: max 5 pagina's (1000 items) per map; meer = zoeken gebruiken.
+    for (let i = 0; url && i < 5; i++) {
+      const res: Response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 404) return { ok: false, error: "Deze map bestaat niet (meer)." };
+      if (!res.ok) return { ok: false, error: `OneDrive-fout ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}` };
+      const j = (await res.json()) as {
+        value: {
+          id: string;
+          name: string;
+          size?: number;
+          folder?: { childCount?: number };
+          webUrl?: string;
+          lastModifiedDateTime?: string;
+        }[];
+        "@odata.nextLink"?: string;
+      };
+      for (const v of j.value) {
+        items.push({
+          id: v.id,
+          name: v.name,
+          isFolder: Boolean(v.folder),
+          size: v.size ?? 0,
+          childCount: v.folder?.childCount ?? null,
+          modified: v.lastModifiedDateTime ?? null,
+          webUrl: v.webUrl ?? null,
+        });
+      }
+      url = j["@odata.nextLink"];
+    }
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+  items.sort((a, b) => Number(b.isFolder) - Number(a.isFolder) || a.name.localeCompare(b.name, "nl"));
+  return { ok: true, items };
+}
+
+/** Nieuwe map in `pad`. Bestaat de naam al, dan maakt OneDrive er "naam 1" van. */
+export async function graphCreateFolder(cfg: CloudConfig, pad: string, naam: string): Promise<GraphUploadResult> {
+  const token = await getToken(cfg);
+  if (!token) return { ok: false, error: "Geen toegangstoken — controleer tenant/client/secret." };
+  try {
+    const res = await fetch(`${itemUrl(cfg, pad)}/children`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ name: sanitizeName(naam), folder: {}, "@microsoft.graph.conflictBehavior": "rename" }),
+    });
+    if (!res.ok) return { ok: false, error: `Map aanmaken mislukt (${res.status}).` };
+    const j = (await res.json().catch(() => null)) as { webUrl?: string } | null;
+    return { ok: true, webUrl: j?.webUrl };
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }

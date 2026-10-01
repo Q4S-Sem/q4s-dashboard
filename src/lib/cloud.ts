@@ -259,3 +259,12 @@ export async function alreadyMirrored(storedFileName: string): Promise<boolean> 
   });
   return Boolean(hit);
 }
+
+/**
+ * De drive voor de bestandsverkenner: de eerste ECHT gekoppelde (OneDrive gaat
+ * voor), of null als er nog niets gekoppeld is.
+ */
+export async function explorerConfig(): Promise<CloudConfig | null> {
+  const { targets } = await buildTargets();
+  return targets.find((t) => t.live)?.config ?? null;
+}
