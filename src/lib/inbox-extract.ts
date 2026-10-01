@@ -35,6 +35,17 @@ type Extracted = {
   project: string;
   notes: string;
   confidence: string;
+  // --- Controlevelden voor "Week verwerken" (src/lib/facturatie-checks.ts) ----
+  // Deze gaan mee in extractedJson; er komt GEEN kolom per veld bij.
+  signaturePresent: boolean;
+  signerName: string;
+  clientName: string;
+  projectName: string;
+  location: string;
+  poNumber: string;
+  travelHours: number;
+  expenses: number;
+  pagesComplete: boolean;
 };
 
 const EXTRACT_SCHEMA = {
@@ -66,8 +77,17 @@ const EXTRACT_SCHEMA = {
     project: { type: "string", description: "Project, opdrachtgever, locatie of uurcode indien vermeld (bv. 'HSM Stormpolder', 'Mistras'); anders lege string." },
     notes: { type: "string", description: "Onzekerheden of opvallende zaken, ALTIJD in het Nederlands (ook bij een Engelstalige staat); anders lege string." },
     confidence: { type: "string", enum: ["high", "medium", "low"], description: "Hoe zeker ben je over deze uitlezing? 'low' als de opmaak onduidelijk was, cijfers slecht leesbaar zijn, of je moest gokken; 'high' als alles helder en eenduidig was; anders 'medium'." },
+    signaturePresent: { type: "boolean", description: "Staat er een HANDTEKENING van de opdrachtgever/klant op de staat (een krabbel, een ingescande of digitale signature, of een duidelijk 'approved by'-veld dat is ingevuld)? true = ja, false = het veld is leeg of er is geen handtekening. Alleen false als je dat zeker ziet." },
+    signerName: { type: "string", description: "De naam van de persoon die namens de OPDRACHTGEVER heeft ondertekend/goedgekeurd (bij 'Signature client', 'Approved by', 'Namens opdrachtgever'), bv. 'P. Jansen'. NIET de naam van de medewerker zelf. Lege string als er geen naam bij de handtekening staat." },
+    clientName: { type: "string", description: "De naam van de OPDRACHTGEVER/klant zoals die op de staat staat (bv. 'Sif Group', 'Heerema'). Lege string als er geen klant op de staat staat." },
+    projectName: { type: "string", description: "De projectnaam of projectcode op de staat (bv. 'HKW8'). Lege string als er geen project op de staat staat." },
+    location: { type: "string", description: "De WERKLOCATIE op de staat (bv. 'Maasvlakte', 'Stormpolder'). Lege string als er geen locatie op de staat staat." },
+    poNumber: { type: "string", description: "Het inkoop-order-/PO-nummer van de klant zoals op de staat vermeld ('PO', 'Inkoopordernummer', 'Order no.'), bv. '4500123'. Lege string als er geen PO op de staat staat — verwar het niet met een project- of werknemersnummer." },
+    travelHours: { type: "number", description: "REISUREN die apart als zodanig op de staat staan ('reisuren', 'travel hours', 'travel time'), dus NIET gewerkte uren en NIET kilometers. 0 als die regel er niet is." },
+    expenses: { type: "number", description: "Het bedrag in EURO's aan losse onkosten/declaraties dat op de staat genoemd wordt (parkeren, verblijf, bonnetjes). Alleen het bedrag, niet de kilometers. 0 als er geen onkosten op de staat staan." },
+    pagesComplete: { type: "boolean", description: "Is het document COMPLEET en leesbaar? false als er pagina's lijken te ontbreken, de scan is afgesneden, of een deel van het raster onleesbaar is. true als je alles kon lezen." },
   },
-  required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes", "confidence"],
+  required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes", "confidence", "signaturePresent", "signerName", "clientName", "projectName", "location", "poNumber", "travelHours", "expenses", "pagesComplete"],
 };
 
 const SYSTEM_EXTRACT = `Je bent een uiterst nauwkeurige administratieve assistent bij Q4S, een Nederlands detacheringsbureau. Je leest binnengekomen WEEKstaten (timesheets) uit die door gedetacheerde vakmensen worden aangeleverd. Elke aanleverder gebruikt een eigen opmaak; herken ook het Q4S-formulier (FO-Q4S-18).
@@ -110,6 +130,13 @@ CONTROLE:
 - Vul reportedTotalHours en reportedTotalKm met de totalen die de staat ZELF vermeldt ('Hours worked Total', 'Total Kilometers'). Laat je dag-optelling (totalHours) hiermee kloppen; wijkt het af, noem dat kort in notes.
 
 NAAM: name = de naam van de medewerker.
+
+HANDTEKENING & PROJECTGEGEVENS (hier wordt de week straks op gecontroleerd — kijk hier dus extra goed):
+- signaturePresent: staat er een handtekening/goedkeuring van de OPDRACHTGEVER op (krabbel, digitale signature, ingevuld 'Approved by'-veld)? Zet alleen false als je duidelijk ziet dat het veld leeg is; weet je het niet, zet dan true en meld de twijfel in notes.
+- signerName: de naam BIJ die handtekening van de opdrachtgever (bv. 'P. Jansen'), nooit de naam van de medewerker zelf.
+- clientName / projectName / location / poNumber: neem letterlijk over wat er op de staat staat. Staat het er niet, laat het dan LEEG — nooit invullen met iets uit een ander veld.
+- travelHours en expenses: alleen vullen als de staat ze APART noemt (reisuren resp. een bedrag aan onkosten). Kilometers horen in het veld kilometers, niet hier.
+- pagesComplete: false als er pagina's/delen ontbreken of onleesbaar zijn afgesneden.
 
 Zaterdag- en zonduren leiden wij zelf af uit de datums; vul de uren gewoon bij de juiste dag/datum in.`;
 
@@ -264,7 +291,7 @@ export async function runInboxExtraction(id: string): Promise<void> {
     : await aiJSONFromFile<Extracted>({
         system,
         prompt:
-          "Lees deze weekstaat (timesheet) uit. Let op: tel per dag ALLE reguliere uren-regels op tot één dagtotaal (excl. overuren), haal de overuren uit de aparte overuren-sectie, en de kilometers uit het reisblok (From/To/Km) of het 'Total Kilometers'-veld. Geef naam, week (maandag), de uren per dag, het weektotaal, de kilometers en de overuren terug volgens het schema.",
+          "Lees deze weekstaat (timesheet) uit. Let op: tel per dag ALLE reguliere uren-regels op tot één dagtotaal (excl. overuren), haal de overuren uit de aparte overuren-sectie, en de kilometers uit het reisblok (From/To/Km) of het 'Total Kilometers'-veld. Kijk daarnaast of er een handtekening van de opdrachtgever op staat (en van wie) en neem klant, project, locatie en PO-nummer letterlijk over. Geef naam, week (maandag), de uren per dag, het weektotaal, de kilometers, de overuren en die controlevelden terug volgens het schema.",
         schema: EXTRACT_SCHEMA,
         file: { base64: await readInboxBase64(item.fileName), mediaType },
         maxTokens: 2500,

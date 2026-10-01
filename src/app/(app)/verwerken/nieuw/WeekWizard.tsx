@@ -74,7 +74,7 @@ import {
 } from "@/lib/timesheet-correction-core";
 import { deleteTimesheet } from "../../uren/actions";
 import { bewaarConcept, leesFactuur, leesTimesheet, verwerkWeek } from "./actions";
-import { DocumentViewer } from "./DocumentViewer";
+import { DocumentViewer } from "@/components/document-viewer";
 import { PersoonPicker } from "./PersoonPicker";
 import { WeekStrip } from "./WeekStrip";
 import {

@@ -283,6 +283,17 @@ model Placement {
   /// BTW verlegd op de verkoopfactuur voor deze plaatsing? Aan = 0% BTW +
   /// verplichte "BTW verlegd"-vermelding (reverse charge). Standaard uit.
   vatReverseCharge Boolean @default(false)
+  /// Maximaal UIT TE BETALEN uren per dag (pauze er al af). Staat hier 11,5 en
+  /// schrijft de freelancer 12 u, dan is de pauze niet verrekend — de controle in
+  /// src/lib/facturatie-checks.ts meldt dat. null = geen afspraak, geen controle.
+  maxPaidHoursPerDay Float?
+  /// Wie bij de klant de urenstaat MAG aftekenen, als één komma-gescheiden veld
+  /// ("P. Jansen, M. de Boer"). Leeg = niet vastgelegd; dan kan de bevoegdheid
+  /// niet getoetst worden en blijft het bij een waarschuwing.
+  approverNames String?
+  /// De afgesproken valuta van deze plaatsing. Een ZZP-factuur in een andere
+  /// valuta is een fout (we betalen en factureren in euro's).
+  currency     String  @default("EUR")
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -2190,6 +2201,16 @@ model ReceivedInvoice {
   /// Wanneer we de medewerker mailden over de afwijking (dan verdwijnt de mail-actie).
   discrepancyMailedAt DateTime?
   notes        String?
+  /// De VOLLEDIGE AI-uitlezing van deze factuur als JSON-string (valuta,
+  /// geadresseerde, PO, IBAN, KvK/btw-id, btw-percentage, toeslagregels …).
+  /// Bewust één JSON-kolom i.p.v. een kolom per veld: de controle-machine
+  /// (src/lib/facturatie-checks.ts) leest er alles uit wat ze nodig heeft, en
+  /// het schema blijft smal. `notes` blijft de leesbare opmerking voor mensen.
+  extractedJson String?
+  /// De ISO-week ("2026-W40") waar deze factuur bij hoort, expliciet vastgelegd
+  /// bij het koppelen. Zo hangt factuur ↔ urenstaat ↔ week aan één sleutel in
+  /// plaats van aan een periode-vergelijking. null = (nog) niet gekoppeld.
+  weekKey      String?
   // Optioneel geüploade PDF van hun factuur.
   fileName     String?
   originalName String?
@@ -2202,6 +2223,38 @@ model ReceivedInvoice {
 
   @@index([consultantId])
   @@index([status])
+  @@index([weekKey])
+}
+
+/// Een in "Week verwerken" handmatig geüploade ZZP-FACTUUR die (nog) niet aan
+/// een persoon gekoppeld kon worden — de naam op het document matchte met niemand
+/// of met meerdere mensen. `ReceivedInvoice.consultantId` is verplicht (geld hoort
+/// altijd bij iemand), dus zo'n losse factuur mag daar niet in: hij wacht hier tot
+/// een mens de persoon kiest, en wordt dán pas een ReceivedInvoice.
+///
+/// Dit is een WACHTRIJ, geen administratie: er staat geen bedrag in dat meetelt
+/// in de boekhouding, en de rij verdwijnt zodra hij gekoppeld of verwijderd is.
+/// Losse URENSTATEN hebben deze wachtrij niet nodig: die gaan zoals altijd naar
+/// TimesheetInbox (consultantId mag daar leeg blijven).
+model FacturatieUpload {
+  id            String   @id @default(cuid())
+  /// De week waarin hij geüpload werd ("2026-W40"); alleen om hem daar te tonen.
+  weekKey       String?
+  // Het opgeslagen bestand (onder uploads/_ontvangen/, net als ReceivedInvoice).
+  fileName      String
+  originalName  String
+  mimeType      String
+  size          Int
+  /// De naam die de AI op de factuur las — de hint bij de persoonkiezer.
+  extractedName String?
+  /// De volledige AI-uitlezing als JSON-string, zodat het koppelen later niets
+  /// opnieuw hoeft uit te lezen (en dus geen tokens kost).
+  extractedJson String?
+  /// Waarom hij niet gekoppeld kon worden, in gewoon Nederlands.
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  @@index([weekKey])
 }
 
 /// Verwerkte binnengekomen e-mails (M365-postvak intake). Eén regel per bericht

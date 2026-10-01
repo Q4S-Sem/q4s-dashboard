@@ -18,6 +18,25 @@ test("normalizeName maakt kleine letters, haalt diakrieten en leestekens weg", (
   assert.equal(normalizeName(""), "");
 });
 
+test("letters met een streep erdoor worden hun basisletter (ł → l, ø → o, ß → ss)", () => {
+  // Deze tekens zijn in Unicode ondeelbaar: NFD splitst ze NIET, dus zonder
+  // expliciete tabel zou "Michał" tot "micha" verminken en een Poolse urenstaat
+  // nooit matchen met de medewerker in de database.
+  assert.equal(normalizeName("Michał Wójcik"), "michal wojcik");
+  assert.equal(normalizeName("Søren Østergård"), "soren ostergard");
+  assert.equal(normalizeName("Weiß"), "weiss");
+  assert.equal(
+    nameMatches({ firstName: "Michał", lastName: "Wójcik" }, "Michal Wojcik"),
+    true,
+  );
+  assert.equal(
+    nameMatches({ firstName: "Michal", lastName: "Wojcik" }, "Michał Wójcik"),
+    true,
+  );
+  // En het blijft streng: een andere naam matcht nog steeds niet.
+  assert.equal(nameMatches({ firstName: "Michał", lastName: "Wójcik" }, "Piotr Wojcik"), false);
+});
+
 test("de volledige naam matcht, ongeacht hoofdletters of diakrieten", () => {
   assert.equal(nameMatches(son, "Rob van Son"), true);
   assert.equal(nameMatches(son, "ROB VAN SON"), true);

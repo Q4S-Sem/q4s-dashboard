@@ -14,10 +14,32 @@
 
 export type NamedPerson = { firstName: string; lastName: string };
 
+/**
+ * Letters met een STREEP of SCHUINE STREEP erdoor (ł, ø, đ, ħ, ŧ) zijn in
+ * Unicode één ondeelbaar teken: NFD splitst ze niet in "letter + diakriet", dus
+ * ze overleven de diakrieten-stap niet en zouden als leesteken wegvallen.
+ * Zonder deze tabel werd "Michał" tot "micha" en matchte een Poolse urenstaat
+ * ("Michal Wojcik") nooit met de medewerker in de database — precies de groep
+ * vakmensen waar dit dashboard voor gebouwd is.
+ */
+const LOSSE_LETTERS: Record<string, string> = {
+  ł: "l",
+  ø: "o",
+  đ: "d",
+  ð: "d",
+  ħ: "h",
+  ŧ: "t",
+  ı: "i",
+  æ: "ae",
+  œ: "oe",
+  ß: "ss",
+};
+
 /** Kleine letters, zonder diakrieten en leestekens, enkele spaties. */
 export function normalizeName(s: string): string {
   return s
     .toLowerCase()
+    .replace(/[łøđðħŧıæœß]/g, (c) => LOSSE_LETTERS[c] ?? c)
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .replace(/[^a-z ]/g, " ")

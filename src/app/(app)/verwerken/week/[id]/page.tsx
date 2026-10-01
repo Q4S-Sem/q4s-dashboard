@@ -30,7 +30,7 @@ import { weekControleDetails } from "@/lib/week-controle";
 import { magScanVerwijderen } from "@/lib/week-detail";
 import { controleLabel, initialen } from "@/lib/weekverwerking";
 import type { DetectieFlag } from "@/lib/facturatie-detecties";
-import { DocumentViewer } from "../../nieuw/DocumentViewer";
+import { DocumentViewer } from "@/components/document-viewer";
 import { ApproveInboxButton } from "../../controle/ApproveInboxButton";
 import { naarWachtkamer } from "../../controle/actions";
 import { verwijderScan } from "../actions";

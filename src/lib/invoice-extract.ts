@@ -38,6 +38,18 @@ export type InvoiceExtracted = {
   name: string;
   confidence: number;
   notes: string;
+  // --- Controlevelden voor "Week verwerken" (src/lib/facturatie-checks.ts) ----
+  // Deze worden als JSON bewaard in ReceivedInvoice.extractedJson; er komt GEEN
+  // kolom per veld bij. Ze vullen het importformulier niet voor.
+  currency: string;
+  addressee: string;
+  poNumber: string;
+  iban: string;
+  kvkNumber: string;
+  vatId: string;
+  vatPercent: number;
+  surchargeLines: { label: string; quantity: number; unit: string; amount: number }[];
+  mentionsAttachment: boolean;
 };
 
 const EXTRACT_SCHEMA = {
@@ -61,8 +73,31 @@ const EXTRACT_SCHEMA = {
     name: { type: "string", description: "De naam van de AFZENDER: de ZZP'er/zelfstandige die factureert (of zijn eenmanszaak), meestal linksboven of bij de bankgegevens. NIET de geadresseerde — Q4S (Q4S Group / Q4Solutions) is de ONTVANGER van deze factuur en mag hier nooit staan. Leeg laten als je de afzender niet zeker weet." },
     confidence: { type: "number", description: "Hoe zeker ben je over deze uitlezing, van 0 (gegokt) tot 1 (alles helder en eenduidig leesbaar)? Gebruik 0.4 of lager als bedragen slecht leesbaar waren of je moest interpreteren." },
     notes: { type: "string", description: "Korte opmerking in het NEDERLANDS over onzekerheden of opvallende zaken (bv. 'bedragen tellen niet op', 'meerdere weken op één factuur'). Lege string als alles duidelijk was." },
+    currency: { type: "string", description: "De VALUTA van de factuur als 3-letterige code (EUR, GBP, USD, PLN). Staat er een euroteken of 'EUR', dan 'EUR'. Lege string als er geen valuta of teken op de factuur staat." },
+    addressee: { type: "string", description: "De GEADRESSEERDE: de naam van het bedrijf waaraan de factuur gericht is (bij 'Aan:', 'Factuuradres', 'Bill to'). Dat hoort Q4S te zijn. Neem de naam letterlijk over; lege string als er geen geadresseerde op staat." },
+    poNumber: { type: "string", description: "Het inkoop-order-/PO-nummer van de klant zoals op de factuur vermeld ('PO', 'Inkoopordernummer', 'Order no.'), bv. '4500123'. Lege string als er geen PO op de factuur staat — verwar het NIET met het factuurnummer, KvK- of btw-nummer." },
+    iban: { type: "string", description: "Het IBAN/bankrekeningnummer waarop hij betaald wil worden, letterlijk zoals het er staat (bv. 'NL02 ABNA 0123 4567 89'). Lege string als er geen rekeningnummer op de factuur staat." },
+    kvkNumber: { type: "string", description: "Zijn eigen KvK-nummer (handelsregisternummer) zoals op de factuur vermeld. Lege string als het er niet staat. NIET het KvK-nummer van Q4S (de geadresseerde)." },
+    vatId: { type: "string", description: "Zijn eigen BTW-identificatienummer / VAT-nummer (bv. 'NL001234567B01', 'PL1234567890'). Lege string als het er niet staat. NIET het btw-nummer van Q4S." },
+    vatPercent: { type: "number", description: "Het BTW-PERCENTAGE dat op de factuur in rekening wordt gebracht (21, 9 of 0) — dus het percentage, NIET het bedrag. Bij 'btw verlegd' of 'reverse charge' is dit 0. Zet -1 als er geen percentage op de factuur staat (dan wordt er niets over beweerd)." },
+    surchargeLines: {
+      type: "array",
+      description: "Elke TOESLAG-regel apart: weekend-/zaterdag-/zondagtoeslag, offshoretoeslag, nacht-/ploegendiensttoeslag, buitenlandtoeslag. GEEN gewone urenregel, GEEN overurenregel en GEEN kilometerregel. Lege lijst als er geen toeslagregels op de factuur staan.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          label: { type: "string", description: "De omschrijving van de regel, letterlijk zoals op de factuur ('Offshore toeslag', 'Zaterdagtoeslag 50%')." },
+          quantity: { type: "number", description: "Het AANTAL op die regel (aantal uren of aantal dagen), bv. 5 bij '5 dagen offshore'. 0 als er geen aantal staat." },
+          unit: { type: "string", description: "De eenheid van dat aantal zoals vermeld: 'uur', 'dagen', 'stuk'. Lege string als er geen eenheid staat." },
+          amount: { type: "number", description: "Het bedrag in euro's van die toeslagregel. 0 als er geen bedrag staat." },
+        },
+        required: ["label", "quantity", "unit", "amount"],
+      },
+    },
+    mentionsAttachment: { type: "boolean", description: "Verwijst de factuur naar een BIJLAGE of onderbouwing ('zie bijgevoegde urenstaat', 'conform timesheet week 40', 'bijlage')? true = ja, false = er staat geen verwijzing op." },
   },
-  required: ["invoiceNumber", "issueDate", "periodStart", "periodEnd", "weekNumber", "year", "hours", "hourlyRate", "overtimeHours", "amountExclVat", "vatAmount", "vatShifted", "kilometers", "totalAmount", "name", "confidence", "notes"],
+  required: ["invoiceNumber", "issueDate", "periodStart", "periodEnd", "weekNumber", "year", "hours", "hourlyRate", "overtimeHours", "amountExclVat", "vatAmount", "vatShifted", "kilometers", "totalAmount", "name", "confidence", "notes", "currency", "addressee", "poNumber", "iban", "kvkNumber", "vatId", "vatPercent", "surchargeLines", "mentionsAttachment"],
 };
 
 const SYSTEM_EXTRACT = `Je bent een uiterst nauwkeurige administratieve assistent bij Q4S, een Nederlands detacheringsbureau. Je leest FACTUREN uit die door zelfstandige (ZZP) vakmensen aan Q4S gestuurd worden voor gewerkte weken. Elke ZZP'er gebruikt zijn eigen factuuropmaak.
@@ -92,6 +127,16 @@ UREN, TARIEF, OVERUREN:
 - Regels voor kilometers, verblijfkosten, parkeren of materiaal zijn GEEN uren.
 
 KILOMETERS: kilometers = het AANTAL km op de reiskosten-/kilometerregel (bij '220 km x € 0,23 = € 50,60' is dat 220, niet 50.60). Geen kilometerregel → 0.
+
+CONTROLEVELDEN (hier wordt de factuur straks op afgekeurd — neem ze LETTERLIJK over en vul nooit iets in wat er niet staat):
+- currency: de valutacode (EUR bij een euroteken).
+- addressee: aan wie de factuur gericht is; dat hoort Q4S te zijn.
+- poNumber: het PO-/inkoopordernummer van de klant, nooit het factuurnummer.
+- iban: het rekeningnummer waarop hij betaald wil worden, letterlijk inclusief spaties.
+- kvkNumber en vatId: ZIJN eigen KvK- en btw-nummer (niet die van Q4S).
+- vatPercent: het btw-PERCENTAGE (21, 9 of 0); staat er geen percentage, zet dan -1.
+- surchargeLines: elke toeslagregel apart (weekend/zaterdag/zondag/offshore/nacht/ploegendienst/buitenland) met aantal, eenheid en bedrag. Een gewone urenregel, overurenregel of kilometerregel hoort hier NIET bij.
+- mentionsAttachment: verwijst de factuur naar een bijlage/urenstaat?
 
 ZEKERHEID: zet confidence laag (0.4 of minder) en leg in notes kort uit wat onduidelijk was zodra bedragen slecht leesbaar zijn, de optelling niet klopt of je moest interpreteren.`;
 
@@ -361,7 +406,7 @@ export async function extractReceivedInvoiceFromFile(input: {
       data = await aiJSONFromFile<InvoiceExtracted>({
         system,
         prompt:
-          "Lees deze factuur van een zelfstandige (ZZP'er) uit. Geef factuurnummer, factuurdatum, de gefactureerde periode (of het weeknummer + jaar), de uren, het uurtarief, eventuele overuren, het bedrag excl. btw, het btw-bedrag (of dat de btw verlegd is), de kilometers, het totaalbedrag en de naam van de afzender terug volgens het schema.",
+          "Lees deze factuur van een zelfstandige (ZZP'er) uit. Geef factuurnummer, factuurdatum, de gefactureerde periode (of het weeknummer + jaar), de uren, het uurtarief, eventuele overuren, het bedrag excl. btw, het btw-bedrag (of dat de btw verlegd is), de kilometers, het totaalbedrag en de naam van de afzender terug. Neem daarnaast de controlevelden letterlijk over: valuta, geadresseerde, PO-nummer, IBAN, zijn KvK- en btw-nummer, het btw-percentage, elke toeslagregel apart en of er naar een bijlage verwezen wordt. Antwoord volgens het schema.",
         schema: EXTRACT_SCHEMA,
         file: { base64: input.base64, mediaType },
         maxTokens: 2500,
