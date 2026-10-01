@@ -14,6 +14,7 @@ import {
 import { akkoordWeken } from "@/lib/facturatie-akkoord";
 import { resolveWeek } from "@/lib/facturatie-week";
 import { nameMatches } from "@/lib/name-match";
+import { weekSlotVanDatum } from "@/lib/week-koppeling";
 import {
   MAX_UPLOAD_BYTES,
   deleteInboxUpload,
@@ -224,8 +225,11 @@ async function registreerOntvangenFactuur(args: {
   data: InvoiceExtracted;
   bestand: { fileName: string; originalName: string; mimeType: string; size: number };
 }): Promise<string> {
-  const { consultantId, weekKey, data, bestand } = args;
+  const { consultantId, data, bestand } = args;
   const velden = toReceivedInvoiceFormValues(data, new Date());
+  // De week komt van de FACTUUR zelf (periode of weeknummer), niet van het scherm
+  // waarop hij binnenkwam; alleen zonder periode valt hij terug op die week.
+  const weekKey = weekSlotVanDatum(velden.periodStart)?.key ?? args.weekKey;
   const bedrag = parseBedrag(velden.amount) ?? 0;
   const btw = parseBedrag(velden.vatAmount ?? "");
   const km = parseBedrag(velden.kilometers);
