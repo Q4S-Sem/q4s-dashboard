@@ -1,5 +1,6 @@
 import { db } from "./db";
 import {
+  AUTOMATION_PRESETS,
   buildCertificateComplianceTasks,
   buildInterviewReminderTasks,
   buildStalledRecruitmentTasks,
@@ -36,6 +37,11 @@ export type RunResult = { rule: string; created: number; eligible: number; skipp
  */
 export async function runAutomations(): Promise<{ total: number; perRule: RunResult }> {
   const now = new Date();
+  // Elke preset draait standaard mee: ontbreekt een trigger helemaal, dan zetten we
+  // hem aan. Een regel die iemand bewust UIT heeft gezet bestaat nog → blijft uit.
+  const known = new Set((await db.automationRule.findMany({ select: { trigger: true } })).map((r) => r.trigger));
+  const missing = AUTOMATION_PRESETS.filter((p) => !known.has(p.trigger));
+  if (missing.length) await db.automationRule.createMany({ data: missing.map((p) => ({ ...p })) });
   const rules = await db.automationRule.findMany({ where: { active: true } });
   const perRule: RunResult = [];
   let total = 0;

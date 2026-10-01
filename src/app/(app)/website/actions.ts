@@ -77,11 +77,8 @@ export async function shortlistCv(formData: FormData) {
 
 // --- Handmatig CV's importeren -----------------------------------------------
 
-/** Toegestane CV-bestandstypen (PDF/Word/Excel/afbeelding/tekst). */
-const CV_EXTENSIONS = new Set([
-  ".pdf", ".doc", ".docx", ".rtf", ".odt", ".txt",
-  ".xls", ".xlsx", ".csv", ".png", ".jpg", ".jpeg", ".webp",
-]);
+/** Toegestane CV-bestandstypen: alleen wat cv-extract echt kan uitlezen. */
+const CV_EXTENSIONS = new Set([".pdf", ".docx", ".png", ".jpg", ".jpeg", ".webp"]);
 function isAllowedCv(file: File): boolean {
   const m = file.name.toLowerCase().match(/\.[a-z0-9]+$/);
   return m ? CV_EXTENSIONS.has(m[0]) : false;
