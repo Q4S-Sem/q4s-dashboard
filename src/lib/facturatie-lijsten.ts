@@ -167,3 +167,36 @@ export function inkoopTellingen<T extends InkoopRij>(rows: T[]): Record<InkoopBu
 export function isInkoopBetaalbaar(row: InkoopRij): boolean {
   return inkoopBucket(row) === "tebetalen";
 }
+
+// ===========================================================================
+// Vervaldatum als mensentaal ("over 5 dagen", "10 dagen te laat")
+// ===========================================================================
+
+export type VervalLabel = { tekst: string; toon: "rood" | "oranje" | "grijs" | "groen" };
+
+const DAG = 86_400_000;
+function dagNummer(d: Date): number {
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAG);
+}
+
+/**
+ * Hoe staat het met de betaling? Betaald → "betaald"; anders afstand tot de
+ * vervaldatum in hele kalenderdagen. Binnen 3 dagen = oranje, daarna rood.
+ */
+export function vervalLabel(dueDate: Date | string | null, betaald: boolean, now: Date): VervalLabel {
+  if (betaald) return { tekst: "betaald", toon: "groen" };
+  if (!dueDate) return { tekst: "geen vervaldatum", toon: "grijs" };
+  const dagen = dagNummer(new Date(dueDate)) - dagNummer(now);
+  if (dagen === 0) return { tekst: "vandaag", toon: "oranje" };
+  if (dagen === 1) return { tekst: "morgen", toon: "oranje" };
+  if (dagen > 1) return { tekst: `over ${dagen} dagen`, toon: dagen <= 3 ? "oranje" : "grijs" };
+  return { tekst: dagen === -1 ? "1 dag te laat" : `${-dagen} dagen te laat`, toon: "rood" };
+}
+
+/** Vervaldatum van een ZZP-factuur: factuurdatum + betaaltermijn (dagen). */
+export function inkoopVervaldatum(issueDate: Date | null, termijnDagen: number): Date | null {
+  if (!issueDate) return null;
+  const d = new Date(issueDate);
+  d.setDate(d.getDate() + termijnDagen);
+  return d;
+}

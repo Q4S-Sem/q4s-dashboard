@@ -55,7 +55,11 @@ export async function setReceivedStatus(formData: FormData) {
   // een al betaalde factuur weer als openstaand meetellen).
   if (current.status === "PAID" && status !== "PAID") redirect(doel);
 
-  await db.receivedInvoice.update({ where: { id }, data: { status } });
+  // Handmatig op betaald: betaaldatum = vandaag (bankafschrift zet de echte boekdatum).
+  await db.receivedInvoice.update({
+    where: { id },
+    data: { status, ...(status === "PAID" && current.status !== "PAID" ? { paidDate: new Date() } : {}) },
+  });
   herlaad();
   revalidatePath(detail(id));
   redirect(doel);

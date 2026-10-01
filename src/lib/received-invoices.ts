@@ -182,6 +182,7 @@ export type ReceivedRow = {
   periodEnd: Date | null;
   amount: number; // gefactureerd incl BTW
   status: string;
+  paidDate: Date | null;
   hasFile: boolean;
   mailed: boolean; // is de medewerker al gemaild over de afwijking?
   mailedAt: Date | null;
@@ -245,6 +246,7 @@ export async function listReceivedInvoices(): Promise<ReceivedRow[]> {
       periodEnd: inv.periodEnd,
       amount: inv.amount,
       status: inv.status,
+      paidDate: inv.paidDate,
       hasFile: Boolean(inv.fileName),
       mailed: Boolean(inv.discrepancyMailedAt),
       mailedAt: inv.discrepancyMailedAt,
@@ -354,6 +356,7 @@ export async function getReceivedDetail(id: string): Promise<ReceivedDetail | nu
     periodEnd: inv.periodEnd,
     amount: inv.amount,
     status: inv.status,
+    paidDate: inv.paidDate,
     hasFile: Boolean(inv.fileName),
     mailed: Boolean(inv.discrepancyMailedAt),
     mailedAt: inv.discrepancyMailedAt,

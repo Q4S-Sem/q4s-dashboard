@@ -18,6 +18,14 @@ import {
   isSendableInvoice,
 } from "@/lib/factuur-bulk";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { vervalLabel, type VervalLabel } from "@/lib/facturatie-lijsten";
+
+const VERVAL_KLEUR: Record<VervalLabel["toon"], string> = {
+  rood: "text-red-700",
+  oranje: "text-amber-700",
+  grijs: "text-ink-600",
+  groen: "text-emerald-700",
+};
 import { bulkDeleteInvoices, bulkReleaseInvoices, bulkSendInvoices, sendInvoiceReminder } from "./actions";
 
 // ---------------------------------------------------------------------------
@@ -37,7 +45,11 @@ export type VerkoopFactuurRij = {
   /** ISO-datums; de server heeft ze al geformatteerd doorgegeven als Date-string. */
   issueDate: string;
   dueDate: string;
+  /** Excl. btw. */
+  subtotal: number;
   total: number;
+  /** Wanneer de klant betaalde (ISO), of null. */
+  paidDate: string | null;
   /** De RUWE status — de guards rekenen hiermee. */
   status: string;
   /** De status zoals hij in de badge hoort ("OVERDUE" bij een te late factuur). */
@@ -49,6 +61,8 @@ export type VerkoopFactuurRij = {
 };
 
 export function VerkoopLijst({ rows, tab }: { rows: VerkoopFactuurRij[]; tab: string }) {
+  // ponytail: "nu" komt van de client-klok; prima voor een dagtelling.
+  const [nu] = useState(() => new Date());
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
   const [afgetopt, setAfgetopt] = useState(0);
 
@@ -191,8 +205,9 @@ export function VerkoopLijst({ rows, tab }: { rows: VerkoopFactuurRij[]; tab: st
             <TH>Nummer</TH>
             <TH>Klant</TH>
             <TH>Factuurdatum</TH>
-            <TH>Vervalt</TH>
-            <TH className="text-right">Bedrag</TH>
+            <TH>Vervalt / betaald</TH>
+            <TH className="text-right">Excl. btw</TH>
+            <TH className="text-right">Totaal</TH>
             <TH>Status</TH>
             <TH className="text-right">Acties</TH>
           </TR>
@@ -200,6 +215,9 @@ export function VerkoopLijst({ rows, tab }: { rows: VerkoopFactuurRij[]; tab: st
         <TBody>
           {rows.map((r) => {
             const teLaat = r.weergave === "OVERDUE";
+            // Concept/klaar/geannuleerd hebben nog geen lopende termijn.
+            const loopt = r.status === "SENT" || r.status === "PAID";
+            const verval = vervalLabel(r.dueDate, r.status === "PAID", nu);
             return (
               <TR key={r.id} className={teLaat ? "bg-red-50/40" : undefined}>
                 <TD>
@@ -224,10 +242,20 @@ export function VerkoopLijst({ rows, tab }: { rows: VerkoopFactuurRij[]; tab: st
                 </TD>
                 <TD>{r.clientName}</TD>
                 <TD className="whitespace-nowrap text-ink-600">{formatDate(r.issueDate)}</TD>
-                <TD className={cn("whitespace-nowrap", teLaat ? "font-semibold text-red-700" : "text-ink-600")}>
-                  {formatDate(r.dueDate)}
+                <TD className="whitespace-nowrap">
+                  {r.status === "PAID" ? (
+                    <span className="text-[13px] font-medium text-emerald-700">
+                      betaald {r.paidDate ? formatDate(r.paidDate) : ""}
+                    </span>
+                  ) : loopt ? (
+                    <span className={cn("text-[13px] font-medium", VERVAL_KLEUR[verval.toon])}>{verval.tekst}</span>
+                  ) : (
+                    <span className="text-[13px] text-ink-300">—</span>
+                  )}
+                  <span className="block text-xs text-ink-400">{formatDate(r.dueDate)}</span>
                 </TD>
-                <TD className="text-right tabular-nums">{formatCurrency(r.total)}</TD>
+                <TD className="text-right tabular-nums text-ink-500">{formatCurrency(r.subtotal)}</TD>
+                <TD className="text-right font-medium tabular-nums">{formatCurrency(r.total)}</TD>
                 <TD>
                   <StatusBadge options={INVOICE_STATUSES} value={r.weergave} />
                   {r.herinneringen > 0 && (

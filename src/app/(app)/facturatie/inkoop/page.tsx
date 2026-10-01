@@ -50,7 +50,10 @@ import {
   inkoopBucket,
   inkoopTellingen,
   isInkoopBetaalbaar,
+  inkoopVervaldatum,
+  vervalLabel,
   type InkoopTab,
+  type VervalLabel,
 } from "@/lib/facturatie-lijsten";
 import { BankImport } from "./BankImport";
 import { DiscrepancyMailButton } from "./DiscrepancyMailButton";
@@ -89,6 +92,13 @@ const INKOOP_TOON: Record<InkoopTab, "slate" | "blue" | "green" | "amber" | "red
   declaraties: "violet",
 };
 
+const VERVAL_KLEUR: Record<VervalLabel["toon"], string> = {
+  rood: "text-red-700",
+  oranje: "text-amber-700",
+  grijs: "text-ink-600",
+  groen: "text-emerald-700",
+};
+
 export const dynamic = "force-dynamic";
 
 type SP = {
@@ -124,6 +134,8 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
   ]);
 
   const facturen = alleFacturen.filter((r) => inWeek(r.issueDate));
+  // Betaaltermijn voor ZZP-facturen: de standaardtermijn uit Instellingen.
+  const termijn = settings.defaultPaymentTermDays ?? 30;
   const tellingen = inkoopTellingen(facturen);
   const rows = facturen.filter(
     (r) => hoortBijInkoopTab(r, tab) && matchtZoek(sp.q, r.consultantName, r.number),
@@ -416,6 +428,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
                 <TR className="hover:bg-transparent">
                   <TH>Freelancer</TH>
                   <TH>Factuur · periode</TH>
+                  <TH>Betalen vóór / betaald</TH>
                   <TH className="text-right">Gefactureerd</TH>
                   <TH className="text-right">Verwacht</TH>
                   <TH>Controle</TH>
@@ -452,6 +465,25 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
                             ? `${formatDate(r.periodStart)} – ${formatDate(r.periodEnd)}`
                             : "geen periode"}
                         </span>
+                      </TD>
+                      <TD className="whitespace-nowrap">
+                        {(() => {
+                          if (r.status === "PAID") {
+                            return (
+                              <span className="text-[13px] font-medium text-emerald-700">
+                                betaald {r.paidDate ? formatDate(r.paidDate) : ""}
+                              </span>
+                            );
+                          }
+                          const due = inkoopVervaldatum(r.issueDate, termijn);
+                          const l = vervalLabel(due, false, now);
+                          return (
+                            <>
+                              <span className={cn("text-[13px] font-medium", VERVAL_KLEUR[l.toon])}>{l.tekst}</span>
+                              {due && <span className="block text-xs text-ink-400">{formatDate(due)}</span>}
+                            </>
+                          );
+                        })()}
                       </TD>
                       <TD className="text-right tabular-nums text-ink-900">
                         {formatCurrency(r.amount)}
