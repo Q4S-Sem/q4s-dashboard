@@ -9,9 +9,6 @@ import {
   Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
-import { StatusVerdeling } from "@/components/ui/status-verdeling";
 import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +17,12 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
-import { WeekBalk } from "@/components/week-balk";
 import { getTeLaat, getWeekOverview, type WeekRow, type WeekStats } from "@/lib/facturatie-week";
 import { DEADLINE_LABEL } from "@/lib/facturatie-checks";
 import { cn, formatDate, formatHours } from "@/lib/utils";
 import { ymd } from "@/lib/week-nav";
 import { UploadPaneel } from "./UploadPaneel";
+import { WeekStrip } from "./WeekStrip";
 import { koppelLosseUpload, verwerkGroeneWeken, verwijderLosseUpload } from "./actions";
 
 // ---------------------------------------------------------------------------
@@ -55,13 +52,22 @@ const FILTERS: {
   tone: "slate" | "blue" | "green" | "amber" | "red" | "violet";
   icon: React.ReactNode;
 }[] = [
-  { key: "alles", label: "Alles", veld: null, tone: "slate", icon: <Users className="h-5 w-5" /> },
-  { key: "niet", label: "Niet ingeleverd", veld: "nietIngeleverd", tone: "slate", icon: <CircleSlash className="h-5 w-5" /> },
-  { key: "wacht", label: "Wacht op factuur", veld: "wacht", tone: "amber", icon: <Clock className="h-5 w-5" /> },
-  { key: "fout", label: "Fout", veld: "fout", tone: "red", icon: <AlertTriangle className="h-5 w-5" /> },
-  { key: "klaar", label: "Klaar", veld: "klaar", tone: "green", icon: <CheckCircle2 className="h-5 w-5" /> },
-  { key: "verwerkt", label: "Gefactureerd", veld: null, tone: "violet", icon: <Receipt className="h-5 w-5" /> },
+  { key: "alles", label: "Alles", veld: null, tone: "slate", icon: <Users className="h-3.5 w-3.5" /> },
+  { key: "niet", label: "Niet ingeleverd", veld: "nietIngeleverd", tone: "slate", icon: <CircleSlash className="h-3.5 w-3.5" /> },
+  { key: "wacht", label: "Wacht op factuur", veld: "wacht", tone: "amber", icon: <Clock className="h-3.5 w-3.5" /> },
+  { key: "fout", label: "Fout", veld: "fout", tone: "red", icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+  { key: "klaar", label: "Klaar", veld: "klaar", tone: "green", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
+  { key: "verwerkt", label: "Gefactureerd", veld: null, tone: "violet", icon: <Receipt className="h-3.5 w-3.5" /> },
 ];
+
+const TOON: Record<(typeof FILTERS)[number]["tone"], string> = {
+  slate: "bg-ink-100 text-ink-600",
+  blue: "bg-blue-100 text-blue-600",
+  green: "bg-emerald-100 text-emerald-600",
+  amber: "bg-amber-100 text-amber-600",
+  red: "bg-red-100 text-red-600",
+  violet: "bg-violet-100 text-violet-600",
+};
 
 function hoortBijFilter(row: WeekRow, filter: Filter): boolean {
   if (filter === "alles") return true;
@@ -137,8 +143,6 @@ export default async function FacturatiePage({
   );
   const ingeleverd = stats.actief - stats.nietIngeleverd;
   const verwerktAantal = rows.filter((r) => r.gefactureerd).length;
-  const deel = (n: number) => (stats.actief > 0 ? n / stats.actief : 0);
-  const pct = (n: number) => `${Math.round(deel(n) * 100)}%`;
   // Dezelfde selectie als de bulkactie server-side maakt (zie akkoordWeken):
   // groen, niet geparkeerd en nog niet gefactureerd.
   const groen = rows.filter(
@@ -155,15 +159,17 @@ export default async function FacturatiePage({
   const verwerkt = Number(sp.verwerkt ?? "");
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Facturatie"
-        title="Week verwerken"
-        description="Alles wat deze week binnenkwam — per persoon één regel. Klik op een regel voor het dossier."
-        actions={
-          <WeekBalk basePath="/facturatie" week={week.mondayParam} currentWeek={ymd(now)} />
-        }
-      />
+    <div className="space-y-4">
+      {/* Kop: titel links, weekkiezer rechts — één regel, geen lucht. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-ink-900">Week verwerken</h1>
+          <p className="text-[13px] text-ink-400">
+            Week {week.isoWeek} · {week.bereik} · deadline {DEADLINE_LABEL} {formatDate(week.deadline)}
+          </p>
+        </div>
+        <WeekStrip huidig={week.key} vandaag={ymd(now)} extra={{ filter: filter === "alles" ? undefined : filter, q: sp.q }} />
+      </div>
 
       {/* Rode melding: deadline voorbij en iemand heeft nog NIETS gestuurd.
           Eén regel; de namen klap je uit als een nette lijst per persoon. */}
@@ -253,65 +259,38 @@ export default async function FacturatiePage({
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Ingeleverd"
-          value={`${ingeleverd} / ${stats.actief}`}
-          sub={`week ${week.isoWeek} · ${week.bereik}`}
-          icon={<Users className="h-4 w-4" />}
-          accent={deadlineVerstreken && stats.nietIngeleverd > 0 ? "red" : "slate"}
-          progress={deel(ingeleverd)}
-          detail="Timesheets ontvangen van actieve plaatsingen"
-          detailSub={
-            stats.nietIngeleverd > 0
-              ? `${stats.nietIngeleverd} nog niets · deadline ${DEADLINE_LABEL} ${formatDate(week.deadline)}`
-              : "iedereen heeft ingeleverd"
-          }
-        />
-        <StatCard
-          label="Klaar"
-          value={stats.klaar}
-          sub={`${pct(stats.klaar)} van de plaatsingen`}
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          accent="green"
-          progress={deel(stats.klaar)}
-          detail="Alle controles groen"
-          detailSub={groen.length > 0 ? `${groen.length} klaar om te verwerken` : "niets open om te verwerken"}
-        />
-        <StatCard
-          label="Fout gevonden"
-          value={stats.fout}
-          sub={`${pct(stats.fout)} van de plaatsingen`}
-          icon={<AlertTriangle className="h-4 w-4" />}
-          accent="red"
-          progress={deel(stats.fout)}
-          detail="Timesheet, factuur of contract klopt niet"
-          detailSub={stats.fout > 0 ? "eerst oplossen of bewust accepteren" : "geen fouten deze week"}
-        />
-        <StatCard
-          label="Wacht op freelancer"
-          value={stats.wacht}
-          sub={`${pct(stats.wacht)} van de plaatsingen`}
-          icon={<Clock className="h-4 w-4" />}
-          accent="amber"
-          progress={deel(stats.wacht)}
-          detail="Urenstaat binnen, factuur nog niet"
-          detailSub={verwerktAantal > 0 ? `${verwerktAantal} al gefactureerd` : "nog niets gefactureerd"}
-        />
-      </div>
-
-      <StatusVerdeling
-        title="Status deze week"
-        items={FILTERS.map((f) => ({
-          key: f.key,
-          label: f.label,
-          count: f.key === "verwerkt" ? verwerktAantal : f.veld ? stats[f.veld] : rows.length,
-          icon: f.icon,
-          tone: f.key === "niet" && deadlineVerstreken && stats.nietIngeleverd > 0 ? "red" : f.tone,
-          href: chipHref(f.key),
-          active: filter === f.key,
-        }))}
-      />
+      {/* Eén smalle balk: elke tegel is tegelijk teller én filter. */}
+      <nav aria-label="Filter op status" className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {FILTERS.map((f) => {
+          const aantal = f.key === "verwerkt" ? verwerktAantal : f.veld ? stats[f.veld] : rows.length;
+          const rood = f.key === "niet" && deadlineVerstreken && aantal > 0;
+          const actief = filter === f.key;
+          return (
+            <Link
+              key={f.key}
+              href={chipHref(f.key)}
+              scroll={false}
+              aria-current={actief ? "page" : undefined}
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg border bg-white px-3 py-2 transition-colors hover:border-ink-300",
+                actief ? "border-ink-900 ring-1 ring-ink-900" : "border-ink-200",
+              )}
+            >
+              <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", rood ? TOON.red : TOON[f.tone])}>
+                {f.icon}
+              </span>
+              <span className="min-w-0">
+                <span className={cn("block text-base font-semibold leading-tight tabular-nums", rood ? "text-red-700" : "text-ink-900")}>
+                  {f.key === "alles" ? `${ingeleverd}/${aantal}` : aantal}
+                </span>
+                <span className="block truncate text-[11px] text-ink-500">
+                  {f.key === "alles" ? "ingeleverd" : f.label}
+                </span>
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
 
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-ink-100 p-4">
