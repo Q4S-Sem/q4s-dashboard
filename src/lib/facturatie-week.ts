@@ -457,8 +457,12 @@ function factuurHoortBijWeek(inv: ReceivedRow, week: WeekSlotInfo): boolean {
  * heeft (die komt als FOUT "geen actieve plaatsing" bovendrijven in plaats van
  * stil te verdwijnen).
  */
+function rondMaandag(monday: Date, uren: number): Date {
+  return new Date(monday.getTime() + uren * 3600_000);
+}
+
 /** Iemand met een actieve plaatsing die na de deadline nog niets heeft gestuurd. */
-export type TeLaat = { naam: string; klantNaam: string | null; href: string | null; weekLabel: string };
+export type TeLaat = { naam: string; klantNaam: string | null; href: string | null; weken: number[] };
 
 /**
  * Wie heeft na de deadline (DEADLINE_LABEL) nog NIETS ingeleverd? Kijkt naar de
@@ -467,20 +471,25 @@ export type TeLaat = { naam: string; klantNaam: string | null; href: string | nu
  * vorige.
  */
 export async function getTeLaat(now: Date = new Date()): Promise<TeLaat[]> {
-  const uit: TeLaat[] = [];
-  for (const terug of [1, 2]) {
+  const perPersoon = new Map<string, TeLaat>();
+  for (const terug of [2, 1]) {
     const dag = new Date(now);
     dag.setDate(dag.getDate() - 7 * terug);
     const week = resolveWeek(null, dag);
     if (now.getTime() <= week.deadline.getTime()) continue;
     const { rows } = await getWeekOverview(week.key, now);
     for (const r of rows) {
-      if (r.status === "NIET_INGELEVERD") {
-        uit.push({ naam: r.naam, klantNaam: r.klantNaam, href: r.href, weekLabel: `week ${week.isoWeek}` });
+      if (r.status !== "NIET_INGELEVERD") continue;
+      const bestaand = perPersoon.get(r.key);
+      if (bestaand) {
+        bestaand.weken.push(week.isoWeek);
+        bestaand.href = r.href; // de meest recente week openen
+      } else {
+        perPersoon.set(r.key, { naam: r.naam, klantNaam: r.klantNaam, href: r.href, weken: [week.isoWeek] });
       }
     }
   }
-  return uit;
+  return [...perPersoon.values()].sort((a, b) => a.naam.localeCompare(b.naam, "nl"));
 }
 
 export async function getWeekOverview(
@@ -508,7 +517,9 @@ export async function getWeekOverview(
       orderBy: { createdAt: "desc" },
     }),
     db.timesheet.findMany({
-      where: { weekStart: week.monday },
+      // Bereik i.p.v. exact: een maandag die ooit in een andere tijdzone is
+      // opgeslagen (22:00 UTC de dag ervoor) moet óók als deze week tellen.
+      where: { weekStart: { gte: rondMaandag(week.monday, -12), lte: rondMaandag(week.monday, 12) } },
       include: {
         entries: { select: { date: true, hours: true } },
         invoiceLine: { select: { invoice: { select: { id: true, number: true, status: true } } } },

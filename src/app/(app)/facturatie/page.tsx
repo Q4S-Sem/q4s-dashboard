@@ -174,7 +174,7 @@ export default async function FacturatiePage({
           </p>
           <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 pl-6">
             {teLaat.map((t) => (
-              <li key={`${t.naam}-${t.weekLabel}`}>
+              <li key={`${t.naam}-${t.klantNaam ?? ""}`}>
                 {t.href ? (
                   <Link href={t.href} className="underline underline-offset-2 hover:text-red-950">
                     {t.naam}
@@ -182,7 +182,10 @@ export default async function FacturatiePage({
                 ) : (
                   t.naam
                 )}
-                <span className="text-red-700/80"> · {t.weekLabel}{t.klantNaam ? ` · ${t.klantNaam}` : ""}</span>
+                <span className="text-red-700/80">
+                  {" "}· {t.weken.length === 1 ? "week" : "weken"} {t.weken.join(", ")}
+                  {t.klantNaam ? ` · ${t.klantNaam}` : ""}
+                </span>
               </li>
             ))}
           </ul>
