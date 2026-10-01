@@ -664,6 +664,10 @@ export function PlacementForm({
   const [chargeRate, setChargeRate] = useState<number>(
     draft?.chargeRate ? Number(draft.chargeRate) || 0 : placement?.chargeRate ?? 0,
   );
+  const [rateUnit, setRateUnit] = useState<string>(
+    draft?.rateUnit === "DAY" ? "DAY" : placement?.rateUnit === "DAY" ? "DAY" : "HOUR",
+  );
+  const eenheid = rateUnit === "DAY" ? "dag" : "uur";
 
   // Start/eind gecontroleerd, zodat de snelle duur-knoppen de einddatum kunnen zetten.
   const [startDate, setStartDate] = useState<string>(
@@ -1101,8 +1105,14 @@ export function PlacementForm({
             </div>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Inkooptarief (per uur)" htmlFor="costRate" required error={e.costRate}>
+          <div className="grid gap-5 sm:grid-cols-3">
+            <Field label="Tarief per" htmlFor="rateUnit">
+              <Select id="rateUnit" name="rateUnit" defaultValue={rateUnit} onValueChange={setRateUnit}>
+                <option value="HOUR">Uur</option>
+                <option value="DAY">Dag (dayrate)</option>
+              </Select>
+            </Field>
+            <Field label={`Inkooptarief (per ${eenheid})`} htmlFor="costRate" required error={e.costRate}>
               <Input
                 id="costRate"
                 name="costRate"
@@ -1114,7 +1124,7 @@ export function PlacementForm({
                 required
               />
             </Field>
-            <Field label="Verkooptarief (per uur)" htmlFor="chargeRate" required error={e.chargeRate}>
+            <Field label={`Verkooptarief (per ${eenheid})`} htmlFor="chargeRate" required error={e.chargeRate}>
               <Input
                 id="chargeRate"
                 name="chargeRate"
@@ -1133,7 +1143,7 @@ export function PlacementForm({
               Marge
             </p>
             <p className="mt-1 text-lg font-bold text-emerald-700">
-              {formatCurrency(marginPerHour)}/uur{" "}
+              {formatCurrency(marginPerHour)}/{eenheid}{" "}
               <span className="text-sm font-medium text-emerald-600">
                 ({marginPct.toFixed(1)}%)
               </span>

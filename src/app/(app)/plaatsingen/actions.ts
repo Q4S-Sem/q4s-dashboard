@@ -30,6 +30,7 @@ const PlacementCoreSchema = z.object({
   endDate: z.coerce.date().optional(),
   costRate: z.coerce.number().min(0, "Inkooptarief mag niet negatief zijn"),
   chargeRate: z.coerce.number().min(0, "Verkooptarief mag niet negatief zijn"),
+  rateUnit: z.enum(["HOUR", "DAY"]).default("HOUR"),
   // Toeslagen (%) + km-vergoeding (€/km), per side. Default 0 = geen toeslag.
   weekendSurchargeBuy: z.coerce.number().min(0).default(0),
   weekendSurchargeSell: z.coerce.number().min(0).default(0),
@@ -120,6 +121,7 @@ function coreToData(d: z.infer<typeof PlacementCoreSchema>) {
     endDate: d.endDate ?? null,
     costRate: d.costRate,
     chargeRate: d.chargeRate,
+    rateUnit: d.rateUnit,
     weekendSurchargeBuy: d.weekendSurchargeBuy,
     weekendSurchargeSell: d.weekendSurchargeSell,
     overtimeSurchargeBuy: d.overtimeSurchargeBuy,

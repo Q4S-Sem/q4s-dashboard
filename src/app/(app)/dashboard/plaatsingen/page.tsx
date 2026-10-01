@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { tariefSuffix } from "@/lib/toeslag";
 import {
   Briefcase,
   Users,
@@ -164,13 +165,13 @@ export default async function PlaatsingenMargesPage() {
                     <TD className="text-ink-600">{p.client?.companyName ?? "— geen bedrijf"}</TD>
                     <TD className="text-ink-600">{p.title}</TD>
                     <TD className="text-right tabular-nums">
-                      {formatCurrency(p.costRate)}/u
+                      {formatCurrency(p.costRate)}{tariefSuffix(p)}
                     </TD>
                     <TD className="text-right tabular-nums">
-                      {formatCurrency(p.chargeRate)}/u
+                      {formatCurrency(p.chargeRate)}{tariefSuffix(p)}
                     </TD>
                     <TD className="text-right font-medium tabular-nums text-emerald-700">
-                      {formatCurrency(margePerHour)}/u
+                      {formatCurrency(margePerHour)}{tariefSuffix(p)}
                     </TD>
                     <TD className="text-right tabular-nums text-ink-700">
                       {pct.toLocaleString("nl-NL")}%

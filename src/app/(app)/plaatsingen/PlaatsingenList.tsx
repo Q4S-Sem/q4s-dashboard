@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { tariefSuffix } from "@/lib/toeslag";
 import { Pencil, Trash2 } from "lucide-react";
 import { SmartList, type SmartColumn, type SmartFilter, type SmartGroup } from "@/components/smart-list";
 import { StatusBadge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ export type PlaatsingRow = {
   title: string;
   costRate: number;
   chargeRate: number;
+  rateUnit: string;
   /** Expliciet overuren-uurtarief (€/u); null = valt terug op de normale rate. */
   overtimeCostRate: number | null;
   overtimeChargeRate: number | null;
@@ -59,14 +61,14 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
       header: "Inkoop",
       align: "right",
       sortValue: (r) => r.costRate,
-      render: (r) => <span className="tabular-nums">{formatCurrency(r.costRate)}/u</span>,
+      render: (r) => <span className="tabular-nums">{formatCurrency(r.costRate)}{tariefSuffix(r)}</span>,
     },
     {
       key: "charge",
       header: "Verkoop",
       align: "right",
       sortValue: (r) => r.chargeRate,
-      render: (r) => <span className="tabular-nums">{formatCurrency(r.chargeRate)}/u</span>,
+      render: (r) => <span className="tabular-nums">{formatCurrency(r.chargeRate)}{tariefSuffix(r)}</span>,
     },
     {
       key: "marge",
@@ -76,7 +78,7 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
       render: (r) => (
         <div className="text-right leading-tight">
           <span className="tabular-nums font-medium text-emerald-700">
-            {formatCurrency(r.chargeRate - r.costRate)}/u
+            {formatCurrency(r.chargeRate - r.costRate)}{tariefSuffix(r)}
           </span>
           {heeftAfwijkendeOvertime(r) && (
             <span className="block text-[11px] tabular-nums text-ink-400">

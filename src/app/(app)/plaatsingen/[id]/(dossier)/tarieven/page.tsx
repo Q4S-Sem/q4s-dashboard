@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { tariefSuffix } from "@/lib/toeslag";
 import { notFound } from "next/navigation";
 import { Pencil, Percent, TrendingUp, Wallet, Coins } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -136,21 +137,21 @@ export default async function PlaatsingTarievenPage({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label={ownStaff ? "Loonkost" : "Inkoop"}
-          value={`${formatCurrency(placement.costRate)}/u`}
+          value={`${formatCurrency(placement.costRate)}${tariefSuffix(placement)}`}
           sub={ownStaff ? "interne loonkost (voor de marge)" : "wat we de werknemer betalen"}
           icon={<Wallet className="h-5 w-5" />}
           accent="slate"
         />
         <StatCard
           label="Verkoop"
-          value={`${formatCurrency(placement.chargeRate)}/u`}
+          value={`${formatCurrency(placement.chargeRate)}${tariefSuffix(placement)}`}
           sub="wat we de klant factureren"
           icon={<Coins className="h-5 w-5" />}
           accent="brand"
         />
         <StatCard
           label="Marge"
-          value={`${formatCurrency(marginPerHour)}/u`}
+          value={`${formatCurrency(marginPerHour)}${tariefSuffix(placement)}`}
           sub={`${marginPct.toFixed(1)}% van het tarief`}
           icon={<Percent className="h-5 w-5" />}
           accent="green"

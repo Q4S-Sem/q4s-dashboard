@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { tariefSuffix } from "@/lib/toeslag";
 import { notFound } from "next/navigation";
 import {
   AlertTriangle,
@@ -200,8 +201,8 @@ export default async function OntvangenFactuurPage({
                       <span className="font-medium text-ink-900">{p.title}</span>
                       <span className="text-ink-400"> · {p.clientName}</span>
                       <span className="block text-xs text-ink-500">
-                        Plaatsingstarief: inkoop {formatCurrency(p.costRate)}/u · verkoop{" "}
-                        {formatCurrency(p.chargeRate)}/u
+                        Plaatsingstarief: inkoop {formatCurrency(p.costRate)}{tariefSuffix(p)} · verkoop{" "}
+                        {formatCurrency(p.chargeRate)}{tariefSuffix(p)}
                       </span>
                     </div>
                     <Link

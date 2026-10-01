@@ -152,6 +152,7 @@ export default async function PlaatsingenPage({
             title: p.title,
             costRate: p.costRate,
             chargeRate: p.chargeRate,
+            rateUnit: p.rateUnit,
             overtimeCostRate: p.overtimeCostRate,
             overtimeChargeRate: p.overtimeChargeRate,
             status: p.status,

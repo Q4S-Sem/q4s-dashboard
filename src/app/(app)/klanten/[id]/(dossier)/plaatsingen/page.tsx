@@ -75,6 +75,7 @@ export default async function KlantPlaatsingenPage({
           title: p.title,
           person: `${p.consultant.firstName} ${p.consultant.lastName}`,
           chargeRate: p.chargeRate,
+          rateUnit: p.rateUnit,
           status: p.status,
         }))}
       />

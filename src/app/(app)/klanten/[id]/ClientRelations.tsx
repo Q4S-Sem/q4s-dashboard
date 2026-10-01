@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { tariefSuffix } from "@/lib/toeslag";
 import Link from "next/link";
 import { Search, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +52,7 @@ export type PlacementRow = {
   title: string;
   person: string;
   chargeRate: number;
+  rateUnit: string;
   status: string;
 };
 
@@ -119,7 +121,7 @@ export function PlacementsPanel({ placements }: { placements: PlacementRow[] }) 
                     </TD>
                     <TD>{p.person}</TD>
                     <TD className="text-right tabular-nums">
-                      {formatCurrency(p.chargeRate)}/u
+                      {formatCurrency(p.chargeRate)}{tariefSuffix(p)}
                     </TD>
                     <TD>
                       <StatusBadge options={PLACEMENT_STATUSES} value={p.status} />

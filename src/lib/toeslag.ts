@@ -42,6 +42,8 @@ export type SurchargeType = SurchargeKind | "weekend";
 export type SurchargeConfig = {
   costRate: number;
   chargeRate: number;
+  /** "DAY" = costRate/chargeRate zijn dagtarieven; anders per uur. */
+  rateUnit?: string | null;
   weekendSurchargeBuy: number; // LEGACY: % uplift on cost rate for weekend hours
   weekendSurchargeSell: number; // LEGACY: % uplift on charge rate for weekend hours
   overtimeSurchargeBuy: number; // % uplift on cost rate for overtime hours (extra uren)
@@ -90,6 +92,40 @@ export type TimesheetInput = {
   overtimeHours: number | null;
   kilometers: number | null;
 };
+
+/** Uren standaard per dag — alleen gebruikt om bij een DAGtarief een overuur te
+ *  prijzen als er geen expliciet overuren-uurtarief is ingesteld. */
+export const UREN_PER_DAG = 8;
+
+export function isDagtarief(p: { rateUnit?: string | null }): boolean {
+  return p.rateUnit === "DAY";
+}
+
+/**
+ * Bij een dagtarief telt elke gewerkte dag als 1 eenheid: de dagregels worden
+ * "1 per dag met uren", zodat álle bestaande uur-rekenwerk (basis, za/zo-toeslag
+ * per dag, offshore) vanzelf in dagen rekent.
+ */
+export function tariefEenheden(
+  entries: { date: Date; hours: number }[],
+  dagtarief: boolean,
+): { date: Date; hours: number }[] {
+  if (!dagtarief) return entries;
+  // Eén per kalenderdag, ook als er (per ongeluk) twee regels op dezelfde dag staan.
+  const gezien = new Set<string>();
+  return entries.flatMap((e) => {
+    const d = new Date(e.date);
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if (e.hours <= 0 || gezien.has(key)) return [];
+    gezien.add(key);
+    return [{ date: e.date, hours: 1 }];
+  });
+}
+
+/** "/u" of "/dag" achter een tarief. */
+export function tariefSuffix(p: { rateUnit?: string | null }): string {
+  return isDagtarief(p) ? "/dag" : "/u";
+}
 
 /** Saturday or Sunday (local). Weekend hours usually carry a toeslag. */
 export function isWeekendDate(d: Date): boolean {
@@ -360,6 +396,8 @@ function computeSide(opts: {
   kmRate: number;
   overtimeRate?: number | null;
   settings?: SideSurcharges;
+  /** Tarief per UUR voor overuren zonder expliciete rate (bij dagtarief: dag/8). */
+  overtimeBaseRate?: number;
 }): SideBreakdown {
   const { hours, rate, overtimeHours, kilometers, kmRate } = opts;
   const base = round2(hours * rate);
@@ -383,7 +421,7 @@ function computeSide(opts: {
   // tarief: een expliciete €/u wint, anders het opgehoogde normale tarief.
   const overtime =
     overtimeHours > 0
-      ? round2(overtimeHours * overtimeUnit(rate, opts.overtimePct, opts.overtimeRate))
+      ? round2(overtimeHours * overtimeUnit(opts.overtimeBaseRate ?? rate, opts.overtimePct, opts.overtimeRate))
       : 0;
   const km = kmRate > 0 && kilometers > 0 ? round2(kilometers * kmRate) : 0;
   return {
@@ -399,6 +437,8 @@ function computeSide(opts: {
 
 export type TimesheetMoney = {
   hours: number; // reguliere (dag)uren — de basis voor het uurbedrag
+  /** Gewerkte dagen bij een dagtarief (de basis voor het bedrag); null bij uurtarief. */
+  days: number | null;
   workedHours: number; // TOTAAL gewerkt = reguliere uren + overuren (voor de weergave)
   weekendHours: number;
   weekdayHours: number;
@@ -423,9 +463,22 @@ export function computeTimesheetMoney(
   const sundayHours = sundayHoursOf(t.entries);
   const overtimeHours = t.overtimeHours ?? 0;
   const kilometers = t.kilometers ?? 0;
-  const dagen = { hours, weekdayHours, saturdayHours, sundayHours, overtimeHours, kilometers };
+  // Geld rekent in tariefeenheden: uren, of bij een dagtarief gewerkte dagen.
+  const dagtarief = isDagtarief(p);
+  const eenheden = tariefEenheden(t.entries, dagtarief);
+  const dagen = {
+    hours: dagtarief ? round2(eenheden.length) : hours,
+    weekdayHours: weekdayHoursOf(eenheden),
+    saturdayHours: saturdayHoursOf(eenheden),
+    sundayHours: sundayHoursOf(eenheden),
+    overtimeHours,
+    kilometers,
+  };
+  // ponytail: overuur bij dagtarief zonder expliciet overuren-uurtarief = dag/8.
+  const perUur = (rate: number) => (dagtarief ? rate / UREN_PER_DAG : rate);
   const sell = computeSide({
     ...dagen,
+    overtimeBaseRate: perUur(p.chargeRate),
     rate: p.chargeRate,
     weekendPct: p.weekendSurchargeSell,
     overtimePct: p.overtimeSurchargeSell,
@@ -435,6 +488,7 @@ export function computeTimesheetMoney(
   });
   const buy = computeSide({
     ...dagen,
+    overtimeBaseRate: perUur(p.costRate),
     rate: p.costRate,
     weekendPct: p.weekendSurchargeBuy,
     overtimePct: p.overtimeSurchargeBuy,
@@ -444,6 +498,7 @@ export function computeTimesheetMoney(
   });
   return {
     hours,
+    days: dagtarief ? eenheden.length : null,
     workedHours: round2(hours + overtimeHours),
     weekendHours,
     weekdayHours,
@@ -497,6 +552,8 @@ export function buildTimesheetLines(opts: {
   /** Expliciet overuren-uurtarief (€/u); wint van het percentage. Leeg = uplift. */
   overtimeRate?: number | null;
   kmRate: number;
+  /** "DAY" = `rate` is een dagtarief: de basisregel telt gewerkte dagen. */
+  rateUnit?: string | null;
   /** Optionele label-overrides (bijv. Engels voor de verkoopfactuur). Default NL. */
   labels?: {
     weekend?: (pct: number) => string;
@@ -515,7 +572,9 @@ export function buildTimesheetLines(opts: {
           ? `Overuren +${p}%`
           : "Overuren");
   const kmLabel = opts.labels?.km ?? "Kilometers";
-  const hours = round2(opts.entries.reduce((s, e) => s + e.hours, 0));
+  const dagtarief = isDagtarief(opts);
+  const eenheden = tariefEenheden(opts.entries, dagtarief);
+  const hours = round2(eenheden.reduce((s, e) => s + e.hours, 0));
   const ot = opts.overtimeHours ?? 0;
   const km = opts.kilometers ?? 0;
   // Week/locatie komen op elke regel; de WEEK/AMOUNT-kolommen tonen het weeknr en
@@ -540,9 +599,9 @@ export function buildTimesheetLines(opts: {
   for (const row of buildSurchargeRows({
     rate: opts.rate,
     hours,
-    weekdayHours: weekdayHoursOf(opts.entries),
-    saturdayHours: saturdayHoursOf(opts.entries),
-    sundayHours: sundayHoursOf(opts.entries),
+    weekdayHours: weekdayHoursOf(eenheden),
+    saturdayHours: saturdayHoursOf(eenheden),
+    sundayHours: sundayHoursOf(eenheden),
     weekendPct: opts.weekendPct,
     settings: opts.surcharges,
     labels: { weekend: opts.labels?.weekend, names: opts.labels?.names },
@@ -562,7 +621,7 @@ export function buildTimesheetLines(opts: {
   // Overuren als eigen regel tegen het volle opgehoogde tarief — zo leest de
   // factuur hetzelfde als die van de freelancer ("Overuren 3,00 × €84,70").
   if (ot > 0) {
-    const unit = overtimeUnit(opts.rate, opts.overtimePct, opts.overtimeRate);
+    const unit = overtimeUnit(dagtarief ? opts.rate / UREN_PER_DAG : opts.rate, opts.overtimePct, opts.overtimeRate);
     lines.push({
       timesheetId: null,
       placementId: opts.placementId,

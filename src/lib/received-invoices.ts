@@ -295,6 +295,7 @@ export type ActivePlacementRef = {
   clientName: string;
   costRate: number;
   chargeRate: number;
+  rateUnit: string;
 };
 
 export type ReceivedDetail = ReceivedRow & {
@@ -333,6 +334,7 @@ export async function getReceivedDetail(id: string): Promise<ReceivedDetail | nu
     clientName: p.client?.companyName ?? "— geen bedrijf",
     costRate: p.costRate,
     chargeRate: p.chargeRate,
+    rateUnit: p.rateUnit,
   }));
 
   let expected: ExpectedForPeriod | null = null;

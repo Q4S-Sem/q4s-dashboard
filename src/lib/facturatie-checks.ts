@@ -3,6 +3,7 @@ import { isDutchHoliday } from "./holidays";
 import { nameMatches, normalizeName } from "./name-match";
 import { canonicalWeekFromDates, weekMismatch, weekMismatchLabel } from "./week-koppeling";
 import {
+  isDagtarief,
   computeTimesheetMoney,
   isWeekendDate,
   saturdayHoursOf,
@@ -481,6 +482,10 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
       (p.sundaySurchargeBuy ?? 0) > 0);
   const kmTarief = p && isNum(p.kmRateBuy) ? p.kmRateBuy : 0;
   const contractTarief = p && isNum(p.costRate) && p.costRate > 0 ? p.costRate : null;
+  // Dagtarief: de factuur noemt dagen × dagtarief; teksten zeggen dan "per dag".
+  const dagtarief = !!p && isDagtarief(p);
+  const perEenheid = dagtarief ? "per dag" : "per uur";
+  const pe = dagtarief ? "p/dag" : "p/u";
 
   // --- de uren, één keer uitgerekend ---------------------------------------
   const entries = ts ? entriesVan(ts.days, monday) : [];
@@ -533,7 +538,7 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
       tarievenOk ? "ok" : "error",
       "Tarieven vastgelegd",
       tarievenOk
-        ? `Inkoop ${formatCurrency(p.costRate)} p/u, verkoop ${formatCurrency(p.chargeRate)} p/u.`
+        ? `Inkoop ${formatCurrency(p.costRate)} ${pe}, verkoop ${formatCurrency(p.chargeRate)} ${pe}.`
         : `Inkoop- of verkooptarief ontbreekt op de plaatsing (inkoop ${formatCurrency(
             p.costRate ?? 0,
           )}, verkoop ${formatCurrency(p.chargeRate ?? 0)}) — zonder tarieven valt er niets te controleren.`,
@@ -1026,27 +1031,29 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
         "factuur",
         "factuur-tarief",
         "warn",
-        "Geen uurtarief op de factuur",
-        `Er staat geen uurtarief op de factuur; afgesproken is ${formatCurrency(contractTarief ?? 0)} per uur.`,
+        dagtarief ? "Geen dagtarief op de factuur" : "Geen uurtarief op de factuur",
+        `Er staat geen tarief op de factuur; afgesproken is ${formatCurrency(contractTarief ?? 0)} ${perEenheid}.`,
       );
     } else {
       add(
         "factuur",
         "factuur-tarief",
         tariefWijktAf ? "error" : "ok",
-        tariefWijktAf ? "Verkeerd uurtarief" : "Uurtarief klopt",
+        tariefWijktAf ? (dagtarief ? "Verkeerd dagtarief" : "Verkeerd uurtarief") : dagtarief ? "Dagtarief klopt" : "Uurtarief klopt",
         tariefWijktAf
-          ? `Op de factuur staat ${formatCurrency(factuurTarief)} per uur, afgesproken is ${formatCurrency(
+          ? `Op de factuur staat ${formatCurrency(factuurTarief)} ${perEenheid}, afgesproken is ${formatCurrency(
               contractTarief ?? 0,
-            )} per uur.`
-          : `${formatCurrency(factuurTarief)} per uur, zoals afgesproken.`,
+            )} ${perEenheid}.`
+          : `${formatCurrency(factuurTarief)} ${perEenheid}, zoals afgesproken.`,
       );
     }
 
     // Uren ------------------------------------------------------------------
     const factuurUren = isNum(inv.hours) ? round2(inv.hours) : null;
+    // Bij een dagtarief mag de factuur dagen tellen in plaats van uren.
+    const klopt = (n: number) => Math.abs(round2(factuurUren! - n)) <= TOLERANTIE_AANTAL;
     const urenWijktAf =
-      factuurUren !== null && ts !== null && Math.abs(round2(factuurUren - dagUren)) > TOLERANTIE_AANTAL;
+      factuurUren !== null && ts !== null && !klopt(dagUren) && !(dagtarief && klopt(gewerkteDagen));
     if (factuurUren === null) {
       add(
         "factuur",
@@ -1510,7 +1517,7 @@ function bouwVergelijking(args: {
   const contractTarief = p && isNum(p.costRate) && p.costRate > 0 ? p.costRate : null;
   rows.push({
     key: "uurtarief",
-    label: "Uurtarief",
+    label: p && isDagtarief(p) ? "Dagtarief" : "Uurtarief",
     timesheet: null,
     invoice: factuurTarief === null ? null : formatCurrency(factuurTarief),
     contract: contractTarief === null ? null : formatCurrency(contractTarief),

@@ -224,6 +224,9 @@ model Placement {
   costRate     Float
   /// What Q4S charges the client per hour (ex BTW).
   chargeRate   Float
+  /// Eenheid van costRate/chargeRate: "HOUR" (per uur) of "DAY" (dagtarief: elke
+  /// gewerkte dag telt als 1, ongeacht het aantal uren).
+  rateUnit     String   @default("HOUR")
   /// Toeslagen (%) + kilometervergoeding (€/km), PER PLACEMENT (persoon bij klant).
   /// Buy = inkoop (paid to the consultant), Sell = verkoop (charged to the client).
   /// All default 0 → identical to the plain hours×rate behaviour.

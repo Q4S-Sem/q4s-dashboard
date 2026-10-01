@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { tariefSuffix } from "@/lib/toeslag";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import {
@@ -483,10 +484,10 @@ export default async function WerknemerDetailPage({
                       <span className="text-ink-400">— geen bedrijf</span>
                     )}
                   </TD>
-                  <TD className="text-right tabular-nums text-ink-600">{formatCurrency(p.costRate)}/u</TD>
-                  <TD className="text-right tabular-nums text-ink-600">{formatCurrency(p.chargeRate)}/u</TD>
+                  <TD className="text-right tabular-nums text-ink-600">{formatCurrency(p.costRate)}{tariefSuffix(p)}</TD>
+                  <TD className="text-right tabular-nums text-ink-600">{formatCurrency(p.chargeRate)}{tariefSuffix(p)}</TD>
                   <TD className="text-right tabular-nums font-medium text-emerald-700">
-                    {formatCurrency(p.chargeRate - p.costRate)}/u
+                    {formatCurrency(p.chargeRate - p.costRate)}{tariefSuffix(p)}
                   </TD>
                   <TD>
                     <StatusBadge options={PLACEMENT_STATUSES} value={p.status} />

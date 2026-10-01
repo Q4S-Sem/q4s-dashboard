@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { tariefEenheden } from "@/lib/toeslag";
 import {
   Wallet,
   TrendingUp,
@@ -319,7 +320,7 @@ export default async function DashboardPage({
   let periodMarge = 0;
   for (const t of periodBillable) {
     const d = new Date(t.weekStart);
-    const hours = t.entries.reduce((s, e) => s + e.hours, 0);
+    const hours = tariefEenheden(t.entries, t.placement.rateUnit === "DAY").reduce((s, e) => s + e.hours, 0);
     const omzet = hours * t.placement.chargeRate;
     // Eigen loondienst-personeel heeft géén inkoopfactuur (salaris) → geen inkoop
     // hier, consistent met invoicingOverview/brutomarge. Anders zou de dashboard-
@@ -344,7 +345,7 @@ export default async function DashboardPage({
   let prevOmzet = 0;
   let prevMarge = 0;
   for (const t of prevBillable) {
-    const hours = t.entries.reduce((s, e) => s + e.hours, 0);
+    const hours = tariefEenheden(t.entries, t.placement.rateUnit === "DAY").reduce((s, e) => s + e.hours, 0);
     const omzet = hours * t.placement.chargeRate;
     const inkoop = t.placement.consultant.employmentType === "LOONDIENST" ? 0 : hours * t.placement.costRate;
     prevOmzet += omzet;
