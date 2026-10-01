@@ -104,7 +104,7 @@ export async function POST(req: Request) {
     }
   }
 
-  revalidatePath("/inbox");
+  revalidatePath("/facturatie");
   revalidatePath("/", "layout");
   return Response.json({ ok: true, created });
 }

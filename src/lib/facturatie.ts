@@ -1,16 +1,14 @@
 import { db } from "./db";
-import { round2, formatWeekLabel } from "./utils";
+import { round2 } from "./utils";
 import { computeTimesheetMoney, type SideBreakdown } from "./toeslag";
-import { createSalesInvoice } from "./invoicing";
 
-// Shared money math + aggregations for the Facturatie hub: the guided per-person
-// flow (/verwerken), the overview (/totaaloverzicht) and the dashboard.
-// Single source of truth so every screen shows the same numbers. Per-timesheet
-// money (incl. weekend/overuren toeslagen + km) lives in src/lib/toeslag.ts, so
-// the wizard preview always equals the generated invoice.
+// Gedeelde geldsommen + aggregaties voor de facturatie: het dashboard en
+// /facturatie/rapportage. Eén bron van waarheid, zodat elk scherm dezelfde
+// cijfers toont. De som per urenstaat (incl. weekend-/overurentoeslag + km)
+// staat in src/lib/toeslag.ts — dezelfde functie die de echte factuur bouwt.
 
 // ---------------------------------------------------------------------------
-// 1) Guided flow — per-consultant pending work
+// 1) Openstaand werk per persoon (het dashboard-tegeltje)
 // ---------------------------------------------------------------------------
 
 export type FlowWeek = {
@@ -158,7 +156,7 @@ export type ConsultantPending = {
   teBetalen: number; // purchase not yet generated (ex BTW)
 };
 
-/** One row per consultant who has pending work, for the /verwerken landing. */
+/** Eén regel per persoon met openstaand werk — voor het dashboard. */
 export async function pendingWorkByConsultant(): Promise<ConsultantPending[]> {
   const timesheets = await db.timesheet.findMany({
     where: pendingWhere(),
@@ -239,7 +237,7 @@ export async function getNavBadges(): Promise<{
       db.invoice.count({ where: { status: { in: ["DRAFT", "READY", "SENT"] } } }),
       // Inkomende ZZP-facturen die nog niet betaald zijn.
       db.receivedInvoice.count({ where: { status: { not: "PAID" } } }),
-      // Verzendmap: uitsluitend vrijgegeven verkoopfacturen (READY) voor klanten.
+      // Klaar om te verzenden: uitsluitend vrijgegeven verkoopfacturen (READY).
       db.invoice.count({ where: { status: "READY" } }),
       // Te-late open taken (chatter/automatisering) — de "Te doen"-badge.
       db.activity.count({ where: { kind: "TODO", done: false, dueAt: { lt: new Date() } } }),
@@ -248,285 +246,8 @@ export async function getNavBadges(): Promise<{
   return { verwerken, facturen, inkoop: 0, ontvangen, verzenden: verzendSales, teDoen };
 }
 
-export type SalesGroup = {
-  clientId: string;
-  clientName: string;
-  timesheetIds: string[];
-  hours: number;
-  charge: number;
-  cost: number;
-  margin: number;
-};
-
-export type ConsultantFlow = {
-  consultant: { id: string; firstName: string; lastName: string; discipline: string | null };
-  weeks: FlowWeek[];
-  needApprovalIds: string[];
-  inkoopPendingIds: string[]; // purchase not yet generated
-  inkoopTotals: { hours: number; cost: number };
-  verkoopByClient: SalesGroup[]; // sales not yet generated, grouped per client
-  ownStaff: boolean; // loondienst/eigen personeel → geen inkoopfactuur (loon)
-  done: boolean; // nothing left to invoice
-};
-
-/** Everything the wizard needs for one consultant, derived from the DB. */
-export async function consultantFlow(consultantId: string): Promise<ConsultantFlow | null> {
-  const consultant = await db.consultant.findUnique({
-    where: { id: consultantId },
-    select: { id: true, firstName: true, lastName: true, discipline: true, employmentType: true },
-  });
-  if (!consultant) return null;
-  const ownStaff = consultant.employmentType === "LOONDIENST";
-
-  const timesheets = await db.timesheet.findMany({
-    where: { ...pendingWhere(), placement: { consultantId } },
-    include: flowInclude,
-    orderBy: { weekStart: "asc" },
-  });
-  const weeks = timesheets.map((t) => toFlowWeek(t));
-
-  const needApprovalIds = weeks.filter((w) => w.status === "SUBMITTED").map((w) => w.timesheetId);
-
-  // Q4S gebruikt de ontvangen factuur van de freelancer; self-billing staat uit.
-  const inkoopPending: FlowWeek[] = [];
-  const inkoopTotals = {
-    hours: round2(inkoopPending.reduce((s, w) => s + w.hours, 0)),
-    cost: round2(inkoopPending.reduce((s, w) => s + w.cost, 0)),
-  };
-
-  // Alleen weken MET een klant kunnen op een verkoopfactuur — een plaatsing zonder
-  // gekoppeld bedrijf slaan we hier over (blijft wel zichtbaar in de wekenlijst).
-  const verkoopPending = weeks.filter((w) => w.status === "APPROVED" && !w.hasSales && w.clientId);
-  const groups = new Map<string, SalesGroup>();
-  for (const w of verkoopPending) {
-    if (!w.clientId) continue;
-    let g = groups.get(w.clientId);
-    if (!g) {
-      g = { clientId: w.clientId, clientName: w.clientName, timesheetIds: [], hours: 0, charge: 0, cost: 0, margin: 0 };
-      groups.set(w.clientId, g);
-    }
-    g.timesheetIds.push(w.timesheetId);
-    g.hours = round2(g.hours + w.hours);
-    g.charge = round2(g.charge + w.charge);
-    g.cost = round2(g.cost + w.cost);
-    g.margin = round2(g.margin + w.margin);
-  }
-
-  return {
-    consultant,
-    weeks,
-    needApprovalIds,
-    inkoopPendingIds: inkoopPending.map((w) => w.timesheetId),
-    inkoopTotals,
-    verkoopByClient: [...groups.values()],
-    ownStaff,
-    done: weeks.length === 0,
-  };
-}
-
 // ---------------------------------------------------------------------------
-// 1b) Batch — genereer alle facturen in één keer
-// ---------------------------------------------------------------------------
-
-export type BatchResult = {
-  consultants: number; // hoeveel medewerkers hadden werk
-  inkoop: number; // aangemaakte inkoopfacturen
-  verkoop: number; // aangemaakte verkoopfacturen
-  skippedApproval: number; // weekstaten die eerst goedgekeurd moeten worden
-  errors: string[];
-};
-
-/**
- * Genereer voor ELKE medewerker met openstaand werk de verkoopfactuur(en) per
- * klant. De eigen freelancerfactuur wordt apart als ReceivedInvoice geregistreerd.
- * Alleen GOEDGEKEURDE
- * weekstaten worden verwerkt; nog-in-te-dienen (SUBMITTED) weekstaten worden
- * geteld en overgeslagen zodat een mens ze eerst controleert. Elke factuur is
- * atomair (zie invoicing.ts); we recomputen per medewerker uit de DB.
- */
-export async function processAllPending(): Promise<BatchResult> {
-  const rows = await pendingWorkByConsultant();
-  const inkoop = 0;
-  let verkoop = 0;
-  let skippedApproval = 0;
-  const errors: string[] = [];
-
-  for (const row of rows) {
-    // Eén medewerker die faalt mag de rest van de batch niet wegvagen: elke
-    // factuur is atomair (invoicing.ts), maar een echte DB-fout WERPT — vang die
-    // per medewerker af, log 'm en ga door.
-    try {
-      // Verse snapshot per medewerker (state kan door eerdere iteraties wijzigen).
-      const flow = await consultantFlow(row.consultantId);
-      if (!flow) continue;
-      skippedApproval += flow.needApprovalIds.length;
-
-      for (const g of flow.verkoopByClient) {
-        const res = await createSalesInvoice({
-          clientId: g.clientId,
-          timesheetIds: g.timesheetIds,
-          issueDate: new Date(),
-          notes: null,
-        });
-        if (res.ok) verkoop++;
-        else errors.push(`Verkoop ${row.name} → ${g.clientName}: ${res.error}`);
-      }
-    } catch (e) {
-      errors.push(`${row.name}: ${e instanceof Error ? e.message : "onbekende fout"}`);
-    }
-  }
-
-  return { consultants: rows.length, inkoop, verkoop, skippedApproval, errors };
-}
-
-export type ConsultantProcessResult = {
-  ok: boolean;
-  approved: number; // ingediende weken die zijn goedgekeurd
-  inkoop: number; // aangemaakte inkoopfacturen
-  verkoop: number; // aangemaakte verkoopfacturen
-  errors: string[];
-};
-
-/**
- * Verwerk ÉÉN medewerker: keur alle ingediende (SUBMITTED) weken goed en maak
- * daarna de verkoopfactuur(en) per klant aan. Een eventuele oude `inkoop`-optie
- * wordt bewust genegeerd: Q4S gebruikt de ontvangen freelancerfactuur. De mens
- * controleert vooraf in het overzicht; alles wordt server-side hercomputed en
- * elke factuur is atomair (invoicing.ts).
- */
-export async function processConsultant(
-  consultantId: string,
-  opts: { inkoop?: boolean; verkoop?: boolean } = {},
-): Promise<ConsultantProcessResult | null> {
-  const doVerkoop = opts.verkoop ?? true;
-
-  const flow0 = await consultantFlow(consultantId);
-  if (!flow0) return null;
-
-  // 1) Keur alle ingediende weken goed — atomair, alleen wat nog SUBMITTED is.
-  //    Nodig voor beide factuursoorten (alleen goedgekeurde weken factureren).
-  let approved = 0;
-  if (flow0.needApprovalIds.length > 0) {
-    const res = await db.timesheet.updateMany({
-      where: { id: { in: flow0.needApprovalIds }, status: "SUBMITTED" },
-      data: { status: "APPROVED" },
-    });
-    approved = res.count;
-  }
-
-  // 2) Herbereken ná goedkeuring: nu zijn die weken factureerbaar.
-  const flow = await consultantFlow(consultantId);
-  if (!flow) return { ok: false, approved, inkoop: 0, verkoop: 0, errors: ["Flow verdween."] };
-
-  const inkoop = 0;
-  let verkoop = 0;
-  const errors: string[] = [];
-
-  // Eén factuur die faalt mag de rest niet wegvagen (elke factuur is atomair),
-  // maar een echte DB-fout WERPT — vang die af, log 'm en ga door.
-  try {
-    if (doVerkoop) {
-      for (const g of flow.verkoopByClient) {
-        const res = await createSalesInvoice({
-          clientId: g.clientId,
-          timesheetIds: g.timesheetIds,
-          issueDate: new Date(),
-          notes: null,
-        });
-        if (res.ok) verkoop++;
-        else errors.push(`Verkoopfactuur → ${g.clientName}: ${res.error}`);
-      }
-    }
-  } catch (e) {
-    errors.push(e instanceof Error ? e.message : "onbekende fout");
-  }
-
-  return { ok: errors.length === 0, approved, inkoop, verkoop, errors };
-}
-
-// ---------------------------------------------------------------------------
-// 1c) Facturatie-archief — volledig verwerkte medewerker-weken, per week
-// ---------------------------------------------------------------------------
-
-export type ArchivedRow = {
-  timesheetId: string;
-  consultantId: string;
-  consultantName: string;
-  placementTitle: string;
-  clientName: string;
-  hours: number;
-  sales: { id: string; number: string; status: string } | null;
-  purchase: { id: string; number: string; status: string } | null;
-};
-
-export type ArchivedWeek = {
-  key: string;
-  weekStart: Date;
-  weekLabel: string;
-  rows: ArchivedRow[];
-  hours: number;
-};
-
-/**
- * Alle weekstaten die het volledige proces hebben doorlopen: INVOICED en op een
- * verkoopfactuur. De freelancerfactuur is een apart ontvangen brondocument.
- * Gegroepeerd per week (nieuwste
- * eerst). De vorige flows (verwerken/verzendmap) blijven zo schoon; hier vind je
- * de historie terug en kun je via de factuur-links aanpassen — het bestaande
- * factuurnummer blijft behouden (bewerken wijzigt het nummer niet).
- */
-export async function archivedBillingByWeek(): Promise<ArchivedWeek[]> {
-  const timesheets = await db.timesheet.findMany({
-    where: {
-      status: "INVOICED",
-      invoiceLine: { isNot: null },
-    },
-    include: {
-      entries: { select: { hours: true } },
-      placement: {
-        include: {
-          client: { select: { companyName: true } },
-          consultant: { select: { id: true, firstName: true, lastName: true } },
-        },
-      },
-      invoiceLine: { select: { invoice: { select: { id: true, number: true, status: true } } } },
-      purchaseLine: { select: { purchaseInvoice: { select: { id: true, number: true, status: true } } } },
-    },
-    orderBy: [{ weekStart: "desc" }],
-  });
-
-  const map = new Map<string, ArchivedWeek>();
-  for (const t of timesheets) {
-    const key = String(t.weekStart.getTime());
-    let g = map.get(key);
-    if (!g) {
-      g = { key, weekStart: t.weekStart, weekLabel: formatWeekLabel(t.weekStart), rows: [], hours: 0 };
-      map.set(key, g);
-    }
-    const hours = round2(t.entries.reduce((s, e) => s + e.hours, 0));
-    const inv = t.invoiceLine?.invoice ?? null;
-    const pinv = t.purchaseLine?.purchaseInvoice ?? null;
-    g.rows.push({
-      timesheetId: t.id,
-      consultantId: t.placement.consultant.id,
-      consultantName: `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`,
-      placementTitle: t.placement.title,
-      clientName: t.placement.client?.companyName ?? "— geen bedrijf",
-      hours,
-      sales: inv ? { id: inv.id, number: inv.number, status: inv.status } : null,
-      purchase: pinv ? { id: pinv.id, number: pinv.number, status: pinv.status } : null,
-    });
-    g.hours = round2(g.hours + hours);
-  }
-
-  for (const g of map.values()) {
-    g.rows.sort((a, b) => a.consultantName.localeCompare(b.consultantName, "nl"));
-  }
-  return [...map.values()].sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime());
-}
-
-// ---------------------------------------------------------------------------
-// 2) Invoicing overview — dashboard + /totaaloverzicht
+// 2) Invoicing overview — dashboard + /facturatie/rapportage
 // ---------------------------------------------------------------------------
 
 const monthFmt = new Intl.DateTimeFormat("nl-NL", { month: "short" });

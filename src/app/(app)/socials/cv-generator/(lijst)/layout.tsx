@@ -40,7 +40,7 @@ export default async function CvGeneratorLayout({ children }: { children: React.
         <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Er is nog geen AI-sleutel ingesteld, dus CV&apos;s kunnen niet uitgelezen worden. Zet er
           een in bij{" "}
-          <Link href="/instellingen" className="font-medium underline">
+          <Link href="/facturatie/instellingen" className="font-medium underline">
             Instellingen
           </Link>
           .
@@ -50,7 +50,7 @@ export default async function CvGeneratorLayout({ children }: { children: React.
         <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Zonder Gemini- of Anthropic-sleutel kunnen alleen Word-bestanden (.docx) uitgelezen
           worden — PDF&apos;s hebben vision nodig. Stel er een in bij{" "}
-          <Link href="/instellingen" className="font-medium underline">
+          <Link href="/facturatie/instellingen" className="font-medium underline">
             Instellingen
           </Link>
           .

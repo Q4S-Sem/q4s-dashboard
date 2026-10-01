@@ -3,7 +3,7 @@ import { BackLink } from "@/components/back-link";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { currentUser } from "@/lib/session";
-import { navTree } from "@/components/nav";
+import { migrateAccessHrefs, navTree } from "@/components/nav";
 import { GebruikerForm } from "../../GebruikerForm";
 import { updateUser } from "../../actions";
 import { PasswordForm } from "../../PasswordForm";
@@ -51,8 +51,8 @@ export default async function GebruikerBewerkenPage({
         submitLabel="Wijzigingen opslaan"
         cancelHref="/gebruikers"
         navTree={navTree()}
-        initialHubs={parseList(user.allowedHubs)}
-        initialPages={parseList(user.allowedPages)}
+        initialHubs={migrateAccessHrefs(parseList(user.allowedHubs))}
+        initialPages={migrateAccessHrefs(parseList(user.allowedPages))}
       />
 
       {isSelf && <PasswordForm email={user.email} />}

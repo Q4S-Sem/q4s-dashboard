@@ -190,7 +190,7 @@ export default async function DossierPage({
           Deze week staat al op verkoopfactuur {row.verkoopFactuurNummer} — er wordt niets dubbel
           gefactureerd.
           <Link
-            href={`/facturen/${row.verkoopFactuurId}`}
+            href={`/facturatie/verkoop/${row.verkoopFactuurId}`}
             className="font-semibold underline underline-offset-2"
           >
             Open de factuur
@@ -485,7 +485,7 @@ export default async function DossierPage({
       <p className="text-xs text-ink-400">
         Akkoord legt de urenstaat vast, keurt zijn eigen factuur als inkoop goed (die factuur ís de
         inkoop — Q4S maakt nooit een eigen inkoopfactuur) en zet de verkoopfactuur als{" "}
-        <em>concept</em> klaar in Facturen. Versturen naar de klant blijft een losse, bewuste stap.
+        <em>concept</em> klaar bij Verkoopfacturen. Versturen naar de klant blijft een losse, bewuste stap.
       </p>
     </div>
   );

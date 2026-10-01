@@ -8,6 +8,8 @@ import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { TIMESHEET_STATUSES } from "@/lib/domain";
 import { formatDate, formatHours, round2 } from "@/lib/utils";
+import { weekKeyVanDatum } from "@/lib/wizard-weeknav";
+import { ymd } from "@/lib/week-nav";
 import { getPlacement, getTimesheets, totalHours } from "../data";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -65,11 +67,13 @@ export default async function PlaatsingUrenPage({ params }: { params: Promise<{ 
       <Card>
         <CardHeader>
           <CardTitle>Urenstaten</CardTitle>
+          {/* Uren komen binnen via Week verwerken (urenstaat uploaden/uitlezen),
+              niet meer via een los invoerformulier. */}
           <Link
-            href={`/uren/nieuw?placement=${placement.id}`}
+            href="/facturatie"
             className={buttonVariants({ variant: "outline", size: "sm" })}
           >
-            <Clock className="h-4 w-4" /> Uren registreren
+            <Clock className="h-4 w-4" /> Naar Week verwerken
           </Link>
         </CardHeader>
         {timesheets.length === 0 ? (
@@ -86,19 +90,31 @@ export default async function PlaatsingUrenPage({ params }: { params: Promise<{ 
               </TR>
             </THead>
             <TBody>
-              {timesheets.map((ts) => (
+              {timesheets.map((ts) => {
+                // Het dossier van die week (document + controles) is nu de plek
+                // waar je een urenstaat bekijkt en corrigeert.
+                const weekKey = weekKeyVanDatum(ymd(ts.weekStart));
+                return (
                 <TR key={ts.id}>
                   <TD>
-                    <Link href={`/uren/${ts.id}`} className="font-medium text-ink-900 hover:text-brand-700">
-                      {formatDate(ts.weekStart)}
-                    </Link>
+                    {weekKey ? (
+                      <Link
+                        href={`/facturatie/${placement.id}/${weekKey}`}
+                        className="font-medium text-ink-900 hover:text-brand-700"
+                      >
+                        {formatDate(ts.weekStart)}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-ink-900">{formatDate(ts.weekStart)}</span>
+                    )}
                   </TD>
                   <TD className="text-right tabular-nums">{formatHours(hoursOf(ts))}</TD>
                   <TD>
                     <StatusBadge options={TIMESHEET_STATUSES} value={ts.status} />
                   </TD>
                 </TR>
-              ))}
+                );
+              })}
             </TBody>
           </Table>
         )}

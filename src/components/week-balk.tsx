@@ -12,10 +12,9 @@ import { parseWeek, shiftWeek, weekHref } from "@/lib/week-nav";
 // "Volgende week ›", met daaronder één regel die vertelt welke week je ziet.
 // Eén rij, gecentreerd, en op smalle schermen breekt hij netjes af.
 //
-// Vroeger had elke pagina hier zijn eigen kopie van (uren, inbox, inbox/status,
-// verzenden, ontvangen-facturen), met net andere breedtes en ondertitels. Dit is
-// die ene balk: hij ziet er overal hetzelfde uit en rekent overal hetzelfde
-// (src/lib/week-nav.ts).
+// Vroeger had elke facturatiepagina hier zijn eigen kopie van, met net andere
+// breedtes en ondertitels. Dit is die ene balk: hij ziet er overal hetzelfde uit
+// en rekent overal hetzelfde (src/lib/week-nav.ts).
 //
 // De balk NAVIGEERT alleen — hij zet `?week=` in de URL. Wat er met die week
 // gebeurt bepaalt de pagina zelf; de balk filtert niets en verandert niets.
@@ -35,7 +34,7 @@ export function WeekBalk({
   extraParams,
   allWeeks = false,
 }: {
-  /** Pad van de pagina zelf, bv. "/uren" of "/verzenden". */
+  /** Pad van de pagina zelf, bv. "/facturatie" of "/facturatie/verkoop". */
   basePath: string;
   /** De getoonde week als "YYYY-MM-DD" (maandag). Leeg = alle weken. */
   week: string;
@@ -44,9 +43,9 @@ export function WeekBalk({
   /** Filters die behouden moeten blijven bij het bladeren, bv. `{ tab, q }`. */
   extraParams?: Record<string, string | null | undefined>;
   /**
-   * Toon een "Alle weken"-knop. Voor de schermen waar je niets mag missen (de
-   * verzendmap, de ontvangen facturen, de wachtkamer, de betalingen): daar is
-   * "alles" de veilige stand en filtert de balk pas als je een week kiest.
+   * Toon een "Alle weken"-knop. Voor de schermen waar je niets mag missen
+   * (verkoopfacturen, inkoop & betalingen): daar is "alles" de veilige stand en
+   * filtert de balk pas als je zelf een week kiest.
    */
   allWeeks?: boolean;
 }) {

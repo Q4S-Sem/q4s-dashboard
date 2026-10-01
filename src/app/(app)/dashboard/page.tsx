@@ -396,13 +396,13 @@ export default async function DashboardPage({
     : null;
 
   const signals: { label: string; value: string; href: string; tone: "red" | "amber" | "blue" | "slate" }[] = [
-    { label: "Facturen te laat (over vervaldatum)", value: overdueInvoices.length ? `${overdueInvoices.length} · ${formatCurrency(overdueAmount)}` : "0", href: "/facturen", tone: overdueInvoices.length ? "red" : "slate" },
-    { label: "Klaar om te verwerken", value: String(pendingConsultants.length), href: "/verwerken/nieuw", tone: pendingConsultants.length ? "blue" : "slate" },
-    { label: "Urenstaten ter goedkeuring", value: String(submittedCount), href: "/uren", tone: submittedCount ? "amber" : "slate" },
+    { label: "Facturen te laat (over vervaldatum)", value: overdueInvoices.length ? `${overdueInvoices.length} · ${formatCurrency(overdueAmount)}` : "0", href: "/facturatie/verkoop?tab=telaat", tone: overdueInvoices.length ? "red" : "slate" },
+    { label: "Klaar om te verwerken", value: String(pendingConsultants.length), href: "/facturatie", tone: pendingConsultants.length ? "blue" : "slate" },
+    { label: "Urenstaten ter goedkeuring", value: String(submittedCount), href: "/facturatie", tone: submittedCount ? "amber" : "slate" },
     { label: "Certificaten (bijna) verlopen", value: String(certAlerts), href: "/certificeringen", tone: expiredCerts ? "red" : certAlerts ? "amber" : "slate" },
     { label: "Plaatsingen met lage marge (<15%)", value: String(lowMarginPlacements.length), href: "/plaatsingen", tone: lowMarginPlacements.length ? "amber" : "slate" },
     { label: "Open sollicitaties in pipeline", value: String(openApplications), href: "/sollicitaties", tone: openApplications ? "blue" : "slate" },
-    { label: "Declaraties te beoordelen", value: String(expensesNewCount), href: "/declaraties", tone: expensesNewCount ? "amber" : "slate" },
+    { label: "Declaraties te beoordelen", value: String(expensesNewCount), href: "/facturatie/inkoop?tab=declaraties", tone: expensesNewCount ? "amber" : "slate" },
     { label: "Vacatures live op de website", value: String(vacPublished), href: "/website", tone: vacPublished ? "blue" : "amber" },
   ];
 
@@ -415,15 +415,15 @@ export default async function DashboardPage({
       key: "verwerken",
       title: `Week verwerken: ${pendingConsultants.length} medewerker${pendingConsultants.length === 1 ? "" : "s"} met goedgekeurde uren`,
       sub: "Week verwerken · urenstaten klaar voor facturatie",
-      href: "/verwerken/nieuw", cta: "Start", tone: "blue", primary: true,
+      href: "/facturatie", cta: "Start", tone: "blue", primary: true,
     });
   }
   if (overdueInvoices.length > 0) {
     todos.push({
       key: "overdue",
       title: `${overdueInvoices.length} factu${overdueInvoices.length === 1 ? "ur is" : "ren zijn"} over de vervaldatum (${formatCurrency(overdueAmount)})`,
-      sub: "Betaalmonitor · herinnering staat klaar",
-      href: "/betaalmonitor", cta: "Bekijk", tone: "amber",
+      sub: "Herinnering staat klaar",
+      href: "/facturatie/verkoop?tab=telaat", cta: "Bekijk", tone: "amber",
     });
   }
   if (certAlerts > 0) {
@@ -439,7 +439,7 @@ export default async function DashboardPage({
       key: "uren",
       title: `${submittedCount} urensta${submittedCount === 1 ? "at wacht" : "ten wachten"} op goedkeuring`,
       sub: "Urenregistratie · controleren en goedkeuren",
-      href: "/uren", cta: "Controleer", tone: "violet",
+      href: "/facturatie", cta: "Controleer", tone: "violet",
     });
   }
   if (openApplications > 0) {
@@ -455,7 +455,7 @@ export default async function DashboardPage({
       key: "declaraties",
       title: `${expensesNewCount} declaratie${expensesNewCount === 1 ? "" : "s"} te beoordelen`,
       sub: "Declaraties · goedkeuren of afwijzen",
-      href: "/declaraties", cta: "Beoordeel", tone: "emerald",
+      href: "/facturatie/inkoop?tab=declaraties", cta: "Beoordeel", tone: "emerald",
     });
   }
   const topTodos = todos.slice(0, 5);
@@ -524,7 +524,7 @@ export default async function DashboardPage({
           value={<CountUpValue value={periodOmzet} />}
           deltaPct={deltaPct(periodOmzet, prevOmzet)}
           hint={`van ${formatCurrency(prevOmzet)} · vorige periode`}
-          href="/totaaloverzicht"
+          href="/facturatie/rapportage"
           spark={months.map((m) => round2(m.omzet))}
           sparkColor="blue"
           delay={0}
@@ -534,7 +534,7 @@ export default async function DashboardPage({
           value={<CountUpValue value={periodMarge} />}
           deltaPct={deltaPct(periodMarge, prevMarge)}
           hint={`van ${formatCurrency(prevMarge)} · ${periodMargePct}% marge`}
-          href="/totaaloverzicht"
+          href="/facturatie/rapportage"
           spark={months.map((m) => round2(m.marge))}
           sparkColor="emerald"
           delay={70}
@@ -608,27 +608,27 @@ export default async function DashboardPage({
               <CardTitle className="flex items-center gap-2 text-emerald-700">
                 <span className="h-2.5 w-2.5 rounded-sm bg-emerald-600" /> Facturatie deze week
               </CardTitle>
-              <Link href="/facturen" className="text-sm font-medium text-ink-500 hover:text-ink-900">Naar facturen</Link>
+              <Link href="/facturatie/verkoop" className="text-sm font-medium text-ink-500 hover:text-ink-900">Naar facturen</Link>
             </CardHeader>
             <div className="divide-y divide-ink-100">
-              <Link href="/verzenden" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
+              <Link href="/facturatie/verkoop?tab=klaar" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
                 <div>
                   <p className="text-[13.5px] font-semibold text-ink-900">Klaar om te versturen</p>
-                  <p className="text-xs text-ink-400">Verzendmap</p>
+                  <p className="text-xs text-ink-400">Verkoopfacturen · status Klaar</p>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11.5px] font-bold text-blue-700">{readyInvoices.length} factu{readyInvoices.length === 1 ? "ur" : "ren"}</span>
                   <span className="text-[13.5px] font-bold tabular-nums text-ink-900">{formatCurrency(readyTotal)}</span>
                 </div>
               </Link>
-              <Link href="/verwerken/nieuw" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
+              <Link href="/facturatie" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
                 <div>
                   <p className="text-[13.5px] font-semibold text-ink-900">Klaar om te verwerken</p>
                   <p className="text-xs text-ink-400">Week verwerken</p>
                 </div>
                 <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11.5px] font-bold text-amber-700">{pendingConsultants.length} medewerker{pendingConsultants.length === 1 ? "" : "s"}</span>
               </Link>
-              <Link href="/betalingen" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
+              <Link href="/facturatie/inkoop" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
                 <div>
                   <p className="text-[13.5px] font-semibold text-ink-900">Betaald deze week</p>
                   <p className="text-xs text-ink-400">Betalingen</p>
@@ -671,7 +671,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Omzet, inkoop & marge ${periodLabel}`}
           color="blue"
-          action={<Link href="/totaaloverzicht" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Totaaloverzicht →</Link>}
+          action={<Link href="/facturatie/rapportage" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Rapportage →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
@@ -733,7 +733,7 @@ export default async function DashboardPage({
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-blue-600" /> Top klanten (omzet {periodLabel})
             </CardTitle>
-            <Link href="/totaaloverzicht" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Overzicht</Link>
+            <Link href="/facturatie/rapportage" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Overzicht</Link>
           </CardHeader>
           <CardContent className="space-y-2.5">
             {topClients.length === 0 ? (
@@ -759,7 +759,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Facturatie ${periodLabel}`}
           color="emerald"
-          action={<Link href="/totaaloverzicht" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Volledig overzicht →</Link>}
+          action={<Link href="/facturatie/rapportage" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Volledig overzicht →</Link>}
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <KpiTile color="blue" label="Omzet" value={formatCurrency(overview.omzet)} icon={<TrendingUp className="h-5 w-5" />} />
@@ -775,7 +775,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Wat Q4S overhoudt (${periodLabel})`}
           color="emerald"
-          action={<Link href="/totaaloverzicht" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Totaaloverzicht →</Link>}
+          action={<Link href="/facturatie/rapportage" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Rapportage →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Twee losse cijfers */}
@@ -850,7 +850,7 @@ export default async function DashboardPage({
             title="Declaraties per categorie"
             icon={<Receipt className="h-5 w-5" />}
             iconColor="text-orange-600"
-            action={<Link href="/declaraties" className="text-sm font-medium text-orange-700 hover:text-orange-800">Alle</Link>}
+            action={<Link href="/facturatie/inkoop?tab=declaraties" className="text-sm font-medium text-orange-700 hover:text-orange-800">Alle</Link>}
           >
             <DashboardPie data={comp.declaratiesPerCategorie} kind="currency" centerLabel="declaraties" />
           </ChartCard>
@@ -894,7 +894,7 @@ export default async function DashboardPage({
         <SectionHeading
           title="Debiteuren & cash"
           color="amber"
-          action={<Link href="/facturen" className="text-sm font-medium text-amber-700 hover:text-amber-800">Facturen →</Link>}
+          action={<Link href="/facturatie/verkoop" className="text-sm font-medium text-amber-700 hover:text-amber-800">Facturen →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           <ChartCard
@@ -931,7 +931,7 @@ export default async function DashboardPage({
             title="Ontvangen ZZP-facturen"
             icon={<Banknote className="h-5 w-5" />}
             iconColor="text-emerald-600"
-            action={<Link href="/ontvangen-facturen" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Alle</Link>}
+            action={<Link href="/facturatie/inkoop" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Alle</Link>}
             note="huidige stand · wat wij nog moeten betalen"
           >
             <DashboardPie data={comp.ontvangenStatus} kind="currency" centerLabel="ontvangen" />
@@ -1043,7 +1043,7 @@ export default async function DashboardPage({
       <div>
         <SectionHeading title="Alle onderdelen" color="violet" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <HubTile color="blue" icon={<ListChecks className="h-5 w-5" />} title="Facturatie" href="/verwerken/nieuw"
+          <HubTile color="blue" icon={<ListChecks className="h-5 w-5" />} title="Facturatie" href="/facturatie"
             rows={[["Te verwerken", String(pendingConsultants.length)], ["Openstaand", formatCurrency(overview.openstaand)], ["Te betalen", formatCurrency(overview.teBetalen)]]} />
           <HubTile color="violet" icon={<Sparkles className="h-5 w-5" />} title="Recruitment" href="/recruitment"
             rows={[["Open sollicitaties", String(openApplications)], ["Kandidaten", String(candidatesCount)], ["Vacatures (live/concept)", `${vacPublished} / ${vacConcept}`]]} />
@@ -1053,7 +1053,7 @@ export default async function DashboardPage({
             rows={[["Verlopen", String(expiredCerts)], ["Verloopt binnenkort", String(expiringCerts)]]} />
           <HubTile color="cyan" icon={<ClipboardCheck className="h-5 w-5" />} title={`Evaluaties ${shortLabel}`} href="/evaluaties/vcu"
             rows={[["Aantal", String(periodEvals.length)], ["Gem. score", evalAvg !== null ? `${evalAvg.toLocaleString("nl-NL")} / 4` : "—"]]} />
-          <HubTile color="orange" icon={<Receipt className="h-5 w-5" />} title="Declaraties" href="/declaraties"
+          <HubTile color="orange" icon={<Receipt className="h-5 w-5" />} title="Declaraties" href="/facturatie/inkoop?tab=declaraties"
             rows={[["Te beoordelen", String(expensesNewCount)], ["Openstaand bedrag", formatCurrency(round2(expensesNew._sum.amount ?? 0))]]} />
           <HubTile color="indigo" icon={<Globe className="h-5 w-5" />} title="Website" href="/website"
             rows={[["Live vacatures", String(vacPublished)], ["Weergaven", String(vacViews._sum.views ?? 0)]]} />
@@ -1069,7 +1069,7 @@ export default async function DashboardPage({
             <CardTitle className="flex items-center gap-2">
               <Receipt className="h-5 w-5 text-blue-600" /> Recente facturen
             </CardTitle>
-            <Link href="/facturen" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Alle facturen</Link>
+            <Link href="/facturatie/verkoop" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Alle facturen</Link>
           </CardHeader>
           {recentInvoices.length === 0 ? (
             <CardContent className="text-sm text-ink-500">Geen facturen in {periodLabel}.</CardContent>
@@ -1087,7 +1087,7 @@ export default async function DashboardPage({
                 {recentInvoices.map((inv) => (
                   <TR key={inv.id}>
                     <TD>
-                      <Link href={`/facturen/${inv.id}`} className="font-bold text-ink-900 hover:text-brand-600">{inv.number}</Link>
+                      <Link href={`/facturatie/verkoop/${inv.id}`} className="font-bold text-ink-900 hover:text-brand-600">{inv.number}</Link>
                     </TD>
                     <TD className="truncate text-ink-600">{inv.client.companyName}</TD>
                     <TD className="text-right tabular-nums">{formatCurrency(inv.total)}</TD>

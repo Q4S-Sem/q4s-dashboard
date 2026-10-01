@@ -20,7 +20,7 @@ export function WeekPicker({
 }: {
   /** Maandag van de getoonde week als "YYYY-MM-DD". */
   value: string;
-  /** Pad om naar te navigeren, bv. "/uren" of "/inbox". */
+  /** Pad om naar te navigeren, bv. "/facturatie" of "/facturatie/inkoop". */
   basePath: string;
   /** Overige filters die behouden moeten blijven, bv. `{ tab, q }`. */
   params?: Record<string, string | null | undefined>;

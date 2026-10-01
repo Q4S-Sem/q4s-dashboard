@@ -159,8 +159,8 @@ export default async function WerknemerDetailPage({
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
-            <Link href={`/verwerken/${c.id}`} className={buttonVariants()}>
-              <ListChecks className="h-4 w-4" /> Facturatie verwerken
+            <Link href="/facturatie" className={buttonVariants()}>
+              <ListChecks className="h-4 w-4" /> Week verwerken
             </Link>
             <Link
               href={`/werknemers/${c.id}/bewerken`}

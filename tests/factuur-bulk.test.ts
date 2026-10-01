@@ -127,13 +127,13 @@ test("een lege selectie doet niets", () => {
 // ---------------------------------------------------------------------------
 
 test("de PDF-link wijst naar de bestaande verkoop-PDF-route", () => {
-  assert.equal(invoicePdfHref("abc123"), "/verzenden/verkoop/abc123/pdf");
+  assert.equal(invoicePdfHref("abc123"), "/facturatie/verkoop/abc123/pdf");
 });
 
 test("de factuurdetail-preview embedt exact dezelfde PDF zonder PDF-toolbar", () => {
   assert.equal(
     invoicePdfPreviewHref("abc123"),
-    "/verzenden/verkoop/abc123/pdf#toolbar=0&navpanes=0&view=FitH",
+    "/facturatie/verkoop/abc123/pdf#toolbar=0&navpanes=0&view=FitH",
   );
 });
 

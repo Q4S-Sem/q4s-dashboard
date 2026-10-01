@@ -40,6 +40,60 @@ const nextConfig: NextConfig = {
       "./node_modules/@napi-rs/canvas*/**",
     ],
   },
+
+  // De facturatie is herbouwd tot vijf schermen onder /facturatie. De oude
+  // paden blijven werken via een TIJDELIJKE omleiding (permanent: false), zodat
+  // bladwijzers, links in al verstuurde e-mails en oude tabbladen niet
+  // doodlopen — en we de doelen later nog kunnen bijstellen zonder dat browsers
+  // een 308 gecachet hebben.
+  //
+  // Volgorde telt: het meest specifieke pad staat BOVEN zijn catch-all, anders
+  // vangt die laatste de PDF-route of de detailpagina af.
+  async redirects() {
+    return [
+      // --- Verkoopfacturen -------------------------------------------------
+      // De PDF-route zit in verstuurde mails en bladwijzers: als eerste.
+      { source: "/verzenden/verkoop/:id/pdf", destination: "/facturatie/verkoop/:id/pdf", permanent: false },
+      { source: "/facturen/nieuw", destination: "/facturatie/verkoop", permanent: false },
+      { source: "/facturen/:id/bewerken", destination: "/facturatie/verkoop/:id", permanent: false },
+      { source: "/facturen/:id/voorbeeld", destination: "/facturatie/verkoop/:id/voorbeeld", permanent: false },
+      { source: "/facturen/:id", destination: "/facturatie/verkoop/:id", permanent: false },
+      { source: "/facturen", destination: "/facturatie/verkoop", permanent: false },
+      { source: "/verzenden", destination: "/facturatie/verkoop?tab=klaar", permanent: false },
+      { source: "/verzenden/:path*", destination: "/facturatie/verkoop?tab=klaar", permanent: false },
+
+      // --- Inkoop & betalingen ---------------------------------------------
+      { source: "/declaraties/:id/bewerken", destination: "/facturatie/inkoop/declaraties/:id", permanent: false },
+      { source: "/declaraties", destination: "/facturatie/inkoop?tab=declaraties", permanent: false },
+      { source: "/declaraties/:path*", destination: "/facturatie/inkoop?tab=declaraties", permanent: false },
+      { source: "/ontvangen-facturen/importeren", destination: "/facturatie", permanent: false },
+      { source: "/ontvangen-facturen/:id", destination: "/facturatie/inkoop/:id", permanent: false },
+      { source: "/ontvangen-facturen", destination: "/facturatie/inkoop", permanent: false },
+      { source: "/betalingen", destination: "/facturatie/inkoop", permanent: false },
+      { source: "/betaalmonitor", destination: "/facturatie/inkoop", permanent: false },
+      { source: "/betaalmonitor/:path*", destination: "/facturatie/inkoop", permanent: false },
+      // Self-billing bestaat niet meer (Optie A): de freelancerfactuur is de inkoop.
+      { source: "/inkoopfacturen", destination: "/facturatie/inkoop", permanent: false },
+      { source: "/inkoopfacturen/:path*", destination: "/facturatie/inkoop", permanent: false },
+
+      // --- Week verwerken (urenstaten) -------------------------------------
+      { source: "/verwerken", destination: "/facturatie", permanent: false },
+      { source: "/verwerken/:path*", destination: "/facturatie", permanent: false },
+      { source: "/inbox", destination: "/facturatie", permanent: false },
+      { source: "/inbox/:path*", destination: "/facturatie", permanent: false },
+      { source: "/uren", destination: "/facturatie", permanent: false },
+      { source: "/uren/:path*", destination: "/facturatie", permanent: false },
+
+      // --- Rapportage -------------------------------------------------------
+      { source: "/totaaloverzicht", destination: "/facturatie/rapportage", permanent: false },
+      { source: "/boekhouding", destination: "/facturatie/rapportage", permanent: false },
+      { source: "/boekhouding/:path*", destination: "/facturatie/rapportage", permanent: false },
+      { source: "/dashboard/facturatie", destination: "/facturatie/rapportage", permanent: false },
+
+      // --- Instellingen & regels -------------------------------------------
+      { source: "/instellingen", destination: "/facturatie/instellingen", permanent: false },
+    ];
+  },
 };
 
 export default nextConfig;

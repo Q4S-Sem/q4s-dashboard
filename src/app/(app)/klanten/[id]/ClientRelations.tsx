@@ -192,7 +192,7 @@ export function InvoicesPanel({ invoices }: { invoices: InvoiceRow[] }) {
                   <TR key={inv.id}>
                     <TD>
                       <Link
-                        href={`/facturen/${inv.id}`}
+                        href={`/facturatie/verkoop/${inv.id}`}
                         className="font-medium text-ink-900 hover:text-brand-700"
                       >
                         {inv.number}

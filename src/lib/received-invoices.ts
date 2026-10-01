@@ -1,5 +1,7 @@
 import { db } from "./db";
 import { round2, formatCurrency, formatDate, formatWeekLabel, startOfISOWeek } from "./utils";
+import { ymd } from "./week-nav";
+import { weekKeyVanDatum } from "./wizard-weeknav";
 import { computeTimesheetMoney } from "./toeslag";
 import { getCompanySettings } from "./settings";
 import { sendMail, renderQ4sEmail, renderQ4sEmailText, type EmailContent } from "./email";
@@ -56,6 +58,10 @@ export async function expectedForConsultantPeriod(
 
 export type TimesheetWeekRow = {
   timesheetId: string;
+  /** De plaatsing waar deze week bij hoort — samen met `weekKey` de dossier-link. */
+  placementId: string;
+  /** "2026-W40"; null als de maandag onleesbaar is (kan in de praktijk niet). */
+  weekKey: string | null;
   weekLabel: string;
   clientName: string;
   hours: number;
@@ -81,6 +87,9 @@ export async function timesheetWeeksForPeriod(
     );
     return {
       timesheetId: t.id,
+      placementId: t.placementId,
+      // Dezelfde weeksleutel als het dossier gebruikt (/facturatie/[plaatsing]/[week]).
+      weekKey: weekKeyVanDatum(ymd(t.weekStart)),
       weekLabel: formatWeekLabel(t.weekStart),
       clientName: t.placement.client?.companyName ?? "— geen bedrijf",
       hours: m.hours,
@@ -181,30 +190,6 @@ export type ReceivedRow = {
   matched: boolean | null; // binnen tolerantie
 };
 
-/**
- * In welke betaal-bucket valt deze factuur? Elke factuur zit in precies één bucket.
- * `matched` (live berekend t.o.v. de timesheets) is leidend — niet de opgeslagen
- * status — zodat een factuur die weer klopt automatisch naar "te betalen" schuift
- * en een betaalde factuur nooit terugvalt naar een afwijking:
- *   - PAID              → "betaald"      (eindstation)
- *   - matched === false → "afwijking"    (wacht op een aangepaste factuur)
- *   - matched === null  → "controleren"  (geen periode → nog niet vergeleken, niet zomaar betalen)
- *   - matched === true  → "tebetalen"    (klopt met de urenstaat → op tijd betalen)
- */
-export type ReceivedBucket = "betaald" | "afwijking" | "controleren" | "tebetalen";
-
-export function receivedBucket(r: Pick<ReceivedRow, "status" | "matched">): ReceivedBucket {
-  if (r.status === "PAID") return "betaald";
-  if (r.matched === false) return "afwijking";
-  if (r.matched == null) return "controleren";
-  return "tebetalen";
-}
-
-/** Wacht deze factuur op een aangepaste factuur (afwijking, nog niet betaald)? */
-export function isAwaitingCorrection(r: Pick<ReceivedRow, "status" | "matched">): boolean {
-  return receivedBucket(r) === "afwijking";
-}
-
 /** Vaste tolerantie (€1): alleen afrondingsverschillen mogen door; een hele extra
  *  uur (minstens ± €30) valt er altijd buiten en wordt dus als afwijking gemeld. */
 const TOLERANCE_EUR = 1;
@@ -269,39 +254,6 @@ export async function listReceivedInvoices(): Promise<ReceivedRow[]> {
     });
   }
   return rows;
-}
-
-export type ReceivedSummary = {
-  toPayCount: number; // klopt + onbetaald → op tijd betalen
-  toPayAmount: number;
-  awaitingCount: number; // afwijking → wacht op een aangepaste factuur
-  awaitingAmount: number;
-  checkCount: number; // geen periode → nog te controleren (niet zomaar betalen)
-  checkAmount: number;
-  paidCount: number;
-  total: number;
-};
-
-/** Beknopte cijfers voor het dashboard + de statkaarten. Elke factuur telt in
- *  precies één bucket mee (zie {@link receivedBucket}), zodat de bedragen kloppen:
- *  alleen wat geverifieerd klopt komt in "te betalen (op tijd)". */
-export async function receivedInvoicesSummary(): Promise<ReceivedSummary> {
-  const rows = await listReceivedInvoices();
-  const sum = (rs: ReceivedRow[]) => round2(rs.reduce((s, r) => s + r.amount, 0));
-  const inBucket = (b: ReceivedBucket) => rows.filter((r) => receivedBucket(r) === b);
-  const toPay = inBucket("tebetalen");
-  const awaiting = inBucket("afwijking");
-  const check = inBucket("controleren");
-  return {
-    toPayCount: toPay.length,
-    toPayAmount: sum(toPay),
-    awaitingCount: awaiting.length,
-    awaitingAmount: sum(awaiting),
-    checkCount: check.length,
-    checkAmount: sum(check),
-    paidCount: inBucket("betaald").length,
-    total: rows.length,
-  };
 }
 
 /**

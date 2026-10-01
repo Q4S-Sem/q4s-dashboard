@@ -102,7 +102,7 @@ export default async function AuditPage({
               <p className="mt-1 text-xs text-ink-400">
                 Gescheiden door komma, spatie of nieuwe regel. Voor de ZZP/inleen-steekproef
                 (inkoopfacturen + dossierstukken) is er de aparte pagina{" "}
-                <Link href="/boekhouding/steekproef" className="text-brand-700 hover:underline">
+                <Link href="/facturatie/rapportage" className="text-brand-700 hover:underline">
                   Steekproef ZZP
                 </Link>.
               </p>
@@ -143,7 +143,7 @@ export default async function AuditPage({
               <div key={r.id} className="flex flex-col gap-2 px-5 py-3.5 sm:flex-row sm:items-center">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link href={`/facturen/${r.id}`} className="font-semibold text-ink-900 hover:text-brand-700">
+                    <Link href={`/facturatie/verkoop/${r.id}`} className="font-semibold text-ink-900 hover:text-brand-700">
                       {r.number}
                     </Link>
                     <span className="text-sm text-ink-500">{r.client}</span>

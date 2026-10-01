@@ -156,7 +156,7 @@ export default async function FacturatiePage({
           <span>
             {verwerkt > 0
               ? `${verwerkt} ${verwerkt === 1 ? "week" : "weken"} vastgelegd${
-                  sp.facturen ? `, ${sp.facturen} concept-verkoopfactuur${Number(sp.facturen) === 1 ? "" : "en"} klaargezet in Facturen` : ""
+                  sp.facturen ? `, ${sp.facturen} concept-verkoopfactuur${Number(sp.facturen) === 1 ? "" : "en"} klaargezet bij Verkoopfacturen` : ""
                 }.`
               : "Er is niets vastgelegd."}
             {sp.overgeslagen
@@ -439,7 +439,7 @@ export default async function FacturatiePage({
       <p className="text-xs text-ink-400">
         Niets op dit scherm wordt automatisch verstuurd of betaald. Een week gaat alleen vooruit met
         de knop <strong className="font-semibold text-ink-600">Akkoord → verkoopfactuur</strong> in
-        het dossier; de verkoopfactuur komt daarna als <em>concept</em> in Facturen te staan.
+        het dossier; de verkoopfactuur komt daarna als <em>concept</em> bij Verkoopfacturen te staan.
       </p>
     </div>
   );

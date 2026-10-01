@@ -189,7 +189,7 @@ const Cvs = svg(
 
 export const APP_ICONS: Record<string, React.FC<IconProps>> = {
   "/dashboard": Analytics,
-  "/verwerken": Facturatie,
+  "/facturatie": Facturatie,
   "/klanten": Stamgegevens,
   "/evaluaties": Evaluaties,
   "/agenda": Agenda,

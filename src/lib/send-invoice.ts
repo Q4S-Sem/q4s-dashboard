@@ -5,7 +5,7 @@ import { renderInvoicePdf } from "./invoice-pdf";
 import { salesSendData, type SendData } from "./verzenden";
 
 /**
- * De verzendkern van de verzendmap: PDF renderen, mailen en de factuur atomair
+ * De verzendkern: PDF renderen, mailen en de factuur atomair
  * "claimen" zodat er nooit twee keer dezelfde mail uitgaat. Hier gehaald uit
  * /verzenden/actions.ts zodat de bulkknoppen op /facturen exact DEZELFDE
  * verzendsemantiek gebruiken — geen tweede, afwijkende verzendweg.
@@ -55,7 +55,7 @@ export async function sendSalesInvoiceById(id: string): Promise<SendOutcome> {
 
   const outcome = await dispatch(data);
   if (outcome === "error") {
-    // Real send failed → release the claim so it returns to the verzendmap.
+    // Mislukt verstuurd → de claim vrijgeven zodat hij weer op READY staat.
     await db.invoice.updateMany({
       where: { id, status: "SENT", sentTo: data.to },
       data: { status: "READY", sentAt: null, sentTo: null },

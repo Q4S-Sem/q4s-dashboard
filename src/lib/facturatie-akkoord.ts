@@ -87,7 +87,7 @@ async function zorgVoorUrenstaat(
       waarschuwingen.push(
         `De bestaande urenstaat staat op ${formatHours(bestaandeUren)} u; op het scherm stond ${formatHours(
           schermUren,
-        )} u. De bestaande uren zijn aangehouden — pas ze zo nodig aan bij Urenregistratie.`,
+        )} u. De bestaande uren zijn aangehouden — corrigeer ze zo nodig in het dossier van deze week.`,
       );
     }
     if (oordeel.eerstGoedkeuren) {

@@ -1,5 +1,5 @@
 /**
- * De guards onder de selectie op /facturen (aanvinken → Openen / Verwijderen /
+ * De guards onder de selectie op /facturatie/verkoop (aanvinken → Openen / Verwijderen /
  * Verzenden). PUUR — geen database, geen React — zodat de knoppenbalk in de
  * client en de server-actions bewijsbaar hetzelfde predicaat draaien: wat je
  * aanvinkt is precies wat er gebeurt.
@@ -17,18 +17,18 @@ export function isDeletableInvoice(status: string): boolean {
 }
 
 /**
- * Vrijgeven naar de verzendmap kan alleen vanuit concept (DRAFT). Op /facturen
- * kijk je de concepten na en zet je ze met "Naar verzendmap" klaar; pas daar
- * worden ze verstuurd. Zo verstuur je nooit iets dat nog niet is nagekeken.
+ * Vrijgeven kan alleen vanuit concept (DRAFT). Op het tabblad "Concept" kijk je
+ * ze na en zet je ze met "Naar klaar" op READY; pas vanaf dáár worden ze echt
+ * verstuurd. Zo verstuur je nooit iets dat nog niet is nagekeken.
  */
 export function isReleasableInvoice(status: string): boolean {
   return status === "DRAFT";
 }
 
 /**
- * Verzenden kan alleen vanuit de verzendmap-status (READY) — exact de selectie
- * die `getOutbox` ophaalt. Zo kan een bulkknop nooit iets versturen dat de
- * verzendmap zelf niet zou versturen (en nooit een onnagekeken concept).
+ * Verzenden kan alleen vanuit de status "klaar om te verzenden" (READY) — exact
+ * de selectie die `getOutbox` ophaalt. Zo kan een bulkknop nooit iets versturen
+ * dat niet is vrijgegeven (en nooit een onnagekeken concept).
  */
 export function isSendableInvoice(status: string): boolean {
   return status === "READY";
@@ -72,9 +72,9 @@ export function partitionBulk(
   return { ids, skipped: requested - ids.length };
 }
 
-/** De bestaande PDF-route van de verzendmap — één plek, ook voor "Openen". */
+/** De PDF-route van de verkoopfactuur — één plek, ook voor "Openen". */
 export function invoicePdfHref(id: string): string {
-  return `/verzenden/verkoop/${id}/pdf`;
+  return `/facturatie/verkoop/${id}/pdf`;
 }
 
 /** Embed dezelfde echte factuur-PDF als in Instellingen, zonder browsertoolbar. */

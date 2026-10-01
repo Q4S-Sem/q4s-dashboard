@@ -78,8 +78,7 @@ export async function verstuurConceptMail(formData: FormData) {
 
   revalidatePath("/facturatie");
   revalidatePath(`/facturatie/${placementId}/${weekKey}`);
-  revalidatePath("/ontvangen-facturen");
-  revalidatePath("/verwerken/wachtkamer");
+  revalidatePath("/facturatie/inkoop");
   revalidatePath("/", "layout");
 
   redirect(

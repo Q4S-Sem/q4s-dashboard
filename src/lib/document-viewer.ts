@@ -1,16 +1,16 @@
 // ---------------------------------------------------------------------------
 // Het denkwerk achter het inline tonen van een geüpload document: welke weergave
-// hoort bij dit bestand, en welke opslag-sleutel mag een streaming-route lezen.
+// hoort bij dit bestand — een PDF in een iframe, een scan/foto in een <img>, en
+// al het andere als nette terugvalkaart met open-/downloadlinks.
 //
-// PUUR en DETERMINISTISCH (net als src/lib/week-wizard.ts): geen Prisma, geen
-// I/O, geen fs. Zo gebruiken het scherm (client) en de streaming-route (server)
-// dezelfde regels en is alles los te testen (tests/document-viewer.test.ts).
+// PUUR en DETERMINISTISCH: geen Prisma, geen I/O, geen fs. Zo gebruiken het
+// scherm (client) en de server dezelfde regels en is alles los te testen
+// (tests/document-viewer.test.ts).
 //
-// De veiligheidskant zit hier bewust in één functie: `veiligeBestandsnaam` is de
-// ENIGE plek waar een van buiten aangeleverde sleutel goedgekeurd wordt. Alles
-// wat ook maar naar een andere map zou kunnen wijzen (schuine strepen, "..",
-// dubbele punten, procent-codering, stuurtekens) valt af, zodat de route zijn
-// map-helper (`receivedKey`) veilig kan aanroepen.
+// Het mimetype dat de uploadende browser meestuurt is NIET heilig: we leiden het
+// ook uit de extensie af en vallen bij alles wat we niet vertrouwen (html, svg)
+// terug op "geen voorbeeld", zodat een als ".pdf" aangeleverd HTML-bestand nooit
+// kan renderen.
 // ---------------------------------------------------------------------------
 
 /** Hoe we een bestand in het scherm laten zien. */
@@ -36,33 +36,6 @@ function extensieVan(name: string): string {
   return name.slice(punt + 1).toLowerCase();
 }
 
-// ===========================================================================
-// 1) SLEUTEL-CONTROLE — welke opslagnaam mag een route ophalen?
-// ===========================================================================
-
-/** Maximale lengte van een opgeslagen bestandsnaam (uuid + extensie is ~41). */
-const MAX_SLEUTEL_LENGTE = 128;
-
-/**
- * Keur een van buiten aangeleverde opslag-bestandsnaam goed, of weiger 'm.
- *
- * Opgeslagen namen zijn altijd `<uuid><extensie>` (zie saveReceivedBytes /
- * saveInboxBytes), dus we kunnen streng zijn: alleen letters, cijfers, punt,
- * liggend streepje en underscore, beginnend met een letter of cijfer. Daarmee
- * kan de naam nooit uit zijn map wijzen — geen "/", geen "\", geen "..", geen
- * ":" (Windows-drive of alternate stream) en geen "%" (procent-codering).
- *
- * @returns de opgeschoonde naam, of null als hij niet vertrouwd wordt.
- */
-export function veiligeBestandsnaam(value: string | null | undefined): string | null {
-  if (typeof value !== "string") return null;
-  const naam = value.trim();
-  if (!naam || naam.length > MAX_SLEUTEL_LENGTE) return null;
-  if (naam.includes("..")) return null;
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(naam)) return null;
-  return naam;
-}
-
 /**
  * Het mimetype dat bij deze opgeslagen naam hoort, afgeleid uit de EXTENSIE en
  * niet uit iets wat de browser meestuurt. Alles wat we niet inline tonen wordt
@@ -72,28 +45,6 @@ export function veiligeBestandsnaam(value: string | null | undefined): string | 
 export function mimeVanBestandsnaam(fileName: string): string {
   return MIME_PER_EXTENSIE[extensieVan(fileName)] ?? "application/octet-stream";
 }
-
-/** Is dit teken veilig in een header/naam? (stuurtekens vallen af) */
-function toonbaar(teken: string): boolean {
-  const code = teken.codePointAt(0) ?? 0;
-  return code >= 32 && code !== 127;
-}
-
-/**
- * De naam die we in de Content-Disposition en op het scherm gebruiken: zonder
- * pad-delen en zonder stuurtekens/regeleindes (header-injectie), teruggevallen
- * op de opslagnaam als er niets bruikbaars overblijft.
- */
-export function veiligeWeergavenaam(value: string | null | undefined, fallback: string): string {
-  if (typeof value !== "string") return fallback;
-  const schoon = [...value].filter(toonbaar).join("");
-  const zonderPad = schoon.split(/[/\\]/).pop()?.trim() ?? "";
-  return zonderPad.slice(0, MAX_SLEUTEL_LENGTE) || fallback;
-}
-
-// ===========================================================================
-// 2) WEERGAVE — pdf, afbeelding of "geen voorbeeld"
-// ===========================================================================
 
 /**
  * Welke weergave hoort bij dit bestand? Een pdf gaat in een iframe, een foto of
@@ -115,30 +66,4 @@ export function documentSoort(
   if (mime === "application/pdf" || uitNaam === "application/pdf") return "pdf";
   if (AFBEELDING_MIMES.has(mime) || AFBEELDING_MIMES.has(uitNaam)) return "afbeelding";
   return "geen-voorbeeld";
-}
-
-// ===========================================================================
-// 3) DE URL VAN EEN NOG NIET GEBOEKT WIZARD-BESTAND
-// ===========================================================================
-
-/** Het pad van de streaming-route voor een net geüpload wizard-bestand. */
-export const WIZARD_BESTAND_PAD = "/api/wizard-bestand";
-
-/**
- * Bouw de bron-URL voor een bestand dat wél is opgeslagen maar nog geen rij in
- * de database heeft (stap 2 van de wizard: zijn factuur is geüpload, maar pas
- * bij het akkoord wordt er een ReceivedInvoice van gemaakt). Een onveilige
- * sleutel geeft null — dan tonen we gewoon geen voorbeeld.
- */
-export function wizardBestandUrl(bestand: {
-  fileName: string;
-  originalName?: string | null;
-}): string | null {
-  const sleutel = veiligeBestandsnaam(bestand.fileName);
-  if (!sleutel) return null;
-  const naam = (bestand.originalName ?? "").trim();
-  const query = naam
-    ? `key=${encodeURIComponent(sleutel)}&naam=${encodeURIComponent(naam)}`
-    : `key=${encodeURIComponent(sleutel)}`;
-  return `${WIZARD_BESTAND_PAD}?${query}`;
 }

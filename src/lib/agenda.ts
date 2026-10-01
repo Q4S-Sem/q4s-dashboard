@@ -116,7 +116,7 @@ export async function getDeadlines(
       date: inv.dueDate,
       kind: "SALES_INVOICE",
       title: `Factuur ${inv.number} — ${inv.client.companyName}`,
-      href: `/facturen/${inv.id}`,
+      href: `/facturatie/verkoop/${inv.id}`,
       overdue: inv.dueDate < today,
     });
   }
@@ -129,7 +129,7 @@ export async function getDeadlines(
       date: dueDate,
       kind: "RECEIVED_INVOICE",
       title: `Ontvangen factuur ${p.number ?? "zonder nummer"} betalen — ${p.consultant.firstName} ${p.consultant.lastName}`,
-      href: `/ontvangen-facturen/${p.id}`,
+      href: `/facturatie/inkoop/${p.id}`,
       overdue: dueDate < today,
     });
   }

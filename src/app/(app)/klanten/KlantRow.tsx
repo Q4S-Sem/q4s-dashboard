@@ -50,7 +50,7 @@ export function KlantRow({ c }: { c: KlantRowData }) {
       <TD className="text-right tabular-nums">
         {c.invoices > 0 ? (
           <Link
-            href={`/facturen?client=${c.id}`}
+            href={`/facturatie/verkoop?client=${c.id}`}
             onClick={stop}
             className="font-medium text-brand-700 hover:text-brand-800 hover:underline"
             title={`Facturen voor ${c.companyName}`}

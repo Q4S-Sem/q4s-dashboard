@@ -65,8 +65,7 @@ function parseBedrag(value: string): number | null {
 
 function herlaad() {
   revalidatePath("/facturatie");
-  revalidatePath("/inbox");
-  revalidatePath("/ontvangen-facturen");
+  revalidatePath("/facturatie/inkoop");
   revalidatePath("/", "layout");
 }
 
@@ -374,9 +373,7 @@ export async function verwerkGroeneWeken(formData: FormData) {
   const samenvatting = await akkoordWeken({ weekKey });
 
   herlaad();
-  revalidatePath("/uren");
-  revalidatePath("/facturen");
-  revalidatePath("/verzenden");
+  revalidatePath("/facturatie/verkoop");
 
   const params = new URLSearchParams({ week: weekKey, verwerkt: String(samenvatting.verwerkt) });
   if (samenvatting.facturen.length > 0) {

@@ -6,11 +6,9 @@ import {
   CalendarClock,
   Receipt,
   Settings,
-  Send,
   Globe,
   FileText,
   FileUser,
-  Scale,
   Database,
   FolderOpen,
   Cloud,
@@ -18,14 +16,9 @@ import {
   ChartNoAxesCombined,
   Target,
   Inbox,
-  Coins,
-  Banknote,
-  HandCoins,
-  BellRing,
   TrendingUp,
   Sparkles,
   Factory,
-  Plug,
   PencilLine,
   Filter,
   Users,
@@ -33,21 +26,16 @@ import {
   CalendarDays,
   ListTodo,
   Plane,
-  ListChecks,
-  PieChart,
-  Percent,
   ClipboardCheck,
   ShieldCheck,
   Award,
   ScrollText,
   UserCog,
-  ReceiptText,
   Archive,
   IdCard,
   UserCheck,
   Kanban,
   Contact,
-  PauseCircle,
   Zap,
   KeyRound,
   Wallet,
@@ -70,7 +58,7 @@ export type NavItem = {
   section?: string;
   /** Wél onderdeel van deze hub (zodat de route zijn zijbalk houdt en een
    *  BackLink zijn label vindt), maar NIET in het menu zelf. Voor schermen die
-   *  je alleen vanuit een ander scherm opent, zoals de uploadbak /inbox. */
+   *  je alleen vanuit een ander scherm opent. */
   hidden?: boolean;
 };
 
@@ -98,7 +86,8 @@ const HUB_LIST: NavHub[] = [
     items: [
       { href: "/dashboard", label: "Overzicht", icon: LayoutDashboard, exact: true },
       { href: "/dashboard/te-doen", label: "Te doen", icon: ListTodo, badge: "teDoen" },
-      { href: "/dashboard/facturatie", label: "Facturatie", icon: PieChart },
+      // Geen "Facturatie"-tegel meer: die cijfers staan nu compleet onder
+      // Facturatie → Rapportage, zodat er maar één plek is om naar te kijken.
       { href: "/dashboard/recruitment", label: "Recruitment", icon: Sparkles },
       { href: "/dashboard/kpi", label: "Recruitment-KPI's", icon: Target },
       { href: "/dashboard/plaatsingen", label: "Plaatsingen & marges", icon: Briefcase },
@@ -108,32 +97,21 @@ const HUB_LIST: NavHub[] = [
     ],
   },
   {
+    // Vijf items, meer niet. Het weekwerk staat bovenaan, daaronder de twee
+    // geldstromen (eruit naar de klant, eruit naar de freelancer), dan het
+    // overzicht en tot slot het beheer. Alles leeft onder /facturatie.
     label: "Facturatie",
-    href: "/verwerken/nieuw",
+    href: "/facturatie",
     icon: Receipt,
     items: [
-      // Het wekelijkse werk — bovenaan.
-      { href: "/verwerken/nieuw", label: "Week verwerken", icon: Wand2, section: "Deze week" },
-      { href: "/verwerken/week", label: "Te controleren", icon: CalendarDays, section: "Deze week" },
-      { href: "/verwerken/wachtkamer", label: "Wachtkamer", icon: PauseCircle, section: "Deze week" },
-      // De timesheet-inbox staat bewust NIET meer in het menu (hidden): "Week
-      // verwerken" is de werkplek, /inbox is alleen nog de uploadbak voor een
-      // stapel bestanden of een ZIP. Je komt er via "Bestanden toevoegen" in de
-      // wizard. Hij blijft hier staan zodat de route wél de facturatie-zijbalk
-      // houdt (hubForPath) en een BackLink zijn label vindt.
-      { href: "/inbox", label: "Timesheet-inbox", icon: Inbox, section: "Uren & documenten", hidden: true },
-      { href: "/uren", label: "Urenregistratie", icon: CalendarClock, section: "Uren & documenten" },
-      { href: "/declaraties", label: "Declaraties", icon: ReceiptText, section: "Uren & documenten" },
-      { href: "/facturen", label: "Verkoopfacturen", icon: Receipt, badge: "facturen", section: "Facturen & betalingen" },
-      { href: "/ontvangen-facturen", label: "Ontvangen facturen", icon: Wallet, badge: "ontvangen", section: "Facturen & betalingen" },
-      { href: "/verzenden", label: "Verzendmap", icon: Send, badge: "verzenden", section: "Facturen & betalingen" },
-      { href: "/betalingen", label: "Betalingen (SEPA)", icon: Banknote, section: "Facturen & betalingen" },
-      { href: "/betaalmonitor", label: "Betaalmonitor", icon: Banknote, section: "Facturen & betalingen" },
-      { href: "/totaaloverzicht", label: "Rapportage", icon: TrendingUp, section: "Overzicht & admin" },
-      { href: "/boekhouding", label: "Boekhouding & BTW", icon: Scale, section: "Overzicht & admin" },
-      { href: "/boekhouding/steekproef", label: "Steekproef (Kiwa)", icon: ShieldCheck, section: "Overzicht & admin" },
-      { href: "/verwerken/archief", label: "Archief", icon: Archive, section: "Overzicht & admin" },
-      { href: "/instellingen", label: "Instellingen", icon: Settings, section: "Overzicht & admin" },
+      // Geen `exact`: de zijbalk kiest altijd de MEEST SPECIFIEKE treffer, dus
+      // het dossier (/facturatie/<plaatsing>/<week>) laat hier netjes "Week
+      // verwerken" oplichten terwijl /facturatie/verkoop zijn eigen item pakt.
+      { href: "/facturatie", label: "Week verwerken", icon: Wand2, badge: "verwerken" },
+      { href: "/facturatie/verkoop", label: "Verkoopfacturen", icon: Receipt, badge: "facturen" },
+      { href: "/facturatie/inkoop", label: "Inkoop & betalingen", icon: Wallet, badge: "ontvangen" },
+      { href: "/facturatie/rapportage", label: "Rapportage", icon: TrendingUp },
+      { href: "/facturatie/instellingen", label: "Instellingen & regels", icon: Settings, section: "Beheer" },
     ],
   },
   {
@@ -246,7 +224,7 @@ const HUB_LIST: NavHub[] = [
 // tegels als de app-switcher volgen deze volgorde.
 const HUB_ORDER = [
   "/klanten", // Personeelsgegevens
-  "/verwerken/nieuw", // Facturatie
+  "/facturatie",
   "/agenda",
   "/recruitment",
   "/website", // Vacatures
@@ -370,8 +348,39 @@ export function canAccessPath(pathname: string, access: UserAccess | null | unde
   const explicit = access!.allowedPages.filter((p) => hubPageHrefs.includes(p));
   if (explicit.length === 0) return true; // hele hub toegestaan
 
-  // Alleen de toegestane pagina's (en hun subroutes) binnen deze hub.
-  return explicit.some((href) => pathname === href || pathname.startsWith(`${href}/`));
+  // Het pad hoort bij het LANGST passende menu-item (zoals hubForPath): anders geeft
+  // een item op de hub-root (bv. /facturatie) via de prefix toegang tot alle
+  // zusterpagina's (/facturatie/verkoop …).
+  const owner = hubPageHrefs
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
+  return owner !== undefined && explicit.includes(owner);
+}
+
+/** Oude facturatie-hrefs (vóór de herbouw) → nieuwe, zodat bewaarde rechten blijven werken. */
+const LEGACY_HREFS: Record<string, string> = {
+  "/verwerken/nieuw": "/facturatie",
+  "/verwerken/week": "/facturatie",
+  "/verwerken/wachtkamer": "/facturatie",
+  "/verwerken/archief": "/facturatie",
+  "/inbox": "/facturatie",
+  "/uren": "/facturatie",
+  "/facturen": "/facturatie/verkoop",
+  "/verzenden": "/facturatie/verkoop",
+  "/ontvangen-facturen": "/facturatie/inkoop",
+  "/declaraties": "/facturatie/inkoop",
+  "/betalingen": "/facturatie/inkoop",
+  "/betaalmonitor": "/facturatie/inkoop",
+  "/inkoopfacturen": "/facturatie/inkoop",
+  "/totaaloverzicht": "/facturatie/rapportage",
+  "/boekhouding": "/facturatie/rapportage",
+  "/boekhouding/steekproef": "/facturatie/rapportage",
+  "/instellingen": "/facturatie/instellingen",
+};
+
+/** Vertaal opgeslagen hrefs naar de huidige navigatie (ontdubbeld). */
+export function migrateAccessHrefs(hrefs: string[]): string[] {
+  return [...new Set(hrefs.map((h) => LEGACY_HREFS[h] ?? h))];
 }
 
 /** Waar sturen we een gebruiker heen als hij géén toegang heeft tot het gevraagde pad. */

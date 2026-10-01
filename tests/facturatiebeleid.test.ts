@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import {
-  FACTUURSTROOM,
-  isOntvangenFactuurBetaalbaar,
-  isVerzendtypeToegestaan,
-} from "../src/lib/facturatiebeleid";
+import { FACTUURSTROOM, isOntvangenFactuurBetaalbaar } from "../src/lib/facturatiebeleid";
 
 test("Q4S gebruikt de eigen factuur van de freelancer en maakt geen self-billing inkoopfactuur", () => {
   assert.deepEqual(FACTUURSTROOM, {
@@ -22,22 +18,18 @@ test("alleen een goedgekeurde ontvangen factuur mag naar SEPA", () => {
   }
 });
 
-test("de verzendmap accepteert alleen verkoopfacturen naar klanten", () => {
-  assert.equal(isVerzendtypeToegestaan("verkoop"), true);
-  assert.equal(isVerzendtypeToegestaan("inkoop"), false);
-  assert.equal(isVerzendtypeToegestaan("purchase"), false);
-  assert.equal(isVerzendtypeToegestaan(""), false);
-});
-
 test("actieve routes kunnen geen self-billingfactuur maken of verzenden", () => {
-  const invoicing = readFileSync(new URL("../src/lib/invoicing.ts", import.meta.url), "utf8");
-  const verzendmap = readFileSync(
-    new URL("../src/app/(app)/verzenden/page.tsx", import.meta.url),
-    "utf8",
-  );
+  const lees = (pad: string) => readFileSync(new URL(pad, import.meta.url), "utf8");
+  const invoicing = lees("../src/lib/invoicing.ts");
+  // De enige PDF-route die Q4S naar buiten stuurt, en de lijst eromheen.
+  const pdfRoute = lees("../src/app/(app)/facturatie/verkoop/[id]/pdf/route.ts");
+  const verkoopActies = lees("../src/app/(app)/facturatie/verkoop/actions.ts");
 
   assert.doesNotMatch(invoicing, /purchaseInvoice\.create/);
-  assert.doesNotMatch(verzendmap, /Verstuur inkoop|Inkoop naar medewerkers|tab=inkoop/);
+  // De verzendweg kent alleen `Invoice` (verkoop) — geen inkoopdocument.
+  assert.doesNotMatch(pdfRoute, /purchaseInvoice/);
+  assert.match(pdfRoute, /db\.invoice\.findUnique/);
+  assert.doesNotMatch(verkoopActies, /purchaseInvoice/);
 });
 
 test("betalingen gebruikt de ontvangen freelancerfactuur als betaalbron", () => {

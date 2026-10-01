@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
+import { migrateAccessHrefs } from "@/components/nav";
 import { isAdminRole, isAuthRequired, sessionSigningSecret } from "@/lib/auth-policy";
 
 // Cookie-based sessions for app-gebruikers. The cookie holds "<userId>.<hmac>";
@@ -115,7 +116,7 @@ export async function currentUser(): Promise<SessionUser | null> {
     name: user.name,
     email: user.email,
     role: user.role,
-    allowedHubs: parseHrefList(user.allowedHubs),
-    allowedPages: parseHrefList(user.allowedPages),
+    allowedHubs: migrateAccessHrefs(parseHrefList(user.allowedHubs)),
+    allowedPages: migrateAccessHrefs(parseHrefList(user.allowedPages)),
   };
 }

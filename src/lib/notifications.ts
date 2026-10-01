@@ -132,16 +132,25 @@ export async function getNotifications(): Promise<Notifications> {
     { key: "taken", label: "Taken", href: "/agenda/taken", late: tkLate, today: tkToday, future: tkFuture },
     { key: "sollicitaties", label: "Sollicitaties", href: "/sollicitaties", late: solLate, today: solToday, future: 0 },
     { key: "certificeringen", label: "Certificaten", href: "/certificeringen", late: certLate, today: certToday, future: certFuture },
-    { key: "facturen", label: "Facturen", href: "/facturen", late: facLate, today: facToday, future: facFuture },
-    // De teller gaat over urenstaten die nog VERWERKT moeten worden — dus door
-    // naar de wizard, niet naar de uploadbak (/inbox). Sleutel blijft "inbox":
-    // hij telt nog steeds de TimesheetInbox-regels (zie ook regel 169).
-    { key: "inbox", label: "Urenstaten verwerken", href: "/verwerken/nieuw", late: 0, today: inboxCount, future: 0 },
+    {
+      key: "facturen",
+      label: "Facturen",
+      // Te late facturen staan op hun eigen tabblad — één klik, meteen de lijst
+      // waar de betalingsherinnering bij staat.
+      href: "/facturatie/verkoop?tab=telaat",
+      late: facLate,
+      today: facToday,
+      future: facFuture,
+    },
+    // De teller gaat over urenstaten die nog VERWERKT moeten worden — dus naar
+    // het weekscherm. Sleutel blijft "inbox": hij telt nog steeds de
+    // TimesheetInbox-regels (zie ook hubActionCounts hieronder).
+    { key: "inbox", label: "Urenstaten verwerken", href: "/facturatie", late: 0, today: inboxCount, future: 0 },
     { key: "msp", label: "Vacature-intake", href: "/vacaturehub", late: 0, today: mspUnread, future: 0 },
     {
       key: "factuur-afwijking",
       label: "Factuur wijkt af van tarief",
-      href: "/ontvangen-facturen#wacht",
+      href: "/facturatie/inkoop?tab=afwijking",
       late: invoiceMismatches,
       today: 0,
       future: 0,
@@ -195,9 +204,9 @@ export function hubActionCounts(badges: NavBadges, notifs: Notifications): Recor
   return {
     "/dashboard": badges.teDoen,
     // Facturatie: opeenvolgende stappen die op actie wachten (geen overlap).
-    // Sleutel = de echte hub-href (/verwerken/nieuw), anders mist de tegel de teller.
-    // `verzenden` = concept-verkoopfacturen die nog verstuurd moeten worden.
-    "/verwerken/nieuw": badges.verwerken + badges.ontvangen + badges.verzenden + all("inbox"),
+    // Sleutel = de echte hub-href (/facturatie), anders mist de tegel de teller.
+    // `verzenden` = vrijgegeven verkoopfacturen die nog verstuurd moeten worden.
+    "/facturatie": badges.verwerken + badges.ontvangen + badges.verzenden + all("inbox"),
     // Personeelsgegevens: certificaten die (bijna) verlopen.
     "/klanten": urgent("certificeringen"),
     // Agenda: afspraken + taken die te laat zijn of vandaag spelen.

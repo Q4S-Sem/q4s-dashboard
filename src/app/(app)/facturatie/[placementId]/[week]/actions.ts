@@ -102,7 +102,7 @@ export async function bewaarCorrecties(
   if (dossier.row.vastgelegd) {
     return {
       error:
-        "De urenstaat van deze week is al vastgelegd — pas de uren aan bij Urenregistratie, of gebruik 'Verwijderen & opnieuw'.",
+        "De urenstaat van deze week is al vastgelegd — corrigeer de uren hierboven, of gebruik 'Verwijderen & opnieuw'.",
     };
   }
 
@@ -279,7 +279,7 @@ export async function naarWachtkamer(formData: FormData) {
     });
   }
   herlaad(placementId, weekKey);
-  revalidatePath("/verwerken/wachtkamer");
+  revalidatePath("/facturatie");
   redirect(dossierPad(placementId, weekKey, { wachtkamer: "1" }));
 }
 
@@ -295,7 +295,7 @@ export async function uitWachtkamer(formData: FormData) {
     });
   }
   herlaad(placementId, weekKey);
-  revalidatePath("/verwerken/wachtkamer");
+  revalidatePath("/facturatie");
   redirect(dossierPad(placementId, weekKey));
 }
 
@@ -351,9 +351,8 @@ export async function verwijderEnOpnieuw(formData: FormData) {
   }
 
   herlaad(placementId, weekKey);
-  revalidatePath("/uren");
-  revalidatePath("/ontvangen-facturen");
-  revalidatePath("/facturen");
+  revalidatePath("/facturatie/inkoop");
+  revalidatePath("/facturatie/verkoop");
 
   if (uitkomst === "locked") {
     redirect(dossierPad(placementId, weekKey, { geblokkeerd: reden ?? "1" }));
@@ -380,10 +379,8 @@ export async function akkoordNaarVerkoopfactuur(formData: FormData) {
   const samenvatting = await akkoordWeek(placementId, weekKey);
 
   herlaad(placementId, weekKey);
-  revalidatePath("/uren");
-  revalidatePath("/ontvangen-facturen");
-  revalidatePath("/facturen");
-  revalidatePath("/verzenden");
+  revalidatePath("/facturatie/inkoop");
+  revalidatePath("/facturatie/verkoop");
 
   if (samenvatting.verwerkt === 0) {
     const reden = samenvatting.overgeslagen[0]?.reden ?? "de week kon niet vastgelegd worden";
@@ -392,7 +389,7 @@ export async function akkoordNaarVerkoopfactuur(formData: FormData) {
   const factuur = samenvatting.facturen[0];
   redirect(
     factuur
-      ? `/facturen/${factuur.id}?nieuw=1`
+      ? `/facturatie/verkoop/${factuur.id}?nieuw=1`
       : dossierPad(placementId, weekKey, { vastgelegd: "1" }),
   );
 }
