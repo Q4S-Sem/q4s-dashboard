@@ -117,7 +117,7 @@ export function ContractVel({
           )}
           <div className="ov-addr">
             WWW.Q4S.NL<br />ARNHEMSEWEG 12<br />2994LA BARENDRECHT<br />
-            THE NETHERLANDS<br />EMAIL: INFO@Q4S.NL<br />TEL: +31 (0) 85 782 6818
+            THE NETHERLANDS<br />EMAIL: INFO@Q4S.NL<br />TEL: +31 6 85 782 6818
           </div>
         </header>
 

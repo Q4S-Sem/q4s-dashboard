@@ -89,7 +89,7 @@ export function buildContractDoc(contract: Contract, settings: CompanySettings):
     `${companyName}, ${settings.address || "Arnhemseweg 12"}, ${settings.postalCode || "2994LA"} ${settings.city || "Barendrecht"}, the Netherlands`,
     settings.website || "www.q4s.nl",
     settings.email || "info@q4s.nl",
-    settings.phone ? `Tel: ${settings.phone}` : "Tel: +31(0) 85 782 6818",
+    settings.phone ? `Tel: ${settings.phone}` : "Tel: +31 6 85 782 6818",
     `KvK: ${settings.kvkNumber || "69073287"}`,
     `Btw: ${settings.vatNumber || "NL857718137B01"}`,
     settings.iban ? `IBAN: ${settings.iban}` : "IBAN: NL96INGB0007873625",
