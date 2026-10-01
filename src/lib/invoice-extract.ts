@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { aiJSON, aiJSONFromFile, isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { ensureAiKeysLoaded } from "@/lib/ai-keys";
 import { excelToText, isSpreadsheet } from "@/lib/excel";
-import { matchByName } from "@/lib/name-match";
+import { matchZzpFactuur } from "@/lib/name-match";
 import { formatCurrency, formatHours, getISOWeek, round2 } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -344,16 +344,19 @@ function fail(reason: InvoiceExtractFailure, message: string): InvoiceExtractRes
   return { ok: false, reason, message };
 }
 
-/** Best-effort: welke actieve medewerker hoort bij de uitgelezen naam? */
+/**
+ * Best-effort: welke actieve medewerker hoort bij deze factuur? Op KvK/btw/IBAN,
+ * dan bedrijfsnaam, dan persoonsnaam (zie matchZzpFactuur).
+ */
 async function matchConsultant(
-  name: string | null | undefined,
+  data: InvoiceExtracted | null | undefined,
 ): Promise<{ matchedConsultantId: string | null; candidates: InvoiceCandidate[] }> {
-  if (!name?.trim()) return { matchedConsultantId: null, candidates: [] };
+  if (!data) return { matchedConsultantId: null, candidates: [] };
   const consultants = await db.consultant.findMany({
     where: { active: true },
-    select: { id: true, firstName: true, lastName: true },
+    select: { id: true, firstName: true, lastName: true, companyName: true, kvkNumber: true, vatNumber: true, iban: true },
   });
-  const { match, candidates } = matchByName(consultants, name);
+  const { match, candidates } = matchZzpFactuur(consultants, data);
   return {
     matchedConsultantId: match?.id ?? null,
     candidates: candidates.map((c) => ({ id: c.id, name: `${c.firstName} ${c.lastName}` })),
@@ -414,7 +417,7 @@ export async function extractReceivedInvoiceFromFile(input: {
       });
     }
 
-    const { matchedConsultantId, candidates } = await matchConsultant(data?.name);
+    const { matchedConsultantId, candidates } = await matchConsultant(data);
     return {
       ok: true,
       data,

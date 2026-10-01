@@ -73,3 +73,70 @@ export function matchByName<T extends NamedPerson>(
   const candidates = people.filter((p) => nameMatches(p, name));
   return { match: candidates.length === 1 ? candidates[0] : null, candidates };
 }
+
+// ---------------------------------------------------------------------------
+// ZZP-factuur → medewerker. Een ZZP'er factureert vaak onder zijn BEDRIJFSNAAM
+// ("Kowalski Welding Sp. z o.o."), niet onder zijn eigen naam. Dus eerst op
+// harde kenmerken (KvK, btw-nummer, IBAN), dan op bedrijfsnaam, en pas als
+// laatste op de persoonsnaam. Elke stap telt alleen bij precies ÉÉN treffer.
+// ---------------------------------------------------------------------------
+
+export type ZzpPerson = NamedPerson & {
+  companyName?: string | null;
+  kvkNumber?: string | null;
+  vatNumber?: string | null;
+  iban?: string | null;
+};
+
+export type ZzpGelezen = {
+  name?: string | null;
+  kvkNumber?: string | null;
+  vatId?: string | null;
+  iban?: string | null;
+};
+
+/** Alleen letters/cijfers, hoofdletters: "NL02 abna 0123" → "NL02ABNA0123". */
+export function normalizeId(s: string | null | undefined): string {
+  return (s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+/** Bedrijfsnaam zonder rechtsvorm-ruis, zodat "Jansen Lassen B.V." == "jansen lassen". */
+export function normalizeCompany(s: string | null | undefined): string {
+  // Losse letters ("B.V." → "b v", "z o.o." → "z o o") vallen ook weg.
+  const RUIS = new Set(["bv", "vof", "sp", "zoo", "ltd", "gmbh", "srl", "sro", "eenmanszaak", "holding"]);
+  return normalizeName(s ?? "")
+    .split(" ")
+    .filter((w) => w.length > 1 && !RUIS.has(w))
+    .join(" ");
+}
+
+export function matchZzpFactuur<T extends ZzpPerson>(
+  people: readonly T[],
+  gelezen: ZzpGelezen,
+): { match: T | null; candidates: T[]; via: "kvk" | "btw" | "iban" | "bedrijf" | "naam" | null } {
+  const uniek = (via: "kvk" | "btw" | "iban" | "bedrijf", hits: T[]) =>
+    hits.length === 1 ? { match: hits[0], candidates: hits, via } : null;
+  const id = (key: "kvkNumber" | "vatNumber" | "iban", waarde: string | null | undefined) => {
+    const w = normalizeId(waarde);
+    // Te kort = geen betrouwbaar kenmerk (bv. "0" of een losse letter).
+    return w.length < 6 ? [] : people.filter((p) => normalizeId(p[key]) === w);
+  };
+
+  const harde =
+    uniek("kvk", id("kvkNumber", gelezen.kvkNumber)) ??
+    uniek("btw", id("vatNumber", gelezen.vatId)) ??
+    uniek("iban", id("iban", gelezen.iban));
+  if (harde) return harde;
+
+  const bedrijf = normalizeCompany(gelezen.name);
+  if (bedrijf) {
+    const viaBedrijf = uniek(
+      "bedrijf",
+      people.filter((p) => normalizeCompany(p.companyName) === bedrijf),
+    );
+    if (viaBedrijf) return viaBedrijf;
+  }
+
+  const { match, candidates } = matchByName(people, gelezen.name);
+  return { match, candidates, via: match ? "naam" : null };
+}

@@ -13,6 +13,7 @@ import {
 } from "@/lib/invoice-extract";
 import { akkoordWeken } from "@/lib/facturatie-akkoord";
 import { resolveWeek } from "@/lib/facturatie-week";
+import { nameMatches } from "@/lib/name-match";
 import {
   MAX_UPLOAD_BYTES,
   deleteInboxUpload,
@@ -298,6 +299,7 @@ export async function koppelLosseUpload(formData: FormData) {
       ? (JSON.parse(los.extractedJson) as InvoiceExtracted)
       : null;
     if (data) {
+      await onthoudBedrijfsgegevens(consultantId, data);
       await registreerOntvangenFactuur({
         consultantId,
         weekKey: los.weekKey ?? weekKey,
@@ -387,4 +389,27 @@ export async function verwerkGroeneWeken(formData: FormData) {
     params.set("overgeslagen", String(samenvatting.overgeslagen.length));
   }
   redirect(`/facturatie?${params.toString()}`);
+}
+
+/**
+ * De mens koppelde een factuur handmatig: zet zijn bedrijfsnaam/KvK/btw/IBAN van
+ * die factuur bij de ZZP'er, zodat de volgende factuur vanzelf matcht. Alleen
+ * LEGE velden — wat al in het dossier staat wordt nooit overschreven.
+ */
+async function onthoudBedrijfsgegevens(consultantId: string, data: InvoiceExtracted): Promise<void> {
+  const c = await db.consultant.findUnique({
+    where: { id: consultantId },
+    select: { firstName: true, lastName: true, companyName: true, kvkNumber: true, vatNumber: true, iban: true },
+  });
+  if (!c) return;
+  const naam = data.name?.trim();
+  // Alleen als bedrijfsnaam bewaren als het NIET gewoon zijn eigen naam is.
+  const isBedrijf = naam && !nameMatches(c, naam);
+  const vul = {
+    ...(!c.companyName?.trim() && isBedrijf ? { companyName: naam } : {}),
+    ...(!c.kvkNumber?.trim() && data.kvkNumber?.trim() ? { kvkNumber: data.kvkNumber.trim() } : {}),
+    ...(!c.vatNumber?.trim() && data.vatId?.trim() ? { vatNumber: data.vatId.trim() } : {}),
+    ...(!c.iban?.trim() && data.iban?.trim() ? { iban: data.iban.trim() } : {}),
+  };
+  if (Object.keys(vul).length > 0) await db.consultant.update({ where: { id: consultantId }, data: vul });
 }
