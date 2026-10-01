@@ -17,6 +17,8 @@
 // (via env of instellingen); tot die tijd draait dit in klaarzet-modus.
 // ---------------------------------------------------------------------------
 
+import { formatDate, round2 } from "./utils";
+
 const AUTH_URL = process.env.SNELSTART_AUTH_URL?.trim() || "https://auth.snelstart.nl/b2b/token";
 const API_URL = (process.env.SNELSTART_API_URL?.trim() || "https://b2bapi.snelstart.nl/v2").replace(/\/$/, "");
 
@@ -218,6 +220,97 @@ export function pushSalesInvoice(input: BookingInput) {
 /** Boek een INKOOPfactuur (self-billing / ZZP) in SnelStart. */
 export function pushPurchaseInvoice(input: BookingInput) {
   return pushBooking("inkoop", input);
+}
+
+/**
+ * Nederlandse melding bij de `?snelstart=`-parameter die de handmatige boekknop
+ * achterlaat. Gedeeld door de verkoop- en de ontvangen-factuurpagina, zodat
+ * beide dezelfde taal spreken. Een onbekende code is de ruwe foutmelding van
+ * SnelStart zelf.
+ */
+export function snelStartMessage(code: string | undefined | null): { ok: boolean; text: string } | null {
+  if (!code) return null;
+  switch (code) {
+    case "ok":
+      return { ok: true, text: "Geboekt in SnelStart." };
+    case "al-geboekt":
+      return { ok: false, text: "Deze factuur staat al in SnelStart — niet nog een keer geboekt." };
+    case "niet-gekoppeld":
+      return { ok: false, text: "SnelStart is niet gekoppeld (sleutels ontbreken)." };
+    case "geen-rechten":
+      return { ok: false, text: "Geen toegang: alleen een beheerder kan naar SnelStart boeken." };
+    default:
+      return { ok: false, text: `Boeken in SnelStart mislukt: ${code}` };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Ontvangen ZZP-factuur → boeking. PUUR (geen IO), zodat de omrekening van btw,
+// vervaldatum en omschrijving los te testen is: zie tests/snelstart-booking.test.ts.
+// ---------------------------------------------------------------------------
+
+/** De velden van een ReceivedInvoice (+ leverancier) die een boeking nodig heeft. */
+export type ReceivedInvoiceBookingSource = {
+  id: string;
+  number: string | null;
+  issueDate: Date | null;
+  /** Terugval als de factuur zelf geen datum heeft: wanneer wij 'm registreerden. */
+  createdAt: Date;
+  /** Gefactureerd totaal incl. btw. */
+  amount: number;
+  vatAmount: number | null;
+  vatRate: number | null;
+  periodStart: Date | null;
+  periodEnd: Date | null;
+  supplierName: string;
+  supplierEmail: string | null;
+  supplierVat: string | null;
+};
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+/**
+ * Zet een ontvangen ZZP-factuur om in een SnelStart-inkoopboeking.
+ *
+ * Twee bewuste keuzes rond geld:
+ *   - zonder bekend btw-bedrag boeken we 0% i.p.v. 21% te veronderstellen — we
+ *     verzinnen geen voorbelasting die niet op de factuur staat;
+ *   - het terugvalnummer is afgeleid van het record-id en dus stabiel, zodat een
+ *     tweede poging nooit een tweede nummerreeks in de boekhouding opent.
+ */
+export function receivedInvoiceBooking(
+  inv: ReceivedInvoiceBookingSource,
+  paymentTermDays: number,
+): BookingInput {
+  const issueDate = inv.issueDate ?? inv.createdAt;
+  const total = round2(inv.amount);
+  const vatAmount = inv.vatAmount != null ? round2(inv.vatAmount) : null;
+  const subtotal = vatAmount != null ? round2(total - vatAmount) : total;
+  const vatRate =
+    vatAmount == null
+      ? 0
+      : (inv.vatRate ?? (subtotal > 0 ? Math.round((vatAmount / subtotal) * 100) : 0));
+  const periode =
+    inv.periodStart && inv.periodEnd
+      ? ` (${formatDate(inv.periodStart)} – ${formatDate(inv.periodEnd)})`
+      : "";
+
+  return {
+    number: inv.number?.trim() || `ONTV-${inv.id.slice(-8).toUpperCase()}`,
+    issueDate,
+    dueDate: addDays(issueDate, paymentTermDays),
+    relationName: inv.supplierName,
+    relationEmail: inv.supplierEmail,
+    relationVat: inv.supplierVat,
+    vatRate,
+    subtotal,
+    total,
+    description: `Ontvangen factuur ${inv.supplierName}${periode}`,
+  };
 }
 
 /** Boek een DECLARATIE/onkostenbon in SnelStart (als inkoopboeking). */

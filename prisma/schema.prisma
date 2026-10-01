@@ -373,6 +373,10 @@ model Invoice {
   /// Betalingsherinneringen (dunning): wanneer voor het laatst herinnerd + hoe vaak.
   reminderSentAt DateTime?
   reminderCount  Int      @default(0)
+  /// Boekingsnummer in SnelStart zodra deze factuur daar HANDMATIG is geboekt
+  /// (knop "Naar SnelStart"). Gevuld = al geboekt: de knop verdwijnt en de actie
+  /// weigert een tweede boeking. Nooit automatisch gevuld.
+  snelstartId String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -2175,6 +2179,14 @@ model ReceivedInvoice {
   countForVat  Boolean   @default(false)
   /// NEW | APPROVED | PAID | DISPUTED  (see RECEIVED_INVOICE_STATUSES)
   status       String    @default("NEW")
+  /// Wanneer deze factuur daadwerkelijk van de rekening is gegaan. Wordt gevuld
+  /// bij het afboeken vanuit een bankafschrift (boekdatum van de afschrijving);
+  /// de handmatige snelknop "Markeer betaald" laat 'm leeg.
+  paidDate     DateTime?
+  /// Boekingsnummer in SnelStart zodra deze factuur daar HANDMATIG is geboekt
+  /// (knop "Naar SnelStart"). Gevuld = al geboekt: de knop verdwijnt en de actie
+  /// weigert een tweede boeking. Nooit automatisch gevuld.
+  snelstartId  String?
   /// Wanneer we de medewerker mailden over de afwijking (dan verdwijnt de mail-actie).
   discrepancyMailedAt DateTime?
   notes        String?

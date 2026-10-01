@@ -348,6 +348,8 @@ export type ReceivedDetail = ReceivedRow & {
   notes: string | null;
   originalName: string | null;
   mimeType: string | null;
+  /** Gevuld zodra deze factuur handmatig in SnelStart is geboekt (knop op de detailpagina). */
+  snelstartId: string | null;
   weeks: TimesheetWeekRow[]; // de urenstaat achter "verwacht", voor de vergelijking
   activePlacements: ActivePlacementRef[]; // voor de "tarief bijwerken"-link
 };
@@ -412,6 +414,7 @@ export async function getReceivedDetail(id: string): Promise<ReceivedDetail | nu
     notes: inv.notes,
     originalName: inv.originalName,
     mimeType: inv.mimeType,
+    snelstartId: inv.snelstartId,
     weeks,
     activePlacements,
   };

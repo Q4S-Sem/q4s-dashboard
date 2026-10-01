@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
-import { Pencil, Printer, Send } from "lucide-react";
+import { BookUp, Pencil, Printer, Send } from "lucide-react";
 import { db } from "@/lib/db";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { INVOICE_STATUSES } from "@/lib/domain";
 import { invoicePdfHref, invoicePdfPreviewHref } from "@/lib/factuur-bulk";
-import { setInvoiceStatus, deleteInvoice } from "../actions";
+import { isSnelStartConnected, snelStartMessage } from "@/lib/snelstart";
+import { setInvoiceStatus, deleteInvoice, pushInvoiceToSnelStart } from "../actions";
 
 export const metadata = { title: "Factuur" };
 
@@ -44,10 +46,10 @@ export default async function FactuurDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; snelstart?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, snelstart } = await searchParams;
   const now = new Date();
 
   const invoice = await db.invoice.findUnique({ where: { id } });
@@ -56,6 +58,7 @@ export default async function FactuurDetailPage({
 
   const status = effectiveStatus(invoice.status, invoice.dueDate, now);
   const pdfHref = invoicePdfHref(invoice.id);
+  const snelstartMelding = snelStartMessage(snelstart);
 
   return (
     <div className="space-y-6">
@@ -68,6 +71,16 @@ export default async function FactuurDetailPage({
         {error === "locked" && (
           <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
             Een verzonden of betaalde factuur kan niet verwijderd worden.
+          </p>
+        )}
+
+        {snelstartMelding && (
+          <p
+            className={`rounded-lg px-4 py-3 text-sm ${
+              snelstartMelding.ok ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+            }`}
+          >
+            {snelstartMelding.text}
           </p>
         )}
 
@@ -122,6 +135,20 @@ export default async function FactuurDetailPage({
                 Verwijderen
               </ConfirmSubmit>
             )}
+            {/* Handmatig naar de boekhouding; nooit automatisch, nooit twee keer. */}
+            {isSnelStartConnected() &&
+              (invoice.snelstartId ? (
+                <span className="inline-flex items-center gap-1.5 rounded-sm bg-ink-100 px-3 py-1 text-sm font-medium text-ink-600">
+                  <BookUp className="h-4 w-4" /> In SnelStart geboekt
+                </span>
+              ) : (
+                <form action={pushInvoiceToSnelStart}>
+                  <input type="hidden" name="id" value={invoice.id} />
+                  <SubmitButton variant="outline" pendingLabel="Boeken…">
+                    <BookUp className="h-4 w-4" /> Naar SnelStart
+                  </SubmitButton>
+                </form>
+              ))}
             <Link
               href={`/facturen/${invoice.id}/bewerken`}
               className={buttonVariants({ variant: "outline" })}

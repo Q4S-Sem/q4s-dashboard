@@ -20,6 +20,8 @@ import {
 import { sendSalesInvoiceById, type SendOutcome } from "@/lib/send-invoice";
 import { parseForm, type FormState } from "@/lib/form";
 import { round2 } from "@/lib/utils";
+import { isAdminSession } from "@/lib/session";
+import { isSnelStartConnected, pushSalesInvoice } from "@/lib/snelstart";
 
 const EditInvoiceSchema = z.object({
   number: z.string().min(1, "Factuurnummer is verplicht"),
@@ -282,6 +284,45 @@ export async function setInvoiceStatus(formData: FormData) {
   revalidatePath("/uren");
   revalidatePath(`/facturen/${id}`);
   redirect(`/facturen/${id}`);
+}
+
+/**
+ * Boek deze verkoopfactuur HANDMATIG in SnelStart (knop op de detailpagina).
+ * Spiegelt `pushReceivedInvoiceToSnelStart` voor ontvangen facturen: alleen na
+ * een klik, alleen als de koppeling geconfigureerd is, en nooit twee keer —
+ * `snelstartId` is het slot. De factuurstatus verandert niet; boeken ≠ innen.
+ */
+export async function pushInvoiceToSnelStart(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect("/facturen");
+  const detail = `/facturen/${id}`;
+
+  if (!(await isAdminSession())) redirect(`${detail}?snelstart=geen-rechten`);
+  if (!isSnelStartConnected()) redirect(`${detail}?snelstart=niet-gekoppeld`);
+
+  const invoice = await db.invoice.findUnique({ where: { id }, include: { client: true } });
+  if (!invoice) redirect("/facturen");
+  if (invoice.snelstartId) redirect(`${detail}?snelstart=al-geboekt`);
+
+  const res = await pushSalesInvoice({
+    number: invoice.number,
+    issueDate: invoice.issueDate,
+    dueDate: invoice.dueDate,
+    relationName: invoice.client.companyName,
+    relationEmail: invoice.client.invoiceEmail || invoice.client.email,
+    relationVat: invoice.client.vatNumber,
+    vatRate: invoice.vatRate,
+    subtotal: invoice.subtotal,
+    total: invoice.total,
+    description: `Verkoopfactuur ${invoice.number} — ${invoice.client.companyName}`,
+  });
+  if (!res.ok) redirect(`${detail}?snelstart=${encodeURIComponent(res.error)}`);
+
+  await db.invoice.update({ where: { id }, data: { snelstartId: res.data.id || "geboekt" } });
+
+  revalidatePath("/facturen");
+  revalidatePath(detail);
+  redirect(`${detail}?snelstart=ok`);
 }
 
 function revalidateFacturen() {

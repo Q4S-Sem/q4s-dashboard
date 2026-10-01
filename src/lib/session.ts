@@ -2,7 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
-import { isAuthRequired, sessionSigningSecret } from "@/lib/auth-policy";
+import { isAdminRole, isAuthRequired, sessionSigningSecret } from "@/lib/auth-policy";
 
 // Cookie-based sessions for app-gebruikers. The cookie holds "<userId>.<hmac>";
 // the HMAC (secret = AUTH_SECRET) makes it tamper-proof. The actual user is
@@ -77,6 +77,20 @@ function parseHrefList(raw: string | null | undefined): string[] {
   } catch {
     return [];
   }
+}
+
+/**
+ * Mag de huidige sessie beheerdersacties doen (geld afboeken, boekhouding)?
+ *
+ * Zelfde grens als `requireAdminApiSession` in src/lib/api-auth.ts: staat
+ * inloggen uit (de open dev-modus), dan gaat alles door; zodra het aan staat
+ * moet er een actieve ADMIN achter de knop zitten. Server Actions zijn eigen
+ * endpoints — de paginagate in (app)/layout.tsx dekt ze niet.
+ */
+export async function isAdminSession(): Promise<boolean> {
+  if (!authRequired()) return true;
+  const user = await currentUser();
+  return isAdminRole(user?.role);
 }
 
 export async function currentUser(): Promise<SessionUser | null> {

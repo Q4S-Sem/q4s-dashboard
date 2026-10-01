@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Mail,
   RotateCcw,
+  BookUp,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,14 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
 import { RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
 import { getReceivedDetail } from "@/lib/received-invoices";
-import { setReceivedStatus, deleteReceivedInvoice, setReceivedVatFlag, resetWeekVanuitFactuur } from "../actions";
+import { isSnelStartConnected, snelStartMessage } from "@/lib/snelstart";
+import {
+  setReceivedStatus,
+  deleteReceivedInvoice,
+  setReceivedVatFlag,
+  resetWeekVanuitFactuur,
+  pushReceivedInvoiceToSnelStart,
+} from "../actions";
 import { DiscrepancyMailButton } from "../DiscrepancyMailButton";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 
@@ -37,10 +45,18 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-export default async function ReceivedDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ReceivedDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ snelstart?: string }>;
+}) {
   const { id } = await params;
+  const { snelstart } = await searchParams;
   const inv = await getReceivedDetail(id);
   if (!inv) notFound();
+  const snelstartMelding = snelStartMessage(snelstart);
 
   const period =
     inv.periodStart && inv.periodEnd
@@ -60,6 +76,17 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
         description={`Van ${inv.consultantName} · binnengekomen ${inv.issueDate ? formatDate(inv.issueDate) : "—"}`}
         actions={<StatusBadge options={RECEIVED_INVOICE_STATUSES} value={inv.status} />}
       />
+
+      {snelstartMelding && (
+        <p
+          className={cn(
+            "rounded-lg px-4 py-3 text-sm",
+            snelstartMelding.ok ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700",
+          )}
+        >
+          {snelstartMelding.text}
+        </p>
+      )}
 
       {/* BTW-voorbelasting: meetellen in de aangifte? Standaard uit — de self-billing
           inkoopfactuur dekt deze ZZP-betaling meestal al. Aanzetten voor ZZP'ers die
@@ -383,6 +410,22 @@ export default async function ReceivedDetailPage({ params }: { params: Promise<{
                 </SubmitButton>
               </form>
             )}
+            {/* Handmatig boeken in de boekhouding. Alleen zichtbaar als de
+                koppeling echt geconfigureerd is én deze factuur er nog niet in
+                staat — er is bewust geen automatische doorzet. */}
+            {isSnelStartConnected() &&
+              (inv.snelstartId ? (
+                <span className="inline-flex items-center gap-1.5 rounded-sm bg-ink-100 px-3 py-1 text-sm font-medium text-ink-600">
+                  <BookUp className="h-4 w-4" /> In SnelStart geboekt
+                </span>
+              ) : (
+                <form action={pushReceivedInvoiceToSnelStart}>
+                  <input type="hidden" name="id" value={inv.id} />
+                  <SubmitButton variant="outline" pendingLabel="Boeken…">
+                    <BookUp className="h-4 w-4" /> Naar SnelStart
+                  </SubmitButton>
+                </form>
+              ))}
             <ConfirmSubmit
               action={deleteReceivedInvoice}
               id={inv.id}

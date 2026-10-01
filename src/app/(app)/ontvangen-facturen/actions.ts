@@ -7,6 +7,9 @@ import { RECEIVED_INVOICE_STATUS_VALUES } from "@/lib/domain";
 import { MAX_UPLOAD_BYTES, saveReceivedBytes, deleteReceivedUpload } from "@/lib/uploads";
 import { mailReceivedDiscrepancy } from "@/lib/received-invoices";
 import { resetWeekForReceivedInvoice } from "@/lib/week-reset";
+import { isAdminSession } from "@/lib/session";
+import { ZZP_PAYMENT_TERM_DAYS } from "@/lib/betalingen";
+import { isSnelStartConnected, pushExpense, receivedInvoiceBooking } from "@/lib/snelstart";
 
 const IMPORT = "/ontvangen-facturen/importeren";
 
@@ -135,6 +138,69 @@ export async function sendDiscrepancyMail(
   revalidate();
   if (res.ok) return { ok: true, simulated: res.simulated };
   return { ok: false, simulated: false, reason: res.noEmail ? "noemail" : "error" };
+}
+
+/**
+ * Boek deze ontvangen ZZP-factuur HANDMATIG in SnelStart (knop op de
+ * detailpagina). Er draait geen automaat en geen cron op deze weg: een mens
+ * klikt, en alleen als de koppeling écht geconfigureerd is.
+ *
+ * Het teruggekregen boekingsnummer gaat in `snelstartId`; staat die al gevuld,
+ * dan weigert de actie — zo kan dezelfde factuur nooit dubbel in de boekhouding
+ * belanden. De factuurstatus blijft ongemoeid; boeken is geen betalen.
+ */
+export async function pushReceivedInvoiceToSnelStart(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect("/ontvangen-facturen");
+  const detail = `/ontvangen-facturen/${id}`;
+
+  if (!(await isAdminSession())) redirect(`${detail}?snelstart=geen-rechten`);
+  if (!isSnelStartConnected()) redirect(`${detail}?snelstart=niet-gekoppeld`);
+
+  const inv = await db.receivedInvoice.findUnique({
+    where: { id },
+    include: {
+      consultant: {
+        select: { firstName: true, lastName: true, companyName: true, email: true, vatNumber: true },
+      },
+    },
+  });
+  if (!inv) redirect("/ontvangen-facturen");
+  if (inv.snelstartId) redirect(`${detail}?snelstart=al-geboekt`);
+
+  const res = await pushExpense(
+    receivedInvoiceBooking(
+      {
+        id: inv.id,
+        number: inv.number,
+        issueDate: inv.issueDate,
+        createdAt: inv.createdAt,
+        amount: inv.amount,
+        vatAmount: inv.vatAmount,
+        vatRate: inv.vatRate,
+        periodStart: inv.periodStart,
+        periodEnd: inv.periodEnd,
+        supplierName:
+          inv.consultant.companyName?.trim() ||
+          `${inv.consultant.firstName} ${inv.consultant.lastName}`.trim(),
+        supplierEmail: inv.consultant.email,
+        supplierVat: inv.consultant.vatNumber,
+      },
+      ZZP_PAYMENT_TERM_DAYS,
+    ),
+  );
+  if (!res.ok) redirect(`${detail}?snelstart=${encodeURIComponent(res.error)}`);
+
+  // Alleen bij een geslaagde boeking vastleggen dat 'ie eruit is. Geeft SnelStart
+  // geen id terug, dan is "geboekt" genoeg om een tweede poging te blokkeren.
+  await db.receivedInvoice.update({
+    where: { id },
+    data: { snelstartId: res.data.id || "geboekt" },
+  });
+
+  revalidate();
+  revalidatePath(detail);
+  redirect(`${detail}?snelstart=ok`);
 }
 
 /** Verwijder een geregistreerde factuur (+ het geüploade bestand). */

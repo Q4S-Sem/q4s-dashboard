@@ -7,7 +7,9 @@ import { StatusBadge } from "@/components/ui/badge";
 import { INVOICE_STATUSES, RECEIVED_INVOICE_STATUSES } from "@/lib/domain";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { paymentMonitor, type MonitorRow } from "@/lib/betaalmonitor";
+import { isAdminSession } from "@/lib/session";
 import { sendInvoiceReminder, sendAllReminders } from "./actions";
+import { BankImport } from "./BankImport";
 
 export const metadata = { title: "Betaalmonitor" };
 
@@ -103,10 +105,15 @@ function OverdueTable({
 export default async function BetaalmonitorPage({
   searchParams,
 }: {
-  searchParams: Promise<{ herinnerd?: string; fout?: string }>;
+  searchParams: Promise<{
+    herinnerd?: string;
+    fout?: string;
+    afgeboekt?: string;
+    overgeslagen?: string;
+  }>;
 }) {
-  const { herinnerd, fout } = await searchParams;
-  const mon = await paymentMonitor();
+  const { herinnerd, fout, afgeboekt, overgeslagen } = await searchParams;
+  const [mon, isAdmin] = await Promise.all([paymentMonitor(), isAdminSession()]);
 
   return (
     <div className="space-y-6">
@@ -132,7 +139,19 @@ export default async function BetaalmonitorPage({
         </p>
       )}
       {fout && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">Herinnering niet verstuurd: {fout}</p>
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {fout === "geen-rechten"
+            ? "Geen toegang: alleen een beheerder kan facturen afboeken."
+            : `Herinnering niet verstuurd: ${fout}`}
+        </p>
+      )}
+      {afgeboekt && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {afgeboekt === "0"
+            ? "Niets afgeboekt — er was niets aangevinkt of de facturen stonden al op betaald."
+            : `${afgeboekt} factuur/facturen op betaald gezet vanuit het bankafschrift.`}
+          {overgeslagen && ` ${overgeslagen} overgeslagen (al betaald of geannuleerd).`}
+        </p>
       )}
 
       {/* Kerncijfers */}
@@ -162,6 +181,11 @@ export default async function BetaalmonitorPage({
           tone={mon.outgoing.overdueCount > 0 ? "red" : "slate"}
         />
       </div>
+
+      {/* Bankafschrift inlezen → voorstellen nalopen. Alleen een beheerder mag
+          geld afboeken, dus voor anderen tonen we het blok niet (de server-
+          actions weigeren het óók, zie isAdminSession). */}
+      {isAdmin && <BankImport />}
 
       {/* Inkomend — te laat */}
       <Card>
