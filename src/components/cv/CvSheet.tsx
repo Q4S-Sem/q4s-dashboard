@@ -29,11 +29,11 @@ const A4_BREEDTE = 210;
 const A4_HOOGTE = 297;
 const MARGE = 12;
 
-function SectieKop({ titel, accent }: { titel: string; accent: string }) {
+/** Titel, met daaronder een dunne grijze lijn over de volle breedte. */
+function SectieKop({ titel }: { titel: string }) {
   return (
     <div className="cv-sectiekop">
       <span className="cv-sectiekop-tekst">{titel}</span>
-      <span className="cv-sectiekop-lijn" style={{ background: accent }} />
     </div>
   );
 }
@@ -83,7 +83,7 @@ export function CvSheet({
     if (!gevuld(k)) return null;
     return (
       <section className="cv-sectie">
-        <SectieKop titel={labelVan(k)} accent={accent} />
+        <SectieKop titel={labelVan(k)} />
         {k === "summary" && <p className="cv-tekst">{doc.summary}</p>}
 
         {k === "experience" &&
@@ -177,7 +177,6 @@ export function CvSheet({
         {/* Witte kop: label links, groot logo rechts. */}
         <header className="cv-kop">
           <div className="cv-label">
-            <span className="cv-label-streep" style={{ background: accent }} />
             Q4S CANDIDATE PROFILE
           </div>
           {template.showLogo && logoSrc && (
@@ -187,7 +186,7 @@ export function CvSheet({
         </header>
 
         {/* Naamstreep in de accentkleur (standaard Q4S-zwart). */}
-        <div className="cv-streep" style={{ background: accent, color: opAccent }}>
+        <div className="cv-streep">
           {toonFoto && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={photoSrc as string} alt="" className="cv-foto" />
@@ -245,41 +244,42 @@ function cvCss(breedte: number, hoogte: number, marge: number): string {
   padding: 7mm ${marge}mm;
 }
 .cv-label { font-size: 10pt; font-weight: 700; letter-spacing: 0.16em; color: #171717; }
-.cv-label-streep { display: block; width: 9mm; height: 0.8mm; margin-bottom: 2mm; }
 .cv-logo { height: 22mm; width: auto; display: block; }
 .cv-streep {
   display: flex;
   align-items: center;
   gap: 6mm;
-  padding: 5mm ${marge}mm;
+  margin: 0 ${marge}mm;
+  padding: 4mm 0;
+  color: #171717;
+  border-bottom: 0.2mm solid #d9d9db;
 }
 .cv-foto {
   width: 20mm;
   height: 20mm;
   object-fit: cover;
   flex: 0 0 auto;
-  border: 0.9mm solid #ffffff;
+  border: 0.3mm solid #d9d9db;
 }
 .cv-kop-tekst { flex: 1 1 auto; min-width: 0; }
 .cv-naam { margin: 0; font-size: 22pt; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
 .cv-functie { margin: 1.2mm 0 0; font-size: 11.5pt; font-weight: 600; }
-.cv-meta { margin: 1.4mm 0 0; font-size: 8.6pt; opacity: 0.75; }
+.cv-meta { margin: 1.4mm 0 0; font-size: 8.6pt; color: #787873; }
 
 /* ---- Body ---- */
 .cv-body { flex: 1 1 auto; padding: 6mm ${marge}mm 0; }
 
 /* ---- Secties ---- */
 .cv-sectie { margin-bottom: 5mm; break-inside: avoid; }
-.cv-sectiekop { display: flex; align-items: center; gap: 3mm; margin-bottom: 2.6mm; }
+.cv-sectiekop { margin-bottom: 2.6mm; padding-bottom: 1.4mm; border-bottom: 0.2mm solid #d9d9db; }
 .cv-sectiekop-tekst {
   font-size: 8.4pt;
   font-weight: 700;
   letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: #4d4d49;
+  color: #171717;
   overflow-wrap: anywhere;
 }
-.cv-sectiekop-lijn { flex: 1 1 auto; min-width: 6mm; height: 0.6mm; border-radius: 1mm; opacity: 0.55; }
 .cv-tekst { margin: 0; text-align: justify; hyphens: auto; }
 
 /* ---- Ervaring & opleiding ---- */

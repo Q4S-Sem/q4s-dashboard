@@ -2,7 +2,6 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { getCvLogoFile } from "./branding";
 import { loadCvFonts } from "./cv-fonts";
 import { sanitizePdfText, truncateText, wrapText } from "./pdf-text";
-import { readableOn } from "./cv-template";
 import { DEFAULT_ACCENT } from "./doc-style";
 import type { CvDoc } from "./cv-doc";
 
@@ -133,9 +132,10 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
   // Alles wat óp de naamstreep staat — tekst en het kadertje om de pasfoto —
   // volgt de accentkleur. Zonder dat verdwijnt de hele kop zodra iemand in de
   // CV-vormgeving een lichte kleur kiest.
-  const bandWit = readableOn(opties.accent ?? DEFAULT_ACCENT) === "#ffffff";
-  const ON_BAND = bandWit ? rgb(1, 1, 1) : rgb(0.07, 0.07, 0.06);
-  const ON_BAND_SOFT = bandWit ? rgb(0.74, 0.74, 0.75) : rgb(0.36, 0.36, 0.35);
+  // De naamstreep is wit: donkere tekst, grijze lijn eronder.
+  const WIT = rgb(1, 1, 1);
+  const ON_BAND = INK;
+  const ON_BAND_SOFT = MUTED;
 
   // Logo staat op wit → altijd de zwarte versie.
   const logoImg = opties.showLogo === false ? null : await embedLogo(pdf, false);
@@ -255,7 +255,6 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
       textR("PROJECT PARTNERS", RIGHT, yTop - 26, 6.5, fonts.semibold, MUTED);
     }
     const baseline = H - headH / 2 - labelSize * 0.36;
-    line(M, baseline + labelSize + 6, M + 26, 2.2, BRAND);
     textTracked("Q4S CANDIDATE PROFILE", M, baseline, labelSize, fonts.bold, INK, labelSize * 0.16);
   };
 
@@ -263,7 +262,8 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
   const drawBand = () => {
     drawHead(HEAD_H, LOGO_H, 10);
     const top = H - HEAD_H;
-    rect(0, top - STRIPE_H, W, STRIPE_H, BRAND);
+    // Witte naamstreep, afgesloten met een dunne grijze lijn.
+    line(M, top - STRIPE_H, RIGHT, 0.6);
 
     let textX = M;
     if (photoImg) {
@@ -277,17 +277,17 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
       const dy = y0 + (PHOTO - dh) / 2;
       if (!pass.dry && page) page.drawImage(photoImg, { x: dx, y: dy, width: dw, height: dh });
       const over = (x: number, yy: number, w: number, h: number) => {
-        if (w > 0.01 && h > 0.01) rect(x, yy, w, h, BRAND);
+        if (w > 0.01 && h > 0.01) rect(x, yy, w, h, WIT);
       };
       over(dx, y0 + PHOTO, dw, dy + dh - (y0 + PHOTO));
       over(dx, dy, dw, y0 - dy);
       over(dx, y0, M - dx, PHOTO);
       over(M + PHOTO, y0, dx + dw - (M + PHOTO), PHOTO);
       const r = PHOTO_RAND;
-      rect(M - r, y0 + PHOTO, PHOTO + r * 2, r, ON_BAND);
-      rect(M - r, y0 - r, PHOTO + r * 2, r, ON_BAND);
-      rect(M - r, y0, r, PHOTO, ON_BAND);
-      rect(M + PHOTO, y0, r, PHOTO, ON_BAND);
+      rect(M - r, y0 + PHOTO, PHOTO + r * 2, r, LINE);
+      rect(M - r, y0 - r, PHOTO + r * 2, r, LINE);
+      rect(M - r, y0, r, PHOTO, LINE);
+      rect(M + PHOTO, y0, r, PHOTO, LINE);
       textX = M + PHOTO + 18;
     }
 
@@ -323,7 +323,7 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
     }
     if (pageCount === 1) {
       drawBand();
-      y = H - HEAD_H - STRIPE_H - 16;
+      y = H - HEAD_H - STRIPE_H - 22;
     } else {
       drawBand2();
       y = H - HEAD2_H - 30;
@@ -351,11 +351,12 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
    */
   const sectionTitle = (title: string, firstBlockH: number) => {
     gap();
-    const headH = 7 + TYPE.section + titleGap();
+    const headH = TYPE.section + titleGap();
     if (y - (headH + firstBlockH) < BOTTOM) newPage();
-    line(M, y + 7, M + 26, 2.2, BRAND);
     y -= TYPE.section;
-    textTracked(title.toUpperCase(), M, y, TYPE.section, fonts.bold, BRAND, 0.9);
+    textTracked(title.toUpperCase(), M, y, TYPE.section, fonts.bold, INK, 0.9);
+    // Dunne grijze lijn over de volle breedte, net onder de titel.
+    line(M, y - 6, RIGHT, 0.6);
     y -= titleGap();
   };
 
@@ -559,10 +560,11 @@ export async function renderCvPdf(doc: CvDoc, opties: CvPdfOpties = {}): Promise
     if (!label) return;
     gap();
     ensure(20);
-    line(M, y + 7, M + 26, 2.2, BRAND);
     y -= TYPE.section;
-    textTracked("LANGUAGES", M, y, TYPE.section, fonts.bold, BRAND, 0.9);
-    text(label, M + 104, y, TYPE.sub + 0.5, fonts.regular, INK);
+    textTracked("LANGUAGES", M, y, TYPE.section, fonts.bold, INK, 0.9);
+    line(M, y - 6, RIGHT, 0.6);
+    y -= titleGap();
+    text(label, M, y, TYPE.sub + 0.5, fonts.regular, INK);
     // Cursor voorbij de regel zetten: anders tekent het blok hieronder er bovenop.
     y -= 13;
   };
