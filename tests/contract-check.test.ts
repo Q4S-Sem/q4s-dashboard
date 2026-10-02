@@ -22,6 +22,6 @@ test("contract-check: leeg contract mist alles, compleet contract niets", () => 
   assert.deepEqual(ontbrekendeContractVelden({ ...compleet, contractorKvk: "  " }), ["KvK-nummer"]);
   assert.deepEqual(
     ontbrekendeContractVelden({ ...compleet, projectDuration: "", rateDayFixed: "" }),
-    ["Einddatum of projectduur", "Uurtarief of dagtarief"],
+    ["Einddatum of contractduur", "Uurtarief of dagtarief"],
   );
 });

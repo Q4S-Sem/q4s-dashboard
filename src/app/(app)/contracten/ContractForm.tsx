@@ -183,7 +183,7 @@ export function ContractForm({
             <Field label="Tot" htmlFor="endDate" error={e.endDate}>
               <Input id="endDate" name="endDate" type="date" defaultValue={toDateInput(c?.endDate ?? null)} />
             </Field>
-            <Field label="Of: projectduur" htmlFor="projectDuration" error={e.projectDuration} hint="Bijv. 4 maanden met verlenging">
+            <Field label="Contractduur" htmlFor="projectDuration" error={e.projectDuration} hint="Bijv. 4 maanden met optie tot verlenging">
               <Input id="projectDuration" name="projectDuration" defaultValue={c?.projectDuration ?? ""} />
             </Field>
             <Field label="Opzegtermijn" htmlFor="noticePeriod" error={e.noticePeriod}>

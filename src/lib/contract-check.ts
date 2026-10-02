@@ -33,7 +33,7 @@ export function ontbrekendeContractVelden(c: ContractVelden): string[] {
   if (leeg(c.contractorIban)) mist.push("IBAN opdrachtnemer");
   if (leeg(c.workDescription)) mist.push("Werkzaamheden (artikel 1.1)");
   if (leeg(c.startDate)) mist.push("Aanvangsdatum");
-  if (leeg(c.endDate) && leeg(c.projectDuration)) mist.push("Einddatum of projectduur");
+  if (leeg(c.endDate) && leeg(c.projectDuration)) mist.push("Einddatum of contractduur");
   if (leeg(c.rateDay) && leeg(c.rateDayFixed)) mist.push("Uurtarief of dagtarief");
   if (leeg(c.signerContractor)) mist.push("Ondertekenaar opdrachtnemer");
   if (leeg(c.signPlaceContractor)) mist.push("Plaats ondertekening opdrachtnemer");

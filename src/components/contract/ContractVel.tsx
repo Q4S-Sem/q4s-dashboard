@@ -335,7 +335,7 @@ export function ContractVel({
                 <td><V>{doc.endDate}</V></td>
               </tr>
               <tr>
-                <td>{en ? "Or; for the duration of the Project" : "Of; voor de duur van het Project"}</td>
+                <td>{en ? "Contract duration" : "Contractduur"}</td>
                 <td><V>{doc.projectDuration}</V></td>
               </tr>
             </tbody>
