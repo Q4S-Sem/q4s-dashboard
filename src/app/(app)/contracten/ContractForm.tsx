@@ -1,12 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import type { Contract } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { buttonVariants } from "@/components/ui/button";
+import { ConfirmCancel } from "@/components/confirm-cancel";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { CONTRACT_STATUSES } from "@/lib/domain";
 
@@ -274,7 +273,7 @@ export function ContractForm({
       </Card>
 
       <div className="flex justify-end gap-3">
-        <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>Annuleren</Link>
+        <ConfirmCancel href={cancelHref} />
         <SubmitButton pendingLabel="Opslaan…">Opslaan</SubmitButton>
       </div>
     </form>

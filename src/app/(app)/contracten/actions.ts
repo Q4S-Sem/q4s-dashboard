@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { parseForm, type FormState } from "@/lib/form";
 import { CONTRACT_STATUS_VALUES } from "@/lib/domain";
+import { ontbrekendeContractVelden } from "@/lib/contract-check";
 
 /**
  * Server actions voor de Contracten-hub (Overeenkomst van opdracht).
@@ -73,6 +74,16 @@ function readFlags(formData: FormData) {
   };
 }
 
+/** Definitief/Getekend mag alleen als alles erin staat — zo gaat er nooit een half contract de deur uit. */
+function blokkeerOnvolledig(d: z.infer<typeof ContractSchema>): FormState | null {
+  if (d.status === "DRAFT") return null;
+  const mist = ontbrekendeContractVelden(d);
+  if (!mist.length) return null;
+  return {
+    error: `Dit contract kan nog niet op "Definitief" of "Getekend": er ontbreekt nog ${mist.join(", ")}. Vul dit aan, of sla het op als Concept.`,
+  };
+}
+
 /** Vul lege optionele string-velden met de sjabloon-defaults. */
 function withDefaults(data: z.infer<typeof ContractSchema>) {
   return {
@@ -91,6 +102,8 @@ export async function createContract(_prev: FormState, formData: FormData): Prom
   if (!parsed.success) return parsed.state;
   const d = parsed.data;
   const flags = readFlags(formData);
+  const blok = blokkeerOnvolledig(d);
+  if (blok) return blok;
 
   let id: string;
   try {
@@ -146,6 +159,8 @@ export async function updateContract(_prev: FormState, formData: FormData): Prom
   if (!parsed.success) return parsed.state;
   const d = parsed.data;
   const flags = readFlags(formData);
+  const blok = blokkeerOnvolledig(d);
+  if (blok) return blok;
 
   try {
     await db.contract.update({

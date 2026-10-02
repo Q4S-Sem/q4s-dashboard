@@ -1,10 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Printer } from "lucide-react";
 import { db } from "@/lib/db";
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/ui/page-header";
-import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { CONTRACT_STATUSES } from "@/lib/domain";
@@ -14,6 +11,8 @@ import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { ContractForm } from "../ContractForm";
 import { updateContract, deleteContract } from "../actions";
 import { getContractFormOptions } from "../data";
+import { ontbrekendeContractVelden } from "@/lib/contract-check";
+import { PrintMetControle } from "./PrintMetControle";
 
 export const metadata = { title: "Contract nakijken" };
 export const dynamic = "force-dynamic";
@@ -35,6 +34,7 @@ export default async function ContractDetailPage({
     db.contract.findUnique({ where: { id } }),
   ]);
   if (!sheet || !contract) notFound();
+  const ontbreekt = ontbrekendeContractVelden(contract);
 
   return (
     <div className="space-y-6">
@@ -47,9 +47,7 @@ export default async function ContractDetailPage({
           <div className="flex flex-wrap gap-2">
             <StatusBadge options={CONTRACT_STATUSES} value={contract.status} />
             <TaalSchakelaar taal={taal} href={(x) => `/contracten/${id}${x === "en" ? "?taal=en" : ""}`} />
-            <Link href={`/contracten/${id}/print${taal === "en" ? "?taal=en" : ""}`} className={buttonVariants({ variant: "outline" })}>
-              <Printer className="h-4 w-4" /> Printen / PDF
-            </Link>
+            <PrintMetControle href={`/contracten/${id}/print${taal === "en" ? "?taal=en" : ""}`} ontbreekt={ontbreekt} />
             <ConfirmSubmit
               action={deleteContract}
               id={id}
@@ -63,6 +61,11 @@ export default async function ContractDetailPage({
 
       {opgeslagen !== undefined && (
         <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">Contract opgeslagen.</p>
+      )}
+      {ontbreekt.length > 0 && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <b>Nog niet compleet</b> — vul aan vóór je het verstuurt: {ontbreekt.join(" · ")}
+        </p>
       )}
       {error === "verwijderen" && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">Verwijderen mislukt.</p>

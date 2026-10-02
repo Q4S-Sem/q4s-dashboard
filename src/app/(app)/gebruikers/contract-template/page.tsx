@@ -14,7 +14,7 @@ import { Download, FileSpreadsheet } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PrintBar } from "../../contracten/[id]/print/PrintBar";
 
-export const metadata = { title: "Contract-vormgeving" };
+export const metadata = { title: "Vormgeving & blanco — Contracten" };
 export const dynamic = "force-dynamic";
 
 /** Voorbeeldinhoud, zodat je de vormgeving beoordeelt zonder een echt contract. */
@@ -110,7 +110,7 @@ export default async function ContractTemplatePage({
     <div className="space-y-4">
       <div className="no-print">
         <PageHeader
-          title="Contract-vormgeving"
+          title="Vormgeving & blanco formulieren"
           description="Zo komen de overeenkomst van opdracht, het persoonsgegevens-formulier en de Q4S-Timesheet en de offerte op papier. Blauw = wat per contract wordt ingevuld."
         />
       </div>
@@ -158,7 +158,7 @@ export default async function ContractTemplatePage({
       )}
 
       <div className="ov-print-pagina">
-        <PrintBar terug="/gebruikers" />
+        <PrintBar terug="/contracten" />
         <div className="flex justify-center overflow-x-auto pb-10">
           {doc === "overeenkomst" ? (
             <ContractVel doc={voorbeeld} logoSrc={logo} taal={taal} className="ov-schaduw" />

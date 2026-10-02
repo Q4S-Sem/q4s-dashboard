@@ -37,7 +37,10 @@ export function UnsavedGuard() {
     if (form.hasAttribute("data-no-guard")) return false;
     if (form.closest("[data-no-guard]")) return false;
     // Zoeken/filteren gaat via GET en verandert niets — daar valt niets kwijt.
-    if (form.method && form.method.toLowerCase() === "get") return false;
+    // Let op: lees het ATTRIBUUT. `form.method` is "get" voor élk formulier
+    // zonder method-attribuut — ook React-formulieren met een server-action —
+    // waardoor de waarschuwing voorheen nergens afging.
+    if ((form.getAttribute("method") ?? "").toLowerCase() === "get") return false;
     return true;
   }, []);
 

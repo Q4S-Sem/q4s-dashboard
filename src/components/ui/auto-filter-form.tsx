@@ -58,6 +58,7 @@ export function AutoFilterForm({
   return (
     <form
       ref={formRef}
+      data-no-guard
       onChange={onChange}
       onSubmit={(e) => {
         e.preventDefault();

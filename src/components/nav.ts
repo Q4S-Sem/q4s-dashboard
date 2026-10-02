@@ -41,6 +41,8 @@ import {
   Wallet,
   Wand2,
   Mail,
+  FileSignature,
+  Plus,
   type LucideIcon,
 } from "lucide-react";
 
@@ -121,9 +123,19 @@ const HUB_LIST: NavHub[] = [
     items: [
       { href: "/klanten", label: "Klanten", icon: Building2, section: "Klanten" },
       { href: "/plaatsingen", label: "Plaatsingen", icon: Briefcase, section: "Plaatsingen" },
-      { href: "/contracten", label: "Contracten", icon: ScrollText, section: "Plaatsingen" },
       { href: "/medewerkers", label: "Medewerkers", icon: IdCard, section: "Medewerkers" },
       { href: "/certificeringen", label: "Certificeringen", icon: Award, section: "Medewerkers" },
+    ],
+  },
+  {
+    // Eigen werkplek: contracten invullen, controleren, printen en opslaan.
+    label: "Contracten",
+    href: "/contracten",
+    icon: FileSignature,
+    items: [
+      { href: "/contracten", label: "Per persoon", icon: FileSignature, exact: true },
+      { href: "/contracten/nieuw", label: "Nieuw contract", icon: Plus },
+      { href: "/gebruikers/contract-template", label: "Vormgeving & blanco", icon: ScrollText, section: "Documenten" },
     ],
   },
   {
@@ -213,7 +225,6 @@ const HUB_LIST: NavHub[] = [
     items: [
       { href: "/gebruikers", label: "Gebruikers", icon: UserCog, exact: true, section: "Toegang" },
       { href: "/gebruikers/handtekening", label: "E-mailhandtekening", icon: Mail, section: "Toegang" },
-      { href: "/gebruikers/contract-template", label: "Contract-vormgeving", icon: ScrollText, section: "Toegang" },
       { href: "/gebruikers/audit", label: "Audit (Kiwa)", icon: ShieldCheck, section: "Compliance" },
       { href: "/gebruikers/dossiercheck", label: "Dossiercheck", icon: ClipboardCheck, section: "Compliance" },
       { href: "/gebruikers/api-sleutels", label: "API-sleutels", icon: KeyRound, section: "AI" },
@@ -227,6 +238,7 @@ const HUB_LIST: NavHub[] = [
 // tegels als de app-switcher volgen deze volgorde.
 const HUB_ORDER = [
   "/klanten", // Personeelsgegevens
+  "/contracten",
   "/facturatie",
   "/agenda",
   "/recruitment",
