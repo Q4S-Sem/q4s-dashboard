@@ -650,7 +650,7 @@ export function ovCss(): string {
 @media print {
   @page { size: A4; margin: 0; }
   html, body { margin: 0; padding: 0; background: #ffffff; }
-  .ov-vel { box-shadow: none; margin: 0 !important; break-after: page; height: 297mm; overflow: hidden; }
+  .ov-vel { box-shadow: none; margin: 0 !important; break-after: page; height: 296.5mm; overflow: hidden; }
   .ov-vel:last-child { break-after: auto; }
   .ov-fill { color: inherit; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }

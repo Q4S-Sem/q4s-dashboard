@@ -317,6 +317,6 @@ const tsCss = `
 .ts-line.ts-big > span { min-height: 11mm; }
 .ts-sigbox { height: 21mm; }
 .ts-note { margin-top: 1.5mm; font-size: 6.6pt; font-style: italic; color: #6b6b70; }
-@media print { @page { size: A4 landscape; margin: 0; } .ts-vel { height: 210mm; } }
+@media print { @page { size: A4 landscape; margin: 0; } .ts-vel { height: 209.5mm; } }
 .ts-vel { box-sizing: border-box; }
 `;

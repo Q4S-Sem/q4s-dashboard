@@ -303,4 +303,28 @@ input[type="number"] {
     size: A4;
     margin: 18mm;
   }
+
+  /* Documentvellen (contract, persoonsgegevens, offerte, timesheet): alleen
+     de vellen printen. "visibility: hidden" laat de app-schil ruimte innemen
+     → er rolde een extra blanco pagina uit. Daarom de rest echt weghalen en de
+     omhullende elementen platslaan (geen padding/marge/min-hoogte). */
+  body:has(.ov-print-pagina)
+    *:not(:has(.ov-print-pagina)):not(.ov-print-pagina):not(.ov-print-pagina *) {
+    display: none !important;
+  }
+  body:has(.ov-print-pagina),
+  body:has(.ov-print-pagina) *:has(.ov-print-pagina),
+  .ov-print-pagina,
+  .ov-print-pagina *:has(.ov-vel) {
+    display: block !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    gap: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
 }
