@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState, type ReactNode, type KeyboardEvent } from "react";
+import { createContext, useActionState, useContext, useEffect, useState, type ReactNode, type KeyboardEvent } from "react";
 import type { Placement } from "@prisma/client";
 import {
   FileText,
@@ -13,6 +13,9 @@ import {
   Building2,
   Loader2,
   AlertTriangle,
+  UserRound,
+  Coins,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input, Select, Textarea, Label } from "@/components/ui/field";
@@ -22,6 +25,7 @@ import { NumberInput } from "@/components/ui/number-input";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmCancel } from "@/components/confirm-cancel";
+import { FolderTab, FolderTabBar } from "@/components/dossier-tabs";
 import { PLACEMENT_STATUSES, DISCIPLINES, EMPLOYMENT_TYPES } from "@/lib/domain";
 import { cn, formatCurrency } from "@/lib/utils";
 import { emptyFormState, type FormState } from "@/lib/form";
@@ -66,9 +70,57 @@ function computeEnd(startISO: string, kind: DurationKind): string {
 
 /** A clean upload card: icon + label + a styled picker + the chosen file(s). */
 /** Eén genummerd blok van het formulier. */
-function Sectie({ nr, titel, sub, children }: { nr: number; titel: string; sub?: string; children: ReactNode }) {
+type Tab = "bestanden" | "werknemer" | "bedrijf" | "documenten" | "plaatsing";
+
+/** Waar staat een veld (voor fouten van de server)? Onbekend = Plaatsing & tarief. */
+const VELD_TAB: Record<string, Tab> = {
+  consultantId: "werknemer",
+  firstName: "werknemer",
+  lastName: "werknemer",
+  dateOfBirth: "werknemer",
+  discipline: "werknemer",
+  employmentType: "werknemer",
+  email: "werknemer",
+  phone: "werknemer",
+  bsn: "werknemer",
+  nationality: "werknemer",
+  companyName: "bedrijf",
+  kvkNumber: "bedrijf",
+  vatNumber: "bedrijf",
+  iban: "bedrijf",
+  address: "bedrijf",
+  postalCode: "bedrijf",
+  city: "bedrijf",
+};
+
+const VOLGENDE: Record<Tab, Tab> = {
+  bestanden: "werknemer",
+  werknemer: "bedrijf",
+  bedrijf: "documenten",
+  documenten: "plaatsing",
+  plaatsing: "plaatsing",
+};
+
+/** Huidig mapje, gedeeld met de secties (alleen het actieve is zichtbaar). */
+const TabContext = createContext<Tab>("werknemer");
+
+function Sectie({
+  nr,
+  titel,
+  sub,
+  tab,
+  children,
+}: {
+  nr: number;
+  titel: string;
+  sub?: string;
+  tab: Tab;
+  children: ReactNode;
+}) {
+  // Verborgen, niet weg: alle velden blijven in het ene formulier en gaan mee bij opslaan.
+  const actief = useContext(TabContext) === tab;
   return (
-    <Card>
+    <Card className={actief ? undefined : "hidden"} data-tab={tab}>
       <CardContent className="space-y-4">
         <div className="flex items-start gap-3 border-b border-ink-100 pb-3">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-900 text-[13px] font-semibold text-white">
@@ -718,6 +770,14 @@ export function PlacementForm({
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
+  const [tab, setTab] = useState<Tab>(placement ? "werknemer" : "bestanden");
+  const [eerderState, setEerderState] = useState(state);
+  // Server keurt een veld af → spring naar het mapje waar dat veld staat.
+  if (state !== eerderState) {
+    setEerderState(state);
+    const eersteFout = Object.keys(state.fieldErrors ?? {})[0];
+    if (eersteFout) setTab(VELD_TAB[eersteFout] ?? "plaatsing");
+  }
   const dv = (name: string, fallback = "") => draft?.[name] ?? fallback;
 
   // Create mode only: fill in a new person inline (default) or pick an existing one.
@@ -851,15 +911,42 @@ export function PlacementForm({
         <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
       )}
 
-      <div className="space-y-4">
+      {/* Mapjes: zelfde look als de dossiers. Een veld dat de browser afkeurt
+          springt naar zijn eigen mapje (onInvalidCapture). */}
+      <TabContext.Provider value={tab}>
+        <FolderTabBar label="Plaatsing">
+          {(placement || personMode === "existing"
+            ? ([
+                ["werknemer", "Werknemer", <UserRound key="i" className="h-4 w-4" />],
+                ["plaatsing", "Plaatsing & tarief", <Coins key="i" className="h-4 w-4" />],
+              ] as const)
+            : ([
+                ["bestanden", "Bestanden uitlezen", <Sparkles key="i" className="h-4 w-4" />],
+                ["werknemer", "Werknemer", <UserRound key="i" className="h-4 w-4" />],
+                ["bedrijf", "Bedrijf ZZP", <Building2 key="i" className="h-4 w-4" />],
+                ["documenten", "Documenten", <FileText key="i" className="h-4 w-4" />],
+                ["plaatsing", "Plaatsing & tarief", <Coins key="i" className="h-4 w-4" />],
+              ] as const)
+          ).map(([key, label, icon]) => (
+            <FolderTab key={key} icon={icon} label={label} active={tab === key} onClick={() => setTab(key)} />
+          ))}
+        </FolderTabBar>
+
+      <div
+        className="space-y-4 pt-4"
+        onInvalidCapture={(ev) => {
+          const t = (ev.target as HTMLElement).closest("[data-tab]")?.getAttribute("data-tab") as Tab | null;
+          if (t && t !== tab) setTab(t);
+        }}
+      >
         {/* 1. Eerst de bestanden: de AI vult de rest zoveel mogelijk in. */}
         {!placement && personMode === "new" && (
-          <Sectie nr={1} titel="Bestanden uitlezen" sub="Begin hier — sleep het CV erin, de AI vult de gegevens hieronder in.">
+          <Sectie tab="bestanden" nr={1} titel="Bestanden uitlezen" sub="Begin hier — sleep het CV erin, de AI vult de gegevens hieronder in.">
             <WerknemerCvIntake />
           </Sectie>
         )}
 
-        <Sectie nr={placement ? 1 : 2} titel="Werknemer" sub={placement ? undefined : "Wie gaan we plaatsen?"}>
+        <Sectie tab="werknemer" nr={placement ? 1 : 2} titel="Werknemer" sub={placement ? undefined : "Wie gaan we plaatsen?"}>
           {placement ? (
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Werknemer" error={e.consultantId}>
@@ -997,7 +1084,7 @@ export function PlacementForm({
 
         {!placement && personMode === "new" && (
           <>
-            <Sectie nr={3} titel="Bedrijfsgegevens ZZP" sub="Voor de inkoopfactuur en de betaling — leeg laten bij loondienst.">
+            <Sectie tab="bedrijf" nr={3} titel="Bedrijfsgegevens ZZP" sub="Voor de inkoopfactuur en de betaling — leeg laten bij loondienst.">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field label="Bedrijfsnaam" htmlFor="p-companyName" error={e.companyName}>
                         <Input id="p-companyName" name="companyName" placeholder="Bijv. Balder Quality Service" />
@@ -1045,7 +1132,7 @@ export function PlacementForm({
                     </div>
             </Sectie>
 
-            <Sectie nr={4} titel="Documenten" sub="Optioneel — kan ook later in het dossier.">
+            <Sectie tab="documenten" nr={4} titel="Documenten" sub="Optioneel — kan ook later in het dossier.">
                     <div className="grid gap-3 sm:grid-cols-3">
                       <UploadCard
                         id="cvFile"
@@ -1077,7 +1164,7 @@ export function PlacementForm({
           </>
         )}
 
-        <Sectie nr={placement ? 2 : 5} titel="Plaatsing & tarief" sub="Bij welke klant, vanaf wanneer en tegen welk tarief.">
+        <Sectie tab="plaatsing" nr={placement ? 2 : 5} titel="Plaatsing & tarief" sub="Bij welke klant, vanaf wanneer en tegen welk tarief.">
           <div className="space-y-5">
             {!placement && <ClientPicker initialClients={clients} initialClientId={dv("clientId")} error={e.clientId} />}
           <Field label="Functie" htmlFor="title" required error={e.title}>
@@ -1373,7 +1460,16 @@ export function PlacementForm({
           </div>
         </Sectie>
 
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {tab !== "plaatsing" && (
+            <button
+              type="button"
+              onClick={() => setTab(placement || personMode === "existing" ? "plaatsing" : VOLGENDE[tab])}
+              className={cn(buttonVariants({ variant: "outline" }), "mr-auto")}
+            >
+              Volgende →
+            </button>
+          )}
 
           <ConfirmCancel href={cancelHref} />
           {!placement && (
@@ -1391,6 +1487,7 @@ export function PlacementForm({
 
         </div>
       </div>
+      </TabContext.Provider>
     </form>
   );
 }
