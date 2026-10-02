@@ -1,4 +1,5 @@
 import { round2 } from "./utils";
+import { isDutchHoliday } from "./holidays";
 
 // ---------------------------------------------------------------------------
 // Toeslagen (weekend/overuren) + kilometervergoeding — per placement (persoon).
@@ -27,6 +28,7 @@ export type SurchargeUnit = "PCT" | "FIXED";
 /** De zes losse toeslagsoorten, elk per plaatsing in te stellen. */
 export type SurchargeKind =
   | "weekday"
+  | "weekday2"
   | "saturday"
   | "sunday"
   | "offshore"
@@ -53,6 +55,13 @@ export type SurchargeConfig = {
   weekdaySurchargeSell?: number;
   weekdaySurchargeUnit?: string;
   weekdaySurchargeSellUnit?: string;
+  /** Meeruren-treden (zie schema): null/undefined = oud gedrag. */
+  otFromHours?: number | null;
+  ot1Hours?: number;
+  weekday2SurchargeBuy?: number;
+  weekday2SurchargeSell?: number;
+  weekday2SurchargeUnit?: string;
+  weekday2SurchargeSellUnit?: string;
   saturdaySurchargeBuy?: number;
   saturdaySurchargeSell?: number;
   saturdaySurchargeUnit?: string;
@@ -161,6 +170,65 @@ export function sundayHoursOf(entries: { date: Date; hours: number }[]): number 
   return hoursOn(entries, (g) => g === 0);
 }
 
+export type ToeslagUren = {
+  weekdayHours: number;
+  weekday2Hours: number;
+  saturdayHours: number;
+  sundayHours: number;
+  /** Tekst achter de naam op de regel, bijv. " (uur 9–10)". */
+  suffix?: Partial<Record<SurchargeKind, string>>;
+};
+
+/**
+ * Over welke uren gelden de dag-toeslagen?
+ * - Geen treden (otFromHours leeg): oud gedrag — doordeweeks = alle ma–vr-uren.
+ * - Met treden: per ma–vr-dag zijn de uren BOVEN `otFromHours` meeruren; de eerste
+ *   `ot1Hours` daarvan → trede 1 (weekday), de rest → trede 2 (weekday2). Een
+ *   feestdag op ma–vr telt als zondag (contract: "Zon/Feestdag").
+ */
+export function toeslagUren(
+  entries: { date: Date; hours: number }[],
+  p: { otFromHours?: number | null; ot1Hours?: number },
+): ToeslagUren {
+  if (p.otFromHours == null) {
+    return {
+      weekdayHours: weekdayHoursOf(entries),
+      weekday2Hours: 0,
+      saturdayHours: saturdayHoursOf(entries),
+      sundayHours: sundayHoursOf(entries),
+    };
+  }
+  const vanaf = Math.max(0, p.otFromHours);
+  const t1 = Math.max(0, p.ot1Hours ?? 2);
+  let w1 = 0;
+  let w2 = 0;
+  let za = 0;
+  let zo = 0;
+  for (const e of entries) {
+    const d = new Date(e.date);
+    const g = d.getDay();
+    if (g === 6) za += e.hours;
+    else if (g === 0 || isDutchHoliday(d)) zo += e.hours;
+    else {
+      const meer = Math.max(0, e.hours - vanaf);
+      w1 += Math.min(meer, t1);
+      w2 += Math.max(0, meer - t1);
+    }
+  }
+  const fmt = (n: number) => String(Math.round(n * 100) / 100).replace(".", ",");
+  return {
+    weekdayHours: round2(w1),
+    weekday2Hours: round2(w2),
+    saturdayHours: round2(za),
+    sundayHours: round2(zo),
+    // Taalneutraal: staat ook op de Engelse verkoopfactuur.
+    suffix: {
+      weekday: ` (h ${fmt(vanaf + 1)}–${fmt(vanaf + t1)})`,
+      weekday2: ` (h ${fmt(vanaf + t1 + 1)}+)`,
+    },
+  };
+}
+
 /** Per-hour surcharge amount, e.g. €40/u at +50% → €20/u. Rounded to cents so
  *  the invoice line (qty × unitPrice) and any preview agree to the cent. */
 export function surchargeUnit(rate: number, pct: number): number {
@@ -190,6 +258,7 @@ const GEEN_TOESLAG: SurchargeSetting = { value: 0, unit: "PCT", enabled: false }
 /** Alles uit — de nulstand voor aanroepers die (nog) geen toeslagen meegeven. */
 export const NO_SURCHARGES: SideSurcharges = {
   weekday: GEEN_TOESLAG,
+  weekday2: GEEN_TOESLAG,
   saturday: GEEN_TOESLAG,
   sunday: GEEN_TOESLAG,
   offshore: GEEN_TOESLAG,
@@ -212,6 +281,7 @@ export function sideSurcharges(p: SurchargeConfig, side: "buy" | "sell"): SideSu
     buy ? buyUnit : (sellUnit ?? buyUnit);
   return {
     weekday: setting(buy ? p.weekdaySurchargeBuy : p.weekdaySurchargeSell, unitFor(p.weekdaySurchargeUnit, p.weekdaySurchargeSellUnit), true),
+    weekday2: setting(buy ? p.weekday2SurchargeBuy : p.weekday2SurchargeSell, unitFor(p.weekday2SurchargeUnit, p.weekday2SurchargeSellUnit), true),
     saturday: setting(buy ? p.saturdaySurchargeBuy : p.saturdaySurchargeSell, unitFor(p.saturdaySurchargeUnit, p.saturdaySurchargeSellUnit), true),
     sunday: setting(buy ? p.sundaySurchargeBuy : p.sundaySurchargeSell, unitFor(p.sundaySurchargeUnit, p.sundaySurchargeSellUnit), true),
     offshore: setting(
@@ -252,6 +322,7 @@ export type SurchargeLabels = {
 
 const TOESLAG_NAMEN: Record<SurchargeKind, string> = {
   weekday: "Toeslag doordeweeks",
+  weekday2: "Toeslag doordeweeks",
   saturday: "Zaterdagtoeslag",
   sunday: "Zondagtoeslag",
   offshore: "Offshoretoeslag",
@@ -289,12 +360,15 @@ export function buildSurchargeRows(opts: {
   /** Alle reguliere (dag)uren — de basis voor offshore/ploegendienst/buitenland. */
   hours: number;
   weekdayHours: number;
+  /** Trede 2 van de meeruren (0 zonder treden). */
+  weekday2Hours?: number;
   saturdayHours: number;
   sundayHours: number;
   /** De legacy weekendtoeslag (%) van deze zijde. */
   weekendPct: number;
   settings?: SideSurcharges;
   labels?: SurchargeLabels;
+  suffix?: Partial<Record<SurchargeKind, string>>;
 }): SurchargeRow[] {
   const s = opts.settings ?? NO_SURCHARGES;
   const rows: SurchargeRow[] = [];
@@ -305,7 +379,7 @@ export function buildSurchargeRows(opts: {
     if (unitAmount <= 0) return;
     rows.push({
       type,
-      label: toeslagLabel(type, set, opts.labels?.names),
+      label: toeslagLabel(type, set, opts.labels?.names) + (opts.suffix?.[type] ?? ""),
       hours,
       unitAmount,
       amount: round2(hours * unitAmount),
@@ -313,6 +387,7 @@ export function buildSurchargeRows(opts: {
   };
 
   add("weekday", s.weekday, opts.weekdayHours);
+  add("weekday2", s.weekday2, opts.weekday2Hours ?? 0);
 
   const legacyPct = opts.weekendPct > 0 ? opts.weekendPct : 0;
   const satLegacy = s.saturday.value <= 0 && legacyPct > 0;
@@ -386,8 +461,10 @@ export function overtimeUnit(
 function computeSide(opts: {
   hours: number;
   weekdayHours: number;
+  weekday2Hours: number;
   saturdayHours: number;
   sundayHours: number;
+  suffix?: Partial<Record<SurchargeKind, string>>;
   overtimeHours: number;
   kilometers: number;
   rate: number;
@@ -405,10 +482,12 @@ function computeSide(opts: {
     rate,
     hours,
     weekdayHours: opts.weekdayHours,
+    weekday2Hours: opts.weekday2Hours,
     saturdayHours: opts.saturdayHours,
     sundayHours: opts.sundayHours,
     weekendPct: opts.weekendPct,
     settings: opts.settings,
+    suffix: opts.suffix,
   });
   const surchargeTotal = round2(surcharges.reduce((s, r) => s + r.amount, 0));
   // `weekend` blijft het za/zo-deel: legacy weekendregel of de losse za/zo-rijen.
@@ -466,11 +545,15 @@ export function computeTimesheetMoney(
   // Geld rekent in tariefeenheden: uren, of bij een dagtarief gewerkte dagen.
   const dagtarief = isDagtarief(p);
   const eenheden = tariefEenheden(t.entries, dagtarief);
+  // Treden gelden alleen per uur; bij een dagtarief is er geen "9e uur".
+  const tu = toeslagUren(eenheden, dagtarief ? {} : p);
   const dagen = {
     hours: dagtarief ? round2(eenheden.length) : hours,
-    weekdayHours: weekdayHoursOf(eenheden),
-    saturdayHours: saturdayHoursOf(eenheden),
-    sundayHours: sundayHoursOf(eenheden),
+    weekdayHours: tu.weekdayHours,
+    weekday2Hours: tu.weekday2Hours,
+    saturdayHours: tu.saturdayHours,
+    sundayHours: tu.sundayHours,
+    suffix: tu.suffix,
     overtimeHours,
     kilometers,
   };
@@ -554,6 +637,9 @@ export function buildTimesheetLines(opts: {
   kmRate: number;
   /** "DAY" = `rate` is een dagtarief: de basisregel telt gewerkte dagen. */
   rateUnit?: string | null;
+  /** Meeruren-treden van de plaatsing (zie toeslagUren). */
+  otFromHours?: number | null;
+  ot1Hours?: number;
   /** Optionele label-overrides (bijv. Engels voor de verkoopfactuur). Default NL. */
   labels?: {
     weekend?: (pct: number) => string;
@@ -599,9 +685,16 @@ export function buildTimesheetLines(opts: {
   for (const row of buildSurchargeRows({
     rate: opts.rate,
     hours,
-    weekdayHours: weekdayHoursOf(eenheden),
-    saturdayHours: saturdayHoursOf(eenheden),
-    sundayHours: sundayHoursOf(eenheden),
+    ...(() => {
+      const tu = toeslagUren(eenheden, dagtarief ? {} : opts);
+      return {
+        weekdayHours: tu.weekdayHours,
+        weekday2Hours: tu.weekday2Hours,
+        saturdayHours: tu.saturdayHours,
+        sundayHours: tu.sundayHours,
+        suffix: tu.suffix,
+      };
+    })(),
     weekendPct: opts.weekendPct,
     settings: opts.surcharges,
     labels: { weekend: opts.labels?.weekend, names: opts.labels?.names },

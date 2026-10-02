@@ -54,6 +54,8 @@ export async function createSalesInvoice(opts: {
       location: t.placement.workLocation ?? null,
       baseDescription: `${t.placement.rateUnit === "DAY" ? "Total days" : "Total hours"} ${consultantName}`,
       rateUnit: t.placement.rateUnit,
+      otFromHours: t.placement.otFromHours,
+      ot1Hours: t.placement.ot1Hours,
       entries: t.entries,
       overtimeHours: t.overtimeHours,
       kilometers: t.kilometers,
@@ -70,6 +72,7 @@ export async function createSalesInvoice(opts: {
         km: "Kilometres",
         names: {
           weekday: "Weekday surcharge",
+          weekday2: "Weekday surcharge",
           saturday: "Saturday surcharge",
           sunday: "Sunday surcharge",
           offshore: "Offshore surcharge",

@@ -244,6 +244,18 @@ model Placement {
   weekdaySurchargeSell   Float   @default(0)
   weekdaySurchargeUnit   String  @default("PCT")
   weekdaySurchargeSellUnit String @default("PCT")
+  /// Meeruren ma–vr in twee treden (zoals in het contract: "9e & 10e uur +15%,
+  /// overige uren +25%"). otFromHours = vanaf hoeveel uur per dag het meeruren
+  /// zijn (8 → vanaf het 9e uur); ot1Hours = hoeveel uur in trede 1 vallen (2 → 9e
+  /// en 10e). Trede 1 = weekday*, trede 2 = weekday2*. null = oud gedrag: de
+  /// doordeweekse toeslag geldt over ALLE ma–vr-uren. Met treden aan tellen
+  /// feestdagen (ma–vr) als zondag.
+  otFromHours            Float?
+  ot1Hours               Float   @default(2)
+  weekday2SurchargeBuy   Float   @default(0)
+  weekday2SurchargeSell  Float   @default(0)
+  weekday2SurchargeUnit  String  @default("PCT")
+  weekday2SurchargeSellUnit String @default("PCT")
   saturdaySurchargeBuy   Float   @default(0)
   saturdaySurchargeSell  Float   @default(0)
   saturdaySurchargeUnit  String  @default("PCT")

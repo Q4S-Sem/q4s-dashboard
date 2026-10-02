@@ -4,13 +4,11 @@ import { nameMatches, normalizeName } from "./name-match";
 import { canonicalWeekFromDates, weekMismatch, weekMismatchLabel } from "./week-koppeling";
 import {
   isDagtarief,
+  toeslagUren,
   computeTimesheetMoney,
   isWeekendDate,
-  saturdayHoursOf,
   sideSurcharges,
-  sundayHoursOf,
   surchargeName,
-  weekdayHoursOf,
   type SurchargeConfig,
   type SurchargeKind,
   type SurchargeType,
@@ -394,7 +392,8 @@ function periodeDektWeek(start: Date | null, end: Date | null, monday: Date): bo
 
 /** Trefwoorden waarmee we een toeslagregel op zijn eigen factuur herkennen. */
 const TOESLAG_TREFWOORD: Record<SurchargeType, RegExp> = {
-  weekday: /doordeweeks|weekday/i,
+  weekday: /doordeweeks|weekday|9e|10e|meeruren/i,
+  weekday2: /overige uren|vanaf.*uur|\(h \d+\+\)/i,
   saturday: /zaterdag|saturday|\bza\b/i,
   sunday: /zondag|sunday|\bzo\b/i,
   weekend: /weekend/i,
@@ -415,6 +414,7 @@ function factuurToeslag(
 /** De toeslagsoorten die wij kennen, in vaste volgorde (stabiele uitvoer). */
 const TOESLAG_SOORTEN: SurchargeKind[] = [
   "weekday",
+  "weekday2",
   "saturday",
   "sunday",
   "offshore",
@@ -1222,7 +1222,7 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
         !!instelling &&
         instelling.value > 0 &&
         (perDag ? instelling.enabled : true) &&
-        (perDag ? gewerkteDagen > 0 : verwachtToeslagUren(soort, entries) > 0);
+        (perDag ? gewerkteDagen > 0 : verwachtToeslagUren(soort, entries, p) > 0);
 
       if (regel && !actief) {
         toeslagFouten.push(
@@ -1239,7 +1239,7 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
       }
       if (!isNum(regel.quantity)) continue; // geen aantal uitgelezen → niets te vergelijken
       const verwachtDagen = gewerkteDagen;
-      const verwachtUren = perDag ? dagUren : verwachtToeslagUren(soort, entries);
+      const verwachtUren = perDag ? dagUren : verwachtToeslagUren(soort, entries, p);
       const klopt = perDag
         ? dichtbij(regel.quantity, verwachtDagen) || dichtbij(regel.quantity, verwachtUren)
         : dichtbij(regel.quantity, verwachtUren);
@@ -1392,10 +1392,17 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
 }
 
 /** De uren waarover een dag-gebonden toeslag (doordeweeks/za/zo) hoort te gelden. */
-function verwachtToeslagUren(soort: SurchargeKind, entries: { date: Date; hours: number }[]): number {
-  if (soort === "weekday") return weekdayHoursOf(entries);
-  if (soort === "saturday") return saturdayHoursOf(entries);
-  if (soort === "sunday") return sundayHoursOf(entries);
+function verwachtToeslagUren(
+  soort: SurchargeKind,
+  entries: { date: Date; hours: number }[],
+  p: PlacementTerms | null,
+): number {
+  // Zelfde verdeling als de factuur (meeruren-treden, feestdag = zondag).
+  const tu = toeslagUren(entries, p ?? {});
+  if (soort === "weekday") return tu.weekdayHours;
+  if (soort === "weekday2") return tu.weekday2Hours;
+  if (soort === "saturday") return tu.saturdayHours;
+  if (soort === "sunday") return tu.sundayHours;
   return 0;
 }
 

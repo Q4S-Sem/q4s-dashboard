@@ -43,6 +43,17 @@ const PlacementCoreSchema = z.object({
   weekdaySurchargeSell: z.coerce.number().min(0).default(0),
   weekdaySurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
   weekdaySurchargeSellUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
+  // Meeruren-treden. Leeg "vanaf" = oud gedrag (toeslag over alle ma–vr-uren).
+  otFromHours: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? Number(v.replace(",", ".")) : null))
+    .refine((v) => v === null || (Number.isFinite(v) && v >= 0 && v <= 24), "Meeruren vanaf: 0 t/m 24 uur"),
+  ot1Hours: z.coerce.number().min(0).max(24).default(2),
+  weekday2SurchargeBuy: z.coerce.number().min(0).default(0),
+  weekday2SurchargeSell: z.coerce.number().min(0).default(0),
+  weekday2SurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
+  weekday2SurchargeSellUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
   saturdaySurchargeBuy: z.coerce.number().min(0).default(0),
   saturdaySurchargeSell: z.coerce.number().min(0).default(0),
   saturdaySurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
@@ -134,6 +145,15 @@ function coreToData(d: z.infer<typeof PlacementCoreSchema>) {
     weekdaySurchargeSell: d.weekdaySurchargeSell,
     weekdaySurchargeUnit: d.weekdaySurchargeUnit,
     weekdaySurchargeSellUnit: d.weekdaySurchargeSellUnit,
+    otFromHours: d.otFromHours,
+    ot1Hours: d.ot1Hours,
+    // Zonder "meeruren vanaf" geen meeruren-toeslag — anders zou de oude regel
+    // (toeslag over ÁLLE ma–vr-uren) ongemerkt gaan gelden.
+    ...(d.otFromHours == null ? { weekdaySurchargeBuy: 0, weekdaySurchargeSell: 0 } : {}),
+    weekday2SurchargeBuy: d.otFromHours == null ? 0 : d.weekday2SurchargeBuy,
+    weekday2SurchargeSell: d.otFromHours == null ? 0 : d.weekday2SurchargeSell,
+    weekday2SurchargeUnit: d.weekday2SurchargeUnit,
+    weekday2SurchargeSellUnit: d.weekday2SurchargeSellUnit,
     saturdaySurchargeBuy: d.saturdaySurchargeBuy,
     saturdaySurchargeSell: d.saturdaySurchargeSell,
     saturdaySurchargeUnit: d.saturdaySurchargeUnit,

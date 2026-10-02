@@ -194,6 +194,7 @@ function ToeslagBlock({
   sellDefault,
   suffix,
   step,
+  nietDoorTekst,
 }: {
   title: string;
   hint: string;
@@ -203,15 +204,56 @@ function ToeslagBlock({
   sellDefault: number;
   suffix: string;
   step: number | string;
+  nietDoorTekst?: string;
 }) {
+  const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
   return (
     <div className="rounded-lg border border-ink-200 bg-white p-4">
-      <p className="text-sm font-semibold text-ink-800">{title}</p>
-      <p className="mt-0.5 text-xs text-ink-400">{hint}</p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold text-ink-800">{title}</p>
+          <p className="mt-0.5 text-xs text-ink-400">{hint}</p>
+        </div>
+        <Doorrekenen aan={door} onChange={setDoor} />
+      </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <ToeslagField label="Inkoop — wij betalen" name={buyName} def={buyDefault} suffix={suffix} step={step} />
-        <ToeslagField label="Verkoop — klant betaalt" name={sellName} def={sellDefault} suffix={suffix} step={step} />
+        {door ? (
+          <ToeslagField label="Verkoop — klant betaalt" name={sellName} def={sellDefault} suffix={suffix} step={step} />
+        ) : (
+          <NietDoor name={sellName} tekst={nietDoorTekst} />
+        )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Rekenen we deze toeslag door aan de klant? Uit = verkoop 0: wij betalen hem,
+ * het gaat van de marge af (en hij komt niet op de verkoopfactuur).
+ */
+function Doorrekenen({ aan, onChange }: { aan: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-ink-200 px-2.5 py-1 text-xs font-medium text-ink-700">
+      <input
+        type="checkbox"
+        checked={aan}
+        onChange={(ev) => onChange(ev.target.checked)}
+        className="h-3.5 w-3.5 rounded border-ink-300 text-brand-600"
+      />
+      Doorrekenen aan klant
+    </label>
+  );
+}
+
+function NietDoor({ name, tekst }: { name: string; tekst?: string }) {
+  return (
+    <div>
+      <input type="hidden" name={name} value={0} />
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-400">Verkoop</span>
+      <p className="rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        {tekst ?? "Niet doorberekend — wij betalen dit, het gaat van de marge af."}
+      </p>
     </div>
   );
 }
@@ -301,6 +343,7 @@ function ToeslagRow({
     sellUnitDefault === "FIXED" ? "FIXED" : "PCT",
   );
   const [aan, setAan] = useState(toggle?.defaultOn ?? true);
+  const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
   const uit = Boolean(toggle) && !aan;
   const buyName = `${prefix}SurchargeBuy`;
   const sellName = `${prefix}SurchargeSell`;
@@ -330,6 +373,7 @@ function ToeslagRow({
             {uit ? "Staat uit — vink aan om deze toeslag te laten meetellen." : hint}
           </p>
         </div>
+        {!uit && <Doorrekenen aan={door} onChange={setDoor} />}
       </div>
 
       {/* De schakelaars reizen als verborgen velden mee (per zijde). */}
@@ -359,21 +403,25 @@ function ToeslagRow({
               step={buyI.step}
             />
           </div>
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
-                Verkoop — klant betaalt
-              </span>
-              <UnitSchakelaar unit={sellUnit} onChange={setSellUnit} label={`${title} verkoop`} />
+          {door ? (
+            <div>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
+                  Verkoop — klant betaalt
+                </span>
+                <UnitSchakelaar unit={sellUnit} onChange={setSellUnit} label={`${title} verkoop`} />
+              </div>
+              <ToeslagField
+                label=""
+                name={sellName}
+                def={sellDefault}
+                suffix={sellI.suffix}
+                step={sellI.step}
+              />
             </div>
-            <ToeslagField
-              label=""
-              name={sellName}
-              def={sellDefault}
-              suffix={sellI.suffix}
-              step={sellI.step}
-            />
-          </div>
+          ) : (
+            <NietDoor name={sellName} />
+          )}
         </div>
       )}
     </div>
@@ -1161,10 +1209,10 @@ export function PlacementForm({
             </p>
           </div>
 
-            <details className="group rounded-lg border border-ink-200">
+            <details open className="group rounded-lg border border-ink-200">
               <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-ink-700 [&::-webkit-details-marker]:hidden">
                 Toeslagen, overuren &amp; kilometers
-                <span className="text-xs font-normal text-ink-400 group-open:hidden">optioneel — klik om te openen</span>
+                <span className="text-xs font-normal text-ink-400">per toeslag: wat wij betalen, en of de klant het betaalt</span>
               </summary>
               <div className="space-y-3 border-t border-ink-100 p-4">
                 <p className="text-xs text-ink-400">
@@ -1183,10 +1231,47 @@ export function PlacementForm({
                   doordeweekse toeslag). Alleen echte overuren krijgen een hoger
                   tarief — zie het Overuren-blok onderaan. We forceren de oude
                   doordeweekse toeslag daarom op 0. */}
-              <input type="hidden" name="weekdaySurchargeBuy" value={0} />
-              <input type="hidden" name="weekdaySurchargeSell" value={0} />
-              <input type="hidden" name="weekdaySurchargeUnit" value="PCT" />
-              <input type="hidden" name="weekdaySurchargeSellUnit" value="PCT" />
+              <div className="rounded-lg border border-ink-200 bg-white p-4">
+                <p className="text-sm font-semibold text-ink-800">Meeruren ma–vr</p>
+                <p className="mt-0.5 text-xs text-ink-400">
+                  Zoals in het contract: bijv. vanaf 8 uur per dag, de eerste 2 meeruren (9e &amp; 10e uur) +15%, de overige +25%.
+                  Leeg laten = geen meeruren-toeslag. Feestdagen tellen als zondag.
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <ToeslagField
+                    label="Meeruren vanaf"
+                    name="otFromHours"
+                    def={placement?.otFromHours ?? 0}
+                    suffix="uur/dag"
+                    step={0.5}
+                  />
+                  <ToeslagField
+                    label="Eerste trede"
+                    name="ot1Hours"
+                    def={placement?.ot1Hours ?? 2}
+                    suffix="uur"
+                    step={0.5}
+                  />
+                </div>
+              </div>
+              <ToeslagRow
+                title="Meeruren — eerste trede"
+                hint="Bijv. het 9e en 10e uur op een werkdag."
+                prefix="weekday"
+                buyDefault={placement?.otFromHours != null ? placement.weekdaySurchargeBuy : 0}
+                sellDefault={placement?.otFromHours != null ? placement.weekdaySurchargeSell : 0}
+                unitDefault={placement?.weekdaySurchargeUnit ?? "PCT"}
+                sellUnitDefault={placement?.weekdaySurchargeSellUnit ?? placement?.weekdaySurchargeUnit ?? "PCT"}
+              />
+              <ToeslagRow
+                title="Meeruren — overige uren"
+                hint="Alles boven de eerste trede op een werkdag."
+                prefix="weekday2"
+                buyDefault={placement?.weekday2SurchargeBuy ?? 0}
+                sellDefault={placement?.weekday2SurchargeSell ?? 0}
+                unitDefault={placement?.weekday2SurchargeUnit ?? "PCT"}
+                sellUnitDefault={placement?.weekday2SurchargeSellUnit ?? placement?.weekday2SurchargeUnit ?? "PCT"}
+              />
               <ToeslagRow
                 title="Zaterdagtoeslag"
                 hint="Geldt over de uren die op zaterdag geschreven zijn."
@@ -1197,8 +1282,8 @@ export function PlacementForm({
                 sellUnitDefault={placement?.saturdaySurchargeSellUnit ?? placement?.saturdaySurchargeUnit ?? "PCT"}
               />
               <ToeslagRow
-                title="Zondagtoeslag"
-                hint="Geldt over de uren die op zondag geschreven zijn."
+                title="Zondag- & feestdagtoeslag"
+                hint="Geldt over de uren op zondag en op feestdagen."
                 prefix="sunday"
                 buyDefault={placement?.sundaySurchargeBuy || placement?.weekendSurchargeBuy || 0}
                 sellDefault={placement?.sundaySurchargeSell || placement?.weekendSurchargeSell || 0}
@@ -1250,6 +1335,7 @@ export function PlacementForm({
                 sellDefault={placement?.overtimeChargeRate ?? 0}
                 suffix="€/u"
                 step={0.01}
+                nietDoorTekst="Klant betaalt overuren tegen het normale tarief — het verschil betalen wij uit de marge."
               />
               <ToeslagBlock
                 title="Kilometervergoeding"
