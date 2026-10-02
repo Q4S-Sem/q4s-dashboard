@@ -5,6 +5,7 @@ import { ContractVel } from "@/components/contract/ContractVel";
 import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { UrenstaatVel } from "@/components/contract/UrenstaatVel";
+import { OfferteVel, type Offerte } from "@/components/contract/OfferteVel";
 import { getCompanySettings } from "@/lib/settings";
 import { buildContractDoc } from "@/lib/contract-doc";
 import { contractLogoDataUri } from "@/lib/contract-render";
@@ -53,6 +54,36 @@ const VOORBEELD = {
   signDate: null,
 } as unknown as Contract;
 
+/** Voorbeeldofferte (zoals Q4S-Q-HOL-006). */
+const OFFERTE: Offerte = {
+  ref: "Q4S-Q-HOL-006",
+  revision: "00",
+  issueDate: "28-06-2021",
+  to: "Hollandia Infra",
+  address: "Schaardijk 23",
+  postalCode: "2921LG",
+  place: "Krimpen a/d IJssel",
+  country: "The Netherlands",
+  attn: "M. Dijkstra",
+  attnEmail: "M.Dijkstra@hollandia.biz",
+  cc: "J.Schipperen@hollandiastructures.nl",
+  tel: "+31 6 53389355",
+  subject: "Provision of QA/QC services",
+  project: "TBA",
+  yourRef: "TBA",
+  from: "Simon van Houten",
+  fromPhone: "+31 6 85 782 6818",
+  fromMobile: "+31 6 81599581",
+  salutation: "Dear Mr. Dijkstra,",
+  inspector: "Mr. R. Krowinkel",
+  location: "Krimpen a/d IJssel",
+  hourlyRate: "€ 72,50",
+  surcharges: "Shift hours +10%, overtime +10%, Saturday and Sunday +15%",
+  travel: "€ 0,40 per kilometre from Krimpen a/d IJssel",
+  availability: "Week 28",
+  duration: "Week 28 until 34, with possible extension",
+};
+
 /**
  * Instellingen → Contract-vormgeving: de twee Q4S-documenten (overeenkomst van
  * opdracht en persoonsgegevens) in de huisstijl, in NL of EN. Hetzelfde vel
@@ -64,7 +95,7 @@ export default async function ContractTemplatePage({
   searchParams: Promise<{ doc?: string; taal?: string }>;
 }) {
   const sp = await searchParams;
-  const doc = sp.doc === "persoonsgegevens" || sp.doc === "urenstaat" ? sp.doc : "overeenkomst";
+  const doc = ["persoonsgegevens", "urenstaat", "offerte"].includes(sp.doc ?? "") ? sp.doc! : "overeenkomst";
   const taal = sp.taal === "en" ? "en" : "nl";
   const url = (d: string, t: string) =>
     `/gebruikers/contract-template?doc=${d}${t === "en" ? "&taal=en" : ""}`;
@@ -78,7 +109,7 @@ export default async function ContractTemplatePage({
       <div className="no-print">
         <PageHeader
           title="Contract-vormgeving"
-          description="Zo komen de overeenkomst van opdracht, het persoonsgegevens-formulier en de urenstaat op papier. Blauw = wat per contract wordt ingevuld."
+          description="Zo komen de overeenkomst van opdracht, het persoonsgegevens-formulier en de urenstaat en de offerte op papier. Blauw = wat per contract wordt ingevuld."
         />
       </div>
 
@@ -87,6 +118,7 @@ export default async function ContractTemplatePage({
           ["overeenkomst", "Overeenkomst van opdracht"],
           ["persoonsgegevens", "Persoonsgegevens"],
           ["urenstaat", "Urenstaat"],
+          ["offerte", "Offerte"],
         ].map(([d, label]) => (
           <Link
             key={d}
@@ -111,8 +143,10 @@ export default async function ContractTemplatePage({
             <ContractVel doc={voorbeeld} logoSrc={logo} taal={taal} className="ov-schaduw" />
           ) : doc === "persoonsgegevens" ? (
             <PersoonsgegevensVel logoSrc={logo} footerLine={voorbeeld.footerLine} taal={taal} className="ov-schaduw" />
-          ) : (
+          ) : doc === "urenstaat" ? (
             <UrenstaatVel logoSrc={logo} footerLine={voorbeeld.footerLine} taal={taal} className="ov-schaduw" />
+          ) : (
+            <OfferteVel logoSrc={logo} footerLine={voorbeeld.footerLine} taal={taal} q={OFFERTE} className="ov-schaduw" />
           )}
         </div>
       </div>
