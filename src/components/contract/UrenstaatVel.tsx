@@ -2,7 +2,7 @@ import { ovCss, type Taal } from "./ContractVel";
 import { getISOWeek } from "@/lib/utils";
 
 /**
- * Q4S-Timesheet (FO-Q4S-18 rev. 2) — exact dezelfde opbouw als de Excel uit
+ * Q4S-Timesheet (FO-Q4S-18) — exact dezelfde opbouw als de Excel uit
  * scripts/make-urenstaat-xlsx.py: A4 liggend, urenrooster + overuren +
  * omschrijving per dag links, kilometers per dag rechts, akkoord onderaan.
  * Optioneel vooraf ingevuld (naam, project, PO, maandag).
@@ -110,7 +110,7 @@ export function UrenstaatVel({
             <span>Arnhemseweg 12</span>
             <span>2994LA Barendrecht</span>
             <span>www.q4s.nl</span>
-            <span>FO-Q4S-18 rev. 2</span>
+            <span>FO-Q4S-18</span>
           </div>
           <div className="ts-co2">
             <span><b>KvK</b> 69073287</span>

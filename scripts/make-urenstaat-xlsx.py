@@ -1,4 +1,4 @@
-"""Generate the Q4S timesheet Excel (FO-Q4S-18 rev. 2), NL + EN.
+"""Generate the Q4S timesheet Excel (FO-Q4S-18), NL + EN.
 
 Run: python3 scripts/make-urenstaat-xlsx.py
 Writes public/templates/urenstaat/Q4S-Timesheet-{NL,EN}.xlsx (content starts at B2).
@@ -64,7 +64,7 @@ T = {
     ),
 }
 
-COMPANY = ["Q4S B.V.", "Arnhemseweg 12", "2994LA Barendrecht", "www.q4s.nl", "FO-Q4S-18 rev. 2"]
+COMPANY = ["Q4S B.V.", "Arnhemseweg 12", "2994LA Barendrecht", "www.q4s.nl", "FO-Q4S-18"]
 COMPANY2 = [("KvK", "69073287"), ("BTW", "NL857718137B01"), ("Tel", "+31 6 85 782 6818"), ("E-mail", "admin@q4s.nl")]
 DAY_COLS = "DEFGHIJ"  # Mo..Su in the hours grid
 
