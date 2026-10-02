@@ -15,6 +15,7 @@ import { DISCIPLINES, DEAL_SOURCES, EMPLOYMENT_TYPES, labelFor, colorFor, type B
 import { Building2, Euro, Users, Star, Link2, StickyNote, Sparkles, Loader2, CheckCircle2, AlertTriangle, Clock, ListChecks } from "lucide-react";
 import { readVacatureFields, generateVacatureFields } from "./actions";
 import type { VacancyFields } from "@/lib/cv-extract";
+import { FolderTabBar, FolderTab } from "@/components/dossier-tabs";
 
 type IdName = { id: string; label: string };
 type StageOption = { id: string; label: string; color: BadgeColor };
@@ -95,6 +96,18 @@ export function DealForm({
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanDone, setScanDone] = useState(false);
 
+  // Vacature = mapjes (één formulier, verborgen mapjes worden gewoon meegestuurd).
+  const [tab, setTab] = useState(isNew ? "inlezen" : "vacature");
+  const tabs = [
+    ...(isNew ? [["inlezen", "Inlezen", <Sparkles key="i" className="h-4 w-4" />] as const] : []),
+    ["vacature", "De vacature", <Building2 key="i" className="h-4 w-4" />] as const,
+    ["planning", "Waarde & planning", <Euro key="i" className="h-4 w-4" />] as const,
+    ["functie", "De functie", <ListChecks key="i" className="h-4 w-4" />] as const,
+    ...(isNew ? [["notitie", "Notitie", <StickyNote key="i" className="h-4 w-4" />] as const] : []),
+  ];
+  /** Verberg een mapje dat niet open staat (alleen bij een vacature). */
+  const zicht = (k: string) => (isVacature && tab !== k ? "hidden" : "");
+
   // Alleen invullen wat de AI vond; bestaande waarden niet met leeg overschrijven.
   function vulIn(v: VacancyFields) {
     const fill = (val: string, setter: Dispatch<SetStateAction<string>>) => {
@@ -149,6 +162,7 @@ export function DealForm({
         return;
       }
       vulIn(res.fields);
+      setTab("vacature");
     } catch {
       setScanError("De vacature kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in.");
     } finally {
@@ -169,9 +183,22 @@ export function DealForm({
       {deal && <input type="hidden" name="id" value={deal.id} />}
       {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
 
-      <div className="space-y-6">
+      <div
+        className="space-y-6"
+        onInvalidCapture={(ev) => {
+          const t = (ev.target as HTMLElement).closest("[data-tab]")?.getAttribute("data-tab");
+          if (t && t !== tab) setTab(t);
+        }}
+      >
+        {isVacature && (
+          <FolderTabBar label="Onderdelen van de vacature">
+            {tabs.map(([key, label, icon]) => (
+              <FolderTab key={key} icon={icon} label={label} active={tab === key} onClick={() => setTab(key)} />
+            ))}
+          </FolderTabBar>
+        )}
         {isNew && (
-          <Card className="border-brand-100 bg-gradient-to-br from-brand-50/60 to-transparent">
+          <Card data-tab="inlezen" className={`${zicht("inlezen")} border-brand-100 bg-gradient-to-br from-brand-50/60 to-transparent`}>
               <CardContent className="space-y-4">
                 <div className="flex items-start gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
@@ -219,14 +246,14 @@ export function DealForm({
             </Card>
           )}
 
-          <Card>
+          <Card className={isVacature && tab === "inlezen" ? "hidden" : ""}>
             <CardContent className="space-y-6">
               {state.error && (
                 <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
               )}
 
               {/* Sectie: de vacature */}
-              <section className="space-y-4">
+              <section data-tab="vacature" className={`space-y-4 ${zicht("vacature")}`}>
                 <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                     <Building2 className="h-4 w-4" />
@@ -381,7 +408,7 @@ export function DealForm({
               </section>
 
               {/* Sectie: waarde & kwalificatie */}
-              <section className="space-y-4 border-t border-ink-100 pt-5">
+              <section data-tab="planning" className={`space-y-4 ${isVacature ? zicht("planning") : "border-t border-ink-100 pt-5"}`}>
                 <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                     <Euro className="h-4 w-4" />
@@ -432,7 +459,7 @@ export function DealForm({
 
               {/* Sectie: opdrachtdetails (alleen vacature) */}
               {isVacature && (
-                <section className="space-y-4 border-t border-ink-100 pt-5">
+                <section data-tab="planning" className={`space-y-4 border-t border-ink-100 pt-5 ${zicht("planning")}`}>
                   <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                       <Clock className="h-4 w-4" />
@@ -463,7 +490,7 @@ export function DealForm({
 
               {/* Sectie: de functie (alleen vacature) */}
               {isVacature && (
-                <section className="space-y-4 border-t border-ink-100 pt-5">
+                <section data-tab="functie" className={`space-y-4 ${zicht("functie")}`}>
                   <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                       <ListChecks className="h-4 w-4" />
@@ -487,7 +514,7 @@ export function DealForm({
                 </section>
               )}
               {!deal && (
-                <section className="space-y-4 border-t border-ink-100 pt-5">
+                <section data-tab="notitie" className={`space-y-4 ${isVacature ? zicht("notitie") : "border-t border-ink-100 pt-5"}`}>
                   <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
                       <StickyNote className="h-4 w-4" />
