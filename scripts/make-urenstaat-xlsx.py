@@ -24,6 +24,11 @@ LOGO = ROOT / "public" / "logo" / "cv" / "q4s-logo.png"
 INK, MUTED, LINE, FAINT, SOFT, BLUE = "1C1C1E", "6B6B70", "C8C8CC", "E4E4E7", "F2F2F3", "1B52C4"
 # Overuren krijgen een eigen kleur, zodat niemand ze in het normale blok zet.
 OT, OT_SOFT = "C2410C", "FFF1E6"
+# Exact de bedrijfsregels van de originele Q4S-timesheet.
+FOOTER_LINES = (
+    "Q4S B.V., Arnhemseweg 12, 2994LA, Barendrecht, the Netherlands, www.q4s.nl, email: info@q4s.nl",
+    "Tel: +31(0) 857826818, KvK:69073287, Btw: NL857718137B01, IBAN: NL96INGB0007873625",
+)
 FONT = "Arial"  # meest gebruikte zakelijke lettertype, op elke pc aanwezig
 # Volledig zwarte lijnen (ook de "dunne" rasterlijnen).
 thin = faint = dark = Side(style="thin", color=INK)
@@ -298,6 +303,15 @@ def build(lang: str) -> Path:
     ws.merge_cells(f"A{nr}:P{nr}")
     put(f"A{nr}", t["note"], size=8, color=MUTED, italic=True)
 
+    # Bedrijfsgegevens onder de timesheet (zichtbaar in het blad én op papier).
+    for i, regel_ in enumerate(FOOTER_LINES):
+        r = nr + 2 + i
+        ws.merge_cells(f"A{r}:P{r}")
+        put(f"A{r}", regel_, size=9, italic=True, align="center")
+        if i == 0:
+            box(f"A{r}:P{r}", top=dark)
+    nr += 1 + len(FOOTER_LINES)
+
     # ---------- Alle tabellen: volledig zwart raster, titels in vakken ----------
     def raster(rng):
         for row in ws[rng]:
@@ -336,9 +350,6 @@ def build(lang: str) -> Path:
     m = ws.page_margins
     m.left = m.right = m.top = 0.4
     m.bottom = 0.5
-    ws.oddFooter.center.text = "Q4S B.V. · Arnhemseweg 12, 2994LA Barendrecht · www.q4s.nl · admin@q4s.nl · KvK 69073287"
-    ws.oddFooter.center.size = 7
-    ws.oddFooter.center.color = "8A8A90"
 
     OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / f"Q4S-Timesheet-{lang.upper()}.xlsx"

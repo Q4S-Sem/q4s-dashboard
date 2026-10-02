@@ -252,18 +252,22 @@ export function UrenstaatVel({
           </div>
         </div>
         <p className="ts-note">{t.note}</p>
+        <div className="ts-footer">
+          <p>Q4S B.V., Arnhemseweg 12, 2994LA, Barendrecht, the Netherlands, www.q4s.nl, email: info@q4s.nl</p>
+          <p>Tel: +31(0) 857826818, KvK:69073287, Btw: NL857718137B01, IBAN: NL96INGB0007873625</p>
+        </div>
       </article>
     </div>
   );
 }
 
 const tsCss = `
-.ts-vel { width: 297mm; min-height: 210mm; padding: 7mm 11mm 5mm; font-family: Arial, Helvetica, sans-serif; font-size: 7.4pt; color: #1c1c1e; }
+.ts-vel { width: 297mm; min-height: 210mm; padding: 5mm 11mm 3mm; font-family: Arial, Helvetica, sans-serif; font-size: 7.4pt; color: #1c1c1e; }
 .ts-vel table { border-collapse: collapse; width: 100%; }
 .ts-grid th, .ts-grid td, .ts-desc th, .ts-desc td, .ts-km th, .ts-km td { border: 1px solid #1c1c1e !important; }
 .ts-gap td { border: 0 !important; }
 .ts-kop { display: grid; grid-template-columns: auto 34mm 44mm 1fr; gap: 6mm; align-items: start; }
-.ts-logo { height: 15mm; width: auto; }
+.ts-logo { height: 13mm; width: auto; }
 .ts-co, .ts-co2 { display: flex; flex-direction: column; gap: .6mm; color: #6b6b70; font-size: 6.8pt; }
 .ts-co b { color: #1c1c1e; }
 .ts-co2 b { display: inline-block; width: 11mm; text-align: right; margin-right: 1.5mm; color: #1c1c1e; }
@@ -272,9 +276,9 @@ const tsCss = `
 .ts-meta-r { display: grid; grid-template-columns: 20mm 1fr 20mm 1fr; align-items: stretch; border: 1px solid #1c1c1e; }
 .ts-k { background: #1c1c1e; color: #fff; font-weight: 700; text-align: right; padding: 1.2mm 2mm; font-size: 6.8pt; }
 .ts-v { border-bottom: 1px solid #1c1c1e; text-align: center; font-weight: 700; padding: 1.2mm 1mm; min-height: 4.6mm; }
-.ts-banner { margin: 3mm 0 2.5mm; padding: 1.6mm; text-align: center; font-weight: 700; background: #f2f2f3; border: 1px solid #1c1c1e; }
+.ts-banner { margin: 2mm 0 2mm; padding: 1.6mm; text-align: center; font-weight: 700; background: #f2f2f3; border: 1px solid #1c1c1e; }
 .ts-body { display: grid; grid-template-columns: 1fr 78mm; gap: 3mm; align-items: start; }
-.ts-grid th, .ts-grid td, .ts-km td, .ts-km th, .ts-desc td, .ts-desc th { height: 4mm; padding: 0 1mm; text-align: center; vertical-align: middle; }
+.ts-grid th, .ts-grid td, .ts-km td, .ts-km th, .ts-desc td, .ts-desc th { height: 3.6mm; padding: 0 1mm; text-align: center; vertical-align: middle; }
 .ts-grid td { border-bottom: 1px solid #1c1c1e; border-left: 1px solid #1c1c1e; }
 .ts-grid td:first-child { border-left: 0; }
 .ts-h { font-size: 6.6pt; font-weight: 700; color: #6b6b70; }
@@ -295,30 +299,32 @@ const tsCss = `
 .ts-bar { background: #f2f2f3; font-weight: 700; text-align: center; border: 0 !important; }
 .ts-desc { margin-top: 3mm; }
 .ts-desc th:first-child, .ts-desc td:first-child { width: 17mm; }
-.ts-desc td { height: 6.8mm; border-bottom: 1px solid #1c1c1e; padding: 0; }
+.ts-desc td { height: 5.8mm; border-bottom: 1px solid #1c1c1e; padding: 0; }
 .ts-desc td:last-child { border-left: 1px solid #1c1c1e; }
-.ts-desc td .ts-dag { height: 3.4mm; line-height: 3.4mm; }
-.ts-desc td .ts-date { height: 3.4mm; line-height: 3.4mm; text-align: center; }
+.ts-desc td .ts-dag { height: 2.9mm; line-height: 2.9mm; }
+.ts-desc td .ts-date { height: 2.9mm; line-height: 2.9mm; text-align: center; }
 .ts-km th { font-size: 6.6pt; font-weight: 700; color: #6b6b70; }
 .ts-km thead tr:first-child th { color: #fff; font-size: 7.4pt; }
 .ts-km thead tr:last-child th { border-bottom: 1px solid #1c1c1e; }
-.ts-km td { height: 3.7mm; border-bottom: 1px solid #1c1c1e; }
+.ts-km td { height: 3.3mm; border-bottom: 1px solid #1c1c1e; }
 .ts-km td:not(:first-child) { border-left: 1px solid #1c1c1e; }
 .ts-km td:first-child { width: 12mm; }
 .ts-km .ts-kmend td { border-bottom: 1px solid #1c1c1e; }
 .ts-km td.ts-dag { border-bottom: 0; }
 .ts-boxed { border: 1px solid #1c1c1e !important; font-weight: 700; }
 /* Zelfde kolommen als het rooster erboven: medewerker + klant samen = breedte urenrooster, handtekening = exact onder Kilometers (78mm). */
-.ts-sign { display: grid; grid-template-columns: 1fr 1.6fr 78mm; gap: 3mm; margin-top: 2.5mm; align-items: stretch; }
+.ts-sign { display: grid; grid-template-columns: 1fr 1.6fr 78mm; gap: 3mm; margin-top: 2mm; align-items: stretch; }
 .ts-sign .ts-dag { padding: 1mm 2mm; text-align: left; }
 .ts-sign > div { border: 1px solid #1c1c1e; display: flex; flex-direction: column; }
 .ts-line { display: grid; grid-template-columns: 24mm 1fr; border-top: 1px solid #1c1c1e; color: #6b6b70; font-size: 6.8pt; }
 .ts-line > span { padding: .9mm 1.5mm; }
 .ts-line > span + span { border-left: 1px solid #1c1c1e; min-height: 4mm; }
 .ts-line.ts-big { flex: 1; }
-.ts-line.ts-big > span { min-height: 11mm; }
-.ts-sigbox { flex: 1; min-height: 21mm; }
+.ts-line.ts-big > span { min-height: 8mm; }
+.ts-sigbox { flex: 1; min-height: 15mm; }
 .ts-note { margin-top: 1.5mm; font-size: 6.6pt; font-style: italic; color: #6b6b70; }
+.ts-footer { margin-top: 1.5mm; padding-top: 1mm; border-top: 1px solid #1c1c1e; text-align: center; font-size: 7pt; font-style: italic; line-height: 1.35; }
+.ts-footer p { margin: 0; }
 @media print { @page { size: A4 landscape; margin: 0; } .ts-vel { height: 209.5mm; } }
 .ts-vel { box-sizing: border-box; }
 `;
