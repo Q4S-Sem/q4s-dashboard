@@ -24,7 +24,7 @@ LOGO = ROOT / "public" / "logo" / "cv" / "q4s-logo.png"
 INK, MUTED, LINE, FAINT, SOFT, BLUE = "1C1C1E", "6B6B70", "C8C8CC", "E4E4E7", "F2F2F3", "1B52C4"
 # Overuren krijgen een eigen kleur, zodat niemand ze in het normale blok zet.
 OT, OT_SOFT = "C2410C", "FFF1E6"
-FONT = "Calibri"
+FONT = "Arial"  # meest gebruikte zakelijke lettertype, op elke pc aanwezig
 # Volledig zwarte lijnen (ook de "dunne" rasterlijnen).
 thin = faint = dark = Side(style="thin", color=INK)
 
@@ -71,7 +71,7 @@ def build(lang: str) -> Path:
     ws = wb.active
     ws.title = t["sheet"]
     ws.sheet_view.showGridLines = False
-    widths = {"A": 17, "B": 10, "C": 8, **{c: 7.2 for c in DAY_COLS}, "K": 8, "L": 1.5, "M": 9, "N": 17, "O": 17, "P": 11}
+    widths = {"A": 22, "B": 13, "C": 10, **{c: 9.5 for c in DAY_COLS}, "K": 10, "L": 2, "M": 11, "N": 22, "O": 22, "P": 13}
     for col, w in widths.items():
         ws.column_dimensions[col].width = w
 

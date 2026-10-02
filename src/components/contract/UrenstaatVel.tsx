@@ -258,7 +258,7 @@ export function UrenstaatVel({
 }
 
 const tsCss = `
-.ts-vel { width: 297mm; min-height: 210mm; padding: 7mm 11mm 5mm; font-family: Calibri, "Segoe UI", Arial, sans-serif; font-size: 7.4pt; color: #1c1c1e; }
+.ts-vel { width: 297mm; min-height: 210mm; padding: 7mm 11mm 5mm; font-family: Arial, Helvetica, sans-serif; font-size: 7.4pt; color: #1c1c1e; }
 .ts-vel table { border-collapse: collapse; width: 100%; }
 .ts-grid th, .ts-grid td, .ts-desc th, .ts-desc td, .ts-km th, .ts-km td { border: 1px solid #1c1c1e !important; }
 .ts-gap td { border: 0 !important; }
