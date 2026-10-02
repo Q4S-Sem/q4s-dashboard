@@ -538,7 +538,7 @@ function ClientPicker({
     <div className="space-y-0">
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <Label htmlFor="clientId" className="mb-0">
-          Klant <span className="font-normal text-ink-400">(optioneel)</span>
+          Klant <span className="font-normal text-ink-400">— wie de factuur krijgt (bij inhuur via een partij: die partij, bijv. IMG Tech)</span>
         </Label>
         <button
           type="button"
@@ -1096,6 +1096,14 @@ export function PlacementForm({
             </Field>
             <Field label="PO-nummer klant" htmlFor="poNumber" error={e.poNumber} hint="Optioneel — komt als “PO” op de verkoopfactuur.">
               <Input id="poNumber" name="poNumber" defaultValue={placement?.poNumber ?? ""} placeholder="Bijv. 4500123456" />
+            </Field>
+            <Field
+              label="Werklocatie / eindklant"
+              htmlFor="workLocation"
+              hint="Waar hij écht werkt (bijv. “LyondellBasell via KWR”). Alleen info op de factuur (kolom LOCATIE) — de factuur gaat altijd naar de Klant hierboven."
+              className="sm:col-span-2"
+            >
+              <Input id="workLocation" name="workLocation" defaultValue={placement?.workLocation ?? ""} placeholder="Bijv. LyondellBasell Moerdijk via KWR" />
             </Field>
           </div>
 
