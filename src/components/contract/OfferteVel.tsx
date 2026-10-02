@@ -1,9 +1,11 @@
 import { VelKop, VelVoet, ovCss, type Taal } from "./ContractVel";
 
 /**
- * Q4S-offerte (Quotation) — één A4 in dezelfde huisstijl als de contracten.
- * Opbouw en tekst volgen de bestaande Q4S-offerte (Q4S-Q-HOL-006). Alle
- * variabele velden komen uit `q`; leeg = invullijn.
+ * Q4S-offerte (Quotation) — exact dezelfde opbouw als de Overeenkomst van
+ * opdracht en het Persoonsgegevens-formulier: kop met logo, grote titel,
+ * secties met een kop + doorlopende rijen (label | waarde), ondertekenblok en
+ * paginavoet. Tekst volgt de bestaande Q4S-offerte (Q4S-Q-HOL-006). Alle
+ * variabele velden komen uit `q`; leeg = invulregel.
  */
 
 export type Offerte = {
@@ -38,7 +40,9 @@ export type Offerte = {
   validDays?: number;
 };
 
-const F = ({ v }: { v?: string | number | null }) => (v || v === 0 ? <span className="ov-fill">{v}</span> : null);
+function F({ v }: { v?: string | number | null }) {
+  return v || v === 0 ? <span className="ov-fill">{v}</span> : null;
+}
 
 export function OfferteVel({
   logoSrc,
@@ -58,11 +62,14 @@ export function OfferteVel({
   const titel = t("Offerte", "Quotation");
   const pay = q.paymentDays ?? 30;
   const valid = q.validDays ?? 14;
+  const kop = <VelKop logoSrc={logoSrc} titel={titel} sub={q.ref ? `Ref. ${q.ref}` : null} />;
+  const samen = (...d: (string | undefined)[]) => d.filter(Boolean).join(" · ");
 
-  const kv = (rows: [string, React.ReactNode][]) => (
-    <table className="ov-grid qo-kv">
+  // Zelfde rijen-tabel als het Persoonsgegevens-formulier.
+  const tabel = (rijen: [string, React.ReactNode][]) => (
+    <table className="pg-tab">
       <tbody>
-        {rows.map(([k, v]) => (
+        {rijen.map(([k, v]) => (
           <tr key={k}>
             <td>{k}</td>
             <td>{v}</td>
@@ -74,57 +81,13 @@ export function OfferteVel({
 
   return (
     <div className={className}>
-      <style>{ovCss() + qoCss}</style>
-      <article className="ov-vel qo-vel" data-ov-sheet>
-        <VelKop logoSrc={logoSrc} titel={titel} sub={q.ref ? `Ref. ${q.ref}` : null} />
+      <style>{ovCss()}</style>
+
+      <article className="ov-vel" data-ov-sheet>
+        {kop}
         <h1 className="ov-title">{titel}</h1>
-
-        <div className="ov-parties" style={{ marginTop: "5mm" }}>
-          <div>
-            <div className="ov-party-t">{t("Aan", "To")}</div>
-            {kv([
-              [t("Bedrijf", "Company"), <F key="a" v={q.to} />],
-              [t("Adres", "Address"), <F key="b" v={q.address} />],
-              [t("Postcode / plaats", "Postal code / place"), <F key="c" v={[q.postalCode, q.place].filter(Boolean).join(" ")} />],
-              [t("Land", "Country"), <F key="d" v={q.country} />],
-              [t("T.a.v.", "Attn"), <F key="e" v={[q.attn, q.attnEmail].filter(Boolean).join(" · ")} />],
-              ["CC", <F key="f" v={q.cc} />],
-              [t("Tel.", "Tel"), <F key="g" v={q.tel} />],
-            ])}
-          </div>
-          <div>
-            <div className="ov-party-t">{t("Van", "From")}</div>
-            {kv([
-              [t("Naam", "Name"), <F key="a" v={q.from} />],
-              [t("Telefoon", "Phone"), <F key="b" v={q.fromPhone} />],
-              [t("Mobiel", "Mobile"), <F key="c" v={q.fromMobile} />],
-              ["E-mail", <F key="d" v={q.fromEmail ?? "info@q4s.nl"} />],
-              [t("Onze ref.", "Our ref."), <F key="e" v={q.ref} />],
-              [t("Datum", "Issue date"), <F key="f" v={q.issueDate} />],
-              [t("Revisie", "Revision"), <F key="g" v={q.revision ?? "00"} />],
-            ])}
-          </div>
-        </div>
-
-        <div className="qo-subj">
-          <div>
-            <span className="qo-lbl">{t("Onderwerp", "Subject")}</span>
-            <F v={q.subject} />
-          </div>
-          <div>
-            <span className="qo-lbl">{t("Project", "Project")}</span>
-            <F v={q.project} />
-          </div>
-          <div>
-            <span className="qo-lbl">{t("Uw ref.", "Your ref.")}</span>
-            <F v={q.yourRef} />
-          </div>
-        </div>
-
-        <p className="qo-p" style={{ marginTop: "4mm" }}>
-          <F v={q.salutation ?? t("Geachte heer/mevrouw,", "Dear Sir/Madam,")} />
-        </p>
-        <p className="qo-p">
+        <p className="pg-intro">
+          <F v={q.salutation ?? t("Geachte heer/mevrouw,", "Dear Sir/Madam,")} />{" "}
           {t(
             "Zoals besproken, hierbij onze offerte voor het leveren van QA/QC-diensten door onze inspecteur",
             "As discussed, herewith our quotation for the provision of QA/QC services by our inspector",
@@ -132,9 +95,38 @@ export function OfferteVel({
           <F v={q.inspector} />.
         </p>
 
+        <p className="ov-hd">{t("Klantgegevens", "Client details")}</p>
+        {tabel([
+          [t("Bedrijf", "Company"), <F key="a" v={q.to} />],
+          [t("Adres", "Address"), <F key="b" v={q.address} />],
+          [t("Postcode / plaats", "Postal code / place"), <F key="c" v={samen(q.postalCode, q.place)} />],
+          [t("Land", "Country"), <F key="d" v={q.country} />],
+          [t("T.a.v.", "Attn"), <F key="e" v={samen(q.attn, q.attnEmail)} />],
+          ["CC", <F key="f" v={q.cc} />],
+          [t("Telefoon", "Phone"), <F key="g" v={q.tel} />],
+        ])}
+
+        <p className="ov-hd">{t("Offertegegevens", "Quotation details")}</p>
+        {tabel([
+          [t("Onderwerp", "Subject"), <F key="a" v={q.subject} />],
+          [t("Project", "Project"), <F key="b" v={q.project} />],
+          [t("Uw referentie", "Your reference"), <F key="c" v={q.yourRef} />],
+          [t("Onze referentie", "Our reference"), <F key="d" v={q.ref} />],
+          [t("Datum", "Issue date"), <F key="e" v={q.issueDate} />],
+          [t("Revisie", "Revision"), <F key="f" v={q.revision ?? "00"} />],
+          [t("Contactpersoon Q4S", "Q4S contact"), <F key="g" v={q.from} />],
+          [t("Telefoon / mobiel", "Phone / mobile"), <F key="h" v={samen(q.fromPhone, q.fromMobile)} />],
+          ["E-mail", <F key="i" v={q.fromEmail ?? "info@q4s.nl"} />],
+        ])}
+        <VelVoet regel={footerLine} page={1} total={2} taal={taal} />
+      </article>
+
+      <article className="ov-vel" data-ov-sheet>
+        {kop}
         <p className="ov-hd">{t("Tarieven en voorwaarden", "Rates and conditions")}</p>
-        {kv([
-          [t("Uurtarief", "Hourly rate"), <><F key="r" v={q.hourlyRate} />{q.location ? <> — {t("op uw locatie te", "on your location at")} <F v={q.location} /></> : null}</>],
+        {tabel([
+          [t("Uurtarief", "Hourly rate"), <F key="r" v={q.hourlyRate} />],
+          [t("Werklocatie", "Work location"), <F key="l" v={q.location} />],
           [t("Toeslagen", "Surcharges"), <F key="s" v={q.surcharges} />],
           [t("Zakelijke reiskosten", "Business travel"), <F key="t" v={q.travel} />],
           [t("Eerst beschikbaar", "Earliest availability"), <F key="a" v={q.availability} />],
@@ -142,75 +134,52 @@ export function OfferteVel({
         ])}
 
         <p className="ov-hd">{t("Opmerkingen", "Notes")}</p>
-        <ol className="ov-bij">
-          <li>{t("Prijzen zijn exclusief BTW, in euro's.", "Prices are quoted excl. VAT in euros.")}</li>
-          <li>{t("Urenstaten worden afgestemd, ondertekend en bij de facturen gevoegd.", "Timesheets to be agreed, signed and attached to invoices.")}</li>
-          <li>{t(`Betaling binnen ${pay} dagen na factuurdatum.`, `Payment within ${pay} days of invoice.`)}</li>
-          <li>
-            {t("Bedrijfsinformatie en certificering:", "Company info and certification:")} q4s.nl/downloads
-          </li>
-        </ol>
-
-        <p className="qo-p" style={{ marginTop: "3mm" }}>
+        <div className="pg-notes">
+          <p>1. {t("Prijzen zijn exclusief BTW, in euro's.", "Prices are quoted excl. VAT in euros.")}</p>
+          <p>2. {t("Urenstaten worden afgestemd, ondertekend en bij de facturen gevoegd.", "Timesheets to be agreed, signed and attached to invoices.")}</p>
+          <p>3. {t(`Betaling binnen ${pay} dagen na factuurdatum.`, `Payment within ${pay} days of invoice.`)}</p>
+          <p>4. {t("Bedrijfsinformatie en certificering:", "Company info and certification:")} q4s.nl/downloads</p>
+          <p>
+            5.{" "}
+            {t(
+              `Deze offerte is ${valid} dagen geldig en mag niet worden gekopieerd of aan derden verstrekt.`,
+              `This quotation is valid for ${valid} days, and may not be copied or released to others.`,
+            )}
+          </p>
+        </div>
+        <p className="pg-intro">
           {t(
             "Wij hopen u hiermee een passende aanbieding te hebben gedaan. Heeft u vragen, neem dan gerust contact met ons op.",
             "Hoping to have made you a suitable offer, if any questions occur, please don’t hesitate to contact us.",
-          )}
-        </p>
-        <p className="qo-p">
-          {t("Met vriendelijke groet,", "Kind regards,")}
-          <br />
-          <F v={q.from} />
-          <br />
-          Q4S B.V.
+          )}{" "}
+          {t("Met vriendelijke groet,", "Kind regards,")} <F v={q.from} /> — Q4S B.V.
         </p>
 
-        <div className="qo-accept">
-          <div className="qo-accept-h">
-            <span>{t("Akkoord", "Acceptance")}</span>
-            {t(
-              "Retourneer bij akkoord een ondertekend exemplaar inclusief PO-nummer naar info@q4s.nl.",
-              "On acceptance of the offer, please return a signed copy including a PO number to info@q4s.nl.",
-            )}
+        <p className="ov-hd">{t("Akkoord", "Acceptance")}</p>
+        <p className="pg-intro" style={{ marginTop: 0 }}>
+          {t(
+            "Retourneer bij akkoord een ondertekend exemplaar inclusief PO-nummer naar info@q4s.nl.",
+            "On acceptance of the offer, please return a signed copy including a PO number to info@q4s.nl.",
+          )}
+        </p>
+        <div className="ov-sign">
+          <div className="ov-sb">
+            <div className="ov-sr"><span>{t("Voor", "For")}</span><span>Q4S B.V.</span></div>
+            <div className="ov-sr"><span>{t("Naam", "Name")}</span><F v={q.from} /></div>
+            <div className="ov-sr"><span>{t("Datum", "Date")}</span><F v={q.issueDate} /></div>
+            <div className="ov-sr"><span>{t("Handtekening", "Signature")}</span></div>
+            <div className="ov-sl" />
           </div>
-          <div className="qo-accept-g">
-            {[t("Naam", "Name"), t("Functie", "Position"), t("Datum", "Date"), t("PO-nummer", "Purchase order no.")].map((l) => (
-              <div key={l} className="ov-sr">
-                <span>{l}</span>
-              </div>
-            ))}
-            <div className="ov-sr qo-sig">
-              <span>{t("Handtekening", "Signature")}</span>
-            </div>
+          <div className="ov-sb">
+            <div className="ov-sr"><span>{t("Voor", "For")}</span><F v={q.to} /></div>
+            <div className="ov-sr"><span>{t("Naam / functie", "Name / position")}</span></div>
+            <div className="ov-sr"><span>{t("Datum / PO-nr.", "Date / PO no.")}</span></div>
+            <div className="ov-sr"><span>{t("Handtekening", "Signature")}</span></div>
+            <div className="ov-sl" />
           </div>
         </div>
-
-        <p className="qo-valid">
-          {t(
-            `Deze offerte is ${valid} dagen geldig en mag niet worden gekopieerd of aan derden verstrekt.`,
-            `This quotation is valid for ${valid} days, and may not be copied or released to others.`,
-          )}
-        </p>
-        <VelVoet regel={footerLine} page={1} total={1} taal={taal} />
+        <VelVoet regel={footerLine} page={2} total={2} taal={taal} />
       </article>
     </div>
   );
 }
-
-const qoCss = `
-.qo-kv td:first-child { width: 38mm; }
-.ov-parties .qo-kv td:first-child { width: 30mm; }
-.qo-subj { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6mm; margin-top: 4mm; padding: 2mm 0; border-top: 1px solid #1c1c1e; border-bottom: 1px solid #d9d9db; }
-.qo-subj .qo-lbl { display: block; font-size: 6.6pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #6b6b70; margin-bottom: .5mm; }
-.qo-subj > div { min-height: 7mm; }
-.qo-p { margin: 1.5mm 0; }
-.qo-vel .ov-grid td { padding: 1mm 0; }
-.qo-vel .ov-hd { margin: 4.5mm 0 1.5mm; }
-.qo-vel .ov-bij li { margin: .3mm 0; }
-.qo-accept { margin-top: 4mm; border: 1px solid #d9d9db; border-radius: 1.5mm; padding: 3mm 4mm; break-inside: avoid; }
-.qo-accept-h { color: #33333a; margin-bottom: 1.5mm; }
-.qo-accept-h span { display: block; font-weight: 700; color: #1c1c1e; font-size: 9pt; margin-bottom: .5mm; }
-.qo-accept-g { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8mm; }
-.qo-sig { grid-column: 1 / -1; height: 10mm; align-items: start; }
-.qo-valid { margin-top: 3mm; font-size: 7pt; font-style: italic; color: #6b6b70; }
-`;
