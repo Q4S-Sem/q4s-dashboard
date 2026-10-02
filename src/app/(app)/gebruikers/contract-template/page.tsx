@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ContractVel } from "@/components/contract/ContractVel";
 import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
+import { UrenstaatVel } from "@/components/contract/UrenstaatVel";
 import { getCompanySettings } from "@/lib/settings";
 import { buildContractDoc } from "@/lib/contract-doc";
 import { contractLogoDataUri } from "@/lib/contract-render";
@@ -63,7 +64,7 @@ export default async function ContractTemplatePage({
   searchParams: Promise<{ doc?: string; taal?: string }>;
 }) {
   const sp = await searchParams;
-  const doc = sp.doc === "persoonsgegevens" ? "persoonsgegevens" : "overeenkomst";
+  const doc = sp.doc === "persoonsgegevens" || sp.doc === "urenstaat" ? sp.doc : "overeenkomst";
   const taal = sp.taal === "en" ? "en" : "nl";
   const url = (d: string, t: string) =>
     `/gebruikers/contract-template?doc=${d}${t === "en" ? "&taal=en" : ""}`;
@@ -77,7 +78,7 @@ export default async function ContractTemplatePage({
       <div className="no-print">
         <PageHeader
           title="Contract-vormgeving"
-          description="Zo komen de overeenkomst van opdracht en het persoonsgegevens-formulier op papier. Blauw = wat per contract wordt ingevuld."
+          description="Zo komen de overeenkomst van opdracht, het persoonsgegevens-formulier en de urenstaat op papier. Blauw = wat per contract wordt ingevuld."
         />
       </div>
 
@@ -85,6 +86,7 @@ export default async function ContractTemplatePage({
         {[
           ["overeenkomst", "Overeenkomst van opdracht"],
           ["persoonsgegevens", "Persoonsgegevens"],
+          ["urenstaat", "Urenstaat"],
         ].map(([d, label]) => (
           <Link
             key={d}
@@ -107,8 +109,10 @@ export default async function ContractTemplatePage({
         <div className="flex justify-center overflow-x-auto pb-10">
           {doc === "overeenkomst" ? (
             <ContractVel doc={voorbeeld} logoSrc={logo} taal={taal} className="ov-schaduw" />
-          ) : (
+          ) : doc === "persoonsgegevens" ? (
             <PersoonsgegevensVel logoSrc={logo} footerLine={voorbeeld.footerLine} taal={taal} className="ov-schaduw" />
+          ) : (
+            <UrenstaatVel logoSrc={logo} footerLine={voorbeeld.footerLine} taal={taal} className="ov-schaduw" />
           )}
         </div>
       </div>
