@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { ontbrekendVoorActief } from "./ontbrekende-gegevens";
 import { getCompanySettings } from "./settings";
 import { summarizeRecentWeeks } from "./timesheet-gate-history";
 import { computeTimesheetMoney } from "./toeslag";
@@ -15,6 +16,7 @@ import {
   type Check,
   type ComparisonRow,
   type FacturatieCheckInput,
+  type FacturatieCheckResult,
   type InvoiceExtraction,
   type PlacementTerms,
   type TimesheetExtraction,
@@ -186,7 +188,9 @@ type PlacementRow = Awaited<ReturnType<typeof ladenPlaatsingen>>[number];
 function ladenPlaatsingen(monday: Date, sunday: Date) {
   return db.placement.findMany({
     where: {
-      status: "ACTIVE",
+      // Ook "nog niet actief": die staan erin met een rode melding wat er
+      // ontbreekt, zodat een binnengekomen urenstaat niet onzichtbaar wordt.
+      status: { in: ["ACTIVE", "INCOMPLETE"] },
       startDate: { lte: sunday },
       OR: [{ endDate: null }, { endDate: { gte: monday } }],
     },
@@ -199,6 +203,32 @@ function ladenPlaatsingen(monday: Date, sunday: Date) {
 }
 
 /** De contractvoorwaarden van een plaatsing, in de vorm die de machine wil. */
+/**
+ * De controle-machine + de harde regel "alleen een complete plaatsing gaat door
+ * de facturatie": ontbreekt er iets (werknemer, klant, tarieven), dan is het een
+ * fout die NIET weg te accepteren is — eerst aanvullen bij de plaatsing.
+ */
+function beoordeelMetPlaatsing(input: FacturatieCheckInput, p: PlacementRow | null): FacturatieCheckResult {
+  const result = evaluateFacturatieWeek(input);
+  if (!p) return result;
+  const ontbreekt = ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant);
+  if (ontbreekt.length === 0) return result;
+  return {
+    ...result,
+    status: result.status === "NIET_INGELEVERD" ? result.status : "FOUT",
+    checks: [
+      {
+        id: "contract-compleet",
+        group: "contract",
+        level: "error",
+        title: "Plaatsing nog niet compleet",
+        detail: `Nog niet ingevuld bij de plaatsing: ${ontbreekt.join(", ")}. Vul dit eerst aan — pas dan kan de week gefactureerd worden.`,
+      },
+      ...result.checks,
+    ],
+  };
+}
+
 function termsVan(p: PlacementRow): PlacementTerms {
   return {
     ...p,
@@ -811,7 +841,7 @@ async function beoordeelRij(args: {
     geaccepteerd: args.geaccepteerd,
   });
 
-  const result = evaluateFacturatieWeek(input);
+  const result = beoordeelMetPlaatsing(input, p);
   const isZZP = (consultant.employmentType ?? "").toUpperCase() === "ZZP";
   const uren = input.timesheet
     ? round2(
@@ -1119,7 +1149,7 @@ export async function getWeekDossier(
     consultantId: p.consultantId,
     geaccepteerd: Boolean(accepteerNotitie),
   });
-  const result = evaluateFacturatieWeek(input);
+  const result = beoordeelMetPlaatsing(input, p);
 
   // De dagvelden: een al vastgelegde urenstaat wint, dan de handmatige correctie,
   // dan de AI-uitlezing — exact dezelfde rangorde als de controle-machine ziet.
@@ -1143,9 +1173,12 @@ export async function getWeekDossier(
   const factuurRaw = leesJson(factuur?.extractedJson ?? null);
 
   const fouten = result.checks.filter((c) => c.level === "error");
+  const onvolledig = result.checks.find((c) => c.id === "contract-compleet");
   const akkoordGeblokkeerd =
     row.gefactureerd && row.verkoopFactuurNummer
       ? `Deze week staat al op verkoopfactuur ${row.verkoopFactuurNummer} — er wordt niets dubbel gefactureerd.`
+      : onvolledig
+        ? onvolledig.detail
       : fouten.length > 0 && !accepteerNotitie
         ? `Er ${fouten.length === 1 ? "is 1 fout" : `zijn ${fouten.length} fouten`} die eerst opgelost of bewust geaccepteerd moet${fouten.length === 1 ? "" : "en"} worden.`
         : !input.timesheet

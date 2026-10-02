@@ -41,3 +41,19 @@ export function ontbrekendeGegevens(c: WerknemerGegevens): string[] {
   ];
   return checks.filter(([, v]) => leeg(v)).map(([k]) => k);
 }
+
+/**
+ * Wat ontbreekt er nog voordat een plaatsing ACTIEF mag (en door de facturatie
+ * mag)? De werknemergegevens hierboven + een klant om te factureren + beide
+ * tarieven. Leeg = compleet.
+ */
+export function ontbrekendVoorActief(
+  p: { heeftKlant: boolean; costRate?: number | null; chargeRate?: number | null },
+  c: WerknemerGegevens,
+): string[] {
+  const plaatsing: string[] = [];
+  if (!p.heeftKlant) plaatsing.push("Klant");
+  if (!(Number(p.costRate) > 0)) plaatsing.push("Inkooptarief");
+  if (!(Number(p.chargeRate) > 0)) plaatsing.push("Verkooptarief");
+  return [...plaatsing, ...ontbrekendeGegevens(c)];
+}

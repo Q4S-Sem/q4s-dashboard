@@ -8,6 +8,7 @@ import { parseForm, type FormState } from "@/lib/form";
 import { saveUpload, deleteUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
 import { readCertificateFile } from "@/lib/cert-extract";
 import { workdaysExcludingHolidays } from "@/lib/holidays";
+import { syncPlaatsingStatus } from "@/lib/plaatsing-status";
 import {
   EMPLOYEE_DEPARTMENT_VALUES,
   EMPLOYEE_EMPLOYMENT_VALUES,
@@ -208,6 +209,7 @@ export async function detachEmployee(formData: FormData) {
     },
   });
 
+  await syncPlaatsingStatus({ id: placement.id });
   revalidatePath(`/medewerkers/${employeeId}`, "layout");
   revalidatePath("/plaatsingen");
   revalidatePath("/werknemers");

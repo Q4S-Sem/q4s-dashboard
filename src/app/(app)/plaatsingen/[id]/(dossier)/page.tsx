@@ -9,7 +9,7 @@ import { formatDate } from "@/lib/utils";
 import { BillingForm } from "../../BillingForm";
 import { updatePlacementBilling } from "../../actions";
 import { getPlacement } from "./data";
-import { ontbrekendeGegevens } from "@/lib/ontbrekende-gegevens";
+import { ontbrekendVoorActief } from "@/lib/ontbrekende-gegevens";
 
 /** Eén label-waarde-regel in de gegevenskaart. */
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
@@ -43,7 +43,7 @@ export default async function PlaatsingGegevensPage({
   // formulier open via ?edit=billing, opslaan/annuleren brengt je terug.
   const c = placement.consultant;
   const editingBilling = edit === "billing";
-  const ontbreekt = ontbrekendeGegevens(c);
+  const ontbreekt = ontbrekendVoorActief({ heeftKlant: Boolean(placement.clientId), ...placement }, c);
   const billingEmpty = !(
     c.companyName || c.kvkNumber || c.vatNumber || c.iban || c.email || c.phone || c.address || c.city
   );
@@ -63,7 +63,9 @@ export default async function PlaatsingGegevensPage({
       {ontbreekt.length > 0 && !editingBilling && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
           <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
-          <span className="font-medium">Nog niet ingevuld:</span>
+          <span className="font-medium">
+            {placement.status !== "ENDED" ? "Nog niet actief — eerst invullen:" : "Nog niet ingevuld:"}
+          </span>
           <span className="flex flex-wrap gap-1.5">
             {ontbreekt.map((k) => (
               <span key={k} className="rounded-sm bg-white px-1.5 py-0.5 text-xs font-medium ring-1 ring-amber-200">
@@ -72,7 +74,11 @@ export default async function PlaatsingGegevensPage({
             ))}
           </span>
           <Link
-            href={`/plaatsingen/${placement.id}?edit=billing`}
+            href={
+              ontbreekt.some((k) => ["Klant", "Inkooptarief", "Verkooptarief"].includes(k))
+                ? `/plaatsingen/${placement.id}/bewerken`
+                : `/plaatsingen/${placement.id}?edit=billing`
+            }
             className="ml-auto text-xs font-semibold text-amber-800 underline-offset-2 hover:underline"
           >
             Aanvullen →

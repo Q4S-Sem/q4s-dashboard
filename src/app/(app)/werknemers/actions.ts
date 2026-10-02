@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { parseForm, type FormState } from "@/lib/form";
 import { DISCIPLINE_VALUES, EMPLOYMENT_VALUES } from "@/lib/domain";
 import { saveUpload, deleteUpload } from "@/lib/uploads";
+import { syncPlaatsingStatus } from "@/lib/plaatsing-status";
 
 const ConsultantSchema = z.object({
   firstName: z.string().min(1, "Voornaam is verplicht"),
@@ -97,6 +98,8 @@ export async function updateConsultant(
 
   const active = formData.get("active") === "on";
   await db.consultant.update({ where: { id }, data: toData(parsed.data, active) });
+  await syncPlaatsingStatus({ consultantId: id });
+  revalidatePath("/plaatsingen");
   revalidatePath("/werknemers");
   revalidatePath(`/werknemers/${id}`);
   redirect(`/werknemers/${id}`);

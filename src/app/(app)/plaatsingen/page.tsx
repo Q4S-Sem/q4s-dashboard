@@ -9,7 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { PlaatsingenList } from "./PlaatsingenList";
-import { ontbrekendeGegevens } from "@/lib/ontbrekende-gegevens";
+import { ontbrekendVoorActief } from "@/lib/ontbrekende-gegevens";
 import { deletePlacementDraft } from "./actions";
 
 export const metadata = { title: "Plaatsingen" };
@@ -38,7 +38,9 @@ export default async function PlaatsingenPage({
     : await db.placementDraft.findMany({ orderBy: { updatedAt: "desc" } });
 
   const mensen = new Set(placements.map((p) => p.consultantId)).size;
-  const actief = placements.filter((p) => p.status === "ACTIVE").length;
+  const actief = placements.filter(
+    (p) => p.status === "ACTIVE" && ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant).length === 0,
+  ).length;
   const avgMarge =
     placements.length > 0
       ? round2(
@@ -168,8 +170,12 @@ export default async function PlaatsingenPage({
             rateUnit: p.rateUnit,
             overtimeCostRate: p.overtimeCostRate,
             overtimeChargeRate: p.overtimeChargeRate,
-            status: p.status,
-            ontbreekt: ontbrekendeGegevens(p.consultant),
+            ...((ontbreekt) => ({
+              // Oude "Actief"-plaatsingen met gaten tonen we eerlijk als "Nog niet actief"
+              // (de facturatie blokkeert ze toch); de DB-status wordt bij Opslaan bijgewerkt.
+              status: p.status === "ACTIVE" && ontbreekt.length > 0 ? "INCOMPLETE" : p.status,
+              ontbreekt,
+            }))(ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant)),
           }))}
         />
       )}

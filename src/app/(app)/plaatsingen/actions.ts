@@ -13,6 +13,7 @@ import {
 } from "@/lib/domain";
 import { saveUpload, deleteUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
 import { extractDocumentMeta, CvExtractError } from "@/lib/cv-extract";
+import { syncPlaatsingStatus } from "@/lib/plaatsing-status";
 
 // Placement fields WITHOUT the consultant link (resolved separately so a new
 // placement can either pick an existing person or create one inline).
@@ -220,6 +221,7 @@ export async function createPlacement(
     const created = await db.placement.create({
       data: { consultantId, ...coreToData(core.data) },
     });
+    await syncPlaatsingStatus({ id: created.id });
     if (draftId) await db.placementDraft.delete({ where: { id: draftId } }).catch(() => {});
     revalidatePath("/plaatsingen");
     redirect(`/plaatsingen/${created.id}`);
@@ -300,6 +302,7 @@ export async function createPlacement(
     }
   }
 
+  await syncPlaatsingStatus({ id: result.placementId });
   if (draftId) await db.placementDraft.delete({ where: { id: draftId } }).catch(() => {});
   revalidatePath("/plaatsingen");
   revalidatePath("/werknemers");
@@ -380,6 +383,7 @@ export async function updatePlacement(
     where: { id },
     data: { consultantId: parsed.data.consultantId, ...coreToData(parsed.data) },
   });
+  await syncPlaatsingStatus({ id });
   revalidatePath("/plaatsingen");
   revalidatePath(`/plaatsingen/${id}`);
   redirect(`/plaatsingen/${id}`);
@@ -401,7 +405,9 @@ export async function archivePlacement(formData: FormData) {
     where: { id },
     data: { status: "ARCHIVED", endDate: p.endDate ?? today },
   });
-  const nogActief = await db.placement.count({ where: { consultantId: p.consultantId, status: "ACTIVE" } });
+  const nogActief = await db.placement.count({
+    where: { consultantId: p.consultantId, status: { in: ["ACTIVE", "INCOMPLETE"] } },
+  });
   if (nogActief === 0) await db.consultant.update({ where: { id: p.consultantId }, data: { active: false } });
   revalidatePath("/plaatsingen");
   revalidatePath("/archief");
@@ -420,6 +426,7 @@ export async function restorePlacement(formData: FormData) {
     data: { status: "ACTIVE", endDate: null },
     select: { consultantId: true },
   });
+  await syncPlaatsingStatus({ id });
   await db.consultant.update({ where: { id: p.consultantId }, data: { active: true } });
   revalidatePath("/plaatsingen");
   revalidatePath("/archief");
@@ -490,6 +497,8 @@ export async function updatePlacementBilling(
     };
   }
 
+  await syncPlaatsingStatus({ consultantId: d.consultantId });
+  revalidatePath("/plaatsingen");
   revalidatePath(`/plaatsingen/${placementId}`);
   revalidatePath(`/werknemers/${d.consultantId}`);
   redirect(`/plaatsingen/${placementId}?saved=billing`);

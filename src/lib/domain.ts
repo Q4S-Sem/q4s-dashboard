@@ -38,6 +38,9 @@ export const EMPLOYMENT_TYPES: Option[] = [
 
 export const PLACEMENT_STATUSES: Option[] = [
   { value: "ACTIVE", label: "Actief", color: "green" },
+  // Nog niet alle gegevens (werknemer, klant, tarieven): niet in de facturatie.
+  // Wordt vanzelf gezet als je "Actief" kiest terwijl er nog iets ontbreekt.
+  { value: "INCOMPLETE", label: "Nog niet actief", color: "amber" },
   { value: "ENDED", label: "Beëindigd", color: "red" },
   // Persoon werkt niet meer voor ons: uit de lijst, in het archief, met één klik
   // terug te zetten (alle tarieven/gegevens blijven op de plaatsing staan).

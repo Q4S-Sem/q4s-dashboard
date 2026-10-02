@@ -1274,7 +1274,13 @@ export function PlacementForm({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-[14rem_1fr]">
-            <Field label="Status" htmlFor="status" required error={e.status}>
+            <Field
+              label="Status"
+              htmlFor="status"
+              required
+              error={e.status}
+              hint="Actief = gaat door de facturatie. Ontbreken er nog gegevens (werknemer, klant, tarieven), dan wordt het vanzelf “Nog niet actief”."
+            >
               <Select
                 id="status"
                 name="status"

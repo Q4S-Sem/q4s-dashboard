@@ -14,6 +14,7 @@ import {
 import { akkoordWeken } from "@/lib/facturatie-akkoord";
 import { resolveWeek } from "@/lib/facturatie-week";
 import { nameMatches } from "@/lib/name-match";
+import { syncPlaatsingStatus } from "@/lib/plaatsing-status";
 import { weekSlotVanDatum } from "@/lib/week-koppeling";
 import {
   MAX_UPLOAD_BYTES,
@@ -415,5 +416,8 @@ async function onthoudBedrijfsgegevens(consultantId: string, data: InvoiceExtrac
     ...(!c.vatNumber?.trim() && data.vatId?.trim() ? { vatNumber: data.vatId.trim() } : {}),
     ...(!c.iban?.trim() && data.iban?.trim() ? { iban: data.iban.trim() } : {}),
   };
-  if (Object.keys(vul).length > 0) await db.consultant.update({ where: { id: consultantId }, data: vul });
+  if (Object.keys(vul).length > 0) {
+    await db.consultant.update({ where: { id: consultantId }, data: vul });
+    await syncPlaatsingStatus({ consultantId }); // misschien is de plaatsing nu compleet
+  }
 }
