@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { PlaatsingenList } from "./PlaatsingenList";
+import { ontbrekendeGegevens } from "@/lib/ontbrekende-gegevens";
 import { deletePlacementDraft } from "./actions";
 
 export const metadata = { title: "Plaatsingen" };
@@ -156,6 +157,7 @@ export default async function PlaatsingenPage({
             overtimeCostRate: p.overtimeCostRate,
             overtimeChargeRate: p.overtimeChargeRate,
             status: p.status,
+            ontbreekt: ontbrekendeGegevens(p.consultant),
           }))}
         />
       )}

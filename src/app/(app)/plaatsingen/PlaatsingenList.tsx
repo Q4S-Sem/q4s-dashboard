@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { tariefSuffix } from "@/lib/toeslag";
-import { Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { SmartList, type SmartColumn, type SmartFilter, type SmartGroup } from "@/components/smart-list";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -23,6 +23,8 @@ export type PlaatsingRow = {
   overtimeCostRate: number | null;
   overtimeChargeRate: number | null;
   status: string;
+  /** Ontbrekende werknemergegevens (IBAN, telefoon, BTW, …). */
+  ontbreekt: string[];
 };
 
 /** De effectieve overuren-marge/uur: expliciete rates indien gezet, anders de
@@ -51,6 +53,14 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
       render: (r) => (
         <Link href={`/plaatsingen/${r.id}`} className="font-medium text-ink-900 hover:text-brand-700">
           {r.person}
+          {r.ontbreekt.length > 0 && (
+            <span
+              title={`Nog niet ingevuld: ${r.ontbreekt.join(", ")}`}
+              className="ml-2 inline-flex items-center gap-1 rounded-sm bg-amber-50 px-1.5 py-0.5 align-middle text-[11px] font-medium text-amber-800 ring-1 ring-amber-200"
+            >
+              <AlertTriangle className="h-3 w-3" /> {r.ontbreekt.length} open
+            </span>
+          )}
         </Link>
       ),
     },
@@ -139,6 +149,15 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
   const filters: SmartFilter<PlaatsingRow>[] = [
     { key: "status", label: "Status", value: (r) => r.status, options: PLACEMENT_STATUSES.map((s) => ({ value: s.value, label: s.label })) },
     { key: "client", label: "Klant", value: (r) => r.clientName, options: clientOptions },
+    {
+      key: "gegevens",
+      label: "Gegevens",
+      value: (r) => (r.ontbreekt.length > 0 ? "open" : "compleet"),
+      options: [
+        { value: "open", label: "Gegevens ontbreken", color: "amber" },
+        { value: "compleet", label: "Compleet", color: "green" },
+      ],
+    },
   ];
 
   const groups: SmartGroup<PlaatsingRow>[] = [
