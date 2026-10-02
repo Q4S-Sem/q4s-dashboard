@@ -34,40 +34,6 @@ import { lookupDutchAddress } from "../klanten/address-actions";
 import { savePlacementDraft } from "./actions";
 import { WerknemerCvIntake } from "./WerknemerCvIntake";
 
-// Snelle duur-knoppen: vullen de einddatum vanaf de startdatum. Handig voor korte
-// klussen (een week / paar weken) zodat je de einddatum niet los hoeft te kiezen.
-const DURATIONS = [
-  { kind: "1w", label: "1 week" },
-  { kind: "2w", label: "2 weken" },
-  { kind: "1m", label: "1 maand" },
-  { kind: "3m", label: "3 maanden" },
-] as const;
-type DurationKind = (typeof DURATIONS)[number]["kind"];
-
-function isoToDate(iso: string): Date | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
-}
-function dateToIso(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-/** Einddatum = startdatum + duur (inclusief: 1 week eindigt op dag 7). */
-function computeEnd(startISO: string, kind: DurationKind): string {
-  const d = isoToDate(startISO);
-  if (!d) return "";
-  if (kind === "1w") d.setDate(d.getDate() + 6);
-  else if (kind === "2w") d.setDate(d.getDate() + 13);
-  else if (kind === "1m") {
-    d.setMonth(d.getMonth() + 1);
-    d.setDate(d.getDate() - 1);
-  } else {
-    d.setMonth(d.getMonth() + 3);
-    d.setDate(d.getDate() - 1);
-  }
-  return dateToIso(d);
-}
-
 /** A clean upload card: icon + label + a styled picker + the chosen file(s). */
 /** Eén genummerd blok van het formulier. */
 type Tab = "bestanden" | "werknemer" | "bedrijf" | "documenten" | "plaatsing";
@@ -1183,29 +1149,9 @@ export function PlacementForm({
             <Field label="Startdatum" htmlFor="startDate" required error={e.startDate}>
               <DateInput id="startDate" name="startDate" required value={startDate} onValueChange={setStartDate} />
             </Field>
-            <Field label="Einddatum" htmlFor="endDate" error={e.endDate}>
+            <Field label="Einddatum" htmlFor="endDate" error={e.endDate} hint="Leeg laten als de plaatsing nog loopt">
               <DateInput id="endDate" name="endDate" value={endDate} onValueChange={setEndDate} />
             </Field>
-            <div className="flex flex-wrap items-center gap-1.5 sm:col-start-2 sm:-mt-2">
-              <span className="text-xs text-ink-400">Leeg = loopt nog · snel:</span>
-              {DURATIONS.map((d) => (
-                <button
-                  key={d.kind}
-                  type="button"
-                  onClick={() => setEndDate(computeEnd(startDate, d.kind))}
-                  disabled={!startDate}
-                  className="rounded-sm border border-ink-200 bg-white px-2 py-0.5 text-xs font-medium text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900 disabled:cursor-not-allowed disabled:opacity-50"
-                  title={`Einddatum = startdatum + ${d.label.toLowerCase()}`}
-                >
-                  {d.label}
-                </button>
-              ))}
-              {endDate && (
-                <button type="button" onClick={() => setEndDate("")} className="px-1 text-xs text-ink-400 hover:text-ink-700">
-                  wissen
-                </button>
-              )}
-            </div>
           </div>
 
           {/* Basistarief + marge op één regel. */}
