@@ -79,14 +79,10 @@ function fmtDate(d: Date | null): string {
   return new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
 }
 
-/** Contract-record + bedrijfsinstellingen → het document dat op papier komt. */
-export function buildContractDoc(contract: Contract, settings: CompanySettings): ContractDoc {
+/** Vaste bedrijfsregel onderaan elk vel (contract, persoonsgegevens, offerte). */
+export function contractFooterLine(settings: CompanySettings): string {
   const companyName = settings.companyName || "Q4S B.V.";
-  const clientAddress = [settings.address, [settings.postalCode, settings.city].filter(Boolean).join(" ")]
-    .filter(Boolean)
-    .join(", ") || "Barendrecht, 2994LA Arnhemseweg 12";
-
-  const footerLine = [
+  return [
     `${companyName}, ${settings.address || "Arnhemseweg 12"}, ${settings.postalCode || "2994LA"} ${settings.city || "Barendrecht"}, the Netherlands`,
     settings.website || "www.q4s.nl",
     settings.email || "info@q4s.nl",
@@ -95,7 +91,17 @@ export function buildContractDoc(contract: Contract, settings: CompanySettings):
     `Btw: ${settings.vatNumber || "NL857718137B01"}`,
     settings.iban ? `IBAN: ${settings.iban}` : "IBAN: NL96INGB0007873625",
   ].join(" · ");
+}
 
+export function buildContractDoc(contract: Contract, settings: CompanySettings): ContractDoc {
+  const companyName = settings.companyName || "Q4S B.V.";
+  const clientAddress = [settings.address, [settings.postalCode, settings.city].filter(Boolean).join(" ")]
+    .filter(Boolean)
+    .join(", ") || "Barendrecht, 2994LA Arnhemseweg 12";
+
+  const footerLine = contractFooterLine(settings);
+
+  /** Contract-record + bedrijfsinstellingen → het document dat op papier komt. */
   return {
     number: contract.number,
     client: {

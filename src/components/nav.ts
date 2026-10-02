@@ -29,7 +29,6 @@ import {
   ClipboardCheck,
   ShieldCheck,
   Award,
-  ScrollText,
   UserCog,
   Archive,
   IdCard,
@@ -134,8 +133,7 @@ const HUB_LIST: NavHub[] = [
     icon: FileSignature,
     items: [
       { href: "/contracten", label: "Per persoon", icon: FileSignature, exact: true },
-      { href: "/contracten/nieuw", label: "Nieuw contract", icon: Plus },
-      { href: "/gebruikers/contract-template", label: "Vormgeving & blanco", icon: ScrollText, section: "Documenten" },
+      { href: "/contracten/nieuw", label: "Nieuw document", icon: Plus },
     ],
   },
   {
