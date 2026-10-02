@@ -196,7 +196,11 @@ function UploadCard({
   );
 }
 
-/** One labelled number field (Inkoop or Verkoop) with a % / €/km suffix inside. */
+/** Kolommen van de toeslagentabel: naam | inkoop | doorrekenen | verkoop. */
+const TOESLAG_GRID =
+  "grid grid-cols-1 gap-2 px-3 py-2.5 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_6.5rem_minmax(0,1fr)] sm:items-center sm:gap-3";
+
+/** Getal met eenheid (%, €/u, €/km) rechts in het veld. Label optioneel. */
 function ToeslagField({
   label,
   name,
@@ -205,7 +209,7 @@ function ToeslagField({
   step,
   disabled,
 }: {
-  label: string;
+  label?: string;
   name: string;
   def: number;
   suffix: string;
@@ -213,10 +217,8 @@ function ToeslagField({
   disabled?: boolean;
 }) {
   return (
-    <label className={cn("block", disabled && "opacity-60")}>
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-400">
-        {label}
-      </span>
+    <label className={cn("block min-w-0 flex-1", disabled && "opacity-60")}>
+      {label && <span className="mb-1 block text-xs font-medium text-ink-500">{label}</span>}
       <div className="relative">
         <NumberInput
           name={name}
@@ -225,10 +227,10 @@ function ToeslagField({
           step={step}
           defaultValue={def || ""}
           placeholder="0"
-          className="pr-12 text-right"
-          aria-label={`${label} (${suffix})`}
+          className="h-9 pr-12 text-right tabular-nums"
+          aria-label={`${label || name} (${suffix})`}
         />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-400">
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-400">
           {suffix}
         </span>
       </div>
@@ -236,46 +238,14 @@ function ToeslagField({
   );
 }
 
-/** A toeslag/km as its own block with a clear Inkoop + Verkoop field. */
-function ToeslagBlock({
-  title,
-  hint,
-  buyName,
-  sellName,
-  buyDefault,
-  sellDefault,
-  suffix,
-  step,
-  nietDoorTekst,
-}: {
-  title: string;
-  hint: string;
-  buyName: string;
-  sellName: string;
-  buyDefault: number;
-  sellDefault: number;
-  suffix: string;
-  step: number | string;
-  nietDoorTekst?: string;
-}) {
-  const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
+/** Kopregel boven de toeslagentabel (alleen op brede schermen). */
+function ToeslagKop() {
   return (
-    <div className="rounded-lg border border-ink-200 bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold text-ink-800">{title}</p>
-          <p className="mt-0.5 text-xs text-ink-400">{hint}</p>
-        </div>
-        <Doorrekenen aan={door} onChange={setDoor} />
-      </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <ToeslagField label="Inkoop — wij betalen" name={buyName} def={buyDefault} suffix={suffix} step={step} />
-        {door ? (
-          <ToeslagField label="Verkoop — klant betaalt" name={sellName} def={sellDefault} suffix={suffix} step={step} />
-        ) : (
-          <NietDoor name={sellName} tekst={nietDoorTekst} />
-        )}
-      </div>
+    <div className={cn(TOESLAG_GRID, "hidden border-b border-ink-200 bg-ink-50/60 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-500 sm:grid")}>
+      <span>Toeslag</span>
+      <span>Inkoop — wij betalen</span>
+      <span>Klant betaalt?</span>
+      <span>Verkoop — klant</span>
     </div>
   );
 }
@@ -284,28 +254,36 @@ function ToeslagBlock({
  * Rekenen we deze toeslag door aan de klant? Uit = verkoop 0: wij betalen hem,
  * het gaat van de marge af (en hij komt niet op de verkoopfactuur).
  */
-function Doorrekenen({ aan, onChange }: { aan: boolean; onChange: (v: boolean) => void }) {
+function Doorrekenen({ aan, onChange, label }: { aan: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-ink-200 px-2.5 py-1 text-xs font-medium text-ink-700">
-      <input
-        type="checkbox"
-        checked={aan}
-        onChange={(ev) => onChange(ev.target.checked)}
-        className="h-3.5 w-3.5 rounded border-ink-300 text-brand-600"
-      />
-      Doorrekenen aan klant
-    </label>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={aan}
+      aria-label={`${label}: doorrekenen aan klant`}
+      onClick={() => onChange(!aan)}
+      className="inline-flex items-center gap-2 text-xs font-medium text-ink-600"
+    >
+      <span className={cn("relative h-5 w-9 rounded-full transition-colors", aan ? "bg-ink-900" : "bg-ink-200")}>
+        <span
+          className={cn(
+            "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all",
+            aan ? "left-[18px]" : "left-0.5",
+          )}
+        />
+      </span>
+      {aan ? "Ja" : "Nee"}
+    </button>
   );
 }
 
 function NietDoor({ name, tekst }: { name: string; tekst?: string }) {
   return (
-    <div>
+    <div className="flex h-9 items-center rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 text-xs text-amber-800">
       <input type="hidden" name={name} value={0} />
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-400">Verkoop</span>
-      <p className="rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-        {tekst ?? "Niet doorberekend — wij betalen dit, het gaat van de marge af."}
-      </p>
+      <span className="truncate" title={tekst}>
+        {tekst ? tekst : "Wij betalen — uit de marge"}
+      </span>
     </div>
   );
 }
@@ -322,14 +300,14 @@ function UnitSchakelaar({
 }) {
   const tab = (active: boolean) =>
     cn(
-      "flex h-7 w-9 items-center justify-center text-sm font-semibold transition-colors",
+      "flex h-9 w-8 items-center justify-center text-xs font-semibold transition-colors",
       active ? "bg-ink-900 text-white" : "bg-white text-ink-400 hover:text-ink-700",
     );
   return (
     <div
       role="group"
       aria-label={`${label}: percentage of vast tarief`}
-      className="inline-flex overflow-hidden rounded-md border border-ink-200"
+      className="inline-flex shrink-0 overflow-hidden rounded-md border border-ink-200"
     >
       <button
         type="button"
@@ -355,17 +333,83 @@ function UnitSchakelaar({
   );
 }
 
+/** Naamcel: titel + korte uitleg, optioneel met aan/uit-vinkje. */
+function ToeslagNaam({
+  title,
+  hint,
+  toggle,
+}: {
+  title: string;
+  hint: string;
+  toggle?: { name: string; aan: boolean; set: (v: boolean) => void };
+}) {
+  return (
+    <div className="min-w-0">
+      {toggle ? (
+        <label className="flex cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            name={toggle.name}
+            checked={toggle.aan}
+            onChange={(ev) => toggle.set(ev.target.checked)}
+            className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
+          />
+          <span className="text-sm font-medium text-ink-900">{title}</span>
+        </label>
+      ) : (
+        <p className="text-sm font-medium text-ink-900">{title}</p>
+      )}
+      <p className="truncate text-xs text-ink-400" title={hint}>
+        {hint}
+      </p>
+    </div>
+  );
+}
+
+/** Overuren-tarief / kilometers: één rij met vaste eenheid. */
+function ToeslagBlock({
+  title,
+  hint,
+  buyName,
+  sellName,
+  buyDefault,
+  sellDefault,
+  suffix,
+  step,
+  nietDoorTekst,
+}: {
+  title: string;
+  hint: string;
+  buyName: string;
+  sellName: string;
+  buyDefault: number;
+  sellDefault: number;
+  suffix: string;
+  step: number | string;
+  nietDoorTekst?: string;
+}) {
+  const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
+  return (
+    <div className={TOESLAG_GRID}>
+      <ToeslagNaam title={title} hint={hint} />
+      <ToeslagField name={buyName} def={buyDefault} suffix={suffix} step={step} label="" />
+      <Doorrekenen aan={door} onChange={setDoor} label={title} />
+      {door ? (
+        <ToeslagField name={sellName} def={sellDefault} suffix={suffix} step={step} label="" />
+      ) : (
+        <NietDoor name={sellName} tekst={nietDoorTekst} />
+      )}
+    </div>
+  );
+}
+
 /**
- * Eén van de ZES toeslagen, met per stuk dezelfde SCHAKELAAR als bij Overuren:
- * een percentage bovenop het uurtarief, of een vast bedrag per uur (€/u). Alleen
- * de gekozen variant staat in beeld; de schakelaar zelf gaat als verborgen veld
- * mee (`…SurchargeUnit`), dus de rekenlaag weet altijd hoe het bedrag bedoeld is.
+ * Eén toeslag als tabelrij: per zijde een %/€-schakelaar (gaat als verborgen
+ * `…SurchargeUnit` mee) en een "klant betaalt?"-schakelaar.
  *
  * Doordeweeks/zaterdag/zondag volgen uit de datums op de urenstaat. Offshore,
- * ploegendienst en buitenland zijn daar niet uit af te leiden en krijgen daarom
- * een AAN/UIT-vinkje: staat het aan, dan geldt de toeslag over ALLE gewerkte
- * reguliere uren van deze plaatsing. Staat het uit, dan blijven de bedragen
- * bewaard (verborgen velden) maar rekenen ze niet mee.
+ * ploegendienst en buitenland krijgen een AAN/UIT-vinkje: aan = geldt over ALLE
+ * gewerkte reguliere uren. Uit = bedragen blijven bewaard (verborgen velden).
  */
 function ToeslagRow({
   title,
@@ -388,46 +432,23 @@ function ToeslagRow({
   /** Alleen voor offshore/ploegendienst/buitenland. */
   toggle?: { name: string; defaultOn: boolean };
 }) {
-  const [buyUnit, setBuyUnit] = useState<"PCT" | "FIXED">(
-    unitDefault === "FIXED" ? "FIXED" : "PCT",
-  );
-  const [sellUnit, setSellUnit] = useState<"PCT" | "FIXED">(
-    sellUnitDefault === "FIXED" ? "FIXED" : "PCT",
-  );
+  const [buyUnit, setBuyUnit] = useState<"PCT" | "FIXED">(unitDefault === "FIXED" ? "FIXED" : "PCT");
+  const [sellUnit, setSellUnit] = useState<"PCT" | "FIXED">(sellUnitDefault === "FIXED" ? "FIXED" : "PCT");
   const [aan, setAan] = useState(toggle?.defaultOn ?? true);
   const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
   const uit = Boolean(toggle) && !aan;
   const buyName = `${prefix}SurchargeBuy`;
   const sellName = `${prefix}SurchargeSell`;
-  const unitInfo = (u: "PCT" | "FIXED") => (u === "PCT" ? { suffix: "%", step: "any" as const } : { suffix: "€/u", step: 0.01 });
-  const buyI = unitInfo(buyUnit);
-  const sellI = unitInfo(sellUnit);
+  const unitInfo = (u: "PCT" | "FIXED") =>
+    u === "PCT" ? { suffix: "%", step: "any" as const } : { suffix: "€/u", step: 0.01 };
 
   return (
-    <div className="rounded-lg border border-ink-200 bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          {toggle ? (
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                name={toggle.name}
-                checked={aan}
-                onChange={(ev) => setAan(ev.target.checked)}
-                className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
-              />
-              <span className="text-sm font-semibold text-ink-800">{title}</span>
-            </label>
-          ) : (
-            <p className="text-sm font-semibold text-ink-800">{title}</p>
-          )}
-          <p className="mt-0.5 text-xs text-ink-400">
-            {uit ? "Staat uit — vink aan om deze toeslag te laten meetellen." : hint}
-          </p>
-        </div>
-        {!uit && <Doorrekenen aan={door} onChange={setDoor} />}
-      </div>
-
+    <div className={cn(TOESLAG_GRID, uit && "bg-ink-50/40")}>
+      <ToeslagNaam
+        title={title}
+        hint={uit ? "Uit — vink aan als het geldt" : hint}
+        toggle={toggle ? { name: toggle.name, aan, set: setAan } : undefined}
+      />
       {/* De schakelaars reizen als verborgen velden mee (per zijde). */}
       <input type="hidden" name={`${prefix}SurchargeUnit`} value={buyUnit} />
       <input type="hidden" name={`${prefix}SurchargeSellUnit`} value={sellUnit} />
@@ -437,44 +458,26 @@ function ToeslagRow({
         <>
           <input type="hidden" name={buyName} value={buyDefault} />
           <input type="hidden" name={sellName} value={sellDefault} />
+          <span className="hidden text-xs text-ink-300 sm:block">—</span>
+          <span className="hidden sm:block" />
+          <span className="hidden text-xs text-ink-300 sm:block">—</span>
         </>
       ) : (
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
-                Inkoop — wij betalen
-              </span>
-              <UnitSchakelaar unit={buyUnit} onChange={setBuyUnit} label={`${title} inkoop`} />
-            </div>
-            <ToeslagField
-              label=""
-              name={buyName}
-              def={buyDefault}
-              suffix={buyI.suffix}
-              step={buyI.step}
-            />
+        <>
+          <div className="flex items-center gap-1.5">
+            <UnitSchakelaar unit={buyUnit} onChange={setBuyUnit} label={`${title} inkoop`} />
+            <ToeslagField name={buyName} def={buyDefault} {...unitInfo(buyUnit)} label="" />
           </div>
+          <Doorrekenen aan={door} onChange={setDoor} label={title} />
           {door ? (
-            <div>
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
-                  Verkoop — klant betaalt
-                </span>
-                <UnitSchakelaar unit={sellUnit} onChange={setSellUnit} label={`${title} verkoop`} />
-              </div>
-              <ToeslagField
-                label=""
-                name={sellName}
-                def={sellDefault}
-                suffix={sellI.suffix}
-                step={sellI.step}
-              />
+            <div className="flex items-center gap-1.5">
+              <UnitSchakelaar unit={sellUnit} onChange={setSellUnit} label={`${title} verkoop`} />
+              <ToeslagField name={sellName} def={sellDefault} {...unitInfo(sellUnit)} label="" />
             </div>
           ) : (
             <NietDoor name={sellName} />
           )}
-        </div>
+        </>
       )}
     </div>
   );
@@ -1167,183 +1170,108 @@ export function PlacementForm({
         <Sectie tab="plaatsing" nr={placement ? 2 : 5} titel="Plaatsing & tarief" sub="Bij welke klant, vanaf wanneer en tegen welk tarief.">
           <div className="space-y-5">
             {!placement && <ClientPicker initialClients={clients} initialClientId={dv("clientId")} error={e.clientId} />}
-          <Field label="Functie" htmlFor="title" required error={e.title}>
-            <Input
-              id="title"
-              name="title"
-              defaultValue={placement?.title ?? ""}
-              placeholder="Bijv. NDT Inspector Level 2"
-              required
-            />
-          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Functie" htmlFor="title" required error={e.title}>
+              <Input id="title" name="title" defaultValue={placement?.title ?? ""} placeholder="Bijv. NDT Inspector Level 2" required />
+            </Field>
+            <Field label="PO-nummer klant" htmlFor="poNumber" error={e.poNumber} hint="Optioneel — komt als “PO” op de verkoopfactuur.">
+              <Input id="poNumber" name="poNumber" defaultValue={placement?.poNumber ?? ""} placeholder="Bijv. 4500123456" />
+            </Field>
+          </div>
 
-          <Field
-            label="PO-nummer (inkooporder klant)"
-            htmlFor="poNumber"
-            error={e.poNumber}
-            hint="Optioneel — het inkoop-ordernummer van de klant voor deze plaatsing. Komt als “PO” op de verkoopfactuur."
-          >
-            <Input
-              id="poNumber"
-              name="poNumber"
-              defaultValue={placement?.poNumber ?? ""}
-              placeholder="Bijv. 4500123456"
-            />
-          </Field>
-
-          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-ink-200 bg-ink-50/60 px-4 py-3">
-            <input
-              type="checkbox"
-              name="vatReverseCharge"
-              defaultChecked={placement?.vatReverseCharge ?? false}
-              className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
-            />
-            <span className="text-sm">
-              <span className="font-medium text-ink-900">BTW verlegd (reverse charge)</span>
-              <span className="mt-0.5 block text-ink-500">
-                Zet aan als de verkoopfactuur voor deze plaatsing met <strong>0% BTW / BTW verlegd</strong> gaat.
-                De factuur toont dan automatisch de verplichte “BTW verlegd”-vermelding en rekent geen BTW.
-              </span>
-            </span>
-          </label>
-          <div className="space-y-3">
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Startdatum" htmlFor="startDate" required error={e.startDate}>
-                <DateInput
-                  id="startDate"
-                  name="startDate"
-                  required
-                  value={startDate}
-                  onValueChange={setStartDate}
-                />
-              </Field>
-              <Field
-                label="Einddatum"
-                htmlFor="endDate"
-                hint="Leeg laten als de plaatsing nog loopt"
-                error={e.endDate}
-              >
-                <DateInput id="endDate" name="endDate" value={endDate} onValueChange={setEndDate} />
-              </Field>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-medium text-ink-500">Snelle duur:</span>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Startdatum" htmlFor="startDate" required error={e.startDate}>
+              <DateInput id="startDate" name="startDate" required value={startDate} onValueChange={setStartDate} />
+            </Field>
+            <Field label="Einddatum" htmlFor="endDate" error={e.endDate}>
+              <DateInput id="endDate" name="endDate" value={endDate} onValueChange={setEndDate} />
+            </Field>
+            <div className="flex flex-wrap items-center gap-1.5 sm:col-start-2 sm:-mt-2">
+              <span className="text-xs text-ink-400">Leeg = loopt nog · snel:</span>
               {DURATIONS.map((d) => (
                 <button
                   key={d.kind}
                   type="button"
                   onClick={() => setEndDate(computeEnd(startDate, d.kind))}
                   disabled={!startDate}
-                  className="rounded-sm border border-ink-200 bg-white px-3 py-1 text-xs font-medium text-ink-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-sm border border-ink-200 bg-white px-2 py-0.5 text-xs font-medium text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900 disabled:cursor-not-allowed disabled:opacity-50"
                   title={`Einddatum = startdatum + ${d.label.toLowerCase()}`}
                 >
                   {d.label}
                 </button>
               ))}
               {endDate && (
-                <button
-                  type="button"
-                  onClick={() => setEndDate("")}
-                  className="rounded-sm px-2 py-1 text-xs text-ink-400 hover:text-ink-700"
-                >
+                <button type="button" onClick={() => setEndDate("")} className="px-1 text-xs text-ink-400 hover:text-ink-700">
                   wissen
                 </button>
               )}
             </div>
           </div>
-          <div className="grid gap-5 sm:grid-cols-3">
-            <Field label="Tarief per" htmlFor="rateUnit">
-              <Select id="rateUnit" name="rateUnit" defaultValue={rateUnit} onValueChange={setRateUnit}>
-                <option value="HOUR">Uur</option>
-                <option value="DAY">Dag (dayrate)</option>
-              </Select>
-            </Field>
-            <Field label={`Inkooptarief (per ${eenheid})`} htmlFor="costRate" required error={e.costRate}>
-              <Input
-                id="costRate"
-                name="costRate"
-                type="number"
-                step="0.01"
-                min={0}
-                defaultValue={placement?.costRate ?? ""}
-                onChange={(ev) => setCostRate(Number(ev.target.value) || 0)}
-                required
-              />
-            </Field>
-            <Field label={`Verkooptarief (per ${eenheid})`} htmlFor="chargeRate" required error={e.chargeRate}>
-              <Input
-                id="chargeRate"
-                name="chargeRate"
-                type="number"
-                step="0.01"
-                min={0}
-                defaultValue={placement?.chargeRate ?? ""}
-                onChange={(ev) => setChargeRate(Number(ev.target.value) || 0)}
-                required
-              />
-            </Field>
-          </div>
 
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
-              Marge
-            </p>
-            <p className="mt-1 text-lg font-bold text-emerald-700">
-              {formatCurrency(marginPerHour)}/{eenheid}{" "}
-              <span className="text-sm font-medium text-emerald-600">
-                ({marginPct.toFixed(1)}%)
-              </span>
-            </p>
-          </div>
-
-            <details open className="group rounded-lg border border-ink-200">
-              <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-ink-700 [&::-webkit-details-marker]:hidden">
-                Toeslagen, overuren &amp; kilometers
-                <span className="text-xs font-normal text-ink-400">per toeslag: wat wij betalen, en of de klant het betaalt</span>
-              </summary>
-              <div className="space-y-3 border-t border-ink-100 p-4">
-                <p className="text-xs text-ink-400">
-                  Inkoop = wat we de werknemer betalen, verkoop = wat we de klant rekenen. Laat 0 staan als er geen toeslag geldt.
-                  Zaterdag/zondag volgen uit de urenstaat; offshore, ploegendienst en buitenland gelden als ze aan staan over alle uren.
+          {/* Basistarief + marge op één regel. */}
+          <div className="rounded-lg border border-ink-200">
+            <div className="grid gap-4 p-3 sm:grid-cols-[9rem_1fr_1fr_11rem] sm:items-end">
+              <Field label="Tarief per" htmlFor="rateUnit">
+                <Select id="rateUnit" name="rateUnit" defaultValue={rateUnit} onValueChange={setRateUnit}>
+                  <option value="HOUR">Uur</option>
+                  <option value="DAY">Dag (dayrate)</option>
+                </Select>
+              </Field>
+              <Field label={`Inkoop — wij betalen (per ${eenheid})`} htmlFor="costRate" required error={e.costRate}>
+                <Input id="costRate" name="costRate" type="number" step="0.01" min={0} defaultValue={placement?.costRate ?? ""} onChange={(ev) => setCostRate(Number(ev.target.value) || 0)} required className="tabular-nums" />
+              </Field>
+              <Field label={`Verkoop — klant betaalt (per ${eenheid})`} htmlFor="chargeRate" required error={e.chargeRate}>
+                <Input id="chargeRate" name="chargeRate" type="number" step="0.01" min={0} defaultValue={placement?.chargeRate ?? ""} onChange={(ev) => setChargeRate(Number(ev.target.value) || 0)} required className="tabular-nums" />
+              </Field>
+              <div className={cn("rounded-md px-3 py-1.5", marginPerHour < 0 ? "bg-red-50" : "bg-emerald-50")}>
+                <p className={cn("text-[11px] font-semibold uppercase tracking-wide", marginPerHour < 0 ? "text-red-700" : "text-emerald-700")}>Marge</p>
+                <p className={cn("text-base font-bold tabular-nums", marginPerHour < 0 ? "text-red-700" : "text-emerald-700")}>
+                  {formatCurrency(marginPerHour)}/{eenheid}{" "}
+                  <span className="text-xs font-medium">({marginPct.toFixed(1)}%)</span>
                 </p>
-            <div className="mt-4 space-y-3">
-              {/* De oude, gecombineerde weekendtoeslag is opgesplitst in een losse
-                  zaterdag- en zondagtoeslag. Zolang een plaatsing nog op het oude veld
-                  staat, rekent src/lib/toeslag.ts daar gewoon mee door; hierboven
-                  tonen we die waarde alvast als za/zo, en bij opslaan gaat 'ie mee in
-                  de nieuwe velden (zelfde bedrag, alleen twee regels i.p.v. één). */}
+              </div>
+            </div>
+            <label className="flex cursor-pointer items-center gap-2 border-t border-ink-100 px-3 py-2 text-sm">
+              <input
+                type="checkbox"
+                name="vatReverseCharge"
+                defaultChecked={placement?.vatReverseCharge ?? false}
+                className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
+              />
+              <span className="font-medium text-ink-900">BTW verlegd</span>
+              <span className="text-xs text-ink-400">— verkoopfactuur met 0% BTW en de verplichte vermelding</span>
+            </label>
+          </div>
+
+          {/* Toeslagen als één compacte tabel. */}
+          <div className="overflow-hidden rounded-lg border border-ink-200">
+            <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-ink-200 px-3 py-2.5">
+              <p className="text-sm font-semibold text-ink-900">Toeslagen, overuren &amp; kilometers</p>
+              <p className="text-xs text-ink-400">Klant betaalt? Nee = wij betalen, gaat van de marge af · 0 = geldt niet</p>
+            </div>
+            <ToeslagKop />
+            <div className="divide-y divide-ink-100">
               <input type="hidden" name="weekendSurchargeBuy" value={0} />
               <input type="hidden" name="weekendSurchargeSell" value={0} />
               {/* Reguliere ma–vr uren gaan tegen het NORMALE uurtarief (geen
                   doordeweekse toeslag). Alleen echte overuren krijgen een hoger
                   tarief — zie het Overuren-blok onderaan. We forceren de oude
                   doordeweekse toeslag daarom op 0. */}
-              <div className="rounded-lg border border-ink-200 bg-white p-4">
-                <p className="text-sm font-semibold text-ink-800">Meeruren ma–vr</p>
-                <p className="mt-0.5 text-xs text-ink-400">
-                  Zoals in het contract: bijv. vanaf 8 uur per dag, de eerste 2 meeruren (9e &amp; 10e uur) +15%, de overige +25%.
-                  Leeg laten = geen meeruren-toeslag. Feestdagen tellen als zondag.
-                </p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <ToeslagField
-                    label="Meeruren vanaf"
-                    name="otFromHours"
-                    def={placement?.otFromHours ?? 0}
-                    suffix="uur/dag"
-                    step={0.5}
-                  />
-                  <ToeslagField
-                    label="Eerste trede"
-                    name="ot1Hours"
-                    def={placement?.ot1Hours ?? 2}
-                    suffix="uur"
-                    step={0.5}
-                  />
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-ink-50/40 px-3 py-2.5 text-sm text-ink-700">
+                <span className="font-medium text-ink-900">Meeruren ma–vr</span>
+                <span className="text-ink-500">vanaf</span>
+                <div className="w-28">
+                  <ToeslagField name="otFromHours" def={placement?.otFromHours ?? 0} suffix="u/dag" step={0.5} label="" />
                 </div>
+                <span className="text-ink-500">per dag, eerste trede</span>
+                <div className="w-24">
+                  <ToeslagField name="ot1Hours" def={placement?.ot1Hours ?? 2} suffix="uur" step={0.5} label="" />
+                </div>
+                <span className="text-xs text-ink-400">Leeg = geen meeruren-toeslag · feestdag telt als zondag</span>
               </div>
               <ToeslagRow
-                title="Meeruren — eerste trede"
-                hint="Bijv. het 9e en 10e uur op een werkdag."
+                title="Meeruren · trede 1"
+                hint="Bijv. 9e & 10e uur"
                 prefix="weekday"
                 buyDefault={placement?.otFromHours != null ? placement.weekdaySurchargeBuy : 0}
                 sellDefault={placement?.otFromHours != null ? placement.weekdaySurchargeSell : 0}
@@ -1351,8 +1279,8 @@ export function PlacementForm({
                 sellUnitDefault={placement?.weekdaySurchargeSellUnit ?? placement?.weekdaySurchargeUnit ?? "PCT"}
               />
               <ToeslagRow
-                title="Meeruren — overige uren"
-                hint="Alles boven de eerste trede op een werkdag."
+                title="Meeruren · trede 2"
+                hint="Boven de eerste trede"
                 prefix="weekday2"
                 buyDefault={placement?.weekday2SurchargeBuy ?? 0}
                 sellDefault={placement?.weekday2SurchargeSell ?? 0}
@@ -1360,8 +1288,8 @@ export function PlacementForm({
                 sellUnitDefault={placement?.weekday2SurchargeSellUnit ?? placement?.weekday2SurchargeUnit ?? "PCT"}
               />
               <ToeslagRow
-                title="Zaterdagtoeslag"
-                hint="Geldt over de uren die op zaterdag geschreven zijn."
+                title="Zaterdag"
+                hint="Uren op zaterdag"
                 prefix="saturday"
                 buyDefault={placement?.saturdaySurchargeBuy || placement?.weekendSurchargeBuy || 0}
                 sellDefault={placement?.saturdaySurchargeSell || placement?.weekendSurchargeSell || 0}
@@ -1369,8 +1297,8 @@ export function PlacementForm({
                 sellUnitDefault={placement?.saturdaySurchargeSellUnit ?? placement?.saturdaySurchargeUnit ?? "PCT"}
               />
               <ToeslagRow
-                title="Zondag- & feestdagtoeslag"
-                hint="Geldt over de uren op zondag en op feestdagen."
+                title="Zondag & feestdag"
+                hint="Uren op zondag en feestdagen"
                 prefix="sunday"
                 buyDefault={placement?.sundaySurchargeBuy || placement?.weekendSurchargeBuy || 0}
                 sellDefault={placement?.sundaySurchargeSell || placement?.weekendSurchargeSell || 0}
@@ -1378,8 +1306,8 @@ export function PlacementForm({
                 sellUnitDefault={placement?.sundaySurchargeSellUnit ?? placement?.sundaySurchargeUnit ?? "PCT"}
               />
               <ToeslagRow
-                title="Offshoretoeslag"
-                hint="Werkt deze persoon offshore? Geldt over alle reguliere uren."
+                title="Offshore"
+                hint="Over alle reguliere uren"
                 prefix="offshore"
                 buyDefault={placement?.offshoreSurchargeBuy ?? 0}
                 sellDefault={placement?.offshoreSurchargeSell ?? 0}
@@ -1388,8 +1316,8 @@ export function PlacementForm({
                 toggle={{ name: "offshoreEnabled", defaultOn: placement?.offshoreEnabled ?? false }}
               />
               <ToeslagRow
-                title="Ploegendiensttoeslag"
-                hint="Draait deze persoon ploegendienst? Geldt over alle reguliere uren."
+                title="Ploegendienst"
+                hint="Over alle reguliere uren"
                 prefix="shift"
                 buyDefault={placement?.shiftSurchargeBuy ?? 0}
                 sellDefault={placement?.shiftSurchargeSell ?? 0}
@@ -1398,8 +1326,8 @@ export function PlacementForm({
                 toggle={{ name: "shiftEnabled", defaultOn: placement?.shiftEnabled ?? false }}
               />
               <ToeslagRow
-                title="Buitenlandtoeslag"
-                hint="Werkt deze persoon in het buitenland? Geldt over alle reguliere uren."
+                title="Buitenland"
+                hint="Over alle reguliere uren"
                 prefix="abroad"
                 buyDefault={placement?.abroadSurchargeBuy ?? 0}
                 sellDefault={placement?.abroadSurchargeSell ?? 0}
@@ -1414,8 +1342,8 @@ export function PlacementForm({
               <input type="hidden" name="overtimeSurchargeBuy" value={placement?.overtimeSurchargeBuy ?? 0} />
               <input type="hidden" name="overtimeSurchargeSell" value={placement?.overtimeSurchargeSell ?? 0} />
               <ToeslagBlock
-                title="Overuren-tarief (€/u)"
-                hint="Vast uurtarief voor overuren. Geldt alléén over de losse overuren — reguliere uren blijven op het normale tarief. Leeg = zelfde als normaal tarief."
+                title="Overuren-tarief"
+                hint="Vast €/u voor losse overuren · leeg = normaal tarief"
                 buyName="overtimeCostRate"
                 sellName="overtimeChargeRate"
                 buyDefault={placement?.overtimeCostRate ?? 0}
@@ -1426,7 +1354,7 @@ export function PlacementForm({
               />
               <ToeslagBlock
                 title="Kilometervergoeding"
-                hint="Vergoeding per gereden kilometer (reiskosten)."
+                hint="Per gereden kilometer"
                 buyName="kmRateBuy"
                 sellName="kmRateSell"
                 buyDefault={placement?.kmRateBuy ?? 0}
@@ -1435,10 +1363,9 @@ export function PlacementForm({
                 step={0.01}
               />
             </div>
-              </div>
-            </details>
+          </div>
 
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-[14rem_1fr]">
             <Field label="Status" htmlFor="status" required error={e.status}>
               <Select
                 id="status"
@@ -1452,11 +1379,10 @@ export function PlacementForm({
                 ))}
               </Select>
             </Field>
+            <Field label="Notities" htmlFor="notes" error={e.notes}>
+              <Textarea id="notes" name="notes" rows={2} defaultValue={placement?.notes ?? ""} />
+            </Field>
           </div>
-
-          <Field label="Notities" htmlFor="notes" error={e.notes}>
-            <Textarea id="notes" name="notes" defaultValue={placement?.notes ?? ""} />
-          </Field>
           </div>
         </Sectie>
 
