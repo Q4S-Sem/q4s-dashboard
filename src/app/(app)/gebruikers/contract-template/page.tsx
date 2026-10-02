@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Oude plek (Vormgeving & blanco) — alles staat nu onder Contracten → Nieuw document. */
+/** Oude plek (Vormgeving & blanco) — staat nu onder Contracten → Blanco / Timesheet. */
 export default async function OudeContractTemplate({
   searchParams,
 }: {

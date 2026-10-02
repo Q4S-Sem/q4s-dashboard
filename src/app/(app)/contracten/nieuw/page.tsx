@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/ui/page-header";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
@@ -17,7 +18,6 @@ export const dynamic = "force-dynamic";
 const SOORTEN: [string, string][] = [
   ["overeenkomst", "Overeenkomst van opdracht"],
   ["persoonsgegevens", "Persoonsgegevens"],
-  ["urenstaat", "Q4S-Timesheet"],
   ["offerte", "Offerte"],
 ];
 
@@ -32,6 +32,8 @@ export default async function NieuwContractPage({
   searchParams: Promise<{ consultantId?: string; placementId?: string; doc?: string; taal?: string }>;
 }) {
   const { consultantId, placementId, doc: d, taal: t } = await searchParams;
+  // Oude links naar de timesheet hier → de eigen Timesheet-pagina.
+  if (d === "urenstaat") redirect(`/contracten/timesheet${t === "en" ? "?taal=en" : ""}`);
   const doc = SOORTEN.some(([k]) => k === d) ? d! : "overeenkomst";
   const taal = t === "en" ? "en" : "nl";
   const url = (x: string, tl: string) => `/contracten/nieuw?doc=${x}${tl === "en" ? "&taal=en" : ""}`;
@@ -41,7 +43,7 @@ export default async function NieuwContractPage({
       <div className="no-print space-y-4">
         <BackLink href="/contracten">Terug naar contracten</BackLink>
         <PageHeader
-          title="Nieuw document"
+          title="Blanco"
           description="Kies welk document je maakt, vul het in en print of bewaar het als PDF."
         />
         <div className="flex flex-wrap items-center gap-2 border-b border-ink-200 pb-3">
