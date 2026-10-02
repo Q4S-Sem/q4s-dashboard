@@ -142,7 +142,7 @@ export default async function ContractTemplatePage({
         <div className="no-print flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
           <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
           <p className="mr-auto text-sm text-ink-600">
-            Excel-versie om naar ZZP&apos;ers te sturen — datum van maandag invullen, de rest rekent vanzelf.
+            Excel-urenstaat (FO-Q4S-18, A4 liggend) om naar ZZP&apos;ers te sturen — datum van maandag bij &ldquo;Van&rdquo; invullen, de rest rekent vanzelf.
           </p>
           {(["NL", "EN"] as const).map((l) => (
             <a
