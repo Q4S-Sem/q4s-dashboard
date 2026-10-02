@@ -231,6 +231,9 @@ function scopeWhere(recruiterId: string | null, scope: "mine" | "all"): Prisma.D
   return scope === "mine" && recruiterId ? { ownerId: recruiterId } : {};
 }
 
+export { CRM_ARCHIEF_DAGEN, crmArchiefWhere } from "./crm-archief";
+import { crmArchiefWhere } from "./crm-archief";
+
 /** Assemble the Kanban board (columns from stages, cards from deals in scope). */
 export async function getBoardData(opts: {
   recruiterId: string | null;
@@ -250,6 +253,7 @@ export async function getBoardData(opts: {
     where: {
       ...scopeWhere(opts.recruiterId, opts.scope),
       ...(opts.onlyWithCandidate ? { candidateId: { not: null } } : {}),
+      NOT: crmArchiefWhere(),
     },
     include: {
       owner: { select: { name: true } },

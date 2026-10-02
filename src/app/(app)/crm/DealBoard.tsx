@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Star, MessageSquare, CalendarClock, Users, MapPin, GripVertical, Briefcase, ArrowRight } from "lucide-react";
+import { Star, MessageSquare, CalendarClock } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
-import { Badge, StatusBadge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
-import { DISCIPLINES, CANDIDATE_RATINGS, colorFor, labelFor, type BadgeColor } from "@/lib/domain";
+import { DISCIPLINES, colorFor, labelFor, type BadgeColor } from "@/lib/domain";
 import { moveDeal } from "./actions";
 
 export type DealColumn = {
@@ -94,7 +94,7 @@ export function DealBoard({
 
   return (
     <div className="overflow-x-auto pb-2">
-      <div className="mx-auto flex w-fit gap-4">
+      <div className="flex w-fit gap-2.5">
       {columns.map((col) => {
         const colCards = cards.filter((c) => c.columnId === col.id);
         const accent = ACCENT[col.color ?? "slate"];
@@ -115,30 +115,30 @@ export function DealBoard({
               if (id) move(id, col.id);
             }}
             className={cn(
-              "flex w-80 shrink-0 flex-col rounded-xl border bg-ink-50/60 transition-colors",
+              "flex w-60 shrink-0 flex-col rounded-md border bg-ink-50/60 transition-colors",
               overCol === col.id ? "border-brand-400 bg-brand-50/40" : "border-ink-200",
             )}
           >
-            <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
+            <div className="flex items-center justify-between gap-2 px-2.5 pt-2.5 pb-1.5">
               <div className="flex items-center gap-2">
                 <span className={cn("h-2.5 w-2.5 rounded-full", accent)} />
-                <span className="text-sm font-semibold text-ink-700">{col.label}</span>
+                <span className="truncate text-[13px] font-semibold text-ink-700">{col.label}</span>
                 <span className="text-[11px] text-ink-400">{col.probability}%</span>
               </div>
               <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-sm bg-ink-200 px-1.5 text-xs font-semibold tabular-nums text-ink-600">
                 {colCards.length}
               </span>
             </div>
-            <div className={cn("h-1 rounded-full mx-3", accent)} />
+            <div className={cn("mx-2.5 h-0.5 rounded-full", accent)} />
             {colValue > 0 && (
-              <div className="px-3 pt-1.5 text-[11px] font-medium tabular-nums text-ink-500">
+              <div className="px-2.5 pt-1 text-[11px] font-medium tabular-nums text-ink-500">
                 {formatCurrency(colValue)}
               </div>
             )}
 
-            <div className="flex flex-1 flex-col gap-2 p-3">
+            <div className="flex min-h-24 flex-1 flex-col gap-1.5 p-2">
               {colCards.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-ink-200 px-3 py-6 text-center text-xs text-ink-400">
+                <p className="rounded-md border border-dashed border-ink-200 px-2 py-4 text-center text-[11px] text-ink-400">
                   Sleep hier een deal
                 </p>
               ) : (
@@ -146,8 +146,9 @@ export function DealBoard({
                   const overdue = isOverdue(card.nextFollowUpAt);
                   const displayName = card.candidateName ?? card.title;
                   return (
-                    <div
+                    <Link
                       key={card.id}
+                      href={`/crm/deals/${card.id}`}
                       draggable
                       onDragStart={(e) => {
                         e.dataTransfer.setData("text/plain", card.id);
@@ -155,89 +156,47 @@ export function DealBoard({
                         setDragId(card.id);
                       }}
                       onDragEnd={() => setDragId(null)}
+                      title="Klik om te openen · sleep naar een andere fase"
                       className={cn(
-                        "group rounded-xl border border-ink-200 bg-white shadow-sm transition-shadow hover:shadow-md",
+                        "block cursor-grab rounded-md border border-ink-200 bg-white px-2.5 py-2 transition-colors hover:border-ink-400 active:cursor-grabbing",
                         dragId === card.id && "opacity-50",
                       )}
                     >
-                      {/* Sleep-strook bovenaan — hier pak je de kaart vast */}
-                      <div className="flex cursor-grab items-center gap-1 rounded-t-xl border-b border-ink-100 bg-ink-50/70 px-2 py-1 text-[11px] text-ink-400 active:cursor-grabbing">
-                        <GripVertical className="h-3.5 w-3.5" />
-                        <span>Sleep naar een andere fase</span>
+                      <div className="flex items-center gap-2">
+                        <Avatar name={displayName} src={card.candidatePhoto} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13px] font-semibold leading-tight text-ink-900">{displayName}</p>
+                          <p className="truncate text-[11px] leading-tight text-ink-500">
+                            {card.company}
+                            {card.candidateHeadline ? ` · ${card.candidateHeadline}` : ""}
+                          </p>
+                        </div>
                         {card.fitScore > 0 && (
-                          <span className="ml-auto inline-flex items-center gap-0.5" title={`Fit ${card.fitScore}/5`}>
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                className={cn("h-3 w-3", i < card.fitScore ? "fill-amber-400 text-amber-400" : "text-ink-200")}
-                              />
-                            ))}
+                          <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-medium text-amber-600" title={`Fit ${card.fitScore}/5`}>
+                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                            {card.fitScore}
                           </span>
                         )}
                       </div>
-
-                      <div className="p-3">
-                        {/* Persoon: avatar + naam + headline */}
-                        <div className="flex items-center gap-2.5">
-                          <Avatar name={displayName} src={card.candidatePhoto} size="sm" className="ring-2 ring-ink-100" />
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-ink-900">{displayName}</p>
-                            {card.candidateHeadline && (
-                              <p className="truncate text-xs text-ink-500">{card.candidateHeadline}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Bedrijf + vacature */}
-                        <div className="mt-2.5 space-y-1 text-xs text-ink-600">
-                          <p className="flex items-center gap-1.5 truncate">
-                            <Briefcase className="h-3.5 w-3.5 shrink-0 text-ink-400" />
-                            <span className="truncate font-medium text-ink-700">{card.company}</span>
-                          </p>
-                          {card.vacancyTitle && (
-                            <p className="truncate pl-5 text-ink-500" title={card.vacancyTitle}>
-                              {card.vacancyTitle}
-                            </p>
-                          )}
-                          {card.candidateLocation && (
-                            <p className="flex items-center gap-1.5 truncate text-ink-500">
-                              <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-400" />
-                              <span className="truncate">{card.candidateLocation}</span>
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Badges: discipline · beoordeling · waarde */}
-                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                      {(card.discipline || card.value > 0 || card.nextFollowUpAt || card.noteCount > 0) && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-400">
                           {card.discipline && (
                             <Badge color={colorFor(DISCIPLINES, card.discipline)}>
                               {labelFor(DISCIPLINES, card.discipline)}
                             </Badge>
                           )}
-                          {card.candidateRating && (
-                            <StatusBadge options={CANDIDATE_RATINGS} value={card.candidateRating} />
-                          )}
                           {card.value > 0 && (
-                            <span className="text-xs font-semibold tabular-nums text-ink-700">
-                              {formatCurrency(card.value)}
-                            </span>
+                            <span className="font-semibold tabular-nums text-ink-700">{formatCurrency(card.value)}</span>
                           )}
-                          {card.positions > 1 && (
-                            <span className="inline-flex items-center gap-0.5 text-[11px] text-ink-400">
-                              <Users className="h-3 w-3" /> {card.positions}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Footer: notities + opvolging, en een duidelijke Openen-knop */}
-                        <div className="mt-2.5 flex items-center justify-end gap-2 border-t border-ink-100 pt-2 text-[11px] text-ink-400">
-                          <span className="flex shrink-0 items-center gap-2">
-                            <span className="inline-flex items-center gap-0.5" title="Notities">
-                              <MessageSquare className="h-3 w-3" /> {card.noteCount}
-                            </span>
+                          <span className="ml-auto inline-flex items-center gap-2">
+                            {card.noteCount > 0 && (
+                              <span className="inline-flex items-center gap-0.5" title="Notities">
+                                <MessageSquare className="h-3 w-3" /> {card.noteCount}
+                              </span>
+                            )}
                             {card.nextFollowUpAt && (
                               <span
-                                className={cn("inline-flex items-center gap-0.5", overdue ? "font-semibold text-red-600" : "text-ink-400")}
+                                className={cn("inline-flex items-center gap-0.5", overdue ? "font-semibold text-red-600" : "")}
                                 title="Opvolgen op"
                               >
                                 <CalendarClock className="h-3 w-3" />
@@ -246,15 +205,8 @@ export function DealBoard({
                             )}
                           </span>
                         </div>
-
-                        <Link
-                          href={`/crm/deals/${card.id}`}
-                          className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
-                        >
-                          Openen <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </div>
-                    </div>
+                      )}
+                    </Link>
                   );
                 })
               )}

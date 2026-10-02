@@ -1,7 +1,7 @@
-import { Kanban, Coins, Gauge, CalendarClock } from "lucide-react";
+import Link from "next/link";
+import { Archive, CalendarClock } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
 import { formatCurrency } from "@/lib/utils";
 import {
   currentRecruiterId,
@@ -61,29 +61,24 @@ export default async function CrmPage() {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="CRM"
-        description="Eén gedeelde pipeline om een kandidaat uit de talentpool bij een eigen klant te plaatsen op een openstaande vacature. Sleep deals tussen de fases; alles wat je doet wordt gelogd."
+        description="Sleep een kaart naar de volgende fase, klik om te openen. Geplaatst en verloren gaan na 3 dagen naar het Archief."
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Open deals" value={openCount} icon={<Kanban className="h-5 w-5" />} accent="brand" />
-        <StatCard label="Pipelinewaarde" value={formatCurrency(pipelineValue)} icon={<Coins className="h-5 w-5" />} accent="violet" />
-        <StatCard
-          label="Gewogen waarde"
-          value={formatCurrency(weightedValue)}
-          sub="naar winkans"
-          icon={<Gauge className="h-5 w-5" />}
-          accent="green"
-        />
-        <StatCard
-          label="Opvolgen"
-          value={dueFollowUps}
-          sub="vandaag of te laat"
-          icon={<CalendarClock className="h-5 w-5" />}
-          accent={dueFollowUps > 0 ? "amber" : "slate"}
-        />
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-ink-500">
+        <span><b className="tabular-nums text-ink-900">{openCount}</b> open</span>
+        <span>Pipeline <b className="tabular-nums text-ink-900">{formatCurrency(pipelineValue)}</b></span>
+        <span>Gewogen <b className="tabular-nums text-ink-900">{formatCurrency(weightedValue)}</b></span>
+        <Link href="/crm/opvolging" className={dueFollowUps > 0 ? "font-medium text-amber-700 hover:underline" : "hover:underline"}>
+          <CalendarClock className="mr-1 inline h-4 w-4" />
+          <b className="tabular-nums">{dueFollowUps}</b> opvolgen
+        </Link>
+        <Link href="/archief?type=crm" className="ml-auto hover:underline">
+          <Archive className="mr-1 inline h-4 w-4" />
+          Archief
+        </Link>
       </div>
 
       <DealBoard columns={dealColumns} cards={dealCards} />

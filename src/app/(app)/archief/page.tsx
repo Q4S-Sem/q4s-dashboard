@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { Archive, Search, Folder, Paperclip, UserX, RotateCcw } from "lucide-react";
+import { Archive, Search, Folder, Paperclip, UserX, RotateCcw, Kanban } from "lucide-react";
+import { StatusBadge } from "@/components/ui/badge";
+import { DEAL_STATUSES } from "@/lib/domain";
+import { crmArchiefWhere, CRM_ARCHIEF_DAGEN } from "@/lib/crm";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { restorePlacement } from "../plaatsingen/actions";
 import { db } from "@/lib/db";
@@ -63,8 +66,10 @@ export default async function ArchiefPage({
   };
 
   const uitDienstMap = type === "uit-dienst";
-  const [items, typeGroups, archivedTotal, uitDienst] = await Promise.all([
-    uitDienstMap ? Promise.resolve([]) : db.archivedItem.findMany({ where, orderBy: { deletedAt: "desc" }, take: 300 }),
+  const crmMap = type === "crm";
+  const eigenMap = uitDienstMap || crmMap;
+  const [items, typeGroups, archivedTotal, uitDienst, crmDeals] = await Promise.all([
+    eigenMap ? Promise.resolve([]) : db.archivedItem.findMany({ where, orderBy: { deletedAt: "desc" }, take: 300 }),
     db.archivedItem.groupBy({ by: ["entityType"], _count: { _all: true } }),
     db.archivedItem.count(),
     // Uit dienst: gearchiveerde plaatsingen (niet verwijderd, terug te zetten).
@@ -85,9 +90,22 @@ export default async function ArchiefPage({
       orderBy: { updatedAt: "desc" },
       include: { consultant: { select: { firstName: true, lastName: true } }, client: { select: { companyName: true } } },
     }),
+    // CRM: geplaatste/verloren deals, na CRM_ARCHIEF_DAGEN van het bord af.
+    db.deal.findMany({
+      where: {
+        AND: [
+          crmArchiefWhere(),
+          q ? { OR: [{ title: { contains: q } }, { company: { contains: q } }] } : {},
+        ],
+      },
+      orderBy: { closedAt: "desc" },
+      take: 300,
+      select: { id: true, title: true, company: true, status: true, closedAt: true, updatedAt: true },
+    }),
   ]);
-  const total = archivedTotal + uitDienst.length;
+  const total = archivedTotal + uitDienst.length + crmDeals.length;
   const toonUitDienst = (type === "" || uitDienstMap) && uitDienst.length > 0;
+  const toonCrm = (type === "" || crmMap) && crmDeals.length > 0;
 
   const folders = typeGroups
     .map((g) => ({ type: g.entityType, label: entLabel(g.entityType), count: g._count._all }))
@@ -152,6 +170,18 @@ export default async function ArchiefPage({
                   <UserX className="h-5 w-5 text-ink-400" />
                   <span className="flex-1 truncate text-sm font-medium text-ink-800">Uit dienst (plaatsingen)</span>
                   <span className="text-sm tabular-nums text-ink-500">{uitDienst.length}</span>
+                </Link>
+              )}
+              {crmDeals.length > 0 && (
+                <Link
+                  href={`/archief?type=crm${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                  className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
+                    crmMap ? "border-brand-300 bg-brand-50" : "border-ink-200 bg-white hover:bg-ink-50"
+                  }`}
+                >
+                  <Kanban className="h-5 w-5 text-ink-400" />
+                  <span className="flex-1 truncate text-sm font-medium text-ink-800">CRM — geplaatst &amp; verloren</span>
+                  <span className="text-sm tabular-nums text-ink-500">{crmDeals.length}</span>
                 </Link>
               )}
               {folders.map((f) => {
@@ -225,8 +255,47 @@ export default async function ArchiefPage({
             </Card>
           )}
 
+          {toonCrm && (
+            <Card>
+              <CardContent className="p-0">
+                <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
+                  <p className="text-sm font-semibold text-ink-900">CRM — geplaatst &amp; verloren</p>
+                  <p className="text-xs text-ink-400">
+                    Na {CRM_ARCHIEF_DAGEN} dagen automatisch van het bord · Openen om terug te zetten
+                  </p>
+                </div>
+                <Table>
+                  <THead>
+                    <TR className="hover:bg-transparent">
+                      <TH>Deal</TH>
+                      <TH>Klant</TH>
+                      <TH>Uitkomst</TH>
+                      <TH>Afgerond</TH>
+                    </TR>
+                  </THead>
+                  <TBody>
+                    {crmDeals.map((d) => (
+                      <TR key={d.id}>
+                        <TD>
+                          <Link href={`/crm/deals/${d.id}`} className="font-medium text-ink-900 hover:text-brand-700">
+                            {d.title}
+                          </Link>
+                        </TD>
+                        <TD className="text-ink-600">{d.company || "—"}</TD>
+                        <TD>
+                          <StatusBadge options={DEAL_STATUSES} value={d.status} />
+                        </TD>
+                        <TD className="text-ink-500">{formatDate(d.closedAt ?? d.updatedAt)}</TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Items */}
-          {!uitDienstMap && (
+          {!eigenMap && (
           <Card>
             <CardContent className="p-0">
               {items.length === 0 ? (
