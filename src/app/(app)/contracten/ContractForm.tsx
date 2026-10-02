@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { Contract } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea, Select } from "@/components/ui/field";
@@ -46,6 +46,12 @@ export function ContractForm({
   const e = state.fieldErrors ?? {};
   const c = contract;
   const d = defaults;
+  // Leeg = nieuw persoon: dan typ je de naam meteen hier bovenaan.
+  const [persoon, setPersoon] = useState(c?.consultantId ?? d?.consultantId ?? "");
+  const [naam, setNaam] = useState(c?.contractorName ?? d?.contractorName ?? "");
+  const naamVeld = (
+    <Input id="contractorName" name="contractorName" value={naam} onChange={(ev) => setNaam(ev.target.value)} required />
+  );
 
   return (
     <form action={formAction} className="space-y-6">
@@ -69,15 +75,29 @@ export function ContractForm({
               label="Opdrachtnemer"
               htmlFor="consultantId"
               error={e.consultantId}
-              hint="Nieuw persoon? Laat op “Nieuw persoon” staan en vul de gegevens hieronder in — koppelen kan later."
+              hint="Nieuw persoon? Laat op “Nieuw persoon” staan en typ de naam hieronder — koppelen kan later."
             >
-              <Select id="consultantId" name="consultantId" defaultValue={c?.consultantId ?? d?.consultantId ?? ""}>
+              <Select
+                id="consultantId"
+                name="consultantId"
+                defaultValue={persoon}
+                onValueChange={(v) => {
+                  setPersoon(v);
+                  const o = consultants.find((x) => x.id === v);
+                  if (o) setNaam(o.company || o.name);
+                }}
+              >
                 <option value="">Nieuw persoon (nog niet in het dashboard)</option>
                 {consultants.map((o) => (
                   <option key={o.id} value={o.id}>{o.name}{o.company ? ` — ${o.company}` : ""}</option>
                 ))}
               </Select>
             </Field>
+            {!persoon && (
+              <Field label="Naam nieuw persoon" htmlFor="contractorName" required error={e.contractorName} hint="Zoals het op het contract komt (persoon of zijn bedrijf)">
+                {naamVeld}
+              </Field>
+            )}
             <Field label="Plaatsing (optioneel)" htmlFor="placementId" error={e.placementId} hint="Koppel aan een plaatsing bij een klant.">
               <Select id="placementId" name="placementId" defaultValue={c?.placementId ?? d?.placementId ?? ""}>
                 <option value="">— Geen plaatsing —</option>
@@ -108,9 +128,11 @@ export function ContractForm({
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Naam (handelend onder)" htmlFor="contractorName" required error={e.contractorName}>
-              <Input id="contractorName" name="contractorName" defaultValue={c?.contractorName ?? d?.contractorName ?? ""} required />
-            </Field>
+            {persoon && (
+              <Field label="Naam (handelend onder)" htmlFor="contractorName" required error={e.contractorName}>
+                {naamVeld}
+              </Field>
+            )}
             <Field label="Gevestigd te" htmlFor="contractorAddress" error={e.contractorAddress}>
               <Input id="contractorAddress" name="contractorAddress" defaultValue={c?.contractorAddress ?? d?.contractorAddress ?? ""} />
             </Field>
