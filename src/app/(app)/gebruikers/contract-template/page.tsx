@@ -10,6 +10,8 @@ import { getCompanySettings } from "@/lib/settings";
 import { buildContractDoc } from "@/lib/contract-doc";
 import { contractLogoDataUri } from "@/lib/contract-render";
 import { cn } from "@/lib/utils";
+import { Download, FileSpreadsheet } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { PrintBar } from "../../contracten/[id]/print/PrintBar";
 
 export const metadata = { title: "Contract-vormgeving" };
@@ -135,6 +137,25 @@ export default async function ContractTemplatePage({
           <TaalSchakelaar taal={taal} href={(t) => url(doc, t)} />
         </div>
       </div>
+
+      {doc === "urenstaat" && (
+        <div className="no-print flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
+          <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+          <p className="mr-auto text-sm text-ink-600">
+            Excel-versie om naar ZZP&apos;ers te sturen — datum van maandag invullen, de rest rekent vanzelf.
+          </p>
+          {(["NL", "EN"] as const).map((l) => (
+            <a
+              key={l}
+              href={`/templates/urenstaat/Q4S-Urenstaat-FO-Q4S-18-${l}.xlsx`}
+              download
+              className={buttonVariants({ variant: l.toLowerCase() === taal ? "secondary" : "outline", size: "sm" })}
+            >
+              <Download className="h-4 w-4" /> Excel {l}
+            </a>
+          ))}
+        </div>
+      )}
 
       <div className="ov-print-pagina">
         <PrintBar terug="/gebruikers" />
