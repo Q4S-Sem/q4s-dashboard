@@ -240,10 +240,10 @@ const HUB_ORDER = [
   "/klanten", // Personeelsgegevens
   "/contracten",
   "/facturatie",
-  "/agenda",
   "/recruitment",
   "/website", // Vacatures
   "/website/cv-inbox", // CV's
+  "/agenda",
   "/evaluaties",
   "/dashboard", // Analytics
   "/data",
