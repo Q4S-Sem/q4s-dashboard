@@ -850,10 +850,20 @@ export async function aiJSONFromFile<T>(opts: FileExtractOpts): Promise<T> {
   // Nederlandse UI: dwing af dat alle vrije tekst (opmerkingen/notities/samen-
   // vattingen) in het Nederlands terugkomt, ook bij een anderstalig brondocument.
   // Feitelijke waarden (namen/nummers/codes) blijven letterlijk.
+  // Tijdmeting per stap (Vercel-logs, regel "[vision-timing]") om te zien waar
+  // het uitlezen zijn tijd verliest. Geen documentinhoud in de log.
+  const t0 = Date.now();
+  const kb = Math.round((opts.file.base64.length * 3) / 4 / 1024);
+  const file = await visionFile(opts.file);
+  const tPrep = Date.now() - t0;
+  const timing = (stap: string) =>
+    console.info(
+      `[vision-timing] ${opts.schemaName ?? "doc"} ${kb}KB ${opts.file.mediaType} -> ${file.mediaType} | voorbereiden ${tPrep}ms | ${stap} | totaal ${Date.now() - t0}ms`,
+    );
   const dutch: FileExtractOpts = {
     ...opts,
     // Gescande PDF eerst zelf naar een scherpe PNG; valt terug op het origineel.
-    file: await visionFile(opts.file),
+    file,
     system: `${opts.system}\n\nTAAL: geef alle vrije tekst (opmerkingen, notities, samenvattingen, toelichtingen) ALTIJD in het NEDERLANDS terug, ook als het brondocument in een andere taal is. Feitelijke waarden (namen, nummers, codes) neem je letterlijk over.`,
   };
   const p = visionProvider();
@@ -863,20 +873,28 @@ export async function aiJSONFromFile<T>(opts: FileExtractOpts): Promise<T> {
   // Eerst het snelle model; twijfelt het of klopt de zelfcontrole niet, dan leest
   // het sterke model hetzelfde document nog een keer, mét de reden erbij.
   let reden: string | null;
+  const t1 = Date.now();
   try {
     const snel = await run(dutch);
     reden = opts.retryIf?.(snel) ?? null;
-    if (!reden) return snel;
+    if (!reden) {
+      timing(`snel model (${visionModel(p)}) ${Date.now() - t1}ms`);
+      return snel;
+    }
   } catch (e) {
     reden = e instanceof Error ? e.message : String(e);
   }
+  const tSnel = Date.now() - t1;
   console.info(`[vision] tweede lezing met het sterke model: ${reden}`);
-  return run({
+  const t2 = Date.now();
+  const sterk = await run({
     ...dutch,
     strong: true,
     maxTokens: Math.max(dutch.maxTokens ?? 4000, 8000),
     prompt: `${dutch.prompt}\n\nLET OP — een eerste uitlezing was onbetrouwbaar (${reden}). Lees het document opnieuw, heel nauwkeurig, cel voor cel en regel voor regel. Controleer zelf dat de optellingen kloppen met de totalen op het document voordat je antwoordt.`,
   });
+  timing(`snel ${tSnel}ms + sterk model (${visionModel(p, true)}) ${Date.now() - t2}ms`);
+  return sterk;
 }
 
 /** Leesbaar model per provider, snel of sterk. */
