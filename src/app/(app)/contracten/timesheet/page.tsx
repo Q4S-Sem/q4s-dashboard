@@ -2,10 +2,8 @@ import { Download, FileSpreadsheet } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
-import { getCompanySettings } from "@/lib/settings";
-import { contractFooterLine } from "@/lib/contract-doc";
 import { contractLogoDataUri } from "@/lib/contract-render";
-import { DocumentInvullen } from "../nieuw/DocumentInvullen";
+import { TimesheetInvullen } from "./TimesheetInvullen";
 
 export const metadata = { title: "Timesheet" };
 export const dynamic = "force-dynamic";
@@ -38,12 +36,7 @@ export default async function TimesheetPage({ searchParams }: { searchParams: Pr
           ))}
         </div>
       </div>
-      <DocumentInvullen
-        doc="urenstaat"
-        taal={taal}
-        logoSrc={contractLogoDataUri()}
-        footerLine={contractFooterLine(await getCompanySettings())}
-      />
+      <TimesheetInvullen taal={taal} logoSrc={contractLogoDataUri()} />
     </div>
   );
 }

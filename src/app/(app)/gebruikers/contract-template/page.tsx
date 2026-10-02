@@ -10,5 +10,5 @@ export default async function OudeContractTemplate({
   const q = new URLSearchParams();
   if (doc) q.set("doc", doc);
   if (taal === "en") q.set("taal", "en");
-  redirect(`/contracten/nieuw${q.size ? `?${q}` : ""}`);
+  redirect(`/contracten/blanco${q.size ? `?${q}` : ""}`);
 }

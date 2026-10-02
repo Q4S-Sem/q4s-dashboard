@@ -1,88 +1,25 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/ui/page-header";
-import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
-import { getCompanySettings } from "@/lib/settings";
-import { contractFooterLine } from "@/lib/contract-doc";
-import { contractLogoDataUri } from "@/lib/contract-render";
-import { cn } from "@/lib/utils";
 import { ContractForm } from "../ContractForm";
 import { createContract } from "../actions";
 import { getContractFormOptions } from "../data";
-import { DocumentInvullen, type InvulDoc } from "./DocumentInvullen";
 
 export const metadata = { title: "Nieuw contract" };
 export const dynamic = "force-dynamic";
 
-const SOORTEN: [string, string][] = [
-  ["overeenkomst", "Overeenkomst van opdracht"],
-  ["persoonsgegevens", "Persoonsgegevens"],
-  ["offerte", "Offerte"],
-];
-
-/**
- * Eén plek om elk Q4S-document te maken: kies bovenaan welk document, vul het
- * in en print/bewaar het. De overeenkomst wordt opgeslagen (met controle op
- * ontbrekende gegevens); de andere drie vul je in en bewaar je als PDF.
- */
+/** Een overeenkomst van opdracht invullen en opslaan (met controle op ontbrekende gegevens). */
 export default async function NieuwContractPage({
   searchParams,
 }: {
   searchParams: Promise<{ consultantId?: string; placementId?: string; doc?: string; taal?: string }>;
 }) {
-  const { consultantId, placementId, doc: d, taal: t } = await searchParams;
-  // Oude links naar de timesheet hier → de eigen Timesheet-pagina.
-  if (d === "urenstaat") redirect(`/contracten/timesheet${t === "en" ? "?taal=en" : ""}`);
-  const doc = SOORTEN.some(([k]) => k === d) ? d! : "overeenkomst";
-  const taal = t === "en" ? "en" : "nl";
-  const url = (x: string, tl: string) => `/contracten/nieuw?doc=${x}${tl === "en" ? "&taal=en" : ""}`;
+  const { consultantId, placementId, doc, taal } = await searchParams;
+  // Oude links (toen Blanco/Timesheet hier zaten) → hun eigen pagina.
+  const tl = taal === "en" ? "taal=en" : "";
+  if (doc === "urenstaat") redirect(`/contracten/timesheet${tl ? `?${tl}` : ""}`);
+  if (doc === "persoonsgegevens" || doc === "offerte") redirect(`/contracten/blanco?doc=${doc}${tl ? `&${tl}` : ""}`);
 
-  return (
-    <div className="space-y-5">
-      <div className="no-print space-y-4">
-        <BackLink href="/contracten">Terug naar contracten</BackLink>
-        <PageHeader
-          title="Blanco"
-          description="Kies welk document je maakt, vul het in en print of bewaar het als PDF."
-        />
-        <div className="flex flex-wrap items-center gap-2 border-b border-ink-200 pb-3">
-          {SOORTEN.map(([k, label]) => (
-            <Link
-              key={k}
-              href={url(k, taal)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium",
-                k === doc ? "bg-ink-900 text-white" : "text-ink-500 hover:bg-ink-100 hover:text-ink-900",
-              )}
-            >
-              {label}
-            </Link>
-          ))}
-          {doc !== "overeenkomst" && (
-            <div className="ml-auto">
-              <TaalSchakelaar taal={taal} href={(tl) => url(doc, tl)} />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {doc === "overeenkomst" ? (
-        await Overeenkomst({ consultantId, placementId })
-      ) : (
-        <DocumentInvullen
-          key={doc}
-          doc={doc as InvulDoc}
-          taal={taal}
-          logoSrc={contractLogoDataUri()}
-          footerLine={contractFooterLine(await getCompanySettings())}
-        />
-      )}
-    </div>
-  );
-}
-
-async function Overeenkomst({ consultantId, placementId }: { consultantId?: string; placementId?: string }) {
   const { consultants, placements } = await getContractFormOptions();
 
   // Voor-invullen bij aanmaken vanuit een plaatsing: opdrachtnemer + plaatsing
@@ -102,12 +39,19 @@ async function Overeenkomst({ consultantId, placementId }: { consultantId?: stri
       : undefined;
 
   return (
-    <ContractForm
-      action={createContract}
-      defaults={defaults}
-      consultants={consultants}
-      placements={placements}
-      cancelHref="/contracten"
-    />
+    <div className="space-y-5">
+      <BackLink href="/contracten">Terug naar contracten</BackLink>
+      <PageHeader
+        title="Nieuw contract"
+        description="Vul de overeenkomst van opdracht in, sla op en print hem. Ontbreekt er iets, dan krijg je een melding."
+      />
+      <ContractForm
+        action={createContract}
+        defaults={defaults}
+        consultants={consultants}
+        placements={placements}
+        cancelHref="/contracten"
+      />
+    </div>
   );
 }

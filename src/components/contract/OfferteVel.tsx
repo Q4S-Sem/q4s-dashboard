@@ -31,8 +31,16 @@ export type Offerte = {
   salutation?: string;
   inspector?: string;
   location?: string;
+  /** Tarieven — zelfde tabel als art. 6.1 van de overeenkomst van opdracht. */
   hourlyRate?: string;
-  surcharges?: string;
+  rateShift?: string;
+  rateSaturday?: string;
+  rateSunday?: string;
+  rateOffshore?: string;
+  rateOvertime?: string;
+  overtimeApplies?: string;
+  rateDayFixed?: string;
+  dayBasedOnHours?: string;
   travel?: string;
   availability?: string;
   duration?: string;
@@ -124,11 +132,51 @@ export function OfferteVel({
       <article className="ov-vel" data-ov-sheet>
         {kop}
         <p className="ov-hd">{t("Tarieven en voorwaarden", "Rates and conditions")}</p>
+        {/* Exact de tarieventabel van art. 6.1 van de overeenkomst van opdracht. */}
+        <table className="ov-tar">
+          <thead>
+            <tr>
+              <th />
+              <th>{t("Dag uren", "Day hours")}</th>
+              <th>Shift</th>
+              <th>{t("Zaterdag", "Saturday")}</th>
+              <th>{t("Zon/Feestdag", "Sun/Public Holiday")}</th>
+              <th>Offshore (NL)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="ov-rl">{t("Uurtarief", "Hourly rate")}</td>
+              <td><F v={q.hourlyRate} /></td>
+              <td><F v={q.rateShift} /></td>
+              <td><F v={q.rateSaturday} /></td>
+              <td><F v={q.rateSunday} /></td>
+              <td><F v={q.rateOffshore} /></td>
+            </tr>
+            <tr>
+              <td className="ov-rl">{t("*Overuren", "*Overtime")}</td>
+              <td colSpan={5}><F v={q.rateOvertime} /></td>
+            </tr>
+            <tr>
+              <td className="ov-rl">{t("Voor overuren gelden uren na", "Overtime hours are")}</td>
+              <td colSpan={5}><F v={q.overtimeApplies} /></td>
+            </tr>
+            <tr>
+              <td className="ov-rl">{t("Dagtarief", "Daily rate")}</td>
+              <td colSpan={5}><F v={q.rateDayFixed} /></td>
+            </tr>
+            <tr>
+              <td className="ov-rl">{t("Dagtarief is gebaseerd op een werkdag van", "Daily rate is based on a working day of")}</td>
+              <td colSpan={5}><F v={q.dayBasedOnHours} /> {t("uur", "hours")}</td>
+            </tr>
+            <tr>
+              <td className="ov-rl">{t("Kilometers", "Kilometers")}</td>
+              <td colSpan={5}><F v={q.travel} /></td>
+            </tr>
+          </tbody>
+        </table>
         {tabel([
-          [t("Uurtarief", "Hourly rate"), <F key="r" v={q.hourlyRate} />],
           [t("Werklocatie", "Work location"), <F key="l" v={q.location} />],
-          [t("Toeslagen", "Surcharges"), <F key="s" v={q.surcharges} />],
-          [t("Zakelijke reiskosten", "Business travel"), <F key="t" v={q.travel} />],
           [t("Eerst beschikbaar", "Earliest availability"), <F key="a" v={q.availability} />],
           [t("Contractduur", "Contract duration"), <F key="d" v={q.duration} />],
         ])}
