@@ -25,7 +25,7 @@ const L = {
     hours: "Hours worked", overtime: "Overtime", ot: "Overtime hrs", day: "Day", desc: "Description of work",
     km: "Kilometres", kmFrom: "From", kmTo: "To", kmTotal: "Total kilometres",
     contractor: "Contractor", approval: "For approval — client", sig: "Signature", date: "Date",
-    fname: "Name", func: "Function", clientL: "Client",
+    fname: "Name", func: "Function", clientL: "Client", sigClient: "Client signature for approval",
     note: "Only timesheets signed by the client are processed. One timesheet per week, as PDF or clear photo to admin@q4s.nl.",
   },
   nl: {
@@ -36,7 +36,7 @@ const L = {
     hours: "Gewerkte uren", overtime: "Overuren", ot: "Overuren", day: "Dag", desc: "Omschrijving werkzaamheden",
     km: "Kilometers", kmFrom: "Van", kmTo: "Naar", kmTotal: "Totaal kilometers",
     contractor: "Medewerker / ZZP'er", approval: "Akkoord klant", sig: "Handtekening", date: "Datum",
-    fname: "Naam", func: "Functie", clientL: "Klant",
+    fname: "Naam", func: "Functie", clientL: "Klant", sigClient: "Handtekening voor akkoord (klant)",
     note: "Alleen een door de klant ondertekende timesheet wordt verwerkt. Eén timesheet per week, als PDF of duidelijke foto naar admin@q4s.nl.",
   },
 };
@@ -220,17 +220,23 @@ export function UrenstaatVel({
           <div>
             <div className="ts-dag ts-l">{t.contractor}</div>
             {[t.fname, t.date, t.sig].map((x) => (
-              <div key={x} className="ts-line">{x}</div>
+              <div key={x} className={x === t.sig ? "ts-line ts-big" : "ts-line"}>
+                <span>{x}</span>
+                <span />
+              </div>
             ))}
           </div>
           <div>
             <div className="ts-dag ts-l">{t.approval}</div>
             {[t.clientL, t.fname, t.func, t.date].map((x) => (
-              <div key={x} className="ts-line">{x}</div>
+              <div key={x} className="ts-line">
+                <span>{x}</span>
+                <span />
+              </div>
             ))}
           </div>
           <div>
-            <div className="ts-dag ts-l">{t.sig}</div>
+            <div className="ts-dag ts-l">{t.sigClient}</div>
             <div className="ts-sigbox" />
           </div>
         </div>
@@ -241,8 +247,10 @@ export function UrenstaatVel({
 }
 
 const tsCss = `
-.ts-vel { width: 297mm; min-height: 210mm; padding: 8mm 11mm 7mm; font-family: Calibri, "Segoe UI", Arial, sans-serif; font-size: 7.4pt; color: #1c1c1e; }
+.ts-vel { width: 297mm; min-height: 210mm; padding: 7mm 11mm 5mm; font-family: Calibri, "Segoe UI", Arial, sans-serif; font-size: 7.4pt; color: #1c1c1e; }
 .ts-vel table { border-collapse: collapse; width: 100%; }
+.ts-grid th, .ts-grid td, .ts-desc th, .ts-desc td, .ts-km th, .ts-km td { border: 1px solid #1c1c1e !important; }
+.ts-gap td { border: 0 !important; }
 .ts-kop { display: grid; grid-template-columns: auto 34mm 44mm 1fr; gap: 6mm; align-items: start; }
 .ts-logo { height: 15mm; width: auto; }
 .ts-co, .ts-co2 { display: flex; flex-direction: column; gap: .6mm; color: #6b6b70; font-size: 6.8pt; }
@@ -250,13 +258,13 @@ const tsCss = `
 .ts-co2 b { display: inline-block; width: 11mm; text-align: right; margin-right: 1.5mm; color: #1c1c1e; }
 .ts-co2 em { font-style: normal; font-weight: 700; color: #1b52c4; }
 .ts-meta { display: flex; flex-direction: column; gap: 1.6mm; }
-.ts-meta-r { display: grid; grid-template-columns: 20mm 1fr 20mm 1fr; align-items: center; }
+.ts-meta-r { display: grid; grid-template-columns: 20mm 1fr 20mm 1fr; align-items: stretch; border: 1px solid #1c1c1e; }
 .ts-k { background: #1c1c1e; color: #fff; font-weight: 700; text-align: right; padding: 1.2mm 2mm; font-size: 6.8pt; }
-.ts-v { border-bottom: 1px solid #c8c8cc; text-align: center; font-weight: 700; padding: 1.2mm 1mm; min-height: 4.6mm; }
-.ts-banner { margin: 3mm 0 2.5mm; padding: 1.6mm; text-align: center; font-weight: 700; background: #f2f2f3; border-top: 1px solid #1c1c1e; border-bottom: 1px solid #1c1c1e; }
+.ts-v { border-bottom: 1px solid #1c1c1e; text-align: center; font-weight: 700; padding: 1.2mm 1mm; min-height: 4.6mm; }
+.ts-banner { margin: 3mm 0 2.5mm; padding: 1.6mm; text-align: center; font-weight: 700; background: #f2f2f3; border: 1px solid #1c1c1e; }
 .ts-body { display: grid; grid-template-columns: 1fr 78mm; gap: 3mm; align-items: start; }
 .ts-grid th, .ts-grid td, .ts-km td, .ts-km th, .ts-desc td, .ts-desc th { height: 4mm; padding: 0 1mm; text-align: center; vertical-align: middle; }
-.ts-grid td { border-bottom: 1px solid #e4e4e7; border-left: 1px solid #e4e4e7; }
+.ts-grid td { border-bottom: 1px solid #1c1c1e; border-left: 1px solid #1c1c1e; }
 .ts-grid td:first-child { border-left: 0; }
 .ts-h { font-size: 6.6pt; font-weight: 700; color: #6b6b70; }
 .ts-l { text-align: left !important; }
@@ -272,24 +280,28 @@ const tsCss = `
 .ts-bar { background: #f2f2f3; font-weight: 700; text-align: center; border: 0 !important; }
 .ts-desc { margin-top: 3mm; }
 .ts-desc th:first-child, .ts-desc td:first-child { width: 17mm; }
-.ts-desc td { height: 6.8mm; border-bottom: 1px solid #e4e4e7; padding: 0; }
-.ts-desc td:last-child { border-left: 1px solid #e4e4e7; }
+.ts-desc td { height: 6.8mm; border-bottom: 1px solid #1c1c1e; padding: 0; }
+.ts-desc td:last-child { border-left: 1px solid #1c1c1e; }
 .ts-desc td .ts-dag { height: 3.4mm; line-height: 3.4mm; }
 .ts-desc td .ts-date { height: 3.4mm; line-height: 3.4mm; text-align: center; }
 .ts-km th { font-size: 6.6pt; font-weight: 700; color: #6b6b70; }
 .ts-km thead tr:first-child th { color: #fff; font-size: 7.4pt; }
 .ts-km thead tr:last-child th { border-bottom: 1px solid #1c1c1e; }
-.ts-km td { height: 3.7mm; border-bottom: 1px solid #e4e4e7; }
-.ts-km td:not(:first-child) { border-left: 1px solid #e4e4e7; }
-.ts-km td:first-child { width: 12mm; border-bottom: 0; }
-.ts-km .ts-kmend td { border-bottom: 1px solid #c8c8cc; }
+.ts-km td { height: 3.7mm; border-bottom: 1px solid #1c1c1e; }
+.ts-km td:not(:first-child) { border-left: 1px solid #1c1c1e; }
+.ts-km td:first-child { width: 12mm; }
+.ts-km .ts-kmend td { border-bottom: 1px solid #1c1c1e; }
 .ts-km td.ts-dag { border-bottom: 0; }
 .ts-boxed { border: 1px solid #1c1c1e !important; font-weight: 700; }
-.ts-sign { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 6mm; margin-top: 3mm; }
-.ts-sign .ts-dag { padding: 1mm 2mm; }
-.ts-line { border-bottom: 1px solid #e4e4e7; padding: .9mm 0; color: #6b6b70; font-size: 6.8pt; }
-.ts-sigbox { height: 13mm; border: 1px solid #c8c8cc; border-top: 0; }
-.ts-note { margin-top: 2mm; font-size: 6.6pt; font-style: italic; color: #6b6b70; }
+.ts-sign { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 6mm; margin-top: 2.5mm; }
+.ts-sign .ts-dag { padding: 1mm 2mm; text-align: left; }
+.ts-sign > div { border: 1px solid #1c1c1e; align-self: start; }
+.ts-line { display: grid; grid-template-columns: 24mm 1fr; border-top: 1px solid #1c1c1e; color: #6b6b70; font-size: 6.8pt; }
+.ts-line > span { padding: .9mm 1.5mm; }
+.ts-line > span + span { border-left: 1px solid #1c1c1e; min-height: 4mm; }
+.ts-line.ts-big > span { min-height: 11mm; }
+.ts-sigbox { height: 21mm; }
+.ts-note { margin-top: 1.5mm; font-size: 6.6pt; font-style: italic; color: #6b6b70; }
 @media print { @page { size: A4 landscape; margin: 0; } .ts-vel { height: 210mm; } }
 .ts-vel { box-sizing: border-box; }
 `;

@@ -1,7 +1,7 @@
 """Generate the Q4S timesheet Excel (FO-Q4S-18 rev. 2), NL + EN.
 
 Run: python3 scripts/make-urenstaat-xlsx.py
-Writes public/templates/urenstaat/Q4S-Timesheet-{NL,EN}.xlsx.
+Writes public/templates/urenstaat/Q4S-Timesheet-{NL,EN}.xlsx (content starts at B2).
 
 Same structure as the original FO-Q4S-18 (landscape: hours grid per client/
 project, overtime, description per day, kilometres per day on the right,
@@ -13,6 +13,7 @@ from pathlib import Path
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import column_index_from_string, get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from PIL import Image as PILImage
 
@@ -22,7 +23,8 @@ LOGO = ROOT / "public" / "logo" / "cv" / "q4s-logo.png"
 
 INK, MUTED, LINE, FAINT, SOFT, BLUE = "1C1C1E", "6B6B70", "C8C8CC", "E4E4E7", "F2F2F3", "1B52C4"
 FONT = "Calibri"
-thin, faint, dark = Side(style="thin", color=LINE), Side(style="thin", color=FAINT), Side(style="thin", color=INK)
+# Volledig zwarte lijnen (ook de "dunne" rasterlijnen).
+thin = faint = dark = Side(style="thin", color=INK)
 
 T = {
     "en": dict(
@@ -33,7 +35,7 @@ T = {
         hours_total="Hours worked", overtime="Overtime", ot_total="Overtime hrs",
         day="Day", desc="Description of work", km="Kilometres", km_from="From", km_to="To", km_total="Total kilometres",
         contractor="Contractor", approval="For approval — client", sig="Signature", date="Date", fname="Name",
-        func="Function", client_l="Client",
+        func="Function", client_l="Client", sig_client="Client signature for approval",
         note="Only timesheets signed by the client are processed. One timesheet per week, as PDF or clear photo to admin@q4s.nl.",
         fromhint="Enter the date of Monday — dates, week number and 'To' follow automatically.",
     ),
@@ -45,7 +47,7 @@ T = {
         hours_total="Gewerkte uren", overtime="Overuren", ot_total="Overuren",
         day="Dag", desc="Omschrijving werkzaamheden", km="Kilometers", km_from="Van", km_to="Naar", km_total="Totaal kilometers",
         contractor="Medewerker / ZZP'er", approval="Akkoord klant", sig="Handtekening", date="Datum", fname="Naam",
-        func="Functie", client_l="Klant",
+        func="Functie", client_l="Klant", sig_client="Handtekening voor akkoord (klant)",
         note="Alleen een door de klant ondertekende timesheet wordt verwerkt. Eén timesheet per week, als PDF of duidelijke foto naar admin@q4s.nl.",
         fromhint="Vul de datum van maandag in — datums, weeknummer en 'Tot' volgen vanzelf.",
     ),
@@ -107,7 +109,7 @@ def build(lang: str) -> Path:
         img = Image(str(LOGO))
         img.height = 56
         img.width = int(56 * w / h)
-        ws.add_image(img, "A1")
+        ws.add_image(img, "B2")  # plaatjes schuiven niet mee met move_range
     for i, line in enumerate(COMPANY):
         put(f"B{i + 1}", line, size=8, color=INK if i == 0 else MUTED, bold=i == 0)
     for i, (k, v) in enumerate(COMPANY2):
@@ -134,7 +136,7 @@ def build(lang: str) -> Path:
     dv = DataValidation(type="date", operator="greaterThan", formula1="DATE(2020,1,1)", allow_blank=True,
                         promptTitle=t["frm"], prompt=t["fromhint"], showInputMessage=True)
     ws.add_data_validation(dv)
-    dv.add("P1")
+    dv.add("Q2")  # = P1 na het verschuiven naar B2
 
     # Banner: insturen naar admin@q4s.nl
     ws.row_dimensions[6].height = 6
@@ -152,7 +154,7 @@ def build(lang: str) -> Path:
         ws.merge_cells(f"{col}{hr}:{col}{dr}")
         put(f"{col}{hr}", txt, size=8, bold=True, color=MUTED, align="center", wrap=True)
     for i, col in enumerate(DAY_COLS):
-        put(f"{col}{hr}", f'=IF($P$1="","",$P$1+{i})', size=8, color=MUTED, align="center", fmt="DD-MM")
+        put(f"{col}{hr}", f'=IF(P1="","",P1+{i})', size=8, color=MUTED, align="center", fmt="DD-MM")
         put(f"{col}{dr}", t["days"][i], size=9, bold=True, color="FFFFFF", fill=INK, align="center")
     ws.merge_cells(f"K{hr}:K{dr}")
     put(f"K{hr}", t["total"], size=8, bold=True, color=MUTED, align="center")
@@ -210,6 +212,7 @@ def build(lang: str) -> Path:
         r0 = km_first + i * per_day
         put(f"M{r0}", t["days"][i], size=9, bold=True, color="FFFFFF", fill=INK, align="center")
         put(f"M{r0 + 1}", f"={DAY_COLS[i]}{hr}", size=8, color=MUTED, align="center", fmt="DD-MM")
+        ws.merge_cells(f"M{r0 + 1}:M{r0 + per_day - 1}")
         for r in range(r0, r0 + per_day):
             for col in "NOP":
                 c = ws[f"{col}{r}"]
@@ -231,30 +234,71 @@ def build(lang: str) -> Path:
     # ---------- Akkoord ----------
     ar = max(last_desc, kt) + 2
     ws.row_dimensions[ar - 1].height = 8
-    blocks = [
-        ("A", "C", t["contractor"], [t["fname"], t["date"], t["sig"]]),
-        ("E", "K", t["approval"], [t["client_l"], t["fname"], t["func"], t["date"]]),
-        ("M", "P", t["sig"], []),
-    ]
-    for c1, c2, head, labels in blocks:
-        ws.merge_cells(f"{c1}{ar}:{c2}{ar}")
-        put(f"{c1}{ar}", head, size=9, bold=True, color="FFFFFF", fill=INK, align="left")
-        box(f"{c1}{ar}:{c2}{ar}", fill=INK)
-        for i, lbl in enumerate(labels):
-            r = ar + 1 + i
-            ws.row_dimensions[r].height = 18
-            put(f"{c1}{r}", lbl, size=8, color=MUTED)
-            box(f"{c1}{r}:{c2}{r}", bottom=faint)
-        if not labels:
-            box(f"{c1}{ar + 1}:{c2}{ar + 4}", left=thin, right=thin, bottom=thin)
-    ws.row_dimensions[ar + 4].height = 26
-    box(f"A{ar + 4}:C{ar + 4}", bottom=thin)
-    nr = ar + 6
+
+    def merge(rng):
+        a_, b_ = rng.split(":")
+        if a_ != b_:
+            ws.merge_cells(rng)
+
+    def kop(rng, text):
+        merge(rng)
+        put(rng.split(":")[0], text, size=9, bold=True, color="FFFFFF", fill=INK)
+        box(rng, fill=INK)
+
+    def regel(label_rng, waarde_rng, label):
+        merge(label_rng)
+        merge(waarde_rng)
+        put(label_rng.split(":")[0], label, size=8, color=MUTED)
+        ws[label_rng.split(":")[0]].alignment = Alignment(horizontal="left", vertical="top", indent=1)
+
+    # Medewerker: naam, datum en een RUIM handtekeningvak (3 regels hoog).
+    kop(f"A{ar}:D{ar}", t["contractor"])
+    regel(f"A{ar + 1}:A{ar + 1}", f"B{ar + 1}:D{ar + 1}", t["fname"])
+    regel(f"A{ar + 2}:A{ar + 2}", f"B{ar + 2}:D{ar + 2}", t["date"])
+    regel(f"A{ar + 3}:A{ar + 5}", f"B{ar + 3}:D{ar + 5}", t["sig"])
+    # Klant: wie tekent er.
+    kop(f"F{ar}:K{ar}", t["approval"])
+    for i, lbl in enumerate([t["client_l"], t["fname"], t["func"], t["date"]]):
+        r = ar + 1 + i
+        regel(f"F{r}:G{r}", f"H{r}:K{r}", lbl)
+    # Klant-handtekening: duidelijk benoemd + groot vak.
+    kop(f"M{ar}:P{ar}", t["sig_client"])
+    merge(f"M{ar + 1}:P{ar + 5}")
+    for r in range(ar + 1, ar + 6):
+        ws.row_dimensions[r].height = 20
+    nr = ar + 7
     ws.merge_cells(f"A{nr}:P{nr}")
     put(f"A{nr}", t["note"], size=8, color=MUTED, italic=True)
 
+    # ---------- Alle tabellen: volledig zwart raster, titels in vakken ----------
+    def raster(rng):
+        for row in ws[rng]:
+            for c in row:
+                c.border = Border(left=dark, right=dark, top=dark, bottom=dark)
+
+    for r in (1, 3, 5):
+        raster(f"M{r}:P{r}")
+    for rng in ("A7:P7", "A9:K17", "A19:K23", "A25:K39", f"M9:P{kt}",
+                f"A{ar}:D{ar + 5}", f"F{ar}:K{ar + 4}", f"M{ar}:P{ar + 5}"):
+        raster(rng)
+
+    # ---------- Alles één rij en één kolom opschuiven: begint op B2 ----------
+    heights = {r: d.height for r, d in ws.row_dimensions.items() if d.height}
+    widths = {c: d.width for c, d in ws.column_dimensions.items() if d.width}
+    ws.move_range(f"A1:P{nr}", rows=1, cols=1, translate=True)
+    for mcr in ws.merged_cells.ranges:
+        mcr.shift(col_shift=1, row_shift=1)
+    for r in heights:
+        ws.row_dimensions[r].height = None
+    for r, h in heights.items():
+        ws.row_dimensions[r + 1].height = h
+    ws.row_dimensions[1].height = 10
+    for c, w in widths.items():
+        ws.column_dimensions[get_column_letter(column_index_from_string(c) + 1)].width = w
+    ws.column_dimensions["A"].width = 2
+
     # ---------- Afdrukken: A4 liggend op één pagina ----------
-    ws.print_area = f"A1:P{nr}"
+    ws.print_area = f"B2:Q{nr + 1}"
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
     ws.page_setup.orientation = "landscape"
     ws.page_setup.fitToWidth = 1
