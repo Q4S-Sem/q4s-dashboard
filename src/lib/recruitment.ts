@@ -151,7 +151,9 @@ Lever exact deze velden aan:
 - employmentType — contractvorm (bijv. Fulltime, Freelance/ZZP, Parttime) als die blijkt, anders "".
 - salary — vergoeding/salaris als die blijkt, anders "".
 
-Verzin geen feiten die niet in de tekst staan; laat onbekende lijst-items weg en onbekende losse velden leeg ("").`;
+Verzin geen feiten die niet in de tekst staan; laat onbekende lijst-items weg en onbekende losse velden leeg ("").
+
+VERTROUWELIJK: noem de naam van de opdrachtgever/klant NOOIT — niet in summary, de lijsten, improvedText of linkedinPost. Schrijf in plaats daarvan iets als "onze opdrachtgever" of beschrijf het soort bedrijf (bijv. "een grote staalproducent in Gent").`;
 
   return aiJSON<VacancyImproveResult>({
     system: IMPROVE_SYSTEM,

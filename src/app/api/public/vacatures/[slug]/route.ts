@@ -8,6 +8,7 @@ import {
   composeDescriptionHtml,
   buildJobPosting,
 } from "@/lib/public-api";
+import { zonderKlantnaam } from "@/lib/klantnaam-publiek";
 
 /**
  * Publieke vacature-DETAIL voor de website (q4s.nl).
@@ -44,17 +45,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     return Response.json({ ok: false, error: "Vacature niet gevonden." }, { status: 404, headers });
   }
 
-  const responsibilities = splitLines(v.responsibilities);
-  const requirements = splitLines(v.requirements);
-  const niceToHave = splitLines(v.niceToHave);
-  const hasStructured = Boolean(v.summary) || responsibilities.length > 0 || requirements.length > 0;
+  // De klantnaam is alleen intern: nooit publiek, ook niet in de tekst.
+  const klant = [v.client?.companyName, v.companyName];
+  const schoon = (t: string | null) => zonderKlantnaam(t, klant);
+  const title = schoon(v.title) ?? v.title;
+  const summary = schoon(v.summary ?? null);
+  const location = schoon(v.location ?? null);
+  const responsibilities = splitLines(v.responsibilities).map((t) => zonderKlantnaam(t, klant));
+  const requirements = splitLines(v.requirements).map((t) => zonderKlantnaam(t, klant));
+  const niceToHave = splitLines(v.niceToHave).map((t) => zonderKlantnaam(t, klant));
+  const hasStructured = Boolean(summary) || responsibilities.length > 0 || requirements.length > 0;
 
   // SEO: semantische HTML + schema.org JobPosting (Google for Jobs), correct
   // opgebouwd zodat q4s.nl 'm alleen hoeft te injecteren/renderen.
   const settings = await getCompanySettings();
   const siteUrl = (process.env.PUBLIC_SITE_ORIGIN?.trim() || "https://www.q4s.nl").replace(/\/+$/, "");
   const descriptionHtml = composeDescriptionHtml({
-    summary: v.summary ?? null,
+    summary,
     responsibilities,
     requirements,
     niceToHave,
@@ -62,9 +69,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const jobPosting = buildJobPosting(
     {
       slug: v.slug,
-      title: v.title,
+      title,
       descriptionHtml,
-      location: v.location ?? null,
+      location,
       employmentType: v.employmentType ?? null,
       publishedAt: v.publishedAt ?? null,
     },
@@ -79,19 +86,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
   const vacature = {
     slug: v.slug,
-    title: v.title,
-    company: v.client?.companyName ?? v.companyName ?? null,
+    title,
+    company: null,
     discipline: v.discipline ?? null,
     disciplineLabel: disciplineLabel(v.discipline),
-    location: v.location ?? null,
+    location,
     employmentType: v.employmentType ?? null,
     salary: v.salary ?? null,
-    summary: v.summary ?? null,
+    summary,
     responsibilities,
     requirements,
     niceToHave,
     // Volledige verbeterde tekst als er geen gestructureerde secties zijn.
-    fullText: !hasStructured ? v.improvedText ?? null : null,
+    fullText: !hasStructured ? schoon(v.improvedText ?? null) : null,
     // SEO-klaar: nette HTML-omschrijving + injecteerbare JobPosting-structured-data.
     descriptionHtml,
     jobPosting,

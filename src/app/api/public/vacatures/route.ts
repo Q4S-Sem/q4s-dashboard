@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { DISCIPLINES } from "@/lib/domain";
 import { corsHeaders, dashboardBaseUrl } from "@/lib/public-api";
+import { zonderKlantnaam } from "@/lib/klantnaam-publiek";
 
 /**
  * Publieke vacature-feed voor de website (q4s.nl).
@@ -37,20 +38,25 @@ export async function GET(req: Request) {
     include: { client: { select: { companyName: true } } },
   });
 
-  const vacatures = rows.map((v) => ({
+  const vacatures = rows.map((v) => {
+    // De klantnaam is alleen intern: nooit in de feed, ook niet in de tekst.
+    const klant = [v.client?.companyName, v.companyName];
+    const schoon = (t: string | null) => zonderKlantnaam(t, klant);
+    return {
     slug: v.slug,
-    title: v.title,
-    company: v.client?.companyName ?? v.companyName ?? null,
+    title: schoon(v.title),
+    company: null,
     discipline: v.discipline ?? null,
     disciplineLabel: disciplineLabel(v.discipline),
-    location: v.location ?? null,
+    location: schoon(v.location ?? null),
     employmentType: v.employmentType ?? null,
     salary: v.salary ?? null,
-    summary: v.summary ?? null,
+    summary: schoon(v.summary ?? null),
     publishedAt: v.publishedAt?.toISOString() ?? null,
     // Link naar de door het dashboard gehoste vacature-pagina (incl. sollicitatie).
     url: `${base}/vacature/${v.slug}`,
-  }));
+    };
+  });
 
   return Response.json({ ok: true, count: vacatures.length, vacatures }, { headers });
 }

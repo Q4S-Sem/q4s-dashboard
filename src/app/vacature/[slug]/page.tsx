@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { formatDateLong } from "@/lib/utils";
 import { ApplyForm } from "./ApplyForm";
+import { zonderKlantnaam } from "@/lib/klantnaam-publiek";
 
 export const metadata = { title: "Vacature" };
 export const dynamic = "force-dynamic"; // count every visit
@@ -66,17 +67,23 @@ export default async function PubliekeVacaturePage({
     .update({ where: { slug }, data: { views: { increment: 1 } } })
     .catch(() => {});
 
-  const company = vacancy.client?.companyName ?? vacancy.companyName ?? null;
+  // Publieke pagina: de klantnaam is alleen intern — niet tonen en ook uit alle
+  // tekst halen (titel, intro, lijsten, volledige tekst, locatie).
+  const klant = [vacancy.client?.companyName, vacancy.companyName];
+  const schoon = (t: string | null) => zonderKlantnaam(t, klant);
+  const titel = schoon(vacancy.title) ?? vacancy.title;
+  const summary = schoon(vacancy.summary);
+  const improvedText = schoon(vacancy.improvedText);
+  const locatie = schoon(vacancy.location);
   const discipline = labelFor(DISCIPLINES, vacancy.discipline);
-  const meta = [discipline, vacancy.location, vacancy.employmentType].filter(
+  const meta = [discipline, locatie, vacancy.employmentType].filter(
     (v) => v && v !== "—",
   );
 
-  const werk = lines(vacancy.responsibilities);
-  const eisen = lines(vacancy.requirements);
-  const pre = lines(vacancy.niceToHave);
-  const hasStructured =
-    Boolean(vacancy.summary) || werk.length > 0 || eisen.length > 0;
+  const werk = lines(vacancy.responsibilities).map((t) => zonderKlantnaam(t, klant));
+  const eisen = lines(vacancy.requirements).map((t) => zonderKlantnaam(t, klant));
+  const pre = lines(vacancy.niceToHave).map((t) => zonderKlantnaam(t, klant));
+  const hasStructured = Boolean(summary) || werk.length > 0 || eisen.length > 0;
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
@@ -84,13 +91,8 @@ export default async function PubliekeVacaturePage({
         <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600 text-white">
           <FileText className="h-5 w-5" />
         </div>
-        {company && (
-          <p className="text-sm font-medium uppercase tracking-wide text-brand-700">
-            {company}
-          </p>
-        )}
         <h1 className="text-3xl font-semibold text-ink-900">
-          {vacancy.title}
+          {titel}
         </h1>
         {meta.length > 0 && (
           <p className="text-sm text-ink-500">{meta.join(" · ")}</p>
@@ -100,9 +102,9 @@ export default async function PubliekeVacaturePage({
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* Inhoud */}
         <article className="space-y-8">
-          {vacancy.summary && (
+          {summary && (
             <Section title="Over de functie">
-              <p className="leading-relaxed text-ink-700">{vacancy.summary}</p>
+              <p className="leading-relaxed text-ink-700">{summary}</p>
             </Section>
           )}
 
@@ -146,9 +148,9 @@ export default async function PubliekeVacaturePage({
           )}
 
           {/* Fallback: nothing structured filled in, but we do have a full text. */}
-          {!hasStructured && vacancy.improvedText && (
+          {!hasStructured && improvedText && (
             <div className="whitespace-pre-wrap leading-relaxed text-ink-800">
-              {vacancy.improvedText}
+              {improvedText}
             </div>
           )}
         </article>
@@ -178,7 +180,7 @@ export default async function PubliekeVacaturePage({
           <div className="rounded-xl border border-ink-200 p-5">
             <h2 className="font-semibold text-ink-900">Details</h2>
             <div className="mt-3 space-y-3">
-              <DetailRow label="Locatie" value={vacancy.location} />
+              <DetailRow label="Locatie" value={locatie} />
               <DetailRow label="Contractvorm" value={vacancy.employmentType} />
               <DetailRow
                 label="Discipline"
