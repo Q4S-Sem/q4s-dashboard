@@ -64,9 +64,14 @@ export function ContractForm({
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Opdrachtnemer (freelancer)" htmlFor="consultantId" required error={e.consultantId}>
+            <Field
+              label="Opdrachtnemer"
+              htmlFor="consultantId"
+              error={e.consultantId}
+              hint="Nieuw persoon? Laat op “Nieuw persoon” staan en vul de gegevens hieronder in — koppelen kan later."
+            >
               <Select id="consultantId" name="consultantId" defaultValue={c?.consultantId ?? d?.consultantId ?? ""}>
-                <option value="" disabled>Kies een opdrachtnemer…</option>
+                <option value="">Nieuw persoon (nog niet in het dashboard)</option>
                 {consultants.map((o) => (
                   <option key={o.id} value={o.id}>{o.name}{o.company ? ` — ${o.company}` : ""}</option>
                 ))}

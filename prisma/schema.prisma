@@ -1204,8 +1204,10 @@ model Contract {
   id           String   @id @default(cuid())
   /// Doorlopend contractnummer voor de referentie op het document (bijv. Q4S-OVO-2025-001).
   number       String?  @unique
-  /// De opdrachtnemer (ZZP'er) — verplicht: hieraan hangt het contract in het dossier.
-  consultantId String
+  /// De opdrachtnemer (ZZP'er) in het dashboard — optioneel: een contract voor
+  /// een NIEUW persoon (nog geen werknemer/plaatsing) staat los, met de gegevens
+  /// alleen op het contract zelf (contractorName e.d.).
+  consultantId String?
   /// Optioneel de plaatsing (persoon bij klant) waar dit contract bij hoort.
   placementId  String?
 
@@ -1272,7 +1274,7 @@ model Contract {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  consultant   Consultant? @relation(fields: [consultantId], references: [id], onDelete: Cascade)
   placement    Placement? @relation(fields: [placementId], references: [id], onDelete: SetNull)
 
   @@index([consultantId])

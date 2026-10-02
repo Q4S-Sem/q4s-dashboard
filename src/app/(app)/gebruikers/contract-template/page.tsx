@@ -10,7 +10,7 @@ import { getCompanySettings } from "@/lib/settings";
 import { buildContractDoc } from "@/lib/contract-doc";
 import { contractLogoDataUri } from "@/lib/contract-render";
 import { cn } from "@/lib/utils";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, PencilLine } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PrintBar } from "../../contracten/[id]/print/PrintBar";
 
@@ -154,6 +154,18 @@ export default async function ContractTemplatePage({
               <Download className="h-4 w-4" /> Excel {l}
             </a>
           ))}
+        </div>
+      )}
+
+      {doc === "overeenkomst" && (
+        <div className="no-print flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
+          <PencilLine className="h-5 w-5 text-brand-600" />
+          <p className="mr-auto text-sm text-ink-600">
+            Dit is het blanco voorbeeld. Wil je een echte overeenkomst invullen, opslaan en printen? Ook voor een nieuw persoon die nog niet in het dashboard staat.
+          </p>
+          <Link href="/contracten/nieuw" className={buttonVariants({ size: "sm" })}>
+            <PencilLine className="h-4 w-4" /> Contract invullen
+          </Link>
         </div>
       )}
 

@@ -56,6 +56,14 @@ export default async function ContractenPage({
   const lijst = mensen.filter((m) =>
     matchtZoek(q, m.firstName, m.lastName, m.companyName, m.kvkNumber, m.placements[0]?.client?.companyName),
   );
+  // Contracten voor nieuwe personen (nog niet als werknemer in het dashboard).
+  const los = (
+    await db.contract.findMany({
+      where: { consultantId: null },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, number: true, status: true, updatedAt: true, contractorName: true, contractorKvk: true },
+    })
+  ).filter((c) => matchtZoek(q, c.contractorName, c.contractorKvk, c.number));
 
   return (
     <div className="space-y-5">
@@ -85,11 +93,30 @@ export default async function ContractenPage({
             <span />
           </div>
 
-          {lijst.length === 0 && (
+          {lijst.length === 0 && los.length === 0 && (
             <p className="px-4 py-8 text-center text-sm text-ink-400">
               {q ? "Niemand gevonden." : "Nog geen personen."}
             </p>
           )}
+
+          {los.map((c) => (
+            <Link
+              key={c.id}
+              href={`/contracten/${c.id}`}
+              className={`grid ${KOLOMMEN} items-center gap-3 border-b border-ink-100 px-4 py-2.5 text-sm hover:bg-ink-50`}
+            >
+              <span className="min-w-0">
+                <span className="block truncate font-medium text-ink-900">{c.contractorName}</span>
+                <span className="block truncate text-xs text-amber-700">Nieuw persoon · nog niet gekoppeld</span>
+              </span>
+              <span className="truncate text-ink-600">{c.number ?? "—"}</span>
+              <span className="tabular-nums text-ink-600">{c.contractorKvk || "—"}</span>
+              <StatusBadge options={CONTRACT_STATUSES} value={c.status} />
+              <span className="text-xs text-ink-400">—</span>
+              <span className="text-xs text-ink-400">—</span>
+              <ChevronRight className="h-4 w-4 text-ink-400" />
+            </Link>
+          ))}
 
           {lijst.map((m) => {
             const naam = `${m.firstName} ${m.lastName}`.trim();

@@ -20,7 +20,9 @@ const optional = z.string().optional().transform((v) => (v && v.trim() ? v.trim(
 const optionalNull = z.string().optional().transform((v) => (v && v.trim() ? v.trim() : null));
 
 const ContractSchema = z.object({
-  consultantId: z.string().min(1, "Kies een opdrachtnemer"),
+  // Leeg = nieuw persoon (nog geen werknemer in het dashboard); de gegevens
+  // staan dan alleen op het contract zelf.
+  consultantId: optionalNull,
   placementId: optionalNull,
   number: optionalNull,
 
