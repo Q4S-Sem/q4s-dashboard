@@ -113,8 +113,8 @@ def build(lang: str) -> Path:
     if LOGO.exists():
         w, h = PILImage.open(LOGO).size
         img = Image(str(LOGO))
-        img.height = 56
-        img.width = int(56 * w / h)
+        img.height = 78
+        img.width = int(78 * w / h)
         ws.add_image(img, "B2")  # plaatjes schuiven niet mee met move_range
     for i, line in enumerate(COMPANY):
         put(f"B{i + 1}", line, size=8, color=INK if i == 0 else MUTED, bold=i == 0)
