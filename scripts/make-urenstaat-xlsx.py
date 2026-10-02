@@ -22,6 +22,8 @@ OUT = ROOT / "public" / "templates" / "urenstaat"
 LOGO = ROOT / "public" / "logo" / "cv" / "q4s-logo.png"
 
 INK, MUTED, LINE, FAINT, SOFT, BLUE = "1C1C1E", "6B6B70", "C8C8CC", "E4E4E7", "F2F2F3", "1B52C4"
+# Overuren krijgen een eigen kleur, zodat niemand ze in het normale blok zet.
+OT, OT_SOFT = "C2410C", "FFF1E6"
 FONT = "Calibri"
 # Volledig zwarte lijnen (ook de "dunne" rasterlijnen).
 thin = faint = dark = Side(style="thin", color=INK)
@@ -32,7 +34,9 @@ T = {
         banner="Send the signed timesheet every week to admin@q4s.nl — no later than Tuesday 12:00",
         client="Client / Proj. no.", hcode="Hour code", code="Code", total="Total",
         days=["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
-        hours_total="Hours worked", overtime="Overtime", ot_total="Overtime hrs",
+        hours_total="Total normal hours", ot_total="Total overtime",
+        normal_band="NORMAL HOURS — regular hours per day. Hours above the regular schedule go in the orange OVERTIME block below.",
+        overtime="OVERTIME (extra hrs)",
         day="Day", desc="Description of work", km="Kilometres", km_from="From", km_to="To", km_total="Total kilometres",
         contractor="Contractor", approval="For approval — client", sig="Signature", date="Date", fname="Name",
         func="Function", client_l="Client", sig_client="Client signature for approval",
@@ -44,7 +48,9 @@ T = {
         banner="Stuur de ondertekende timesheet elke week naar admin@q4s.nl — uiterlijk dinsdag 12:00",
         client="Klant / proj.nr.", hcode="Uurcode", code="Code", total="Totaal",
         days=["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"],
-        hours_total="Gewerkte uren", overtime="Overuren", ot_total="Overuren",
+        hours_total="Totaal normale uren", ot_total="Totaal overuren",
+        normal_band="NORMALE UREN — gewone uren per dag. Uren bóven het normale rooster vul je in bij het oranje blok OVERUREN hieronder.",
+        overtime="OVERUREN (extra uren)",
         day="Dag", desc="Omschrijving werkzaamheden", km="Kilometers", km_from="Van", km_to="Naar", km_total="Totaal kilometers",
         contractor="Medewerker / ZZP'er", approval="Akkoord klant", sig="Handtekening", date="Datum", fname="Naam",
         func="Functie", client_l="Klant", sig_client="Handtekening voor akkoord (klant)",
@@ -144,7 +150,12 @@ def build(lang: str) -> Path:
     ws.merge_cells("A7:P7")
     put("A7", t["banner"], size=9, bold=True, align="center", fill=SOFT)
     box("A7:P7", fill=SOFT, top=dark, bottom=dark)
-    ws.row_dimensions[8].height = 6
+    # Band boven het rooster: hier horen de normale uren.
+    ws.row_dimensions[8].height = 18
+    ws.merge_cells("A8:K8")
+    put("A8", t["normal_band"], size=9, bold=True, color="FFFFFF", fill=INK, align="left")
+    ws["A8"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
+    box("A8:K8", fill=INK)
 
     # ---------- Urenrooster ----------
     hr, dr = 9, 10  # datum-rij, dag-rij
@@ -160,7 +171,7 @@ def build(lang: str) -> Path:
     put(f"K{hr}", t["total"], size=8, bold=True, color=MUTED, align="center")
     box(f"A{dr}:K{dr}", bottom=dark)
 
-    def rooster(first: int, n: int):
+    def rooster(first: int, n: int, tint: str | None = None):
         for r in range(first, first + n):
             ws.row_dimensions[r].height = 17
             for col in "ABCDEFGHIJK":
@@ -168,25 +179,34 @@ def build(lang: str) -> Path:
                 c.border = Border(bottom=faint, left=faint if col != "A" else None)
                 c.font = Font(name=FONT, size=9, color=INK)
                 c.alignment = Alignment(horizontal="left" if col == "A" else "center", vertical="center")
-                if col in "IJ":
-                    c.fill = PatternFill("solid", fgColor="FAFAFA")
+                if tint or col in "IJ":
+                    c.fill = PatternFill("solid", fgColor=tint or "FAFAFA")
             ws[f"K{r}"] = f'=IF(SUM(D{r}:J{r})=0,"",SUM(D{r}:J{r}))'
             ws[f"K{r}"].font = Font(name=FONT, size=9, bold=True)
 
-    def totaal(r: int, first: int, last: int, label: str):
+    def totaal(r: int, first: int, last: int, label: str, kleur: str = INK):
         ws.row_dimensions[r].height = 18
         ws.merge_cells(f"A{r}:C{r}")
-        put(f"A{r}", label, size=9, bold=True, align="right")
+        put(f"A{r}", label, size=9, bold=True, color=kleur, align="right")
         for col in DAY_COLS:
-            put(f"{col}{r}", f"=SUM({col}{first}:{col}{last})", bold=True, align="center")
-        put(f"K{r}", f"=SUM(D{r}:J{r})", size=10, bold=True, align="center", fill=SOFT)
+            put(f"{col}{r}", f"=SUM({col}{first}:{col}{last})", bold=True, color=kleur, align="center")
+        put(f"K{r}", f"=SUM(D{r}:J{r})", size=10, bold=True, color=kleur, align="center", fill=SOFT)
         box(f"A{r}:K{r}", top=dark)
 
     rooster(11, 6)
     totaal(17, 11, 16, t["hours_total"])
-    bar("A19:K19", t["overtime"], dark_bar=False)
-    rooster(20, 3)
-    totaal(23, 20, 22, t["ot_total"])
+    # Overuren: eigen oranje band mét dagkoppen, en oranje getinte invulvakken.
+    ws.row_dimensions[19].height = 18
+    ws.merge_cells("A19:C19")
+    put("A19", t["overtime"], size=8, bold=True, color="FFFFFF", fill=OT, align="left", wrap=True)
+    ws["A19"].alignment = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
+    box("A19:C19", fill=OT)
+    for i, col in enumerate(DAY_COLS):
+        put(f"{col}19", t["days"][i], size=9, bold=True, color="FFFFFF", fill=OT, align="center")
+    put("K19", t["total"], size=8, bold=True, color="FFFFFF", fill=OT, align="center")
+    ws.row_dimensions[19].height = 24
+    rooster(20, 3, OT_SOFT)
+    totaal(23, 20, 22, t["ot_total"], OT)
 
     # ---------- Omschrijving per dag (2 regels per dag) ----------
     put("A25", t["day"], size=8, bold=True, color=MUTED, align="center")
@@ -278,7 +298,7 @@ def build(lang: str) -> Path:
 
     for r in (1, 3, 5):
         raster(f"M{r}:P{r}")
-    for rng in ("A7:P7", "A9:K17", "A19:K23", "A25:K39", f"M9:P{kt}",
+    for rng in ("A7:P7", "A8:K17", "A19:K23", "A25:K39", f"M9:P{kt}",
                 f"A{ar}:D{ar + 5}", f"F{ar}:K{ar + 4}", f"M{ar}:P{ar + 5}"):
         raster(rng)
 

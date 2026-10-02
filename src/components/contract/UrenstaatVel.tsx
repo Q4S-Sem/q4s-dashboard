@@ -22,7 +22,8 @@ const L = {
     banner: "Send the signed timesheet every week to admin@q4s.nl — no later than Tuesday 12:00",
     client: "Client / Proj. no.", hcode: "Hour code", code: "Code", total: "Total",
     days: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
-    hours: "Hours worked", overtime: "Overtime", ot: "Overtime hrs", day: "Day", desc: "Description of work",
+    hours: "Total normal hours", overtime: "OVERTIME (extra hrs)", ot: "Total overtime",
+    normalBand: "NORMAL HOURS — regular hours per day. Hours above the regular schedule go in the orange OVERTIME block below.", day: "Day", desc: "Description of work",
     km: "Kilometres", kmFrom: "From", kmTo: "To", kmTotal: "Total kilometres",
     contractor: "Contractor", approval: "For approval — client", sig: "Signature", date: "Date",
     fname: "Name", func: "Function", clientL: "Client", sigClient: "Client signature for approval",
@@ -33,7 +34,8 @@ const L = {
     banner: "Stuur de ondertekende timesheet elke week naar admin@q4s.nl — uiterlijk dinsdag 12:00",
     client: "Klant / proj.nr.", hcode: "Uurcode", code: "Code", total: "Totaal",
     days: ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"],
-    hours: "Gewerkte uren", overtime: "Overuren", ot: "Overuren", day: "Dag", desc: "Omschrijving werkzaamheden",
+    hours: "Totaal normale uren", overtime: "OVERUREN (extra uren)", ot: "Totaal overuren",
+    normalBand: "NORMALE UREN — gewone uren per dag. Uren bóven het normale rooster vul je in bij het oranje blok OVERUREN hieronder.", day: "Dag", desc: "Omschrijving werkzaamheden",
     km: "Kilometers", kmFrom: "Van", kmTo: "Naar", kmTotal: "Totaal kilometers",
     contractor: "Medewerker / ZZP'er", approval: "Akkoord klant", sig: "Handtekening", date: "Datum",
     fname: "Naam", func: "Functie", clientL: "Klant", sigClient: "Handtekening voor akkoord (klant)",
@@ -69,9 +71,9 @@ export function UrenstaatVel({
     return d ? dd(d) : "";
   };
 
-  const rooster = (n: number) =>
+  const rooster = (n: number, ot = false) =>
     Array.from({ length: n }, (_, r) => (
-      <tr key={r}>
+      <tr key={r} className={ot ? "ts-otrow" : undefined}>
         <td className="ts-l" />
         <td />
         <td />
@@ -81,8 +83,8 @@ export function UrenstaatVel({
         <td className="ts-tot" />
       </tr>
     ));
-  const totaal = (label: string) => (
-    <tr className="ts-sum">
+  const totaal = (label: string, ot = false) => (
+    <tr className={ot ? "ts-sum ts-ottxt" : "ts-sum"}>
       <td colSpan={3} className="ts-r">{label}</td>
       {t.days.map((d) => (
         <td key={d} />
@@ -139,6 +141,9 @@ export function UrenstaatVel({
             <table className="ts-grid">
               <thead>
                 <tr>
+                  <th colSpan={11} className="ts-dag ts-l ts-band">{t.normalBand}</th>
+                </tr>
+                <tr>
                   <th rowSpan={2} className="ts-l ts-h">{t.client}</th>
                   <th rowSpan={2} className="ts-h">{t.hcode}</th>
                   <th rowSpan={2} className="ts-h">{t.code}</th>
@@ -157,9 +162,15 @@ export function UrenstaatVel({
                 {rooster(6)}
                 {totaal(t.hours)}
                 <tr className="ts-gap"><td colSpan={11} /></tr>
-                <tr><td colSpan={11} className="ts-bar">{t.overtime}</td></tr>
-                {rooster(3)}
-                {totaal(t.ot)}
+                <tr className="ts-otbar">
+                  <td colSpan={3} className="ts-l">{t.overtime}</td>
+                  {t.days.map((d) => (
+                    <td key={d}>{d}</td>
+                  ))}
+                  <td>{t.total}</td>
+                </tr>
+                {rooster(3, true)}
+                {totaal(t.ot, true)}
               </tbody>
             </table>
 
@@ -273,6 +284,10 @@ const tsCss = `
 .ts-dag { background: #1c1c1e; color: #fff; font-weight: 700; text-align: center; }
 .ts-grid thead tr:last-child th { border-bottom: 1px solid #1c1c1e; }
 .ts-we { background: #fafafa; }
+.ts-band { font-size: 6.8pt; padding: 0 2mm !important; }
+.ts-otbar td { background: #c2410c; color: #fff; font-weight: 700; padding: 0 1.5mm !important; }
+.ts-otrow td { background: #fff1e6; }
+.ts-ottxt td { color: #c2410c; }
 .ts-tot { font-weight: 700; }
 .ts-soft { background: #f2f2f3; }
 .ts-sum td { border-top: 1px solid #1c1c1e !important; border-left: 0 !important; border-bottom: 0 !important; font-weight: 700; }
