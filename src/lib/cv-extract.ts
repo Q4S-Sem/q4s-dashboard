@@ -547,6 +547,47 @@ export async function extractVacancyFields(
   return parsed.data;
 }
 
+/**
+ * Alleen een titel (+ wat al is ingevuld) → een compleet vacatureformulier,
+ * geschreven door de AI. Voor als er géén vacaturetekst/bestand is. Bedrijf en
+ * tarief worden NIET verzonnen (die komen van de recruiter).
+ */
+export async function generateVacancyFromTitle(input: {
+  title: string;
+  discipline?: string;
+  location?: string;
+  employmentType?: string;
+}): Promise<VacancyFields> {
+  await ensureAiKeysLoaded();
+  const context = [
+    `Functietitel: ${input.title}`,
+    input.discipline ? `Discipline: ${input.discipline}` : null,
+    input.location ? `Locatie: ${input.location}` : null,
+    input.employmentType ? `Dienstverband: ${input.employmentType}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const raw = await aiJSON<unknown>({
+    system:
+      VACANCY_SYSTEM.replace("Je leest één geüploade vacaturetekst en haalt alle kernvelden eruit.", "Je schrijft een complete, realistische vacature op basis van een functietitel.") +
+      " Schrijf wat gebruikelijk is voor deze functie in de Nederlandse/Belgische staalbouw, offshore en industrie.",
+    prompt:
+      `${context}\n\nMaak hiervan een volledige vacature:\n` +
+      VACANCY_PROMPT.replace("Lees deze vacature en vul de velden:\n", "") +
+      "\n\nREGELS: company en rateText altijd LEEG laten (die vult Q4S zelf in). Neem de opgegeven titel, discipline, locatie en dienstverband over. " +
+      "Geef 5-8 werkzaamheden, 4-7 eisen, 2-4 pré's en de gangbare certificaten (bv. VCA VOL) voor deze functie.",
+    schema: VACANCY_AI_SCHEMA as unknown as Record<string, unknown>,
+    schemaName: "vacancy_fields",
+    maxTokens: 1500,
+  });
+  const parsed = vacancyFieldsSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new CvExtractError("De AI gaf een onverwacht antwoord. Probeer het opnieuw.");
+  }
+  // Vangnet: nooit een verzonnen bedrijf of tarief overnemen.
+  return { ...parsed.data, company: "", rateText: "", title: parsed.data.title || input.title };
+}
+
 // ---------------------------------------------------------------------------
 // Documentclassificatie (plaatsingen → Documenten-tab)
 // Leest een geüpload bestand en stelt een SOORT + TITEL voor, zodat de gebruiker

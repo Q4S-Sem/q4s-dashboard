@@ -9,7 +9,8 @@ import { DEAL_SOURCE_VALUES, CRM_NOTE_TYPE_VALUES, CRM_SENTIMENT_VALUES } from "
 import { currentRecruiterId, logNote } from "@/lib/crm";
 import { mirrorDealToVacancy } from "@/lib/vacancy-mirror";
 import { withMarktconformFallback } from "@/lib/markttarief";
-import { extractVacancyFields, CvExtractError, type VacancyFields } from "@/lib/cv-extract";
+import { extractVacancyFields, generateVacancyFromTitle, CvExtractError, type VacancyFields } from "@/lib/cv-extract";
+import { authRequired, currentUser } from "@/lib/session";
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 
@@ -42,6 +43,31 @@ export async function readVacatureFields(formData: FormData): Promise<VacancyRea
       ok: false,
       error: `De vacature kon niet uitgelezen worden: ${detail}. Probeer het opnieuw of vul handmatig in.`,
     };
+  }
+}
+
+/** Alleen een titel → de AI schrijft het hele vacatureformulier (niets opgeslagen). */
+export async function generateVacatureFields(input: {
+  title: string;
+  discipline?: string;
+  location?: string;
+  employmentType?: string;
+}): Promise<VacancyReadResult> {
+  if (authRequired() && !(await currentUser())) return { ok: false, error: "Niet ingelogd." };
+  const title = String(input.title ?? "").trim().slice(0, 200);
+  if (!title) return { ok: false, error: "Vul eerst een titel in." };
+  try {
+    const fields = await generateVacancyFromTitle({
+      title,
+      discipline: input.discipline?.slice(0, 60),
+      location: input.location?.slice(0, 120),
+      employmentType: input.employmentType?.slice(0, 40),
+    });
+    return { ok: true, fields };
+  } catch (err) {
+    if (err instanceof CvExtractError) return { ok: false, error: err.message };
+    console.error("generateVacatureFields mislukt:", err);
+    return { ok: false, error: "De AI kon geen vacature maken. Probeer het opnieuw of vul handmatig in." };
   }
 }
 

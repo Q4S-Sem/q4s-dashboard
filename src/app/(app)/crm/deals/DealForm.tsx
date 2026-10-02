@@ -7,13 +7,14 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input, Textarea, Select } from "@/components/ui/field";
 import { Badge } from "@/components/ui/badge";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Dropzone } from "@/components/ui/dropzone";
 import { TextCombobox } from "@/components/ui/text-combobox";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { DISCIPLINES, DEAL_SOURCES, EMPLOYMENT_TYPES, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
 import { Building2, Euro, Users, Star, Link2, StickyNote, Sparkles, Loader2, CheckCircle2, AlertTriangle, Clock, ListChecks } from "lucide-react";
-import { readVacatureFields } from "./actions";
+import { readVacatureFields, generateVacatureFields } from "./actions";
+import type { VacancyFields } from "@/lib/cv-extract";
 
 type IdName = { id: string; label: string };
 type StageOption = { id: string; label: string; color: BadgeColor };
@@ -94,6 +95,46 @@ export function DealForm({
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanDone, setScanDone] = useState(false);
 
+  // Alleen invullen wat de AI vond; bestaande waarden niet met leeg overschrijven.
+  function vulIn(v: VacancyFields) {
+    const fill = (val: string, setter: Dispatch<SetStateAction<string>>) => {
+      if (val) setter((prev) => (prev.trim() ? prev : val));
+    };
+    if (v.title) setTitle(v.title);
+    if (v.company) setCompany(v.company);
+    if (v.discipline) setDiscipline(v.discipline);
+    if (v.location) setLocation(v.location);
+    if (v.employmentType) setEmploymentType(v.employmentType);
+    if (v.positions && v.positions > 0) setPositions(String(v.positions));
+    if (v.hoursPerWeek && v.hoursPerWeek > 0) setHoursPerWeek(String(v.hoursPerWeek));
+    fill(v.durationText, setDurationText);
+    fill(v.rateText, setRateText);
+    fill(v.experienceText, setExperienceText);
+    fill(v.educationLevel, setEducationLevel);
+    fill(v.responsibilities, setResponsibilities);
+    fill(v.requirements, setRequirements);
+    fill(v.niceToHave, setNiceToHave);
+    fill(v.certificates, setCertificates);
+    if (v.notes) setNotes((prev) => (prev.trim() ? prev : v.notes));
+    setScanDone(true);
+  }
+
+  // Alleen een titel ingetypt → AI schrijft de rest van het formulier.
+  async function maakMetAi() {
+    setReading(true);
+    setScanError(null);
+    setScanDone(false);
+    try {
+      const res = await generateVacatureFields({ title, discipline, location, employmentType });
+      if (res.ok) vulIn(res.fields);
+      else setScanError(res.error);
+    } catch {
+      setScanError("De AI kon geen vacature maken. Probeer het opnieuw of vul handmatig in.");
+    } finally {
+      setReading(false);
+    }
+  }
+
   async function leesVacature(f: File | null) {
     if (!f) return;
     setReading(true);
@@ -107,28 +148,7 @@ export function DealForm({
         setScanError(res.error);
         return;
       }
-      const v = res.fields;
-      // Alleen invullen wat de AI vond; bestaande waarden niet met leeg overschrijven.
-      const fill = (val: string, setter: Dispatch<SetStateAction<string>>) => {
-        if (val) setter((prev) => (prev.trim() ? prev : val));
-      };
-      if (v.title) setTitle(v.title);
-      if (v.company) setCompany(v.company);
-      if (v.discipline) setDiscipline(v.discipline);
-      if (v.location) setLocation(v.location);
-      if (v.employmentType) setEmploymentType(v.employmentType);
-      if (v.positions && v.positions > 0) setPositions(String(v.positions));
-      if (v.hoursPerWeek && v.hoursPerWeek > 0) setHoursPerWeek(String(v.hoursPerWeek));
-      fill(v.durationText, setDurationText);
-      fill(v.rateText, setRateText);
-      fill(v.experienceText, setExperienceText);
-      fill(v.educationLevel, setEducationLevel);
-      fill(v.responsibilities, setResponsibilities);
-      fill(v.requirements, setRequirements);
-      fill(v.niceToHave, setNiceToHave);
-      fill(v.certificates, setCertificates);
-      if (v.notes) setNotes((prev) => (prev.trim() ? prev : v.notes));
-      setScanDone(true);
+      vulIn(res.fields);
     } catch {
       setScanError("De vacature kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in.");
     } finally {
@@ -214,15 +234,45 @@ export function DealForm({
                   {isVacature ? "De vacature" : "De plaatsing"}
                 </h2>
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field label="Titel" htmlFor="title" required error={e.title}>
-                    <Input
-                      id="title"
-                      name="title"
-                      value={title}
-                      onChange={(ev) => setTitle(ev.target.value)}
-                      placeholder="Bijv. 2× NDT Inspector — TenneT"
-                      required
-                    />
+                  <Field
+                    label="Titel"
+                    htmlFor="title"
+                    required
+                    error={e.title}
+                    hint={isVacature ? "Typ de functie en laat de AI de rest van het formulier invullen" : undefined}
+                  >
+                    <div className="flex gap-2">
+                      <Input
+                        id="title"
+                        name="title"
+                        value={title}
+                        onChange={(ev) => setTitle(ev.target.value)}
+                        placeholder="Bijv. 2× NDT Inspector — TenneT"
+                        required
+                      />
+                      {isVacature && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="shrink-0"
+                          disabled={!title.trim() || reading}
+                          onClick={() => void maakMetAi()}
+                        >
+                          {reading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                          Vul in met AI
+                        </Button>
+                      )}
+                    </div>
+                    {isVacature && !reading && scanDone && !scanError && (
+                      <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Ingevuld — controleer en pas aan vóór je opslaat
+                      </p>
+                    )}
+                    {isVacature && scanError && (
+                      <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber-800">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {scanError}
+                      </p>
+                    )}
                   </Field>
                   <Field
                     label="Bedrijf / opdrachtgever"
