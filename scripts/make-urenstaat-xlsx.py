@@ -1,7 +1,7 @@
 """Generate the Q4S timesheet Excel (FO-Q4S-18 rev. 2), NL + EN.
 
 Run: python3 scripts/make-urenstaat-xlsx.py
-Writes public/templates/urenstaat/Q4S-Urenstaat-FO-Q4S-18-{NL,EN}.xlsx.
+Writes public/templates/urenstaat/Q4S-Timesheet-{NL,EN}.xlsx.
 
 Same structure as the original FO-Q4S-18 (landscape: hours grid per client/
 project, overtime, description per day, kilometres per day on the right,
@@ -26,7 +26,7 @@ thin, faint, dark = Side(style="thin", color=LINE), Side(style="thin", color=FAI
 
 T = {
     "en": dict(
-        sheet="Timesheet", name="Name", week="Week no.", frm="From", to="To", project="Project", po="PO no.",
+        sheet="Q4S-Timesheet", name="Name", week="Week no.", frm="From", to="To", project="Project", po="PO no.",
         banner="Send the signed timesheet every week to admin@q4s.nl — no later than Tuesday 12:00",
         client="Client / Proj. no.", hcode="Hour code", code="Code", total="Total",
         days=["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
@@ -38,15 +38,15 @@ T = {
         fromhint="Enter the date of Monday — dates, week number and 'To' follow automatically.",
     ),
     "nl": dict(
-        sheet="Urenstaat", name="Naam", week="Weeknr.", frm="Van", to="Tot", project="Project", po="PO-nr.",
-        banner="Stuur de ondertekende urenstaat elke week naar admin@q4s.nl — uiterlijk dinsdag 12:00",
+        sheet="Q4S-Timesheet", name="Naam", week="Weeknr.", frm="Van", to="Tot", project="Project", po="PO-nr.",
+        banner="Stuur de ondertekende timesheet elke week naar admin@q4s.nl — uiterlijk dinsdag 12:00",
         client="Klant / proj.nr.", hcode="Uurcode", code="Code", total="Totaal",
         days=["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"],
         hours_total="Gewerkte uren", overtime="Overuren", ot_total="Overuren",
         day="Dag", desc="Omschrijving werkzaamheden", km="Kilometers", km_from="Van", km_to="Naar", km_total="Totaal kilometers",
         contractor="Medewerker / ZZP'er", approval="Akkoord klant", sig="Handtekening", date="Datum", fname="Naam",
         func="Functie", client_l="Klant",
-        note="Alleen een door de klant ondertekende urenstaat wordt verwerkt. Eén urenstaat per week, als PDF of duidelijke foto naar admin@q4s.nl.",
+        note="Alleen een door de klant ondertekende timesheet wordt verwerkt. Eén timesheet per week, als PDF of duidelijke foto naar admin@q4s.nl.",
         fromhint="Vul de datum van maandag in — datums, weeknummer en 'Tot' volgen vanzelf.",
     ),
 }
@@ -59,6 +59,7 @@ DAY_COLS = "DEFGHIJ"  # Mo..Su in the hours grid
 def build(lang: str) -> Path:
     t = T[lang]
     wb = Workbook()
+    wb.properties.title = "Q4S-Timesheet"
     ws = wb.active
     ws.title = t["sheet"]
     ws.sheet_view.showGridLines = False
@@ -268,7 +269,7 @@ def build(lang: str) -> Path:
     ws.oddFooter.center.color = "8A8A90"
 
     OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / f"Q4S-Urenstaat-FO-Q4S-18-{lang.upper()}.xlsx"
+    path = OUT / f"Q4S-Timesheet-{lang.upper()}.xlsx"
     wb.save(path)
     return path
 

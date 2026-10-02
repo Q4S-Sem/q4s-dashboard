@@ -111,7 +111,7 @@ export default async function ContractTemplatePage({
       <div className="no-print">
         <PageHeader
           title="Contract-vormgeving"
-          description="Zo komen de overeenkomst van opdracht, het persoonsgegevens-formulier en de urenstaat en de offerte op papier. Blauw = wat per contract wordt ingevuld."
+          description="Zo komen de overeenkomst van opdracht, het persoonsgegevens-formulier en de Q4S-Timesheet en de offerte op papier. Blauw = wat per contract wordt ingevuld."
         />
       </div>
 
@@ -119,7 +119,7 @@ export default async function ContractTemplatePage({
         {[
           ["overeenkomst", "Overeenkomst van opdracht"],
           ["persoonsgegevens", "Persoonsgegevens"],
-          ["urenstaat", "Urenstaat"],
+          ["urenstaat", "Q4S-Timesheet"],
           ["offerte", "Offerte"],
         ].map(([d, label]) => (
           <Link
@@ -142,12 +142,12 @@ export default async function ContractTemplatePage({
         <div className="no-print flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
           <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
           <p className="mr-auto text-sm text-ink-600">
-            Excel-urenstaat (FO-Q4S-18, A4 liggend) om naar ZZP&apos;ers te sturen — datum van maandag bij &ldquo;Van&rdquo; invullen, de rest rekent vanzelf.
+            Q4S-Timesheet in Excel (A4 liggend) om naar ZZP&apos;ers te sturen — hieronder precies zoals hij eruitziet — datum van maandag bij &ldquo;Van&rdquo; invullen, de rest rekent vanzelf.
           </p>
           {(["NL", "EN"] as const).map((l) => (
             <a
               key={l}
-              href={`/templates/urenstaat/Q4S-Urenstaat-FO-Q4S-18-${l}.xlsx`}
+              href={`/templates/urenstaat/Q4S-Timesheet-${l}.xlsx`}
               download
               className={buttonVariants({ variant: l.toLowerCase() === taal ? "secondary" : "outline", size: "sm" })}
             >
