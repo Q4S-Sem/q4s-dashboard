@@ -195,13 +195,15 @@ const HUB_LIST: NavHub[] = [
     href: "/data",
     icon: Database,
     items: [
-      { href: "/data/cloud", label: "SharePoint & OneDrive", icon: Cloud, section: "Cloudopslag" },
-      { href: "/data", label: "Overzicht", icon: Database, exact: true, section: "Data" },
-      { href: "/werknemers", label: "Werknemers", icon: HardHat, section: "Data" },
-      { href: "/documenten", label: "Documenten", icon: FolderOpen, section: "Data" },
-      { href: "/analyses", label: "Analyses", icon: BarChart3, section: "Data" },
-      { href: "/marktkansen", label: "Marktkansen", icon: Target, section: "Data" },
-      { href: "/archief", label: "Archief", icon: Archive, section: "Prullenbak" },
+      // Alleen Overzicht in het menu; de rest is een map ín het Overzicht
+      // (hidden = hoort bij deze hub, maar staat niet in de zijbalk).
+      { href: "/data", label: "Overzicht", icon: Database, exact: true },
+      { href: "/data/cloud", label: "SharePoint & OneDrive", icon: Cloud, hidden: true },
+      { href: "/werknemers", label: "Werknemers", icon: HardHat, hidden: true },
+      { href: "/documenten", label: "Documenten", icon: FolderOpen, hidden: true },
+      { href: "/analyses", label: "Analyses", icon: BarChart3, hidden: true },
+      { href: "/marktkansen", label: "Marktkansen", icon: Target, hidden: true },
+      { href: "/archief", label: "Archief", icon: Archive, hidden: true },
     ],
   },
   {

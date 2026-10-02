@@ -15,6 +15,14 @@ import {
   Home,
   Search,
   Upload,
+  HardHat,
+  Building2,
+  Briefcase,
+  FolderOpen,
+  BarChart3,
+  Target,
+  Archive,
+  UserRound,
 } from "lucide-react";
 import { explorerConfig } from "@/lib/cloud";
 import { graphList, veiligPad, type DriveItem } from "@/lib/onedrive";
@@ -51,7 +59,8 @@ const SOORT: [RegExp, typeof FileIcon, string][] = [
   [/\.(zip|rar|7z)$/i, FileArchive, "text-amber-500"],
   [/\.(mp4|mov|avi)$/i, FileVideo, "text-pink-500"],
 ];
-function icoon(it: DriveItem) {
+function icoon(it: Item) {
+  if (it.icon) return { Icon: it.icon, kleur: it.isFolder ? "text-blue-500" : "text-ink-500" };
   if (it.isFolder) return { Icon: Folder, kleur: "text-blue-500" };
   const hit = SOORT.find(([re]) => re.test(it.name));
   return hit ? { Icon: hit[1], kleur: hit[2] } : { Icon: FileIcon, kleur: "text-ink-400" };
@@ -62,9 +71,11 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
   const pad = veiligPad(sp.pad);
   const cfg = await explorerConfig();
 
-  // Zonder OneDrive: dezelfde verkenner over de eigen dashboard-documenten
-  // (map per soort → map per werknemer → bestanden).
-  const lijst = cfg ? await graphList(cfg, pad) : await dashboardMap(pad);
+  // Eén verkenner over alles: de dashboard-mappen (werknemers, klanten,
+  // plaatsingen, documenten, …) en — indien gekoppeld — de map OneDrive.
+  const inOneDrive = pad === ONEDRIVE || pad.startsWith(`${ONEDRIVE}/`);
+  const odPad = inOneDrive ? pad.slice(ONEDRIVE.length + 1) : "";
+  const lijst = cfg && inOneDrive ? await graphList(cfg, odPad) : await dashboardMap(pad, Boolean(cfg));
   const items = lijst.ok ? lijst.items.filter((i) => matchtZoek(sp.q, i.name)) : [];
   const delen = pad ? pad.split("/") : [];
   const href = (p: string) => (p ? `/data?pad=${encodeURIComponent(p)}` : "/data");
@@ -76,7 +87,7 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-ink-900">Data</h1>
           <p className="text-[13px] text-ink-400">
-            {cfg ? "De Q4S-OneDrive — wat je hier doet, staat ook in OneDrive" : "Alle documenten uit de dossiers, per map"}
+            {inOneDrive ? "De Q4S-OneDrive — wat je hier doet, staat ook in OneDrive" : "Alle gegevens van het dashboard, per map"}
           </p>
         </div>
         {!cfg && (
@@ -110,7 +121,7 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
         </form>
         <nav aria-label="Pad" className="flex min-w-0 flex-1 flex-wrap items-center gap-1 text-[13px]">
           <Link href="/data" className="flex items-center gap-1 rounded px-1.5 py-1 text-ink-600 hover:bg-ink-100">
-            <Home className="h-3.5 w-3.5" /> {cfg ? "OneDrive" : "Documenten"}
+            <Home className="h-3.5 w-3.5" /> Overzicht
           </Link>
           {delen.map((d, i) => (
             <span key={i} className="flex items-center gap-1">
@@ -124,13 +135,13 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
             </span>
           ))}
         </nav>
-        {cfg && (<>
+        {cfg && inOneDrive && (<>
         <details className="relative">
           <summary className={cn(buttonVariants({ variant: "outline", size: "sm" }), "cursor-pointer list-none [&::-webkit-details-marker]:hidden")}>
             <FolderPlus className="h-4 w-4" /> Nieuwe map
           </summary>
           <form action={nieuweMap} className="absolute right-0 z-20 mt-2 flex w-72 gap-2 rounded-lg border border-ink-200 bg-white p-3 shadow-lg">
-            <input type="hidden" name="pad" value={pad} />
+            <input type="hidden" name="pad" value={odPad} />
             <input name="naam" required autoFocus placeholder="Naam van de map" className="h-8 flex-1 rounded-md border border-ink-200 px-2 text-sm" />
             <button className={buttonVariants({ size: "sm" })}>Maak</button>
           </form>
@@ -140,9 +151,9 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
             <Upload className="h-4 w-4" /> Uploaden
           </summary>
           <form action={uploadNaarMap} className="absolute right-0 z-20 mt-2 w-80 space-y-2 rounded-lg border border-ink-200 bg-white p-3 shadow-lg">
-            <input type="hidden" name="pad" value={pad} />
+            <input type="hidden" name="pad" value={odPad} />
             <input name="file" type="file" multiple required className="block w-full text-sm" />
-            <p className="text-xs text-ink-400">Komt in {pad || "de hoofdmap"}. Bestaat de naam al, dan krijgt hij een nummer — er wordt nooit iets overschreven.</p>
+            <p className="text-xs text-ink-400">Komt in {odPad || "de hoofdmap van OneDrive"}. Bestaat de naam al, dan krijgt hij een nummer — er wordt nooit iets overschreven.</p>
             <button className={buttonVariants({ size: "sm" })}>Uploaden</button>
           </form>
         </details>
@@ -176,12 +187,25 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
                   {it.name}
                 </span>
                 <span className="mt-0.5 text-xs text-ink-400">
-                  {it.isFolder ? `${it.childCount ?? 0} ${it.childCount === 1 ? "item" : "items"}` : grootte(it.size)}
+                  {it.isFolder
+                    ? it.childCount == null
+                      ? "openen"
+                      : `${it.childCount} ${it.childCount === 1 ? "item" : "items"}`
+                    : it.href
+                      ? ""
+                      : grootte(it.size)}
                 </span>
                 {it.sub && <span className="mt-0.5 line-clamp-1 text-xs text-ink-400">{it.sub}</span>}
               </>
             );
             const kaart = "flex flex-col items-center rounded-lg border border-ink-200 bg-white px-3 py-5 text-center transition hover:border-ink-300 hover:shadow-sm";
+            // Map/record die naar een dashboardpagina gaat (klant, plaatsing, Analyses…).
+            if (it.href)
+              return (
+                <Link key={it.id} href={it.href} className={kaart}>
+                  {inhoud}
+                </Link>
+              );
             return it.isFolder ? (
               <Link key={it.id} href={href([pad, it.name].filter(Boolean).join("/"))} className={kaart}>
                 {inhoud}
@@ -199,11 +223,90 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
   );
 }
 
-type Item = DriveItem & { sub?: string };
+type Item = DriveItem & {
+  sub?: string;
+  /** Opent deze dashboardpagina i.p.v. de map/het bestand. */
+  href?: string;
+  icon?: typeof FileIcon;
+};
 
-/** De eigen dashboard-documenten als mappen: "" → soorten, "Contract" → werknemers, "Contract/Jan Jansen" → bestanden. */
-async function dashboardMap(pad: string): Promise<{ ok: true; items: Item[] } | { ok: false; error: string }> {
-  const [soortLabel, persoon] = pad.split("/");
+const ONEDRIVE = "OneDrive";
+type Lijst = { ok: true; items: Item[] } | { ok: false; error: string };
+
+const map = (name: string, aantal: number | null, extra: Partial<Item> = {}): Item => ({
+  id: name, name, isFolder: true, size: 0, childCount: aantal, modified: null, webUrl: null, ...extra,
+});
+const record = (id: string, name: string, href: string, sub: string | undefined, icon: typeof FileIcon): Item => ({
+  id, name, isFolder: false, size: 0, childCount: null, modified: null, webUrl: null, href, sub, icon,
+});
+
+/**
+ * Het Overzicht als mappen:
+ *   ""                       → Werknemers · Klanten · Plaatsingen · Documenten · Analyses · Marktkansen · Archief (· OneDrive)
+ *   "Werknemers"/"Klanten"/"Plaatsingen" → één kaart per record, klik = dossier
+ *   "Documenten/…"           → soort → werknemer → bestanden
+ */
+async function dashboardMap(pad: string, metOneDrive: boolean): Promise<Lijst> {
+  const [top, ...rest] = pad ? pad.split("/") : [];
+  if (!top) {
+    const [werknemers, klanten, plaatsingen, documenten, kansen] = await Promise.all([
+      db.consultant.count({ where: { active: true } }),
+      db.client.count(),
+      db.placement.count({ where: { status: { not: "ARCHIVED" } } }),
+      db.document.count(),
+      db.opportunity.count(),
+    ]);
+    return {
+      ok: true,
+      items: [
+        map("Werknemers", werknemers, { icon: HardHat }),
+        map("Klanten", klanten, { icon: Building2 }),
+        map("Plaatsingen", plaatsingen, { icon: Briefcase }),
+        map("Documenten", documenten, { icon: FolderOpen }),
+        map("Analyses", null, { href: "/analyses", icon: BarChart3 }),
+        map("Marktkansen", kansen, { href: "/marktkansen", icon: Target }),
+        map("Archief", null, { href: "/archief", icon: Archive }),
+        ...(metOneDrive ? [map(ONEDRIVE, null, { icon: Cloud })] : []),
+      ],
+    };
+  }
+  if (top === "Werknemers" && rest.length === 0) {
+    const rows = await db.consultant.findMany({
+      where: { active: true },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      select: { id: true, firstName: true, lastName: true, discipline: true, companyName: true },
+    });
+    return { ok: true, items: rows.map((c) => record(c.id, `${c.firstName} ${c.lastName}`, `/werknemers/${c.id}`, c.companyName ?? c.discipline, UserRound)) };
+  }
+  if (top === "Klanten" && rest.length === 0) {
+    const rows = await db.client.findMany({ orderBy: { companyName: "asc" }, select: { id: true, companyName: true, city: true } });
+    return { ok: true, items: rows.map((c) => record(c.id, c.companyName, `/klanten/${c.id}`, c.city ?? undefined, Building2)) };
+  }
+  if (top === "Plaatsingen" && rest.length === 0) {
+    const rows = await db.placement.findMany({
+      where: { status: { not: "ARCHIVED" } },
+      orderBy: { startDate: "desc" },
+      select: {
+        id: true,
+        title: true,
+        consultant: { select: { firstName: true, lastName: true } },
+        client: { select: { companyName: true } },
+      },
+    });
+    return {
+      ok: true,
+      items: rows.map((p) =>
+        record(p.id, `${p.consultant.firstName} ${p.consultant.lastName}`, `/plaatsingen/${p.id}`, [p.client?.companyName, p.title].filter(Boolean).join(" · "), Briefcase),
+      ),
+    };
+  }
+  if (top === "Documenten") return documentenMap(rest.join("/"));
+  return { ok: false, error: "Deze map bestaat niet." };
+}
+
+/** Dossierdocumenten: "" → soorten, "Contract" → werknemers, "Contract/Jan Jansen" → bestanden. */
+async function documentenMap(pad: string): Promise<Lijst> {
+  const [soortLabel, persoon] = pad ? pad.split("/") : [];
   const soort = DOCUMENT_CATEGORIES.find((c) => c.label === soortLabel);
   if (soortLabel && !soort) return { ok: false, error: "Deze map bestaat niet." };
 
@@ -221,9 +324,6 @@ async function dashboardMap(pad: string): Promise<{ ok: true; items: Item[] } | 
     },
   });
   const naam = (d: (typeof docs)[number]) => `${d.consultant.firstName} ${d.consultant.lastName}`.trim();
-  const map = (name: string, aantal: number): Item => ({
-    id: name, name, isFolder: true, size: 0, childCount: aantal, modified: null, webUrl: null,
-  });
 
   if (!soort) {
     return { ok: true, items: DOCUMENT_CATEGORIES.map((c) => map(c.label, docs.filter((d) => d.category === c.value).length)) };

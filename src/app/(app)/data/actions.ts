@@ -10,8 +10,9 @@ import { authRequired, currentUser } from "@/lib/session";
 // Bestandsverkenner-acties: werken RECHTSTREEKS in de bestaande OneDrive-mappen.
 // Nooit overschrijven (Graph: conflictBehavior=rename) en nooit verwijderen.
 
+// OneDrive is een map ín het Overzicht: terug naar /data?pad=OneDrive/<pad>.
 const terug = (pad: string, extra = "") =>
-  `/data${pad ? `?pad=${encodeURIComponent(pad)}` : ""}${extra ? `${pad ? "&" : "?"}${extra}` : ""}`;
+  `/data?pad=${encodeURIComponent(["OneDrive", pad].filter(Boolean).join("/"))}${extra ? `&${extra}` : ""}`;
 
 async function toegang() {
   if (authRequired() && !(await currentUser())) redirect("/login");
