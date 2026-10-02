@@ -10,6 +10,7 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { CONTRACT_STATUSES } from "@/lib/domain";
 import { ContractVel } from "@/components/contract/ContractVel";
 import { loadContractSheet } from "@/lib/contract-render";
+import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { ContractForm } from "../ContractForm";
 import { updateContract, deleteContract } from "../actions";
 import { getContractFormOptions } from "../data";
@@ -22,10 +23,11 @@ export default async function ContractDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ opgeslagen?: string; error?: string }>;
+  searchParams: Promise<{ opgeslagen?: string; error?: string; taal?: string }>;
 }) {
   const { id } = await params;
-  const { opgeslagen, error } = await searchParams;
+  const { opgeslagen, error, taal: t } = await searchParams;
+  const taal = t === "en" ? "en" : "nl";
 
   const [sheet, options, contract] = await Promise.all([
     loadContractSheet(id),
@@ -44,7 +46,8 @@ export default async function ContractDetailPage({
         actions={
           <div className="flex flex-wrap gap-2">
             <StatusBadge options={CONTRACT_STATUSES} value={contract.status} />
-            <Link href={`/contracten/${id}/print`} className={buttonVariants({ variant: "outline" })}>
+            <TaalSchakelaar taal={taal} href={(x) => `/contracten/${id}${x === "en" ? "?taal=en" : ""}`} />
+            <Link href={`/contracten/${id}/print${taal === "en" ? "?taal=en" : ""}`} className={buttonVariants({ variant: "outline" })}>
               <Printer className="h-4 w-4" /> Printen / PDF
             </Link>
             <ConfirmSubmit
@@ -78,7 +81,7 @@ export default async function ContractDetailPage({
         <div className="hidden xl:block">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">Voorbeeld</p>
           <div className="origin-top-left scale-[0.62] overflow-hidden rounded-lg border border-ink-200 shadow-sm">
-            <ContractVel doc={sheet.doc} logoSrc={sheet.logoSrc} />
+            <ContractVel doc={sheet.doc} logoSrc={sheet.logoSrc} taal={taal} />
           </div>
         </div>
       </div>

@@ -8,19 +8,22 @@ export const dynamic = "force-dynamic";
 
 export default async function ContractPrintPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ taal?: string }>;
 }) {
   const { id } = await params;
+  const taal = (await searchParams).taal === "en" ? "en" : "nl";
   const sheet = await loadContractSheet(id);
   if (!sheet) notFound();
 
   return (
     <div className="ov-print-pagina">
-      <PrintBar terug={`/contracten/${id}`} />
+      <PrintBar terug={`/contracten/${id}${taal === "en" ? "?taal=en" : ""}`} />
 
       <div className="flex justify-center pb-10">
-        <ContractVel doc={sheet.doc} logoSrc={sheet.logoSrc} className="ov-schaduw" />
+        <ContractVel doc={sheet.doc} logoSrc={sheet.logoSrc} taal={taal} className="ov-schaduw" />
       </div>
 
       <style>{`
