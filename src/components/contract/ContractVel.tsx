@@ -418,6 +418,10 @@ export function ContractVel({
                 </td>
               </tr>
               <tr>
+                <td className="ov-rl">{en ? "Contract duration" : "Contractduur"}</td>
+                <td colSpan={5}><V>{doc.projectDuration}</V></td>
+              </tr>
+              <tr>
                 <td className="ov-rl">{en ? "VAT reverse charge" : "BTW verlegd"}</td>
                 <td colSpan={5}>
                   <span className={doc.rates.vatReverseCharge ? "ov-fill" : "ov-strike"}>{en ? "YES" : "Ja"}</span>
