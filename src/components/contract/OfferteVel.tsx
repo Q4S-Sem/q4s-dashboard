@@ -124,7 +124,7 @@ export function OfferteVel({
           [t("Revisie", "Revision"), <F key="f" v={q.revision ?? "00"} />],
           [t("Contactpersoon Q4S", "Q4S contact"), <F key="g" v={q.from} />],
           [t("Telefoon / mobiel", "Phone / mobile"), <F key="h" v={samen(q.fromPhone, q.fromMobile)} />],
-          ["E-mail", <F key="i" v={q.fromEmail ?? "info@q4s.nl"} />],
+          ["E-mail", <F key="i" v={q.fromEmail ?? "admin@q4s.nl"} />],
         ])}
         <VelVoet regel={footerLine} page={1} total={2} taal={taal} />
       </article>
@@ -206,8 +206,8 @@ export function OfferteVel({
         <p className="ov-hd">{t("Akkoord", "Acceptance")}</p>
         <p className="pg-intro" style={{ marginTop: 0 }}>
           {t(
-            "Retourneer bij akkoord een ondertekend exemplaar inclusief PO-nummer naar info@q4s.nl.",
-            "On acceptance of the offer, please return a signed copy including a PO number to info@q4s.nl.",
+            "Retourneer bij akkoord een ondertekend exemplaar inclusief PO-nummer naar admin@q4s.nl.",
+            "On acceptance of the offer, please return a signed copy including a PO number to admin@q4s.nl.",
           )}
         </p>
         <div className="ov-sign">
