@@ -10,6 +10,7 @@ import {
   Wallet,
   FileText,
   StickyNote,
+  Trophy,
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
@@ -17,7 +18,7 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { DossierTabs } from "@/components/dossier-tabs";
 import { EMPLOYEE_DEPARTMENTS, EMPLOYEE_EMPLOYMENT_TYPES } from "@/lib/domain";
 import { deleteEmployee } from "../../actions";
-import { getEmployee, getNotesCount } from "./data";
+import { getEmployee, getNotesCount, getRecruiterPlacements } from "./data";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,11 @@ export default async function MedewerkerDossierLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [m, notes] = await Promise.all([getEmployee(id), getNotesCount(id)]);
+  const [m, notes, geplaatst] = await Promise.all([
+    getEmployee(id),
+    getNotesCount(id),
+    getRecruiterPlacements(id),
+  ]);
   if (!m) notFound();
 
   const detacheringen = m.detachering?.placements ?? [];
@@ -110,6 +115,10 @@ export default async function MedewerkerDossierLayout({
             icon: <Wallet className="h-4 w-4" />,
             count: m.payslips.length + m.bonuses.length,
           },
+          // Alleen recruiters (of wie al iemand heeft weggezet) krijgen het mapje Bonus.
+          ...(m.department === "RECRUITMENT" || geplaatst.length > 0
+            ? [{ seg: "bonus", label: "Bonus", icon: <Trophy className="h-4 w-4" />, count: geplaatst.length }]
+            : []),
           {
             seg: "documenten",
             label: "Documenten",

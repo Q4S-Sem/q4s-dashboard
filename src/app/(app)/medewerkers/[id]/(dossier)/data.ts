@@ -35,6 +35,23 @@ export const getClients = cache(async () =>
   db.client.findMany({ orderBy: { companyName: "asc" }, select: { id: true, companyName: true } }),
 );
 
+/** Plaatsingen die deze medewerker als recruiter heeft weggezet (bonus). */
+export const getRecruiterPlacements = cache(async (id: string) =>
+  db.placement.findMany({
+    where: { recruiterId: id },
+    orderBy: { startDate: "desc" },
+    select: {
+      id: true,
+      title: true,
+      startDate: true,
+      status: true,
+      recruiterBonusPct: true,
+      consultant: { select: { firstName: true, lastName: true } },
+      client: { select: { companyName: true } },
+    },
+  }),
+);
+
 /** Aantal notities/taken — voor het mapje Notities. */
 export const getNotesCount = cache(async (id: string) =>
   db.activity.count({ where: { entityType: "employee", entityId: id } }),

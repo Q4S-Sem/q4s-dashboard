@@ -520,6 +520,9 @@ export const LEAVE_TYPES: Option[] = [
 ];
 export const LEAVE_TYPE_VALUES = LEAVE_TYPES.map((d) => d.value) as [string, ...string[]];
 
+/** Bonuspercentages per weggezette persoon (recruiter-bonus). */
+export const RECRUITER_BONUS_PCTS = [25, 50, 75, 100] as const;
+
 export const BONUS_TYPES: Option[] = [
   { value: "PRESTATIE", label: "Prestatiebonus", color: "green" },
   { value: "EINDEJAAR", label: "Eindejaarsbonus", color: "violet" },

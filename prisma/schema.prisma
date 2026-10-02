@@ -309,6 +309,11 @@ model Placement {
   /// De afgesproken valuta van deze plaatsing. Een ZZP-factuur in een andere
   /// valuta is een fout (we betalen en factureren in euro's).
   currency     String  @default("EUR")
+  /// Recruiter-bonus: welke eigen medewerker (Employee) deze persoon heeft
+  /// weggezet, en welk bonuspercentage (25/50/75/100) daarbij hoort. Alleen
+  /// registratie voor het totaalplaatje — er wordt niets mee berekend.
+  recruiterId       String?
+  recruiterBonusPct Int?
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -325,6 +330,7 @@ model Placement {
   @@index([consultantId])
   @@index([clientId])
   @@index([status])
+  @@index([recruiterId])
 }
 
 /// Weekly timesheet per placement; entries are per-day hours.

@@ -15,6 +15,7 @@ import {
   BONUS_TYPE_VALUES,
   EMPLOYEE_DOC_CATEGORY_VALUES,
   DISCIPLINE_VALUES,
+  RECRUITER_BONUS_PCTS,
 } from "@/lib/domain";
 
 const EmployeeSchema = z.object({
@@ -280,6 +281,38 @@ export async function deleteBonus(formData: FormData) {
   if (id) await db.employeeBonus.delete({ where: { id } }).catch(() => {});
   revalidatePath(`/medewerkers/${employeeId}`, "layout");
   redirect(`/medewerkers/${employeeId}/beloning`);
+}
+
+// ---- Recruiter-bonus: weggezette plaatsingen ----
+
+
+/** Koppel een plaatsing aan deze recruiter met een bonuspercentage (of wijzig het %). */
+export async function setRecruiterPlacement(formData: FormData) {
+  const employeeId = String(formData.get("employeeId") ?? "");
+  const placementId = String(formData.get("placementId") ?? "");
+  const pct = Number(formData.get("pct"));
+  if (employeeId && placementId && (RECRUITER_BONUS_PCTS as readonly number[]).includes(pct)) {
+    await db.placement.update({
+      where: { id: placementId },
+      data: { recruiterId: employeeId, recruiterBonusPct: pct },
+    });
+  }
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/bonus`);
+}
+
+export async function removeRecruiterPlacement(formData: FormData) {
+  const employeeId = String(formData.get("employeeId") ?? "");
+  const id = String(formData.get("id") ?? "");
+  if (id && employeeId) {
+    // Alleen loskoppelen als hij nog bij déze recruiter hoort.
+    await db.placement.updateMany({
+      where: { id, recruiterId: employeeId },
+      data: { recruiterId: null, recruiterBonusPct: null },
+    });
+  }
+  revalidatePath(`/medewerkers/${employeeId}`, "layout");
+  redirect(`/medewerkers/${employeeId}/bonus`);
 }
 
 // ---- Eindejaarsbeoordeling (percentage) ----
