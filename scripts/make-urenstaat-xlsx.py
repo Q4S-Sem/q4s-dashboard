@@ -41,7 +41,7 @@ T = {
         contractor="Contractor", approval="For approval — client", sig="Signature", date="Date", fname="Name",
         func="Function", client_l="Client", sig_client="Client signature for approval",
         note="Only timesheets signed by the client are processed. One timesheet per week, as PDF or clear photo to admin@q4s.nl.",
-        fromhint="Enter the date of Monday — dates, week number and 'To' follow automatically.",
+        weekhint="Enter the week number (1-53) — From, To and all dates follow automatically.",
     ),
     "nl": dict(
         sheet="Q4S-Timesheet", name="Naam", week="Weeknr.", frm="Van", to="Tot", project="Project", po="PO-nr.",
@@ -55,7 +55,7 @@ T = {
         contractor="Medewerker / ZZP'er", approval="Akkoord klant", sig="Handtekening", date="Datum", fname="Naam",
         func="Functie", client_l="Klant", sig_client="Handtekening voor akkoord (klant)",
         note="Alleen een door de klant ondertekende timesheet wordt verwerkt. Eén timesheet per week, als PDF of duidelijke foto naar admin@q4s.nl.",
-        fromhint="Vul de datum van maandag in — datums, weeknummer en 'Tot' volgen vanzelf.",
+        weekhint="Vul het weeknummer in (1-53) — Van, Tot en alle datums volgen vanzelf.",
     ),
 }
 
@@ -133,16 +133,22 @@ def build(lang: str) -> Path:
         for col in "NP":
             put(f"{col}{r}", None, bold=True, color=BLUE, align="center")
             box(f"{col}{r}:{col}{r}", bottom=thin)
-    put("P1", None, bold=True, color=BLUE, align="center", fmt="DD-MM-YYYY")
-    ws["N3"] = '=IF(P1="","",_xlfn.ISOWEEKNUM(P1))'
+    # Alleen het weeknummer invullen; Van (maandag) en Tot (zondag) rekenen mee,
+    # en daarmee ook alle datums in het rooster, de omschrijving en de kilometers.
+    # Jaar = huidig jaar; week 1-9 in december telt als volgend jaar, week 41+ in januari als vorig jaar.
+    # ponytail: jaar volgt TODAY(), dus een oud bestand dat je volgend jaar heropent verschuift; voeg een jaarveld toe als dat speelt.
+    put("N3", None, bold=True, color=BLUE, align="center")
+    jaar = 'YEAR(TODAY())+IF(AND(MONTH(TODAY())=12,N3<10),1,IF(AND(MONTH(TODAY())=1,N3>40),-1,0))'
+    ws["P1"] = f'=IF(N3="","",DATE({jaar},1,4)-WEEKDAY(DATE({jaar},1,4),3)+7*(N3-1))'
     ws["P3"] = '=IF(P1="","",P1+6)'
-    ws["P3"].number_format = "DD-MM-YYYY"
-    for ref in ("N3", "P3"):
+    for ref in ("P1", "P3"):
+        ws[ref].number_format = "DD-MM-YYYY"
         ws[ref].font = Font(name=FONT, size=9, bold=True, color=INK)
-    dv = DataValidation(type="date", operator="greaterThan", formula1="DATE(2020,1,1)", allow_blank=True,
-                        promptTitle=t["frm"], prompt=t["fromhint"], showInputMessage=True)
+    dv = DataValidation(type="whole", operator="between", formula1="1", formula2="53", allow_blank=True,
+                        promptTitle=t["week"], prompt=t["weekhint"], showInputMessage=True,
+                        errorTitle=t["week"], error=t["weekhint"], showErrorMessage=True)
     ws.add_data_validation(dv)
-    dv.add("Q2")  # = P1 na het verschuiven naar B2
+    dv.add("O4")  # = N3 na het verschuiven naar B2
 
     # Banner: insturen naar admin@q4s.nl
     ws.row_dimensions[6].height = 6

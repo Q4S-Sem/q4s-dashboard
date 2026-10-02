@@ -142,7 +142,7 @@ export default async function ContractTemplatePage({
         <div className="no-print flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
           <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
           <p className="mr-auto text-sm text-ink-600">
-            Q4S-Timesheet in Excel (A4 liggend) om naar ZZP&apos;ers te sturen — hieronder precies zoals hij eruitziet — datum van maandag bij &ldquo;Van&rdquo; invullen, de rest rekent vanzelf.
+            Q4S-Timesheet in Excel (A4 liggend) om naar ZZP&apos;ers te sturen — hieronder precies zoals hij eruitziet — alleen het weeknummer invullen; Van, Tot en alle datums (ook bij de omschrijving) rekenen vanzelf.
           </p>
           {(["NL", "EN"] as const).map((l) => (
             <a
