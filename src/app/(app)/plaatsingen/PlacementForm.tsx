@@ -30,7 +30,6 @@ import { PLACEMENT_STATUSES, DISCIPLINES, EMPLOYMENT_TYPES } from "@/lib/domain"
 import { cn, formatCurrency } from "@/lib/utils";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { quickCreateClient } from "../klanten/actions";
-import { lookupDutchAddress } from "../klanten/address-actions";
 import { savePlacementDraft } from "./actions";
 import { WerknemerCvIntake } from "./WerknemerCvIntake";
 
@@ -809,40 +808,6 @@ export function PlacementForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ZZP-adres → postcode + plaats automatisch aanvullen via PDOK (gratis, geen
-  // sleutel). Schrijft rechtstreeks naar de (uncontrolled) inputs op hun id.
-  const [addrStatus, setAddrStatus] = useState<"idle" | "busy" | "done" | "none">("idle");
-  async function autofillZzpAddress(raw: string) {
-    const q = raw.trim();
-    if (q.length < 5 || !/\d/.test(q)) return; // geen huisnummer → niets op te zoeken
-    setAddrStatus("busy");
-    const res = await lookupDutchAddress(q);
-    if (!res) {
-      setAddrStatus("none");
-      return;
-    }
-    // Alleen vertrouwen als er een postcode in stond of de straat echt in de tekst
-    // voorkomt (voorkomt een verkeerde "beste gok" bij vage invoer).
-    const low = q.toLowerCase();
-    const pcInQuery = /\d{4}\s?[a-z]{2}/i.test(q);
-    const streetMatch = Boolean(res.street) && low.includes(res.street.toLowerCase());
-    if (!pcInQuery && !streetMatch) {
-      setAddrStatus("none");
-      return;
-    }
-    const setVal = (id: string, val: string) => {
-      const el = document.getElementById(id) as HTMLInputElement | null;
-      if (el && val) {
-        el.value = val;
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-    };
-    setVal("p-address", [res.street, res.houseNumber].filter(Boolean).join(" "));
-    setVal("p-postalCode", res.postcode);
-    setVal("p-city", res.city);
-    setAddrStatus("done");
-  }
-
   // The werknemer of an existing plaatsing is fixed and cannot be changed here.
   const currentPerson = placement
     ? consultants.find((c) => c.id === placement.consultantId)
@@ -1070,15 +1035,6 @@ export function PlacementForm({
                       <Field
                         label="Adres"
                         htmlFor="p-address"
-                        hint={
-                          addrStatus === "busy"
-                            ? "Adres opzoeken…"
-                            : addrStatus === "done"
-                              ? "Postcode en plaats automatisch aangevuld ✓"
-                              : addrStatus === "none"
-                                ? "Niet gevonden — vul postcode en plaats zelf in."
-                                : "Typ straat + huisnummer — postcode en plaats worden automatisch aangevuld."
-                        }
                         error={e.address}
                       >
                         <Input
@@ -1086,8 +1042,6 @@ export function PlacementForm({
                           name="address"
                           placeholder="Straat en huisnummer"
                           autoComplete="off"
-                          onChange={() => addrStatus !== "idle" && setAddrStatus("idle")}
-                          onBlur={(ev) => autofillZzpAddress(ev.target.value)}
                         />
                       </Field>
                       <div className="grid grid-cols-2 gap-3">

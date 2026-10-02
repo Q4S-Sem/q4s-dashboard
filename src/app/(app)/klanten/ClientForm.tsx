@@ -9,7 +9,7 @@ import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { emptyFormState, type FormState } from "@/lib/form";
-import { lookupDutchAddress, lookupCompanyByWebsite } from "./address-actions";
+import { lookupCompanyByWebsite } from "./address-actions";
 
 export type ClientLite = { id: string; name: string };
 
@@ -96,31 +96,6 @@ export function ClientForm({
     () => findDuplicate(name, existingClients, client?.id),
     [name, existingClients, client?.id],
   );
-
-  const [addr, setAddr] = useState<"idle" | "busy" | "done" | "none">("idle");
-  async function autofillAddress(raw: string) {
-    const q = raw.trim();
-    if (q.length < 5 || !/\d/.test(q)) return; // geen huisnummer → niets op te zoeken
-    setAddr("busy");
-    const res = await lookupDutchAddress(q);
-    if (!res) {
-      setAddr("none");
-      return;
-    }
-    // Alleen vertrouwen als er een postcode in stond of de straat echt in de tekst
-    // voorkomt (voorkomt een verkeerde "beste gok" bij vage invoer).
-    const low = q.toLowerCase();
-    const pcInQuery = /\d{4}\s?[a-z]{2}/i.test(q);
-    const streetMatch = Boolean(res.street) && low.includes(res.street.toLowerCase());
-    if (!pcInQuery && !streetMatch) {
-      setAddr("none");
-      return;
-    }
-    setFieldValue("address", [res.street, res.houseNumber].filter(Boolean).join(" "));
-    setFieldValue("postalCode", res.postcode);
-    setFieldValue("city", res.city);
-    setAddr("done");
-  }
 
   // ---- Web-enrichment: bedrijfsdata ophalen vanaf de website (gratis) ----
   const [website, setWebsite] = useState(client?.website ?? "");
@@ -304,7 +279,6 @@ export function ClientForm({
             <Field
               label="Adres"
               htmlFor="address"
-              hint="Typ het adres of postcode + huisnummer — postcode en plaats worden automatisch aangevuld."
               error={e.address}
             >
               <Input
@@ -313,14 +287,8 @@ export function ClientForm({
                 placeholder="Bijv. Hofweg 15, 3208 LE Spijkenisse"
                 defaultValue={client?.address ?? ""}
                 autoComplete="off"
-                onChange={() => addr !== "idle" && setAddr("idle")}
-                onBlur={(ev) => autofillAddress(ev.target.value)}
               />
             </Field>
-            {addr === "busy" && <p className="mt-1 text-xs text-ink-400">Adres opzoeken…</p>}
-            {addr === "done" && (
-              <p className="mt-1 text-xs text-emerald-600">Postcode en plaats automatisch aangevuld.</p>
-            )}
           </div>
 
           <div className="grid gap-5 sm:grid-cols-3">
