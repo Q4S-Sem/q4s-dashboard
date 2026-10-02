@@ -12,6 +12,8 @@ import {
   CalendarRange,
   MapPin,
   ScrollText,
+  Archive,
+  RotateCcw,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
@@ -20,7 +22,7 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { DossierTabs } from "@/components/dossier-tabs";
 import { PLACEMENT_STATUSES } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
-import { deletePlacement } from "../../actions";
+import { archivePlacement, deletePlacement, restorePlacement } from "../../actions";
 import { getPlacement, getDossierCounts } from "./data";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -76,6 +78,27 @@ export default async function PlaatsingDossierLayout({
             >
               <Pencil className="h-4 w-4" /> Bewerken
             </Link>
+            {placement.status === "ARCHIVED" ? (
+              <ConfirmSubmit
+                action={restorePlacement}
+                id={placement.id}
+                variant="secondary"
+                message={`${person} weer in dienst nemen?`}
+                description="De plaatsing gaat terug naar actief met alle tarieven en gegevens. Je past daarna de start- en einddatum aan."
+              >
+                <RotateCcw className="h-4 w-4" /> Terugzetten
+              </ConfirmSubmit>
+            ) : (
+              <ConfirmSubmit
+                action={archivePlacement}
+                id={placement.id}
+                variant="outline"
+                message={`${person} uit dienst — plaatsing archiveren?`}
+                description="De plaatsing verdwijnt uit de lijst en gaat naar het archief. Er wordt niets verwijderd: met één klik zet je hem terug."
+              >
+                <Archive className="h-4 w-4" /> Archiveren
+              </ConfirmSubmit>
+            )}
             <ConfirmSubmit
               action={deletePlacement}
               id={placement.id}

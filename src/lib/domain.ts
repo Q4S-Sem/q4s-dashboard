@@ -39,6 +39,9 @@ export const EMPLOYMENT_TYPES: Option[] = [
 export const PLACEMENT_STATUSES: Option[] = [
   { value: "ACTIVE", label: "Actief", color: "green" },
   { value: "ENDED", label: "Beëindigd", color: "red" },
+  // Persoon werkt niet meer voor ons: uit de lijst, in het archief, met één klik
+  // terug te zetten (alle tarieven/gegevens blijven op de plaatsing staan).
+  { value: "ARCHIVED", label: "Gearchiveerd", color: "slate" },
 ];
 
 /** Hoe een toeslag gerekend wordt — per toeslag, per plaatsing te schakelen.

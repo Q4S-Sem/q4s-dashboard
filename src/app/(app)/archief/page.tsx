@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { Archive, Search, Folder, Paperclip } from "lucide-react";
+import { Archive, Search, Folder, Paperclip, UserX, RotateCcw } from "lucide-react";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { restorePlacement } from "../plaatsingen/actions";
 import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -8,7 +10,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
 import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { formatDateLong } from "@/lib/utils";
+import { formatDate, formatDateLong } from "@/lib/utils";
 
 export const metadata = { title: "Archief" };
 export const dynamic = "force-dynamic";
@@ -60,11 +62,32 @@ export default async function ArchiefPage({
       : {}),
   };
 
-  const [items, typeGroups, total] = await Promise.all([
-    db.archivedItem.findMany({ where, orderBy: { deletedAt: "desc" }, take: 300 }),
+  const uitDienstMap = type === "uit-dienst";
+  const [items, typeGroups, archivedTotal, uitDienst] = await Promise.all([
+    uitDienstMap ? Promise.resolve([]) : db.archivedItem.findMany({ where, orderBy: { deletedAt: "desc" }, take: 300 }),
     db.archivedItem.groupBy({ by: ["entityType"], _count: { _all: true } }),
     db.archivedItem.count(),
+    // Uit dienst: gearchiveerde plaatsingen (niet verwijderd, terug te zetten).
+    db.placement.findMany({
+      where: {
+        status: "ARCHIVED",
+        ...(q
+          ? {
+              OR: [
+                { title: { contains: q } },
+                { consultant: { firstName: { contains: q } } },
+                { consultant: { lastName: { contains: q } } },
+                { client: { companyName: { contains: q } } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { updatedAt: "desc" },
+      include: { consultant: { select: { firstName: true, lastName: true } }, client: { select: { companyName: true } } },
+    }),
   ]);
+  const total = archivedTotal + uitDienst.length;
+  const toonUitDienst = (type === "" || uitDienstMap) && uitDienst.length > 0;
 
   const folders = typeGroups
     .map((g) => ({ type: g.entityType, label: entLabel(g.entityType), count: g._count._all }))
@@ -74,7 +97,7 @@ export default async function ArchiefPage({
     <div className="space-y-6">
       <PageHeader
         title="Archief"
-        description="Alles wat je in het dashboard verwijdert wordt hier automatisch bewaard — gesorteerd in mappen per soort, met bestanden, en altijd terug te vinden."
+        description="Alles wat je verwijdert of uit dienst zet wordt hier bewaard — gesorteerd in mappen per soort, met bestanden, en altijd terug te vinden."
       />
 
       {total === 0 ? (
@@ -119,6 +142,18 @@ export default async function ArchiefPage({
                 <span className="flex-1 text-sm font-medium text-ink-800">Alles</span>
                 <span className="text-sm tabular-nums text-ink-500">{total}</span>
               </Link>
+              {uitDienst.length > 0 && (
+                <Link
+                  href={`/archief?type=uit-dienst${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                  className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
+                    uitDienstMap ? "border-brand-300 bg-brand-50" : "border-ink-200 bg-white hover:bg-ink-50"
+                  }`}
+                >
+                  <UserX className="h-5 w-5 text-ink-400" />
+                  <span className="flex-1 truncate text-sm font-medium text-ink-800">Uit dienst (plaatsingen)</span>
+                  <span className="text-sm tabular-nums text-ink-500">{uitDienst.length}</span>
+                </Link>
+              )}
               {folders.map((f) => {
                 const href = `/archief?type=${f.type}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
                 return (
@@ -138,7 +173,60 @@ export default async function ArchiefPage({
             </div>
           </div>
 
+          {toonUitDienst && (
+            <Card>
+              <CardContent className="p-0">
+                <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
+                  <p className="text-sm font-semibold text-ink-900">Uit dienst — plaatsingen</p>
+                  <p className="text-xs text-ink-400">Alle gegevens bewaard · Terugzetten = weer actief bij de plaatsingen</p>
+                </div>
+                <Table>
+                  <THead>
+                    <TR className="hover:bg-transparent">
+                      <TH>Werknemer</TH>
+                      <TH>Klant</TH>
+                      <TH>Functie</TH>
+                      <TH>Periode</TH>
+                      <TH className="text-right">
+                        <span className="sr-only">Acties</span>
+                      </TH>
+                    </TR>
+                  </THead>
+                  <TBody>
+                    {uitDienst.map((p) => (
+                      <TR key={p.id}>
+                        <TD>
+                          <Link href={`/plaatsingen/${p.id}`} className="font-medium text-ink-900 hover:text-brand-700">
+                            {p.consultant.firstName} {p.consultant.lastName}
+                          </Link>
+                        </TD>
+                        <TD className="text-ink-600">{p.client?.companyName ?? "—"}</TD>
+                        <TD className="text-ink-600">{p.title}</TD>
+                        <TD className="text-ink-500">
+                          {formatDate(p.startDate)} – {p.endDate ? formatDate(p.endDate) : "…"}
+                        </TD>
+                        <TD className="text-right">
+                          <ConfirmSubmit
+                            action={restorePlacement}
+                            id={p.id}
+                            variant="outline"
+                            size="sm"
+                            message={`${p.consultant.firstName} ${p.consultant.lastName} weer in dienst nemen?`}
+                            description="De plaatsing gaat terug naar actief met alle tarieven en gegevens. Je past daarna de start- en einddatum aan."
+                          >
+                            <RotateCcw className="h-4 w-4" /> Terugzetten
+                          </ConfirmSubmit>
+                        </TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Items */}
+          {!uitDienstMap && (
           <Card>
             <CardContent className="p-0">
               {items.length === 0 ? (
@@ -191,6 +279,7 @@ export default async function ArchiefPage({
               )}
             </CardContent>
           </Card>
+          )}
         </>
       )}
     </div>

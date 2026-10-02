@@ -1318,7 +1318,7 @@ export function PlacementForm({
                 name="status"
                 defaultValue={dv("status", placement?.status ?? "ACTIVE")}
               >
-                {PLACEMENT_STATUSES.map((o) => (
+                {PLACEMENT_STATUSES.filter((o) => o.value !== "ARCHIVED" || placement?.status === "ARCHIVED").map((o) => (
                   <option key={o.value} value={o.value} data-color={o.color}>
                     {o.label}
                   </option>

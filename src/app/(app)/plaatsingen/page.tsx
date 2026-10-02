@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Briefcase, Plus, Users, CheckCircle2, Coins, FileText, Trash2 } from "lucide-react";
+import { Archive, Briefcase, Plus, Users, CheckCircle2, Coins, FileText, Trash2 } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -17,9 +17,9 @@ export const metadata = { title: "Plaatsingen" };
 export default async function PlaatsingenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; client?: string; concept?: string }>;
+  searchParams: Promise<{ error?: string; client?: string; concept?: string; gearchiveerd?: string }>;
 }) {
-  const { error, client: clientId, concept } = await searchParams;
+  const { error, client: clientId, concept, gearchiveerd } = await searchParams;
   const filterClient = clientId
     ? await db.client.findUnique({
         where: { id: clientId },
@@ -27,10 +27,11 @@ export default async function PlaatsingenPage({
       })
     : null;
   const placements = await db.placement.findMany({
-    where: filterClient ? { clientId: filterClient.id } : {},
+    where: { status: { not: "ARCHIVED" }, ...(filterClient ? { clientId: filterClient.id } : {}) },
     orderBy: { startDate: "desc" },
     include: { consultant: true, client: true },
   });
+  const gearchiveerdAantal = await db.placement.count({ where: { status: "ARCHIVED" } });
   // Concepten (half ingevulde plaatsingen) — bovenaan, om af te maken.
   const drafts = filterClient
     ? []
@@ -52,11 +53,22 @@ export default async function PlaatsingenPage({
         title="Plaatsingen"
         description="Werknemers gekoppeld aan klanten, met de marges die we hanteren."
         actions={
-          <Link href="/plaatsingen/nieuw" className={buttonVariants()}>
-            <Plus className="h-4 w-4" /> Nieuwe plaatsing
-          </Link>
+          <>
+            <Link href="/archief?type=uit-dienst" className={buttonVariants({ variant: "outline" })}>
+              <Archive className="h-4 w-4" /> Archief{gearchiveerdAantal > 0 ? ` (${gearchiveerdAantal})` : ""}
+            </Link>
+            <Link href="/plaatsingen/nieuw" className={buttonVariants()}>
+              <Plus className="h-4 w-4" /> Nieuwe plaatsing
+            </Link>
+          </>
         }
       />
+
+      {gearchiveerd && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Plaatsing gearchiveerd. Je vindt hem onder <Link href="/archief?type=uit-dienst" className="font-semibold underline">Archief</Link> — met één klik terug te zetten.
+        </p>
+      )}
 
       {concept && (
         <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">

@@ -383,6 +383,47 @@ export async function updatePlacement(
   redirect(`/plaatsingen/${id}`);
 }
 
+/**
+ * Uit dienst: plaatsing naar het archief. Niets wordt verwijderd — de plaatsing
+ * blijft compleet (tarieven, documenten, urenstaten) en de werknemer gaat op
+ * inactief als hij geen andere actieve plaatsing heeft.
+ */
+export async function archivePlacement(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const p = await db.placement.findUnique({ where: { id }, select: { consultantId: true, endDate: true } });
+  if (!p) return;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  await db.placement.update({
+    where: { id },
+    data: { status: "ARCHIVED", endDate: p.endDate ?? today },
+  });
+  const nogActief = await db.placement.count({ where: { consultantId: p.consultantId, status: "ACTIVE" } });
+  if (nogActief === 0) await db.consultant.update({ where: { id: p.consultantId }, data: { active: false } });
+  revalidatePath("/plaatsingen");
+  revalidatePath("/archief");
+  redirect("/plaatsingen?gearchiveerd=1");
+}
+
+/**
+ * Weer in dienst: plaatsing terug naar actief met alle oude gegevens. De
+ * einddatum gaat leeg; start/einddatum pas je daarna aan via Bewerken.
+ */
+export async function restorePlacement(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const p = await db.placement.update({
+    where: { id },
+    data: { status: "ACTIVE", endDate: null },
+    select: { consultantId: true },
+  });
+  await db.consultant.update({ where: { id: p.consultantId }, data: { active: true } });
+  revalidatePath("/plaatsingen");
+  revalidatePath("/archief");
+  redirect(`/plaatsingen/${id}/bewerken?teruggezet=1`);
+}
+
 export async function deletePlacement(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
