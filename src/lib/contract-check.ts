@@ -9,6 +9,7 @@ export type ContractVelden = {
   contractorAddress?: string | null;
   contractorKvk?: string | null;
   contractorVat?: string | null;
+  contractorIban?: string | null;
   workDescription?: string | null;
   startDate?: Date | string | null;
   endDate?: Date | string | null;
@@ -29,6 +30,7 @@ export function ontbrekendeContractVelden(c: ContractVelden): string[] {
   if (leeg(c.contractorAddress)) mist.push("Adres opdrachtnemer (gevestigd te)");
   if (leeg(c.contractorKvk)) mist.push("KvK-nummer");
   if (leeg(c.contractorVat)) mist.push("BTW-nummer");
+  if (leeg(c.contractorIban)) mist.push("IBAN opdrachtnemer");
   if (leeg(c.workDescription)) mist.push("Werkzaamheden (artikel 1.1)");
   if (leeg(c.startDate)) mist.push("Aanvangsdatum");
   if (leeg(c.endDate) && leeg(c.projectDuration)) mist.push("Einddatum of projectduur");

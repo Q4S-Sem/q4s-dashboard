@@ -24,6 +24,7 @@ const VOORBEELD = {
   contractorAddress: "Voorbeeldstraat 1, 1234 AB Rotterdam",
   contractorKvk: "12345678",
   contractorVat: "NL001234567B01",
+  contractorIban: "NL00 BANK 0123 4567 89",
   fieldOfWork: "Quality & Inspection Services",
   serviceNeed: "Quality Management & Inspection Services",
   thirdParty: "Smulders-HSM (HSI PEMAC)",

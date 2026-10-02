@@ -185,6 +185,7 @@ export function ContractVel({
             [en ? "Located at" : "Gevestigd te", <V key="a">{doc.contractor.address}</V>],
             [en ? "Chamber of Commerce no." : "KvK-nr.", <V key="k">{doc.contractor.kvk}</V>],
             [en ? "VAT no." : "BTW-nr.", <V key="b">{doc.contractor.vat}</V>],
+            ["IBAN", <V key="i">{doc.contractor.iban}</V>],
             [en ? "Hereafter to be called" : "Hierna te noemen", an],
           ])}
         </div>

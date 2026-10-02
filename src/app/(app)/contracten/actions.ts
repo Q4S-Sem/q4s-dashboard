@@ -30,6 +30,7 @@ const ContractSchema = z.object({
   contractorAddress: optional,
   contractorKvk: optional,
   contractorVat: optional,
+  contractorIban: optional,
 
   fieldOfWork: optional,
   serviceNeed: optional,
@@ -118,6 +119,7 @@ export async function createContract(_prev: FormState, formData: FormData): Prom
         contractorAddress: d.contractorAddress,
         contractorKvk: d.contractorKvk,
         contractorVat: d.contractorVat,
+        contractorIban: d.contractorIban,
         thirdParty: d.thirdParty,
         workDescription: d.workDescription,
         startDate: d.startDate ?? null,
@@ -175,6 +177,7 @@ export async function updateContract(_prev: FormState, formData: FormData): Prom
         contractorAddress: d.contractorAddress,
         contractorKvk: d.contractorKvk,
         contractorVat: d.contractorVat,
+        contractorIban: d.contractorIban,
         thirdParty: d.thirdParty,
         workDescription: d.workDescription,
         startDate: d.startDate ?? null,

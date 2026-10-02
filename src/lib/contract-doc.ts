@@ -33,6 +33,7 @@ export type ContractDoc = {
     address: string;
     kvk: string;
     vat: string;
+    iban: string;
   };
   fieldOfWork: string;
   serviceNeed: string;
@@ -108,6 +109,7 @@ export function buildContractDoc(contract: Contract, settings: CompanySettings):
       address: contract.contractorAddress,
       kvk: contract.contractorKvk,
       vat: contract.contractorVat,
+      iban: contract.contractorIban,
     },
     fieldOfWork: contract.fieldOfWork,
     serviceNeed: contract.serviceNeed,

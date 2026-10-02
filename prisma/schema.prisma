@@ -1216,6 +1216,7 @@ model Contract {
   contractorAddress String @default("")
   contractorKvk     String @default("")
   contractorVat     String @default("")
+  contractorIban    String @default("")
 
   // ---- Opdracht (overwegingen + art. 1) ----
   /// Vakgebied Opdrachtgever (overweging a).

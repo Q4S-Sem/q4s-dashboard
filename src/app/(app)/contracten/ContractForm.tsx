@@ -9,7 +9,7 @@ import { ConfirmCancel } from "@/components/confirm-cancel";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { CONTRACT_STATUSES } from "@/lib/domain";
 
-type ConsultantOption = { id: string; name: string; company: string; kvk: string; vat: string; address: string };
+type ConsultantOption = { id: string; name: string; company: string; kvk: string; vat: string; iban: string; address: string };
 type PlacementOption = { id: string; consultantId: string; label: string; thirdParty: string };
 
 /** Voor-invulwaarden bij een nieuw contract (bijv. aangemaakt vanuit een plaatsing). */
@@ -20,6 +20,7 @@ type ContractDefaults = {
   contractorAddress?: string;
   contractorKvk?: string;
   contractorVat?: string;
+  contractorIban?: string;
 };
 
 function toDateInput(d: Date | null): string {
@@ -118,6 +119,9 @@ export function ContractForm({
             </Field>
             <Field label="BTW-nummer" htmlFor="contractorVat" error={e.contractorVat}>
               <Input id="contractorVat" name="contractorVat" defaultValue={c?.contractorVat ?? d?.contractorVat ?? ""} />
+            </Field>
+            <Field label="IBAN" htmlFor="contractorIban" error={e.contractorIban}>
+              <Input id="contractorIban" name="contractorIban" defaultValue={c?.contractorIban ?? d?.contractorIban ?? ""} placeholder="NL00 BANK 0000 0000 00" />
             </Field>
           </div>
         </CardContent>

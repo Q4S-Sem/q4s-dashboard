@@ -18,6 +18,7 @@ export async function getContractFormOptions() {
         companyName: true,
         kvkNumber: true,
         vatNumber: true,
+        iban: true,
         address: true,
         postalCode: true,
         city: true,
@@ -43,6 +44,7 @@ export async function getContractFormOptions() {
       company: c.companyName ?? "",
       kvk: c.kvkNumber ?? "",
       vat: c.vatNumber ?? "",
+      iban: c.iban ?? "",
       address: [c.address, [c.postalCode, c.city].filter(Boolean).join(" ")].filter(Boolean).join(", "),
     })),
     placements: placements.map((p) => ({

@@ -27,6 +27,7 @@ export default async function NieuwContractPage({
           contractorAddress: chosen?.address ?? "",
           contractorKvk: chosen?.kvk ?? "",
           contractorVat: chosen?.vat ?? "",
+          contractorIban: chosen?.iban ?? "",
         }
       : undefined;
 
