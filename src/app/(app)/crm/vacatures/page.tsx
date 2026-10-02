@@ -70,7 +70,7 @@ export default async function VacaturesPage({
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Open vacatures" value={open.length} icon={<Briefcase className="h-5 w-5" />} accent="brand" />
         <StatCard label="Te vullen posities" value={totalPositions} icon={<Users2 className="h-5 w-5" />} accent="violet" />
         <StatCard label="In pipeline" value={filled.length} icon={<Kanban className="h-5 w-5" />} accent="green" />

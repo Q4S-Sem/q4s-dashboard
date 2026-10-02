@@ -117,7 +117,7 @@ export default async function PlaatsingenPage({
       )}
 
       {placements.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Mensen" value={mensen} sub="unieke werknemers" icon={<Users className="h-5 w-5" />} accent="brand" />
           <StatCard label="Plaatsingen" value={placements.length} icon={<Briefcase className="h-5 w-5" />} accent="violet" />
           <StatCard label="Actief" value={actief} icon={<CheckCircle2 className="h-5 w-5" />} accent="green" />

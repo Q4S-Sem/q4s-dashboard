@@ -41,7 +41,7 @@ export default async function DossiercheckPage() {
         description="Is elk personeelsdossier compleet? Per persoon zie je welke verplichte stukken ontbreken of verlopen zijn, zodat je ze vóór een audit kunt opvragen. Deze pagina leest alleen — opvragen en bijwerken doe je zelf in het dossier."
       />
 
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-4">
         <StatCard label="Dossiers gecontroleerd" value={checks.length} icon={<Users className="h-5 w-5" />} accent="brand" />
         <StatCard
           label="Niet auditproof"

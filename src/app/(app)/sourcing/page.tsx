@@ -74,7 +74,7 @@ export default async function SourcingPage({
       )}
 
       {/* Last run summary */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Gevonden (web)" value={lastRun?.sourced ?? 0} icon={<Sparkles className="h-5 w-5" />} accent="brand" />
         <StatCard label="Beoordeeld" value={lastRun?.filtered ?? 0} icon={<Filter className="h-5 w-5" />} accent="violet" />
         <StatCard label="Relevant" value={lastRun?.relevant ?? 0} icon={<Sparkles className="h-5 w-5" />} accent="green" />

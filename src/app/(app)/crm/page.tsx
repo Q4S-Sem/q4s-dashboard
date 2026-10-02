@@ -67,7 +67,7 @@ export default async function CrmPage() {
         description="Eén gedeelde pipeline om een kandidaat uit de talentpool bij een eigen klant te plaatsen op een openstaande vacature. Sleep deals tussen de fases; alles wat je doet wordt gelogd."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Open deals" value={openCount} icon={<Kanban className="h-5 w-5" />} accent="brand" />
         <StatCard label="Pipelinewaarde" value={formatCurrency(pipelineValue)} icon={<Coins className="h-5 w-5" />} accent="violet" />
         <StatCard

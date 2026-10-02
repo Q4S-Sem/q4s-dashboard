@@ -142,7 +142,7 @@ export default async function KandidatenPage({
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Kandidaten" value={total} icon={<Users className="h-5 w-5" />} accent="brand" />
         <StatCard label="Goed" value={countBy("GOED")} icon={<Star className="h-5 w-5" />} accent="green" />
         <StatCard label="Redelijk" value={countBy("REDELIJK")} icon={<ThumbsUp className="h-5 w-5" />} accent="amber" />

@@ -162,7 +162,7 @@ export default async function WebsiteCvsPage({
         {tabLink("email", "E-mail", emailCount, <Mail className="h-4 w-4" />)}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="CV's in deze bron" value={rows.length} icon={<FileText className="h-5 w-5" />} accent="brand" />
         <StatCard label="Nieuw (7 dagen)" value={recent} icon={<Inbox className="h-5 w-5" />} accent="green" />
         <StatCard label="Doorgezet als lead" value={inCrm} sub="staat in het CRM" icon={<Kanban className="h-5 w-5" />} accent="violet" />

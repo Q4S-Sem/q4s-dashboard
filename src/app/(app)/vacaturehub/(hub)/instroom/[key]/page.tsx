@@ -147,7 +147,7 @@ export default async function BronPage({
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Binnengekomen" value={source.total} accent="slate" />
         <StatCard label="Te beoordelen" value={source.unknown} accent={source.unknown > 0 ? "amber" : "slate"} />
         <StatCard label="Relevant" value={source.relevant} accent="violet" />

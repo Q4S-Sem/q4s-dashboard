@@ -162,7 +162,7 @@ export default async function CvMatchesPage({
         </Card>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             <StatCard label="Zoekopdrachten" value={searches.length} icon={<Search className="h-5 w-5" />} accent="brand" />
             <StatCard label="Matches totaal" value={totalMatches} icon={<Target className="h-5 w-5" />} accent="violet" />
             <StatCard label="Sterke matches" value={strong} sub="≥ 70% (top 12/zoekopdracht)" icon={<Sparkles className="h-5 w-5" />} accent="green" />

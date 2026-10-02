@@ -37,37 +37,39 @@ export function StatCard({
   className?: string;
 }) {
   return (
-    <Card className={cn("group relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md", className)}>
-      <div className="flex items-start justify-between gap-3 p-5">
-        <div className="min-w-0">
-          <p className="text-[13px] font-medium text-ink-500">{label}</p>
-          <p className="mt-2 text-[30px] font-semibold tracking-[-0.02em] tabular-nums text-ink-900">
-            {value}
-          </p>
-          {sub && <p className="mt-1.5 text-xs text-ink-400">{sub}</p>}
-        </div>
+    // Compacte KPI-tegel: klein icoon links, label + waarde ernaast. Bewust
+    // laag (~56px) — de cijfers zijn context, niet de hoofdzaak van de pagina.
+    <Card className={cn("relative overflow-hidden shadow-none", className)}>
+      <div className="flex items-center gap-3 px-3.5 py-2.5">
         {icon && (
           <div
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md [&_svg]:h-4 [&_svg]:w-4",
               accentMap[accent],
             )}
           >
             {icon}
           </div>
         )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-medium text-ink-500">{label}</p>
+          <p className="flex items-baseline gap-2 text-lg font-semibold leading-tight tracking-tight tabular-nums text-ink-900">
+            <span className="truncate">{value}</span>
+            {sub && <span className="truncate text-xs font-normal tracking-normal text-ink-400">{sub}</span>}
+          </p>
+        </div>
       </div>
       {(progress !== undefined || detail) && (
-        <div className="-mt-1 px-5 pb-5">
+        <div className="px-3.5 pb-2.5">
           {progress !== undefined && (
-            <div className="h-1.5 overflow-hidden rounded-full bg-ink-100" role="presentation">
+            <div className="h-1 overflow-hidden rounded-full bg-ink-100" role="presentation">
               <div
                 className={cn("h-full rounded-full", accent === "red" ? "bg-red-600" : "bg-ink-900")}
                 style={{ width: `${Math.round(Math.min(1, Math.max(0, progress)) * 100)}%` }}
               />
             </div>
           )}
-          {detail && <p className="mt-3 text-[13px] text-ink-700">{detail}</p>}
+          {detail && <p className="mt-1.5 text-xs text-ink-700">{detail}</p>}
           {detailSub && <p className="mt-0.5 text-xs text-ink-400">{detailSub}</p>}
         </div>
       )}

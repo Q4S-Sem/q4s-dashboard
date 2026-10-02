@@ -53,7 +53,7 @@ export default async function RecruitmentKpiPage() {
       </p>
 
       {/* Kerncijfers */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label={labels.openVacancies}
           value={capacity.openVacancies}
@@ -201,7 +201,7 @@ export default async function RecruitmentKpiPage() {
         action={<ActionLink href="/dashboard/automatisering">Automatische acties →</ActionLink>}
       >
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <StatCard
               label={labels.stalledCandidates}
               value={stalled.candidates}

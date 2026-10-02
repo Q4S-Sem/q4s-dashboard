@@ -36,7 +36,7 @@ export default async function GebruikersPage() {
       />
 
       {total > 0 && (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-3">
           <StatCard label="Gebruikers" value={total} icon={<UserCog className="h-5 w-5" />} accent="brand" />
           <StatCard label="Beheerders" value={admins} icon={<ShieldCheck className="h-5 w-5" />} accent="violet" />
           <StatCard

@@ -53,7 +53,7 @@ export default async function AutomatiseringPage({
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Actieve regels" value={`${activeCount}/${rules.length}`} icon={<Zap className="h-5 w-5" />} accent="brand" />
         <StatCard label="Taken aangemaakt" value={createdCount} icon={<CheckCircle2 className="h-5 w-5" />} accent="violet" />
         <StatCard label="Nog open" value={openCount} icon={<CircleDot className="h-5 w-5" />} accent={openCount ? "amber" : "slate"} />

@@ -180,7 +180,7 @@ export async function EvaluatiesList({
       </Card>
 
       {/* Overzicht */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Evaluaties" value={evals.length} icon={<ClipboardCheck className="h-5 w-5" />} />
         <StatCard
           label="Gemiddelde score"

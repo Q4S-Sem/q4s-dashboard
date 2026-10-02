@@ -112,7 +112,7 @@ export default async function TalentpoolAnalyticsPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Clicks" value={totalClicks} icon={<MousePointerClick className="h-5 w-5" />} accent="brand" />
         <StatCard label="Aanmeldingen" value={totalSignups} icon={<UserPlus className="h-5 w-5" />} accent="violet" />
         <StatCard label="Plaatsingen" value={totalPlacements} icon={<CheckCircle2 className="h-5 w-5" />} accent="green" />

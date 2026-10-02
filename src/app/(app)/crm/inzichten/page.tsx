@@ -118,7 +118,7 @@ export default async function InzichtenPage() {
       />
 
       {/* KPI-cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Open deals" value={ins.totalOpen} icon={<Kanban className="h-5 w-5" />} accent="brand" />
         <StatCard label="Gewogen waarde" value={formatCurrency(ins.weightedValue)} icon={<Gauge className="h-5 w-5" />} accent="violet" />
         <StatCard label="Winkans" value={ins.winRate === null ? "—" : `${ins.winRate}%`} sub={ins.winRate === null ? "nog niets afgesloten" : `${ins.wonCount} gewonnen · ${ins.lostCount} verloren`} icon={<Trophy className="h-5 w-5" />} accent="green" />

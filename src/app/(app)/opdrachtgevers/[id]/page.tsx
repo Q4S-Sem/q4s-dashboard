@@ -102,7 +102,7 @@ export default async function BedrijfWerkruimtePage({
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Openstaande vacatures" value={openVacatures} icon={<Briefcase className="h-5 w-5" />} accent="green" />
         <StatCard label="Lopende deals" value={openDeals} icon={<Kanban className="h-5 w-5" />} accent="violet" />
         <StatCard label="Plaatsingen" value={client._count.placements} icon={<Users2 className="h-5 w-5" />} accent="brand" />

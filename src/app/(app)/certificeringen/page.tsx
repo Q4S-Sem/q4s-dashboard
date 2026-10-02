@@ -159,7 +159,7 @@ export default async function CertificeringenPage() {
         description="Een map per medewerker met al hun certificaten, verloopdatums en herinneringen."
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Certificaten" value={totalCerts} icon={<Award className="h-5 w-5" />} />
         <StatCard
           label="Verloopt binnenkort"

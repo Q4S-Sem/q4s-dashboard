@@ -132,7 +132,7 @@ export default async function CloudPage({
       </Card>
 
       {/* Cijfers */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Gespiegelde kopieën" value={total} icon={<HardDrive className="h-5 w-5" />} accent="brand" />
         <StatCard label={live ? "Gesynct" : "Klaargezet"} value={live ? synced : simulated} icon={<CheckCircle2 className="h-5 w-5" />} accent="green" />
         <StatCard label="Fouten" value={errors} icon={<CircleDot className="h-5 w-5" />} accent={errors ? "red" : "slate"} />

@@ -165,7 +165,7 @@ export default async function OpvolgingPage({
         description="Je focus-dashboard: openstaande vacatures die je met de juiste persoon moet vullen, de stand van je pipeline, en alles wat een vervolgactie nodig heeft. Zo zie je precies waar je contact mee moet houden — klanten én werknemers."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Vacatures te vullen" value={vacatures.length} icon={<Briefcase className="h-5 w-5" />} accent="brand" />
         <StatCard label="Kandidaten in pipeline" value={openCards.length} icon={<Kanban className="h-5 w-5" />} accent="violet" />
         <StatCard label="Over tijd" value={overdue.length} icon={<AlertTriangle className="h-5 w-5" />} accent={overdue.length > 0 ? "red" : "green"} />

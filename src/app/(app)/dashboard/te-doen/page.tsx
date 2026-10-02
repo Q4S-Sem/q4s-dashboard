@@ -90,7 +90,7 @@ export default async function TeDoenPage() {
         Alle openstaande taken en herinneringen uit de hele app — vastgelegd in de chatter of automatisch aangemaakt door je regels. Vink af zodra het klaar is.
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Open taken" value={tasks.length} icon={<ListTodo className="h-5 w-5" />} accent="brand" />
         <StatCard label="Te laat" value={overdue} icon={<CalendarClock className="h-5 w-5" />} accent={overdue ? "red" : "slate"} />
         <StatCard label="Vandaag" value={todayCount} icon={<Circle className="h-5 w-5" />} accent={todayCount ? "amber" : "slate"} />

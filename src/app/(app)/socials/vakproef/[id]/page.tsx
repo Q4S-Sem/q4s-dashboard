@@ -120,7 +120,7 @@ export default async function VakproefDetailPage({
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Deelnemers" value={totalAttempts} icon={<Users className="h-5 w-5" />} accent="brand" />
         <StatCard label={passRate === null ? "Geslaagd" : `Geslaagd (${passRate}%)`} value={correctCount} icon={<CheckCircle2 className="h-5 w-5" />} accent="green" />
         <StatCard label="Talentpool-aanmeldingen" value={signups} icon={<UserPlus className="h-5 w-5" />} accent="violet" />

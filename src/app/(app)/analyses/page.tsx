@@ -48,7 +48,7 @@ export default async function AnalysesPage() {
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Kansen totaal" value={total} icon={<Target className="h-5 w-5" />} accent="brand" />
         <StatCard label="Hoog potentieel" value={highPotential} icon={<TrendingUp className="h-5 w-5" />} accent="green" />
         <StatCard label="Actief oppakken" value={pursuing} icon={<Sparkles className="h-5 w-5" />} accent="violet" />

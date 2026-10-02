@@ -38,7 +38,7 @@ export default async function ContractenPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="Contracten totaal" value={contracts.length} icon={<ScrollText className="h-5 w-5" />} accent="brand" />
         <StatCard label="Concept" value={drafts} icon={<FileText className="h-5 w-5" />} accent="amber" />
         <StatCard label="Getekend" value={signed} sub="volledig afgerond" icon={<FileText className="h-5 w-5" />} accent="green" />
