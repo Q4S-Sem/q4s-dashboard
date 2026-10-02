@@ -16,7 +16,7 @@ export default async function CvPrintPage({
   if (!vel) notFound();
 
   return (
-    <div className="cv-print-pagina">
+    <div className="cv-print-pagina ov-print-pagina">
       <PrintBar terug={`/socials/cv-generator/${id}`} />
 
       {/* Het vel staat gecentreerd op het scherm met een lichte schaduw; bij

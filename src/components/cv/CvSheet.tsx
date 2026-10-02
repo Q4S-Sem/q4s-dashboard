@@ -341,7 +341,16 @@ function cvCss(breedte: number, hoogte: number, marge: number): string {
 @media print {
   @page { size: A4; margin: 0; }
   html, body { margin: 0; padding: 0; background: #ffffff; }
-  .cv-vel { box-shadow: none; }
+  /* Altijd precies één A4: is het CV langer, dan schaalt het hele vel
+     gelijkmatig mee (--cv-fit, gezet door de printknop vóór het printen). */
+  .cv-vel {
+    box-shadow: none;
+    zoom: var(--cv-fit, 1);
+    width: calc(${breedte}mm / var(--cv-fit, 1));
+    height: calc(${hoogte - 0.5}mm / var(--cv-fit, 1));
+    min-height: 0;
+    overflow: hidden;
+  }
   /* Achtergrondkleuren moeten mee de printer in, anders valt de hele huisstijl weg. */
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
