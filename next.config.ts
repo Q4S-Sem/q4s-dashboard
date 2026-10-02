@@ -31,13 +31,30 @@ const nextConfig: NextConfig = {
       "./public/logo/**",
       "./public/templates/**",
       "./public/fonts/**",
-      "./node_modules/pdfjs-dist/legacy/build/**",
+      // Alleen wat pdf-render.ts echt laadt — de .map/min/sandbox-varianten
+      // (~10 MB) zaten anders in élke functie van élke deployment.
+      "./node_modules/pdfjs-dist/legacy/build/pdf.mjs",
+      "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
       "./node_modules/pdfjs-dist/standard_fonts/**",
       "./node_modules/pdfjs-dist/cmaps/**",
       "./node_modules/pdfjs-dist/iccs/**",
       "./node_modules/pdfjs-dist/wasm/**",
       "./node_modules/pdfjs-dist/package.json",
-      "./node_modules/@napi-rs/canvas*/**",
+      // Vercel draait Linux/glibc: alleen het hoofdpakket + de gnu-binary. De
+      // musl-variant meenemen verdubbelde de canvas-grootte per functie.
+      "./node_modules/@napi-rs/canvas/**",
+      "./node_modules/@napi-rs/canvas-linux-x64-gnu/**",
+    ],
+  },
+  // Bronmappen en lokale bestanden horen nooit in een functie-bundel.
+  outputFileTracingExcludes: {
+    "/**": [
+      "./node_modules/**/*.map",
+      "./node_modules/@napi-rs/canvas-linux-x64-musl/**",
+      "./node_modules/@napi-rs/canvas-win32-*/**",
+      "./node_modules/@napi-rs/canvas-darwin-*/**",
+      "./tests/**",
+      "./scripts/**",
     ],
   },
 
