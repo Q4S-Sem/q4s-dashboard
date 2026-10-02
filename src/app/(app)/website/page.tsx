@@ -7,7 +7,9 @@ import {
   Users,
   ExternalLink,
   Eye,
+  Plus,
 } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -117,17 +119,23 @@ export default async function WebsitePage({
         title="Vacatures"
         description="Alle openstaande vacatures uit de recruitment-hub. Werk ze hier uit voor de website en maak er een LinkedIn-post van — recruitment blijft leidend."
         actions={
-          url ? (
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
-            >
-              <Globe className="h-4 w-4" /> {settings?.website}
-              <ExternalLink className="h-3.5 w-3.5 text-ink-400" />
-            </a>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            {url && (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
+              >
+                <Globe className="h-4 w-4" /> {settings?.website}
+                <ExternalLink className="h-3.5 w-3.5 text-ink-400" />
+              </a>
+            )}
+            {/* Nieuwe vacatures ontstaan in Recruitment (die blijft leidend). */}
+            <Link href="/crm/vacatures/nieuw" className={buttonVariants()}>
+              <Plus className="h-4 w-4" /> Vacature plaatsen
+            </Link>
+          </div>
         }
       />
 
