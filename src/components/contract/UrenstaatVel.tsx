@@ -308,14 +308,16 @@ const tsCss = `
 .ts-km .ts-kmend td { border-bottom: 1px solid #1c1c1e; }
 .ts-km td.ts-dag { border-bottom: 0; }
 .ts-boxed { border: 1px solid #1c1c1e !important; font-weight: 700; }
-.ts-sign { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 6mm; margin-top: 2.5mm; }
+/* Zelfde kolommen als het rooster erboven: medewerker + klant samen = breedte urenrooster, handtekening = exact onder Kilometers (78mm). */
+.ts-sign { display: grid; grid-template-columns: 1fr 1.6fr 78mm; gap: 3mm; margin-top: 2.5mm; align-items: stretch; }
 .ts-sign .ts-dag { padding: 1mm 2mm; text-align: left; }
-.ts-sign > div { border: 1px solid #1c1c1e; align-self: start; }
+.ts-sign > div { border: 1px solid #1c1c1e; display: flex; flex-direction: column; }
 .ts-line { display: grid; grid-template-columns: 24mm 1fr; border-top: 1px solid #1c1c1e; color: #6b6b70; font-size: 6.8pt; }
 .ts-line > span { padding: .9mm 1.5mm; }
 .ts-line > span + span { border-left: 1px solid #1c1c1e; min-height: 4mm; }
+.ts-line.ts-big { flex: 1; }
 .ts-line.ts-big > span { min-height: 11mm; }
-.ts-sigbox { height: 21mm; }
+.ts-sigbox { flex: 1; min-height: 21mm; }
 .ts-note { margin-top: 1.5mm; font-size: 6.6pt; font-style: italic; color: #6b6b70; }
 @media print { @page { size: A4 landscape; margin: 0; } .ts-vel { height: 209.5mm; } }
 .ts-vel { box-sizing: border-box; }

@@ -284,9 +284,11 @@ def build(lang: str) -> Path:
     regel(f"A{ar + 3}:A{ar + 5}", f"B{ar + 3}:D{ar + 5}", t["sig"])
     # Klant: wie tekent er.
     kop(f"F{ar}:K{ar}", t["approval"])
+    # Even hoog als de andere twee blokken: de laatste regel loopt door tot onderaan.
     for i, lbl in enumerate([t["client_l"], t["fname"], t["func"], t["date"]]):
         r = ar + 1 + i
-        regel(f"F{r}:G{r}", f"H{r}:K{r}", lbl)
+        r2 = ar + 5 if i == 3 else r
+        regel(f"F{r}:G{r2}", f"H{r}:K{r2}", lbl)
     # Klant-handtekening: duidelijk benoemd + groot vak.
     kop(f"M{ar}:P{ar}", t["sig_client"])
     merge(f"M{ar + 1}:P{ar + 5}")
@@ -305,7 +307,7 @@ def build(lang: str) -> Path:
     for r in (1, 3, 5):
         raster(f"M{r}:P{r}")
     for rng in ("A7:P7", "A8:K17", "A19:K23", "A25:K39", f"M9:P{kt}",
-                f"A{ar}:D{ar + 5}", f"F{ar}:K{ar + 4}", f"M{ar}:P{ar + 5}"):
+                f"A{ar}:D{ar + 5}", f"F{ar}:K{ar + 5}", f"M{ar}:P{ar + 5}"):
         raster(rng)
 
     # ---------- Alles één rij en één kolom opschuiven: begint op B2 ----------
