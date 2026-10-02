@@ -10,6 +10,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { CONTRACT_STATUSES } from "@/lib/domain";
 import { getPlacement } from "../data";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { neemContractTarievenOver } from "../../../actions";
+import { ContractTarievenUpload } from "./ContractTarievenUpload";
 
 export const metadata = { title: "Contracten — plaatsing" };
 export const dynamic = "force-dynamic";
@@ -42,6 +45,8 @@ export default async function PlaatsingContractenTab({
         </Link>
       </div>
 
+      <ContractTarievenUpload placementId={id} />
+
       <Card>
         {contracts.length === 0 ? (
           <CardContent>
@@ -65,6 +70,7 @@ export default async function PlaatsingContractenTab({
                 <TH>Status</TH>
                 <TH>Bijgewerkt</TH>
                 <TH>PDF</TH>
+                <TH>Tarieven</TH>
               </TR>
             </THead>
             <TBody>
@@ -86,6 +92,15 @@ export default async function PlaatsingContractenTab({
                     >
                       <FileDown className="h-3.5 w-3.5" /> PDF
                     </Link>
+                  </TD>
+                  <TD>
+                    {/* Dashboard-contract = met de ZZP'er → inkoopkant. */}
+                    <form action={neemContractTarievenOver} className="relative z-10">
+                      <input type="hidden" name="placementId" value={id} />
+                      <input type="hidden" name="contractId" value={c.id} />
+                      <input type="hidden" name="kant" value="inkoop" />
+                      <SubmitButton size="sm" variant="outline">Overnemen</SubmitButton>
+                    </form>
                   </TD>
                 </TR>
               ))}

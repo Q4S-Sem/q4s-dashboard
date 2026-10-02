@@ -12,7 +12,9 @@ import {
   SURCHARGE_UNIT_VALUES,
 } from "@/lib/domain";
 import { saveUpload, deleteUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
-import { extractDocumentMeta, CvExtractError } from "@/lib/cv-extract";
+import { extractDocumentMeta, extractContractRates, CvExtractError } from "@/lib/cv-extract";
+import { plaatsingUitContract, type ContractTarieven, type TariefKant } from "@/lib/contract-tarieven";
+import { authRequired, currentUser } from "@/lib/session";
 import { syncPlaatsingStatus } from "@/lib/plaatsing-status";
 
 // Placement fields WITHOUT the consultant link (resolved separately so a new
@@ -616,4 +618,78 @@ export async function readDocumentMeta(formData: FormData): Promise<DocMetaResul
     const msg = err instanceof CvExtractError ? err.message : "Automatisch herkennen lukte niet — kies de soort zelf.";
     return { ok: false, category: "OVERIG", title: fallbackTitle(file.name), error: msg };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Tarieven uit het contract overnemen (plaatsing → Contracten-tab).
+// Uitlezen slaat NIETS op; pas "Overnemen" (een expliciete knop) zet de
+// tarieven op de plaatsing. De omrekening is plaatsingUitContract (getest).
+// ---------------------------------------------------------------------------
+
+export type ContractTariefVoorstel =
+  | { ok: true; tarieven: ContractTarieven; regels: string[]; naam: string }
+  | { ok: false; error: string };
+
+/** Lees een geüpload contract (PDF/Word/foto) en laat zien wat er zou veranderen. */
+export async function leesContractTarieven(formData: FormData): Promise<ContractTariefVoorstel> {
+  if (authRequired() && !(await currentUser())) return { ok: false, error: "Niet ingelogd." };
+  const file = formData.get("file");
+  const kant: TariefKant = formData.get("kant") === "verkoop" ? "verkoop" : "inkoop";
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Geen bestand ontvangen." };
+  if (file.size > MAX_UPLOAD_BYTES) return { ok: false, error: "Dit bestand is te groot (max. 15 MB)." };
+  try {
+    const r = await extractContractRates(Buffer.from(await file.arrayBuffer()), file.name, file.type || "");
+    const { regels } = plaatsingUitContract(r, kant);
+    if (regels.length === 0) return { ok: false, error: "Er zijn geen tarieven in dit contract gevonden." };
+    return { ok: true, tarieven: r, regels, naam: r.contractorName };
+  } catch (err) {
+    if (err instanceof CvExtractError) return { ok: false, error: err.message };
+    console.error("leesContractTarieven mislukt:", err);
+    return { ok: false, error: "Het contract kon niet uitgelezen worden. Probeer het opnieuw." };
+  }
+}
+
+const tariefVeld = z.string().max(80).optional();
+const TarievenSchema = z.object({
+  rateDay: tariefVeld, rateDayFixed: tariefVeld, rateOvertime: tariefVeld, rateSaturday: tariefVeld,
+  rateSunday: tariefVeld, rateShift: tariefVeld, rateOffshore: tariefVeld, kmRate: tariefVeld,
+  startDate: tariefVeld, endDate: tariefVeld,
+});
+
+/**
+ * Zet de tarieven op de plaatsing — de knop "Overnemen". Bron is óf een
+ * contract in het dashboard (contractId, server leest het zelf), óf het
+ * voorstel uit een geüpload bestand (tarieven-JSON, opnieuw gevalideerd).
+ */
+export async function neemContractTarievenOver(formData: FormData): Promise<void> {
+  if (authRequired() && !(await currentUser())) redirect("/login");
+  const placementId = String(formData.get("placementId") ?? "");
+  const kant: TariefKant = formData.get("kant") === "verkoop" ? "verkoop" : "inkoop";
+  const contractId = String(formData.get("contractId") ?? "");
+  let tarieven: ContractTarieven | null = null;
+  if (contractId) {
+    const c = await db.contract.findUnique({ where: { id: contractId } });
+    if (c) {
+      const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
+      tarieven = { ...c, startDate: iso(c.startDate), endDate: iso(c.endDate) };
+    }
+  } else {
+    let json: unknown = null;
+    try {
+      json = JSON.parse(String(formData.get("tarieven") ?? ""));
+    } catch {
+      json = null;
+    }
+    const parsed = TarievenSchema.safeParse(json);
+    if (parsed.success) tarieven = parsed.data;
+  }
+  if (!placementId || !tarieven) redirect(`/plaatsingen/${placementId}/contracten?tarieven=fout`);
+  const { data } = plaatsingUitContract(tarieven, kant);
+  if (Object.keys(data).length > 0) {
+    await db.placement.update({ where: { id: placementId }, data });
+    await syncPlaatsingStatus({ id: placementId });
+  }
+  revalidatePath("/plaatsingen");
+  revalidatePath(`/plaatsingen/${placementId}`, "layout");
+  redirect(`/plaatsingen/${placementId}/tarieven?overgenomen=1`);
 }

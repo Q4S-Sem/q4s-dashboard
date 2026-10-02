@@ -16,10 +16,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function PlaatsingTarievenPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ overgenomen?: string }>;
 }) {
   const { id } = await params;
+  const { overgenomen } = await searchParams;
   const [placement, timesheets] = await Promise.all([getPlacement(id), getTimesheets(id)]);
   if (!placement) notFound();
 
@@ -134,6 +137,11 @@ export default async function PlaatsingTarievenPage({
 
   return (
     <div className="space-y-6">
+      {overgenomen && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Tarieven uit het contract overgenomen — controleer ze hieronder.
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label={ownStaff ? "Loonkost" : "Inkoop"}

@@ -682,3 +682,75 @@ export async function extractDocumentMeta(
   }
   return { category: parsed.data.category, title: parsed.data.title };
 }
+
+// ---------------------------------------------------------------------------
+// Tarieven uit een overeenkomst van opdracht (plaatsing → Contracten-tab).
+// De AI geeft de cellen van art. 6 letterlijk terug; de omrekening naar
+// plaatsingvelden zit in contract-tarieven.ts (getest, geen AI).
+// ---------------------------------------------------------------------------
+
+const CONTRACT_RATE_KEYS = [
+  "rateDay", "rateDayFixed", "rateOvertime", "rateSaturday", "rateSunday",
+  "rateShift", "rateOffshore", "kmRate", "startDate", "endDate", "contractorName",
+] as const;
+
+export type ContractRates = Record<(typeof CONTRACT_RATE_KEYS)[number], string>;
+
+const contractRatesSchema = z.record(z.string(), z.string().nullish());
+
+const CONTRACT_RATES_AI_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    rateDay: { type: "string", description: "Uurtarief overdag / basis-uurtarief, letterlijk (bv. '€ 78,-')" },
+    rateDayFixed: { type: "string", description: "Vast dagtarief, letterlijk; leeg als er alleen een uurtarief is" },
+    rateOvertime: { type: "string", description: "Tarief voor overuren, letterlijk" },
+    rateSaturday: { type: "string", description: "Tarief of toeslag zaterdag, letterlijk (bv. '€ 80,-' of '+ 25 %')" },
+    rateSunday: { type: "string", description: "Tarief of toeslag zon-/feestdagen, letterlijk" },
+    rateShift: { type: "string", description: "Tarief of toeslag shift/ploegendienst, letterlijk" },
+    rateOffshore: { type: "string", description: "Tarief of toeslag offshore, letterlijk" },
+    kmRate: { type: "string", description: "Kilometervergoeding per km, letterlijk" },
+    startDate: { type: "string", description: "Ingangsdatum als YYYY-MM-DD, leeg als onbekend" },
+    endDate: { type: "string", description: "Einddatum als YYYY-MM-DD, leeg als onbekend" },
+    contractorName: { type: "string", description: "Naam van de opdrachtnemer (persoon of bedrijf)" },
+  },
+  required: [...CONTRACT_RATE_KEYS],
+} as const;
+
+const CONTRACT_RATES_SYSTEM =
+  "Je leest een overeenkomst van opdracht (Nederlands of Engels) van Q4S, een technisch detacheringsbureau. " +
+  "Je haalt de afgesproken vergoedingen (meestal artikel 6 'Vergoeding') en de looptijd eruit. " +
+  "Neem bedragen LETTERLIJK over zoals ze er staan. Verzin niets: laat een veld leeg als het er niet staat " +
+  "of als er 'n.v.t.' / 'zie uurtarief' staat.";
+
+/** Contractbestand (PDF/Word/foto) → de tariefcellen + looptijd, letterlijk. */
+export async function extractContractRates(bytes: Buffer, fileName: string, mimeType: string): Promise<ContractRates> {
+  await ensureAiKeysLoaded();
+  const kind = resolveSourceKind(bytes, fileName, mimeType);
+  if (!kind) throw new CvExtractError("Alleen een PDF, Word (.docx) of foto van het contract kan uitgelezen worden.");
+  const opts = {
+    system: CONTRACT_RATES_SYSTEM,
+    prompt: "Lees de tarieven en de looptijd uit deze overeenkomst.",
+    schema: CONTRACT_RATES_AI_SCHEMA,
+    schemaName: "contract_rates",
+    maxTokens: 600,
+  };
+  let raw: unknown;
+  if (kind === "docx") {
+    raw = await extractFromDocx<unknown>(bytes, opts);
+  } else {
+    if (!isVisionConfigured()) {
+      throw new CvExtractError("Om een PDF/foto te lezen is een Gemini- of Anthropic-sleutel nodig (Instellingen-hub), of upload het contract als Word.");
+    }
+    raw = await aiJSONFromFile<unknown>({
+      ...opts,
+      file: { base64: bytes.toString("base64"), mediaType: kind === "pdf" ? "application/pdf" : mimeType || "image/jpeg" },
+      effort: "low",
+    });
+  }
+  const parsed = contractRatesSchema.safeParse(raw);
+  if (!parsed.success) throw new CvExtractError("De AI gaf een onverwacht antwoord op dit contract. Probeer het opnieuw.");
+  return Object.fromEntries(
+    CONTRACT_RATE_KEYS.map((k) => [k, (parsed.data[k] ?? "").trim()]),
+  ) as ContractRates;
+}
