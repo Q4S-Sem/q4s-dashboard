@@ -14,7 +14,7 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input, Select, Textarea, Label } from "@/components/ui/field";
 import { DateInput } from "@/components/ui/date-input";
 import { SearchSelect } from "@/components/ui/search-select";
@@ -65,6 +65,26 @@ function computeEnd(startISO: string, kind: DurationKind): string {
 }
 
 /** A clean upload card: icon + label + a styled picker + the chosen file(s). */
+/** Eén genummerd blok van het formulier. */
+function Sectie({ nr, titel, sub, children }: { nr: number; titel: string; sub?: string; children: ReactNode }) {
+  return (
+    <Card>
+      <CardContent className="space-y-4">
+        <div className="flex items-start gap-3 border-b border-ink-100 pb-3">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-900 text-[13px] font-semibold text-white">
+            {nr}
+          </span>
+          <div>
+            <h2 className="text-[15px] font-semibold text-ink-900">{titel}</h2>
+            {sub && <p className="text-xs text-ink-400">{sub}</p>}
+          </div>
+        </div>
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
 function UploadCard({
   id,
   name,
@@ -779,14 +799,19 @@ export function PlacementForm({
         <SubmitButton>{submitLabel}</SubmitButton>
       </div>
 
-      <Card>
-        <CardContent className="space-y-5">
-          {state.error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {state.error}
-            </p>
-          )}
+      {state.error && (
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
+      )}
 
+      <div className="space-y-4">
+        {/* 1. Eerst de bestanden: de AI vult de rest zoveel mogelijk in. */}
+        {!placement && personMode === "new" && (
+          <Sectie nr={1} titel="Bestanden uitlezen" sub="Begin hier — sleep het CV erin, de AI vult de gegevens hieronder in.">
+            <WerknemerCvIntake />
+          </Sectie>
+        )}
+
+        <Sectie nr={placement ? 1 : 2} titel="Werknemer" sub={placement ? undefined : "Wie gaan we plaatsen?"}>
           {placement ? (
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Werknemer" error={e.consultantId}>
@@ -808,7 +833,7 @@ export function PlacementForm({
               />
             </div>
           ) : (
-            <>
+            <div className="space-y-4">
               <input type="hidden" name="personMode" value={personMode} />
               <div>
                 <Label>Werknemer</Label>
@@ -865,11 +890,6 @@ export function PlacementForm({
                   />
                 </Field>
               ) : (
-                <div className="space-y-4 rounded-lg border border-ink-200 p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-ink-500">
-                    Nieuwe werknemer — gegevens
-                  </p>
-                  <WerknemerCvIntake />
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Voornaam" htmlFor="firstName" required error={e.firstName}>
                       <Input id="firstName" name="firstName" required />
@@ -922,14 +942,14 @@ export function PlacementForm({
                       <Input id="nationality" name="nationality" />
                     </Field>
                   </div>
+              )}
+            </div>
+          )}
+        </Sectie>
 
-                  <div className="border-t border-ink-100 pt-4">
-                    <p className="mb-2.5 text-xs font-medium uppercase tracking-wide text-ink-500">
-                      Bedrijfsgegevens{" "}
-                      <span className="font-normal normal-case text-ink-400">
-                        (ZZP — voor de inkoopfactuur &amp; betaling)
-                      </span>
-                    </p>
+        {!placement && personMode === "new" && (
+          <>
+            <Sectie nr={3} titel="Bedrijfsgegevens ZZP" sub="Voor de inkoopfactuur en de betaling — leeg laten bij loondienst.">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field label="Bedrijfsnaam" htmlFor="p-companyName" error={e.companyName}>
                         <Input id="p-companyName" name="companyName" placeholder="Bijv. Balder Quality Service" />
@@ -975,15 +995,9 @@ export function PlacementForm({
                         </Field>
                       </div>
                     </div>
-                  </div>
+            </Sectie>
 
-                  <div className="border-t border-ink-100 pt-4">
-                    <p className="mb-2.5 text-xs font-medium uppercase tracking-wide text-ink-500">
-                      Documenten{" "}
-                      <span className="font-normal normal-case text-ink-400">
-                        (optioneel)
-                      </span>
-                    </p>
+            <Sectie nr={4} titel="Documenten" sub="Optioneel — kan ook later in het dossier.">
                     <div className="grid gap-3 sm:grid-cols-3">
                       <UploadCard
                         id="cvFile"
@@ -1011,14 +1025,13 @@ export function PlacementForm({
                     <p className="mt-2.5 text-xs text-ink-400">
                       Je kunt deze ook later op de plaatsing toevoegen.
                     </p>
-                  </div>
-                </div>
-              )}
+            </Sectie>
+          </>
+        )}
 
-              <ClientPicker initialClients={clients} initialClientId={dv("clientId")} error={e.clientId} />
-            </>
-          )}
-
+        <Sectie nr={placement ? 2 : 5} titel="Plaatsing & tarief" sub="Bij welke klant, vanaf wanneer en tegen welk tarief.">
+          <div className="space-y-5">
+            {!placement && <ClientPicker initialClients={clients} initialClientId={dv("clientId")} error={e.clientId} />}
           <Field label="Functie" htmlFor="title" required error={e.title}>
             <Input
               id="title"
@@ -1058,7 +1071,6 @@ export function PlacementForm({
               </span>
             </span>
           </label>
-
           <div className="space-y-3">
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Startdatum" htmlFor="startDate" required error={e.startDate}>
@@ -1104,7 +1116,6 @@ export function PlacementForm({
               )}
             </div>
           </div>
-
           <div className="grid gap-5 sm:grid-cols-3">
             <Field label="Tarief per" htmlFor="rateUnit">
               <Select id="rateUnit" name="rateUnit" defaultValue={rateUnit} onValueChange={setRateUnit}>
@@ -1150,24 +1161,16 @@ export function PlacementForm({
             </p>
           </div>
 
-          <div className="rounded-xl border border-ink-200 bg-ink-50/60 p-4">
-            <p className="text-sm font-semibold text-ink-700">
-              Toeslagen &amp; kilometervergoeding
-            </p>
-            <p className="mt-1 text-xs text-ink-400">
-              Per persoon. <span className="font-medium text-ink-500">Inkoop</span> ={" "}
-              wat we de werknemer betalen, <span className="font-medium text-ink-500">Verkoop</span>{" "}
-              = wat we de klant rekenen. Laat 0 staan als er geen toeslag geldt — het
-              komt als aparte regel bovenop het basisbedrag op de factuur. Per toeslag
-              kies je zelf of het een <span className="font-medium text-ink-500">percentage</span>{" "}
-              op het uurtarief is of een <span className="font-medium text-ink-500">vast bedrag per uur</span>.
-            </p>
-            <p className="mt-2 text-xs text-ink-400">
-              Doordeweeks, zaterdag en zondag volgen automatisch uit de datums op de
-              urenstaat. Offshore, ploegendienst en buitenland staan niet op de uren —
-              vink je ze aan, dan gelden ze over <strong>alle</strong> gewerkte reguliere
-              uren van deze plaatsing.
-            </p>
+            <details className="group rounded-lg border border-ink-200">
+              <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold text-ink-700 [&::-webkit-details-marker]:hidden">
+                Toeslagen, overuren &amp; kilometers
+                <span className="text-xs font-normal text-ink-400 group-open:hidden">optioneel — klik om te openen</span>
+              </summary>
+              <div className="space-y-3 border-t border-ink-100 p-4">
+                <p className="text-xs text-ink-400">
+                  Inkoop = wat we de werknemer betalen, verkoop = wat we de klant rekenen. Laat 0 staan als er geen toeslag geldt.
+                  Zaterdag/zondag volgen uit de urenstaat; offshore, ploegendienst en buitenland gelden als ze aan staan over alle uren.
+                </p>
             <div className="mt-4 space-y-3">
               {/* De oude, gecombineerde weekendtoeslag is opgesplitst in een losse
                   zaterdag- en zondagtoeslag. Zolang een plaatsing nog op het oude veld
@@ -1259,7 +1262,8 @@ export function PlacementForm({
                 step={0.01}
               />
             </div>
-          </div>
+              </div>
+            </details>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Status" htmlFor="status" required error={e.status}>
@@ -1280,8 +1284,11 @@ export function PlacementForm({
           <Field label="Notities" htmlFor="notes" error={e.notes}>
             <Textarea id="notes" name="notes" defaultValue={placement?.notes ?? ""} />
           </Field>
-        </CardContent>
-        <CardFooter className="flex flex-wrap justify-end gap-2">
+          </div>
+        </Sectie>
+
+        <div className="flex flex-wrap justify-end gap-2">
+
           <ConfirmCancel href={cancelHref} />
           {!placement && (
             <button
@@ -1295,8 +1302,9 @@ export function PlacementForm({
             </button>
           )}
           <SubmitButton>{submitLabel}</SubmitButton>
-        </CardFooter>
-      </Card>
+
+        </div>
+      </div>
     </form>
   );
 }
