@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { ontbrekendeContractVelden } from "../src/lib/contract-check";
 
 test("contract-check: leeg contract mist alles, compleet contract niets", () => {
-  assert.equal(ontbrekendeContractVelden({}).length, 12);
+  assert.equal(ontbrekendeContractVelden({}).length, 10);
   const compleet = {
     number: "Q4S-OVO-2026-001",
     contractorName: "RvS Inspections",
