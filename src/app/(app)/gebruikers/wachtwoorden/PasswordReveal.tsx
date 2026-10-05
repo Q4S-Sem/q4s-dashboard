@@ -2,7 +2,26 @@
 
 import { useState } from "react";
 import { Check, Copy, Eye, EyeOff } from "lucide-react";
+import { Input } from "@/components/ui/field";
 import { revealPortalPassword } from "./actions";
+
+/** Wachtwoordveld met oogje, zodat je bij het invullen kunt controleren wat je typt. */
+export function PasswordInput({ id }: { id: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input id={id} name="password" type={show ? "text" : "password"} autoComplete="new-password" className="pr-10" />
+      <button
+        type="button"
+        onClick={() => setShow((v) => !v)}
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-ink-500 hover:text-ink-800"
+        aria-label={show ? "Verberg wachtwoord" : "Toon wachtwoord"}
+      >
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
 
 /** Wachtwoord blijft gemaskeerd tot je op het oog of kopieer klikt (server ontsleutelt dan pas). */
 export function PasswordReveal({ id, hasPassword }: { id: string; hasPassword: boolean }) {

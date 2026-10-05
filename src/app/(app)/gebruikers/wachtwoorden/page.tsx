@@ -7,7 +7,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/lib/db";
 import { isAdminSession } from "@/lib/session";
 import { deletePortal, savePortal } from "./actions";
-import { PasswordReveal } from "./PasswordReveal";
+import { PasswordInput, PasswordReveal } from "./PasswordReveal";
 
 export const metadata = { title: "Wachtwoorden" };
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ function PortalFields({ p }: { p?: Row }) {
         <Input id={`user-${k}`} name="username" autoComplete="off" defaultValue={p?.username} />
       </Field>
       <Field label={p ? "Nieuw wachtwoord (leeg = behouden)" : "Wachtwoord"} htmlFor={`pw-${k}`}>
-        <Input id={`pw-${k}`} name="password" type="password" autoComplete="new-password" />
+        <PasswordInput id={`pw-${k}`} />
       </Field>
       <Field label="Notitie" htmlFor={`notes-${k}`} className="md:col-span-2">
         <Textarea id={`notes-${k}`} name="notes" rows={2} defaultValue={p?.notes} placeholder="2FA via telefoon Sem, klantnummer, …" />
