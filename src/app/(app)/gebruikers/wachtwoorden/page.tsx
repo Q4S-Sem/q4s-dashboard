@@ -6,7 +6,7 @@ import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/lib/db";
 import { isAdminSession } from "@/lib/session";
-import { deletePortal, savePortal } from "./actions";
+import { deletePortal, importPortals, savePortal } from "./actions";
 import { NewPortalDialog, PasswordInput, PasswordReveal } from "./PasswordReveal";
 
 export const metadata = { title: "Wachtwoorden" };
@@ -41,7 +41,7 @@ function PortalFields({ p }: { p?: Row }) {
 export default async function WachtwoordenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; verwijderd?: string; fout?: string; bewerk?: string }>;
+  searchParams: Promise<{ ok?: string; verwijderd?: string; fout?: string; bewerk?: string; geimporteerd?: string; overgeslagen?: string }>;
 }) {
   const sp = await searchParams;
   const editing = sp.bewerk;
@@ -56,6 +56,19 @@ export default async function WachtwoordenPage({
         title="Wachtwoorden"
         description="Alle portalen waar we moeten inloggen, met de link erbij. Wachtwoorden staan versleuteld opgeslagen en worden pas getoond als je op het oog klikt."
         actions={
+          <div className="flex flex-wrap gap-2">
+          <NewPortalDialog label="Importeren" title="Portalen importeren" outline>
+            <form action={importPortals} className="space-y-3" data-no-persist data-no-guard>
+              <p className="text-sm text-ink-600">
+                Kies een tab-gescheiden bestand (Excel: Opslaan als &rarr; Tekst (tab)) met de kolommen naam, link,
+                gebruikersnaam, wachtwoord en notitie. Portalen die al bestaan worden overgeslagen.
+              </p>
+              <input name="bestand" type="file" accept=".tsv,.txt,text/plain,text/tab-separated-values" required className="block w-full text-sm" />
+              <SubmitButton pendingLabel="Importeren…">
+                <KeyRound className="h-4 w-4" /> Importeren
+              </SubmitButton>
+            </form>
+          </NewPortalDialog>
           <NewPortalDialog>
             <form action={savePortal} className="space-y-3">
               <PortalFields />
@@ -64,9 +77,16 @@ export default async function WachtwoordenPage({
               </SubmitButton>
             </form>
           </NewPortalDialog>
+          </div>
         }
       />
 
+      {sp.geimporteerd !== undefined && (
+        <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <CheckCircle2 className="h-4 w-4" /> {sp.geimporteerd} portalen geïmporteerd
+          {Number(sp.overgeslagen) > 0 ? `, ${sp.overgeslagen} overgeslagen (bestonden al)` : ""}.
+        </p>
+      )}
       {sp.ok && (
         <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           <CheckCircle2 className="h-4 w-4" /> Opgeslagen.
@@ -80,7 +100,7 @@ export default async function WachtwoordenPage({
       {sp.fout && (
         <p className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">
           <ShieldAlert className="h-4 w-4" />
-          {sp.fout === "geen-rechten" ? "Alleen een beheerder kan wachtwoorden beheren." : "Vul een naam voor het portaal in."}
+          {sp.fout === "geen-rechten" ? "Alleen een beheerder kan wachtwoorden beheren." : sp.fout === "bestand" ? "Kies een geldig importbestand (max. 500 KB)." : "Vul een naam voor het portaal in."}
         </p>
       )}
 

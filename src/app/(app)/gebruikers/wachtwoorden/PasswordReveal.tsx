@@ -1,21 +1,35 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, Copy, Eye, EyeOff, Plus, X } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Plus, Upload, X } from "lucide-react";
 import { Input } from "@/components/ui/field";
 import { revealPortalPassword } from "./actions";
 
 /** Knop "Nieuw portaal" die het toevoeg-formulier als pop-up opent (native <dialog>: Esc sluit, focus blijft erin). */
-export function NewPortalDialog({ children }: { children: React.ReactNode }) {
+export function NewPortalDialog({
+  children,
+  label = "Nieuw portaal",
+  title = "Portaal toevoegen",
+  outline = false,
+}: {
+  children: React.ReactNode;
+  label?: string;
+  title?: string;
+  outline?: boolean;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
   return (
     <>
       <button
         type="button"
         onClick={() => ref.current?.showModal()}
-        className="inline-flex items-center gap-2 rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800"
+        className={
+          outline
+            ? "inline-flex items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-2 text-sm font-semibold text-ink-800 hover:bg-ink-50"
+            : "inline-flex items-center gap-2 rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800"
+        }
       >
-        <Plus className="h-4 w-4" /> Nieuw portaal
+        {outline ? <Upload className="h-4 w-4" /> : <Plus className="h-4 w-4" />} {label}
       </button>
       <dialog
         ref={ref}
@@ -24,7 +38,7 @@ export function NewPortalDialog({ children }: { children: React.ReactNode }) {
       >
         <div className="space-y-4 p-6">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-bold text-ink-900">Portaal toevoegen</h2>
+            <h2 className="text-base font-bold text-ink-900">{title}</h2>
             <button type="button" onClick={() => ref.current?.close()} aria-label="Sluiten" className="rounded-md p-1 text-ink-500 hover:bg-ink-100">
               <X className="h-5 w-5" />
             </button>
