@@ -549,9 +549,10 @@ export function ContractVel({
           ].map((s) => (
             <div key={s.who} className="ov-sb">
               <div className="ov-who">{s.who}</div>
-              <div className="ov-sr"><span>{en ? "Date" : "Datum"}</span><V>{doc.sign.date}</V></div>
-              <div className="ov-sr"><span>{en ? "Place" : "Plaats"}</span>{s.v ? <V>{s.place}</V> : s.place}</div>
-              <div className="ov-sr"><span>{en ? "Name" : "Naam"}</span>{s.v ? <V>{s.name}</V> : s.name}</div>
+              {/* Opdrachtnemer vult datum, plaats en naam zelf in (met de hand): die rijen blijven leeg. */}
+              <div className="ov-sr"><span>{en ? "Date" : "Datum"}</span>{!s.v && <V>{doc.sign.date}</V>}</div>
+              <div className="ov-sr"><span>{en ? "Place" : "Plaats"}</span>{!s.v && s.place}</div>
+              <div className="ov-sr"><span>{en ? "Name" : "Naam"}</span>{!s.v && s.name}</div>
               <div className="ov-sr"><span>{en ? "Signature" : "Handtekening"}</span></div>
               {!s.v && handtekening ? <img src={handtekening} alt="" className="ov-sig" /> : <div className="ov-sl" />}
             </div>

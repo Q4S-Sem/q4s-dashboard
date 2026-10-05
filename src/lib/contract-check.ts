@@ -16,8 +16,6 @@ export type ContractVelden = {
   projectDuration?: string | null;
   rateDay?: string | null;
   rateDayFixed?: string | null;
-  signerContractor?: string | null;
-  signPlaceContractor?: string | null;
 };
 
 const leeg = (v: unknown) => v == null || String(v).trim() === "";
@@ -35,7 +33,5 @@ export function ontbrekendeContractVelden(c: ContractVelden): string[] {
   if (leeg(c.startDate)) mist.push("Aanvangsdatum");
   if (leeg(c.endDate) && leeg(c.projectDuration)) mist.push("Einddatum of contractduur");
   if (leeg(c.rateDay) && leeg(c.rateDayFixed)) mist.push("Uurtarief of dagtarief");
-  if (leeg(c.signerContractor)) mist.push("Ondertekenaar opdrachtnemer");
-  if (leeg(c.signPlaceContractor)) mist.push("Plaats ondertekening opdrachtnemer");
   return mist;
 }

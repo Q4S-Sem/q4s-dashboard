@@ -15,8 +15,6 @@ test("contract-check: leeg contract mist alles, compleet contract niets", () => 
     startDate: new Date("2026-10-05"),
     projectDuration: "4 maanden", // einddatum mag ontbreken als de duur er staat
     rateDayFixed: "€ 650,-", // dagtarief telt ook als tarief
-    signerContractor: "R. van Son",
-    signPlaceContractor: "Rotterdam",
   };
   assert.deepEqual(ontbrekendeContractVelden(compleet), []);
   assert.deepEqual(ontbrekendeContractVelden({ ...compleet, contractorKvk: "  " }), ["KvK-nummer"]);

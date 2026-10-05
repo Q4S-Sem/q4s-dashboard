@@ -277,13 +277,8 @@ export function ContractForm({
             <Field label="Plaats (Q4S)" htmlFor="signPlaceClient" error={e.signPlaceClient}>
               <Input id="signPlaceClient" name="signPlaceClient" defaultValue={c?.signPlaceClient ?? "Barendrecht"} />
             </Field>
-            <Field label="Ondertekenaar Opdrachtnemer" htmlFor="signerContractor" error={e.signerContractor}>
-              <Input id="signerContractor" name="signerContractor" defaultValue={c?.signerContractor ?? ""} />
-            </Field>
-            <Field label="Plaats (Opdrachtnemer)" htmlFor="signPlaceContractor" error={e.signPlaceContractor}>
-              <Input id="signPlaceContractor" name="signPlaceContractor" defaultValue={c?.signPlaceContractor ?? ""} />
-            </Field>
-            <Field label="Datum ondertekening" htmlFor="signDate" error={e.signDate}>
+            {/* Opdrachtnemer tekent zelf: datum, plaats en naam blijven open op het contract. */}
+            <Field label="Datum ondertekening (Q4S)" htmlFor="signDate" error={e.signDate}>
               <Input id="signDate" name="signDate" type="date" defaultValue={toDateInput(c?.signDate ?? null)} />
             </Field>
           </div>
