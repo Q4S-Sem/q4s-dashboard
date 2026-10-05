@@ -397,7 +397,7 @@ export default async function DashboardPage({
           value={<CountUpValue value={overview.omzet} />}
           deltaPct={deltaPct(overview.omzet, prevOverview.omzet)}
           hint={`${formatCurrency(prevOverview.omzet)} in ${p.prevLabel} · gefactureerd ex btw`}
-          href={`/facturatie/rapportage?q=${p.param}&year=${p.year}`}
+          href={`/facturatie/rapportage?jaar=${p.year}&kwartaal=${p.q ?? "jaar"}`}
           spark={overview.perMonth.map((m) => m.omzet)}
           sparkColor="blue"
           delay={0}
@@ -407,7 +407,7 @@ export default async function DashboardPage({
           value={<CountUpValue value={overview.marge} />}
           deltaPct={deltaPct(overview.marge, prevOverview.marge)}
           hint={`${periodMargePct}% van omzet · ${formatCurrency(prevOverview.marge)} in ${p.prevLabel}`}
-          href={`/facturatie/rapportage?q=${p.param}&year=${p.year}`}
+          href={`/facturatie/rapportage?jaar=${p.year}&kwartaal=${p.q ?? "jaar"}`}
           spark={overview.perMonth.map((m) => m.marge)}
           sparkColor="emerald"
           delay={70}
@@ -541,7 +541,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Omzet, inkoop & marge ${periodLabel}`}
           color="blue"
-          action={<Link href={`/facturatie/rapportage?q=${p.param}&year=${p.year}`} className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Rapportage →</Link>}
+          action={<Link href={`/facturatie/rapportage?jaar=${p.year}&kwartaal=${p.q ?? "jaar"}`} className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Rapportage →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
@@ -603,7 +603,7 @@ export default async function DashboardPage({
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-blue-600" /> Top klanten (omzet {periodLabel})
             </CardTitle>
-            <Link href={`/facturatie/rapportage?q=${p.param}&year=${p.year}`} className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Overzicht</Link>
+            <Link href={`/facturatie/rapportage?jaar=${p.year}&kwartaal=${p.q ?? "jaar"}`} className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Overzicht</Link>
           </CardHeader>
           <CardContent className="space-y-2.5">
             {topClients.length === 0 ? (
@@ -629,7 +629,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Wat Q4S overhoudt (${periodLabel})`}
           color="emerald"
-          action={<Link href={`/facturatie/rapportage?q=${p.param}&year=${p.year}`} className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Rapportage →</Link>}
+          action={<Link href={`/facturatie/rapportage?jaar=${p.year}&kwartaal=${p.q ?? "jaar"}`} className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Rapportage →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Twee losse cijfers */}
