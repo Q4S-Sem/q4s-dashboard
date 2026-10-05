@@ -1,57 +1,77 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BackLink } from "@/components/back-link";
+import { ArrowRight, FileSignature, Receipt, UserRound } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { ContractForm } from "../ContractForm";
-import { createContract } from "../actions";
-import { getContractFormOptions } from "../data";
 
 export const metadata = { title: "Nieuw contract" };
-export const dynamic = "force-dynamic";
 
-/** Een overeenkomst van opdracht invullen en opslaan (met controle op ontbrekende gegevens). */
+const SOORTEN = [
+  {
+    href: "/contracten/nieuw/overeenkomst",
+    titel: "Overeenkomst van opdracht",
+    uitleg: "Het contract met de opdrachtnemer: partijen, opdracht, duur en tarieven. Wordt opgeslagen bij de persoon.",
+    icon: FileSignature,
+    tone: "bg-brand-50 text-brand-600",
+  },
+  {
+    href: "/contracten/nieuw/persoonsgegevens",
+    titel: "Persoonsgegevens",
+    uitleg: "Bedrijf- en persoonsgegevens van de kandidaat of opdrachtnemer, klaar om te laten aanvullen en tekenen.",
+    icon: UserRound,
+    tone: "bg-emerald-50 text-emerald-600",
+  },
+  {
+    href: "/contracten/nieuw/offerte",
+    titel: "Offerte",
+    uitleg: "Een offerte voor de klant met de inspecteur, locatie en tarieven.",
+    icon: Receipt,
+    tone: "bg-amber-50 text-amber-600",
+  },
+];
+
+/** Beginscherm: kies welk document je gaat invullen. */
 export default async function NieuwContractPage({
   searchParams,
 }: {
   searchParams: Promise<{ consultantId?: string; placementId?: string; doc?: string; taal?: string }>;
 }) {
-  const { consultantId, placementId, doc, taal } = await searchParams;
-  // Oude links (toen Blanco/Timesheet hier zaten) → hun eigen pagina.
-  const tl = taal === "en" ? "taal=en" : "";
-  if (doc === "urenstaat") redirect(`/contracten/blanco?doc=timesheet${tl ? `&${tl}` : ""}`);
-  if (doc === "persoonsgegevens" || doc === "offerte") redirect(`/contracten/blanco?doc=${doc}${tl ? `&${tl}` : ""}`);
-
-  const { consultants, placements } = await getContractFormOptions();
-
-  // Voor-invullen bij aanmaken vanuit een plaatsing: opdrachtnemer + plaatsing
-  // staan dan al goed, en de opdrachtnemer-gegevens worden overgenomen.
-  const chosen = consultants.find((c) => c.id === consultantId);
-  const defaults =
-    consultantId || placementId
-      ? {
-          consultantId: consultantId ?? "",
-          placementId: placementId ?? null,
-          contractorName: chosen?.company || chosen?.name || "",
-          contractorAddress: chosen?.address ?? "",
-          contractorKvk: chosen?.kvk ?? "",
-          contractorVat: chosen?.vat ?? "",
-          contractorIban: chosen?.iban ?? "",
-        }
-      : undefined;
+  const sp = await searchParams;
+  // Links vanuit een persoon/plaatsing gaan direct door naar de overeenkomst.
+  if (sp.consultantId || sp.placementId) {
+    const q = new URLSearchParams();
+    if (sp.consultantId) q.set("consultantId", sp.consultantId);
+    if (sp.placementId) q.set("placementId", sp.placementId);
+    redirect(`/contracten/nieuw/overeenkomst?${q}`);
+  }
+  // Oude links (toen Blanco/Timesheet hier zaten).
+  const tl = sp.taal === "en" ? "&taal=en" : "";
+  if (sp.doc === "urenstaat") redirect(`/contracten/blanco?doc=timesheet${tl}`);
+  if (sp.doc === "persoonsgegevens" || sp.doc === "offerte") redirect(`/contracten/blanco?doc=${sp.doc}${tl}`);
 
   return (
-    <div className="space-y-5">
-      <BackLink href="/contracten">Terug naar contracten</BackLink>
+    <div className="space-y-6">
       <PageHeader
         title="Nieuw contract"
-        description="Vul de overeenkomst van opdracht in, sla op en print hem. Ontbreekt er iets, dan krijg je een melding."
+        description="Kies wat je wilt opstellen. Wat je invult blijft als concept bewaard, ook als je tussendoor naar een andere pagina gaat."
       />
-      <ContractForm
-        action={createContract}
-        defaults={defaults}
-        consultants={consultants}
-        placements={placements}
-        cancelHref="/contracten"
-      />
+      <div className="grid gap-4 md:grid-cols-3">
+        {SOORTEN.map(({ href, titel, uitleg, icon: Icon, tone }) => (
+          <Link
+            key={href}
+            href={href}
+            className="group flex flex-col rounded-lg border border-ink-200 bg-white p-6 transition hover:border-ink-900 hover:shadow-md"
+          >
+            <span className={`flex h-12 w-12 items-center justify-center rounded-lg ${tone} transition-transform group-hover:scale-110`}>
+              <Icon className="h-6 w-6" />
+            </span>
+            <h2 className="mt-5 text-lg font-bold text-ink-900">{titel}</h2>
+            <p className="mt-1.5 flex-1 text-sm text-ink-500">{uitleg}</p>
+            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-ink-900">
+              Invullen <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

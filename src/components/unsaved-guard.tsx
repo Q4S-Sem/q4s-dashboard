@@ -136,8 +136,8 @@ export function UnsavedGuard() {
               Weet je zeker dat je weggaat?
             </h2>
             <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
-              Je hebt wijzigingen gemaakt die nog niet zijn opgeslagen. Als je
-              nu verdergaat ben je ze kwijt.
+              Je hebt wijzigingen gemaakt die nog niet zijn opgeslagen. Wat je
+              hebt ingevuld blijft als concept op dit apparaat bewaard tot je terugkomt.
             </p>
           </div>
         </div>
