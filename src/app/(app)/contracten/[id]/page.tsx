@@ -10,7 +10,6 @@ import { loadContractSheet } from "@/lib/contract-render";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { ContractForm } from "../ContractForm";
 import { updateContract, deleteContract } from "../actions";
-import { getContractFormOptions } from "../data";
 import { ontbrekendeContractVelden } from "@/lib/contract-check";
 import { PrintMetControle } from "./PrintMetControle";
 
@@ -28,9 +27,8 @@ export default async function ContractDetailPage({
   const { opgeslagen, error, taal: t } = await searchParams;
   const taal = t === "en" ? "en" : "nl";
 
-  const [sheet, options, contract] = await Promise.all([
+  const [sheet, contract] = await Promise.all([
     loadContractSheet(id),
-    getContractFormOptions(),
     db.contract.findUnique({ where: { id } }),
   ]);
   if (!sheet || !contract) notFound();
@@ -75,8 +73,6 @@ export default async function ContractDetailPage({
         <ContractForm
           action={updateContract}
           contract={contract}
-          consultants={options.consultants}
-          placements={options.placements}
           cancelHref="/contracten"
         />
 

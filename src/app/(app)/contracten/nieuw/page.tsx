@@ -36,13 +36,8 @@ export default async function NieuwContractPage({
   searchParams: Promise<{ consultantId?: string; placementId?: string; doc?: string; taal?: string }>;
 }) {
   const sp = await searchParams;
-  // Links vanuit een persoon/plaatsing gaan direct door naar de overeenkomst.
-  if (sp.consultantId || sp.placementId) {
-    const q = new URLSearchParams();
-    if (sp.consultantId) q.set("consultantId", sp.consultantId);
-    if (sp.placementId) q.set("placementId", sp.placementId);
-    redirect(`/contracten/nieuw/overeenkomst?${q}`);
-  }
+  // Oude links vanuit een persoon/plaatsing: direct naar de (lege) overeenkomst.
+  if (sp.consultantId || sp.placementId) redirect("/contracten/nieuw/overeenkomst");
   // Oude links (toen Blanco/Timesheet hier zaten).
   const tl = sp.taal === "en" ? "&taal=en" : "";
   if (sp.doc === "urenstaat") redirect(`/contracten/blanco?doc=timesheet${tl}`);

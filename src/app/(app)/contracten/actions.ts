@@ -13,17 +13,14 @@ import { ontbrekendeContractVelden } from "@/lib/contract-check";
  *
  * Alleen de VARIABELE velden komen hier binnen; de vaste juridische tekst zit in
  * de renderer (contract-doc.ts / ContractVel.tsx). Een contract hangt altijd aan
- * een Consultant (opdrachtnemer) en optioneel aan een Placement.
+ * nieuw persoon: de gegevens staan op het contract zelf (geen koppeling met
+ * werknemers of plaatsingen; bestaande koppelingen blijven ongemoeid bij bijwerken).
  */
 
 const optional = z.string().optional().transform((v) => (v && v.trim() ? v.trim() : ""));
 const optionalNull = z.string().optional().transform((v) => (v && v.trim() ? v.trim() : null));
 
 const ContractSchema = z.object({
-  // Leeg = nieuw persoon (nog geen werknemer in het dashboard); de gegevens
-  // staan dan alleen op het contract zelf.
-  consultantId: optionalNull,
-  placementId: optionalNull,
   number: optionalNull,
 
   contractorName: z.string().min(1, "Naam opdrachtnemer is verplicht"),
@@ -90,8 +87,6 @@ function blokkeerOnvolledig(d: z.infer<typeof ContractSchema>): FormState | null
 /** Vul lege optionele string-velden met de sjabloon-defaults. */
 function withDefaults(data: z.infer<typeof ContractSchema>) {
   return {
-    fieldOfWork: data.fieldOfWork || "Quality & Inspection Services",
-    serviceNeed: data.serviceNeed || "Quality Management & Inspection Services",
     noticePeriod: data.noticePeriod || "twee (2) weken",
     invoiceEmail: data.invoiceEmail || "admin@q4s.nl",
     insuranceCover: data.insuranceCover || "€ 2.500.000,-",
@@ -112,14 +107,14 @@ export async function createContract(_prev: FormState, formData: FormData): Prom
   try {
     const created = await db.contract.create({
       data: {
-        consultantId: d.consultantId,
-        placementId: d.placementId,
         number: d.number,
         contractorName: d.contractorName,
         contractorAddress: d.contractorAddress,
         contractorKvk: d.contractorKvk,
         contractorVat: d.contractorVat,
         contractorIban: d.contractorIban,
+        fieldOfWork: d.fieldOfWork,
+        serviceNeed: d.serviceNeed,
         thirdParty: d.thirdParty,
         workDescription: d.workDescription,
         startDate: d.startDate ?? null,
@@ -170,14 +165,14 @@ export async function updateContract(_prev: FormState, formData: FormData): Prom
     await db.contract.update({
       where: { id },
       data: {
-        consultantId: d.consultantId,
-        placementId: d.placementId,
         number: d.number,
         contractorName: d.contractorName,
         contractorAddress: d.contractorAddress,
         contractorKvk: d.contractorKvk,
         contractorVat: d.contractorVat,
         contractorIban: d.contractorIban,
+        fieldOfWork: d.fieldOfWork,
+        serviceNeed: d.serviceNeed,
         thirdParty: d.thirdParty,
         workDescription: d.workDescription,
         startDate: d.startDate ?? null,

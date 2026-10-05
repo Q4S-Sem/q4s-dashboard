@@ -1,4 +1,4 @@
-import { VelKop, VelVoet, ovCss, type Taal } from "./ContractVel";
+import { Q4S_HANDTEKENING, VelKop, VelVoet, ovCss, type Taal } from "./ContractVel";
 
 /**
  * Q4S-offerte (Quotation) — exact dezelfde opbouw als de Overeenkomst van
@@ -58,12 +58,14 @@ export function OfferteVel({
   taal = "en",
   q = {},
   className,
+  handtekening = Q4S_HANDTEKENING,
 }: {
   logoSrc?: string | null;
   footerLine: string;
   taal?: Taal;
   q?: Offerte;
   className?: string;
+  handtekening?: string | null;
 }) {
   const en = taal === "en";
   const t = (nl: string, eng: string) => (en ? eng : nl);
@@ -213,10 +215,10 @@ export function OfferteVel({
         <div className="ov-sign">
           <div className="ov-sb">
             <div className="ov-sr"><span>{t("Voor", "For")}</span><span>Q4S B.V.</span></div>
-            <div className="ov-sr"><span>{t("Naam", "Name")}</span><F v={q.from} /></div>
+            <div className="ov-sr"><span>{t("Naam", "Name")}</span>{handtekening ? <span>P. Boomsma</span> : <F v={q.from} />}</div>
             <div className="ov-sr"><span>{t("Datum", "Date")}</span><F v={q.issueDate} /></div>
             <div className="ov-sr"><span>{t("Handtekening", "Signature")}</span></div>
-            <div className="ov-sl" />
+            {handtekening ? <img src={handtekening} alt="" className="ov-sig" /> : <div className="ov-sl" />}
           </div>
           <div className="ov-sb">
             <div className="ov-sr"><span>{t("Voor", "For")}</span><F v={q.to} /></div>

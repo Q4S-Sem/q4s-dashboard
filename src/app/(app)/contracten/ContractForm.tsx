@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { fromRateText, toRateText, type RateUnit } from "@/lib/contract-tarief";
 import type { Contract } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea, Select } from "@/components/ui/field";
@@ -9,13 +10,9 @@ import { ConfirmCancel } from "@/components/confirm-cancel";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { CONTRACT_STATUSES } from "@/lib/domain";
 
-type ConsultantOption = { id: string; name: string; company: string; kvk: string; vat: string; iban: string; address: string };
-type PlacementOption = { id: string; consultantId: string; label: string; thirdParty: string };
 
 /** Voor-invulwaarden bij een nieuw contract (bijv. aangemaakt vanuit een plaatsing). */
 type ContractDefaults = {
-  consultantId?: string;
-  placementId?: string | null;
   contractorName?: string;
   contractorAddress?: string;
   contractorKvk?: string;
@@ -31,27 +28,17 @@ export function ContractForm({
   action,
   contract,
   defaults,
-  consultants,
-  placements,
   cancelHref,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   contract?: Contract | null;
   defaults?: ContractDefaults;
-  consultants: ConsultantOption[];
-  placements: PlacementOption[];
   cancelHref: string;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
   const c = contract;
   const d = defaults;
-  // Leeg = nieuw persoon: dan typ je de naam meteen hier bovenaan.
-  const [persoon, setPersoon] = useState(c?.consultantId ?? d?.consultantId ?? "");
-  const [naam, setNaam] = useState(c?.contractorName ?? d?.contractorName ?? "");
-  const naamVeld = (
-    <Input id="contractorName" name="contractorName" value={naam} onChange={(ev) => setNaam(ev.target.value)} required />
-  );
 
   return (
     <form action={formAction} className="space-y-6">
@@ -61,50 +48,16 @@ export function ContractForm({
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{state.error}</p>
       )}
 
-      {/* Koppeling */}
+      {/* Contract */}
       <Card>
         <CardHeader>
-          <CardTitle>Koppeling</CardTitle>
-          <span className="text-sm text-ink-400">
-            Aan wie hangt dit contract? Bij een plaatsing verschijnt het straks ook in dat dossier.
-          </span>
+          <CardTitle>Contract</CardTitle>
+          <span className="text-sm text-ink-400">De opdrachtnemer is altijd een nieuw persoon; alles staat op het contract zelf.</span>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field
-              label="Opdrachtnemer"
-              htmlFor="consultantId"
-              error={e.consultantId}
-              hint="Nieuw persoon? Laat op “Nieuw persoon” staan en typ de naam hieronder — koppelen kan later."
-            >
-              <Select
-                id="consultantId"
-                name="consultantId"
-                defaultValue={persoon}
-                onValueChange={(v) => {
-                  setPersoon(v);
-                  const o = consultants.find((x) => x.id === v);
-                  if (o) setNaam(o.company || o.name);
-                }}
-              >
-                <option value="">Nieuw persoon (nog niet in het dashboard)</option>
-                {consultants.map((o) => (
-                  <option key={o.id} value={o.id}>{o.name}{o.company ? ` — ${o.company}` : ""}</option>
-                ))}
-              </Select>
-            </Field>
-            {!persoon && (
-              <Field label="Naam nieuw persoon" htmlFor="contractorName" required error={e.contractorName} hint="Zoals het op het contract komt (persoon of zijn bedrijf)">
-                {naamVeld}
-              </Field>
-            )}
-            <Field label="Plaatsing (optioneel)" htmlFor="placementId" error={e.placementId} hint="Koppel aan een plaatsing bij een klant.">
-              <Select id="placementId" name="placementId" defaultValue={c?.placementId ?? d?.placementId ?? ""}>
-                <option value="">— Geen plaatsing —</option>
-                {placements.map((p) => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
-                ))}
-              </Select>
+          <div className="grid gap-5 sm:grid-cols-3">
+            <Field label="Naam opdrachtnemer" htmlFor="contractorName" required error={e.contractorName} hint="Zoals het op het contract komt (persoon of zijn bedrijf)">
+              <Input id="contractorName" name="contractorName" defaultValue={c?.contractorName ?? d?.contractorName ?? ""} required />
             </Field>
             <Field label="Contractnummer / referentie" htmlFor="number" error={e.number} hint="Bijv. Q4S-OVO-2025-001">
               <Input id="number" name="number" defaultValue={c?.number ?? ""} />
@@ -128,11 +81,6 @@ export function ContractForm({
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
-            {persoon && (
-              <Field label="Naam (handelend onder)" htmlFor="contractorName" required error={e.contractorName}>
-                {naamVeld}
-              </Field>
-            )}
             <Field label="Gevestigd te" htmlFor="contractorAddress" error={e.contractorAddress}>
               <Input id="contractorAddress" name="contractorAddress" defaultValue={c?.contractorAddress ?? d?.contractorAddress ?? ""} />
             </Field>
@@ -157,10 +105,10 @@ export function ContractForm({
         <CardContent className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Vakgebied Opdrachtgever" htmlFor="fieldOfWork" error={e.fieldOfWork} hint="Overweging a">
-              <Input id="fieldOfWork" name="fieldOfWork" defaultValue={c?.fieldOfWork ?? "Quality & Inspection Services"} />
+              <Input id="fieldOfWork" name="fieldOfWork" defaultValue={c?.fieldOfWork ?? ""} />
             </Field>
             <Field label="Behoefte / dienst" htmlFor="serviceNeed" error={e.serviceNeed} hint="Overweging b">
-              <Input id="serviceNeed" name="serviceNeed" defaultValue={c?.serviceNeed ?? "Quality Management & Inspection Services"} />
+              <Input id="serviceNeed" name="serviceNeed" defaultValue={c?.serviceNeed ?? ""} />
             </Field>
           </div>
           <Field label="Derde / eindklant / project" htmlFor="thirdParty" error={e.thirdParty} hint="Overweging c — bij of ten behoeve van welke derde">
@@ -197,39 +145,39 @@ export function ContractForm({
       <Card>
         <CardHeader>
           <CardTitle>Vergoeding (artikel 6)</CardTitle>
-          <span className="text-sm text-ink-400">Vul de tarieven in zoals ze op het contract moeten staan (vrije tekst, bijv. &ldquo;€ 78,-&rdquo;).</span>
+          <span className="text-sm text-ink-400">Kies per tarief € (bedrag) of % (percentage) en vul het getal in.</span>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
             <Field label="Uurtarief — dag" htmlFor="rateDay" error={e.rateDay}>
-              <Input id="rateDay" name="rateDay" defaultValue={c?.rateDay ?? ""} placeholder="€ 78,-" />
+              <RateInput name="rateDay" defaultValue={c?.rateDay ?? ""} />
             </Field>
             <Field label="Shift" htmlFor="rateShift" error={e.rateShift}>
-              <Input id="rateShift" name="rateShift" defaultValue={c?.rateShift ?? ""} placeholder="€ 80,-" />
+              <RateInput name="rateShift" defaultValue={c?.rateShift ?? ""} />
             </Field>
             <Field label="Zaterdag" htmlFor="rateSaturday" error={e.rateSaturday}>
-              <Input id="rateSaturday" name="rateSaturday" defaultValue={c?.rateSaturday ?? ""} placeholder="€ 80,-" />
+              <RateInput name="rateSaturday" defaultValue={c?.rateSaturday ?? ""} />
             </Field>
             <Field label="Zon/feestdag" htmlFor="rateSunday" error={e.rateSunday}>
-              <Input id="rateSunday" name="rateSunday" defaultValue={c?.rateSunday ?? ""} placeholder="€ 80,-" />
+              <RateInput name="rateSunday" defaultValue={c?.rateSunday ?? ""} />
             </Field>
             <Field label="Offshore (NL)" htmlFor="rateOffshore" error={e.rateOffshore}>
-              <Input id="rateOffshore" name="rateOffshore" defaultValue={c?.rateOffshore ?? ""} placeholder="+ 0 %" />
+              <RateInput name="rateOffshore" defaultValue={c?.rateOffshore ?? ""} />
             </Field>
             <Field label="Overuren" htmlFor="rateOvertime" error={e.rateOvertime}>
-              <Input id="rateOvertime" name="rateOvertime" defaultValue={c?.rateOvertime ?? ""} placeholder="€ 80,-" />
+              <RateInput name="rateOvertime" defaultValue={c?.rateOvertime ?? ""} />
             </Field>
             <Field label="Voor overuren gelden uren" htmlFor="overtimeApplies" error={e.overtimeApplies}>
               <Input id="overtimeApplies" name="overtimeApplies" defaultValue={c?.overtimeApplies ?? ""} placeholder="zie uurtarief" />
             </Field>
             <Field label="Dagtarief" htmlFor="rateDayFixed" error={e.rateDayFixed}>
-              <Input id="rateDayFixed" name="rateDayFixed" defaultValue={c?.rateDayFixed ?? ""} placeholder="€ 0,-" />
+              <RateInput name="rateDayFixed" defaultValue={c?.rateDayFixed ?? ""} />
             </Field>
             <Field label="Dagtarief o.b.v. werkdag van" htmlFor="dayBasedOnHours" error={e.dayBasedOnHours}>
               <Input id="dayBasedOnHours" name="dayBasedOnHours" defaultValue={c?.dayBasedOnHours ?? ""} placeholder="8 uur" />
             </Field>
             <Field label="Kilometervergoeding" htmlFor="kmRate" error={e.kmRate}>
-              <Input id="kmRate" name="kmRate" defaultValue={c?.kmRate ?? ""} placeholder="€ 0,-" />
+              <RateInput name="kmRate" defaultValue={c?.kmRate ?? ""} />
             </Field>
           </div>
           <div className="grid gap-5 sm:grid-cols-3">
@@ -308,5 +256,36 @@ export function ContractForm({
         <SubmitButton pendingLabel="Opslaan…">Opslaan</SubmitButton>
       </div>
     </form>
+  );
+}
+
+/** Tarief als bedrag (€) of percentage (%); het verborgen veld bevat de tekst zoals op het contract. */
+function RateInput({ name, defaultValue }: { name: string; defaultValue: string }) {
+  const start = fromRateText(defaultValue);
+  const [unit, setUnit] = useState<RateUnit>(start.unit);
+  const [value, setValue] = useState(start.value);
+  return (
+    <div className="flex">
+      <input type="hidden" name={name} value={toRateText(value, unit)} />
+      <select
+        name={`${name}__eenheid`}
+        aria-label="Eenheid"
+        value={unit}
+        onChange={(ev) => setUnit(ev.target.value as RateUnit)}
+        className="shrink-0 rounded-l-sm border border-r-0 border-ink-200 bg-ink-50 px-2 text-sm font-semibold text-ink-800 focus:outline-none"
+      >
+        <option value="€">€</option>
+        <option value="%">%</option>
+      </select>
+      <Input
+        id={name}
+        name={`${name}__getal`}
+        inputMode="decimal"
+        value={value}
+        onChange={(ev) => setValue(ev.target.value)}
+        placeholder={unit === "€" ? "78" : "10"}
+        className="rounded-l-none"
+      />
+    </div>
   );
 }

@@ -76,16 +76,21 @@ function enWaarde(v: string): string {
   return v;
 }
 
+/** Standaard-handtekening van Q4S (P. Boomsma); `null` = lege tekenregel (Blanco). */
+export const Q4S_HANDTEKENING = "/handtekening/paul-boomsma.png";
+
 export function ContractVel({
   doc,
   logoSrc,
   className,
   taal = "nl",
+  handtekening = Q4S_HANDTEKENING,
 }: {
   doc: ContractDoc;
   logoSrc?: string | null;
   className?: string;
   taal?: Taal;
+  handtekening?: string | null;
 }) {
   const en = taal === "en";
   const titel = en ? "Contract agreement" : "Overeenkomst van opdracht";
@@ -548,7 +553,7 @@ export function ContractVel({
               <div className="ov-sr"><span>{en ? "Place" : "Plaats"}</span>{s.v ? <V>{s.place}</V> : s.place}</div>
               <div className="ov-sr"><span>{en ? "Name" : "Naam"}</span>{s.v ? <V>{s.name}</V> : s.name}</div>
               <div className="ov-sr"><span>{en ? "Signature" : "Handtekening"}</span></div>
-              <div className="ov-sl" />
+              {!s.v && handtekening ? <img src={handtekening} alt="" className="ov-sig" /> : <div className="ov-sl" />}
             </div>
           ))}
         </div>
@@ -631,6 +636,7 @@ export function ovCss(): string {
 .ov-tar .ov-rl { text-align: left; color: #33333a; font-weight: 600; width: 46mm; }
 .ov-fill { color: #1b52c4; font-weight: 600; }
 .ov-strike { color: #a0a0a6; text-decoration: line-through; }
+.ov-sig { display: block; height: 16mm; width: auto; margin-top: 1mm; }
 .ov-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; margin-top: 6mm; break-inside: avoid; }
 .ov-sb { border-top: 1px solid #1c1c1e; padding-top: 2.5mm; }
 .ov-who { font-weight: 700; font-size: 9pt; margin-bottom: 2mm; }
