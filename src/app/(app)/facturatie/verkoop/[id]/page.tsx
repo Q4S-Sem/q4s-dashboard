@@ -114,12 +114,14 @@ export default async function VerkoopfactuurPage({
         >
           <BellRing className="mt-0.5 h-4 w-4 shrink-0" />
           {sp.herinnering === "ok"
-            ? "De betalingsherinnering is verstuurd."
+            ? "De betalingsherinnering is verstuurd, met de factuur als bijlage."
             : sp.herinnering === "geen-adres"
               ? "Geen herinnering verstuurd: deze klant heeft geen e-mailadres."
               : sp.herinnering === "niet-verzonden"
                 ? "Alleen een verzonden, nog niet betaalde factuur kan herinnerd worden."
-                : "De herinnering kon niet verstuurd worden."}
+                : sp.herinnering === "te-vroeg"
+                  ? "Geen herinnering verstuurd: de vorige is minder dan 7 dagen geleden verstuurd."
+                  : "De herinnering kon niet verstuurd worden."}
         </p>
       )}
       {snelstartMelding && (

@@ -58,6 +58,8 @@ export type VerkoopFactuurRij = {
   heeftMail: boolean;
   herinneringen: number;
   herinnerdOp: string | null;
+  /** Te laat en (nog nooit / ≥ 7 dagen geleden) herinnerd. */
+  herinnerenNu: boolean;
 };
 
 export function VerkoopLijst({ rows, tab }: { rows: VerkoopFactuurRij[]; tab: string }) {
@@ -258,6 +260,9 @@ export function VerkoopLijst({ rows, tab }: { rows: VerkoopFactuurRij[]; tab: st
                 <TD className="text-right font-medium tabular-nums">{formatCurrency(r.total)}</TD>
                 <TD>
                   <StatusBadge options={INVOICE_STATUSES} value={r.weergave} />
+                  {r.herinnerenNu && (
+                    <span className="mt-1 block text-xs font-medium text-amber-700">Herinnering aan de beurt</span>
+                  )}
                   {r.herinneringen > 0 && (
                     <span className="mt-1 block text-xs text-ink-400">
                       {r.herinneringen}× herinnerd

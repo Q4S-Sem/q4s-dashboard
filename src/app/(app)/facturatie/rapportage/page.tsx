@@ -28,6 +28,8 @@ import { invoicingOverview } from "@/lib/facturatie";
 import { buildMargeOverzicht, type MargeRegel } from "@/lib/marge-overzicht";
 import { summarizeRecurringFaults, type PastFault } from "@/lib/facturatie-detecties";
 import { matchSalesInvoices, steekproefChecklist } from "@/lib/steekproef";
+import { cashflowPrognose } from "@/lib/cashflow";
+import { ZZP_PAYMENT_TERM_DAYS } from "@/lib/betalingen";
 import { FACTURATIE_ENTITY, ACCEPT_KEY } from "@/lib/facturatie-week";
 
 // ---------------------------------------------------------------------------
@@ -284,6 +286,26 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
   }
 
   const btwTeBetalen = btw.saldo >= 0;
+
+  // Cashflow komende 8 weken — huidige stand, los van de gekozen periode.
+  const nu = new Date();
+  const [openVerkoop, openInkoop] = await Promise.all([
+    db.invoice.findMany({ where: { status: { in: ["SENT", "OVERDUE"] } }, select: { total: true, dueDate: true } }),
+    db.receivedInvoice.findMany({
+      where: { status: { not: "PAID" } },
+      select: { amount: true, issueDate: true, createdAt: true },
+    }),
+  ]);
+  const prognose = cashflowPrognose(
+    openVerkoop.map((i) => ({ bedrag: i.total, datum: i.dueDate })),
+    openInkoop.map((r) => {
+      const d = new Date(r.issueDate ?? r.createdAt);
+      d.setDate(d.getDate() + ZZP_PAYMENT_TERM_DAYS);
+      return { bedrag: r.amount, datum: d };
+    }),
+    nu,
+  );
+  const laagste = Math.min(...prognose.map((w) => w.saldo));
   const periodeHref = (j: number, k: number | null) =>
     `/facturatie/rapportage?jaar=${j}&kwartaal=${k ?? "jaar"}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`;
 
@@ -362,6 +384,48 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
           accent={inv.overdue > 0 ? "red" : "slate"}
         />
       </div>
+
+      {/* Cashflow-prognose */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-4 w-4 text-ink-400" /> Cashflow komende 8 weken
+          </CardTitle>
+          <p className="text-xs text-ink-500">
+            Binnen = open verkoopfacturen op hun vervaldatum (te laat telt deze week). Eruit = openstaande
+            freelancerfacturen, {ZZP_PAYMENT_TERM_DAYS} dagen na factuurdatum.
+            {laagste < 0 && (
+              <span className="ml-1 font-semibold text-red-700">
+                Let op: het saldo zakt tot {formatCurrency(laagste)} — eerst innen, dan uitbetalen.
+              </span>
+            )}
+          </p>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          <Table>
+            <THead>
+              <TR>
+                <TH>Week</TH>
+                <TH className="text-right">Binnen</TH>
+                <TH className="text-right">Eruit</TH>
+                <TH className="text-right">Saldo (cumulatief)</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {prognose.map((w) => (
+                <TR key={w.label}>
+                  <TD className="font-medium text-ink-900">{w.label}</TD>
+                  <TD className="text-right tabular-nums text-emerald-700">{w.in ? formatCurrency(w.in) : "—"}</TD>
+                  <TD className="text-right tabular-nums text-amber-700">{w.uit ? formatCurrency(w.uit) : "—"}</TD>
+                  <TD className={cn("text-right font-semibold tabular-nums", w.saldo < 0 ? "text-red-700" : "text-ink-900")}>
+                    {formatCurrency(w.saldo)}
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       {/* Grafiek + geld onderweg */}
       <div className="grid gap-4 xl:grid-cols-3">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Ban, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
+import { AlertTriangle, Ban, BellRing, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { FilterTegels, PaginaKop } from "@/components/ui/filter-tegels";
@@ -18,6 +18,9 @@ import {
   type VerkoopTab,
 } from "@/lib/facturatie-lijsten";
 import { VerkoopLijst, type VerkoopFactuurRij } from "./VerkoopLijst";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { herinneringAanDeBeurt } from "@/lib/cashflow";
+import { sendDueReminders } from "./actions";
 
 // ---------------------------------------------------------------------------
 // VERKOOPFACTUREN — één lijst met tabbladen, in de volgorde van de trechter:
@@ -65,6 +68,7 @@ type SP = {
   geenmail?: string;
   mislukt?: string;
   herinnering?: string;
+  herinneringen?: string;
 };
 
 /** Eén nette Nederlandse zin over wat de vorige actie heeft gedaan. */
@@ -76,8 +80,18 @@ function melding(sp: SP): { tekst: string; toon: "ok" | "let-op" } | null {
   const over = n(sp.overgeslagen);
   const delen: string[] = [];
 
+  if (sp.herinneringen !== undefined) {
+    const v = n(sp.herinneringen);
+    delen.push(v === 1 ? "1 herinnering verstuurd (met factuur als bijlage)." : `${v} herinneringen verstuurd (met factuur als bijlage).`);
+    if (n(sp.geenmail) > 0) delen.push(`${n(sp.geenmail)} klant(en) zonder e-mailadres — bel die na.`);
+    if (n(sp.mislukt) > 0) delen.push(`${n(sp.mislukt)} mislukt.`);
+    return { tekst: delen.join(" "), toon: n(sp.geenmail) + n(sp.mislukt) > 0 ? "let-op" : "ok" };
+  }
+
   if (sp.herinnering) {
-    if (sp.herinnering === "ok") return { tekst: "De betalingsherinnering is verstuurd.", toon: "ok" };
+    if (sp.herinnering === "ok") return { tekst: "De betalingsherinnering is verstuurd, met de factuur als bijlage.", toon: "ok" };
+    if (sp.herinnering === "te-vroeg")
+      return { tekst: "Geen herinnering verstuurd: de vorige is minder dan 7 dagen geleden verstuurd.", toon: "let-op" };
     if (sp.herinnering === "geen-adres")
       return { tekst: "Geen herinnering verstuurd: deze klant heeft geen e-mailadres.", toon: "let-op" };
     if (sp.herinnering === "niet-verzonden")
@@ -169,7 +183,9 @@ export default async function VerkoopfacturenPage({
     heeftMail: Boolean(i.client.invoiceEmail?.trim() || i.client.email?.trim()),
     herinneringen: i.reminderCount,
     herinnerdOp: i.reminderSentAt ? i.reminderSentAt.toISOString() : null,
+    herinnerenNu: herinneringAanDeBeurt(i, now),
   }));
+  const aanDeBeurt = alle.filter((i) => i.herinnerenNu);
 
   const tellingen = verkoopTellingen(alle, now);
   const rows = alle.filter(
@@ -228,6 +244,25 @@ export default async function VerkoopfacturenPage({
           >
             Alle klanten ✕
           </Link>
+        </div>
+      )}
+
+      {tab === "telaat" && aanDeBeurt.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-amber-200 bg-amber-50 px-4 py-2.5 text-[13px] text-amber-900">
+          <span>
+            <strong className="font-semibold">{aanDeBeurt.length}</strong> te late factuur{aanDeBeurt.length === 1 ? "" : "en"} (
+            {formatCurrency(round2(aanDeBeurt.reduce((t, i) => t + i.total, 0)))}) toe aan een herinnering.
+          </span>
+          <ConfirmSubmit
+            action={sendDueReminders}
+            message={`${aanDeBeurt.length} betalingsherinnering${aanDeBeurt.length === 1 ? "" : "en"} versturen?`}
+            description="Elke klant krijgt een e-mail met de factuur als bijlage. De toon loopt op: 1e herinnering, 2e herinnering, daarna een aanmaning. Facturen die de afgelopen 7 dagen al herinnerd zijn worden overgeslagen."
+            confirmLabel="Herinneringen versturen"
+            variant="primary"
+            confirmVariant="primary"
+          >
+            <BellRing className="h-4 w-4" /> Alle herinneringen versturen
+          </ConfirmSubmit>
         </div>
       )}
 

@@ -19,6 +19,9 @@ import {
 import { sendSalesInvoiceById, type SendOutcome } from "@/lib/send-invoice";
 import { getCompanySettings } from "@/lib/settings";
 import { reminderSendData } from "@/lib/reminders";
+import { herinneringAanDeBeurt } from "@/lib/cashflow";
+import { salesSendData } from "@/lib/verzenden";
+import { renderInvoicePdf } from "@/lib/invoice-pdf";
 import { sendMail } from "@/lib/email";
 import { parseForm, type FormState } from "@/lib/form";
 import { round2 } from "@/lib/utils";
@@ -425,41 +428,60 @@ const DAG = 86_400_000;
  * (1e = herinnering, 2e = tweede herinnering, 3e+ = aanmaning) en de teller +
  * verzenddatum worden pas bijgewerkt als de mail écht weg is.
  */
-export async function sendInvoiceReminder(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  const terug = String(formData.get("terug") ?? "") === "detail";
-  if (!id) redirect(LIJST);
-  const doel = terug ? detail(id) : `${LIJST}?tab=telaat`;
+type HerinnerUitkomst = "ok" | "geen-adres" | "niet-verzonden" | "te-vroeg" | "mislukt";
 
-  const [inv, settings] = await Promise.all([
-    db.invoice.findUnique({ where: { id }, include: { client: true } }),
-    getCompanySettings(),
-  ]);
-  if (!inv) redirect(LIJST);
-  if (inv.status !== "SENT") {
-    redirect(`${doel}${doel.includes("?") ? "&" : "?"}herinnering=niet-verzonden`);
-  }
-
+/** Eén herinnering versturen, met de factuur-PDF als bijlage. Teller pas omhoog als de mail weg is. */
+async function stuurHerinnering(id: string, settings: Awaited<ReturnType<typeof getCompanySettings>>): Promise<HerinnerUitkomst> {
+  const inv = await db.invoice.findUnique({ where: { id }, include: { client: true, lines: true } });
+  if (!inv || inv.status !== "SENT") return "niet-verzonden";
   const now = new Date();
+  // Dubbel-klik / te snel opnieuw: hooguit één herinnering per interval.
+  if (!herinneringAanDeBeurt(inv, now)) return inv.dueDate < now ? "te-vroeg" : "niet-verzonden";
+
   const dagenTeLaat = Math.max(0, Math.floor((now.getTime() - inv.dueDate.getTime()) / DAG));
   const count = inv.reminderCount + 1;
   const data = reminderSendData(inv, settings, count, dagenTeLaat);
-  if (!data.to) redirect(`${doel}${doel.includes("?") ? "&" : "?"}herinnering=geen-adres`);
+  if (!data.to) return "geen-adres";
 
+  const factuur = salesSendData(inv, settings);
   const res = await sendMail({
     to: data.to,
     subject: data.subject,
     html: data.html,
     text: data.text,
+    attachments: [
+      { filename: factuur.pdfName, content: Buffer.from(await renderInvoicePdf(factuur.pdfDoc)), contentType: "application/pdf" },
+    ],
   });
-  if (!res.ok) redirect(`${doel}${doel.includes("?") ? "&" : "?"}herinnering=mislukt`);
+  if (!res.ok) return "mislukt";
 
-  await db.invoice.update({
-    where: { id },
-    data: { reminderCount: count, reminderSentAt: now },
-  });
+  await db.invoice.update({ where: { id }, data: { reminderCount: count, reminderSentAt: now } });
+  return "ok";
+}
 
+export async function sendInvoiceReminder(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const terug = String(formData.get("terug") ?? "") === "detail";
+  if (!id) redirect(LIJST);
+  const doel = terug ? detail(id) : `${LIJST}?tab=telaat`;
+  const uitkomst = await stuurHerinnering(id, await getCompanySettings());
   herlaad();
   revalidatePath(detail(id));
-  redirect(`${doel}${doel.includes("?") ? "&" : "?"}herinnering=ok`);
+  redirect(`${doel}${doel.includes("?") ? "&" : "?"}herinnering=${uitkomst}`);
+}
+
+/** Alle herinneringen die aan de beurt zijn in één keer (na bevestiging in de UI). */
+export async function sendDueReminders() {
+  const now = new Date();
+  const kandidaten = await db.invoice.findMany({
+    where: { status: "SENT", dueDate: { lt: now } },
+    select: { id: true, status: true, dueDate: true, reminderSentAt: true },
+  });
+  const settings = await getCompanySettings();
+  const telling: Record<HerinnerUitkomst, number> = { ok: 0, "geen-adres": 0, "niet-verzonden": 0, "te-vroeg": 0, mislukt: 0 };
+  for (const k of kandidaten.filter((k) => herinneringAanDeBeurt(k, now))) {
+    telling[await stuurHerinnering(k.id, settings)] += 1;
+  }
+  herlaad();
+  redirect(`${LIJST}?tab=telaat&herinneringen=${telling.ok}&geenmail=${telling["geen-adres"]}&mislukt=${telling.mislukt}`);
 }

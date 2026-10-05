@@ -26,7 +26,9 @@ export default async function KlantFacturenPage({ params }: { params: Promise<{ 
   const billed = invoices.filter((i) => i.status !== "DRAFT" && i.status !== "CANCELLED");
   const open = invoices.filter((i) => i.status === "SENT" || i.status === "OVERDUE");
   const paid = invoices.filter((i) => i.status === "PAID");
-  const overdue = invoices.filter((i) => i.status === "OVERDUE");
+  // Te laat wordt niet opgeslagen: een verzonden factuur over de vervaldatum IS te laat.
+  const now = new Date();
+  const overdue = open.filter((i) => i.status === "OVERDUE" || i.dueDate < now);
   const drafts = invoices.filter((i) => i.status === "DRAFT");
   const last = invoices[0];
 
