@@ -17,7 +17,7 @@ export default async function NieuwContractPage({
   const { consultantId, placementId, doc, taal } = await searchParams;
   // Oude links (toen Blanco/Timesheet hier zaten) → hun eigen pagina.
   const tl = taal === "en" ? "taal=en" : "";
-  if (doc === "urenstaat") redirect(`/contracten/timesheet${tl ? `?${tl}` : ""}`);
+  if (doc === "urenstaat") redirect(`/contracten/blanco?doc=timesheet${tl ? `&${tl}` : ""}`);
   if (doc === "persoonsgegevens" || doc === "offerte") redirect(`/contracten/blanco?doc=${doc}${tl ? `&${tl}` : ""}`);
 
   const { consultants, placements } = await getContractFormOptions();

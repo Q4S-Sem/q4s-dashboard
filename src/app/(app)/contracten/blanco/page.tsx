@@ -4,6 +4,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ContractVel } from "@/components/contract/ContractVel";
 import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { OfferteVel } from "@/components/contract/OfferteVel";
+import { UrenstaatVel } from "@/components/contract/UrenstaatVel";
+import { Download } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { getCompanySettings } from "@/lib/settings";
 import { buildContractDoc } from "@/lib/contract-doc";
@@ -18,6 +21,7 @@ const SOORTEN: [string, string][] = [
   ["overeenkomst", "Overeenkomst van opdracht"],
   ["persoonsgegevens", "Persoonsgegevens"],
   ["offerte", "Offerte"],
+  ["timesheet", "Timesheet"],
 ];
 
 /** Lege overeenkomst: alleen de vaste standaarden, de rest blijft een invullijn. */
@@ -44,7 +48,7 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
   return (
     <div className="space-y-4">
       <div className="no-print space-y-4">
-        <PageHeader title="Blanco" description="Lege Q4S-documenten om te printen of als PDF te bewaren." />
+        <PageHeader title="Blanco" description="Lege Q4S-documenten (overeenkomst, persoonsgegevens, offerte, timesheet) om te printen of als PDF te bewaren." />
         <div className="flex flex-wrap items-center gap-2 border-b border-ink-200 pb-3">
           {SOORTEN.map(([k, label]) => (
             <Link
@@ -62,6 +66,18 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
             <TaalSchakelaar taal={taal} href={(t) => url(doc, t)} />
           </div>
         </div>
+        {doc === "timesheet" && (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
+            <p className="mr-auto text-sm text-ink-600">
+              Ook als Excel voor ZZP&apos;ers — alleen het weeknummer invullen, de datums rekenen vanzelf.
+            </p>
+            {(["NL", "EN"] as const).map((l) => (
+              <a key={l} href={`/templates/urenstaat/Q4S-Timesheet-${l}.xlsx`} download className={buttonVariants({ variant: "outline", size: "sm" })}>
+                <Download className="h-4 w-4" /> Excel {l}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="ov-print-pagina">
@@ -71,6 +87,8 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
             <ContractVel doc={leeg} logoSrc={logo} taal={taal} className="ov-schaduw" />
           ) : doc === "persoonsgegevens" ? (
             <PersoonsgegevensVel logoSrc={logo} footerLine={leeg.footerLine} taal={taal} className="ov-schaduw" />
+          ) : doc === "timesheet" ? (
+            <UrenstaatVel logoSrc={logo} taal={taal} className="ov-schaduw" />
           ) : (
             <OfferteVel logoSrc={logo} footerLine={leeg.footerLine} taal={taal} className="ov-schaduw" />
           )}
