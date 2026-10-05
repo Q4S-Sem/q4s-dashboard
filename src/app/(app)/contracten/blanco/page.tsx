@@ -5,8 +5,9 @@ import { ContractVel } from "@/components/contract/ContractVel";
 import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { OfferteVel } from "@/components/contract/OfferteVel";
 import { UrenstaatVel } from "@/components/contract/UrenstaatVel";
-import { Download } from "lucide-react";
-import { buttonVariants, segmentVariants } from "@/components/ui/button";
+import { Clock, Download, FileSignature, Receipt, UserRound, type LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { buttonVariants, mapTabVariants } from "@/components/ui/button";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { getCompanySettings } from "@/lib/settings";
 import { buildContractDoc } from "@/lib/contract-doc";
@@ -17,11 +18,11 @@ import { WordKnop } from "@/components/contract/WordKnop";
 export const metadata = { title: "Blanco — Contracten" };
 export const dynamic = "force-dynamic";
 
-const SOORTEN: [string, string][] = [
-  ["overeenkomst", "Overeenkomst van opdracht"],
-  ["persoonsgegevens", "Persoonsgegevens"],
-  ["offerte", "Offerte"],
-  ["timesheet", "Timesheet"],
+const SOORTEN: [string, string, LucideIcon][] = [
+  ["overeenkomst", "Overeenkomst van opdracht", FileSignature],
+  ["persoonsgegevens", "Persoonsgegevens", UserRound],
+  ["offerte", "Offerte", Receipt],
+  ["timesheet", "Timesheet", Clock],
 ];
 
 /** Lege overeenkomst: alleen de vaste standaarden, de rest blijft een invullijn. */
@@ -52,18 +53,18 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
         <PageHeader title="Blanco" description="Lege Q4S-documenten om te printen, als PDF te bewaren of als Word te bewerken." />
       </div>
 
-      {/* Eén werkbalk: links welk document, rechts taal en downloads. */}
-      <div className="no-print sticky top-14 z-20 flex flex-wrap items-center gap-3 rounded-lg border border-ink-200 bg-white p-2 shadow-sm">
-        <nav className="flex flex-wrap items-center gap-1" aria-label="Document">
-          {SOORTEN.map(([k, label]) => (
-            <Link key={k} href={url(k, taal)} aria-current={k === doc ? "page" : undefined} className={segmentVariants(k === doc)}>
+      {/* Mapjes zoals bij een plaatsing; taal en downloads rechts op dezelfde lijn. */}
+      <div className="no-print flex flex-wrap items-end gap-3 border-b border-ink-200">
+        <nav aria-label="Document" className="flex items-end gap-1 overflow-x-auto">
+          {SOORTEN.map(([k, label, Icon]) => (
+            <Link key={k} href={url(k, taal)} aria-current={k === doc ? "page" : undefined} className={mapTabVariants(k === doc)}>
+              <Icon className={cn("h-4 w-4", k === doc ? "text-brand-600" : "text-ink-400")} />
               {label}
             </Link>
           ))}
         </nav>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="mb-2 ml-auto flex flex-wrap items-center gap-2">
           <TaalSchakelaar taal={taal} href={(t) => url(doc, t)} />
-          <span className="mx-1 hidden h-6 w-px bg-ink-200 sm:block" aria-hidden />
           {doc === "timesheet" ? (
             <a href={`/templates/urenstaat/Q4S-Timesheet-${taal.toUpperCase()}.xlsx`} download className={buttonVariants({ variant: "outline", size: "sm" })}>
               <Download className="h-4 w-4" /> Excel
