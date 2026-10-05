@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { FileText } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/ui/page-header";
@@ -45,6 +47,9 @@ export default async function ContractDetailPage({
           <div className="flex flex-wrap gap-2">
             <StatusBadge options={CONTRACT_STATUSES} value={contract.status} />
             <TaalSchakelaar taal={taal} href={(x) => `/contracten/${id}${x === "en" ? "?taal=en" : ""}`} />
+            <a href={`/contracten/word?id=${id}&taal=${taal}`} className={buttonVariants({ variant: "outline" })}>
+              <FileText className="h-4 w-4" /> Word
+            </a>
             <PrintMetControle href={`/contracten/${id}/print${taal === "en" ? "?taal=en" : ""}`} ontbreekt={ontbreekt} />
             <ConfirmSubmit
               action={deleteContract}

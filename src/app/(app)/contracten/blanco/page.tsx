@@ -5,12 +5,12 @@ import { ContractVel } from "@/components/contract/ContractVel";
 import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { OfferteVel } from "@/components/contract/OfferteVel";
 import { UrenstaatVel } from "@/components/contract/UrenstaatVel";
-import { Download } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { getCompanySettings } from "@/lib/settings";
 import { buildContractDoc } from "@/lib/contract-doc";
-import { contractLogoDataUri } from "@/lib/contract-render";
+import { contractLogoDataUri, q4sHandtekeningDataUri } from "@/lib/contract-render";
 import { cn } from "@/lib/utils";
 import { PrintBar } from "../[id]/print/PrintBar";
 
@@ -44,6 +44,7 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
   const url = (d: string, t: string) => `/contracten/blanco?doc=${d}${t === "en" ? "&taal=en" : ""}`;
   const leeg = buildContractDoc(LEEG, await getCompanySettings());
   const logo = contractLogoDataUri();
+  const handtekening = q4sHandtekeningDataUri();
 
   return (
     <div className="space-y-4">
@@ -66,6 +67,19 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
             <TaalSchakelaar taal={taal} href={(t) => url(doc, t)} />
           </div>
         </div>
+        {doc !== "timesheet" && (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
+            <FileText className="h-5 w-5 text-brand-600" />
+            <p className="mr-auto text-sm text-ink-600">
+              Ook als Word-bestand — om buiten het dashboard te bewerken of door te sturen.
+            </p>
+            {(["nl", "en"] as const).map((l) => (
+              <a key={l} href={`/contracten/word?doc=${doc}&taal=${l}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                <Download className="h-4 w-4" /> Word {l.toUpperCase()}
+              </a>
+            ))}
+          </div>
+        )}
         {doc === "timesheet" && (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
             <p className="mr-auto text-sm text-ink-600">
@@ -84,13 +98,13 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
         <PrintBar terug="/contracten" />
         <div className="flex justify-center overflow-x-auto pb-10">
           {doc === "overeenkomst" ? (
-            <ContractVel doc={leeg} logoSrc={logo} taal={taal} className="ov-schaduw" />
+            <ContractVel doc={leeg} logoSrc={logo} handtekening={handtekening} taal={taal} className="ov-schaduw" />
           ) : doc === "persoonsgegevens" ? (
             <PersoonsgegevensVel logoSrc={logo} footerLine={leeg.footerLine} taal={taal} className="ov-schaduw" />
           ) : doc === "timesheet" ? (
             <UrenstaatVel logoSrc={logo} taal={taal} className="ov-schaduw" />
           ) : (
-            <OfferteVel logoSrc={logo} footerLine={leeg.footerLine} taal={taal} className="ov-schaduw" />
+            <OfferteVel logoSrc={logo} footerLine={leeg.footerLine} handtekening={handtekening} taal={taal} className="ov-schaduw" />
           )}
         </div>
       </div>
