@@ -5,13 +5,13 @@ import { ContractVel } from "@/components/contract/ContractVel";
 import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { OfferteVel } from "@/components/contract/OfferteVel";
 import { UrenstaatVel } from "@/components/contract/UrenstaatVel";
-import { Download, FileText } from "lucide-react";
-import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { buttonVariants, segmentVariants } from "@/components/ui/button";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { getCompanySettings } from "@/lib/settings";
 import { buildContractDoc } from "@/lib/contract-doc";
 import { contractLogoDataUri, q4sHandtekeningDataUri } from "@/lib/contract-render";
-import { PrintBar } from "../[id]/print/PrintBar";
+import { PrintKnop } from "../[id]/print/PrintBar";
 import { WordKnop } from "@/components/contract/WordKnop";
 
 export const metadata = { title: "Blanco — Contracten" };
@@ -48,50 +48,35 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-6">
-      <div className="no-print space-y-4">
-        <PageHeader title="Blanco" description="Lege Q4S-documenten (overeenkomst, persoonsgegevens, offerte, timesheet) om te printen of als PDF te bewaren." />
-        <div className="flex flex-wrap items-center gap-2">
-          <div className={SEGMENT_GROEP}>
+      <div className="no-print">
+        <PageHeader title="Blanco" description="Lege Q4S-documenten om te printen, als PDF te bewaren of als Word te bewerken." />
+      </div>
+
+      {/* Eén werkbalk: links welk document, rechts taal en downloads. */}
+      <div className="no-print sticky top-14 z-20 flex flex-wrap items-center gap-3 rounded-lg border border-ink-200 bg-white p-2 shadow-sm">
+        <nav className="flex flex-wrap items-center gap-1" aria-label="Document">
           {SOORTEN.map(([k, label]) => (
-            <Link
-              key={k}
-              href={url(k, taal)}
-              className={segmentVariants(k === doc)}
-            >
+            <Link key={k} href={url(k, taal)} aria-current={k === doc ? "page" : undefined} className={segmentVariants(k === doc)}>
               {label}
             </Link>
           ))}
-          </div>
-          <div className="ml-auto">
-            <TaalSchakelaar taal={taal} href={(t) => url(doc, t)} />
-          </div>
-        </div>
-        {doc !== "timesheet" && (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
-            <FileText className="h-5 w-5 text-brand-600" />
-            <p className="mr-auto text-sm text-ink-600">
-              Ook als Word-bestand ({taal.toUpperCase()}) — om buiten het dashboard te bewerken of door te sturen.
-            </p>
+        </nav>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <TaalSchakelaar taal={taal} href={(t) => url(doc, t)} />
+          <span className="mx-1 hidden h-6 w-px bg-ink-200 sm:block" aria-hidden />
+          {doc === "timesheet" ? (
+            <a href={`/templates/urenstaat/Q4S-Timesheet-${taal.toUpperCase()}.xlsx`} download className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <Download className="h-4 w-4" /> Excel
+            </a>
+          ) : (
             <WordKnop bestandsnaam={`Q4S ${SOORTEN.find(([k]) => k === doc)?.[1] ?? doc} (${taal.toUpperCase()})`} />
-          </div>
-        )}
-        {doc === "timesheet" && (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
-            <p className="mr-auto text-sm text-ink-600">
-              Ook als Excel voor ZZP&apos;ers — alleen het weeknummer invullen, de datums rekenen vanzelf.
-            </p>
-            {(["NL", "EN"] as const).map((l) => (
-              <a key={l} href={`/templates/urenstaat/Q4S-Timesheet-${l}.xlsx`} download className={buttonVariants({ variant: "outline", size: "sm" })}>
-                <Download className="h-4 w-4" /> Excel {l}
-              </a>
-            ))}
-          </div>
-        )}
+          )}
+          <PrintKnop />
+        </div>
       </div>
 
-      <div className="ov-print-pagina">
-        <PrintBar terug="/contracten" />
-        <div className="flex justify-center overflow-x-auto pb-10" data-word-bron>
+      <div className="ov-print-pagina rounded-lg border border-ink-200 bg-ink-100/60 py-8 print:border-0 print:bg-transparent print:py-0">
+        <div className="flex justify-center overflow-x-auto" data-word-bron>
           {doc === "overeenkomst" ? (
             <ContractVel doc={leeg} logoSrc={logo} handtekening={handtekening} taal={taal} className="ov-schaduw" />
           ) : doc === "persoonsgegevens" ? (
