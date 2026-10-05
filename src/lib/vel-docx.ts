@@ -5,6 +5,7 @@ import {
   Footer,
   ImageRun,
   Packer,
+  PageBreak,
   PageNumber,
   Paragraph,
   Table,
@@ -103,7 +104,7 @@ function runs(n: Node, s: Stijl): ParagraphChild[] {
         bold: s.bold,
         italics: s.italics,
         color: s.color,
-        size: s.size ?? 19,
+        size: s.size ?? 17,
         strike: s.strike,
         superScript: s.sup,
         allCaps: s.caps,
@@ -121,7 +122,7 @@ function runs(n: Node, s: Stijl): ParagraphChild[] {
   if (n.tag === "sup") t.sup = true;
   if (has(n, "ov-fill")) {
     // Lege invulwaarde ("…") → een schrijfregel; ingevulde waarde in blauw.
-    if (text(n).trim() === "…") return [new TextRun({ text: "……………………………", font: FONT, color: GREY, size: s.size ?? 19 })];
+    if (text(n).trim() === "…") return [new TextRun({ text: "……………………………", font: FONT, color: GREY, size: s.size ?? 17 })];
     t.color = BLUE;
   }
   if (has(n, "ov-strike")) t.strike = true;
@@ -132,29 +133,31 @@ function runs(n: Node, s: Stijl): ParagraphChild[] {
     out.push(...runs(k, t));
     // Nummer van een artikel/clausule en label van een tekenregel: ruimte erachter.
     if (typeof k !== "string" && (has(k, "ov-cn") || has(k, "ov-an") || (has(n, "ov-sr") && i === 0))) {
-      out.push(new TextRun({ text: has(n, "ov-sr") ? ":\t" : "  ", font: FONT, size: s.size ?? 19 }));
+      out.push(new TextRun({ text: has(n, "ov-sr") ? ":\t" : "  ", font: FONT, size: s.size ?? 17 }));
     }
   });
   return out;
 }
 
 /** Opmaak per blok-klasse. */
-function blokStijl(e: El): { stijl: Stijl; before?: number; after?: number } {
-  if (e.tag === "h1" || has(e, "ov-title")) return { stijl: { bold: true, size: 36 }, before: 120, after: 60 };
-  if (has(e, "ov-hd")) return { stijl: { bold: true, size: 22 }, before: 240, after: 80 };
-  if (e.tag === "h3" || has(e, "ov-art")) return { stijl: { bold: true, size: 20 }, before: 200, after: 60 };
+function blokStijl(e: El): { stijl: Stijl; before?: number; after?: number; keep?: boolean } {
+  if (e.tag === "h1" || has(e, "ov-title")) return { stijl: { bold: true, size: 36 }, before: 60, after: 40, keep: true };
+  if (has(e, "ov-hd")) return { stijl: { bold: true, size: 18 }, before: 200, after: 60, keep: true };
+  if (e.tag === "h3" || has(e, "ov-art")) return { stijl: { bold: true, size: 17 }, before: 160, after: 40, keep: true };
   if (has(e, "ov-party-t") || has(e, "ov-who")) return { stijl: { bold: true, size: 16, caps: true, color: GREY }, before: 120, after: 60 };
   if (has(e, "ov-rev") || has(e, "ov-note") || has(e, "ov-small") || has(e, "ov-fn") || has(e, "ov-sub"))
     return { stijl: { italics: has(e, "ov-note"), size: 16, color: GREY }, after: 60 };
-  return { stijl: {}, after: 80 };
+  return { stijl: {}, after: 50 };
 }
 
 type Blok = Paragraph | Table;
-type Ctx = { lijst?: { type: string; n: number }; eersteKop: boolean; /** Clausulenummer dat vóór de eerstvolgende alinea komt. */ prefix?: ParagraphChild[] };
+type Ctx = { lijst?: { type: string; n: number }; eersteKop: boolean; /** Aantal vellen (A4-pagina's) al gezien. */ vellen?: number; /** Clausulenummer dat vóór de eerstvolgende alinea komt. */ prefix?: ParagraphChild[] };
 
-function para(children: ParagraphChild[], before?: number, after?: number, indent?: number): Paragraph {
+function para(children: ParagraphChild[], before?: number, after?: number, indent?: number, keepNext?: boolean): Paragraph {
   return new Paragraph({
     children,
+    keepNext,
+    keepLines: keepNext,
     spacing: { before, after },
     indent: indent ? { left: indent, hanging: indent } : undefined,
     tabStops: [{ type: "left", position: indent ?? 1600 }],
@@ -175,6 +178,40 @@ function blocks(e: El, ctx: Ctx, stijl: Stijl = {}): Blok[] {
     const logo = e.kids.find((k): k is El => typeof k !== "string" && (k.tag === "img" || has(k, "ov-logo-txt")));
     return logo ? [para(runs(logo, { bold: true, size: 32 }), 0, 200)] : [];
   }
+  // Elk vel op het scherm = één A4-pagina: in Word ook een nieuwe pagina per vel.
+  if (e.tag === "article" && has(e, "ov-vel")) {
+    ctx.vellen = (ctx.vellen ?? 0) + 1;
+    const inhoud = e.kids.flatMap((k) => (typeof k === "string" ? [] : blocks(k, ctx, stijl)));
+    return ctx.vellen > 1 ? [new Paragraph({ children: [new PageBreak()] }), ...inhoud] : inhoud;
+  }
+  // Twee kolommen naast elkaar (partijen, ondertekening): randloze tabel, zoals op het vel.
+  if (has(e, "ov-parties") || has(e, "ov-sign")) {
+    const kolommen = e.kids.filter((k): k is El => typeof k !== "string");
+    const geen = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+    return [
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: { top: geen, bottom: geen, left: geen, right: geen, insideHorizontal: geen, insideVertical: geen },
+        rows: [
+          new TableRow({
+            cantSplit: true,
+            children: kolommen.map(
+              (k) =>
+                new TableCell({
+                  width: { size: Math.floor(100 / kolommen.length), type: WidthType.PERCENTAGE },
+                  margins: { top: 0, bottom: 0, left: 0, right: 200 },
+                  borders: { top: geen, bottom: geen, left: geen, right: geen },
+                  children: (() => {
+                    const b = blocks(k, ctx, stijl);
+                    return b.length ? b : [new Paragraph("")];
+                  })(),
+                }),
+            ),
+          }),
+        ],
+      }),
+    ];
+  }
   if (has(e, "ov-sl")) return [para([new TextRun({ text: "_______________________________", font: FONT, color: GREY })], 360, 120)];
   if (e.tag === "table") return [tabel(e, ctx)];
   if (e.tag === "ol" || e.tag === "ul") {
@@ -182,7 +219,7 @@ function blocks(e: El, ctx: Ctx, stijl: Stijl = {}): Blok[] {
     return e.kids.flatMap((k) => {
       if (typeof k === "string" || k.tag !== "li") return [];
       sub.lijst!.n += 1;
-      const pre = new TextRun({ text: lijstPrefix(sub.lijst!.type, sub.lijst!.n, e.tag === "ol"), font: FONT, size: 19 });
+      const pre = new TextRun({ text: lijstPrefix(sub.lijst!.type, sub.lijst!.n, e.tag === "ol"), font: FONT, size: 17 });
       return [para([pre, ...k.kids.flatMap((x) => runs(x, stijl))], undefined, 60, 360)];
     });
   }
@@ -190,14 +227,14 @@ function blocks(e: El, ctx: Ctx, stijl: Stijl = {}): Blok[] {
   if (has(e, "ov-cl")) {
     // <span class="ov-cn">6.1</span><div>tekst…</div> → "6.1  tekst…" in één alinea.
     const nr = e.kids.find((k): k is El => typeof k !== "string" && has(k, "ov-cn"));
-    ctx.prefix = [new TextRun({ text: `${nr ? text(nr) : ""}\t`, font: FONT, size: 19, bold: true })];
+    ctx.prefix = [new TextRun({ text: `${nr ? text(nr) : ""}\t`, font: FONT, size: 17, bold: true })];
     const rest = e.kids.filter((k) => k !== nr);
     const out = rest.flatMap((k) => (typeof k === "string" ? [para(runs(k, stijl))] : blocks(k, ctx, stijl)));
     ctx.prefix = undefined;
     return out;
   }
 
-  const { stijl: eigen, before, after } = blokStijl(e);
+  const { stijl: eigen, before, after, keep } = blokStijl(e);
   const st = { ...stijl, ...eigen };
   const out: Blok[] = [];
   let inline: Node[] = [];
@@ -207,7 +244,7 @@ function blocks(e: El, ctx: Ctx, stijl: Stijl = {}): Blok[] {
     if (rs.length && inline.some((k) => typeof k !== "string" || k.trim())) {
       const pre = ctx.prefix ?? [];
       ctx.prefix = undefined;
-      out.push(para([...pre, ...rs], before, after, pre.length ? 500 : undefined));
+      out.push(para([...pre, ...rs], before, after, pre.length ? 500 : undefined, keep));
     }
     inline = [];
   };
@@ -270,7 +307,7 @@ export async function velHtmlToDocx(html: string): Promise<Uint8Array> {
     creator: "Q4S",
     sections: [
       {
-        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } },
+        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 680, bottom: 900, left: 1020, right: 1020, footer: 400 } } },
         footers: {
           default: new Footer({
             children: [
