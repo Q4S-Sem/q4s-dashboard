@@ -23,7 +23,7 @@ export default async function NieuwContractPage({ searchParams }: { searchParams
       />
       <ContractForm
         action={createContract}
-        cancelHref="/contracten"
+        cancelHref="/contracten/nieuw"
         voorbeeld={{
           settings: await getCompanySettings(),
           logoSrc: contractLogoDataUri(),

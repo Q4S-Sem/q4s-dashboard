@@ -111,9 +111,8 @@ export async function createContract(_prev: FormState, formData: FormData): Prom
   const blok = blokkeerOnvolledig(d);
   if (blok) return blok;
 
-  let id: string;
   try {
-    const created = await db.contract.create({
+    await db.contract.create({
       data: {
         number: d.number,
         contractorName: d.contractorName,
@@ -157,13 +156,13 @@ export async function createContract(_prev: FormState, formData: FormData): Prom
       },
       select: { id: true },
     });
-    id = created.id;
   } catch {
     return { error: "Contract kon niet worden opgeslagen. Controleer de velden en probeer opnieuw." };
   }
 
   revalidatePath("/contracten");
-  redirect(`/contracten/${id}`);
+  revalidatePath("/contracten/nieuw");
+  redirect("/contracten/nieuw");
 }
 
 export async function updateContract(_prev: FormState, formData: FormData): Promise<FormState> {
