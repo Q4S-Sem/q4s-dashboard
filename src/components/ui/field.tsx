@@ -9,7 +9,8 @@ export { Select } from "./select";
 
 // Strak invoerveld: rechte hoeken, dunne rand, antraciete focus — zoals de
 // formulieren op q4s.nl.
-const fieldBase =
+/** Basisstijl van elk invoerveld (ook voor een los native veld). */
+export const fieldBase =
   "block w-full rounded-sm border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/25 disabled:cursor-not-allowed disabled:bg-ink-50";
 
 export const Input = React.forwardRef<

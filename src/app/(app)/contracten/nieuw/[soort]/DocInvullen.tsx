@@ -4,6 +4,8 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, Input, fieldBase } from "@/components/ui/field";
 import { WordKnop } from "@/components/contract/WordKnop";
 import { InvulTabs } from "@/components/contract/InvulTabs";
 import { PrintKnop } from "../../[id]/print/PrintBar";
@@ -13,64 +15,55 @@ import { OfferteVel, type Offerte } from "@/components/contract/OfferteVel";
 
 export type Soort = "persoonsgegevens" | "offerte";
 
-type Veld = [key: string, label: string, type?: "date" | "textarea"];
-type Groep = [titel: string, velden: Veld[]];
+/** [key, label, type?, breed?] — breed = over twee kolommen (lange tekst). */
+type Veld = [key: string, label: string, type?: "date", breed?: boolean];
+/** [titel, uitleg, velden] — op volgorde waarin je het invult. */
+type Groep = [titel: string, uitleg: string, velden: Veld[]];
 
 const VELDEN: Record<Soort, Groep[]> = {
   persoonsgegevens: [
-    ["Bedrijf", [
-      ["companyName", "Bedrijfsnaam"],
-      ["companyAddress", "Adres bedrijf"],
-      ["companyCity", "Postcode / woonplaats bedrijf"],
+    ["Bedrijf", "Gegevens van het bedrijf van de opdrachtnemer.", [
+      ["companyName", "Bedrijfsnaam", undefined, true],
       ["kvk", "KvK-nummer"],
       ["vat", "BTW-nummer"],
-      ["iban", "IBAN & BIC"],
+      ["companyAddress", "Adres bedrijf", undefined, true],
+      ["companyCity", "Postcode / woonplaats bedrijf", undefined, true],
+      ["iban", "IBAN & BIC", undefined, true],
     ]],
-    ["Persoon", [
+    ["Persoon", "De persoon zelf.", [
       ["firstName", "Voornaam"],
       ["lastName", "Achternaam"],
       ["birth", "Geboortedatum & plaats"],
       ["nationality", "Nationaliteit"],
-      ["address", "Adres (privé)"],
-      ["city", "Postcode / woonplaats (privé)"],
+      ["address", "Adres (privé)", undefined, true],
+      ["city", "Postcode / woonplaats (privé)", undefined, true],
       ["phone", "Telefoon"],
       ["email", "E-mail"],
     ]],
   ],
   offerte: [
-    ["Offerte", [
-      ["ref", "Referentie"],
-      ["revision", "Revisie"],
-      ["issueDate", "Datum", "date"],
-      ["subject", "Onderwerp"],
-      ["project", "Project"],
-      ["yourRef", "Uw referentie"],
-    ]],
-    ["Klant", [
-      ["to", "Bedrijf"],
-      ["address", "Adres"],
+    ["Klant", "Aan wie gaat de offerte?", [
+      ["to", "Bedrijf", undefined, true],
+      ["attn", "T.a.v."],
+      ["salutation", "Aanhef"],
+      ["attnEmail", "E-mail t.a.v."],
+      ["tel", "Telefoon"],
+      ["cc", "CC", undefined, true],
+      ["address", "Adres", undefined, true],
       ["postalCode", "Postcode"],
       ["place", "Plaats"],
       ["country", "Land"],
-      ["attn", "T.a.v."],
-      ["attnEmail", "E-mail t.a.v."],
-      ["tel", "Telefoon"],
-      ["cc", "CC"],
-      ["salutation", "Aanhef"],
     ]],
-    ["Van (Q4S)", [
-      ["from", "Naam"],
-      ["fromEmail", "E-mail"],
-      ["fromPhone", "Telefoon"],
-      ["fromMobile", "Mobiel"],
-    ]],
-    ["Inzet", [
+    ["Opdracht", "Wat bieden we aan, waar en wanneer?", [
+      ["subject", "Onderwerp", undefined, true],
+      ["project", "Project"],
+      ["yourRef", "Uw referentie"],
       ["inspector", "Inspecteur"],
       ["location", "Locatie"],
       ["availability", "Beschikbaarheid"],
       ["duration", "Duur"],
     ]],
-    ["Tarieven", [
+    ["Tarieven", "Bedragen zoals ze op de offerte komen, bijv. € 78,- of + 25 %.", [
       ["hourlyRate", "Uurtarief"],
       ["rateShift", "Ploegentoeslag"],
       ["rateSaturday", "Zaterdag"],
@@ -80,13 +73,22 @@ const VELDEN: Record<Soort, Groep[]> = {
       ["overtimeApplies", "Overuren gelden vanaf"],
       ["rateDayFixed", "Vast dagtarief"],
       ["dayBasedOnHours", "Dag gebaseerd op (uren)"],
-      ["travel", "Reiskosten"],
+      ["travel", "Reiskosten", undefined, true],
+    ]],
+    ["Offertegegevens", "Nummer en datum van deze offerte.", [
+      ["ref", "Referentie"],
+      ["revision", "Revisie"],
+      ["issueDate", "Datum", "date"],
+    ]],
+    ["Van (Q4S)", "Wie verstuurt de offerte namens Q4S?", [
+      ["from", "Naam"],
+      ["fromEmail", "E-mail"],
+      ["fromPhone", "Telefoon"],
+      ["fromMobile", "Mobiel"],
     ]],
   ],
 };
 
-const veld =
-  "block w-full rounded-sm border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/25";
 
 /**
  * Persoonsgegevens/offerte invullen, met het vel onder het mapje Voorbeeld. Niets in de database:
@@ -111,6 +113,8 @@ export function DocInvullen({
 }) {
   const pathname = usePathname();
   const [w, setW] = useState<Record<string, string>>({});
+
+  const zet = (k: string, v: string) => setW((o) => ({ ...o, [k]: v }));
 
   function leegmaken() {
     if (!window.confirm("Alles leegmaken? Het concept wordt gewist.")) return;
@@ -150,25 +154,30 @@ export function DocInvullen({
         </>
       }
       formulier={
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-6 rounded-lg border border-ink-200 bg-white p-6">
-          {VELDEN[soort].map(([titel, velden]) => (
-            <fieldset key={titel} className="space-y-3">
-              <legend className="mb-2 text-sm font-bold text-ink-900">{titel}</legend>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {velden.map(([k, label, type]) => (
-                  <label key={k} className="block">
-                    <span className="mb-1 block text-xs font-medium text-ink-600">{label}</span>
-                    <input
-                      name={k}
-                      type={type ?? "text"}
-                      value={w[k] ?? ""}
-                      onChange={(e) => setW((o) => ({ ...o, [k]: e.target.value }))}
-                      className={veld}
-                    />
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+          {VELDEN[soort].map(([titel, uitleg, velden], i) => (
+            <Card key={titel}>
+              <CardHeader className="flex flex-row items-center gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-900 text-xs font-bold text-white">{i + 1}</span>
+                <div>
+                  <CardTitle>{titel}</CardTitle>
+                  <p className="text-sm text-ink-500">{uitleg}</p>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                  {velden.map(([k, label, type, breed]) => (
+                    <Field key={k} label={label} htmlFor={k} className={breed ? "sm:col-span-2" : undefined}>
+                      {type === "date" ? (
+                        <input id={k} name={k} type="date" value={w[k] ?? ""} onChange={(e) => zet(k, e.target.value)} className={fieldBase} />
+                      ) : (
+                        <Input id={k} name={k} value={w[k] ?? ""} onChange={(e) => zet(k, e.target.value)} />
+                      )}
+                    </Field>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </form>
       }
