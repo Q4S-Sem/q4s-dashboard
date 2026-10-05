@@ -9,7 +9,7 @@ export const metadata = { title: "Nieuwe marktkans" };
 
 export default function NieuweMarktkansPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href="/marktkansen">
         Terug naar marktkansen
       </BackLink>

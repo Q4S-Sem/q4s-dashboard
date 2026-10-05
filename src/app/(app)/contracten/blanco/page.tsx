@@ -47,7 +47,7 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
   const handtekening = q4sHandtekeningDataUri();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="no-print space-y-4">
         <PageHeader title="Blanco" description="Lege Q4S-documenten (overeenkomst, persoonsgegevens, offerte, timesheet) om te printen of als PDF te bewaren." />
         <div className="flex flex-wrap items-center gap-2">

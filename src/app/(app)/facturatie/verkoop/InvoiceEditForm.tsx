@@ -145,7 +145,7 @@ export function InvoiceEditForm({
   }, []);
 
   return (
-    <div className={previewUrl ? "grid gap-6 lg:grid-cols-2" : "mx-auto max-w-3xl"}>
+    <div className={previewUrl ? "grid gap-6 lg:grid-cols-2" : "max-w-3xl"}>
       {/* Links: het bewerkbare formulier */}
       <form action={formAction}>
         <input type="hidden" name="id" value={invoice.id} />

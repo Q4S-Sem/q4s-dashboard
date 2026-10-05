@@ -135,7 +135,7 @@ export default async function DossierPage({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Kopbalk: wie, welke week, status en ALLE acties op één regel. Plakt onder
           de app-header, zodat Akkoord altijd binnen handbereik is. */}
       <div className="sticky top-14 z-20 -mx-4 border-b border-ink-200 bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur sm:-mx-6 sm:px-6">

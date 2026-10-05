@@ -8,7 +8,7 @@ export const metadata = { title: "Nieuw contract" };
 /** Een overeenkomst van opdracht invullen en opslaan (met controle op ontbrekende gegevens). */
 export default function NieuwContractPage() {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <BackLink href="/contracten/nieuw">Terug naar nieuw contract</BackLink>
       <PageHeader
         title="Overeenkomst van opdracht"

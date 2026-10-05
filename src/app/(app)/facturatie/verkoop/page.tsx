@@ -212,7 +212,7 @@ export default async function VerkoopfacturenPage({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PaginaKop
         titel="Verkoopfacturen"
         sub={`${monday ? formatWeekLabel(monday) : "Alle weken"} · ${formatCurrency(omzet)} gefactureerd · ${formatCurrency(openstaand)} openstaand`}

@@ -32,7 +32,7 @@ export default async function FasesTab({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error === "stage-in-use" && (
         <p className="rounded-sm bg-red-50 px-4 py-3 text-sm text-red-700">
           Deze fase kan niet verwijderd worden zolang er deals in staan.

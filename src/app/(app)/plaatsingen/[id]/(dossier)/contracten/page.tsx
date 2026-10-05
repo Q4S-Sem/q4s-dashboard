@@ -35,7 +35,7 @@ export default async function PlaatsingContractenTab({
   const newHref = `/contracten/nieuw?consultantId=${placement.consultantId}&placementId=${id}`;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-ink-500">
           Overeenkomsten van opdracht die aan deze plaatsing gekoppeld zijn.

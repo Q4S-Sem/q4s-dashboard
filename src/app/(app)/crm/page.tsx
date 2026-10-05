@@ -61,7 +61,7 @@ export default async function CrmPage() {
   }));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title="CRM"
         description="Sleep een kaart naar de volgende fase, klik om te openen. Geplaatst en verloren gaan na 3 dagen naar het Archief."

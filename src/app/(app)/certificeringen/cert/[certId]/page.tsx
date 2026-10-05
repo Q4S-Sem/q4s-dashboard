@@ -40,7 +40,7 @@ export default async function CertificaatBewerkenPage({
   const backHref = `/certificeringen/${cert.consultantId}`;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-6">
       <BackLink href={backHref}>Terug naar de map</BackLink>
       <PageHeader
         title="Certificaat bewerken"

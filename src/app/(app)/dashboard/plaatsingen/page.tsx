@@ -92,7 +92,7 @@ export default async function PlaatsingenMargesPage() {
   const maxDisciplineCount = Math.max(1, ...perDiscipline.map((d) => d.count));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
         De marge per actieve plaatsing, per klant en per discipline — zo zie je in één oogopslag waar het geld verdiend wordt.
       </p>

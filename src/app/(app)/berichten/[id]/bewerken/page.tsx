@@ -25,7 +25,7 @@ export default async function BerichtBewerkenPage({
   if (!message) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href={`/berichten/${message.id}`}>
         Terug naar bericht
       </BackLink>

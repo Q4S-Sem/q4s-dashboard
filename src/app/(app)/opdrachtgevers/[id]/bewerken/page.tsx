@@ -25,7 +25,7 @@ export default async function OpdrachtgeverBewerkenPage({
   if (!target) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href={`/opdrachtgevers/${target.id}`}>
         Terug naar opdrachtgever
       </BackLink>

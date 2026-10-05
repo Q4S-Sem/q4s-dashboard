@@ -48,7 +48,7 @@ export default async function EvaluatieBewerkenPage({
   for (const [k, v] of Object.entries(rawAnswers)) answers[k] = String(v);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href={`/evaluaties/${id}`}>
         Terug naar evaluatie
       </BackLink>

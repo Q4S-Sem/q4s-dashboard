@@ -83,10 +83,10 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
   const ouder = delen.slice(0, -1).join("/");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-ink-900">Data</h1>
+          <h1 className="q4s-display text-[26px]">Data</h1>
           <p className="text-[13px] text-ink-400">
             {inOneDrive ? "De Q4S-OneDrive — wat je hier doet, staat ook in OneDrive" : "Alle gegevens van het dashboard, per map"}
           </p>

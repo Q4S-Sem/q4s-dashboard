@@ -25,7 +25,7 @@ export default async function PostBewerkenPage({
   if (!post) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href={`/posts/${post.id}`}>
         Terug naar post
       </BackLink>

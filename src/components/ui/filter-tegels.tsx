@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "./page-header";
 
 export type TegelToon = "slate" | "blue" | "green" | "amber" | "red" | "violet";
 
@@ -70,13 +71,6 @@ export function PaginaKop({
   sub: React.ReactNode;
   children?: React.ReactNode;
 }) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight text-ink-900">{titel}</h1>
-        <p className="text-[13px] text-ink-400">{sub}</p>
-      </div>
-      {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
-    </div>
-  );
+  // Zelfde kop als elke andere pagina (titel, uitleg, acties rechts), zodat titels overal op dezelfde plek en maat staan.
+  return <PageHeader title={titel} description={sub} actions={children} />;
 }

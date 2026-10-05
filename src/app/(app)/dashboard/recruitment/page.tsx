@@ -106,7 +106,7 @@ export default async function RecruitmentDashboardPage() {
   const ratingMax = Math.max(0, ...ratingRows.map((r) => r.count));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
         Sollicitatie-funnel, kandidaten en best presterende vacatures. Alles gekoppeld aan de operationele pagina's.
       </p>

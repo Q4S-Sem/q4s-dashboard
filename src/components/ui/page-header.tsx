@@ -14,7 +14,7 @@ export function PageHeader({
   className,
 }: {
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   /** Klein label boven de kop, bv. de hub- of sectienaam. */
   eyebrow?: string;
   /** Element vóór de titel, bv. een profielfoto. */

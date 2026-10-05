@@ -17,7 +17,7 @@ export default async function NewContactPage({
   const [opts, sp] = await Promise.all([loadContactFormOptions(), searchParams]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href="/crm/contacten">
         Terug naar contacten
       </BackLink>

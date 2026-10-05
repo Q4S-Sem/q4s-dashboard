@@ -19,7 +19,7 @@ export default async function MarktkansBewerkenPage({
   if (!opportunity) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href={`/marktkansen/${opportunity.id}`}>
         Terug naar kans
       </BackLink>

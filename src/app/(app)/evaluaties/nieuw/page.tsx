@@ -109,7 +109,7 @@ export default async function NieuwEvaluatiePage({
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href={backHref}>Terug naar evaluaties</BackLink>
       <PageHeader
         title="Nieuwe evaluatie"

@@ -243,7 +243,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PaginaKop
         titel="Inkoop & betalingen"
         sub={`${monday ? formatWeekLabel(monday) : "Alle weken"} · wat we aan ZZP'ers moeten betalen, en wanneer`}

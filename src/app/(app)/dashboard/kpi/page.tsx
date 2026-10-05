@@ -45,7 +45,7 @@ export default async function RecruitmentKpiPage() {
   const reachedMax = Math.max(0, ...funnel.stages.map((s) => s.reached));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
         Kerncijfers en knelpunten van de recruitment-pijplijn: waar sollicitaties blijven hangen, hoe lang
         een plaatsing duurt en wat er zonder opvolging ligt. Alleen-lezen — er wordt hier niets gewijzigd.

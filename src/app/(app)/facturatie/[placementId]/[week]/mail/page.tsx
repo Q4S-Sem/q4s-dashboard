@@ -42,7 +42,7 @@ export default async function ConceptMailPage({
   const dossierHref = `/facturatie/${placementId}/${data.weekKey}`;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <BackLink href={dossierHref}>Terug naar het dossier</BackLink>
 
       <PageHeader

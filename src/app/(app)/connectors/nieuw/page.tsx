@@ -15,7 +15,7 @@ export default async function NieuweConnectorPage() {
   const byKey = new Map(existing.map((c) => [c.key, c.id]));
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="max-w-3xl space-y-6">
       <BackLink href="/connectors">
         Terug naar koppelingen
       </BackLink>

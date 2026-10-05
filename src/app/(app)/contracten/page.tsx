@@ -91,7 +91,7 @@ export default async function ContractenPage({
   const personeel = personeelAlle.filter((e) => matchtZoek(q, e.firstName, e.lastName, e.jobTitle));
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader
         title="Contracten"
         description="Alle contracten van iedereen die bij ons werkt — opdrachtnemers én eigen personeel. Klik op een naam om de contracten te openen, te printen of aan te passen."

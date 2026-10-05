@@ -88,7 +88,7 @@ export default async function VerkoopfactuurPage({
   const snelstartMelding = snelStartMessage(sp.snelstart);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <BackLink href="/facturatie/verkoop">Terug naar verkoopfacturen</BackLink>
 
       {sp.opgeslagen === "1" && (
@@ -140,7 +140,7 @@ export default async function VerkoopfactuurPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-xl font-semibold tracking-[-0.01em] text-ink-900">
+            <h1 className="q4s-display text-[26px]">
               {invoice.number}
             </h1>
             <StatusBadge options={INVOICE_STATUSES} value={weergave} />

@@ -15,7 +15,7 @@ export default async function NieuwePostPage() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href="/posts">
         Terug naar social posts
       </BackLink>

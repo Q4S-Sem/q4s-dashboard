@@ -31,7 +31,7 @@ export default async function CvImporterenPage({
   const aiOn = isVisionConfigured();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href="/website/cv-inbox">
         Terug naar CV's
       </BackLink>

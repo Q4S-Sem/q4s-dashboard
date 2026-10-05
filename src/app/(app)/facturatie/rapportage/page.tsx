@@ -310,7 +310,7 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
     `/facturatie/rapportage?jaar=${j}&kwartaal=${k ?? "jaar"}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}`;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PaginaKop
         titel="Rapportage"
         sub={`${range.label} · omzet, inkoop, marge en btw — plus wie telkens dezelfde fout maakt`}

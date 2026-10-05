@@ -22,7 +22,7 @@ export default async function ConnectorBewerkenPage({
   const { apiKey, ...connector } = full;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href={`/connectors/${connector.id}`}>
         Terug naar connector
       </BackLink>

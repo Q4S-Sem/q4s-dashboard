@@ -124,7 +124,7 @@ export default async function DagPage({
           </Link>
         </div>
         <div>
-          <h1 className="text-2xl font-bold capitalize tracking-tight text-ink-900">
+          <h1 className="q4s-display text-[26px] capitalize">
             {headerLabel}
           </h1>
           {isToday && (

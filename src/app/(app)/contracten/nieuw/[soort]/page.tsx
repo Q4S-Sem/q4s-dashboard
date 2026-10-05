@@ -25,7 +25,7 @@ export default async function DocInvullenPage({
   const footerLine = contractFooterLine(await getCompanySettings());
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="no-print space-y-4">
         <BackLink href="/contracten/nieuw">Terug naar nieuw contract</BackLink>
         <PageHeader

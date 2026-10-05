@@ -40,7 +40,7 @@ export default async function GebruikerBewerkenPage({
   const isSelf = me?.id === user.id;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href="/gebruikers">Terug naar gebruikers</BackLink>
       <PageHeader title="Gebruiker bewerken" description={user.name} />
 

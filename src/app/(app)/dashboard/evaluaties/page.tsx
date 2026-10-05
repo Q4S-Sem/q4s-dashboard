@@ -80,7 +80,7 @@ export default async function EvaluatiesDashboardPage() {
   const maxTypeCount = Math.max(1, ...typeBars.map((t) => t.value));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
         Inzicht in alle ingevulde evaluaties: scores, verdeling per kwartaal en per type, en de laatst ingevulde formulieren.
       </p>

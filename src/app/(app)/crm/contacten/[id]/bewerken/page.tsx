@@ -17,7 +17,7 @@ export default async function EditContactPage({ params }: { params: Promise<{ id
   if (!contact) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href={`/crm/contacten/${contact.id}`}>
         Terug naar contact
       </BackLink>

@@ -73,7 +73,7 @@ export default async function TakenPage() {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader
         title="Takenlijst"
         description="Wijs to-do's toe aan collega's — wie doet wat. Taken met een deadline verschijnen ook in de agenda."

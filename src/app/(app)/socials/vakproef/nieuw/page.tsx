@@ -9,7 +9,7 @@ export const metadata = { title: "Nieuwe vakproef" };
 
 export default function NieuweVakproefPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href="/socials/vakproef">
         Terug naar vakproef
       </BackLink>

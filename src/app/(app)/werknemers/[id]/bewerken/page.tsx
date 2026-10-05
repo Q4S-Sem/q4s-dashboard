@@ -19,7 +19,7 @@ export default async function WerknemerBewerkenPage({
   if (!consultant) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href={`/werknemers/${consultant.id}`}>
         Terug naar werknemer
       </BackLink>

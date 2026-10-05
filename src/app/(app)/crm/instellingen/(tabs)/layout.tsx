@@ -19,7 +19,7 @@ export default async function CrmInstellingenLayout({
   const recruiter = await currentRecruiter();
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="max-w-5xl space-y-6">
       <BackLink href="/crm">Terug naar CRM</BackLink>
 
       <PageHeader

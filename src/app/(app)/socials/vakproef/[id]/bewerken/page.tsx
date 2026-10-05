@@ -19,7 +19,7 @@ export default async function VakproefBewerkenPage({
   if (!challenge) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <BackLink href={`/socials/vakproef/${challenge.id}`}>
         Terug naar vakproef
       </BackLink>

@@ -53,7 +53,7 @@ export default async function DeclaratiePage({
   const isAfbeelding = /^image\//.test(expense.mimeType ?? "");
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <BackLink href={TERUG}>Terug naar declaraties</BackLink>
 
       <PageHeader

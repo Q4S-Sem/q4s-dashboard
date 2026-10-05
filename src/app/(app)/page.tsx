@@ -68,7 +68,7 @@ export default async function StartPage() {
   return (
     <div className="mx-auto max-w-6xl pt-2 sm:pt-4">
       <header className="mb-6">
-        <h1 className="text-[26px] font-semibold tracking-[-0.01em] text-ink-900">
+        <h1 className="q4s-display text-[26px]">
           Waar wil je aan werken?
         </h1>
         <p className="mt-1 text-[15px] text-ink-500">
