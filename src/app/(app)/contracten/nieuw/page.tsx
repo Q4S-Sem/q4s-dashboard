@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { CONTRACT_STATUSES } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import { TabelZoek } from "@/components/ui/tabel-zoek";
 
 export const metadata = { title: "Nieuw contract" };
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ const SOORTEN = [
 export default async function NieuwContractPage({
   searchParams,
 }: {
-  searchParams: Promise<{ consultantId?: string; placementId?: string; doc?: string; taal?: string }>;
+  searchParams: Promise<{ q?: string; consultantId?: string; placementId?: string; doc?: string; taal?: string }>;
 }) {
   const sp = await searchParams;
   // Oude links vanuit een persoon/plaatsing: direct naar de (lege) overeenkomst.
@@ -49,7 +50,10 @@ export default async function NieuwContractPage({
   if (sp.doc === "urenstaat") redirect(`/contracten/blanco?doc=timesheet${tl}`);
   if (sp.doc === "persoonsgegevens" || sp.doc === "offerte") redirect(`/contracten/blanco?doc=${sp.doc}${tl}`);
 
+  const q = sp.q?.trim() ?? "";
+  const zoek = { contains: q, mode: "insensitive" as const };
   const contracten = await db.contract.findMany({
+    where: q ? { OR: [{ contractorName: zoek }, { number: zoek }, { thirdParty: zoek }] } : undefined,
     orderBy: { updatedAt: "desc" },
     select: { id: true, number: true, contractorName: true, thirdParty: true, status: true, updatedAt: true, rateDay: true },
   });
@@ -81,14 +85,19 @@ export default async function NieuwContractPage({
 
       <div className="space-y-3 pt-2">
         <div>
-          <h2 className="text-base font-bold text-ink-900">Opgestelde contracten ({contracten.length})</h2>
+          <h2 className="text-base font-bold text-ink-900">
+            {q ? `Gevonden contracten (${contracten.length})` : `Opgestelde contracten (${contracten.length})`}
+          </h2>
           <p className="text-sm text-ink-500">
             Alle overeenkomsten van opdracht die hier zijn ingevuld en opgeslagen. Klik om te bekijken, aan te passen, te printen of als Word te downloaden.
           </p>
         </div>
+        <TabelZoek basePath="/contracten/nieuw" q={q} placeholder="Zoek op naam, contractnummer of klant…" />
         <Card className="overflow-hidden">
           {contracten.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-ink-400">Nog geen contracten opgesteld.</p>
+            <p className="px-5 py-8 text-center text-sm text-ink-400">
+              {q ? `Geen contracten gevonden voor “${q}”.` : "Nog geen contracten opgesteld."}
+            </p>
           ) : (
             <ul className="divide-y divide-ink-100">
               {contracten.map((c) => (
