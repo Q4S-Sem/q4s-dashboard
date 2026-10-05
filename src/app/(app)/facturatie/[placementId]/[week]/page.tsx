@@ -20,7 +20,7 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { getWeekDossier, getWeekOverview } from "@/lib/facturatie-week";
 import { volgendePersoon, voortgang } from "@/lib/facturatie-volgende";
-import { StapUpload } from "./StapUpload";
+import { KlaarVak, StapUpload } from "./StapUpload";
 import type { Check as Controle, CheckGroup } from "@/lib/facturatie-checks";
 import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
 import { CorrectieFormulier } from "./CorrectieFormulier";
@@ -245,7 +245,9 @@ export default async function DossierPage({
             label: "Urenstaat",
             klaar: row.timesheetOntvangen,
             sub: row.timesheetOntvangen ? "ontvangen" : "nog uploaden",
-            upload: !row.vastgelegd && !row.timesheetOntvangen && (
+            upload: row.timesheetOntvangen ? (
+              <KlaarVak tekst="Urenstaat uitgelezen" />
+            ) : !row.vastgelegd && (
               <StapUpload soort="file" week={dossier.week.key} consultantId={row.consultantId} placementId={placementId} />
             ),
           },
@@ -253,7 +255,9 @@ export default async function DossierPage({
             label: "Factuur",
             klaar: row.factuurNvt || row.factuurOntvangen,
             sub: row.factuurNvt ? "n.v.t. (in dienst)" : row.factuurOntvangen ? "ontvangen" : "nog uploaden",
-            upload: !row.vastgelegd && !row.factuurNvt && !row.factuurOntvangen && (
+            upload: row.factuurOntvangen ? (
+              <KlaarVak tekst="Factuur uitgelezen" />
+            ) : !row.vastgelegd && !row.factuurNvt && (
               <StapUpload soort="factuur" week={dossier.week.key} consultantId={row.consultantId} placementId={placementId} />
             ),
           },

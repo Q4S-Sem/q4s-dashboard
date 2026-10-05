@@ -1,9 +1,21 @@
 "use client";
 
 import { useActionState, useRef } from "react";
-import { Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Dropzone } from "@/components/ui/dropzone";
 import { uploadVoorPersoon, type UploadState } from "../../actions";
+
+/** Groen vak met een vink die erin "popt": dit onderdeel is binnen en uitgelezen. */
+export function KlaarVak({ tekst }: { tekst: string }) {
+  return (
+    <div className="mt-3 flex h-24 flex-col items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-[13px] font-medium text-emerald-800">
+      <span className="animate-dialog-in flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
+        <Check className="h-5 w-5" strokeWidth={3} />
+      </span>
+      {tekst}
+    </div>
+  );
+}
 
 /**
  * Sleepvak binnen een stap van het dossier: bestand erin = meteen uitlezen en
@@ -27,7 +39,10 @@ export function StapUpload({
       <input type="hidden" name="week" value={week} />
       <input type="hidden" name="consultantId" value={consultantId} />
       <input type="hidden" name="placementId" value={placementId} />
-      {pending ? (
+      {!pending && state.melding && !state.fouten?.length ? (
+        // Gelukt: vink tot de pagina ververst en de stap zelf groen wordt.
+        <KlaarVak tekst="Uitgelezen en verwerkt" />
+      ) : pending ? (
         <div className="flex h-24 items-center justify-center gap-2 rounded-lg border border-dashed border-ink-300 bg-ink-50 text-[13px] text-ink-600">
           <Loader2 className="h-4 w-4 animate-spin" /> Uitlezen en controleren…
         </div>
