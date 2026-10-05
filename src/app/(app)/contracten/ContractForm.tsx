@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { fromRateText, toRateText, type RateUnit } from "@/lib/contract-tarief";
 import type { Contract } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +37,17 @@ export function ContractForm({
   cancelHref: string;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
+  // Oude concepten (localStorage, zie FormAutosave) bevatten nog de vroegere
+  // standaardtekst bij vakgebied/behoefte; wis die vóór het terugzetten.
+  useEffect(() => {
+    try {
+      for (const k of Object.keys(localStorage)) {
+        if (/::(fieldOfWork|serviceNeed)#/.test(k) && zonderOudeStandaard(localStorage.getItem(k)) === "") localStorage.removeItem(k);
+      }
+    } catch {
+      // geen opslag beschikbaar
+    }
+  }, []);
   const e = state.fieldErrors ?? {};
   const c = contract;
   const d = defaults;
