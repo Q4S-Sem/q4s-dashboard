@@ -340,9 +340,10 @@ export async function runInboxExtraction(id: string): Promise<void> {
   // Best-effort match to a consultant by name (+ their single active placement).
   // Bewust vóór de reconciliatie: pas mét de plaatsing in de hand kunnen de
   // geleerde correcties van deze persoon nog op de uitlezing worden toegepast.
-  let consultantId: string | null = null;
-  let placementId: string | null = null;
-  if (data.name && data.name.trim()) {
+  // Al bekend (geüpload vanuit iemands eigen dossier)? Dan blijft het die persoon.
+  let consultantId: string | null = item.consultantId;
+  let placementId: string | null = item.consultantId ? bekendeId : null;
+  if (!consultantId && data.name && data.name.trim()) {
     const consultants = await db.consultant.findMany({
       include: { placements: { where: { status: "ACTIVE" } } },
     });

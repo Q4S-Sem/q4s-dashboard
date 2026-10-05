@@ -9,12 +9,14 @@ import {
   ACK_PREFIX,
   FACTURATIE_ENTITY,
   getWeekDossier,
+  getWeekOverview,
   resolveWeek,
   weekEntityId,
 } from "@/lib/facturatie-week";
 import { deleteInboxUpload } from "@/lib/uploads";
 import { resetWeekForReceivedInvoice, resetWeekForTimesheet } from "@/lib/week-reset";
 import { currentUser } from "@/lib/session";
+import { volgendePersoon } from "@/lib/facturatie-volgende";
 
 // ---------------------------------------------------------------------------
 // De acties van het dossier (/facturatie/[placementId]/[week]).
@@ -387,9 +389,11 @@ export async function akkoordNaarVerkoopfactuur(formData: FormData) {
     redirect(dossierPad(placementId, weekKey, { geblokkeerd: reden }));
   }
   const factuur = samenvatting.facturen[0];
-  redirect(
-    factuur
-      ? `/facturatie/verkoop/${factuur.id}?nieuw=1`
-      : dossierPad(placementId, weekKey, { vastgelegd: "1" }),
-  );
+  if (!factuur) redirect(dossierPad(placementId, weekKey, { vastgelegd: "1" }));
+  // Klaar met deze persoon → meteen door naar de volgende die nog werk heeft.
+  const { rows } = await getWeekOverview(weekKey);
+  const huidig = rows.find((r) => r.placementId === placementId);
+  const volgende = volgendePersoon(rows, huidig?.key);
+  const qs = new URLSearchParams({ klaar: huidig?.naam ?? "Deze persoon", factuur: factuur.id }).toString();
+  redirect(volgende?.href ? `${volgende.href}?${qs}` : `/facturatie?week=${weekKey}&allesklaar=${factuur.id}`);
 }

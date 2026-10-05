@@ -46,6 +46,8 @@ export type MailInput = {
   html: string;
   text: string;
   attachments?: MailAttachment[];
+  /** Afzender, bijv. "Q4S Administratie <admin@q4s.nl>"; leeg = emailFrom(). */
+  from?: string;
 };
 
 export type MailResult = {
@@ -122,7 +124,7 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
     });
     const logoBytes = emailLogoBytes();
     const info = await transport.sendMail({
-      from: emailFrom(),
+      from: input.from || emailFrom(),
       to,
       subject,
       text,

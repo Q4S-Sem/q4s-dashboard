@@ -23,7 +23,11 @@ import { cn, formatDate, formatHours } from "@/lib/utils";
 import { ymd } from "@/lib/week-nav";
 import { UploadPaneel } from "./UploadPaneel";
 import { WeekStrip } from "./WeekStrip";
-import { koppelLosseUpload, verwerkGroeneWeken, verwijderLosseUpload } from "./actions";
+import { koppelLosseUpload, verwerkGroeneWeken, verwijderLosseUpload, zetHerinnering } from "./actions";
+import { volgendePersoon, voortgang } from "@/lib/facturatie-volgende";
+import { getCompanySettings } from "@/lib/settings";
+import { buttonVariants } from "@/components/ui/button";
+import { ArrowRight, Bell } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // "WEEK VERWERKEN" — het enige werkscherm van de facturatie.
@@ -129,11 +133,16 @@ export default async function FacturatiePage({
     gekoppeld?: string;
     verwijderd?: string;
     fout?: string;
+    allesklaar?: string;
   }>;
 }) {
   const sp = await searchParams;
   const now = new Date();
-  const [overzicht, teLaat] = await Promise.all([getWeekOverview(sp.week, now), getTeLaat(now)]);
+  const [overzicht, teLaat, settings] = await Promise.all([
+    getWeekOverview(sp.week, now),
+    getTeLaat(now),
+    getCompanySettings(),
+  ]);
   const { week, rows, stats, losseUploads, personen } = overzicht;
   const deadlineVerstreken = now.getTime() > week.deadline.getTime();
 
@@ -157,6 +166,9 @@ export default async function FacturatiePage({
   };
 
   const verwerkt = Number(sp.verwerkt ?? "");
+  const eerste = volgendePersoon(rows);
+  const stand = voortgang(rows);
+  const herinneringAan = settings.timesheetReminderEnabled;
 
   return (
     <div className="space-y-6">
@@ -258,6 +270,57 @@ export default async function FacturatiePage({
           Kies eerst een persoon om het bestand aan te koppelen.
         </p>
       )}
+
+      {sp.allesklaar && (
+        <p className="flex items-center gap-2 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
+          <CheckCircle2 className="h-4 w-4 shrink-0" /> Iedereen van deze week is verwerkt.{" "}
+          <Link href={`/facturatie/verkoop/${sp.allesklaar}`} className="font-semibold underline underline-offset-2">
+            Bekijk de laatste factuur
+          </Link>
+        </p>
+      )}
+
+      {/* Persoon voor persoon: één knop naar de eerste die nog werk heeft. */}
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-ink-200 bg-white px-4 py-2.5">
+        {eerste?.href ? (
+          <Link href={eerste.href} className={buttonVariants({ size: "sm" })}>
+            Start verwerken — {eerste.naam} <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-emerald-700">
+            <CheckCircle2 className="h-4 w-4" /> Niemand meer te verwerken deze week
+          </span>
+        )}
+        <span className="text-[13px] tabular-nums text-ink-500">
+          {stand.klaar} van {stand.totaal} personen klaar
+        </span>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-600">
+            <Bell className="h-4 w-4 text-ink-400" /> Herinnering-mail na {DEADLINE_LABEL}
+          </span>
+          <form action={zetHerinnering}>
+            <input type="hidden" name="aan" value={herinneringAan ? "0" : "1"} />
+            <button
+              type="submit"
+              role="switch"
+              aria-checked={herinneringAan}
+              title={herinneringAan ? "Staat aan — klik om uit te zetten" : "Staat uit — klik om aan te zetten"}
+              className={cn(
+                "inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-[13px] font-semibold transition-colors",
+                herinneringAan ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-ink-200 bg-white text-ink-600 hover:bg-ink-50",
+              )}
+            >
+              <span className={cn("relative h-4 w-7 rounded-full transition-colors", herinneringAan ? "bg-emerald-600" : "bg-ink-300")}>
+                <span className={cn("absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all", herinneringAan ? "left-3.5" : "left-0.5")} />
+              </span>
+              {herinneringAan ? "Aan" : "Uit"}
+            </button>
+          </form>
+          <Link href="/facturatie/herinnering" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            Voorbeeld
+          </Link>
+        </div>
+      </div>
 
       {/* Eén smalle balk: elke tegel is tegelijk teller én filter. */}
       <nav aria-label="Filter op status" className="grid grid-cols-3 gap-2 sm:grid-cols-6">

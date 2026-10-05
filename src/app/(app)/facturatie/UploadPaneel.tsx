@@ -5,7 +5,7 @@ import { AlertTriangle, CheckCircle2, FileText, Receipt, Upload } from "lucide-r
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dropzone } from "@/components/ui/dropzone";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { uploadBestanden, type UploadState } from "./actions";
+import { uploadBestanden, uploadVoorPersoon, type UploadState } from "./actions";
 
 // ---------------------------------------------------------------------------
 // "Bestanden toevoegen" op het weekoverzicht: twee sleepvlakken naast elkaar —
@@ -17,10 +17,20 @@ import { uploadBestanden, type UploadState } from "./actions";
 // niet eenduidig, dan komt het bestand op het overzicht met "kies de persoon".
 // ---------------------------------------------------------------------------
 
-export function UploadPaneel({ week }: { week: string }) {
+/** `persoon` = in iemands dossier: alles hoort bij die persoon (geen naam-matching). */
+export function UploadPaneel({
+  week,
+  persoon,
+}: {
+  week: string;
+  persoon?: { consultantId: string; placementId: string | null; naam: string; metFactuur: boolean };
+}) {
   const [uren, setUren] = useState(0);
   const [facturen, setFacturen] = useState(0);
-  const [state, action, pending] = useActionState<UploadState, FormData>(uploadBestanden, {});
+  const [state, action, pending] = useActionState<UploadState, FormData>(
+    persoon ? uploadVoorPersoon : uploadBestanden,
+    {},
+  );
   const totaal = uren + facturen;
 
   return (
@@ -29,12 +39,20 @@ export function UploadPaneel({ week }: { week: string }) {
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-4 w-4 text-ink-400" /> Bestanden toevoegen
         </CardTitle>
-        <span className="text-xs text-ink-400">Wordt automatisch aan de juiste persoon gekoppeld.</span>
+        <span className="text-xs text-ink-400">
+          {persoon ? `Komt direct bij ${persoon.naam} en wordt meteen gecontroleerd.` : "Wordt automatisch aan de juiste persoon gekoppeld."}
+        </span>
       </CardHeader>
       <CardContent className="space-y-3">
         <form action={action} className="space-y-3">
           <input type="hidden" name="week" value={week} />
-          <div className="grid gap-3 sm:grid-cols-2">
+          {persoon && (
+            <>
+              <input type="hidden" name="consultantId" value={persoon.consultantId} />
+              <input type="hidden" name="placementId" value={persoon.placementId ?? ""} />
+            </>
+          )}
+          <div className={persoon && !persoon.metFactuur ? "grid gap-3" : "grid gap-3 sm:grid-cols-2"}>
             <div className="space-y-1.5">
               <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-900">
                 <FileText className="h-4 w-4 text-ink-400" /> Urenstaten
@@ -44,12 +62,12 @@ export function UploadPaneel({ week }: { week: string }) {
                 multiple
                 compact
                 accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.xlsx,.xls,.csv"
-                label="Sleep urenstaten hier"
+                label={persoon ? "Sleep de urenstaat hier" : "Sleep urenstaten hier"}
                 hint="PDF, scan, foto of Excel"
                 onFilesChange={(files) => setUren(files.length)}
               />
             </div>
-            <div className="space-y-1.5">
+            <div className={persoon && !persoon.metFactuur ? "hidden" : "space-y-1.5"}>
               <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-900">
                 <Receipt className="h-4 w-4 text-ink-400" /> Facturen van ZZP&apos;ers
               </p>
@@ -58,7 +76,7 @@ export function UploadPaneel({ week }: { week: string }) {
                 multiple
                 compact
                 accept=".pdf,.png,.jpg,.jpeg,.webp,.gif"
-                label="Sleep facturen hier"
+                label={persoon ? "Sleep de factuur hier" : "Sleep facturen hier"}
                 hint="Wordt direct als inkoopfactuur geregistreerd"
                 onFilesChange={(files) => setFacturen(files.length)}
               />

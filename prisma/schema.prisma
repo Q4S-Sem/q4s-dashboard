@@ -505,6 +505,8 @@ model CompanySettings {
   /// Master-switch for AI auto-reading of certificates (uses ANTHROPIC_API_KEY).
   /// Off by default — the user opts in per choice.
   aiAutoExtract        Boolean @default(true)
+  /// Automatische timesheet-herinnering na de deadline (dinsdag 12:00). Standaard UIT.
+  timesheetReminderEnabled Boolean @default(false)
 
   // ---- Vormgeving van het Q4S-CV ----
   // Eén huisstijl voor elk CV dat naar een opdrachtgever gaat. Aanpasbaar, maar
@@ -2320,4 +2322,16 @@ model PortalLogin {
   notes       String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/// Verstuurde timesheet-herinneringen: per persoon per week maximaal één mail.
+model TimesheetHerinnering {
+  id           String   @id @default(cuid())
+  consultantId String
+  /// "2026-W41"
+  weekKey      String
+  email        String
+  sentAt       DateTime @default(now())
+
+  @@unique([consultantId, weekKey])
 }

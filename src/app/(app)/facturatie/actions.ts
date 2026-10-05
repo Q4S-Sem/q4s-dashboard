@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { isAdminSession } from "@/lib/session";
 import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
 import { ensureAiKeysLoaded } from "@/lib/ai-keys";
 import { runInboxExtraction } from "@/lib/inbox-extract";
@@ -133,8 +134,12 @@ export async function uploadBestanden(
   };
 }
 
-/** Eén urenstaat via het bestaande inbox-pad (inclusief AI-uitlezing). */
-async function voegUrenstaatToe(file: File): Promise<void> {
+/** Eén urenstaat via het bestaande inbox-pad (inclusief AI-uitlezing).
+ *  `persoon` = vanuit iemands dossier geüpload: dan hoort hij bij die persoon. */
+async function voegUrenstaatToe(
+  file: File,
+  persoon?: { consultantId: string; placementId: string | null },
+): Promise<void> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const fileName = await saveInboxBytes(bytes, file.name);
   const created = await db.timesheetInbox.create({
@@ -145,6 +150,8 @@ async function voegUrenstaatToe(file: File): Promise<void> {
       originalName: file.name,
       mimeType: file.type || "application/octet-stream",
       size: bytes.length,
+      consultantId: persoon?.consultantId ?? null,
+      placementId: persoon?.placementId ?? null,
     },
   });
   if (!isAIConfigured() && !isVisionConfigured()) {
@@ -153,6 +160,70 @@ async function voegUrenstaatToe(file: File): Promise<void> {
   // Mislukt het uitlezen, dan blijft het item staan (status NEW) en vult de mens
   // de uren zelf in; de melding gaat wel naar de gebruiker.
   await runInboxExtraction(created.id);
+}
+
+/**
+ * Uploaden vanuit het dossier van ÉÉN persoon: urenstaat en/of factuur horen dan
+ * zeker bij die persoon — geen naam-matching, dus ook nooit "Niet gekoppeld".
+ * Daarna draait de controle vanzelf opnieuw (de pagina rendert vers).
+ */
+export async function uploadVoorPersoon(_prev: UploadState, formData: FormData): Promise<UploadState> {
+  const consultantId = tekst(formData, "consultantId");
+  const placementId = tekst(formData, "placementId") || null;
+  const weekKey = resolveWeek(tekst(formData, "week"), new Date()).key;
+  if (!consultantId) return { error: "Onbekende persoon." };
+  const persoon = await db.consultant.findUnique({ where: { id: consultantId }, select: { id: true } });
+  if (!persoon) return { error: "Onbekende persoon." };
+
+  const echt = (naam: string) =>
+    formData.getAll(naam).filter((f): f is File => f instanceof File && f.size > 0);
+  const bestanden = [
+    ...echt("file").map((file) => ({ file, soort: "TIMESHEET" as const })),
+    ...echt("factuur").map((file) => ({ file, soort: "FACTUUR" as const })),
+  ];
+  if (bestanden.length === 0) return { error: "Kies of sleep eerst een urenstaat of factuur." };
+
+  await ensureAiKeysLoaded();
+  const fouten: string[] = [];
+  let gelukt = 0;
+  for (const { file, soort } of bestanden) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      fouten.push(`${file.name}: te groot (max. ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB).`);
+      continue;
+    }
+    try {
+      if (soort === "TIMESHEET") {
+        await voegUrenstaatToe(file, { consultantId, placementId });
+      } else {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const mimeType = file.type || "application/octet-stream";
+        const fileName = await saveReceivedBytes(bytes, file.name);
+        const gelezen = await extractReceivedInvoiceFromFile({
+          base64: Buffer.from(bytes).toString("base64"),
+          originalName: file.name,
+          mimeType,
+        });
+        if (!gelezen.ok) throw new Error(gelezen.message);
+        await registreerOntvangenFactuur({
+          consultantId,
+          weekKey,
+          data: gelezen.data,
+          bestand: { fileName, originalName: file.name, mimeType, size: bytes.length },
+        });
+        await onthoudBedrijfsgegevens(consultantId, gelezen.data);
+      }
+      gelukt++;
+    } catch (e) {
+      fouten.push(`${file.name}: ${e instanceof Error ? e.message : "kon niet verwerkt worden"}.`);
+    }
+  }
+
+  herlaad();
+  if (placementId) revalidatePath(`/facturatie/${placementId}/${weekKey}`);
+  return {
+    melding: gelukt > 0 ? "Uitgelezen en gecontroleerd — kijk hieronder of alles klopt." : undefined,
+    fouten: fouten.length > 0 ? fouten : undefined,
+  };
 }
 
 /**
@@ -420,4 +491,19 @@ async function onthoudBedrijfsgegevens(consultantId: string, data: InvoiceExtrac
     await db.consultant.update({ where: { id: consultantId }, data: vul });
     await syncPlaatsingStatus({ consultantId }); // misschien is de plaatsing nu compleet
   }
+}
+
+// ===========================================================================
+// Automatische timesheet-herinnering aan/uit (standaard UIT)
+// ===========================================================================
+
+export async function zetHerinnering(formData: FormData) {
+  if (!(await isAdminSession())) redirect("/facturatie?fout=rechten");
+  const aan = tekst(formData, "aan") === "1";
+  await db.companySettings.upsert({
+    where: { id: "default" },
+    update: { timesheetReminderEnabled: aan },
+    create: { id: "default", timesheetReminderEnabled: aan },
+  });
+  revalidatePath("/facturatie");
 }

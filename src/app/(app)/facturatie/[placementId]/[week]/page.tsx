@@ -18,7 +18,9 @@ import { Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
-import { getWeekDossier } from "@/lib/facturatie-week";
+import { getWeekDossier, getWeekOverview } from "@/lib/facturatie-week";
+import { volgendePersoon, voortgang } from "@/lib/facturatie-volgende";
+import { UploadPaneel } from "../../UploadPaneel";
 import type { Check as Controle, CheckGroup } from "@/lib/facturatie-checks";
 import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
 import { CorrectieFormulier } from "./CorrectieFormulier";
@@ -95,12 +97,16 @@ export default async function DossierPage({
     wachtkamer?: string;
     vastgelegd?: string;
     fout?: string;
+    klaar?: string;
+    factuur?: string;
   }>;
 }) {
   const { placementId, week } = await params;
   const sp = await searchParams;
-  const dossier = await getWeekDossier(placementId, week);
+  const [dossier, overzicht] = await Promise.all([getWeekDossier(placementId, week), getWeekOverview(week)]);
   if (!dossier) notFound();
+  const volgende = volgendePersoon(overzicht.rows, dossier.row.key);
+  const stand = voortgang(overzicht.rows);
 
   const { row, checks, comparison, akkoorden, accepteerReden, geld } = dossier;
   const afwijkend = comparison.filter((r) => !r.ok);
@@ -164,6 +170,14 @@ export default async function DossierPage({
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-xs tabular-nums text-ink-400" title="Personen deze week klaar">
+              {stand.klaar}/{stand.totaal} klaar
+            </span>
+            {volgende?.href && (
+              <Link href={volgende.href} className={buttonVariants({ variant: "outline", size: "sm" })} title={`Volgende: ${volgende.naam}`}>
+                Volgende persoon <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
             <Link
               href={`/facturatie/${placementId}/${dossier.week.key}/mail`}
               className={buttonVariants({ variant: "outline", size: "sm" })}
@@ -226,6 +240,56 @@ export default async function DossierPage({
           <p className="mt-1.5 text-right text-xs text-ink-400">{dossier.akkoordGeblokkeerd}</p>
         )}
       </div>
+
+      {/* Stap voor stap: wat is er binnen, klopt het, en is het vastgelegd? */}
+      <Stappen
+        stappen={[
+          { label: "Urenstaat", klaar: row.timesheetOntvangen, sub: row.timesheetOntvangen ? "ontvangen" : "nog uploaden" },
+          {
+            label: "Factuur",
+            klaar: row.factuurNvt || row.factuurOntvangen,
+            sub: row.factuurNvt ? "n.v.t. (in dienst)" : row.factuurOntvangen ? "ontvangen" : "nog uploaden",
+          },
+          {
+            label: "Controle",
+            klaar: row.timesheetOntvangen && fouten.length === 0 && openWaarschuwingen.length === 0,
+            fout: fouten.length > 0 && !accepteerReden,
+            sub: !row.timesheetOntvangen
+              ? "wacht op urenstaat"
+              : fouten.length > 0
+                ? `${fouten.length} fout${fouten.length === 1 ? "" : "en"}${accepteerReden ? " — geaccepteerd" : ""}`
+                : openWaarschuwingen.length > 0
+                  ? `${openWaarschuwingen.length} om na te kijken`
+                  : "alles klopt",
+          },
+          {
+            label: "Akkoord",
+            klaar: row.vastgelegd || row.gefactureerd,
+            sub: row.gefactureerd ? "gefactureerd" : row.vastgelegd ? "vastgelegd" : "verkoopfactuur klaarzetten",
+          },
+        ]}
+      />
+
+      {sp.klaar && (
+        <Melding toon="groen">
+          {sp.klaar} is verwerkt{sp.factuur ? " — de concept-verkoopfactuur staat klaar" : ""}. Dit is de volgende persoon.
+          {sp.factuur && (
+            <>
+              {" "}
+              <Link href={`/facturatie/verkoop/${sp.factuur}`} className="font-semibold underline underline-offset-2">
+                Bekijk de factuur
+              </Link>
+            </>
+          )}
+        </Melding>
+      )}
+
+      {!row.vastgelegd && (!row.timesheetOntvangen || (!row.factuurNvt && !row.factuurOntvangen)) && (
+        <UploadPaneel
+          week={dossier.week.key}
+          persoon={{ consultantId: row.consultantId, placementId, naam: row.naam, metFactuur: !row.factuurNvt }}
+        />
+      )}
 
       {/* Meldingen van de vorige handeling */}
       {sp.geblokkeerd && (
@@ -458,6 +522,30 @@ export default async function DossierPage({
         </div>
       </div>
     </div>
+  );
+}
+
+/** De vier stappen als één strakke balk: groen = klaar, rood = fout, grijs = te doen. */
+function Stappen({ stappen }: { stappen: { label: string; sub: string; klaar: boolean; fout?: boolean }[] }) {
+  return (
+    <ol className="grid grid-cols-2 overflow-hidden rounded-lg border border-ink-200 bg-white sm:grid-cols-4 sm:divide-x sm:divide-ink-100">
+      {stappen.map((s, i) => (
+        <li key={s.label} className="flex items-center gap-3 px-4 py-3">
+          <span
+            className={cn(
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+              s.klaar ? "bg-emerald-600 text-white" : s.fout ? "bg-red-600 text-white" : "bg-ink-100 text-ink-500",
+            )}
+          >
+            {s.klaar ? <Check className="h-3.5 w-3.5" /> : s.fout ? "!" : i + 1}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[13px] font-semibold text-ink-900">{s.label}</span>
+            <span className={cn("block truncate text-xs", s.fout ? "text-red-600" : "text-ink-400")}>{s.sub}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
   );
 }
 
