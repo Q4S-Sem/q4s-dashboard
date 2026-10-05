@@ -157,7 +157,7 @@ export function DocInvullen({
         <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
           {VELDEN[soort].map(([titel, uitleg, velden], i) => (
             <Card key={titel}>
-              <CardHeader className="flex flex-row items-center gap-3">
+              <CardHeader className="flex flex-row items-center justify-start gap-3">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink-900 text-xs font-bold text-white">{i + 1}</span>
                 <div>
                   <CardTitle>{titel}</CardTitle>
