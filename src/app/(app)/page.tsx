@@ -83,7 +83,7 @@ export default async function StartPage() {
         {hubs.map((h) => (
           <AppCard
             key={h.href}
-            href={h.href}
+            href={h.start ?? h.href}
             label={h.label}
             Icon={h.icon}
             count={counts[h.href] ?? 0}

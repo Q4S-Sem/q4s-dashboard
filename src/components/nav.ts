@@ -68,7 +68,10 @@ export type NavItem = {
 // contextual-sidebar entries.
 export type NavHub = {
   label: string;
+  /** Sleutel van de hub (toegangsrechten, iconen, tellers). */
   href: string;
+  /** Waar de tegel op het startscherm naartoe gaat, als dat niet `href` is. */
+  start?: string;
   icon: LucideIcon;
   items: NavItem[];
 };
@@ -131,6 +134,7 @@ const HUB_LIST: NavHub[] = [
     // Eigen werkplek: contracten invullen, controleren, printen en opslaan.
     label: "Contracten",
     href: "/contracten",
+    start: "/contracten/nieuw",
     icon: FileSignature,
     items: [
       { href: "/contracten/nieuw", label: "Nieuw contract", icon: Plus },
