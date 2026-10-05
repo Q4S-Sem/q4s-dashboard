@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Plus, X } from "lucide-react";
-import { Field, Input } from "@/components/ui/field";
+import { Field, Input, Select } from "@/components/ui/field";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { DISCIPLINES, EMPLOYMENT_TYPES } from "@/lib/domain";
@@ -76,35 +76,25 @@ export function NewVacancyButton({ clientId }: { clientId: string }) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Discipline" htmlFor="discipline">
-                    <select
-                      id="discipline"
-                      name="discipline"
-                      defaultValue=""
-                      className="block w-full rounded-sm border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
-                    >
+                    <Select id="discipline" name="discipline" defaultValue="">
                       <option value="">— kies —</option>
                       {DISCIPLINES.map((d) => (
                         <option key={d.value} value={d.value}>
                           {d.label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </Field>
 
                   <Field label="Dienstverband" htmlFor="employmentType">
-                    <select
-                      id="employmentType"
-                      name="employmentType"
-                      defaultValue=""
-                      className="block w-full rounded-sm border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
-                    >
+                    <Select id="employmentType" name="employmentType" defaultValue="">
                       <option value="">— kies —</option>
                       {EMPLOYMENT_TYPES.map((d) => (
                         <option key={d.value} value={d.value}>
                           {d.label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </Field>
                 </div>
 

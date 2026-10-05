@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { GitBranchPlus, X, Loader2 } from "lucide-react";
-import { Field, Input } from "@/components/ui/field";
+import { Field, Input, Select } from "@/components/ui/field";
 import { TextCombobox } from "@/components/ui/text-combobox";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
@@ -146,12 +146,12 @@ export function PipelineButton({
                       : "Kies de vacature waarop je deze kandidaat wilt plaatsen."
                   }
                 >
-                  <select
+                  <Select
+                    key={company}
                     id="vacancyId"
                     name="vacancyId"
-                    value={vacancyId}
-                    onChange={(e) => setVacancyId(e.target.value)}
-                    className="block w-full rounded-sm border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/25"
+                    defaultValue={vacancyId}
+                    onValueChange={setVacancyId}
                   >
                     <option value="">— geen / later —</option>
                     {relevantVacancies.map((v) => (
@@ -160,7 +160,7 @@ export function PipelineButton({
                         {v.company ? ` — ${v.company}` : ""}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
 
                 <Field

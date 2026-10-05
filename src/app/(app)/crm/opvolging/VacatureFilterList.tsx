@@ -8,6 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { DISCIPLINES } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 import { ZOEK_INPUT, ZOEK_ICOON } from "@/components/ui/tabel-zoek";
+import { Select } from "@/components/ui/field";
 
 /** Diacritics-insensitive fold. */
 function fold(s: string): string {
@@ -62,11 +63,11 @@ export function VacatureFilterList({ vacatures }: { vacatures: VacatureItem[] })
             className={ZOEK_INPUT}
           />
         </div>
-        <select
-          value={disc}
-          onChange={(e) => setDisc(e.target.value)}
+        <Select
+          defaultValue={disc}
+          onValueChange={setDisc}
           aria-label="Filter op discipline"
-          className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 sm:w-56"
+          className="sm:w-56"
         >
           <option value="">Alle disciplines</option>
           {usedDisciplines.map((d) => (
@@ -74,7 +75,7 @@ export function VacatureFilterList({ vacatures }: { vacatures: VacatureItem[] })
               {DISCIPLINES.find((x) => x.value === d)?.label ?? d}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {filtered.length === 0 ? (

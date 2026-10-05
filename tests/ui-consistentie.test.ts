@@ -52,3 +52,16 @@ test("zoekvelden gebruiken ZOEK_INPUT (één zoekveld-stijl)", () => {
   }
   assert.deepEqual(fout, [], `Gebruik ZOEK_INPUT uit ui/tabel-zoek:\n${fout.join("\n")}`);
 });
+
+test("keuzelijsten gebruiken de gedeelde Select (geen losse <select>)", () => {
+  const fout: string[] = [];
+  for (const f of tsx(ROOT)) {
+    const rel = relative(ROOT, f);
+    if (/^components[\\/]ui[\\/]/.test(rel) || /^app[\\/](login|vacature|talentpool|vakproef)[\\/]/.test(rel)) continue;
+    // ContractForm: €/%-kiezer die aan het invoerveld vastzit (inline eenheid, geen losse keuzelijst).
+    if (/ContractForm\.tsx$/.test(rel)) continue;
+    const src = readFileSync(f, "utf8");
+    for (const m of src.matchAll(/<select\b/g)) fout.push(`${rel}:${src.slice(0, m.index).split("\n").length}`);
+  }
+  assert.deepEqual(fout, [], `Gebruik Select uit ui/field:\n${fout.join("\n")}`);
+});
