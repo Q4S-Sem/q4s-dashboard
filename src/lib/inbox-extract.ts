@@ -503,7 +503,7 @@ async function ontdubbelUrenstaat(id: string, consultantId: string | null, weekS
   if (vastgelegd) {
     const zelf = await db.timesheetInbox.delete({ where: { id }, select: { fileName: true } });
     await deleteInboxUpload(zelf.fileName).catch(() => {});
-    throw new Error("deze week staat al als urenstaat vastgelegd — niet dubbel ingezet");
+    throw new Error("deze week staat al als urenstaat vastgelegd — niet dubbel ingezet. Verkeerd? Klik Opnieuw in het dossier van deze week en zet de juiste erin");
   }
   const ouder = await db.timesheetInbox.findMany({
     where: { id: { not: id }, consultantId, extractedWeekStart: venster, timesheetId: null, status: { in: ["NEW", "EXTRACTED"] } },

@@ -1,13 +1,26 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Dropzone } from "@/components/ui/dropzone";
 import { uploadVoorPersoon, type UploadState } from "../../actions";
 
 /** Groen vak met een vink die erin "popt": dit onderdeel is binnen en uitgelezen. */
-export function KlaarVak({ tekst }: { tekst: string }) {
+export function KlaarVak({ tekst, vervang }: { tekst: string; vervang?: React.ReactNode }) {
+  // Verkeerde staat/factuur gestuurd? "Vervangen" opent het sleepvak weer; de
+  // nieuwe vervangt de oude (één per persoon per week, laatste versie wint).
+  const [open, setOpen] = useState(false);
+  if (open && vervang) {
+    return (
+      <div>
+        {vervang}
+        <button type="button" onClick={() => setOpen(false)} className="mt-1 text-xs text-ink-500 underline underline-offset-2 hover:text-ink-900">
+          Annuleren
+        </button>
+      </div>
+    );
+  }
   return (
     <div role="status" className="animate-card-in mt-3 flex h-24 flex-col items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-[13px] font-medium text-emerald-800">
       <span className="animate-dialog-in flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
@@ -17,6 +30,11 @@ export function KlaarVak({ tekst }: { tekst: string }) {
         </svg>
       </span>
       {tekst}
+      {vervang && (
+        <button type="button" onClick={() => setOpen(true)} className="text-xs font-normal text-emerald-700 underline underline-offset-2 hover:text-emerald-900">
+          Verkeerd bestand? Vervangen
+        </button>
+      )}
     </div>
   );
 }

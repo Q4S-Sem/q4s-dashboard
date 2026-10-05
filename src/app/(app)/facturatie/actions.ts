@@ -387,7 +387,7 @@ async function registreerOntvangenFactuur(args: {
     if (dubbelBesluit(zelfdeWeek.status) === "blokkeer") {
       await deleteReceivedUpload(bestand.fileName).catch(() => {});
       throw new Error(
-        `voor week ${weekNr} staat al een goedgekeurde factuur${zelfdeWeek.number ? ` (${zelfdeWeek.number})` : ""} — niet dubbel ingezet`,
+        `voor week ${weekNr} staat al een goedgekeurde factuur${zelfdeWeek.number ? ` (${zelfdeWeek.number})` : ""} — niet dubbel ingezet. Verkeerd? Klik Opnieuw in het dossier van deze week en zet de juiste erin`,
       );
     }
     // Nog open: de nieuwe factuur vervangt de oude (laatste versie wint).

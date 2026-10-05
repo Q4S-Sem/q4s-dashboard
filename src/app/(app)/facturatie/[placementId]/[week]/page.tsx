@@ -248,7 +248,10 @@ export default async function DossierPage({
             klaar: row.timesheetOntvangen,
             sub: row.timesheetOntvangen ? "ontvangen" : "nog uploaden",
             upload: row.timesheetOntvangen ? (
-              <KlaarVak tekst="Urenstaat uitgelezen" />
+              <KlaarVak
+                tekst="Urenstaat uitgelezen"
+                vervang={!row.vastgelegd && <StapUpload soort="file" week={dossier.week.key} consultantId={row.consultantId} placementId={placementId} />}
+              />
             ) : !row.vastgelegd && (
               <StapUpload soort="file" week={dossier.week.key} consultantId={row.consultantId} placementId={placementId} />
             ),
@@ -258,7 +261,10 @@ export default async function DossierPage({
             klaar: row.factuurNvt || row.factuurOntvangen,
             sub: row.factuurNvt ? "n.v.t. (in dienst)" : row.factuurOntvangen ? "ontvangen" : "nog uploaden",
             upload: row.factuurOntvangen ? (
-              <KlaarVak tekst="Factuur uitgelezen" />
+              <KlaarVak
+                tekst="Factuur uitgelezen"
+                vervang={!row.vastgelegd && <StapUpload soort="factuur" week={dossier.week.key} consultantId={row.consultantId} placementId={placementId} />}
+              />
             ) : !row.vastgelegd && !row.factuurNvt && (
               <StapUpload soort="factuur" week={dossier.week.key} consultantId={row.consultantId} placementId={placementId} />
             ),
