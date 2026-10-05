@@ -20,18 +20,18 @@ const SOORTEN = [
     tone: "bg-brand-50 text-brand-600",
   },
   {
-    href: "/contracten/nieuw/persoonsgegevens",
-    titel: "Persoonsgegevens",
-    uitleg: "Bedrijf- en persoonsgegevens van de kandidaat of opdrachtnemer, klaar om te laten aanvullen en tekenen.",
-    icon: UserRound,
-    tone: "bg-emerald-50 text-emerald-600",
-  },
-  {
     href: "/contracten/nieuw/offerte",
     titel: "Offerte",
     uitleg: "Een offerte voor de klant met de inspecteur, locatie en tarieven.",
     icon: Receipt,
     tone: "bg-amber-50 text-amber-600",
+  },
+  {
+    href: "/contracten/nieuw/persoonsgegevens",
+    titel: "Persoonsgegevens",
+    uitleg: "Bedrijf- en persoonsgegevens van de kandidaat of opdrachtnemer, klaar om te laten aanvullen en tekenen.",
+    icon: UserRound,
+    tone: "bg-emerald-50 text-emerald-600",
   },
 ];
 
