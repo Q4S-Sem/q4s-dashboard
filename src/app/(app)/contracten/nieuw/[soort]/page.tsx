@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { getCompanySettings } from "@/lib/settings";
 import { contractFooterLine } from "@/lib/contract-doc";
-import { contractLogoDataUri } from "@/lib/contract-render";
+import { contractLogoDataUri, q4sHandtekeningDataUri } from "@/lib/contract-render";
 import { DocInvullen, type Soort } from "./DocInvullen";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +34,7 @@ export default async function DocInvullenPage({
           actions={<TaalSchakelaar taal={taal} href={(t) => `/contracten/nieuw/${soort}?taal=${t}`} />}
         />
       </div>
-      <DocInvullen soort={soort} taal={taal} logoSrc={contractLogoDataUri()} footerLine={footerLine} />
+      <DocInvullen soort={soort} taal={taal} logoSrc={contractLogoDataUri()} handtekening={q4sHandtekeningDataUri()} footerLine={footerLine} />
     </div>
   );
 }

@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/**": [
       "./public/logo/**",
+      "./assets/handtekening/**",
       "./public/templates/**",
       "./public/fonts/**",
       // Alleen wat pdf-render.ts echt laadt — de .map/min/sandbox-varianten

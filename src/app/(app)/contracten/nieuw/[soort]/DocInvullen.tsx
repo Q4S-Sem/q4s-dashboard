@@ -94,11 +94,13 @@ export function DocInvullen({
   soort,
   taal,
   logoSrc,
+  handtekening,
   footerLine,
 }: {
   soort: Soort;
   taal: Taal;
   logoSrc: string | null;
+  handtekening: string | null;
   footerLine: string;
 }) {
   const pathname = usePathname();
@@ -156,6 +158,7 @@ export function DocInvullen({
               logoSrc={logoSrc}
               footerLine={footerLine}
               taal={taal}
+              handtekening={handtekening}
               q={{ ...(w as Offerte), issueDate: w.issueDate ? new Date(`${w.issueDate}T00:00`).toLocaleDateString(taal === "en" ? "en-GB" : "nl-NL") : undefined }}
               className="ov-schaduw"
             />

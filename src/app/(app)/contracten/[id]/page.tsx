@@ -80,7 +80,7 @@ export default async function ContractDetailPage({
         <div className="hidden xl:block">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">Voorbeeld</p>
           <div className="origin-top-left scale-[0.62] overflow-hidden rounded-lg border border-ink-200 shadow-sm">
-            <ContractVel doc={sheet.doc} logoSrc={sheet.logoSrc} taal={taal} />
+            <ContractVel doc={sheet.doc} logoSrc={sheet.logoSrc} handtekening={sheet.handtekening} taal={taal} />
           </div>
         </div>
       </div>

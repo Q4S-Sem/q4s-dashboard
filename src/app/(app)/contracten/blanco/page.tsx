@@ -84,13 +84,13 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
         <PrintBar terug="/contracten" />
         <div className="flex justify-center overflow-x-auto pb-10">
           {doc === "overeenkomst" ? (
-            <ContractVel doc={leeg} logoSrc={logo} taal={taal} handtekening={null} className="ov-schaduw" />
+            <ContractVel doc={leeg} logoSrc={logo} taal={taal} className="ov-schaduw" />
           ) : doc === "persoonsgegevens" ? (
             <PersoonsgegevensVel logoSrc={logo} footerLine={leeg.footerLine} taal={taal} className="ov-schaduw" />
           ) : doc === "timesheet" ? (
             <UrenstaatVel logoSrc={logo} taal={taal} className="ov-schaduw" />
           ) : (
-            <OfferteVel logoSrc={logo} footerLine={leeg.footerLine} taal={taal} handtekening={null} className="ov-schaduw" />
+            <OfferteVel logoSrc={logo} footerLine={leeg.footerLine} taal={taal} className="ov-schaduw" />
           )}
         </div>
       </div>

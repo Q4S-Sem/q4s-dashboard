@@ -1,4 +1,6 @@
 import "server-only";
+import fs from "node:fs";
+import path from "node:path";
 import { db } from "./db";
 import { getCompanySettings } from "./settings";
 import { getCvLogoFile } from "./branding";
@@ -29,6 +31,19 @@ export function contractLogoDataUri(): string | null {
   return `data:${mime};base64,${f.bytes.toString("base64")}`;
 }
 
+/**
+ * Handtekening van P. Boomsma als data-URI. Bewust NIET in /public: dan zou hij
+ * zonder inloggen te downloaden zijn. Ontbreekt het bestand → lege tekenregel.
+ */
+export function q4sHandtekeningDataUri(): string | null {
+  try {
+    const bytes = fs.readFileSync(path.join(process.cwd(), "assets", "handtekening", "paul-boomsma.png"));
+    return `data:image/png;base64,${bytes.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadContractSheet(contractId: string) {
   const contract = await db.contract.findUnique({
     where: { id: contractId },
@@ -39,5 +54,5 @@ export async function loadContractSheet(contractId: string) {
   const settings = await getCompanySettings();
   const doc = buildContractDoc(contract, settings);
 
-  return { contract, doc, logoSrc: contractLogoDataUri() };
+  return { contract, doc, logoSrc: contractLogoDataUri(), handtekening: q4sHandtekeningDataUri() };
 }

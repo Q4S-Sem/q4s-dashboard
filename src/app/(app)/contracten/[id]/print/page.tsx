@@ -23,7 +23,7 @@ export default async function ContractPrintPage({
       <PrintBar terug={`/contracten/${id}${taal === "en" ? "?taal=en" : ""}`} />
 
       <div className="flex justify-center pb-10">
-        <ContractVel doc={sheet.doc} logoSrc={sheet.logoSrc} taal={taal} className="ov-schaduw" />
+        <ContractVel doc={sheet.doc} logoSrc={sheet.logoSrc} handtekening={sheet.handtekening} taal={taal} className="ov-schaduw" />
       </div>
 
       <style>{`

@@ -76,20 +76,18 @@ function enWaarde(v: string): string {
   return v;
 }
 
-/** Standaard-handtekening van Q4S (P. Boomsma); `null` = lege tekenregel (Blanco). */
-export const Q4S_HANDTEKENING = "/handtekening/paul-boomsma.png";
-
 export function ContractVel({
   doc,
   logoSrc,
   className,
   taal = "nl",
-  handtekening = Q4S_HANDTEKENING,
+  handtekening = null,
 }: {
   doc: ContractDoc;
   logoSrc?: string | null;
   className?: string;
   taal?: Taal;
+  /** Data-URI van de Q4S-handtekening (q4sHandtekeningDataUri); leeg = tekenregel. */
   handtekening?: string | null;
 }) {
   const en = taal === "en";

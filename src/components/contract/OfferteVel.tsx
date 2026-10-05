@@ -1,4 +1,4 @@
-import { Q4S_HANDTEKENING, VelKop, VelVoet, ovCss, type Taal } from "./ContractVel";
+import { VelKop, VelVoet, ovCss, type Taal } from "./ContractVel";
 
 /**
  * Q4S-offerte (Quotation) — exact dezelfde opbouw als de Overeenkomst van
@@ -58,7 +58,7 @@ export function OfferteVel({
   taal = "en",
   q = {},
   className,
-  handtekening = Q4S_HANDTEKENING,
+  handtekening = null,
 }: {
   logoSrc?: string | null;
   footerLine: string;
