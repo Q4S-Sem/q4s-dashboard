@@ -99,6 +99,8 @@ export default async function DossierPage({
     fout?: string;
     klaar?: string;
     factuur?: string;
+    andereWeek?: string;
+    van?: string;
   }>;
 }) {
   const { placementId, week } = await params;
@@ -284,6 +286,13 @@ export default async function DossierPage({
           },
         ]}
       />
+
+      {sp.andereWeek && (
+        <Melding toon="oranje">
+          Dit was een document van <strong>week {sp.andereWeek}</strong>, niet van week {sp.van}. Week {sp.andereWeek} stond
+          nog open, dus je werkt nu verder in week {sp.andereWeek}.
+        </Melding>
+      )}
 
       {sp.klaar && (
         <Melding toon="groen">

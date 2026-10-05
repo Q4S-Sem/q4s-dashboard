@@ -36,3 +36,19 @@ export function voortgang(rows: VolgendeRij[]): { klaar: number; totaal: number 
   const metDossier = rows.filter((r) => r.href);
   return { klaar: metDossier.filter((r) => r.gefactureerd || r.vastgelegd).length, totaal: metDossier.length };
 }
+
+/**
+ * Een urenstaat/factuur uit een ANDERE week dan het scherm:
+ * - "zelfde"   → hoort bij deze week;
+ * - "verder"   → die week staat nog open: ga daar verder;
+ * - "verkeerd" → die week is al vastgelegd/gefactureerd: verkeerde staat ingezet.
+ * Onbekende week (geen datum gelezen) telt als "zelfde" — dan beslist de mens.
+ */
+export function weekBeslissing(
+  schermWeek: string,
+  gelezenWeek: string | null | undefined,
+  gelezenWeekGesloten: boolean,
+): "zelfde" | "verder" | "verkeerd" {
+  if (!gelezenWeek || gelezenWeek === schermWeek) return "zelfde";
+  return gelezenWeekGesloten ? "verkeerd" : "verder";
+}

@@ -13,7 +13,8 @@ import {
   type InvoiceExtracted,
 } from "@/lib/invoice-extract";
 import { akkoordWeken } from "@/lib/facturatie-akkoord";
-import { resolveWeek } from "@/lib/facturatie-week";
+import { getWeekDossier, resolveWeek } from "@/lib/facturatie-week";
+import { weekBeslissing } from "@/lib/facturatie-volgende";
 import { nameMatches } from "@/lib/name-match";
 import { syncPlaatsingStatus } from "@/lib/plaatsing-status";
 import { weekSlotVanDatum } from "@/lib/week-koppeling";
@@ -46,6 +47,8 @@ export type UploadState = {
   /** Wat er niet lukte — nooit stilzwijgend. */
   fouten?: string[];
   error?: string;
+  /** Het bestand hoort bij een andere, nog open week: ga daarheen. */
+  naarWeek?: string;
 };
 
 function tekst(formData: FormData, key: string): string {
@@ -139,7 +142,7 @@ export async function uploadBestanden(
 async function voegUrenstaatToe(
   file: File,
   persoon?: { consultantId: string; placementId: string | null },
-): Promise<void> {
+): Promise<string> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const fileName = await saveInboxBytes(bytes, file.name);
   const created = await db.timesheetInbox.create({
@@ -160,6 +163,7 @@ async function voegUrenstaatToe(
   // Mislukt het uitlezen, dan blijft het item staan (status NEW) en vult de mens
   // de uren zelf in; de melding gaat wel naar de gebruiker.
   await runInboxExtraction(created.id);
+  return created.id;
 }
 
 /**
@@ -186,6 +190,14 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
   await ensureAiKeysLoaded();
   const fouten: string[] = [];
   let gelukt = 0;
+  let naarWeek: string | undefined;
+  // Welke week staat er ECHT op het document, en is die al verwerkt?
+  const beslis = async (gelezenWeek: string | null | undefined) => {
+    if (!gelezenWeek || gelezenWeek === weekKey || !placementId) return "zelfde" as const;
+    const d = await getWeekDossier(placementId, gelezenWeek);
+    return weekBeslissing(weekKey, gelezenWeek, Boolean(d && (d.row.vastgelegd || d.row.gefactureerd)));
+  };
+  const weekNr = (key: string) => Number(key.split("-W")[1]);
   for (const { file, soort } of bestanden) {
     if (file.size > MAX_UPLOAD_BYTES) {
       fouten.push(`${file.name}: te groot (max. ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB).`);
@@ -193,7 +205,18 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
     }
     try {
       if (soort === "TIMESHEET") {
-        await voegUrenstaatToe(file, { consultantId, placementId });
+        const inboxId = await voegUrenstaatToe(file, { consultantId, placementId });
+        const item = await db.timesheetInbox.findUnique({ where: { id: inboxId }, select: { extractedWeekStart: true, fileName: true } });
+        const gelezen = weekSlotVanDatum(item?.extractedWeekStart)?.key;
+        const besluit = await beslis(gelezen);
+        if (besluit === "verkeerd" && item) {
+          // Ruwe scan van een al verwerkte week: weggooien, er is niets geboekt.
+          await db.timesheetInbox.delete({ where: { id: inboxId } });
+          await deleteInboxUpload(item.fileName).catch(() => {});
+          fouten.push(`Verkeerde weekstaat ingezet: dit is week ${weekNr(gelezen!)}, en die is al verwerkt. Zet de urenstaat van week ${weekNr(weekKey)} erin`);
+          continue;
+        }
+        if (besluit === "verder") naarWeek = gelezen;
       } else {
         const bytes = new Uint8Array(await file.arrayBuffer());
         const mimeType = file.type || "application/octet-stream";
@@ -204,6 +227,14 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
           mimeType,
         });
         if (!gelezen.ok) throw new Error(gelezen.message);
+        const factuurWeek = weekSlotVanDatum(toReceivedInvoiceFormValues(gelezen.data, new Date()).periodStart)?.key;
+        const besluit = await beslis(factuurWeek);
+        if (besluit === "verkeerd") {
+          await deleteReceivedUpload(fileName).catch(() => {});
+          fouten.push(`Verkeerde factuur ingezet: dit is week ${weekNr(factuurWeek!)}, en die is al verwerkt. Zet de factuur van week ${weekNr(weekKey)} erin`);
+          continue;
+        }
+        if (besluit === "verder") naarWeek = factuurWeek;
         await registreerOntvangenFactuur({
           consultantId,
           weekKey,
@@ -223,6 +254,10 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
   return {
     melding: gelukt > 0 ? "Uitgelezen en gecontroleerd — kijk hieronder of alles klopt." : undefined,
     fouten: fouten.length > 0 ? fouten : undefined,
+    naarWeek:
+      naarWeek && placementId
+        ? `/facturatie/${placementId}/${naarWeek}?andereWeek=${weekNr(naarWeek)}&van=${weekNr(weekKey)}`
+        : undefined,
   };
 }
 

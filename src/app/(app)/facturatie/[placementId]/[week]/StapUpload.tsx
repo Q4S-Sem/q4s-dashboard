@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Dropzone } from "@/components/ui/dropzone";
 import { uploadVoorPersoon, type UploadState } from "../../actions";
@@ -37,12 +38,17 @@ export function StapUpload({
 }) {
   const form = useRef<HTMLFormElement>(null);
   const [state, action, pending] = useActionState<UploadState, FormData>(uploadVoorPersoon, {});
+  const router = useRouter();
+  // Andere, nog open week gelezen → daar verder (de pagina daar legt uit waarom).
+  useEffect(() => {
+    if (state.naarWeek) router.push(state.naarWeek);
+  }, [state.naarWeek, router]);
   return (
     <form ref={form} action={action} className="mt-3 space-y-1.5">
       <input type="hidden" name="week" value={week} />
       <input type="hidden" name="consultantId" value={consultantId} />
       <input type="hidden" name="placementId" value={placementId} />
-      {!pending && state.melding && !state.fouten?.length ? (
+      {!pending && state.melding && !state.fouten?.length && !state.naarWeek ? (
         // Gelukt: vink tot de pagina ververst en de stap zelf groen wordt.
         <KlaarVak tekst="Uitgelezen en verwerkt" />
       ) : pending ? (

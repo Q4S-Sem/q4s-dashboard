@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { volgendePersoon, voortgang } from "../src/lib/facturatie-volgende";
+import { volgendePersoon, voortgang, weekBeslissing } from "../src/lib/facturatie-volgende";
 import { herinneringMail } from "../src/lib/timesheet-herinnering";
 
 const rij = (key: string, extra: Partial<{ href: string | null; gefactureerd: boolean; vastgelegd: boolean; wachtkamerSinds: Date | null }> = {}) => ({
@@ -35,4 +35,11 @@ test("herinnering-mail: ZZP vraagt timesheet + factuur, in dienst alleen timeshe
   assert.equal(zzp.content.greeting, "Hoi Jordy,");
   const vast = herinneringMail({ voornaam: "", isoWeek: 41, bereik: "x", isZZP: false }, s);
   assert.doesNotMatch(vast.content.paragraphs[0], /factuur/);
+});
+
+test("weekBeslissing: andere week open → verder, al verwerkt → verkeerd", () => {
+  assert.equal(weekBeslissing("2026-W41", "2026-W41", true), "zelfde");
+  assert.equal(weekBeslissing("2026-W41", null, false), "zelfde");
+  assert.equal(weekBeslissing("2026-W41", "2026-W39", false), "verder");
+  assert.equal(weekBeslissing("2026-W41", "2026-W39", true), "verkeerd");
 });
