@@ -20,7 +20,7 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { getWeekDossier, getWeekOverview } from "@/lib/facturatie-week";
 import { volgendePersoon, voortgang } from "@/lib/facturatie-volgende";
-import { UploadPaneel } from "../../UploadPaneel";
+import { StapUpload } from "./StapUpload";
 import type { Check as Controle, CheckGroup } from "@/lib/facturatie-checks";
 import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
 import { CorrectieFormulier } from "./CorrectieFormulier";
@@ -236,19 +236,26 @@ export default async function DossierPage({
             </form>
           </div>
         </div>
-        {dossier.akkoordGeblokkeerd && (
-          <p className="mt-1.5 text-right text-xs text-ink-400">{dossier.akkoordGeblokkeerd}</p>
-        )}
       </div>
 
-      {/* Stap voor stap: wat is er binnen, klopt het, en is het vastgelegd? */}
+      {/* Stap voor stap. Stap 1 en 2 hebben hun eigen sleepvak: bestand erin = meteen uitgelezen. */}
       <Stappen
         stappen={[
-          { label: "Urenstaat", klaar: row.timesheetOntvangen, sub: row.timesheetOntvangen ? "ontvangen" : "nog uploaden" },
+          {
+            label: "Urenstaat",
+            klaar: row.timesheetOntvangen,
+            sub: row.timesheetOntvangen ? "ontvangen" : "nog uploaden",
+            upload: !row.vastgelegd && !row.timesheetOntvangen && (
+              <StapUpload soort="file" week={dossier.week.key} consultantId={row.consultantId} placementId={placementId} />
+            ),
+          },
           {
             label: "Factuur",
             klaar: row.factuurNvt || row.factuurOntvangen,
             sub: row.factuurNvt ? "n.v.t. (in dienst)" : row.factuurOntvangen ? "ontvangen" : "nog uploaden",
+            upload: !row.vastgelegd && !row.factuurNvt && !row.factuurOntvangen && (
+              <StapUpload soort="factuur" week={dossier.week.key} consultantId={row.consultantId} placementId={placementId} />
+            ),
           },
           {
             label: "Controle",
@@ -265,7 +272,11 @@ export default async function DossierPage({
           {
             label: "Akkoord",
             klaar: row.vastgelegd || row.gefactureerd,
-            sub: row.gefactureerd ? "gefactureerd" : row.vastgelegd ? "vastgelegd" : "verkoopfactuur klaarzetten",
+            sub: row.gefactureerd
+              ? "gefactureerd"
+              : row.vastgelegd
+                ? "vastgelegd"
+                : (dossier.akkoordGeblokkeerd ?? "klaar — klik Akkoord rechtsboven"),
           },
         ]}
       />
@@ -284,12 +295,6 @@ export default async function DossierPage({
         </Melding>
       )}
 
-      {!row.vastgelegd && (!row.timesheetOntvangen || (!row.factuurNvt && !row.factuurOntvangen)) && (
-        <UploadPaneel
-          week={dossier.week.key}
-          persoon={{ consultantId: row.consultantId, placementId, naam: row.naam, metFactuur: !row.factuurNvt }}
-        />
-      )}
 
       {/* Meldingen van de vorige handeling */}
       {sp.geblokkeerd && (
@@ -530,36 +535,39 @@ export default async function DossierPage({
   );
 }
 
-/** De vier stappen als één strakke balk: groen = klaar, rood = fout, grijs = te doen. */
-function Stappen({ stappen }: { stappen: { label: string; sub: string; klaar: boolean; fout?: boolean }[] }) {
-  // De eerste stap die nog niet klaar is = waar je nu bent.
-  const actief = stappen.findIndex((s) => !s.klaar);
+/** De vier stappen als één kaart: groen = klaar, rood = fout, grijs = te doen. Stap 1/2 kunnen een sleepvak bevatten. */
+function Stappen({
+  stappen,
+}: {
+  stappen: { label: string; sub: string; klaar: boolean; fout?: boolean; upload?: React.ReactNode }[];
+}) {
+  const huidig = stappen.findIndex((s) => !s.klaar);
   return (
-    <ol className="grid grid-cols-2 overflow-hidden rounded-lg border border-ink-200 bg-white sm:grid-cols-4 sm:divide-x sm:divide-ink-100">
+    <ol className="grid overflow-hidden rounded-lg border border-ink-200 bg-white sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-ink-100">
       {stappen.map((s, i) => (
         <li
           key={s.label}
-          className={cn("flex items-center gap-3 px-4 py-2.5", i === actief && "bg-ink-50")}
-          aria-current={i === actief ? "step" : undefined}
+          className={cn(
+            "border-b border-ink-100 p-4 xl:border-b-0",
+            i === huidig && !s.fout && "bg-brand-50/40",
+            s.fout && "bg-red-50/50",
+          )}
         >
-          <span
-            className={cn(
-              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-              s.klaar
-                ? "bg-emerald-600 text-white"
-                : s.fout
-                  ? "bg-red-600 text-white"
-                  : i === actief
-                    ? "bg-ink-900 text-white"
-                    : "bg-ink-100 text-ink-500",
-            )}
-          >
-            {s.klaar ? <Check className="h-3.5 w-3.5" /> : s.fout ? "!" : i + 1}
-          </span>
-          <span className="min-w-0">
-            <span className="block text-[13px] font-semibold text-ink-900">{s.label}</span>
-            <span className={cn("block truncate text-xs", s.fout ? "text-red-600" : "text-ink-400")}>{s.sub}</span>
-          </span>
+          <div className="flex items-start gap-3">
+            <span
+              className={cn(
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors",
+                s.klaar ? "bg-emerald-600 text-white" : s.fout ? "bg-red-600 text-white" : i === huidig ? "bg-ink-900 text-white" : "bg-ink-100 text-ink-500",
+              )}
+            >
+              {s.klaar ? <Check className="h-3.5 w-3.5" /> : s.fout ? "!" : i + 1}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[13px] font-semibold text-ink-900">{s.label}</span>
+              <span className={cn("block text-xs", s.fout ? "text-red-600" : s.klaar ? "text-emerald-700" : "text-ink-400")}>{s.sub}</span>
+            </span>
+          </div>
+          {s.upload}
         </li>
       ))}
     </ol>
