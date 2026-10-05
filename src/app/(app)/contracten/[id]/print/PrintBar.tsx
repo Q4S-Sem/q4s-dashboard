@@ -17,7 +17,7 @@ export function PrintBar({ terug }: { terug: string }) {
       <p className="text-sm text-ink-500">
         Print dit contract of kies &ldquo;Opslaan als PDF&rdquo; in het printvenster.
       </p>
-      <Button className="ml-auto" onClick={() => window.print()}>
+      <Button size="sm" className="ml-auto" onClick={() => window.print()}>
         <Printer className="h-4 w-4" /> Printen / opslaan als PDF
       </Button>
     </div>

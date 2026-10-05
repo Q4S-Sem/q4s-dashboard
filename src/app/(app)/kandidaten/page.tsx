@@ -269,7 +269,7 @@ export default async function KandidatenPage({
                   </div>
 
                   {/* Statussen — compact naast elkaar */}
-                  <div className="relative z-10 flex items-center gap-2">
+                  <div className="relative z-10 flex flex-wrap items-center gap-2">
                     <RatingSelect id={c.id} value={c.rating} className="w-36" />
                     <AvailabilitySelect id={c.id} value={c.availability} className="w-36" />
                     <InterviewSelect id={c.id} value={c.interviewStatus} className="w-32" />
@@ -283,7 +283,7 @@ export default async function KandidatenPage({
                     <Link
                       href={`/kandidaten/${c.id}`}
                       aria-label={`${c.firstName} ${c.lastName} openen`}
-                      className="inline-flex shrink-0 rounded-md p-1 text-ink-300 transition-colors hover:bg-ink-100 hover:text-brand-600"
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-300 transition-colors hover:bg-ink-100 hover:text-brand-600"
                     >
                       <ChevronRight className="h-5 w-5" />
                     </Link>

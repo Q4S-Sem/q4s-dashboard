@@ -240,13 +240,13 @@ export function AgendaCalendar({
       {/* Toolbar — zoals de referentie: links navigatie + maand, rechts weergave-schakelaar */}
       <div className="flex flex-wrap items-center gap-3 border-b border-ink-100 px-4 py-3">
         <div className="flex items-center gap-1">
-          <Link href={prevHref} aria-label="Vorige maand" className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-900">
+          <Link href={prevHref} aria-label="Vorige maand" className={buttonVariants({ variant: "ghost", size: "sm", className: "w-8 px-0" })}>
             <ChevronLeft className="h-5 w-5" />
           </Link>
-          <Link href={todayHref} className="rounded-lg px-2.5 py-1 text-sm font-medium text-ink-600 hover:bg-ink-100 hover:text-ink-900">
+          <Link href={todayHref} className={buttonVariants({ variant: "ghost", size: "sm" })}>
             Vandaag
           </Link>
-          <Link href={nextHref} aria-label="Volgende maand" className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100 hover:text-ink-900">
+          <Link href={nextHref} aria-label="Volgende maand" className={buttonVariants({ variant: "ghost", size: "sm", className: "w-8 px-0" })}>
             <ChevronRight className="h-5 w-5" />
           </Link>
           <h2 className="ml-2 text-base font-semibold capitalize text-ink-900">{monthLabel}</h2>

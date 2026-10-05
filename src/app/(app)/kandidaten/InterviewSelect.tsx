@@ -112,7 +112,7 @@ export function InterviewSelect({
         onClick={() => setOpen((o) => !o)}
         aria-label="Interview-status"
         aria-haspopup="menu"
-        className={`inline-flex ${className} items-center justify-between gap-2 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors ${tone}`}
+        className={`inline-flex ${className} h-8 items-center justify-between gap-2 rounded-md border px-3 text-xs font-semibold transition-colors ${tone}`}
       >
         <span className="inline-flex items-center gap-1.5 truncate">
           <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[current] ?? DOT.NONE}`} />

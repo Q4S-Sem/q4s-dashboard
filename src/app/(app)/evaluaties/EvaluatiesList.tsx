@@ -107,7 +107,7 @@ export async function EvaluatiesList({
                 beheerpagina. */}
             <Link
               href={`/evaluaties/sjabloon/${type.toLowerCase()}`}
-              className={buttonVariants({ variant: "outline", size: "icon" })}
+              className={buttonVariants({ variant: "outline", className: "w-10 px-0" })}
               title="Blanco formulier printen"
               aria-label="Blanco formulier printen"
             >

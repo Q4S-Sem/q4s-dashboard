@@ -107,7 +107,7 @@ export default async function PlaatsingenPage({
                   id={d.id}
                   message="Dit concept verwijderen?"
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                 >
                   <Trash2 className="h-4 w-4" />
                 </ConfirmSubmit>
