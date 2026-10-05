@@ -3,6 +3,7 @@
 import { Download, ExternalLink, FileSpreadsheet } from "lucide-react";
 import { documentSoort } from "@/lib/document-viewer";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------
 // Het geüploade document naast de uitgelezen velden — zodat de mens met één
@@ -61,14 +62,14 @@ export function DocumentViewer({
           href={src}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-xs font-semibold text-ink-500 hover:bg-white hover:text-ink-900"
+          className={buttonVariants({ variant: "ghost", size: "sm", className: "shrink-0" })}
         >
           <ExternalLink className="h-3.5 w-3.5" /> Open in nieuw tabblad
         </a>
         <a
           href={src}
           download={originalName}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-xs font-semibold text-ink-500 hover:bg-white hover:text-ink-900"
+          className={buttonVariants({ variant: "ghost", size: "sm", className: "shrink-0" })}
         >
           <Download className="h-3.5 w-3.5" /> Downloaden
         </a>

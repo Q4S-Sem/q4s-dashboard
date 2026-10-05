@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/field";
 import { buttonVariants } from "@/components/ui/button";
 import type { Option } from "@/lib/domain";
+import { ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 
 /**
  * Filterbalk voor de talentpool. Zoekt automatisch tijdens het typen (debounced)
@@ -65,7 +66,7 @@ export function KandidatenFilters({
       <CardContent className="py-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_180px_180px_180px_auto]">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+            <Search className={ZOEK_ICOON} />
             <Input
               value={term}
               onChange={(e) => setTerm(e.target.value)}

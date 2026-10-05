@@ -11,6 +11,7 @@ import { person } from "@/lib/people";
 import { DISCIPLINES } from "@/lib/domain";
 import { profileFromCandidateCv } from "../../actions";
 import { KandidaatCvKaart } from "./KandidaatCvKaart";
+import { ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 
 /**
  * Zoek een kandidaat op naam en maak van het CV dat al in zijn dossier zit een
@@ -95,7 +96,7 @@ export default async function CvGeneratorKandidatenPage({
         <CardContent className="py-4">
           <AutoFilterForm basePath="/socials/cv-generator/kandidaten" className="flex flex-wrap items-center gap-3">
             <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+              <Search className={ZOEK_ICOON} />
               <Input
                 name="q"
                 defaultValue={q}

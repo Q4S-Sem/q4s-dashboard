@@ -9,6 +9,7 @@ import { CRM_NOTE_TYPES, labelFor } from "@/lib/domain";
 import { AUTOMATION_PRESETS, triggerLabel } from "@/lib/automation";
 import { RuleForm } from "./RuleForm";
 import { toggleRule, deleteRule, addPreset, runNow } from "./actions";
+import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Automatisering" };
 export const dynamic = "force-dynamic";
@@ -122,11 +123,7 @@ export default async function AutomatiseringPage({
                   <input type="hidden" name="id" value={r.id} />
                   <button
                     type="submit"
-                    className={
-                      r.active
-                        ? "rounded-sm bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-200"
-                        : "rounded-sm bg-ink-100 px-3 py-1 text-xs font-semibold text-ink-500 hover:bg-ink-200"
-                    }
+                    className={buttonVariants({ variant: r.active ? "success" : "outline", size: "sm" })}
                   >
                     {r.active ? "Actief" : "Uit"}
                   </button>

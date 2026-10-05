@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { FolderOpen, ChevronRight, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ZOEK_INPUT, ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 
 export type CertPerson = {
   id: string;
@@ -27,14 +28,14 @@ export function CertPeopleList({ people }: { people: CertPerson[] }) {
   return (
     <div className="space-y-3">
       <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+        <Search className={ZOEK_ICOON} />
         <input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Zoek op naam…"
           aria-label="Zoek medewerker op naam"
-          className="block w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          className={ZOEK_INPUT}
         />
       </div>
 

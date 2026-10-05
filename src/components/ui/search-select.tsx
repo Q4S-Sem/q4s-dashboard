@@ -5,6 +5,7 @@ import { useValueSignal } from "./value-signal";
 import { useDropDirection, dropClass } from "./use-drop-direction";
 import { Search, ChevronsUpDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ZOEK_INPUT, ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 
 export type SearchOption = { value: string; label: string; sub?: string };
 
@@ -109,7 +110,7 @@ export function SearchSelect({
     <div ref={rootRef} className="relative">
       <input ref={hiddenRef} type="hidden" name={name} value={value} />
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+        <Search className={ZOEK_ICOON} />
         <input
           id={id}
           type="text"
@@ -127,7 +128,7 @@ export function SearchSelect({
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          className="w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-9 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          className={cn(ZOEK_INPUT, "pr-9")}
         />
         <ChevronsUpDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
       </div>

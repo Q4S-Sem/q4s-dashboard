@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH } from "@/components/ui/table";
 import { KlantRow, type KlantRowData } from "./KlantRow";
+import { ZOEK_INPUT, ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 
 type SortKey = "companyName" | "city" | "contactName" | "contacts" | "placements" | "invoices";
 type SortDir = "asc" | "desc";
@@ -96,13 +97,13 @@ export function KlantenTable({ clients }: { clients: KlantRowData[] }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative w-full max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+          <Search className={ZOEK_ICOON} />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Zoek op bedrijf, plaats of contact…"
             aria-label="Zoek klant"
-            className="w-full rounded-lg border border-ink-200 bg-white py-2 pl-9 pr-3 text-sm text-ink-800 placeholder:text-ink-400 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
+            className={ZOEK_INPUT}
           />
         </div>
         {query && (

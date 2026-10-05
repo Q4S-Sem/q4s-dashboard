@@ -26,6 +26,7 @@ import {
 import { RatingSelect } from "../RatingSelect";
 import { AvailabilitySelect } from "../AvailabilitySelect";
 import { PhoneReveal } from "../PhoneReveal";
+import { ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 
 export const metadata = { title: "Beschikbaarheid" };
 export const dynamic = "force-dynamic";
@@ -225,7 +226,7 @@ export default async function BeschikbaarPage({
             {/* Behoud de actieve tab tijdens het filteren. */}
             <input type="hidden" name="status" value={activeStatus} />
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+              <Search className={ZOEK_ICOON} />
               <Input
                 name="q"
                 defaultValue={q}

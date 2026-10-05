@@ -22,6 +22,7 @@ import { FolderTabBar, FolderTab } from "@/components/dossier-tabs";
 import { cn, formatDate } from "@/lib/utils";
 import { publishVacancy, pauseVacancy, resumeVacancy } from "./actions";
 import { publicVacancyUrl } from "@/lib/public-site";
+import { ZOEK_INPUT, ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 
 export type WorkVacancy = {
   id: string;
@@ -230,14 +231,14 @@ export function VacancyWorkList({ vacancies }: { vacancies: WorkVacancy[] }) {
 
       {vacancies.length > 6 && (
         <div className="relative max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+          <Search className={ZOEK_ICOON} />
           <input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Zoek op titel, plaats of opdrachtgever…"
             aria-label="Zoek vacature"
-            className="w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            className={ZOEK_INPUT}
           />
         </div>
       )}

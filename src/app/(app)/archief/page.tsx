@@ -10,10 +10,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/field";
 import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatDate, formatDateLong } from "@/lib/utils";
+import { ZOEK_ICOON, ZOEK_INPUT } from "@/components/ui/tabel-zoek";
 
 export const metadata = { title: "Archief" };
 export const dynamic = "force-dynamic";
@@ -132,8 +132,8 @@ export default async function ArchiefPage({
               <AutoFilterForm basePath="/archief" className="flex flex-wrap items-center gap-3">
                 {type && <input type="hidden" name="type" value={type} />}
                 <div className="relative flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
-                  <Input name="q" defaultValue={q} placeholder="Zoek in het archief op naam of inhoud…" className="pl-9" aria-label="Zoeken" />
+                  <Search className={ZOEK_ICOON} />
+                  <input name="q" type="search" defaultValue={q} placeholder="Zoek in het archief op naam of inhoud…" className={ZOEK_INPUT} aria-label="Zoeken" />
                 </div>
                 {(q || type) && (
                   <Link href="/archief" className={buttonVariants({ variant: "outline" })}>

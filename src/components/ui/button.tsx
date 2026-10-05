@@ -14,7 +14,7 @@ type Size = "sm" | "md" | "lg" | "icon";
 // op de gevulde varianten. Bij een klik zakt de knop 1px in zodat de actie
 // voelbaar is.
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 whitespace-nowrap cursor-pointer active:translate-y-px";
+  "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 whitespace-nowrap cursor-pointer active:translate-y-px [&_svg]:size-4 [&_svg]:shrink-0";
 
 const variantClasses: Record<Variant, string> = {
   primary: "bg-brand-600 text-white shadow-sm hover:bg-brand-700",
@@ -54,7 +54,7 @@ export const SEGMENT_GROEP = "inline-flex flex-wrap items-center gap-1 rounded-l
 
 export function segmentVariants(active: boolean, className?: string) {
   return cn(
-    "inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+    "inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 [&_svg]:size-4 [&_svg]:shrink-0",
     active ? "bg-ink-900 text-white shadow-sm" : "text-ink-600 hover:bg-ink-100 hover:text-ink-900",
     className,
   );

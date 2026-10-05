@@ -5,6 +5,7 @@ import { Search, Mail } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
 import { PhoneButton } from "@/components/ui/phone-button";
+import { ZOEK_INPUT, ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 
 /** Diacritics-insensitive fold zodat "jose" ook "José" vindt. */
 function fold(s: string): string {
@@ -95,14 +96,14 @@ export function ContactsTable({
     <Card>
       <div className="border-b border-ink-100 px-5 py-3">
         <div className="relative max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+          <Search className={ZOEK_ICOON} />
           <input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Zoek op naam, functie, bedrijf, e-mail of telefoon…"
             aria-label="Zoek contact"
-            className="block w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            className={ZOEK_INPUT}
           />
         </div>
       </div>

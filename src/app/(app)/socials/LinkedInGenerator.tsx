@@ -23,6 +23,7 @@ import {
   type PostInput,
 } from "@/lib/linkedin-template";
 import { buttonVariants } from "@/components/ui/button";
+import { ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 
 /* ── helpers ────────────────────────────────────────────────────────── */
 
@@ -364,7 +365,7 @@ export function LinkedInGenerator({
                   Kies een vacature uit het dashboard — de post wordt direct gegenereerd.
                 </p>
                 <div ref={vacRef} className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+                  <Search className={ZOEK_ICOON} />
                   <input
                     id="vac"
                     type="text"

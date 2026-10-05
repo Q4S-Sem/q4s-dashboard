@@ -32,6 +32,7 @@ import { DOCUMENT_CATEGORIES } from "@/lib/domain";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { nieuweMap, uploadNaarMap } from "./actions";
+import { ZOEK_ICOON, ZOEK_INPUT } from "@/components/ui/tabel-zoek";
 
 // ---------------------------------------------------------------------------
 // DATA = de bestaande Q4S-OneDrive, rechtstreeks in het dashboard. Je bladert
@@ -111,12 +112,12 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
         </Link>
         <form method="get" className="relative">
           {pad && <input type="hidden" name="pad" value={pad} />}
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+          <Search className={ZOEK_ICOON} />
           <input
             name="q"
             defaultValue={sp.q ?? ""}
             placeholder="Zoek in deze map…"
-            className="h-9 w-64 rounded-md border border-ink-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+            className={cn(ZOEK_INPUT, "w-64")}
           />
         </form>
         <nav aria-label="Pad" className="flex min-w-0 flex-1 flex-wrap items-center gap-1 text-[13px]">

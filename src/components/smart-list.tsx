@@ -6,6 +6,7 @@ import { Search, ArrowUp, ArrowDown, ArrowUpDown, ChevronDown, ChevronRight, Lay
 import { cn } from "@/lib/utils";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Select } from "@/components/ui/field";
+import { ZOEK_INPUT, ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 
 /** Diacritics-insensitive fold zodat "jose" ook "José" vindt. */
 function fold(s: string): string {
@@ -245,14 +246,14 @@ export function SmartList<T extends { id: string }>({
       <div className="flex flex-wrap items-center gap-2">
         {search && (
           <div className="relative min-w-[14rem] flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+            <Search className={ZOEK_ICOON} />
             <input
               type="search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={searchPlaceholder}
               aria-label="Zoeken"
-              className="block w-full rounded-lg border border-ink-300 bg-white py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+              className={ZOEK_INPUT}
             />
           </div>
         )}

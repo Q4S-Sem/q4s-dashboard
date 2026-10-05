@@ -39,3 +39,16 @@ test("geen handgemaakte gevulde knoppen of schakelaars met eigen kleur", () => {
   }
   assert.deepEqual(fout, [], `Gebruik buttonVariants/segmentVariants i.p.v. eigen klassen:\n${fout.join("\n")}`);
 });
+
+test("zoekvelden gebruiken ZOEK_INPUT (één zoekveld-stijl)", () => {
+  const fout: string[] = [];
+  for (const f of tsx(ROOT)) {
+    const rel = relative(ROOT, f);
+    if (/tabel-zoek\.tsx$/.test(rel) || /^app[\\/](login|vacature|talentpool|vakproef)[\\/]/.test(rel)) continue;
+    const src = readFileSync(f, "utf8");
+    for (const m of src.matchAll(/<input\b[\s\S]*?\/>/g)) {
+      if (/className="[^"]*\bpl-9\b/.test(m[0])) fout.push(`${rel}:${src.slice(0, m.index).split("\n").length}`);
+    }
+  }
+  assert.deepEqual(fout, [], `Gebruik ZOEK_INPUT uit ui/tabel-zoek:\n${fout.join("\n")}`);
+});
