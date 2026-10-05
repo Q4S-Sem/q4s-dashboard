@@ -26,7 +26,7 @@ import { WeekStrip } from "./WeekStrip";
 import { koppelLosseUpload, verwerkGroeneWeken, verwijderLosseUpload, zetHerinnering } from "./actions";
 import { volgendePersoon, voortgang } from "@/lib/facturatie-volgende";
 import { getCompanySettings } from "@/lib/settings";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, mapTabVariants } from "@/components/ui/button";
 import { ArrowRight, Bell } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -46,6 +46,13 @@ import { ArrowRight, Bell } from "lucide-react";
 
 export const metadata = { title: "Week verwerken" };
 export const dynamic = "force-dynamic";
+
+type Tab = "personen" | "bestanden" | "telaat";
+const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  { key: "personen", label: "Personen", icon: <Users className="h-4 w-4" /> },
+  { key: "bestanden", label: "Bestanden & niet gekoppeld", icon: <FileQuestion className="h-4 w-4" /> },
+  { key: "telaat", label: "Te laat & herinnering", icon: <AlertTriangle className="h-4 w-4" /> },
+];
 
 type Filter = "alles" | "fout" | "wacht" | "niet" | "klaar" | "verwerkt";
 
@@ -134,6 +141,7 @@ export default async function FacturatiePage({
     verwijderd?: string;
     fout?: string;
     allesklaar?: string;
+    tab?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -166,6 +174,14 @@ export default async function FacturatiePage({
   };
 
   const verwerkt = Number(sp.verwerkt ?? "");
+  const tab: Tab =
+    TABS.find((t) => t.key === sp.tab)?.key ??
+    (sp.gekoppeld || sp.verwijderd || sp.fout === "koppelen" ? "bestanden" : "personen");
+  const tabHref = (t: Tab) => {
+    const q = new URLSearchParams({ week: week.mondayParam });
+    if (t !== "personen") q.set("tab", t);
+    return `/facturatie?${q.toString()}`;
+  };
   const eerste = volgendePersoon(rows);
   const stand = voortgang(rows);
   const herinneringAan = settings.timesheetReminderEnabled;
@@ -182,55 +198,6 @@ export default async function FacturatiePage({
         </div>
         <WeekStrip huidig={week.key} vandaag={ymd(now)} extra={{ filter: filter === "alles" ? undefined : filter, q: sp.q }} />
       </div>
-
-      {/* Rode melding: deadline voorbij en iemand heeft nog NIETS gestuurd.
-          Eén regel; de namen klap je uit als een nette lijst per persoon. */}
-      {teLaat.length > 0 && (
-        <details role="alert" className="group overflow-hidden rounded-lg border border-red-200 bg-red-50">
-          <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm text-red-800 [&::-webkit-details-marker]:hidden">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
-              <AlertTriangle className="h-4 w-4" />
-            </span>
-            <span className="flex-1">
-              <strong className="font-semibold">
-                {teLaat.length === 1 ? "1 persoon" : `${teLaat.length} personen`} te laat
-              </strong>
-              <span className="text-red-700/80"> — deadline {DEADLINE_LABEL} verstreken, nog niets ingeleverd</span>
-            </span>
-            <span className="text-xs font-medium text-red-700 group-open:hidden">Toon namen</span>
-            <span className="hidden text-xs font-medium text-red-700 group-open:inline">Verberg</span>
-          </summary>
-          <ul className="grid gap-px border-t border-red-200 bg-red-200 sm:grid-cols-2 xl:grid-cols-3">
-            {teLaat.map((t) => {
-              const inhoud = (
-                <>
-                  <PersoonVierkant naam={t.naam} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-medium text-ink-900">{t.naam}</span>
-                    <span className="block truncate text-xs text-ink-400">{t.klantNaam ?? "geen klant"}</span>
-                  </span>
-                  <span className="flex shrink-0 gap-1">
-                    {t.weken.map((w) => (
-                      <Badge key={w} color="red">wk {w}</Badge>
-                    ))}
-                  </span>
-                </>
-              );
-              return (
-                <li key={`${t.naam}-${t.klantNaam ?? ""}`} className="bg-white">
-                  {t.href ? (
-                    <Link href={t.href} className="flex items-center gap-3 px-4 py-2.5 hover:bg-red-50/60">
-                      {inhoud}
-                    </Link>
-                  ) : (
-                    <span className="flex items-center gap-3 px-4 py-2.5">{inhoud}</span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </details>
-      )}
 
       {/* Melding na een actie — kort en feitelijk, nooit geraden. */}
       {Number.isFinite(verwerkt) && sp.verwerkt !== undefined && (
@@ -280,48 +247,50 @@ export default async function FacturatiePage({
         </p>
       )}
 
-      {/* Persoon voor persoon: één knop naar de eerste die nog werk heeft. */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-ink-200 bg-white px-4 py-2.5">
-        {eerste?.href ? (
-          <Link href={eerste.href} className={buttonVariants({ size: "sm" })}>
-            Start verwerken — {eerste.naam} <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-emerald-700">
-            <CheckCircle2 className="h-4 w-4" /> Niemand meer te verwerken deze week
+      {/* Drie mapjes: wie moet er nog, wat moet er nog gekoppeld worden, en wie is te laat. */}
+      <div className="flex flex-wrap items-end gap-3 border-b border-ink-200">
+        <nav aria-label="Onderdeel" className="flex flex-wrap items-end gap-1">
+          {TABS.map((t) => {
+            const aantal = t.key === "personen" ? rows.length : t.key === "bestanden" ? losseUploads.length : teLaat.length;
+            return (
+              <Link key={t.key} href={tabHref(t.key)} scroll={false} aria-current={tab === t.key ? "page" : undefined} className={mapTabVariants(tab === t.key)}>
+                <span className={tab === t.key ? "text-brand-600" : "text-ink-400"}>{t.icon}</span>
+                {t.label}
+                {aantal > 0 && (
+                  <span
+                    className={cn(
+                      "rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+                      t.key === "telaat" ? "bg-red-100 text-red-700" : "bg-ink-100 text-ink-500",
+                    )}
+                  >
+                    {aantal}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="mb-2 ml-auto flex flex-wrap items-center gap-3">
+          <span className="text-[13px] tabular-nums text-ink-500">
+            {stand.klaar} van {stand.totaal} klaar
           </span>
-        )}
-        <span className="text-[13px] tabular-nums text-ink-500">
-          {stand.klaar} van {stand.totaal} personen klaar
-        </span>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-600">
-            <Bell className="h-4 w-4 text-ink-400" /> Herinnering-mail na {DEADLINE_LABEL}
+          {eerste?.href ? (
+            <Link href={eerste.href} className={buttonVariants({ size: "sm" })}>
+              Start verwerken — {eerste.naam} <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-emerald-700">
+              <CheckCircle2 className="h-4 w-4" /> Niemand meer te verwerken deze week
+            </span>
+          )}
+          <span className="text-[13px] tabular-nums text-ink-500">
+            {stand.klaar} van {stand.totaal} personen klaar
           </span>
-          <form action={zetHerinnering}>
-            <input type="hidden" name="aan" value={herinneringAan ? "0" : "1"} />
-            <button
-              type="submit"
-              role="switch"
-              aria-checked={herinneringAan}
-              title={herinneringAan ? "Staat aan — klik om uit te zetten" : "Staat uit — klik om aan te zetten"}
-              className={cn(
-                "inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-[13px] font-semibold transition-colors",
-                herinneringAan ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-ink-200 bg-white text-ink-600 hover:bg-ink-50",
-              )}
-            >
-              <span className={cn("relative h-4 w-7 rounded-full transition-colors", herinneringAan ? "bg-emerald-600" : "bg-ink-300")}>
-                <span className={cn("absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all", herinneringAan ? "left-3.5" : "left-0.5")} />
-              </span>
-              {herinneringAan ? "Aan" : "Uit"}
-            </button>
-          </form>
-          <Link href="/facturatie/herinnering" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            Voorbeeld
-          </Link>
         </div>
       </div>
 
+      {tab === "personen" && (
+        <>
       {/* Eén smalle balk: elke tegel is tegelijk teller én filter. */}
       <nav aria-label="Filter op status" className="grid grid-cols-3 gap-2 sm:grid-cols-6">
         {FILTERS.map((f) => {
@@ -354,92 +323,6 @@ export default async function FacturatiePage({
           );
         })}
       </nav>
-
-      {/* Eerst bestanden erin, dan de lijst met freelancers. */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <UploadPaneel week={week.key} />
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileQuestion className="h-4 w-4 text-ink-400" /> Niet gekoppeld
-            </CardTitle>
-            <span className="text-xs text-ink-400">
-              {losseUploads.length === 0
-                ? "alles is aan een persoon gekoppeld"
-                : `${losseUploads.length} bestand${losseUploads.length === 1 ? "" : "en"}`}
-            </span>
-          </CardHeader>
-          <CardContent>
-            {losseUploads.length === 0 ? (
-              <p className="text-[13px] text-ink-400">
-                Er staan geen losse bestanden open. Komt een naam niet overeen met iemand in het
-                dossier, dan verschijnt het bestand hier met een keuzelijst.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {losseUploads.map((los) => (
-                  <li key={los.id} className="rounded-sm border border-ink-200 bg-white p-3">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <span className="min-w-0">
-                        <a
-                          href={los.src}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block truncate text-[13px] font-semibold text-ink-900 underline underline-offset-2 hover:text-brand-700"
-                          title={los.originalName}
-                        >
-                          {los.originalName}
-                        </a>
-                        <span className="mt-0.5 block text-xs text-ink-500">
-                          {los.soort === "timesheet" ? "Urenstaat" : "Factuur"}
-                          {los.gelezenNaam ? ` · gelezen naam: ${los.gelezenNaam}` : ""}
-                        </span>
-                      </span>
-                      <Badge color={los.soort === "timesheet" ? "blue" : "amber"}>
-                        {los.soort === "timesheet" ? "uren" : "factuur"}
-                      </Badge>
-                    </div>
-                    {los.reden && <p className="mt-1.5 text-xs text-ink-500">{los.reden}</p>}
-                    <div className="mt-2.5 flex flex-wrap items-end gap-2">
-                      <form action={koppelLosseUpload} className="flex flex-1 items-end gap-2">
-                        <input type="hidden" name="id" value={los.id} />
-                        <input type="hidden" name="soort" value={los.soort} />
-                        <input type="hidden" name="week" value={week.key} />
-                        <Select
-                          name="consultantId"
-                          defaultValue=""
-                          className="min-w-[12rem] flex-1"
-                          aria-label="Kies de persoon"
-                        >
-                          <option value="">Kies de persoon…</option>
-                          {personen.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.naam}
-                            </option>
-                          ))}
-                        </Select>
-                        <SubmitButton variant="outline" size="sm" pendingLabel="Koppelen…">
-                          Koppelen
-                        </SubmitButton>
-                      </form>
-                      <ConfirmSubmit
-                        action={verwijderLosseUpload}
-                        id={los.id}
-                        hidden={{ soort: los.soort, week: week.key }}
-                        message="Deze upload verwijderen?"
-                        description="Het bestand verdwijnt. Er is nog niets geboekt, dus er gaat geen administratie verloren."
-                      >
-                        Verwijderen
-                      </ConfirmSubmit>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-ink-100 p-4">
@@ -563,6 +446,169 @@ export default async function FacturatiePage({
         de knop <strong className="font-semibold text-ink-600">Akkoord → verkoopfactuur</strong> in
         het dossier; de verkoopfactuur komt daarna als <em>concept</em> bij Verkoopfacturen te staan.
       </p>
+        </>
+      )}
+
+      {tab === "bestanden" && (
+        <>
+      {/* Bestanden die nog bij niemand horen staan rechts. */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <UploadPaneel week={week.key} />
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileQuestion className="h-4 w-4 text-ink-400" /> Niet gekoppeld
+            </CardTitle>
+            <span className="text-xs text-ink-400">
+              {losseUploads.length === 0
+                ? "alles is aan een persoon gekoppeld"
+                : `${losseUploads.length} bestand${losseUploads.length === 1 ? "" : "en"}`}
+            </span>
+          </CardHeader>
+          <CardContent>
+            {losseUploads.length === 0 ? (
+              <p className="text-[13px] text-ink-400">
+                Er staan geen losse bestanden open. Komt een naam niet overeen met iemand in het
+                dossier, dan verschijnt het bestand hier met een keuzelijst.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {losseUploads.map((los) => (
+                  <li key={los.id} className="rounded-sm border border-ink-200 bg-white p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <span className="min-w-0">
+                        <a
+                          href={los.src}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block truncate text-[13px] font-semibold text-ink-900 underline underline-offset-2 hover:text-brand-700"
+                          title={los.originalName}
+                        >
+                          {los.originalName}
+                        </a>
+                        <span className="mt-0.5 block text-xs text-ink-500">
+                          {los.soort === "timesheet" ? "Urenstaat" : "Factuur"}
+                          {los.gelezenNaam ? ` · gelezen naam: ${los.gelezenNaam}` : ""}
+                        </span>
+                      </span>
+                      <Badge color={los.soort === "timesheet" ? "blue" : "amber"}>
+                        {los.soort === "timesheet" ? "uren" : "factuur"}
+                      </Badge>
+                    </div>
+                    {los.reden && <p className="mt-1.5 text-xs text-ink-500">{los.reden}</p>}
+                    <div className="mt-2.5 flex flex-wrap items-end gap-2">
+                      <form action={koppelLosseUpload} className="flex flex-1 items-end gap-2">
+                        <input type="hidden" name="id" value={los.id} />
+                        <input type="hidden" name="soort" value={los.soort} />
+                        <input type="hidden" name="week" value={week.key} />
+                        <Select
+                          name="consultantId"
+                          defaultValue=""
+                          className="min-w-[12rem] flex-1"
+                          aria-label="Kies de persoon"
+                        >
+                          <option value="">Kies de persoon…</option>
+                          {personen.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.naam}
+                            </option>
+                          ))}
+                        </Select>
+                        <SubmitButton variant="outline" size="sm" pendingLabel="Koppelen…">
+                          Koppelen
+                        </SubmitButton>
+                      </form>
+                      <ConfirmSubmit
+                        action={verwijderLosseUpload}
+                        id={los.id}
+                        hidden={{ soort: los.soort, week: week.key }}
+                        message="Deze upload verwijderen?"
+                        description="Het bestand verdwijnt. Er is nog niets geboekt, dus er gaat geen administratie verloren."
+                      >
+                        Verwijderen
+                      </ConfirmSubmit>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+        </>
+      )}
+
+      {tab === "telaat" && (
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-600" /> Te laat
+            </CardTitle>
+            <span className="text-xs text-ink-400">deadline {DEADLINE_LABEL} verstreken, nog niets ingeleverd</span>
+          </CardHeader>
+          {teLaat.length === 0 ? (
+            <CardContent className="text-[13px] text-ink-400">Niemand te laat. Mooi.</CardContent>
+          ) : (
+          <ul className="grid gap-px border-y border-red-200 bg-red-200 sm:grid-cols-2 xl:grid-cols-3">
+            {teLaat.map((t) => {
+              const inhoud = (
+                <>
+                  <PersoonVierkant naam={t.naam} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-medium text-ink-900">{t.naam}</span>
+                    <span className="block truncate text-xs text-ink-400">{t.klantNaam ?? "geen klant"}</span>
+                  </span>
+                  <span className="flex shrink-0 gap-1">
+                    {t.weken.map((w) => (
+                      <Badge key={w} color="red">wk {w}</Badge>
+                    ))}
+                  </span>
+                </>
+              );
+              return (
+                <li key={`${t.naam}-${t.klantNaam ?? ""}`} className="bg-white">
+                  {t.href ? (
+                    <Link href={t.href} className="flex items-center gap-3 px-4 py-2.5 hover:bg-red-50/60">
+                      {inhoud}
+                    </Link>
+                  ) : (
+                    <span className="flex items-center gap-3 px-4 py-2.5">{inhoud}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          )}
+        <div className="flex flex-wrap items-center gap-2 border-t border-ink-100 px-4 py-3">
+          <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-600">
+            <Bell className="h-4 w-4 text-ink-400" /> Herinnering-mail na {DEADLINE_LABEL}
+          </span>
+          <form action={zetHerinnering}>
+            <input type="hidden" name="aan" value={herinneringAan ? "0" : "1"} />
+            <button
+              type="submit"
+              role="switch"
+              aria-checked={herinneringAan}
+              title={herinneringAan ? "Staat aan — klik om uit te zetten" : "Staat uit — klik om aan te zetten"}
+              className={cn(
+                "inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-[13px] font-semibold transition-colors",
+                herinneringAan ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-ink-200 bg-white text-ink-600 hover:bg-ink-50",
+              )}
+            >
+              <span className={cn("relative h-4 w-7 rounded-full transition-colors", herinneringAan ? "bg-emerald-600" : "bg-ink-300")}>
+                <span className={cn("absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all", herinneringAan ? "left-3.5" : "left-0.5")} />
+              </span>
+              {herinneringAan ? "Aan" : "Uit"}
+            </button>
+          </form>
+          <Link href="/facturatie/herinnering" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            Voorbeeld
+          </Link>
+        </div>
+        </Card>
+      )}
     </div>
   );
 }
