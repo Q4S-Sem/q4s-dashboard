@@ -37,6 +37,7 @@ import {
   Contact,
   Zap,
   KeyRound,
+  Lock,
   Wallet,
   Wand2,
   Mail,
@@ -224,6 +225,7 @@ const HUB_LIST: NavHub[] = [
     items: [
       { href: "/gebruikers", label: "Gebruikers", icon: UserCog, exact: true, section: "Toegang" },
       { href: "/gebruikers/handtekening", label: "E-mailhandtekening", icon: Mail, section: "Toegang" },
+      { href: "/gebruikers/wachtwoorden", label: "Wachtwoorden", icon: Lock, section: "Toegang" },
       { href: "/gebruikers/audit", label: "Audit (Kiwa)", icon: ShieldCheck, section: "Compliance" },
       { href: "/gebruikers/dossiercheck", label: "Dossiercheck", icon: ClipboardCheck, section: "Compliance" },
       { href: "/gebruikers/api-sleutels", label: "API-sleutels", icon: KeyRound, section: "AI" },

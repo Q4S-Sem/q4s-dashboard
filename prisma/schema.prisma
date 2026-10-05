@@ -2299,3 +2299,16 @@ model MailIntakeLog {
   others     Int      @default(0)
   processedAt DateTime @default(now())
 }
+
+/// Inloggegevens van externe portalen (MSP's, klantportalen, overheid). Het
+/// wachtwoord staat AES-256-GCM-versleuteld in `passwordEnc` (src/lib/vault.ts).
+model PortalLogin {
+  id          String   @id @default(cuid())
+  name        String
+  url         String   @default("")
+  username    String   @default("")
+  passwordEnc String   @default("")
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
