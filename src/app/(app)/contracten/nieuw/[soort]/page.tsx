@@ -30,8 +30,7 @@ export default async function DocInvullenPage({
         <BackLink href="/contracten/nieuw">Terug naar nieuw contract</BackLink>
         <PageHeader
           title={TITELS[soort]}
-          description="Vul links in, rechts zie je direct het document. Wat je typt blijft als concept bewaard; klaar? Print of sla op als PDF."
-          actions={<TaalSchakelaar taal={taal} href={(t) => `/contracten/nieuw/${soort}?taal=${t}`} />}
+          description="Vul het formulier in en bekijk het document onder Voorbeeld. Wat je typt blijft als concept bewaard; klaar? Download Word of print / sla op als PDF."
         />
       </div>
       <DocInvullen taalKeuze={<TaalSchakelaar taal={taal} href={(t) => `/contracten/nieuw/${soort}?taal=${t}`} />} soort={soort} taal={taal} logoSrc={contractLogoDataUri()} handtekening={q4sHandtekeningDataUri()} footerLine={footerLine} />

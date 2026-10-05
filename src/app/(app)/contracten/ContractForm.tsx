@@ -73,7 +73,6 @@ export function ContractForm({
   const [waarden, setWaarden] = useState<Contract | null>(null);
   // ponytail: setTimeout(0) — de verborgen tariefvelden (RateInput) krijgen hun waarde pas na de React-render.
   const lees = () => setTimeout(() => formRef.current && setWaarden(uitFormulier(formRef.current)), 0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => void lees(), []);
   const [state, formAction] = useActionState(action, emptyFormState);
   // Oude concepten (localStorage, zie FormAutosave) bevatten nog de vroegere
