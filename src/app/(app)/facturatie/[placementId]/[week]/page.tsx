@@ -314,6 +314,9 @@ export default async function DossierPage({
         </Melding>
       )}
 
+      {/* Pas iets te zien als er een urenstaat of factuur is — anders alleen uploaden. */}
+      {(row.timesheetOntvangen || row.factuurOntvangen) && (
+        <>
       {/* KPI-strook */}
       <Card className="grid grid-cols-2 divide-ink-100 sm:grid-cols-5 sm:divide-x">
         <Kpi label="Uren" waarde={geld ? formatHours(geld.uren) : "—"} />
@@ -521,20 +524,34 @@ export default async function DossierPage({
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
 
 /** De vier stappen als één strakke balk: groen = klaar, rood = fout, grijs = te doen. */
 function Stappen({ stappen }: { stappen: { label: string; sub: string; klaar: boolean; fout?: boolean }[] }) {
+  // De eerste stap die nog niet klaar is = waar je nu bent.
+  const actief = stappen.findIndex((s) => !s.klaar);
   return (
     <ol className="grid grid-cols-2 overflow-hidden rounded-lg border border-ink-200 bg-white sm:grid-cols-4 sm:divide-x sm:divide-ink-100">
       {stappen.map((s, i) => (
-        <li key={s.label} className="flex items-center gap-3 px-4 py-3">
+        <li
+          key={s.label}
+          className={cn("flex items-center gap-3 px-4 py-2.5", i === actief && "bg-ink-50")}
+          aria-current={i === actief ? "step" : undefined}
+        >
           <span
             className={cn(
               "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-              s.klaar ? "bg-emerald-600 text-white" : s.fout ? "bg-red-600 text-white" : "bg-ink-100 text-ink-500",
+              s.klaar
+                ? "bg-emerald-600 text-white"
+                : s.fout
+                  ? "bg-red-600 text-white"
+                  : i === actief
+                    ? "bg-ink-900 text-white"
+                    : "bg-ink-100 text-ink-500",
             )}
           >
             {s.klaar ? <Check className="h-3.5 w-3.5" /> : s.fout ? "!" : i + 1}

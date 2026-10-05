@@ -84,7 +84,7 @@ export function UploadPaneel({
           </div>
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-ink-400">
-              Er wordt niets verstuurd of betaald: alles komt eerst op dit overzicht te staan.
+              {persoon ? "Na uitlezen draaien de controles meteen." : "Er wordt niets verstuurd of betaald: alles komt eerst op dit overzicht te staan."}
             </p>
             <SubmitButton size="sm" disabled={totaal === 0} pendingLabel="Bezig met uitlezen…">
               {totaal > 1 ? `${totaal} bestanden uitlezen` : "Uitlezen"}
