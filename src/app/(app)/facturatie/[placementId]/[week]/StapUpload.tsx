@@ -1,16 +1,19 @@
 "use client";
 
 import { useActionState, useRef } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Dropzone } from "@/components/ui/dropzone";
 import { uploadVoorPersoon, type UploadState } from "../../actions";
 
 /** Groen vak met een vink die erin "popt": dit onderdeel is binnen en uitgelezen. */
 export function KlaarVak({ tekst }: { tekst: string }) {
   return (
-    <div className="mt-3 flex h-24 flex-col items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-[13px] font-medium text-emerald-800">
+    <div role="status" className="animate-card-in mt-3 flex h-24 flex-col items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-[13px] font-medium text-emerald-800">
       <span className="animate-dialog-in flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
-        <Check className="h-5 w-5" strokeWidth={3} />
+        {/* De vink tekent zichzelf in (spark-draw uit globals.css, pathLength=100). */}
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M5 12.5l4.5 4.5L19 7.5" pathLength={100} className="animate-spark-draw" />
+        </svg>
       </span>
       {tekst}
     </div>
