@@ -73,7 +73,8 @@ export async function generateVacatureFields(input: {
 
 const DealSchema = z.object({
   title: z.string().min(1, "Titel is verplicht"),
-  company: z.string().min(1, "Bedrijf is verplicht"),
+  // Optioneel: een vacature mag eerst zonder bedrijf worden vastgelegd.
+  company: z.string().trim().default(""),
   discipline: z.string().optional(),
   location: z.string().optional(),
   employmentType: z.string().optional(),

@@ -304,7 +304,6 @@ export function DealForm({
                   <Field
                     label="Bedrijf / opdrachtgever"
                     htmlFor="company"
-                    required
                     error={e.company}
                     hint={
                       company.trim() && !knownCompany
@@ -317,7 +316,6 @@ export function DealForm({
                       name="company"
                       options={companies}
                       defaultValue={company}
-                      required
                       placeholder="Bijv. TenneT"
                       onChange={setCompany}
                     />
