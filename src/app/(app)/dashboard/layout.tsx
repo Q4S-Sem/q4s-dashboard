@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   ListTodo,
-  PieChart,
   Sparkles,
   Briefcase,
   ClipboardCheck,
@@ -38,7 +37,6 @@ export default function AnalyticsLayout({
         tabs={[
           { seg: "", label: "Overzicht", icon: <LayoutDashboard className="h-4 w-4" /> },
           { seg: "te-doen", label: "Te doen", icon: <ListTodo className="h-4 w-4" /> },
-          { seg: "facturatie", label: "Facturatie", icon: <PieChart className="h-4 w-4" /> },
           { seg: "recruitment", label: "Recruitment", icon: <Sparkles className="h-4 w-4" /> },
           { seg: "kpi", label: "Recruitment-KPI's", icon: <Target className="h-4 w-4" /> },
           { seg: "plaatsingen", label: "Plaatsingen & marges", icon: <Briefcase className="h-4 w-4" /> },

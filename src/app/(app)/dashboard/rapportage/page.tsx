@@ -1,18 +1,19 @@
 import Link from "next/link";
+import { periodeUit } from "@/lib/analytics-periode";
+import { PeriodeFilter, TabKop } from "../_ui";
 import { SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
-import { BarChart3, ChevronLeft, ChevronRight, Building2, CalendarDays, HardHat } from "lucide-react";
+import { BarChart3, Building2, CalendarDays, HardHat } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatCurrency, round2 } from "@/lib/utils";
-import { QUARTERS, DISCIPLINES, labelFor } from "@/lib/domain";
+import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { MiniBar, SectionHeading } from "../_kpi";
 
 export const metadata = { title: "Rapportage" };
 export const dynamic = "force-dynamic";
 
 const monthFmt = new Intl.DateTimeFormat("nl-NL", { month: "short" });
-const quarterOf = (d: Date) => Math.floor(d.getMonth() / 3) + 1;
 
 type Dim = "klant" | "maand" | "discipline";
 const DIMS: { value: Dim; label: string; icon: typeof Building2; head: string }[] = [
@@ -25,18 +26,8 @@ type SP = { dim?: string; q?: string; year?: string };
 
 export default async function RapportagePage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  const now = new Date();
-  const START_YEAR = 2026;
-  const maxYear = Math.max(START_YEAR, now.getFullYear());
-  let year = sp.year && /^\d{4}$/.test(sp.year) ? Number(sp.year) : now.getFullYear();
-  year = Math.min(Math.max(year, START_YEAR), maxYear);
-
-  const isYear = sp.q === "all";
-  const qNum = isYear ? null : sp.q && /^[1-4]$/.test(sp.q) ? Number(sp.q) : quarterOf(now);
-  const qParam = isYear ? "all" : String(qNum);
-  const periodStart = isYear ? new Date(year, 0, 1) : new Date(year, (qNum! - 1) * 3, 1);
-  const periodEnd = isYear ? new Date(year + 1, 0, 1) : new Date(year, qNum! * 3, 1);
-  const periodLabel = isYear ? `${year}` : `Q${qNum} ${year}`;
+  const p = periodeUit(sp, new Date());
+  const { start: periodStart, end: periodEnd, label: periodLabel, param: qParam, year } = p;
 
   const dim: Dim = sp.dim === "maand" ? "maand" : sp.dim === "discipline" ? "discipline" : "klant";
   const dimMeta = DIMS.find((d) => d.value === dim)!;
@@ -123,46 +114,12 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
   const totalOmzet = round2(rows.reduce((s, r) => s + r.omzet, 0));
   const maxOmzet = Math.max(1, ...rows.map((r) => r.omzet));
 
-  const periodBtn = (label: string, active: boolean, param: string) => (
-    <Link
-      href={`/dashboard/rapportage?dim=${dim}&q=${param}&year=${year}`}
-      className={segmentVariants(active)}
-    >
-      {label}
-    </Link>
-  );
 
   return (
     <div className="space-y-6">
-      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
-        Draai je omzet en marge uit per klant, maand of discipline — gescopet op de gekozen periode. Exporteren en meer dimensies volgen.
-      </p>
-
-      {/* Periode */}
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-400">Periode</span>
-        <div className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5">
-          {periodBtn("Heel jaar", isYear, "all")}
-          {QUARTERS.map((qq) => periodBtn(`Q${qq.value}`, !isYear && qNum === Number(qq.value), qq.value))}
-        </div>
-        <div className="inline-flex items-center gap-1 rounded-lg border border-ink-200 bg-white p-0.5">
-          {year > START_YEAR ? (
-            <Link href={`/dashboard/rapportage?dim=${dim}&q=${qParam}&year=${year - 1}`} aria-label="Vorig jaar" className="rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900">
-              <ChevronLeft className="h-4 w-4" />
-            </Link>
-          ) : (
-            <span className="cursor-not-allowed p-1.5 text-ink-200"><ChevronLeft className="h-4 w-4" /></span>
-          )}
-          <span className="min-w-[3rem] text-center text-sm font-semibold text-ink-900">{year}</span>
-          {year < maxYear ? (
-            <Link href={`/dashboard/rapportage?dim=${dim}&q=${qParam}&year=${year + 1}`} aria-label="Volgend jaar" className="rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900">
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          ) : (
-            <span className="cursor-not-allowed p-1.5 text-ink-200"><ChevronRight className="h-4 w-4" /></span>
-          )}
-        </div>
-      </div>
+      <TabKop uitleg="Draai omzet en marge uit per klant, maand of discipline. Bedragen uit de verkoopfacturen, ex btw — dezelfde bron als Facturatie → Rapportage.">
+        <PeriodeFilter basePath="/dashboard/rapportage" periode={p} extra={{ dim }} />
+      </TabKop>
 
       {/* Dimensie-tabs */}
       <div className={SEGMENT_GROEP}>

@@ -7,7 +7,8 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/badge";
 import { EVALUATION_STATUSES, EVALUATION_TYPES, labelFor } from "@/lib/domain";
 import { averageOfScores, parseJsonMap } from "@/lib/evaluation-forms";
-import { SectionCard, ActionLink, Bar, Empty } from "../_ui";
+import { SectionCard, ActionLink, Bar, Empty, PeriodeFilter, TabKop } from "../_ui";
+import { periodeUit } from "@/lib/analytics-periode";
 
 export const metadata = { title: "Evaluaties — dashboard" };
 export const dynamic = "force-dynamic";
@@ -19,15 +20,23 @@ function avgOf(scoresJson: string | null): number | null {
   return averageOfScores(parseJsonMap(scoresJson));
 }
 
-export default async function EvaluatiesDashboardPage() {
+export default async function EvaluatiesDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; year?: string }>;
+}) {
+  const p = periodeUit(await searchParams, new Date());
+  // Evaluaties horen bij een jaar + kwartaal (niet bij een datum).
+  const inPeriode = { year: p.year, ...(p.q ? { quarter: p.q } : {}) };
   const [total, definitief, concept, scoreRows, recent] = await Promise.all([
-    db.evaluation.count(),
-    db.evaluation.count({ where: { status: "DEFINITIEF" } }),
-    db.evaluation.count({ where: { status: "CONCEPT" } }),
+    db.evaluation.count({ where: inPeriode }),
+    db.evaluation.count({ where: { ...inPeriode, status: "DEFINITIEF" } }),
+    db.evaluation.count({ where: { ...inPeriode, status: "CONCEPT" } }),
     db.evaluation.findMany({
       select: { year: true, quarter: true, type: true, scoresJson: true },
     }),
     db.evaluation.findMany({
+      where: inPeriode,
       orderBy: { createdAt: "desc" },
       take: 10,
       include: {
@@ -37,7 +46,8 @@ export default async function EvaluatiesDashboardPage() {
   ]);
 
   // ---- Gemiddelde score (over alle evaluaties met een score) ----
-  const allScores = scoreRows
+  const periodeRows = scoreRows.filter((e) => e.year === p.year && (!p.q || e.quarter === p.q));
+  const allScores = periodeRows
     .map((e) => avgOf(e.scoresJson))
     .filter((x): x is number => x !== null);
   const overallAvg = allScores.length
@@ -70,7 +80,7 @@ export default async function EvaluatiesDashboardPage() {
 
   // ---- Evaluaties per type ----
   const typeCounts = new Map<string, number>();
-  for (const e of scoreRows) {
+  for (const e of periodeRows) {
     typeCounts.set(e.type, (typeCounts.get(e.type) ?? 0) + 1);
   }
   const typeBars = EVALUATION_TYPES.map((t) => ({
@@ -81,9 +91,9 @@ export default async function EvaluatiesDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
-        Inzicht in alle ingevulde evaluaties: scores, verdeling per kwartaal en per type, en de laatst ingevulde formulieren.
-      </p>
+      <TabKop uitleg={`Evaluaties van ${p.label}: aantallen, gemiddelde score en per type. De grafiek per kwartaal toont het verloop over alle jaren.`}>
+        <PeriodeFilter basePath="/dashboard/evaluaties" periode={p} />
+      </TabKop>
 
       {/* Kerncijfers */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

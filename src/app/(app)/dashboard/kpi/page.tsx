@@ -16,7 +16,7 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { APPLICATION_STATUSES } from "@/lib/domain";
 import { formatDate, formatHours, formatPercent } from "@/lib/utils";
 import { buildRecruitmentKpis } from "@/lib/recruitment-kpi";
-import { SectionCard, ActionLink, Bar, Empty } from "../_ui";
+import { SectionCard, ActionLink, Bar, Empty, TabKop } from "../_ui";
 
 export const metadata = { title: "Recruitment-KPI's — dashboard" };
 export const dynamic = "force-dynamic";
@@ -46,12 +46,7 @@ export default async function RecruitmentKpiPage() {
 
   return (
     <div className="space-y-6">
-      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
-        Kerncijfers en knelpunten van de recruitment-pijplijn: waar sollicitaties blijven hangen, hoe lang
-        een plaatsing duurt en wat er zonder opvolging ligt. Alleen-lezen — er wordt hier niets gewijzigd.
-        Peildatum: {formatDate(kpis.generatedAt)}.
-      </p>
-
+      <TabKop uitleg={`Waar sollicitaties blijven hangen, hoe lang een plaatsing duurt en wat zonder opvolging ligt. Peildatum ${formatDate(kpis.generatedAt)}.`} />
       {/* Kerncijfers */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard

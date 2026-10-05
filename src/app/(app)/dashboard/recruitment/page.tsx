@@ -20,12 +20,19 @@ import {
   DISCIPLINES,
   VACANCY_STATUSES,
 } from "@/lib/domain";
-import { SectionCard, ActionLink, Bar, Empty } from "../_ui";
+import { SectionCard, ActionLink, Bar, Empty, PeriodeFilter, TabKop } from "../_ui";
+import { periodeUit } from "@/lib/analytics-periode";
 
 export const metadata = { title: "Recruitment — dashboard" };
 export const dynamic = "force-dynamic";
 
-export default async function RecruitmentDashboardPage() {
+export default async function RecruitmentDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; year?: string }>;
+}) {
+  const p = periodeUit(await searchParams, new Date());
+  const inPeriode = { createdAt: { gte: p.start, lt: p.end } };
   const [
     vacanciesTotal,
     vacanciesPublished,
@@ -39,10 +46,10 @@ export default async function RecruitmentDashboardPage() {
   ] = await Promise.all([
     db.vacancy.count(),
     db.vacancy.count({ where: { status: "PUBLISHED" } }),
-    db.candidate.count(),
-    db.application.count(),
-    db.application.count({ where: { status: "PLACED" } }),
-    db.application.groupBy({ by: ["status"], _count: { _all: true } }),
+    db.candidate.count({ where: inPeriode }),
+    db.application.count({ where: inPeriode }),
+    db.application.count({ where: { ...inPeriode, status: "PLACED" } }),
+    db.application.groupBy({ by: ["status"], where: inPeriode, _count: { _all: true } }),
     db.candidate.groupBy({ by: ["discipline"], _count: { _all: true } }),
     db.candidate.groupBy({ by: ["rating"], _count: { _all: true } }),
     db.vacancy.findMany({
@@ -107,9 +114,9 @@ export default async function RecruitmentDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
-        Sollicitatie-funnel, kandidaten en best presterende vacatures. Alles gekoppeld aan de operationele pagina's.
-      </p>
+      <TabKop uitleg={`Sollicitaties en nieuwe kandidaten in ${p.label}. De talentpool (discipline, rangschikking) en vacatures tonen de huidige stand.`}>
+        <PeriodeFilter basePath="/dashboard/recruitment" periode={p} />
+      </TabKop>
 
       {/* Kerncijfers */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -121,19 +128,19 @@ export default async function RecruitmentDashboardPage() {
           accent="slate"
         />
         <StatCard
-          label="Kandidaten"
+          label={`Nieuwe kandidaten ${p.short}`}
           value={candidatesTotal}
           icon={<Users className="h-5 w-5" />}
           accent="slate"
         />
         <StatCard
-          label="Sollicitaties"
+          label={`Sollicitaties ${p.short}`}
           value={applicationsTotal}
           icon={<ClipboardList className="h-5 w-5" />}
           accent="slate"
         />
         <StatCard
-          label="Geplaatst"
+          label={`Geplaatst ${p.short}`}
           value={applicationsPlaced}
           icon={<UserCheck className="h-5 w-5" />}
           accent="green"
@@ -148,7 +155,7 @@ export default async function RecruitmentDashboardPage() {
           action={<ActionLink href="/sollicitaties">Alle sollicitaties →</ActionLink>}
         >
           {funnelMax === 0 ? (
-            <Empty>Nog geen sollicitaties.</Empty>
+            <Empty>Geen sollicitaties in {p.label}.</Empty>
           ) : (
             <CardContent className="space-y-3">
               {funnel.map((f) => (

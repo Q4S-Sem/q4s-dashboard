@@ -337,9 +337,13 @@ export async function invoicingOverview(range?: { start: Date; end: Date }): Pro
   );
   const teBetalen = round2(toPay.reduce((s, p) => s + p.amount, 0));
 
-  // Per month (last 12), ex BTW.
-  const perMonth: OverviewMonth[] = Array.from({ length: 12 }, (_, idx) => {
-    const d = new Date(twelveAgo.getFullYear(), twelveAgo.getMonth() + idx, 1);
+  // Per maand, ex BTW: de maanden van de gekozen periode, anders de laatste 12.
+  const maandStart = scoped ? new Date(start.getFullYear(), start.getMonth(), 1) : twelveAgo;
+  const aantalMaanden = scoped
+    ? Math.max(1, (end.getFullYear() - maandStart.getFullYear()) * 12 + end.getMonth() - maandStart.getMonth() + (end.getDate() > 1 ? 1 : 0))
+    : 12;
+  const perMonth: OverviewMonth[] = Array.from({ length: aantalMaanden }, (_, idx) => {
+    const d = new Date(maandStart.getFullYear(), maandStart.getMonth() + idx, 1);
     return { key: `${d.getFullYear()}-${d.getMonth()}`, label: monthFmt.format(d), omzet: 0, inkoop: 0, marge: 0 };
   });
   const monthKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;

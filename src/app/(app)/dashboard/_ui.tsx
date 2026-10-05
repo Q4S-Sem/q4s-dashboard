@@ -1,7 +1,10 @@
 import Link from "next/link";
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { segmentVariants } from "@/components/ui/button";
+import type { Periode } from "@/lib/analytics-periode";
 
 // Gedeelde presentatie-bouwstenen voor de analytics sub-dashboards, zodat
 // Facturatie / Recruitment / Plaatsingen / Evaluaties er identiek + strak uitzien.
@@ -93,7 +96,7 @@ export function Bar({
       </span>
       <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink-100">
         <div
-          className={cn("h-full rounded-full transition-all", TONE[color] ?? "bg-emerald-500")}
+          className={cn("animate-bar-in h-full origin-left rounded-full transition-all", TONE[color] ?? "bg-emerald-500")}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -107,4 +110,71 @@ export function Bar({
 /** A consistent empty-state body inside a SectionCard. */
 export function Empty({ children }: { children: React.ReactNode }) {
   return <CardContent className="py-8 text-center text-sm text-ink-400">{children}</CardContent>;
+}
+
+/**
+ * Periodekiezer van Analytics: Heel jaar · Q1–Q4 + jaar ‹ ›. Links (geen JS), zodat
+ * de keuze in de URL staat; `extra` = andere query-params die mee moeten (bijv. dim).
+ */
+export function PeriodeFilter({
+  basePath,
+  periode: p,
+  extra = {},
+}: {
+  basePath: string;
+  periode: Periode;
+  extra?: Record<string, string>;
+}) {
+  const href = (q: string, year: number) =>
+    `${basePath}?${new URLSearchParams({ ...extra, q, year: String(year) }).toString()}`;
+  const pijl = "rounded-md p-1.5 text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-900";
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5">
+        <Link href={href("all", p.year)} scroll={false} className={segmentVariants(p.isYear)}>
+          Heel jaar
+        </Link>
+        {[1, 2, 3, 4].map((q) => (
+          <Link key={q} href={href(String(q), p.year)} scroll={false} className={segmentVariants(p.q === q)}>
+            Q{q}
+          </Link>
+        ))}
+      </div>
+      <div className="inline-flex items-center gap-1 rounded-lg border border-ink-200 bg-white p-0.5">
+        {p.year > p.minYear ? (
+          <Link href={href(p.param, p.year - 1)} scroll={false} aria-label="Vorig jaar" className={pijl}>
+            <ChevronLeft className="h-4 w-4" />
+          </Link>
+        ) : (
+          <span className="p-1.5 text-ink-200" aria-hidden>
+            <ChevronLeft className="h-4 w-4" />
+          </span>
+        )}
+        <span className="min-w-[3rem] text-center text-sm font-semibold tabular-nums text-ink-900">{p.year}</span>
+        {p.year < p.maxYear ? (
+          <Link href={href(p.param, p.year + 1)} scroll={false} aria-label="Volgend jaar" className={pijl}>
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        ) : (
+          <span className="p-1.5 text-ink-200" aria-hidden>
+            <ChevronRight className="h-4 w-4" />
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Kop van een Analytics-tab: korte uitleg links, filter (of "huidige stand") rechts. */
+export function TabKop({ uitleg, children }: { uitleg: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="max-w-3xl text-sm text-ink-500">{uitleg}</p>
+      {children ?? (
+        <span className="rounded-full border border-ink-200 bg-white px-3 py-1 text-xs font-medium text-ink-500">
+          Huidige stand
+        </span>
+      )}
+    </div>
+  );
 }

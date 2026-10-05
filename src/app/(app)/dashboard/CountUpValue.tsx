@@ -28,10 +28,8 @@ export function CountUpValue({
   const ref = React.useRef<HTMLSpanElement>(null);
 
   React.useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setText(fmt(value));
-      return;
-    }
+    // Reduced motion: de begintekst (eindwaarde) blijft gewoon staan.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let raf = 0;
     let start: number | null = null;
     const dur = 900;

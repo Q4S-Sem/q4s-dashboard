@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { tariefSuffix } from "@/lib/toeslag";
+import { UREN_PER_DAG, isDagtarief, tariefSuffix } from "@/lib/toeslag";
 import {
   Briefcase,
   Users,
@@ -16,10 +16,15 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { formatCurrency, round2 } from "@/lib/utils";
 import { DISCIPLINES, PLACEMENT_STATUSES, labelFor } from "@/lib/domain";
-import { SectionCard, ActionLink, Bar, Empty } from "../_ui";
+import { SectionCard, ActionLink, Bar, Empty, TabKop } from "../_ui";
 
 export const metadata = { title: "Plaatsingen & marges" };
 export const dynamic = "force-dynamic";
+
+/** Marge per uur; een dagtarief wordt omgerekend op een werkdag van UREN_PER_DAG uur. */
+function margeUur(p: { chargeRate: number; costRate: number; rateUnit?: string | null }): number {
+  return round2((p.chargeRate - p.costRate) / (isDagtarief(p) ? UREN_PER_DAG : 1));
+}
 
 /** Margin % of a placement; guards against chargeRate = 0. */
 function marginPct(charge: number, cost: number): number {
@@ -39,7 +44,7 @@ export default async function PlaatsingenMargesPage() {
   const avgMargePerHour =
     actief > 0
       ? round2(
-          placements.reduce((s, p) => s + (p.chargeRate - p.costRate), 0) / actief,
+          placements.reduce((s, p) => s + margeUur(p), 0) / actief,
         )
       : 0;
   const avgMargePct =
@@ -52,7 +57,7 @@ export default async function PlaatsingenMargesPage() {
 
   // ---- Marge per plaatsing (aflopend op marge/uur) ----
   const rows = [...placements].sort(
-    (a, b) => b.chargeRate - b.costRate - (a.chargeRate - a.costRate),
+    (a, b) => margeUur(b) - margeUur(a),
   );
 
   // ---- Marge per klant (som marge/uur, actieve plaatsingen) ----
@@ -69,7 +74,7 @@ export default async function PlaatsingenMargesPage() {
       sum: 0,
       count: 0,
     };
-    cur.sum = round2(cur.sum + (p.chargeRate - p.costRate));
+    cur.sum = round2(cur.sum + margeUur(p));
     cur.count += 1;
     perClientMap.set(p.clientId, cur);
   }
@@ -93,9 +98,7 @@ export default async function PlaatsingenMargesPage() {
 
   return (
     <div className="space-y-6">
-      <p className="-mt-2 max-w-3xl text-[15px] leading-relaxed text-ink-500">
-        De marge per actieve plaatsing, per klant en per discipline — zo zie je in één oogopslag waar het geld verdiend wordt.
-      </p>
+      <TabKop uitleg="Contractmarge per actieve plaatsing, per klant en per discipline. Een dagtarief is omgerekend naar per uur (8 uur per dag)." />
 
       {/* Kerncijfers */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -150,7 +153,7 @@ export default async function PlaatsingenMargesPage() {
             </THead>
             <TBody>
               {rows.map((p) => {
-                const margePerHour = round2(p.chargeRate - p.costRate);
+                const margePerHour = margeUur(p);
                 const pct = marginPct(p.chargeRate, p.costRate);
                 return (
                   <TR key={p.id}>

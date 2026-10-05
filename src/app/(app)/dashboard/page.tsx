@@ -1,6 +1,10 @@
 import Link from "next/link";
-import { buttonVariants, segmentVariants } from "@/components/ui/button";
-import { tariefEenheden } from "@/lib/toeslag";
+import { buttonVariants } from "@/components/ui/button";
+import { deltaPct, periodeUit } from "@/lib/analytics-periode";
+import { getWeekOverview } from "@/lib/facturatie-week";
+import { volgendePersoon } from "@/lib/facturatie-volgende";
+import { DEADLINE_LABEL } from "@/lib/facturatie-checks";
+import { PeriodeFilter } from "./_ui";
 import {
   Wallet,
   TrendingUp,
@@ -14,12 +18,6 @@ import {
   Sparkles,
   ClipboardList,
   Award,
-  ClipboardCheck,
-  Globe,
-  ListChecks,
-  ChevronRight,
-  ChevronLeft,
-  Star,
   Users,
   Building2,
   Layers,
@@ -37,17 +35,15 @@ import { cn, formatCurrency, round2 } from "@/lib/utils";
 import {
   INVOICE_STATUSES,
   APPLICATION_STATUSES,
-  QUARTERS,
   colorFor,
 } from "@/lib/domain";
-import { averageOfScores, parseJsonMap } from "@/lib/evaluation-forms";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { DashboardChart } from "./DashboardChart";
 import { DashboardPie } from "./DashboardPie";
 import { DashboardLine } from "./DashboardLine";
-import { KpiTile, SectionCard, SectionHeading, HubTile, MiniBar, ResultRow, type DashColor } from "./_kpi";
+import { KpiTile, SectionCard, SectionHeading, MiniBar, ResultRow, type DashColor } from "./_kpi";
 import { CountUpValue } from "./CountUpValue";
-import { invoicingOverview, pendingWorkByConsultant, companyCostsThisYear } from "@/lib/facturatie";
+import { invoicingOverview, companyCostsThisYear } from "@/lib/facturatie";
 import { dashboardComposition } from "@/lib/dashboard-analytics";
 import { currentUser } from "@/lib/session";
 import type { ReactNode } from "react";
@@ -55,14 +51,10 @@ import type { ReactNode } from "react";
 export const metadata = { title: "Analytics" };
 export const dynamic = "force-dynamic";
 
-const monthFmt = new Intl.DateTimeFormat("nl-NL", { month: "short" });
 
 function effectiveStatus(status: string, dueDate: Date, now: Date) {
   if (status === "SENT" && dueDate < now) return "OVERDUE";
   return status;
-}
-function quarterOf(d: Date) {
-  return Math.floor(d.getMonth() / 3) + 1;
 }
 
 /** Domein-badgekleur → dashboard-kleur voor de gekleurde bars. */
@@ -137,24 +129,8 @@ export default async function DashboardPage({
 }) {
   const sp = await searchParams;
   const now = new Date();
-  const START_YEAR = 2026;
-  const maxYear = Math.max(START_YEAR, now.getFullYear());
-  let year = sp.year && /^\d{4}$/.test(sp.year) ? Number(sp.year) : now.getFullYear();
-  year = Math.min(Math.max(year, START_YEAR), maxYear);
-
-  // Periode = heel jaar ("all") of een kwartaal (1..4). Default = huidig kwartaal.
-  const isYear = sp.q === "all";
-  const qNum = isYear
-    ? null
-    : sp.q && /^[1-4]$/.test(sp.q)
-      ? Number(sp.q)
-      : quarterOf(now);
-  const qParam = isYear ? "all" : String(qNum);
-
-  const periodStart = isYear ? new Date(year, 0, 1) : new Date(year, (qNum! - 1) * 3, 1);
-  const periodEnd = isYear ? new Date(year + 1, 0, 1) : new Date(year, qNum! * 3, 1);
-  const periodLabel = isYear ? `${year}` : `Q${qNum} ${year}`;
-  const shortLabel = isYear ? `${year}` : `Q${qNum}`;
+  const p = periodeUit(sp, now);
+  const { start: periodStart, end: periodEnd, label: periodLabel, short: shortLabel } = p;
   const soon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 60);
   // Vandaag-venster + start van de lopende ISO-week (maandag) voor de
   // begroetingskaarten bovenaan.
@@ -163,35 +139,35 @@ export default async function DashboardPage({
   const isoWeekStart = new Date(todayStart);
   isoWeekStart.setDate(isoWeekStart.getDate() - ((isoWeekStart.getDay() + 6) % 7));
 
+  // Plaatsingen die een venster overlappen (start vóór het einde, niet geëindigd vóór het begin).
+  const overlapt = (start: Date, end: Date) => ({
+    startDate: { lt: end },
+    OR: [{ endDate: null }, { endDate: { gte: start } }],
+  });
   const [
-    periodBillable,
     periodPlacements,
+    prevPlacementsCount,
     activePlacements,
-    consultantsCount,
-    clientsCount,
-    submittedCount,
     sentInvoices,
-    pendingConsultants,
+    week,
     overview,
+    prevOverview,
     costs,
   ] = await Promise.all([
-    db.timesheet.findMany({
-      where: { status: { in: ["APPROVED", "INVOICED"] }, weekStart: { gte: periodStart, lt: periodEnd } },
-      include: { entries: true, placement: { include: { consultant: { select: { employmentType: true } } } } },
-    }),
     // Plaatsingen die de periode overlappen (start vóór einde periode én nog niet
     // geëindigd vóór het begin ervan) — de periode-versie van "actieve plaatsingen".
     db.placement.findMany({
-      where: { startDate: { lt: periodEnd }, OR: [{ endDate: null }, { endDate: { gte: periodStart } }] },
+      where: overlapt(periodStart, periodEnd),
       select: { id: true, consultantId: true, clientId: true },
     }),
+    db.placement.count({ where: overlapt(p.prevStart, p.prevEnd) }),
     db.placement.findMany({ where: { status: "ACTIVE" }, include: { consultant: true, client: true } }),
-    db.consultant.count({ where: { active: true } }),
-    db.client.count(),
-    db.timesheet.count({ where: { status: "SUBMITTED" } }),
     db.invoice.findMany({ where: { status: "SENT" } }),
-    pendingWorkByConsultant(),
+    // Dezelfde stand als Facturatie → Week verwerken (deze week).
+    getWeekOverview(undefined, now),
+    // Omzet/marge komen uit de FACTUREN — precies zoals Facturatie → Rapportage.
     invoicingOverview({ start: periodStart, end: periodEnd }),
+    invoicingOverview({ start: p.prevStart, end: p.prevEnd }),
     companyCostsThisYear({ start: periodStart, end: periodEnd }),
   ]);
 
@@ -200,23 +176,6 @@ export default async function DashboardPage({
     periodPlacements.map((p) => p.clientId).filter((id): id is string => id !== null),
   ).size;
 
-  // ---- Vorige periode: voor de echte delta-percentages op de bovenste kaarten.
-  // Even lang venster, direct ervóór (kwartaal → vorig kwartaal, jaar → vorig jaar).
-  const prevStart = isYear
-    ? new Date(year - 1, 0, 1)
-    : new Date(periodStart.getFullYear(), periodStart.getMonth() - 3, 1);
-  const prevEnd = periodStart;
-  const [prevOverview, prevBillable] = await Promise.all([
-    invoicingOverview({ start: prevStart, end: prevEnd }),
-    db.timesheet.findMany({
-      where: { status: { in: ["APPROVED", "INVOICED"] }, weekStart: { gte: prevStart, lt: prevEnd } },
-      include: { entries: true, placement: { include: { consultant: { select: { employmentType: true } } } } },
-    }),
-  ]);
-  // Delta-helper: procentueel verschil t.o.v. vorige periode; null als er niets
-  // was om mee te vergelijken (dan tonen we geen badge i.p.v. een nep-100%).
-  const deltaPct = (current: number, previous: number): number | null =>
-    previous > 0 ? round2(((current - previous) / previous) * 100) : null;
 
   // ---- Nettowinst: brutomarge (omzet − inkoop) minus onze EIGEN kosten ----
   const brutomarge = overview.marge;
@@ -226,12 +185,8 @@ export default async function DashboardPage({
   const [
     certs,
     openApplications,
-    candidatesCount,
     vacPublished,
-    vacConcept,
-    vacViews,
     expensesNew,
-    periodEvals,
     recentInvoices,
     recentApplications,
     applicationsByStatus,
@@ -242,15 +197,8 @@ export default async function DashboardPage({
   ] = await Promise.all([
     db.certificate.findMany({ where: { expiryDate: { not: null } }, select: { expiryDate: true, consultantId: true } }),
     db.application.count({ where: { status: { in: ["NEW", "SCREENING", "PROPOSED"] } } }),
-    db.candidate.count(),
     db.vacancy.count({ where: { status: "PUBLISHED" } }),
-    db.vacancy.count({ where: { status: "CONCEPT" } }),
-    db.vacancy.aggregate({ where: { status: "PUBLISHED" }, _sum: { views: true } }),
-    db.expense.aggregate({ where: { status: "NEW" }, _count: { _all: true }, _sum: { amount: true } }),
-    db.evaluation.findMany({
-      where: { year, ...(isYear ? {} : { quarter: qNum! }) },
-      select: { scoresJson: true },
-    }),
+    db.expense.count({ where: { status: "NEW" } }),
     db.invoice.findMany({
       where: { issueDate: { gte: periodStart, lt: periodEnd } },
       orderBy: [{ issueDate: "desc" }, { number: "desc" }],
@@ -308,59 +256,9 @@ export default async function DashboardPage({
   for (const r of evDates) bump(r.start);
   for (const r of expDates) bump(r.date);
 
-  // ---- Omzet/inkoop/marge per maand binnen de periode (billable timesheets) ----
-  const months = [] as { y: number; m: number; label: string; omzet: number; inkoop: number; marge: number }[];
-  for (
-    let d = new Date(periodStart.getFullYear(), periodStart.getMonth(), 1);
-    d < periodEnd;
-    d = new Date(d.getFullYear(), d.getMonth() + 1, 1)
-  ) {
-    months.push({ y: d.getFullYear(), m: d.getMonth(), label: monthFmt.format(d), omzet: 0, inkoop: 0, marge: 0 });
-  }
-  let periodOmzet = 0;
-  let periodMarge = 0;
-  for (const t of periodBillable) {
-    const d = new Date(t.weekStart);
-    const hours = tariefEenheden(t.entries, t.placement.rateUnit === "DAY").reduce((s, e) => s + e.hours, 0);
-    const omzet = hours * t.placement.chargeRate;
-    // Eigen loondienst-personeel heeft géén inkoopfactuur (salaris) → geen inkoop
-    // hier, consistent met invoicingOverview/brutomarge. Anders zou de dashboard-
-    // marge de loonkost als fantoom-inkoop aftrekken en botsen met de facturatie-
-    // sectie op dezelfde pagina.
-    const inkoop = t.placement.consultant.employmentType === "LOONDIENST" ? 0 : hours * t.placement.costRate;
-    const marge = omzet - inkoop;
-    const mo = months.find((x) => x.y === d.getFullYear() && x.m === d.getMonth());
-    if (mo) {
-      mo.omzet += omzet;
-      mo.inkoop += inkoop;
-      mo.marge += marge;
-    }
-    periodOmzet += omzet;
-    periodMarge += marge;
-  }
-  periodOmzet = round2(periodOmzet);
-  periodMarge = round2(periodMarge);
-  const periodMargePct = periodOmzet > 0 ? Math.round((periodMarge / periodOmzet) * 100) : 0;
-
-  // Vorige-periode omzet/marge (zelfde rekenwijze) voor de delta-badges.
-  let prevOmzet = 0;
-  let prevMarge = 0;
-  for (const t of prevBillable) {
-    const hours = tariefEenheden(t.entries, t.placement.rateUnit === "DAY").reduce((s, e) => s + e.hours, 0);
-    const omzet = hours * t.placement.chargeRate;
-    const inkoop = t.placement.consultant.employmentType === "LOONDIENST" ? 0 : hours * t.placement.costRate;
-    prevOmzet += omzet;
-    prevMarge += omzet - inkoop;
-  }
-  prevOmzet = round2(prevOmzet);
-  prevMarge = round2(prevMarge);
-  const prevPlacementsCount = prevOverview.perConsultant.length;
-  const chartData = months.map((m) => ({
-    month: m.label,
-    omzet: round2(m.omzet),
-    inkoop: round2(m.inkoop),
-    marge: round2(m.marge),
-  }));
+  // ---- Omzet/inkoop/marge per maand — uit de facturen, net als Rapportage ----
+  const chartData = overview.perMonth.map((m) => ({ month: m.label, omzet: m.omzet, inkoop: m.inkoop, marge: m.marge }));
+  const periodMargePct = overview.margePct;
 
   // ---- Samenstelling/verdeling + risico-analyses (cirkeldiagrammen e.d.) ----
   const comp = await dashboardComposition({ start: periodStart, end: periodEnd }, now);
@@ -388,19 +286,17 @@ export default async function DashboardPage({
   const lowMarginPlacements = activePlacements.filter(
     (p) => p.chargeRate > 0 && (p.chargeRate - p.costRate) / p.chargeRate < 0.15,
   );
-  const expensesNewCount = expensesNew._count._all;
+  const expensesNewCount = expensesNew;
 
-  const evalScores = periodEvals
-    .map((e) => averageOfScores(parseJsonMap(e.scoresJson)))
-    .filter((x): x is number => x !== null);
-  const evalAvg = evalScores.length
-    ? Math.round((evalScores.reduce((s, v) => s + v, 0) / evalScores.length) * 10) / 10
-    : null;
+  // ---- Week verwerken (zelfde cijfers als Facturatie → Week verwerken) ----
+  const ws = week.stats;
+  const eersteVerwerken = volgendePersoon(week.rows);
+  const deadlineVoorbij = now.getTime() > week.week.deadline.getTime();
 
   const signals: { label: string; value: string; href: string; tone: "red" | "amber" | "blue" | "slate" }[] = [
     { label: "Facturen te laat (over vervaldatum)", value: overdueInvoices.length ? `${overdueInvoices.length} · ${formatCurrency(overdueAmount)}` : "0", href: "/facturatie/verkoop?tab=telaat", tone: overdueInvoices.length ? "red" : "slate" },
-    { label: "Klaar om te verwerken", value: String(pendingConsultants.length), href: "/facturatie", tone: pendingConsultants.length ? "blue" : "slate" },
-    { label: "Urenstaten ter goedkeuring", value: String(submittedCount), href: "/facturatie", tone: submittedCount ? "amber" : "slate" },
+    { label: `Week ${week.week.isoWeek}: klaar voor akkoord`, value: String(ws.klaar), href: "/facturatie?filter=klaar", tone: ws.klaar ? "blue" : "slate" },
+    { label: `Week ${week.week.isoWeek}: met fouten`, value: String(ws.fout), href: "/facturatie?filter=fout", tone: ws.fout ? "red" : "slate" },
     { label: "Certificaten (bijna) verlopen", value: String(certAlerts), href: "/certificeringen", tone: expiredCerts ? "red" : certAlerts ? "amber" : "slate" },
     { label: "Plaatsingen met lage marge (<15%)", value: String(lowMarginPlacements.length), href: "/plaatsingen", tone: lowMarginPlacements.length ? "amber" : "slate" },
     { label: "Open sollicitaties in pipeline", value: String(openApplications), href: "/sollicitaties", tone: openApplications ? "blue" : "slate" },
@@ -412,12 +308,28 @@ export default async function DashboardPage({
   // bestaande signalen — met een directe actieknop per regel (mockup-stijl).
   type Todo = { key: string; title: string; sub: string; href: string; cta: string; tone: DashColor; primary?: boolean };
   const todos: Todo[] = [];
-  if (pendingConsultants.length > 0) {
+  if (ws.klaar > 0 && eersteVerwerken?.href) {
     todos.push({
       key: "verwerken",
-      title: `Week verwerken: ${pendingConsultants.length} medewerker${pendingConsultants.length === 1 ? "" : "s"} met goedgekeurde uren`,
-      sub: "Week verwerken · urenstaten klaar voor facturatie",
-      href: "/facturatie", cta: "Start", tone: "blue", primary: true,
+      title: `Week ${week.week.isoWeek}: ${ws.klaar} ${ws.klaar === 1 ? "persoon" : "personen"} klaar voor akkoord`,
+      sub: `Week verwerken · begin bij ${eersteVerwerken.naam}`,
+      href: eersteVerwerken.href, cta: "Start", tone: "blue", primary: true,
+    });
+  }
+  if (ws.fout > 0) {
+    todos.push({
+      key: "fouten",
+      title: `Week ${week.week.isoWeek}: ${ws.fout} ${ws.fout === 1 ? "week" : "weken"} met fouten`,
+      sub: "Week verwerken · urenstaat en factuur kloppen niet",
+      href: "/facturatie?filter=fout", cta: "Bekijk", tone: "amber",
+    });
+  }
+  if (deadlineVoorbij && ws.nietIngeleverd > 0) {
+    todos.push({
+      key: "telaat",
+      title: `${ws.nietIngeleverd} ${ws.nietIngeleverd === 1 ? "persoon heeft" : "personen hebben"} week ${week.week.isoWeek} nog niet ingeleverd`,
+      sub: `Deadline ${DEADLINE_LABEL} verstreken`,
+      href: "/facturatie?filter=niet", cta: "Bekijk", tone: "amber",
     });
   }
   if (overdueInvoices.length > 0) {
@@ -434,14 +346,6 @@ export default async function DashboardPage({
       title: `${certAlerts} certifica${certAlerts === 1 ? "at" : "ten"} (bijna) verlopen`,
       sub: "Certificeringen · hercertificering plannen",
       href: "/certificeringen", cta: "Plan", tone: "amber",
-    });
-  }
-  if (submittedCount > 0) {
-    todos.push({
-      key: "uren",
-      title: `${submittedCount} urensta${submittedCount === 1 ? "at wacht" : "ten wachten"} op goedkeuring`,
-      sub: "Urenregistratie · controleren en goedkeuren",
-      href: "/facturatie", cta: "Controleer", tone: "violet",
     });
   }
   if (openApplications > 0) {
@@ -469,14 +373,6 @@ export default async function DashboardPage({
   const greeting = now.getHours() < 12 ? "Goedemorgen" : now.getHours() < 18 ? "Goedemiddag" : "Goedenavond";
   const firstName = me?.name?.split(" ")[0] ?? "";
 
-  const periodBtn = (label: string, active: boolean, param: string) => (
-    <Link
-      href={`/dashboard?q=${param}&year=${year}`}
-      className={segmentVariants(active)}
-    >
-      {label}
-    </Link>
-  );
 
   return (
     <div className="space-y-8">
@@ -490,29 +386,7 @@ export default async function DashboardPage({
             Dit speelt er vandaag. Begin bovenaan bij &quot;Nu te doen&quot;.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-lg border border-ink-200 bg-white p-0.5">
-          {periodBtn("Heel jaar", isYear, "all")}
-          {QUARTERS.map((qq) => periodBtn(`Q${qq.value}`, !isYear && qNum === Number(qq.value), qq.value))}
-        </div>
-        <div className="inline-flex items-center gap-1 rounded-lg border border-ink-200 bg-white p-0.5">
-          {year > START_YEAR ? (
-            <Link href={`/dashboard?q=${qParam}&year=${year - 1}`} aria-label="Vorig jaar" className="rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900">
-              <ChevronLeft className="h-4 w-4" />
-            </Link>
-          ) : (
-            <span className="cursor-not-allowed p-1.5 text-ink-200"><ChevronLeft className="h-4 w-4" /></span>
-          )}
-          <span className="min-w-[3rem] text-center text-sm font-semibold text-ink-900">{year}</span>
-          {year < maxYear ? (
-            <Link href={`/dashboard?q=${qParam}&year=${year + 1}`} aria-label="Volgend jaar" className="rounded-md p-1.5 text-ink-500 hover:bg-ink-50 hover:text-ink-900">
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          ) : (
-            <span className="cursor-not-allowed p-1.5 text-ink-200"><ChevronRight className="h-4 w-4" /></span>
-          )}
-        </div>
-        </div>
+        <PeriodeFilter basePath="/dashboard" periode={p} />
       </div>
 
       {/* Kerncijfers (periode) — Studio Admin-stijl statuskaarten met delta t.o.v.
@@ -520,21 +394,21 @@ export default async function DashboardPage({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SectionCard
           label={`Omzet ${shortLabel}`}
-          value={<CountUpValue value={periodOmzet} />}
-          deltaPct={deltaPct(periodOmzet, prevOmzet)}
-          hint={`van ${formatCurrency(prevOmzet)} · vorige periode`}
-          href="/facturatie/rapportage"
-          spark={months.map((m) => round2(m.omzet))}
+          value={<CountUpValue value={overview.omzet} />}
+          deltaPct={deltaPct(overview.omzet, prevOverview.omzet)}
+          hint={`${formatCurrency(prevOverview.omzet)} in ${p.prevLabel} · gefactureerd ex btw`}
+          href={`/facturatie/rapportage?q=${p.param}&year=${p.year}`}
+          spark={overview.perMonth.map((m) => m.omzet)}
           sparkColor="blue"
           delay={0}
         />
         <SectionCard
           label={`Marge ${shortLabel}`}
-          value={<CountUpValue value={periodMarge} />}
-          deltaPct={deltaPct(periodMarge, prevMarge)}
-          hint={`van ${formatCurrency(prevMarge)} · ${periodMargePct}% marge`}
-          href="/facturatie/rapportage"
-          spark={months.map((m) => round2(m.marge))}
+          value={<CountUpValue value={overview.marge} />}
+          deltaPct={deltaPct(overview.marge, prevOverview.marge)}
+          hint={`${periodMargePct}% van omzet · ${formatCurrency(prevOverview.marge)} in ${p.prevLabel}`}
+          href={`/facturatie/rapportage?q=${p.param}&year=${p.year}`}
+          spark={overview.perMonth.map((m) => m.marge)}
           sparkColor="emerald"
           delay={70}
         />
@@ -542,7 +416,7 @@ export default async function DashboardPage({
           label={`Plaatsingen ${shortLabel}`}
           value={<CountUpValue value={periodPlacements.length} format="number" />}
           deltaPct={deltaPct(periodPlacements.length, prevPlacementsCount)}
-          hint={`van ${prevPlacementsCount} · vorige periode`}
+          hint={`${prevPlacementsCount} in ${p.prevLabel}`}
           href="/plaatsingen"
           delay={140}
         />
@@ -617,15 +491,17 @@ export default async function DashboardPage({
               </Link>
               <Link href="/facturatie" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
                 <div>
-                  <p className="text-[13.5px] font-semibold text-ink-900">Klaar om te verwerken</p>
-                  <p className="text-xs text-ink-400">Week verwerken</p>
+                  <p className="text-[13.5px] font-semibold text-ink-900">Week {week.week.isoWeek} verwerkt</p>
+                  <p className="text-xs text-ink-400">Week verwerken · {ws.klaar} klaar · {ws.fout} fout · {ws.nietIngeleverd} niet ingeleverd</p>
                 </div>
-                <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11.5px] font-bold text-amber-700">{pendingConsultants.length} medewerker{pendingConsultants.length === 1 ? "" : "s"}</span>
+                <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11.5px] font-bold tabular-nums text-amber-700">
+                  {week.rows.filter((r) => r.gefactureerd || r.vastgelegd).length} / {ws.actief}
+                </span>
               </Link>
-              <Link href="/facturatie/inkoop" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
+              <Link href="/facturatie/verkoop?tab=betaald" className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-ink-50">
                 <div>
-                  <p className="text-[13.5px] font-semibold text-ink-900">Betaald deze week</p>
-                  <p className="text-xs text-ink-400">Betalingen</p>
+                  <p className="text-[13.5px] font-semibold text-ink-900">Ontvangen deze week</p>
+                  <p className="text-xs text-ink-400">Betaalde verkoopfacturen</p>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11.5px] font-bold text-emerald-700">{paidThisWeek.length} factu{paidThisWeek.length === 1 ? "ur" : "ren"}</span>
@@ -665,7 +541,7 @@ export default async function DashboardPage({
         <SectionHeading
           title={`Omzet, inkoop & marge ${periodLabel}`}
           color="blue"
-          action={<Link href="/facturatie/rapportage" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Rapportage →</Link>}
+          action={<Link href={`/facturatie/rapportage?q=${p.param}&year=${p.year}`} className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Rapportage →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
@@ -727,7 +603,7 @@ export default async function DashboardPage({
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-blue-600" /> Top klanten (omzet {periodLabel})
             </CardTitle>
-            <Link href="/facturatie/rapportage" className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Overzicht</Link>
+            <Link href={`/facturatie/rapportage?q=${p.param}&year=${p.year}`} className="text-sm font-bold text-brand-700 hover:text-brand-800 hover:underline underline-offset-2">Overzicht</Link>
           </CardHeader>
           <CardContent className="space-y-2.5">
             {topClients.length === 0 ? (
@@ -748,28 +624,12 @@ export default async function DashboardPage({
         </Card>
       </div>
 
-      {/* Facturatie periode — kleurrijke KPI-tegels */}
-      <div>
-        <SectionHeading
-          title={`Facturatie ${periodLabel}`}
-          color="emerald"
-          action={<Link href="/facturatie/rapportage" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Volledig overzicht →</Link>}
-        />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <KpiTile color="blue" label="Omzet" value={formatCurrency(overview.omzet)} icon={<TrendingUp className="h-5 w-5" />} />
-          <KpiTile color="violet" label="Inkoop" value={formatCurrency(overview.inkoop)} icon={<Coins className="h-5 w-5" />} />
-          <KpiTile color="emerald" label="Marge" value={formatCurrency(overview.marge)} sub={`${overview.margePct}% marge`} icon={<Percent className="h-5 w-5" />} />
-          <KpiTile color="amber" label="Openstaand" value={formatCurrency(overview.openstaand)} icon={<Wallet className="h-5 w-5" />} />
-          <KpiTile color="orange" label="Te betalen" value={formatCurrency(overview.teBetalen)} icon={<Banknote className="h-5 w-5" />} />
-        </div>
-      </div>
-
       {/* Wat we overhouden — brutomarge én nettowinst, met de uitsplitsing ertussen */}
       <div>
         <SectionHeading
           title={`Wat Q4S overhoudt (${periodLabel})`}
           color="emerald"
-          action={<Link href="/facturatie/rapportage" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Rapportage →</Link>}
+          action={<Link href={`/facturatie/rapportage?q=${p.param}&year=${p.year}`} className="text-sm font-medium text-emerald-700 hover:text-emerald-800">Rapportage →</Link>}
         />
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Twee losse cijfers */}
@@ -978,7 +838,7 @@ export default async function DashboardPage({
             title="Bron van instroom (kandidaten)"
             icon={<Sparkles className="h-5 w-5" />}
             iconColor="text-cyan-600"
-            action={<Link href="/website/cv-inbox" className="text-sm font-medium text-cyan-700 hover:text-cyan-800">CV's</Link>}
+            action={<Link href="/website/cv-inbox" className="text-sm font-medium text-cyan-700 hover:text-cyan-800">CV&apos;s</Link>}
             note="Welk kanaal levert kandidaten — stuurt je budget/keuze."
           >
             <DashboardPie data={comp.kandidatenPerBron} kind="count" centerLabel="kandidaten" />
@@ -1030,29 +890,6 @@ export default async function DashboardPage({
               }))}
             />
           </ChartCard>
-        </div>
-      </div>
-
-      {/* Alle onderdelen — kleurrijke hub-tegels */}
-      <div>
-        <SectionHeading title="Alle onderdelen" color="violet" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <HubTile color="blue" icon={<ListChecks className="h-5 w-5" />} title="Facturatie" href="/facturatie"
-            rows={[["Te verwerken", String(pendingConsultants.length)], ["Openstaand", formatCurrency(overview.openstaand)], ["Te betalen", formatCurrency(overview.teBetalen)]]} />
-          <HubTile color="violet" icon={<Sparkles className="h-5 w-5" />} title="Recruitment" href="/recruitment"
-            rows={[["Open sollicitaties", String(openApplications)], ["Kandidaten", String(candidatesCount)], ["Vacatures (live/concept)", `${vacPublished} / ${vacConcept}`]]} />
-          <HubTile color="emerald" icon={<Briefcase className="h-5 w-5" />} title="Plaatsingen" href="/plaatsingen"
-            rows={[["Actief nu", String(activePlacements.length)], ["Lage marge (<15%)", String(lowMarginPlacements.length)], ["Werknemers", String(consultantsCount)]]} />
-          <HubTile color="amber" icon={<Award className="h-5 w-5" />} title="Certificaten" href="/certificeringen"
-            rows={[["Verlopen", String(expiredCerts)], ["Verloopt binnenkort", String(expiringCerts)]]} />
-          <HubTile color="cyan" icon={<ClipboardCheck className="h-5 w-5" />} title={`Evaluaties ${shortLabel}`} href="/evaluaties/vcu"
-            rows={[["Aantal", String(periodEvals.length)], ["Gem. score", evalAvg !== null ? `${evalAvg.toLocaleString("nl-NL")} / 4` : "—"]]} />
-          <HubTile color="orange" icon={<Receipt className="h-5 w-5" />} title="Declaraties" href="/facturatie/inkoop?tab=declaraties"
-            rows={[["Te beoordelen", String(expensesNewCount)], ["Openstaand bedrag", formatCurrency(round2(expensesNew._sum.amount ?? 0))]]} />
-          <HubTile color="indigo" icon={<Globe className="h-5 w-5" />} title="Website" href="/website"
-            rows={[["Live vacatures", String(vacPublished)], ["Weergaven", String(vacViews._sum.views ?? 0)]]} />
-          <HubTile color="rose" icon={<Star className="h-5 w-5" />} title="Talentpool" href="/kandidaten"
-            rows={[["Kandidaten", String(candidatesCount)], ["In pipeline", String(openApplications)]]} />
         </div>
       </div>
 
