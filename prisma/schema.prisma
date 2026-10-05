@@ -1220,9 +1220,9 @@ model Contract {
 
   // ---- Opdracht (overwegingen + art. 1) ----
   /// Vakgebied Opdrachtgever (overweging a).
-  fieldOfWork       String @default("Quality & Inspection Services")
+  fieldOfWork       String @default("")
   /// Behoefte Opdrachtgever (overweging b).
-  serviceNeed       String @default("Quality Management & Inspection Services")
+  serviceNeed       String @default("")
   /// De Derde / eindklant / project (overweging c).
   thirdParty        String @default("")
   /// De werkzaamheden (art. 1.1).

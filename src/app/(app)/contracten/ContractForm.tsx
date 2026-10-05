@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmCancel } from "@/components/confirm-cancel";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { CONTRACT_STATUSES } from "@/lib/domain";
+import { zonderOudeStandaard } from "@/lib/contract-doc";
 
 
 /** Voor-invulwaarden bij een nieuw contract (bijv. aangemaakt vanuit een plaatsing). */
@@ -105,10 +106,10 @@ export function ContractForm({
         <CardContent className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Vakgebied Opdrachtgever" htmlFor="fieldOfWork" error={e.fieldOfWork} hint="Overweging a">
-              <Input id="fieldOfWork" name="fieldOfWork" defaultValue={c?.fieldOfWork ?? ""} />
+              <Input id="fieldOfWork" name="fieldOfWork" defaultValue={zonderOudeStandaard(c?.fieldOfWork)} />
             </Field>
             <Field label="Behoefte / dienst" htmlFor="serviceNeed" error={e.serviceNeed} hint="Overweging b">
-              <Input id="serviceNeed" name="serviceNeed" defaultValue={c?.serviceNeed ?? ""} />
+              <Input id="serviceNeed" name="serviceNeed" defaultValue={zonderOudeStandaard(c?.serviceNeed)} />
             </Field>
           </div>
           <Field label="Derde / eindklant / project" htmlFor="thirdParty" error={e.thirdParty} hint="Overweging c — bij of ten behoeve van welke derde">

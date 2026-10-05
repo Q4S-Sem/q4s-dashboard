@@ -80,6 +80,12 @@ function fmtDate(d: Date | null): string {
 }
 
 /** Vaste bedrijfsregel onderaan elk vel (contract, persoonsgegevens, offerte). */
+/** Vroegere vaste standaardtekst bij vakgebied/behoefte: die vult Q4S nu zelf in, dus behandelen als leeg. */
+const OUDE_STANDAARD = new Set(["Quality & Inspection Services", "Quality Management & Inspection Services"]);
+export function zonderOudeStandaard(v: string | null | undefined): string {
+  return v && !OUDE_STANDAARD.has(v.trim()) ? v : "";
+}
+
 export function contractFooterLine(settings: CompanySettings): string {
   const companyName = settings.companyName || "Q4S B.V.";
   return [
@@ -117,8 +123,8 @@ export function buildContractDoc(contract: Contract, settings: CompanySettings):
       vat: contract.contractorVat,
       iban: contract.contractorIban,
     },
-    fieldOfWork: contract.fieldOfWork,
-    serviceNeed: contract.serviceNeed,
+    fieldOfWork: zonderOudeStandaard(contract.fieldOfWork),
+    serviceNeed: zonderOudeStandaard(contract.serviceNeed),
     thirdParty: contract.thirdParty,
     workDescription: contract.workDescription,
     startDate: fmtDate(contract.startDate),
