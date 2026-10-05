@@ -16,7 +16,7 @@ import type { ContractDoc } from "@/lib/contract-doc";
 export type Taal = "nl" | "en";
 const PAGINAS = 5;
 
-function V({ children }: { children: React.ReactNode }) {
+export function V({ children }: { children: React.ReactNode }) {
   // Ingevulde waarde — blauw, zodat vast vs. variabel meteen zichtbaar is.
   return <span className="ov-fill">{children || "…"}</span>;
 }
@@ -51,7 +51,7 @@ export function VelVoet({ regel, page, total, taal }: { regel: string; page: num
   );
 }
 
-function Art({ nr, titel }: { nr: number; titel: string }) {
+export function Art({ nr, titel }: { nr: number; titel: string }) {
   return (
     <h3 className="ov-art">
       <span className="ov-an">{nr}</span>
@@ -60,7 +60,7 @@ function Art({ nr, titel }: { nr: number; titel: string }) {
   );
 }
 
-function Cl({ nr, children }: { nr: string; children: React.ReactNode }) {
+export function Cl({ nr, children }: { nr: string; children: React.ReactNode }) {
   return (
     <div className="ov-cl">
       <span className="ov-cn">{nr}</span>

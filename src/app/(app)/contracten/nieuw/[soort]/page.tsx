@@ -9,7 +9,11 @@ import { DocInvullen, type Soort } from "./DocInvullen";
 
 export const dynamic = "force-dynamic";
 
-const TITELS: Record<Soort, string> = { persoonsgegevens: "Persoonsgegevens", offerte: "Offerte" };
+const TITELS: Record<Soort, string> = {
+  persoonsgegevens: "Persoonsgegevens",
+  offerte: "Offerte",
+  arbeidsovereenkomst: "Arbeidsovereenkomst",
+};
 
 export default async function DocInvullenPage({
   params,
@@ -18,8 +22,8 @@ export default async function DocInvullenPage({
   params: Promise<{ soort: string }>;
   searchParams: Promise<{ taal?: string }>;
 }) {
-  const { soort } = await params;
-  if (soort !== "persoonsgegevens" && soort !== "offerte") notFound();
+  const soort = (await params).soort as Soort;
+  if (!(soort in TITELS)) notFound();
   const sp = await searchParams;
   const taal = sp.taal === "en" ? "en" : sp.taal === "nl" ? "nl" : soort === "offerte" ? "en" : "nl";
   const footerLine = contractFooterLine(await getCompanySettings());

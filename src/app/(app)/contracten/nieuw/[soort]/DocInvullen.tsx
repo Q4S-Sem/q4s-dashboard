@@ -5,22 +5,68 @@ import { usePathname } from "next/navigation";
 import { Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, Input, fieldBase } from "@/components/ui/field";
+import { Field, Input, Select, fieldBase } from "@/components/ui/field";
 import { WordKnop } from "@/components/contract/WordKnop";
 import { InvulTabs } from "@/components/contract/InvulTabs";
 import { PrintKnop } from "../../[id]/print/PrintBar";
 import type { Taal } from "@/components/contract/ContractVel";
 import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { OfferteVel, type Offerte } from "@/components/contract/OfferteVel";
+import { ArbeidsovereenkomstVel } from "@/components/contract/ArbeidsovereenkomstVel";
+import { PROEFTIJDEN, SOORTEN_DIENSTVERBAND, arbeidsWaarschuwingen } from "@/lib/arbeidsovereenkomst";
+import { AlertTriangle } from "lucide-react";
 
-export type Soort = "persoonsgegevens" | "offerte";
+export type Soort = "persoonsgegevens" | "offerte" | "arbeidsovereenkomst";
 
-/** [key, label, type?, breed?] — breed = over twee kolommen (lange tekst). */
-type Veld = [key: string, label: string, type?: "date", breed?: boolean];
+/** [key, label, type?, breed?, voorbeeld?] — type = "date" of keuzelijst; breed = twee kolommen. */
+type Veld = [key: string, label: string, type?: "date" | readonly string[], breed?: boolean, voorbeeld?: string];
 /** [titel, uitleg, velden] — op volgorde waarin je het invult. */
 type Groep = [titel: string, uitleg: string, velden: Veld[]];
 
 const VELDEN: Record<Soort, Groep[]> = {
+  arbeidsovereenkomst: [
+    ["Werknemer", "Wie komt er in dienst?", [
+      ["naam", "Volledige naam", undefined, true, "Sem Johan de Snoo"],
+      ["geboortedatum", "Geboortedatum", undefined, false, "22-03-2005"],
+      ["adres", "Adres", undefined, true, "Quadenoord 240"],
+      ["woonplaats", "Postcode / woonplaats", undefined, false, "3079 XJ Rotterdam"],
+    ]],
+    ["Dienstverband", "Functie, plaats, duur en proeftijd.", [
+      ["soort", "Soort contract", SOORTEN_DIENSTVERBAND],
+      ["functie", "Functie", undefined, false, "QC Inspecteur"],
+      ["startdatum", "Datum in dienst", undefined, false, "01-11-2026"],
+      ["proeftijd", "Proeftijd", PROEFTIJDEN],
+      ["duur", "Duur (bij bepaalde tijd)", undefined, false, "12 maanden"],
+      ["einddatum", "Einddatum (bij bepaalde tijd)", undefined, false, "31-10-2027"],
+      ["werkplaats", "Plaats van werk", undefined, true, "bij diverse opdrachtgevers van Werkgever"],
+    ]],
+    ["Werktijden & salaris", "Uren, werktijden, loon en overwerk.", [
+      ["urenPerWeek", "Uren per week", undefined, false, "40"],
+      ["dagenPerWeek", "Dagen per week", undefined, false, "5"],
+      ["werktijden", "Werktijden", undefined, true, "flexibel tussen 06:00 en 18:00"],
+      ["salaris", "Bruto salaris", undefined, false, "€ 2.300,-"],
+      ["salarisPer", "Per", ["per maand", "per uur", "per vier weken"]],
+      ["overwerk", "Overwerk", undefined, true, "ma–vr na 8 uur +25%, za/zo/feestdag +50%"],
+    ]],
+    ["Vakantie, ziekte & pensioen", "Wettelijk minimum vakantie = 4× de weekuren.", [
+      ["vakantiedagen", "Vakantiedagen per jaar", undefined, false, "25"],
+      ["vakantietoeslagMaand", "Vakantietoeslag in", undefined, false, "juni"],
+      ["wachtdagen", "Wachtdagen bij ziekte", ["0", "1", "2"]],
+      ["loonBijZiekte", "Loon bij ziekte", undefined, false, "70% van het bruto loon"],
+      ["pensioen", "Pensioenregeling", undefined, true, "StiPP (www.stippensioen.nl)"],
+    ]],
+    ["Overige afspraken", "Wat verder geldt.", [
+      ["reiskosten", "Reiskosten", undefined, true, "€ 0,23 per km onbelast voor eigen vervoer"],
+      ["concurrentiebeding", "Concurrentie-/relatiebeding", undefined, false, "n.v.t."],
+      ["cao", "Cao", undefined, false, "geen cao van toepassing"],
+      ["overig", "Extra afspraak (optioneel)", undefined, true, "Bijv. laptop en telefoon ter beschikking"],
+    ]],
+    ["Ondertekening (Q4S)", "De werknemer tekent zelf — zijn blok blijft open.", [
+      ["ondertekenaar", "Namens Q4S", undefined, false, "Paul Boomsma"],
+      ["plaats", "Plaats", undefined, false, "Barendrecht"],
+      ["datum", "Datum", undefined, false, "25-10-2026"],
+    ]],
+  ],
   persoonsgegevens: [
     ["Bedrijf", "Gegevens van het bedrijf van de opdrachtnemer.", [
       ["companyName", "Bedrijfsnaam", undefined, true],
@@ -127,8 +173,11 @@ export function DocInvullen({
     setW({});
   }
 
+  const waarschuwingen = soort === "arbeidsovereenkomst" ? arbeidsWaarschuwingen(w) : [];
   const vel =
-    soort === "persoonsgegevens" ? (
+    soort === "arbeidsovereenkomst" ? (
+      <ArbeidsovereenkomstVel logoSrc={logoSrc} footerLine={footerLine} taal={taal} handtekening={handtekening} waarden={w} className="ov-schaduw" />
+    ) : soort === "persoonsgegevens" ? (
       <PersoonsgegevensVel logoSrc={logoSrc} footerLine={footerLine} taal={taal} waarden={w} className="ov-schaduw" />
     ) : (
       <OfferteVel
@@ -149,12 +198,26 @@ export function DocInvullen({
           <Button type="button" variant="outline" size="sm" onClick={leegmaken}>
             <Eraser className="h-4 w-4" /> Leegmaken
           </Button>
-          <WordKnop bestandsnaam={`Q4S ${soort === "offerte" ? "Offerte" : "Persoonsgegevens"}${w.companyName || w.to ? ` - ${w.companyName || w.to}` : ""}`} />
+          <WordKnop
+            bestandsnaam={`Q4S ${soort === "offerte" ? "Offerte" : soort === "arbeidsovereenkomst" ? "Arbeidsovereenkomst" : "Persoonsgegevens"}${w.companyName || w.to || w.naam ? ` - ${w.companyName || w.to || w.naam}` : ""}`}
+          />
           <PrintKnop />
         </>
       }
       formulier={
         <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+          {waarschuwingen.length > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900">
+              <p className="flex items-center gap-2 font-semibold">
+                <AlertTriangle className="h-4 w-4" /> Klopt niet met de wet — pas aan vóór je verstuurt
+              </p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-6">
+                {waarschuwingen.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           {VELDEN[soort].map(([titel, uitleg, velden], i) => (
             <Card key={titel}>
               <CardHeader className="flex flex-row items-center justify-start gap-3">
@@ -166,12 +229,22 @@ export function DocInvullen({
               </CardHeader>
               <CardContent>
                 <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                  {velden.map(([k, label, type, breed]) => (
+                  {velden.map(([k, label, type, breed, voorbeeld]) => (
                     <Field key={k} label={label} htmlFor={k} className={breed ? "sm:col-span-2" : undefined}>
-                      {type === "date" ? (
+                      {Array.isArray(type) ? (
+                        // key met de waarde: na "Leegmaken" (of concept-herstel) toont hij weer de juiste keuze.
+                        <Select key={`${k}:${w[k] ?? ""}`} id={k} name={k} defaultValue={w[k] ?? ""} onValueChange={(v) => zet(k, v)}>
+                          <option value="">— kies —</option>
+                          {type.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </Select>
+                      ) : type === "date" ? (
                         <input id={k} name={k} type="date" value={w[k] ?? ""} onChange={(e) => zet(k, e.target.value)} className={fieldBase} />
                       ) : (
-                        <Input id={k} name={k} value={w[k] ?? ""} onChange={(e) => zet(k, e.target.value)} />
+                        <Input id={k} name={k} value={w[k] ?? ""} placeholder={voorbeeld} onChange={(e) => zet(k, e.target.value)} />
                       )}
                     </Field>
                   ))}

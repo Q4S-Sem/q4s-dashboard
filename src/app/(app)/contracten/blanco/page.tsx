@@ -4,8 +4,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ContractVel } from "@/components/contract/ContractVel";
 import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { OfferteVel } from "@/components/contract/OfferteVel";
+import { ArbeidsovereenkomstVel } from "@/components/contract/ArbeidsovereenkomstVel";
 import { UrenstaatVel } from "@/components/contract/UrenstaatVel";
-import { Clock, Download, FileSignature, Receipt, UserRound, type LucideIcon } from "lucide-react";
+import { BriefcaseBusiness, Clock, Download, FileSignature, Receipt, UserRound, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants, mapTabVariants } from "@/components/ui/button";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
@@ -22,6 +23,7 @@ const SOORTEN: [string, string, LucideIcon][] = [
   ["overeenkomst", "Overeenkomst van opdracht", FileSignature],
   ["persoonsgegevens", "Persoonsgegevens", UserRound],
   ["offerte", "Offerte", Receipt],
+  ["arbeidsovereenkomst", "Arbeidsovereenkomst", BriefcaseBusiness],
   ["timesheet", "Timesheet", Clock],
 ];
 
@@ -82,6 +84,8 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
             <ContractVel doc={leeg} logoSrc={logo} handtekening={handtekening} taal={taal} className="ov-schaduw" />
           ) : doc === "persoonsgegevens" ? (
             <PersoonsgegevensVel logoSrc={logo} footerLine={leeg.footerLine} taal={taal} className="ov-schaduw" />
+          ) : doc === "arbeidsovereenkomst" ? (
+            <ArbeidsovereenkomstVel logoSrc={logo} footerLine={leeg.footerLine} handtekening={handtekening} taal={taal} className="ov-schaduw" />
           ) : doc === "timesheet" ? (
             <UrenstaatVel logoSrc={logo} taal={taal} className="ov-schaduw" />
           ) : (

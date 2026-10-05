@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, ChevronRight, FileSignature, Receipt } from "lucide-react";
+import { ArrowRight, ChevronRight, FileSignature, Receipt, BriefcaseBusiness } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
@@ -26,6 +26,13 @@ const SOORTEN = [
     uitleg: "Een offerte voor de klant met de inspecteur, locatie en tarieven.",
     icon: Receipt,
     tone: "bg-amber-50 text-amber-600",
+  },
+  {
+    href: "/contracten/nieuw/arbeidsovereenkomst",
+    titel: "Arbeidsovereenkomst",
+    uitleg: "Voor iemand in loondienst: bepaalde of onbepaalde tijd, salaris, proeftijd en verlof. Controleert de wettelijke grenzen.",
+    icon: BriefcaseBusiness,
+    tone: "bg-emerald-50 text-emerald-600",
   },
 ];
 
@@ -57,7 +64,7 @@ export default async function NieuwContractPage({
         title="Nieuw contract"
         description="Kies wat je wilt opstellen. Wat je invult blijft als concept bewaard, ook als je tussendoor naar een andere pagina gaat."
       />
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         {SOORTEN.map(({ href, titel, uitleg, icon: Icon, tone }) => (
           <Link
             key={href}
