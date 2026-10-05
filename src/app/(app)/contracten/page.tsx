@@ -167,7 +167,12 @@ export default async function ContractenPage({
                   <span className="truncate text-ink-600">{m.companyName || "—"}</span>
                   <span className="tabular-nums text-ink-600">{m.kvkNumber || "—"}</span>
                   <span className="truncate tabular-nums text-ink-900">{m.contracts.find((c) => c.rateDay)?.rateDay || "—"}</span>
-                  <Vink ok={m.contracts.length > 0 || heeft("CONTRACT")} />
+                  {/* Getekend of geüpload = aanwezig; anders de status van het laatste contract (bv. Concept). */}
+                  {heeft("CONTRACT") || m.contracts.some((c) => c.status === "SIGNED") || m.contracts.length === 0 ? (
+                    <Vink ok={m.contracts.length > 0 || heeft("CONTRACT")} />
+                  ) : (
+                    <StatusBadge options={CONTRACT_STATUSES} value={m.contracts[0].status} />
+                  )}
                   <Vink ok={heeft("KVK")} />
                   <Vink ok={heeft("ID")} />
                   <ChevronRight className="h-4 w-4 text-ink-400 transition-transform group-open:rotate-90" />
