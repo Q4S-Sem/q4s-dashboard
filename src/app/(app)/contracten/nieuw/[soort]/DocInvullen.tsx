@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Eraser, Printer } from "lucide-react";
+import { Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WordKnop } from "@/components/contract/WordKnop";
+import { InvulTabs } from "@/components/contract/InvulTabs";
+import { PrintKnop } from "../../[id]/print/PrintBar";
 import type { Taal } from "@/components/contract/ContractVel";
 import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { OfferteVel, type Offerte } from "@/components/contract/OfferteVel";
@@ -87,7 +89,7 @@ const veld =
   "block w-full rounded-sm border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/25";
 
 /**
- * Persoonsgegevens/offerte invullen met het vel ernaast. Niets in de database:
+ * Persoonsgegevens/offerte invullen, met het vel onder het mapje Voorbeeld. Niets in de database:
  * de globale FormAutosave bewaart elk veld als concept (per pagina, op dit
  * apparaat) en UnsavedGuard vraagt "weet je het zeker" bij weggaan.
  */
@@ -97,7 +99,10 @@ export function DocInvullen({
   logoSrc,
   handtekening,
   footerLine,
+  taalKeuze,
 }: {
+  /** NL/EN-schakelaar (server-gerenderd, want hij maakt links). */
+  taalKeuze: React.ReactNode;
   soort: Soort;
   taal: Taal;
   logoSrc: string | null;
@@ -118,57 +123,56 @@ export function DocInvullen({
     setW({});
   }
 
+  const vel =
+    soort === "persoonsgegevens" ? (
+      <PersoonsgegevensVel logoSrc={logoSrc} footerLine={footerLine} taal={taal} waarden={w} className="ov-schaduw" />
+    ) : (
+      <OfferteVel
+        logoSrc={logoSrc}
+        footerLine={footerLine}
+        taal={taal}
+        handtekening={handtekening}
+        q={{ ...(w as Offerte), issueDate: w.issueDate ? new Date(`${w.issueDate}T00:00`).toLocaleDateString(taal === "en" ? "en-GB" : "nl-NL") : undefined }}
+        className="ov-schaduw"
+      />
+    );
+
   return (
-    <div className="grid gap-6 2xl:grid-cols-[26rem_minmax(0,1fr)] 2xl:items-start">
-      <form onSubmit={(e) => e.preventDefault()} className="no-print space-y-5 rounded-lg border border-ink-200 bg-white p-5">
-        {VELDEN[soort].map(([titel, velden]) => (
-          <fieldset key={titel} className="space-y-3">
-            <legend className="mb-2 text-sm font-bold text-ink-900">{titel}</legend>
-            <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-2">
-              {velden.map(([k, label, type]) => (
-                <label key={k} className="block">
-                  <span className="mb-1 block text-xs font-medium text-ink-600">{label}</span>
-                  <input
-                    name={k}
-                    type={type ?? "text"}
-                    value={w[k] ?? ""}
-                    onChange={(e) => setW((o) => ({ ...o, [k]: e.target.value }))}
-                    className={veld}
-                  />
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        ))}
-        <div className="flex flex-wrap gap-2 border-t border-ink-100 pt-4">
-          <Button type="button" className="flex-1" onClick={() => window.print()}>
-            <Printer className="h-4 w-4" /> Printen / opslaan als PDF
-          </Button>
-          <WordKnop bestandsnaam={`Q4S ${soort === "offerte" ? "Offerte" : "Persoonsgegevens"}${w.companyName || w.to ? ` - ${w.companyName || w.to}` : ""}`} size="md" />
-          <Button type="button" variant="outline" onClick={leegmaken}>
+    <InvulTabs
+      acties={
+        <>
+          {taalKeuze}
+          <Button type="button" variant="outline" size="sm" onClick={leegmaken}>
             <Eraser className="h-4 w-4" /> Leegmaken
           </Button>
-        </div>
-      </form>
-
-      <div className="ov-print-pagina overflow-x-auto">
-        <div className="flex justify-center pb-10" data-word-bron>
-          {soort === "persoonsgegevens" ? (
-            <PersoonsgegevensVel logoSrc={logoSrc} footerLine={footerLine} taal={taal} waarden={w} className="ov-schaduw" />
-          ) : (
-            <OfferteVel
-              logoSrc={logoSrc}
-              footerLine={footerLine}
-              taal={taal}
-              handtekening={handtekening}
-              q={{ ...(w as Offerte), issueDate: w.issueDate ? new Date(`${w.issueDate}T00:00`).toLocaleDateString(taal === "en" ? "en-GB" : "nl-NL") : undefined }}
-              className="ov-schaduw"
-            />
-          )}
-        </div>
-      </div>
-      <style>{`.ov-schaduw > .ov-vel { box-shadow: 0 18px 50px -24px rgb(0 0 0 / 0.45); border: 1px solid #e7e7e5; }
-        @media print { .ov-schaduw > .ov-vel { box-shadow: none; border: 0; } }`}</style>
-    </div>
+          <WordKnop bestandsnaam={`Q4S ${soort === "offerte" ? "Offerte" : "Persoonsgegevens"}${w.companyName || w.to ? ` - ${w.companyName || w.to}` : ""}`} />
+          <PrintKnop />
+        </>
+      }
+      formulier={
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6 rounded-lg border border-ink-200 bg-white p-6">
+          {VELDEN[soort].map(([titel, velden]) => (
+            <fieldset key={titel} className="space-y-3">
+              <legend className="mb-2 text-sm font-bold text-ink-900">{titel}</legend>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {velden.map(([k, label, type]) => (
+                  <label key={k} className="block">
+                    <span className="mb-1 block text-xs font-medium text-ink-600">{label}</span>
+                    <input
+                      name={k}
+                      type={type ?? "text"}
+                      value={w[k] ?? ""}
+                      onChange={(e) => setW((o) => ({ ...o, [k]: e.target.value }))}
+                      className={veld}
+                    />
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ))}
+        </form>
+      }
+      voorbeeld={vel}
+    />
   );
 }

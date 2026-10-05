@@ -34,7 +34,7 @@ export default async function DocInvullenPage({
           actions={<TaalSchakelaar taal={taal} href={(t) => `/contracten/nieuw/${soort}?taal=${t}`} />}
         />
       </div>
-      <DocInvullen soort={soort} taal={taal} logoSrc={contractLogoDataUri()} handtekening={q4sHandtekeningDataUri()} footerLine={footerLine} />
+      <DocInvullen taalKeuze={<TaalSchakelaar taal={taal} href={(t) => `/contracten/nieuw/${soort}?taal=${t}`} />} soort={soort} taal={taal} logoSrc={contractLogoDataUri()} handtekening={q4sHandtekeningDataUri()} footerLine={footerLine} />
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { CONTRACT_STATUSES } from "@/lib/domain";
-import { ContractVel } from "@/components/contract/ContractVel";
+import { getCompanySettings } from "@/lib/settings";
 import { loadContractSheet } from "@/lib/contract-render";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { ContractForm } from "../ContractForm";
@@ -41,13 +41,10 @@ export default async function ContractDetailPage({
 
       <PageHeader
         title="Overeenkomst van opdracht"
-        description="Links bewerk je de gegevens, rechts zie je direct hoe het contract eruit rolt. De blauwe waarden zijn wat jij invult; de rest is de vaste modelovereenkomst."
+        description="Bewerk de gegevens onder Invulformulier; onder Voorbeeld zie je direct hoe het contract eruit rolt. De blauwe waarden zijn wat jij invult; de rest is de vaste modelovereenkomst."
         actions={
           <div className="flex flex-wrap gap-2">
             <StatusBadge options={CONTRACT_STATUSES} value={contract.status} />
-            <TaalSchakelaar taal={taal} href={(x) => `/contracten/${id}${x === "en" ? "?taal=en" : ""}`} />
-            <WordKnop bestandsnaam={`Overeenkomst van opdracht - ${contract.contractorName || contract.number || ""}`} size="md" />
-            <PrintMetControle href={`/contracten/${id}/print${taal === "en" ? "?taal=en" : ""}`} ontbreekt={ontbreekt} />
             <ConfirmSubmit
               action={deleteContract}
               id={id}
@@ -71,21 +68,24 @@ export default async function ContractDetailPage({
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">Verwijderen mislukt.</p>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
-        <ContractForm
-          action={updateContract}
-          contract={contract}
-          cancelHref="/contracten"
-        />
-
-        {/* Live voorbeeld — hetzelfde vel als de print/PDF, op schaal. */}
-        <div className="hidden xl:block">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-400">Voorbeeld</p>
-          <div className="origin-top-left scale-[0.62] overflow-hidden rounded-lg border border-ink-200 shadow-sm" data-word-bron>
-            <ContractVel doc={sheet.doc} logoSrc={sheet.logoSrc} handtekening={sheet.handtekening} taal={taal} />
-          </div>
-        </div>
-      </div>
+      <ContractForm
+        action={updateContract}
+        contract={contract}
+        cancelHref="/contracten"
+        voorbeeld={{
+          settings: await getCompanySettings(),
+          logoSrc: sheet.logoSrc,
+          handtekening: sheet.handtekening,
+          taal,
+          acties: (
+            <>
+              <TaalSchakelaar taal={taal} href={(x) => `/contracten/${id}${x === "en" ? "?taal=en" : ""}`} />
+              <WordKnop bestandsnaam={`Overeenkomst van opdracht - ${contract.contractorName || contract.number || ""}`} />
+              <PrintMetControle href={`/contracten/${id}/print${taal === "en" ? "?taal=en" : ""}`} ontbreekt={ontbreekt} />
+            </>
+          ),
+        }}
+      />
     </div>
   );
 }

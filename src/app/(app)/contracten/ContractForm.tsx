@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { fromRateText, toRateText, type RateUnit } from "@/lib/contract-tarief";
 import type { Contract } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,10 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmCancel } from "@/components/confirm-cancel";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { CONTRACT_STATUSES } from "@/lib/domain";
-import { zonderOudeStandaard } from "@/lib/contract-doc";
+import { buildContractDoc, zonderOudeStandaard } from "@/lib/contract-doc";
+import type { CompanySettings } from "@/lib/settings";
+import { ContractVel, type Taal } from "@/components/contract/ContractVel";
+import { InvulTabs } from "@/components/contract/InvulTabs";
 
 
 /** Voor-invulwaarden bij een nieuw contract (bijv. aangemaakt vanuit een plaatsing). */
@@ -19,6 +22,26 @@ type ContractDefaults = {
   contractorKvk?: string;
   contractorVat?: string;
   contractorIban?: string;
+};
+
+/** Wat nu in het formulier staat, als Contract — voor het live voorbeeld. */
+function uitFormulier(f: HTMLFormElement): Contract {
+  const fd = new FormData(f);
+  const o: Record<string, unknown> = {};
+  for (const [k, v] of fd) if (typeof v === "string") o[k] = v;
+  for (const k of ["vatReverseCharge", "includeConfidentiality", "includeGdpr", "includeIp"]) o[k] = fd.has(k);
+  for (const k of ["startDate", "endDate", "signDate"]) o[k] = o[k] ? new Date(`${o[k]}T00:00`) : null;
+  o.paymentTermDays = Number(o.paymentTermDays) || 30;
+  return o as unknown as Contract;
+}
+
+/** Live voorbeeld naast het formulier (mapje "Voorbeeld"); taal/downloads in `acties`. */
+type Voorbeeld = {
+  settings: CompanySettings;
+  logoSrc: string | null;
+  handtekening: string | null;
+  taal: Taal;
+  acties?: React.ReactNode;
 };
 
 function toDateInput(d: Date | null): string {
@@ -38,12 +61,20 @@ export function ContractForm({
   contract,
   defaults,
   cancelHref,
+  voorbeeld,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   contract?: Contract | null;
   defaults?: ContractDefaults;
   cancelHref: string;
+  voorbeeld?: Voorbeeld;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [waarden, setWaarden] = useState<Contract | null>(null);
+  // ponytail: setTimeout(0) — de verborgen tariefvelden (RateInput) krijgen hun waarde pas na de React-render.
+  const lees = () => setTimeout(() => formRef.current && setWaarden(uitFormulier(formRef.current)), 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => void lees(), []);
   const [state, formAction] = useActionState(action, emptyFormState);
   // Oude concepten (localStorage, zie FormAutosave) bevatten nog de vroegere
   // standaardtekst bij vakgebied/behoefte; wis die vóór het terugzetten.
@@ -60,8 +91,8 @@ export function ContractForm({
   const c = contract;
   const d = defaults;
 
-  return (
-    <form action={formAction} className="space-y-6">
+  const form = (
+    <form ref={formRef} action={formAction} onChange={lees} onInput={lees} className="space-y-6">
       {c && <input type="hidden" name="id" value={c.id} />}
 
       {state.error && (
@@ -268,6 +299,23 @@ export function ContractForm({
         <SubmitButton pendingLabel="Opslaan…">Opslaan</SubmitButton>
       </div>
     </form>
+  );
+  if (!voorbeeld) return form;
+  const bron = waarden ?? c ?? ({ ...d, contractorName: d?.contractorName ?? "" } as unknown as Contract);
+  return (
+    <InvulTabs
+      acties={voorbeeld.acties}
+      formulier={form}
+      voorbeeld={
+        <ContractVel
+          doc={buildContractDoc(bron, voorbeeld.settings)}
+          logoSrc={voorbeeld.logoSrc}
+          handtekening={voorbeeld.handtekening}
+          taal={voorbeeld.taal}
+          className="ov-schaduw"
+        />
+      }
+    />
   );
 }
 
