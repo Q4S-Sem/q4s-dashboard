@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, ExternalLink, KeyRound, Lock, Plus, Save, ShieldAlert, Trash2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, KeyRound, Lock, Save, ShieldAlert, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
@@ -7,7 +7,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/lib/db";
 import { isAdminSession } from "@/lib/session";
 import { deletePortal, savePortal } from "./actions";
-import { PasswordInput, PasswordReveal } from "./PasswordReveal";
+import { NewPortalDialog, PasswordInput, PasswordReveal } from "./PasswordReveal";
 
 export const metadata = { title: "Wachtwoorden" };
 export const dynamic = "force-dynamic";
@@ -55,6 +55,16 @@ export default async function WachtwoordenPage({
       <PageHeader
         title="Wachtwoorden"
         description="Alle portalen waar we moeten inloggen, met de link erbij. Wachtwoorden staan versleuteld opgeslagen en worden pas getoond als je op het oog klikt."
+        actions={
+          <NewPortalDialog>
+            <form action={savePortal} className="space-y-3">
+              <PortalFields />
+              <SubmitButton pendingLabel="Opslaan…">
+                <KeyRound className="h-4 w-4" /> Portaal opslaan
+              </SubmitButton>
+            </form>
+          </NewPortalDialog>
+        }
       />
 
       {sp.ok && (
@@ -77,7 +87,7 @@ export default async function WachtwoordenPage({
       <Card>
         <CardContent className="p-0">
           {portals.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-ink-500">Nog geen portalen. Voeg hieronder de eerste toe.</p>
+            <p className="px-5 py-8 text-center text-sm text-ink-500">Nog geen portalen. Klik rechtsboven op &lsquo;Nieuw portaal&rsquo;.</p>
           ) : (
             <ul className="divide-y divide-ink-100">
               {portals.map((p) => (
@@ -138,22 +148,6 @@ export default async function WachtwoordenPage({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <Plus className="h-4 w-4" />
-            </span>
-            <h2 className="text-sm font-bold text-ink-900">Portaal toevoegen</h2>
-          </div>
-          <form action={savePortal} className="space-y-3">
-            <PortalFields />
-            <SubmitButton pendingLabel="Opslaan…">
-              <KeyRound className="h-4 w-4" /> Portaal opslaan
-            </SubmitButton>
-          </form>
-        </CardContent>
-      </Card>
     </div>
   );
 }
