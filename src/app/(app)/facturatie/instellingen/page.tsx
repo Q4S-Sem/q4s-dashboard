@@ -15,7 +15,10 @@ import {
 } from "@/lib/facturatie-checks";
 import { formatCurrency, formatHours } from "@/lib/utils";
 import { SettingsForm } from "./SettingsForm";
-import { updateSettings } from "./actions";
+import { updateSettings, wisTestdata } from "./actions";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { isAdminSession } from "@/lib/session";
+import { facturatieTellingen } from "@/lib/facturatie-wissen";
 
 // ---------------------------------------------------------------------------
 // INSTELLINGEN & REGELS — twee dingen bij elkaar:
@@ -50,10 +53,12 @@ function Regel({ label, value, uitleg }: { label: string; value: string; uitleg:
 export default async function FacturatieInstellingenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ opgeslagen?: string }>;
+  searchParams: Promise<{ opgeslagen?: string; gewist?: string }>;
 }) {
-  const { opgeslagen } = await searchParams;
+  const { opgeslagen, gewist } = await searchParams;
   const settings = await getCompanySettings();
+  const admin = await isAdminSession();
+  const tel = admin ? await facturatieTellingen() : null;
 
   return (
     <div className="space-y-6">
@@ -145,6 +150,55 @@ export default async function FacturatieInstellingenPage({
           .
         </p>
       </div>
+      {tel && (
+        <Card className="border-red-200">
+          <CardHeader>
+            <CardTitle className="text-red-700">Testdata wissen</CardTitle>
+            <span className="text-xs text-ink-400">alleen beheerder</span>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {gewist && (
+              <p className="rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
+                Alles is gewist. Je kunt opnieuw beginnen.
+              </p>
+            )}
+            <p className="text-[13px] text-ink-600">
+              Wist alle facturen en urenstaten, zodat je opnieuw kunt testen. Klanten, personen, plaatsingen en contracten
+              blijven staan. De factuurnummering begint opnieuw. Niet terug te draaien.
+            </p>
+            <div className="grid grid-cols-2 gap-x-6 text-[13px] sm:grid-cols-3">
+              {[
+                ["Verkoopfacturen", tel.verkoop],
+                ["… waarvan verstuurd/betaald", tel.verstuurd],
+                ["Ontvangen ZZP-facturen", tel.ontvangen],
+                ["Oude inkoopfacturen", tel.inkoop],
+                ["Urenstaten", tel.urenstaten],
+                ["Scans", tel.scans],
+                ["Losse uploads", tel.los],
+                ["Herinneringen", tel.herinneringen],
+                ["Akkoorden/notities", tel.akkoorden],
+              ].map(([l, n]) => (
+                <div key={l as string} className="flex justify-between border-b border-ink-100 py-1.5">
+                  <span className="text-ink-500">{l}</span>
+                  <span className="font-semibold tabular-nums text-ink-900">{n}</span>
+                </div>
+              ))}
+            </div>
+            <ConfirmSubmit
+              action={wisTestdata}
+              trigger="button"
+              variant="outline"
+              size="sm"
+              confirmVariant="danger"
+              confirmLabel="Alles wissen"
+              message="Alle facturen en urenstaten wissen?"
+              description={`${tel.verkoop} verkoopfacturen (${tel.verstuurd} verstuurd/betaald), ${tel.ontvangen} ZZP-facturen, ${tel.urenstaten} urenstaten en ${tel.scans} scans verdwijnen definitief.`}
+            >
+              Alles wissen…
+            </ConfirmSubmit>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

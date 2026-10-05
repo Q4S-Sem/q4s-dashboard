@@ -4,6 +4,8 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { isAdminSession } from "@/lib/session";
+import { wisFacturatieTestdata } from "@/lib/facturatie-wissen";
 import { parseForm, type FormState } from "@/lib/form";
 
 const SettingsSchema = z.object({
@@ -82,4 +84,12 @@ export async function updateSettings(
   revalidatePath("/facturatie/instellingen");
   revalidatePath("/facturatie/verkoop");
   redirect("/facturatie/instellingen?opgeslagen=1");
+}
+
+/** Alle facturen en urenstaten wissen (testdata) — alleen beheerder, na bevestiging. */
+export async function wisTestdata() {
+  if (!(await isAdminSession())) redirect("/facturatie/instellingen");
+  await wisFacturatieTestdata();
+  revalidatePath("/", "layout");
+  redirect("/facturatie/instellingen?gewist=1");
 }
