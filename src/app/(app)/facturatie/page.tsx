@@ -283,9 +283,6 @@ export default async function FacturatiePage({
               <CheckCircle2 className="h-4 w-4" /> Niemand meer te verwerken deze week
             </span>
           )}
-          <span className="text-[13px] tabular-nums text-ink-500">
-            {stand.klaar} van {stand.totaal} personen klaar
-          </span>
         </div>
       </div>
 
@@ -551,7 +548,7 @@ export default async function FacturatiePage({
           {teLaat.length === 0 ? (
             <CardContent className="text-[13px] text-ink-400">Niemand te laat. Mooi.</CardContent>
           ) : (
-          <ul className="grid gap-px border-y border-red-200 bg-red-200 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid border-t border-red-200 sm:grid-cols-2 xl:grid-cols-3">
             {teLaat.map((t) => {
               const inhoud = (
                 <>
@@ -568,7 +565,7 @@ export default async function FacturatiePage({
                 </>
               );
               return (
-                <li key={`${t.naam}-${t.klantNaam ?? ""}`} className="bg-white">
+                <li key={`${t.naam}-${t.klantNaam ?? ""}`} className="border-b border-r border-red-100 bg-white">
                   {t.href ? (
                     <Link href={t.href} className="flex items-center gap-3 px-4 py-2.5 hover:bg-red-50/60">
                       {inhoud}
