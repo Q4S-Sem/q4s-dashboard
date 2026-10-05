@@ -25,6 +25,14 @@ function toDateInput(d: Date | null): string {
   return d ? new Date(d).toISOString().slice(0, 10) : "";
 }
 
+
+const TARIEF_KOLOMMEN = ["Dag uren", "Shift", "Zaterdag", "Zon/feestdag", "Offshore (NL)"];
+const TARIEF_RIJEN = [
+  ["Uurtarief", ["rateDay", "rateShift", "rateSaturday", "rateSunday", "rateOffshore"]],
+  ["Overuren", ["rateOvertime", "overtimeShift", "overtimeSaturday", "overtimeSunday", "overtimeOffshore"]],
+  ["Dagtarief", ["rateDayFixed", "dayFixedShift", "dayFixedSaturday", "dayFixedSunday", "dayFixedOffshore"]],
+] as const;
+
 export function ContractForm({
   action,
   contract,
@@ -160,30 +168,22 @@ export function ContractForm({
           <span className="text-sm text-ink-400">Kies per tarief € (bedrag) of % (percentage) en vul het getal in.</span>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
-            <Field label="Uurtarief — dag" htmlFor="rateDay" error={e.rateDay}>
-              <RateInput name="rateDay" defaultValue={c?.rateDay ?? ""} />
-            </Field>
-            <Field label="Shift" htmlFor="rateShift" error={e.rateShift}>
-              <RateInput name="rateShift" defaultValue={c?.rateShift ?? ""} />
-            </Field>
-            <Field label="Zaterdag" htmlFor="rateSaturday" error={e.rateSaturday}>
-              <RateInput name="rateSaturday" defaultValue={c?.rateSaturday ?? ""} />
-            </Field>
-            <Field label="Zon/feestdag" htmlFor="rateSunday" error={e.rateSunday}>
-              <RateInput name="rateSunday" defaultValue={c?.rateSunday ?? ""} />
-            </Field>
-            <Field label="Offshore (NL)" htmlFor="rateOffshore" error={e.rateOffshore}>
-              <RateInput name="rateOffshore" defaultValue={c?.rateOffshore ?? ""} />
-            </Field>
-            <Field label="Overuren" htmlFor="rateOvertime" error={e.rateOvertime}>
-              <RateInput name="rateOvertime" defaultValue={c?.rateOvertime ?? ""} />
-            </Field>
+          {/* Zelfde tabel als artikel 6 op het contract: per rij (uurtarief, overuren, dagtarief) vijf kolommen. */}
+          <div className="space-y-4">
+            {TARIEF_RIJEN.map(([rij, namen]) => (
+              <div key={rij} className="grid gap-3 sm:grid-cols-[8rem_repeat(5,minmax(0,1fr))] sm:items-end">
+                <p className="text-sm font-semibold text-ink-900 sm:pb-2.5">{rij}</p>
+                {namen.map((n, i) => (
+                  <Field key={n} label={TARIEF_KOLOMMEN[i]} htmlFor={n} error={e[n]}>
+                    <RateInput name={n} defaultValue={(c?.[n] as string | undefined) ?? ""} />
+                  </Field>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="grid gap-5 sm:grid-cols-3">
             <Field label="Voor overuren gelden uren" htmlFor="overtimeApplies" error={e.overtimeApplies}>
               <Input id="overtimeApplies" name="overtimeApplies" defaultValue={c?.overtimeApplies ?? ""} placeholder="zie uurtarief" />
-            </Field>
-            <Field label="Dagtarief" htmlFor="rateDayFixed" error={e.rateDayFixed}>
-              <RateInput name="rateDayFixed" defaultValue={c?.rateDayFixed ?? ""} />
             </Field>
             <Field label="Dagtarief o.b.v. werkdag van" htmlFor="dayBasedOnHours" error={e.dayBasedOnHours}>
               <Input id="dayBasedOnHours" name="dayBasedOnHours" defaultValue={c?.dayBasedOnHours ?? ""} placeholder="8 uur" />

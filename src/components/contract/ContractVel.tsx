@@ -399,7 +399,8 @@ export function ContractVel({
               </tr>
               <tr>
                 <td className="ov-rl">{en ? "*Overtime" : "*Overuren"}</td>
-                <td colSpan={5}><V>{doc.rates.overtime}</V></td>
+                <td><V>{doc.rates.overtime}</V></td>
+                {(doc.rates.overtimeCols ?? []).map((v, i) => <td key={i}><V>{v}</V></td>)}
               </tr>
               <tr>
                 <td className="ov-rl">{en ? "Overtime hours are" : "Voor overuren gelden uren na"}</td>
@@ -407,7 +408,8 @@ export function ContractVel({
               </tr>
               <tr>
                 <td className="ov-rl">{en ? "Daily rate" : "Dagtarief"}</td>
-                <td colSpan={5}><V>{doc.rates.dayFixed}</V></td>
+                <td><V>{doc.rates.dayFixed}</V></td>
+                {(doc.rates.dayFixedCols ?? []).map((v, i) => <td key={i}><V>{v}</V></td>)}
               </tr>
               <tr>
                 <td className="ov-rl">{en ? "Daily rate is based on a working day of" : "Dagtarief is gebaseerd op een werkdag van"}</td>

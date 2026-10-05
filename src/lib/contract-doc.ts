@@ -52,6 +52,9 @@ export type ContractDoc = {
     overtime: string;
     overtimeApplies: string;
     dayFixed: string;
+    /** Overuren / dagtarief voor shift, zaterdag, zon/feestdag, offshore (dag-kolom = overtime / dayFixed). */
+    overtimeCols: string[];
+    dayFixedCols: string[];
     dayBasedOnHours: string;
     km: string;
     vatReverseCharge: boolean;
@@ -140,6 +143,8 @@ export function buildContractDoc(contract: Contract, settings: CompanySettings):
       overtime: contract.rateOvertime,
       overtimeApplies: contract.overtimeApplies,
       dayFixed: contract.rateDayFixed,
+      overtimeCols: [contract.overtimeShift, contract.overtimeSaturday, contract.overtimeSunday, contract.overtimeOffshore],
+      dayFixedCols: [contract.dayFixedShift, contract.dayFixedSaturday, contract.dayFixedSunday, contract.dayFixedOffshore],
       dayBasedOnHours: contract.dayBasedOnHours,
       km: contract.kmRate,
       vatReverseCharge: contract.vatReverseCharge,

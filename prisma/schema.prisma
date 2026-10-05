@@ -1245,6 +1245,15 @@ model Contract {
   rateOvertime      String @default("")
   overtimeApplies   String @default("")
   rateDayFixed      String @default("")
+  /// Overuren en dagtarief per kolom (shift, zaterdag, zon/feestdag, offshore) — art. 6-tabel.
+  overtimeShift     String @default("")
+  overtimeSaturday  String @default("")
+  overtimeSunday    String @default("")
+  overtimeOffshore  String @default("")
+  dayFixedShift     String @default("")
+  dayFixedSaturday  String @default("")
+  dayFixedSunday    String @default("")
+  dayFixedOffshore  String @default("")
   dayBasedOnHours   String @default("")
   kmRate            String @default("")
   /// BTW verlegd? true = "Ja" op het contract (reverse charge).
