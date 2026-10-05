@@ -22,6 +22,7 @@ import {
   LINKEDIN_MAX,
   type PostInput,
 } from "@/lib/linkedin-template";
+import { buttonVariants } from "@/components/ui/button";
 
 /* ── helpers ────────────────────────────────────────────────────────── */
 
@@ -80,7 +81,7 @@ function CopyButton({ text, label = "Kopieer" }: { text: string; label?: string 
         setState(ok ? "done" : "error");
         setTimeout(() => setState("idle"), 2200);
       }}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-ink-900 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink-800"
+      className={buttonVariants()}
     >
       {state === "done" ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
       {state === "done" ? "Gekopieerd!" : state === "error" ? "Selecteer & kopieer zelf" : label}
@@ -437,7 +438,7 @@ export function LinkedInGenerator({
                     type="button"
                     onClick={parseRaw}
                     disabled={!rawText.trim()}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className={buttonVariants()}
                   >
                     <Wand2 className="h-4 w-4" /> Omzetten
                   </button>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { vorigeWeek, volgendeWeek, weekSlotVanKey } from "@/lib/wizard-weeknav";
@@ -42,9 +43,9 @@ export function WeekStrip({
   for (let i = 0; i < 3; i++) weken.unshift(vorigeWeek(weken[0])!);
   weken.push(volgendeWeek(midden)!);
 
-  const pijl = "flex h-8 w-8 items-center justify-center rounded-md text-ink-500 hover:bg-ink-100 hover:text-ink-900";
+  const pijl = segmentVariants(false, "w-8 justify-center px-0");
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-ink-200 bg-white p-1">
+    <div className={SEGMENT_GROEP}>
       <Link href={href(vorigeWeek(midden))} scroll={false} className={pijl} aria-label="Vorige week">
         <ChevronLeft className="h-4 w-4" />
       </Link>
@@ -58,10 +59,7 @@ export function WeekStrip({
             scroll={false}
             aria-current={actief ? "page" : undefined}
             title={`Week ${w.isoWeek}`}
-            className={cn(
-              "relative h-8 min-w-[3.25rem] rounded-md px-2 text-center text-[13px] font-medium leading-8 tabular-nums transition-colors",
-              actief ? "bg-ink-900 text-white" : "text-ink-600 hover:bg-ink-100",
-            )}
+            className={segmentVariants(actief, "relative min-w-[3.25rem] justify-center px-2 tabular-nums")}
           >
             wk {w.isoWeek}
             {isNu && (
@@ -77,7 +75,7 @@ export function WeekStrip({
         <Link
           href={href(nu)}
           scroll={false}
-          className="ml-1 h-8 rounded-md border border-ink-200 px-2.5 text-[13px] font-medium leading-8 text-ink-700 hover:bg-ink-50"
+          className={buttonVariants({ variant: "outline", size: "sm", className: "ml-1" })}
         >
           Deze week
         </Link>
@@ -87,10 +85,7 @@ export function WeekStrip({
           href={href(null)}
           scroll={false}
           aria-current={!gekozen ? "page" : undefined}
-          className={cn(
-            "ml-1 h-8 rounded-md px-2.5 text-[13px] font-medium leading-8",
-            !gekozen ? "bg-ink-900 text-white" : "border border-ink-200 text-ink-700 hover:bg-ink-50",
-          )}
+          className={segmentVariants(!gekozen, "ml-1")}
         >
           Alle weken
         </Link>

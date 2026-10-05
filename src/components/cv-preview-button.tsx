@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Eye, ExternalLink, X, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 /**
  * Oog-knop die het ZOJUIST GEKOZEN CV-bestand (nog niet geüpload) toont in een
@@ -99,7 +100,7 @@ export function CvPreviewButton({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-md border border-ink-200 bg-white px-2.5 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50"
+                    className={buttonVariants({ variant: "outline", size: "sm" })}
                   >
                     <ExternalLink className="h-3.5 w-3.5" /> Nieuw tabblad
                   </a>
@@ -134,7 +135,7 @@ export function CvPreviewButton({
                     <a
                       href={url}
                       download={file.name}
-                      className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                      className={buttonVariants()}
                     >
                       <ExternalLink className="h-4 w-4" /> CV openen / downloaden
                     </a>

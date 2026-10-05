@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatDateLong } from "@/lib/utils";
 import { purgeArchivedItem } from "../actions";
+import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Gearchiveerd item" };
 export const dynamic = "force-dynamic";
@@ -77,7 +78,7 @@ export default async function GearchiveerdItemPage({
                 href={`/api/archief/${item.id}/file/${i}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-lg border border-ink-200 px-3 py-2 text-sm font-medium text-brand-700 hover:bg-ink-50"
+                className={buttonVariants({ variant: "outline" })}
               >
                 <Download className="h-4 w-4" /> {f.name}
               </a>

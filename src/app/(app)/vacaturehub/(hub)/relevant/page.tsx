@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Sparkles, PencilLine } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { getHubCounts } from "../data";
 import { HubVacancyList, HUB_VACANCY_SELECT, toHubVacancies } from "../HubVacancyList";
 
@@ -57,24 +57,16 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
             Deze vacatures passen binnen de niche. Stuur ze door naar Maken: daar schrijf je de
             tekst af (of laat je de AI dat doen), lees je 'm na en zet je 'm zelf op q4s.nl.
           </p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className={SEGMENT_GROEP}>
             <Link
               href="/vacaturehub/relevant"
-              className={
-                showLive
-                  ? "rounded-sm bg-ink-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200"
-                  : "rounded-sm bg-ink-900 px-3 py-1 text-xs font-medium text-white"
-              }
+              className={segmentVariants(!showLive)}
             >
               Klaar voor maken ({c.toPublish})
             </Link>
             <Link
               href="/vacaturehub/relevant?tab=live"
-              className={
-                showLive
-                  ? "rounded-sm bg-ink-900 px-3 py-1 text-xs font-medium text-white"
-                  : "rounded-sm bg-ink-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-ink-200"
-              }
+              className={segmentVariants(showLive)}
             >
               Live op de site ({c.published})
             </Link>

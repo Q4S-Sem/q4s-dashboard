@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Phone, X, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 /**
  * Telefoon-icoonknop die bij klik een pop-up (modal) toont met het telefoonnummer.
@@ -121,14 +122,14 @@ export function PhoneButton({
               <div className="flex gap-2 border-t border-ink-100 bg-ink-50/60 px-4 py-3">
                 <a
                   href={`tel:${phone}`}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+                  className={buttonVariants({ variant: "success", className: "flex-1" })}
                 >
                   <Phone className="h-4 w-4" /> Bellen
                 </a>
                 <button
                   type="button"
                   onClick={copy}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50"
+                  className={buttonVariants({ variant: "outline" })}
                 >
                   {copied ? (
                     <>

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, mapTabVariants } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { DISCIPLINES, type BadgeColor } from "@/lib/domain";
@@ -91,12 +91,7 @@ export default async function VacaturesPage({
               href={`/crm/vacatures?view=${t.key}`}
               scroll={false}
               aria-current={active ? "page" : undefined}
-              className={cn(
-                "-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors",
-                active
-                  ? "border-ink-200 border-b-[#fafafa] bg-white text-ink-900"
-                  : "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900",
-              )}
+              className={mapTabVariants(active)}
             >
               <span className={cn("h-2.5 w-2.5 rounded-full", t.dot)} />
               {t.label}

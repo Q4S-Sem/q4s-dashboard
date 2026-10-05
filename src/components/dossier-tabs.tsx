@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { mapTabVariants } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -41,13 +42,6 @@ export function FolderTabBar({
     </nav>
   );
 }
-
-// -mb-px laat het tabje over de lijn vallen; de onderrand krijgt de paginakleur
-// (#fafafa) zodat het mapje "open" staat.
-const TAB_BASE =
-  "-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors";
-const TAB_ACTIVE = "border-ink-200 border-b-[#fafafa] bg-white text-ink-900";
-const TAB_IDLE = "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900";
 
 /** De inhoud van één mapje: icoon, tekst en eventueel een aantal. */
 function TabInner({
@@ -98,7 +92,7 @@ export function FolderTab({
       type="button"
       onClick={onClick}
       aria-current={active ? "true" : undefined}
-      className={cn(TAB_BASE, active ? TAB_ACTIVE : TAB_IDLE)}
+      className={mapTabVariants(active)}
     >
       <TabInner icon={icon} label={label} count={count} active={active} />
     </button>
@@ -126,7 +120,7 @@ export function DossierTabs({
             key={t.seg || "_root"}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={cn(TAB_BASE, active ? TAB_ACTIVE : TAB_IDLE)}
+            className={mapTabVariants(active)}
           >
             <TabInner icon={t.icon} label={t.label} count={t.count} active={active} />
           </Link>

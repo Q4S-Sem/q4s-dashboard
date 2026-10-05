@@ -13,6 +13,7 @@ import { PLACEMENT_STATUSES, RECRUITER_BONUS_PCTS } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
 import { setRecruiterPlacement, removeRecruiterPlacement } from "../../../actions";
 import { getEmployee, getRecruiterPlacements } from "../data";
+import { SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -117,7 +118,7 @@ export default async function MedewerkerBonusPage({ params }: { params: Promise<
                   </TD>
                   <TD>
                     {/* Klik een ander % → direct opgeslagen. */}
-                    <form action={setRecruiterPlacement} className="flex items-center gap-1">
+                    <form action={setRecruiterPlacement} className={SEGMENT_GROEP}>
                       <input type="hidden" name="employeeId" value={m.id} />
                       <input type="hidden" name="placementId" value={p.id} />
                       {RECRUITER_BONUS_PCTS.map((v) => (
@@ -127,9 +128,7 @@ export default async function MedewerkerBonusPage({ params }: { params: Promise<
                           value={v}
                           aria-pressed={v === p.recruiterBonusPct}
                           className={
-                            v === p.recruiterBonusPct
-                              ? "rounded-md bg-ink-900 px-2 py-1 text-xs font-semibold text-white"
-                              : "rounded-md border border-ink-200 px-2 py-1 text-xs text-ink-500 hover:border-ink-400 hover:text-ink-900"
+                            segmentVariants(v === p.recruiterBonusPct, "h-7 px-2 text-xs")
                           }
                         >
                           {v}%

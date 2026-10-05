@@ -9,7 +9,7 @@ import {
   Eye,
   Plus,
 } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, mapTabVariants } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -125,7 +125,7 @@ export default async function WebsitePage({
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-700 hover:bg-ink-50"
+                className={buttonVariants({ variant: "outline" })}
               >
                 <Globe className="h-4 w-4" /> {settings?.website}
                 <ExternalLink className="h-3.5 w-3.5 text-ink-400" />
@@ -152,12 +152,7 @@ export default async function WebsitePage({
               href={`/website?tab=${t.key}`}
               scroll={false}
               aria-current={on ? "page" : undefined}
-              className={cn(
-                "-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors",
-                on
-                  ? "border-ink-200 border-b-[#fafafa] bg-white text-ink-900"
-                  : "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900",
-              )}
+              className={mapTabVariants(on)}
             >
               <span className={cn("h-2.5 w-2.5 rounded-full", t.dot)} />
               {t.label}
@@ -286,7 +281,7 @@ export default async function WebsitePage({
                         href={publicVacancyUrl(vac.slug)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+                        className={buttonVariants({ variant: "ghost", size: "sm" })}
                         title="Bekijk op de website"
                       >
                         Bekijk <ArrowRight className="h-3.5 w-3.5" />

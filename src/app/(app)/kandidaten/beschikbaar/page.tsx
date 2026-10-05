@@ -11,7 +11,7 @@ import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, mapTabVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Input, Select } from "@/components/ui/field";
@@ -267,12 +267,7 @@ export default async function BeschikbaarPage({
               href={tabHref(t.key)}
               scroll={false}
               aria-current={active ? "page" : undefined}
-              className={cn(
-                "-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors",
-                active
-                  ? "border-ink-200 border-b-[#fafafa] bg-white text-ink-900"
-                  : "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900",
-              )}
+              className={mapTabVariants(active)}
             >
               <span className={cn("h-2.5 w-2.5 rounded-full", t.dot)} />
               {t.label}

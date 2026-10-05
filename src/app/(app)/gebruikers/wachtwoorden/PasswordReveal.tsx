@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Check, Copy, Eye, EyeOff, Plus, Upload, X } from "lucide-react";
 import { Input } from "@/components/ui/field";
+import { buttonVariants } from "@/components/ui/button";
 import { revealPortalPassword } from "./actions";
 
 /** Knop "Nieuw portaal" die het toevoeg-formulier als pop-up opent (native <dialog>: Esc sluit, focus blijft erin). */
@@ -23,11 +24,7 @@ export function NewPortalDialog({
       <button
         type="button"
         onClick={() => ref.current?.showModal()}
-        className={
-          outline
-            ? "inline-flex items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-2 text-sm font-semibold text-ink-800 hover:bg-ink-50"
-            : "inline-flex items-center gap-2 rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800"
-        }
+        className={buttonVariants({ variant: outline ? "outline" : "primary" })}
       >
         {outline ? <Upload className="h-4 w-4" /> : <Plus className="h-4 w-4" />} {label}
       </button>
@@ -39,7 +36,7 @@ export function NewPortalDialog({
         <div className="space-y-4 p-6">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-base font-bold text-ink-900">{title}</h2>
-            <button type="button" onClick={() => ref.current?.close()} aria-label="Sluiten" className="rounded-md p-1 text-ink-500 hover:bg-ink-100">
+            <button type="button" onClick={() => ref.current?.close()} aria-label="Sluiten" className={buttonVariants({ variant: "ghost", size: "icon" })}>
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -103,7 +100,7 @@ export function PasswordReveal({ id, hasPassword }: { id: string; hasPassword: b
     }
   }
 
-  const btn = "flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 text-ink-500 hover:bg-ink-50";
+  const btn = buttonVariants({ variant: "outline", size: "icon", className: "h-8 w-8" });
   return (
     <div className="flex items-center gap-1.5">
       <span className="min-w-0 truncate font-mono text-[13px] text-ink-700">{pw ?? "••••••••••"}</span>

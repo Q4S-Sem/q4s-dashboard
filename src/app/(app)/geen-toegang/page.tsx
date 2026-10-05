@@ -2,6 +2,7 @@ import { LogOut, ShieldAlert } from "lucide-react";
 import { logout } from "@/app/login/actions";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Geen toegang" };
 
@@ -22,7 +23,7 @@ export default function GeenToegangPage() {
               <form action={logout}>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-sm bg-ink-900 px-4 py-2 text-sm font-medium text-white hover:bg-ink-800"
+                  className={buttonVariants()}
                 >
                   <LogOut className="h-4 w-4" /> Uitloggen
                 </button>

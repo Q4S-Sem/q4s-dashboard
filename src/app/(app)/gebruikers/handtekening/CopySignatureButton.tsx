@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 
 /**
  * Kopieert de handtekening als OPGEMAAKTE HTML (rich clipboard), zodat je 'm
@@ -34,7 +35,7 @@ export function CopySignatureButton({ html, text }: { html: string; text: string
     <button
       type="button"
       onClick={copyRich}
-      className="inline-flex items-center gap-2 rounded-md bg-ink-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink-800"
+      className={buttonVariants()}
       title="Kopieer de handtekening en plak 'm in Outlook of Gmail"
     >
       {done ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

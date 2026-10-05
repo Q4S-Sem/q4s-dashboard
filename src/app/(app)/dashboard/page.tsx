@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { buttonVariants, segmentVariants } from "@/components/ui/button";
 import { tariefEenheden } from "@/lib/toeslag";
 import {
   Wallet,
@@ -471,10 +472,7 @@ export default async function DashboardPage({
   const periodBtn = (label: string, active: boolean, param: string) => (
     <Link
       href={`/dashboard?q=${param}&year=${year}`}
-      className={cn(
-        "rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors",
-        active ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-ink-50",
-      )}
+      className={segmentVariants(active)}
     >
       {label}
     </Link>
@@ -588,12 +586,7 @@ export default async function DashboardPage({
                   </div>
                   <Link
                     href={t.href}
-                    className={cn(
-                      "shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
-                      t.primary
-                        ? "bg-ink-900 text-white hover:bg-ink-700"
-                        : "border border-ink-200 bg-white text-ink-700 hover:bg-ink-50",
-                    )}
+                    className={buttonVariants({ variant: t.primary ? "primary" : "outline", size: "sm", className: "shrink-0" })}
                   >
                     {t.cta}
                   </Link>

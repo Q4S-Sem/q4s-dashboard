@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { WeekPicker } from "@/components/week-picker";
-import { cn, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { parseWeek, shiftWeek, weekHref } from "@/lib/week-nav";
 
 // ---------------------------------------------------------------------------
@@ -81,12 +81,7 @@ export function WeekBalk({
             href={weekHref(basePath, null, extraParams)}
             scroll={false}
             aria-current={isAlleWeken ? "page" : undefined}
-            className={cn(
-              "inline-flex h-8 items-center rounded-sm border px-3 text-sm font-semibold transition-all active:translate-y-px",
-              isAlleWeken
-                ? "border-brand-600 bg-brand-600 text-white"
-                : "border-ink-200 bg-white text-ink-800 hover:border-ink-900 hover:bg-ink-50",
-            )}
+            className={buttonVariants({ variant: isAlleWeken ? "primary" : "outline", size: "sm" })}
           >
             Alle weken
           </Link>

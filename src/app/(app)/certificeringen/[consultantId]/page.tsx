@@ -254,7 +254,7 @@ export default async function MedewerkerCertificatenPage({
                           href={`/api/certificates/${ct.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200 px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-ink-50"
+                          className={buttonVariants({ variant: "outline", size: "sm" })}
                         >
                           <FileText className="h-4 w-4" /> Bekijk bestand
                         </a>

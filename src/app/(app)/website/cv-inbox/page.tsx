@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DISCIPLINES, CANDIDATE_SOURCES, CANDIDATE_AVAILABILITY, labelFor } from "@/lib/domain";
 import { CvInboxFilters } from "./CvInboxFilters";
@@ -96,16 +96,13 @@ export default async function WebsiteCvsPage({
   const tabLink = (t: "website" | "email", label: string, count: number, icon: React.ReactNode) => (
     <Link
       href={`/website/cv-inbox?bron=${t}`}
-      className={cn(
-        "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-        bron === t ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-800",
-      )}
+      className={segmentVariants(bron === t)}
     >
       {icon} {label}
       <span
         className={cn(
           "rounded-sm px-1.5 text-xs font-semibold tabular-nums",
-          bron === t ? "bg-brand-100 text-brand-700" : "bg-ink-200 text-ink-600",
+          bron === t ? "bg-white/20 text-white" : "bg-ink-100 text-ink-600",
         )}
       >
         {count}
@@ -157,7 +154,7 @@ export default async function WebsiteCvsPage({
       )}
 
       {/* Bron-switch */}
-      <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-0.5">
+      <div className={SEGMENT_GROEP}>
         {tabLink("website", "Website", websiteCount, <Globe className="h-4 w-4" />)}
         {tabLink("email", "E-mail", emailCount, <Mail className="h-4 w-4" />)}
       </div>

@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { BarChart3, ChevronLeft, ChevronRight, Building2, CalendarDays, HardHat } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { cn, formatCurrency, round2 } from "@/lib/utils";
+import { formatCurrency, round2 } from "@/lib/utils";
 import { QUARTERS, DISCIPLINES, labelFor } from "@/lib/domain";
 import { MiniBar, SectionHeading } from "../_kpi";
 
@@ -125,10 +126,7 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
   const periodBtn = (label: string, active: boolean, param: string) => (
     <Link
       href={`/dashboard/rapportage?dim=${dim}&q=${param}&year=${year}`}
-      className={cn(
-        "rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors",
-        active ? "bg-brand-600 text-white" : "text-ink-600 hover:bg-ink-50",
-      )}
+      className={segmentVariants(active)}
     >
       {label}
     </Link>
@@ -167,15 +165,12 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
       </div>
 
       {/* Dimensie-tabs */}
-      <div className="inline-flex flex-wrap gap-1 rounded-lg border border-ink-200 bg-white p-0.5">
+      <div className={SEGMENT_GROEP}>
         {DIMS.map((d) => (
           <Link
             key={d.value}
             href={`/dashboard/rapportage?dim=${d.value}&q=${qParam}&year=${year}`}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              dim === d.value ? "bg-violet-600 text-white shadow-sm" : "text-ink-600 hover:bg-ink-50",
-            )}
+            className={segmentVariants(dim === d.value)}
           >
             <d.icon className="h-4 w-4" /> {d.label}
           </Link>

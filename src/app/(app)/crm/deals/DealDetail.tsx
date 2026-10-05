@@ -230,7 +230,7 @@ export async function DealDetail({
             <input type="hidden" name="id" value={deal.id} />
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-ink-700 shadow-sm ring-1 ring-inset ring-ink-200 hover:bg-ink-50"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Opvolging afronden
             </button>

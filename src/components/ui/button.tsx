@@ -45,6 +45,32 @@ export function buttonVariants({
   return cn(base, variantClasses[variant], sizeClasses[size], className);
 }
 
+/**
+ * Gesegmenteerde schakelaar (periode, taal, weergave, documentsoort): ÉÉN stijl
+ * in het hele dashboard. Zet de knoppen in een `<div className={SEGMENT_GROEP}>`.
+ * Actief = zwart, net als de primaire knoppen; nooit een eigen kleur per pagina.
+ */
+export const SEGMENT_GROEP = "inline-flex flex-wrap items-center gap-1 rounded-lg border border-ink-200 bg-white p-1";
+
+export function segmentVariants(active: boolean, className?: string) {
+  return cn(
+    "inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+    active ? "bg-ink-900 text-white shadow-sm" : "text-ink-600 hover:bg-ink-100 hover:text-ink-900",
+    className,
+  );
+}
+
+/**
+ * Mapje-tab (dossier- en lijst-tabbladen boven een kaart). -mb-px laat het tabje
+ * over de lijn vallen; de onderrand krijgt de paginakleur zodat het mapje "open" staat.
+ */
+export function mapTabVariants(active: boolean) {
+  return cn(
+    "-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors",
+    active ? "border-ink-200 border-b-[#fafafa] bg-white text-ink-900" : "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900",
+  );
+}
+
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;

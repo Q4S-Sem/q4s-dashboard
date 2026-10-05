@@ -21,7 +21,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { cn, formatCurrency, formatDate, formatHours, formatPercent } from "@/lib/utils";
 import { btwOverview, periodToRange } from "@/lib/boekhouding";
 import { invoicingOverview } from "@/lib/facturatie";
@@ -316,10 +316,10 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
         sub={`${range.label} · omzet, inkoop, marge en btw — plus wie telkens dezelfde fout maakt`}
       >
         {/* Periode als knoppen: één klik, geen formulier. */}
-        <div className="flex items-center gap-1 rounded-lg border border-ink-200 bg-white p-1">
+        <div className={SEGMENT_GROEP}>
           <Link
             href={periodeHref(Math.max(jaar - 1, START_JAAR), kwartaal)}
-            className="flex h-8 items-center rounded-md px-2 text-[13px] font-medium text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+            className={segmentVariants(false, "px-2")}
             aria-label="Vorig jaar"
           >
             ‹
@@ -327,7 +327,7 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
           <span className="px-1 text-[13px] font-semibold tabular-nums text-ink-900">{jaar}</span>
           <Link
             href={periodeHref(Math.min(jaar + 1, maxJaar), kwartaal)}
-            className="flex h-8 items-center rounded-md px-2 text-[13px] font-medium text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+            className={segmentVariants(false, "px-2")}
             aria-label="Volgend jaar"
           >
             ›
@@ -337,10 +337,7 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
               key={k ?? "jaar"}
               href={periodeHref(jaar, k)}
               aria-current={kwartaal === k ? "page" : undefined}
-              className={cn(
-                "h-8 rounded-md px-2.5 text-[13px] font-medium leading-8",
-                kwartaal === k ? "bg-ink-900 text-white" : "text-ink-600 hover:bg-ink-100",
-              )}
+              className={segmentVariants(kwartaal === k)}
             >
               {k ? `Q${k}` : "Jaar"}
             </Link>

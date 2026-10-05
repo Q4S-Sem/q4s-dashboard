@@ -6,12 +6,11 @@ import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { OfferteVel } from "@/components/contract/OfferteVel";
 import { UrenstaatVel } from "@/components/contract/UrenstaatVel";
 import { Download, FileText } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { getCompanySettings } from "@/lib/settings";
 import { buildContractDoc } from "@/lib/contract-doc";
 import { contractLogoDataUri, q4sHandtekeningDataUri } from "@/lib/contract-render";
-import { cn } from "@/lib/utils";
 import { PrintBar } from "../[id]/print/PrintBar";
 import { WordKnop } from "@/components/contract/WordKnop";
 
@@ -51,19 +50,18 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
     <div className="space-y-4">
       <div className="no-print space-y-4">
         <PageHeader title="Blanco" description="Lege Q4S-documenten (overeenkomst, persoonsgegevens, offerte, timesheet) om te printen of als PDF te bewaren." />
-        <div className="flex flex-wrap items-center gap-2 border-b border-ink-200 pb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className={SEGMENT_GROEP}>
           {SOORTEN.map(([k, label]) => (
             <Link
               key={k}
               href={url(k, taal)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium",
-                k === doc ? "bg-ink-900 text-white" : "text-ink-500 hover:bg-ink-100 hover:text-ink-900",
-              )}
+              className={segmentVariants(k === doc)}
             >
               {label}
             </Link>
           ))}
+          </div>
           <div className="ml-auto">
             <TaalSchakelaar taal={taal} href={(t) => url(doc, t)} />
           </div>

@@ -10,6 +10,7 @@ import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table"
 import { APPLICATION_STATUSES } from "@/lib/domain";
 import { person } from "@/lib/people";
 import { formatDate, cn } from "@/lib/utils";
+import { mapTabVariants } from "@/components/ui/button";
 
 /** Kleurstip per status-tab (zelfde badge-kleuren als APPLICATION_STATUSES). */
 const STATUS_DOT: Record<string, string> = {
@@ -70,12 +71,7 @@ export async function SollicitatiesList({
               href={`${basePath}?status=${s.value}`}
               scroll={false}
               aria-current={active ? "page" : undefined}
-              className={cn(
-                "-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors",
-                active
-                  ? "border-ink-200 border-b-[#fafafa] bg-white text-ink-900"
-                  : "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900",
-              )}
+              className={mapTabVariants(active)}
             >
               <span className={cn("h-2.5 w-2.5 rounded-full", STATUS_DOT[s.value] ?? "bg-ink-300")} />
               {s.label}

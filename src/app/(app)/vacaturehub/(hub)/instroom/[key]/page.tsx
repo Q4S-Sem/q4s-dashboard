@@ -4,11 +4,11 @@ import { ArrowLeft, Filter, Sparkles, Plug, ExternalLink, Download } from "lucid
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { StatusBadge } from "@/components/ui/badge";
 import { VMS_STATUSES } from "@/lib/domain";
-import { formatDate, cn } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { bulkFilterVacancies } from "../../../actions";
 import { pullNow } from "../../../intake-actions";
 import { getSource, sourceWhere, OVERIG_KEY } from "../../data";
@@ -175,17 +175,12 @@ export default async function BronPage({
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className={SEGMENT_GROEP}>
         {TABS.map((t) => (
           <Link
             key={t.key}
             href={`/vacaturehub/instroom/${key}?tab=${t.key}`}
-            className={cn(
-              "rounded-sm px-3 py-1 text-xs font-medium transition-colors",
-              tab === t.key
-                ? "bg-ink-900 text-white"
-                : "bg-ink-100 text-ink-600 hover:bg-ink-200",
-            )}
+            className={segmentVariants(tab === t.key)}
           >
             {t.label}
           </Link>

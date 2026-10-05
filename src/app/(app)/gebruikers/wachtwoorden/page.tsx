@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { isAdminSession } from "@/lib/session";
 import { deletePortal, importPortals, savePortal } from "./actions";
 import { NewPortalDialog, PasswordInput, PasswordReveal } from "./PasswordReveal";
+import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Wachtwoorden" };
 export const dynamic = "force-dynamic";
@@ -139,7 +140,7 @@ export default async function WachtwoordenPage({
                     <Link
                       href={editing === p.id ? "/gebruikers/wachtwoorden" : `/gebruikers/wachtwoorden?bewerk=${p.id}`}
                       scroll={false}
-                      className="justify-self-start rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50 md:justify-self-end"
+                      className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start md:justify-self-end" })}
                     >
                       {editing === p.id ? "Sluiten" : "Bewerken"}
                     </Link>

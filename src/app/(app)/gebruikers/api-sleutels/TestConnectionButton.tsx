@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { PlugZap, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { testAiConnection } from "./actions";
+import { buttonVariants } from "@/components/ui/button";
 
 /** "Test verbinding"-knop per provider: doet een live API-ping en toont ✓/✗ inline. */
 export function TestConnectionButton({
@@ -30,7 +31,7 @@ export function TestConnectionButton({
           type="button"
           onClick={run}
           disabled={pending || !configured}
-          className="inline-flex items-center gap-2 rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className={buttonVariants({ variant: "outline" })}
         >
           {pending ? (
             <Loader2 className="h-4 w-4 animate-spin" />

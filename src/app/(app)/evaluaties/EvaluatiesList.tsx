@@ -11,7 +11,7 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 
 type SP = { year?: string; quarter?: string; opgeslagen?: string };
 
@@ -38,11 +38,7 @@ function FilterPill({
   return (
     <Link
       href={href}
-      className={
-        active
-          ? "rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white"
-          : "rounded-lg border border-ink-200 bg-white px-3 py-1.5 text-sm text-ink-600 hover:bg-ink-50"
-      }
+      className={segmentVariants(active)}
     >
       {children}
     </Link>
@@ -142,7 +138,7 @@ export async function EvaluatiesList({
       {/* Filters: kwartaal + jaar (geen type-switch meer) */}
       <Card>
         <CardContent className="space-y-3 py-4">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className={SEGMENT_GROEP}>
             <FilterPill active={!quarter} href={hrefWith(basePath, sp, { quarter: undefined })}>
               Alle
             </FilterPill>

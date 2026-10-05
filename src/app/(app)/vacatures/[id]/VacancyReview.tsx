@@ -17,7 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { cn } from "@/lib/utils";
 import { saveVacancyContent } from "../actions";
@@ -310,7 +310,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
               type="button"
               onClick={improveWithAI}
               disabled={aiBusy || !aiReady}
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-200 transition-all hover:shadow-lg hover:shadow-violet-300 hover:brightness-110 active:translate-y-px disabled:pointer-events-none disabled:opacity-40"
+              className={buttonVariants({ className: "group" })}
             >
               <Sparkles className={cn("h-4 w-4", aiBusy && "animate-pulse")} />
               {aiBusy ? "AI is bezig…" : "Laat AI uitschrijven"}

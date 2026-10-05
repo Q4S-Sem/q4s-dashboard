@@ -4,8 +4,7 @@ import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { ContactsTable } from "./ContactsTable";
 import { CompaniesBrowser, type CompanyRow } from "./CompaniesBrowser";
 
@@ -22,22 +21,16 @@ export default async function ContactenPage({
 
   // Segmented toggle bovenaan: schakel tussen bedrijfscontacten en werknemers.
   const toggle = (
-    <div className="inline-flex rounded-lg border border-ink-200 bg-white p-1 shadow-sm">
+    <div className={SEGMENT_GROEP}>
       <Link
         href="/crm/contacten"
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-          view === "klanten" ? "bg-brand-600 text-white shadow-sm" : "text-ink-600 hover:bg-ink-50",
-        )}
+        className={segmentVariants(view === "klanten")}
       >
         <Building2 className="h-4 w-4" /> Klanten
       </Link>
       <Link
         href="/crm/contacten?type=werknemers"
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-          view === "werknemers" ? "bg-brand-600 text-white shadow-sm" : "text-ink-600 hover:bg-ink-50",
-        )}
+        className={segmentVariants(view === "werknemers")}
       >
         <HardHat className="h-4 w-4" /> Werknemers
       </Link>
