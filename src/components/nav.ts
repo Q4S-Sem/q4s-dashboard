@@ -133,9 +133,9 @@ const HUB_LIST: NavHub[] = [
     href: "/contracten",
     icon: FileSignature,
     items: [
-      { href: "/contracten", label: "Contracten", icon: FileSignature, exact: true },
       { href: "/contracten/nieuw", label: "Nieuw contract", icon: Plus },
       { href: "/contracten/blanco", label: "Blanco", icon: FileText },
+      { href: "/contracten", label: "Contracten", icon: FileSignature, exact: true },
     ],
   },
   {
