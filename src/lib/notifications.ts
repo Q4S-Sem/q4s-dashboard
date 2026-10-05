@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { weekSlotVanDatum } from "@/lib/week-koppeling";
 import { countReceivedDiscrepancies } from "@/lib/received-invoices";
 
 // ---------------------------------------------------------------------------
@@ -127,17 +128,33 @@ export async function getNotifications(): Promise<Notifications> {
     db.crmNote.count({ where: { dealId: null, followUpDone: false, followUpAt: { gte: endToday } } }),
   ]);
 
+  // Een melding brengt je naar de plek waar het werk ligt — niet naar een
+  // algemeen overzicht van een andere week. Oudste open scan eerst.
+  const scan = inboxCount
+    ? await db.timesheetInbox.findFirst({
+        where: { status: { in: ["NEW", "EXTRACTED"] }, timesheetId: null },
+        orderBy: [{ extractedWeekStart: "asc" }, { createdAt: "asc" }],
+        select: { placementId: true, consultantId: true, extractedWeekStart: true },
+      })
+    : null;
+  const scanWeek = weekSlotVanDatum(scan?.extractedWeekStart)?.key;
+  const inboxHref = !scanWeek
+    ? "/facturatie?tab=bestanden"
+    : scan?.placementId
+      ? `/facturatie/${scan.placementId}/${scanWeek}`
+      : `/facturatie?week=${scanWeek}${scan?.consultantId ? "" : "&tab=bestanden"}`;
+
   const all: NotifGroup[] = [
     { key: "agenda", label: "Agenda", href: "/agenda", late: agLate, today: agToday, future: agFuture },
     { key: "taken", label: "Taken", href: "/agenda/taken", late: tkLate, today: tkToday, future: tkFuture },
-    { key: "sollicitaties", label: "Sollicitaties", href: "/sollicitaties", late: solLate, today: solToday, future: 0 },
+    { key: "sollicitaties", label: "Sollicitaties", href: "/sollicitaties?status=NEW", late: solLate, today: solToday, future: 0 },
     { key: "certificeringen", label: "Certificaten", href: "/certificeringen", late: certLate, today: certToday, future: certFuture },
     {
       key: "facturen",
       label: "Facturen",
       // Te late facturen staan op hun eigen tabblad — één klik, meteen de lijst
       // waar de betalingsherinnering bij staat.
-      href: "/facturatie/verkoop?tab=telaat",
+      href: facLate > 0 ? "/facturatie/verkoop?tab=telaat" : "/facturatie/verkoop?tab=verzonden",
       late: facLate,
       today: facToday,
       future: facFuture,
@@ -145,7 +162,7 @@ export async function getNotifications(): Promise<Notifications> {
     // De teller gaat over urenstaten die nog VERWERKT moeten worden — dus naar
     // het weekscherm. Sleutel blijft "inbox": hij telt nog steeds de
     // TimesheetInbox-regels (zie ook hubActionCounts hieronder).
-    { key: "inbox", label: "Urenstaten verwerken", href: "/facturatie", late: 0, today: inboxCount, future: 0 },
+    { key: "inbox", label: "Urenstaten verwerken", href: inboxHref, late: 0, today: inboxCount, future: 0 },
     { key: "msp", label: "Vacature-intake", href: "/vacaturehub", late: 0, today: mspUnread, future: 0 },
     {
       key: "factuur-afwijking",
