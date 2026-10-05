@@ -68,6 +68,10 @@ const nextConfig: NextConfig = {
   // vangt die laatste de PDF-route of de detailpagina af.
   async redirects() {
     return [
+      // --- Audits (verhuisd uit Instellingen) ------------------------------
+      { source: "/gebruikers/dossiercheck", destination: "/audits/nen-4400", permanent: false },
+      { source: "/gebruikers/audit", destination: "/audits/nen-4400/facturen", permanent: false },
+
       // --- Verkoopfacturen -------------------------------------------------
       // De PDF-route zit in verstuurde mails en bladwijzers: als eerste.
       { source: "/verzenden/verkoop/:id/pdf", destination: "/facturatie/verkoop/:id/pdf", permanent: false },

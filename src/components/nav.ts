@@ -219,6 +219,18 @@ const HUB_LIST: NavHub[] = [
     ],
   },
   {
+    // Eén pagina per norm waarop we geaudit worden.
+    label: "Audits",
+    href: "/audits",
+    icon: ShieldCheck,
+    items: [
+      { href: "/audits/iso-9001", label: "ISO 9001", icon: Award },
+      { href: "/audits/nen-4400", label: "NEN 4400-1", icon: ClipboardCheck },
+      { href: "/audits/nen-4400/facturen", label: "Facturen-steekproef", icon: Receipt, hidden: true },
+      { href: "/audits/vcu", label: "VCU", icon: HardHat },
+    ],
+  },
+  {
     label: "Instellingen",
     href: "/gebruikers",
     icon: Settings,
@@ -226,8 +238,6 @@ const HUB_LIST: NavHub[] = [
       { href: "/gebruikers", label: "Gebruikers", icon: UserCog, exact: true, section: "Toegang" },
       { href: "/gebruikers/handtekening", label: "E-mailhandtekening", icon: Mail, section: "Toegang" },
       { href: "/gebruikers/wachtwoorden", label: "Wachtwoorden", icon: Lock, section: "Toegang" },
-      { href: "/gebruikers/audit", label: "Audit (Kiwa)", icon: ShieldCheck, section: "Compliance" },
-      { href: "/gebruikers/dossiercheck", label: "Dossiercheck", icon: ClipboardCheck, section: "Compliance" },
       { href: "/gebruikers/api-sleutels", label: "API-sleutels", icon: KeyRound, section: "AI" },
       { href: "/gebruikers/tokenverbruik", label: "Tokenverbruik", icon: BarChart3, section: "AI" },
     ],
@@ -248,6 +258,7 @@ const HUB_ORDER = [
   "/evaluaties",
   "/dashboard", // Analytics
   "/data",
+  "/audits",
   "/gebruikers", // Instellingen
 ];
 

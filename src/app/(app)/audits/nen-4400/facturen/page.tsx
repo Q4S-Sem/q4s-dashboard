@@ -3,6 +3,7 @@ import { ShieldCheck, CheckCircle2, AlertTriangle, Download, FileText, Receipt }
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { BackLink } from "@/components/back-link";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
@@ -79,8 +80,9 @@ export default async function AuditPage({
 
   return (
     <div className="space-y-6">
+      <BackLink href="/audits/nen-4400">Terug naar NEN 4400-1</BackLink>
       <PageHeader
-        title="Audit (Kiwa/SNA)"
+        title="Facturen-steekproef (Kiwa/SNA)"
         description="Plak de factuurnummers uit de opvraagmail van de auditor. Je ziet direct welke facturen we hebben, welke onder de LET OP-regel vallen, en downloadt alles inclusief urenspecificaties als ZIP voor de gedeelde map."
       />
 

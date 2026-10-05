@@ -1,7 +1,7 @@
 // Dossiercheck (NEN 4400 / Kiwa / VCU): welke verplichte dossierstukken ontbreken
 // of zijn verlopen? PURE logica — geen db, geen IO, geen mail en geen status- of
 // dossierwijziging; deze module leest alleen wat haar wordt aangereikt. De
-// lees-alleen pagina (gebruikers/dossiercheck) en de DOSSIER_INCOMPLETE-
+// lees-alleen pagina (audits/nen-4400) en de DOSSIER_INCOMPLETE-
 // automatisering voeren hem met al opgehaalde gegevens (zie ./dossier-data).
 
 /** consultant = gedetacheerde (werknemers-hub) · employee = eigen Q4S-personeel. */

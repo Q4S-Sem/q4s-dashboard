@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, CheckCircle2, FileText, ShieldCheck, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { buttonVariants } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ import {
 } from "@/lib/dossier-check";
 import { loadDossierPeople } from "@/lib/dossier-data";
 
-export const metadata = { title: "Dossiercheck (NEN 4400 / Kiwa)" };
+export const metadata = { title: "NEN 4400-1" };
 export const dynamic = "force-dynamic";
 
 const STATUS_META: Record<DossierStatus, { label: string; color: BadgeColor }> = {
@@ -37,7 +38,12 @@ export default async function DossiercheckPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dossiercheck (NEN 4400 / Kiwa)"
+        title="NEN 4400-1 — dossiercheck"
+        actions={
+          <Link href="/audits/nen-4400/facturen" className={buttonVariants({ variant: "outline" })}>
+            <FileText className="h-4 w-4" /> Facturen-steekproef (Kiwa/SNA)
+          </Link>
+        }
         description="Is elk personeelsdossier compleet? Per persoon zie je welke verplichte stukken ontbreken of verlopen zijn, zodat je ze vóór een audit kunt opvragen. Deze pagina leest alleen — opvragen en bijwerken doe je zelf in het dossier."
       />
 
