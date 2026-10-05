@@ -55,7 +55,7 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
 
       {/* Mapjes zoals bij een plaatsing; taal en downloads rechts op dezelfde lijn. */}
       <div className="no-print flex flex-wrap items-end gap-3 border-b border-ink-200">
-        <nav aria-label="Document" className="flex items-end gap-1 overflow-x-auto">
+        <nav aria-label="Document" className="flex flex-wrap items-end gap-1">
           {SOORTEN.map(([k, label, Icon]) => (
             <Link key={k} href={url(k, taal)} aria-current={k === doc ? "page" : undefined} className={mapTabVariants(k === doc)}>
               <Icon className={cn("h-4 w-4", k === doc ? "text-brand-600" : "text-ink-400")} />
