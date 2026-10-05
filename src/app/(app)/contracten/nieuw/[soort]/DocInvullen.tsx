@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Eraser, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WordKnop } from "@/components/contract/WordKnop";
 import type { Taal } from "@/components/contract/ContractVel";
 import { PersoonsgegevensVel } from "@/components/contract/PersoonsgegevensVel";
 import { OfferteVel, type Offerte } from "@/components/contract/OfferteVel";
@@ -143,6 +144,7 @@ export function DocInvullen({
           <Button type="button" className="flex-1" onClick={() => window.print()}>
             <Printer className="h-4 w-4" /> Printen / opslaan als PDF
           </Button>
+          <WordKnop bestandsnaam={`Q4S ${soort === "offerte" ? "Offerte" : "Persoonsgegevens"}${w.companyName || w.to ? ` - ${w.companyName || w.to}` : ""}`} size="md" />
           <Button type="button" variant="outline" onClick={leegmaken}>
             <Eraser className="h-4 w-4" /> Leegmaken
           </Button>
@@ -150,7 +152,7 @@ export function DocInvullen({
       </form>
 
       <div className="ov-print-pagina overflow-x-auto">
-        <div className="flex justify-center pb-10">
+        <div className="flex justify-center pb-10" data-word-bron>
           {soort === "persoonsgegevens" ? (
             <PersoonsgegevensVel logoSrc={logoSrc} footerLine={footerLine} taal={taal} waarden={w} className="ov-schaduw" />
           ) : (

@@ -13,6 +13,7 @@ import { buildContractDoc } from "@/lib/contract-doc";
 import { contractLogoDataUri, q4sHandtekeningDataUri } from "@/lib/contract-render";
 import { cn } from "@/lib/utils";
 import { PrintBar } from "../[id]/print/PrintBar";
+import { WordKnop } from "@/components/contract/WordKnop";
 
 export const metadata = { title: "Blanco — Contracten" };
 export const dynamic = "force-dynamic";
@@ -71,13 +72,9 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3">
             <FileText className="h-5 w-5 text-brand-600" />
             <p className="mr-auto text-sm text-ink-600">
-              Ook als Word-bestand — om buiten het dashboard te bewerken of door te sturen.
+              Ook als Word-bestand ({taal.toUpperCase()}) — om buiten het dashboard te bewerken of door te sturen.
             </p>
-            {(["nl", "en"] as const).map((l) => (
-              <a key={l} href={`/contracten/word?doc=${doc}&taal=${l}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-                <Download className="h-4 w-4" /> Word {l.toUpperCase()}
-              </a>
-            ))}
+            <WordKnop bestandsnaam={`Q4S ${SOORTEN.find(([k]) => k === doc)?.[1] ?? doc} (${taal.toUpperCase()})`} />
           </div>
         )}
         {doc === "timesheet" && (
@@ -96,7 +93,7 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
 
       <div className="ov-print-pagina">
         <PrintBar terug="/contracten" />
-        <div className="flex justify-center overflow-x-auto pb-10">
+        <div className="flex justify-center overflow-x-auto pb-10" data-word-bron>
           {doc === "overeenkomst" ? (
             <ContractVel doc={leeg} logoSrc={logo} handtekening={handtekening} taal={taal} className="ov-schaduw" />
           ) : doc === "persoonsgegevens" ? (

@@ -17,8 +17,9 @@ import {
 
 /**
  * Een contract-vel (ContractVel / OfferteVel / PersoonsgegevensVel) als
- * bewerkbaar Word-document. Bron = de HTML die React van hetzelfde vel maakt
- * (renderToStaticMarkup), zodat Word en scherm/print nooit uit elkaar lopen.
+ * bewerkbaar Word-document. Bron = de HTML van hetzelfde vel zoals het op het
+ * scherm staat (in de browser: element.innerHTML), zodat Word en scherm/print
+ * nooit uit elkaar lopen. Draait in de browser én in Node (tests): geen Buffer.
  *
  * Kent alleen de tags/klassen die de vellen gebruiken. ponytail: geen echte
  * HTML-parser — de invoer is onze eigen, altijd goed gevormde React-markup; komt
@@ -76,14 +77,15 @@ const GREY = "6B6B70";
 const BLUE = "1D4ED8";
 type Stijl = { bold?: boolean; italics?: boolean; color?: string; size?: number; strike?: boolean; sup?: boolean; caps?: boolean };
 
-function pngSize(b: Buffer): { w: number; h: number } {
-  return b.length > 24 && b.readUInt32BE(12) === 0x49484452 ? { w: b.readUInt32BE(16), h: b.readUInt32BE(20) } : { w: 300, h: 100 };
+function pngSize(b: Uint8Array): { w: number; h: number } {
+  const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  return b.length > 24 && v.getUint32(12) === 0x49484452 ? { w: v.getUint32(16), h: v.getUint32(20) } : { w: 300, h: 100 };
 }
 
 function imageRun(src: string, hoogtePx: number): ImageRun | null {
   const m = /^data:image\/(png|jpe?g);base64,(.+)$/.exec(src);
   if (!m) return null;
-  const data = Buffer.from(m[2], "base64");
+  const data = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
   const { w, h } = pngSize(data);
   return new ImageRun({
     data,
@@ -245,9 +247,24 @@ function tabel(e: El, ctx: Ctx): Table {
   });
 }
 
-/** HTML van een vel → .docx (A4, Arial, voettekst met bedrijfsgegevens + paginanummer). */
-export async function velHtmlToDocx(html: string, voetregel: string): Promise<Buffer> {
+/** Tekst van de eerste paginavoet (zonder paginanummer) — wordt de Word-voettekst. */
+function voetVan(e: El): string {
+  for (const k of e.kids) {
+    if (typeof k === "string") continue;
+    if (k.tag === "footer") {
+      const zonderPg = (n: Node): string => (typeof n === "string" ? n : has(n, "ov-pg") ? "" : n.kids.map(zonderPg).join(" "));
+      return zonderPg(k).replace(/\s+/g, " ").trim();
+    }
+    const v = voetVan(k);
+    if (v) return v;
+  }
+  return "";
+}
+
+/** HTML van een vel → .docx-bytes (A4, Arial, voettekst met bedrijfsgegevens + paginanummer). */
+export async function velHtmlToDocx(html: string): Promise<Uint8Array> {
   const root = parseMarkup(html);
+  const voetregel = voetVan(root);
   const body = blocks(root, { eersteKop: true });
   const doc = new Document({
     creator: "Q4S",
@@ -271,5 +288,5 @@ export async function velHtmlToDocx(html: string, voetregel: string): Promise<Bu
       },
     ],
   });
-  return Packer.toBuffer(doc);
+  return new Uint8Array(await Packer.toArrayBuffer(doc));
 }
