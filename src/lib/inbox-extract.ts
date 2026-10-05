@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { aiJSON, aiJSONFromFile } from "@/lib/ai";
-import { readInboxBase64, readInboxBuffer } from "@/lib/uploads";
+import { deleteInboxUpload, readInboxBase64, readInboxBuffer } from "@/lib/uploads";
 import { excelToText, isSpreadsheet } from "@/lib/excel";
 import { matchByName } from "@/lib/name-match";
 import {
@@ -480,4 +480,37 @@ export async function runInboxExtraction(id: string): Promise<void> {
       placementId,
     },
   });
+
+  await ontdubbelUrenstaat(id, consultantId, weekStart);
+}
+
+/**
+ * ÉÉN URENSTAAT PER PERSOON PER WEEK. Ligt er voor deze week al een vastgelegde
+ * urenstaat, dan is deze scan dubbel: weg + fout. Liggen er nog oudere, niet
+ * verwerkte scans van dezelfde week, dan vervangt deze (de nieuwste) ze.
+ * Weekvergelijking met ±12 uur marge (oude rijen staan soms op zondag 22:00 UTC).
+ */
+async function ontdubbelUrenstaat(id: string, consultantId: string | null, weekStart: Date | null): Promise<void> {
+  if (!consultantId || !weekStart) return;
+  const venster = {
+    gte: new Date(weekStart.getTime() - 12 * 3_600_000),
+    lte: new Date(weekStart.getTime() + 12 * 3_600_000),
+  };
+  const vastgelegd = await db.timesheet.findFirst({
+    where: { weekStart: venster, placement: { consultantId } },
+    select: { id: true },
+  });
+  if (vastgelegd) {
+    const zelf = await db.timesheetInbox.delete({ where: { id }, select: { fileName: true } });
+    await deleteInboxUpload(zelf.fileName).catch(() => {});
+    throw new Error("deze week staat al als urenstaat vastgelegd — niet dubbel ingezet");
+  }
+  const ouder = await db.timesheetInbox.findMany({
+    where: { id: { not: id }, consultantId, extractedWeekStart: venster, timesheetId: null, status: { in: ["NEW", "EXTRACTED"] } },
+    select: { id: true, fileName: true },
+  });
+  for (const o of ouder) {
+    await db.timesheetInbox.delete({ where: { id: o.id } });
+    await deleteInboxUpload(o.fileName).catch(() => {});
+  }
 }

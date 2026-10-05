@@ -14,7 +14,7 @@ import {
 } from "@/lib/invoice-extract";
 import { akkoordWeken } from "@/lib/facturatie-akkoord";
 import { getWeekDossier, resolveWeek } from "@/lib/facturatie-week";
-import { weekBeslissing } from "@/lib/facturatie-volgende";
+import { dubbelBesluit, weekBeslissing } from "@/lib/facturatie-volgende";
 import { nameMatches } from "@/lib/name-match";
 import { syncPlaatsingStatus } from "@/lib/plaatsing-status";
 import { weekSlotVanDatum } from "@/lib/week-koppeling";
@@ -376,6 +376,27 @@ async function registreerOntvangenFactuur(args: {
     });
     return bestaand.id;
   }
+  // ÉÉN FACTUUR PER PERSOON PER WEEK: anders telt de week dubbel ("Dubbele facturatie").
+  const zelfdeWeek = await db.receivedInvoice.findFirst({
+    where: { consultantId, weekKey },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, status: true, number: true, fileName: true },
+  });
+  if (zelfdeWeek) {
+    const weekNr = weekKey.split("-W")[1];
+    if (dubbelBesluit(zelfdeWeek.status) === "blokkeer") {
+      await deleteReceivedUpload(bestand.fileName).catch(() => {});
+      throw new Error(
+        `voor week ${weekNr} staat al een goedgekeurde factuur${zelfdeWeek.number ? ` (${zelfdeWeek.number})` : ""} — niet dubbel ingezet`,
+      );
+    }
+    // Nog open: de nieuwe factuur vervangt de oude (laatste versie wint).
+    await db.receivedInvoice.update({ where: { id: zelfdeWeek.id }, data: rij });
+    if (zelfdeWeek.fileName && zelfdeWeek.fileName !== bestand.fileName) {
+      await deleteReceivedUpload(zelfdeWeek.fileName).catch(() => {});
+    }
+    return zelfdeWeek.id;
+  }
   const created = await db.receivedInvoice.create({ data: { ...rij, status: "NEW" } });
   return created.id;
 }
@@ -411,7 +432,7 @@ export async function koppelLosseUpload(formData: FormData) {
       : null;
     if (data) {
       await onthoudBedrijfsgegevens(consultantId, data);
-      await registreerOntvangenFactuur({
+      const ok = await registreerOntvangenFactuur({
         consultantId,
         weekKey: los.weekKey ?? weekKey,
         data,
@@ -421,7 +442,12 @@ export async function koppelLosseUpload(formData: FormData) {
           mimeType: los.mimeType,
           size: los.size,
         },
-      });
+      }).catch(() => null);
+      if (!ok) {
+        // Al een goedgekeurde factuur voor die week: deze losse upload is dubbel.
+        await db.facturatieUpload.delete({ where: { id } });
+        redirect(`/facturatie?week=${weekKey}&tab=bestanden&fout=dubbel`);
+      }
     } else {
       // Niet uitgelezen: wél registreren (zodat hij niet kwijt is), maar leeg —
       // de mens vult de bedragen op het dossier aan.

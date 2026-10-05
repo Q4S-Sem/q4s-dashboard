@@ -52,3 +52,12 @@ export function weekBeslissing(
   if (!gelezenWeek || gelezenWeek === schermWeek) return "zelfde";
   return gelezenWeekGesloten ? "verkeerd" : "verder";
 }
+
+/**
+ * Er komt een factuur/urenstaat binnen voor een week waar er al één van deze
+ * persoon ligt. Nog niet goedgekeurd → de nieuwe VERVANGT de oude (laatste
+ * versie wint). Al goedgekeurd/betaald/vastgelegd → BLOKKEREN, nooit dubbel.
+ */
+export function dubbelBesluit(bestaandeStatus: string): "vervang" | "blokkeer" {
+  return ["APPROVED", "PAID", "INVOICED", "CONFIRMED"].includes(bestaandeStatus) ? "blokkeer" : "vervang";
+}

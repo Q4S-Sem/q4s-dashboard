@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { volgendePersoon, voortgang, weekBeslissing } from "../src/lib/facturatie-volgende";
+import { volgendePersoon, voortgang, weekBeslissing, dubbelBesluit } from "../src/lib/facturatie-volgende";
 import { herinneringMail } from "../src/lib/timesheet-herinnering";
 
 const rij = (key: string, extra: Partial<{ href: string | null; gefactureerd: boolean; vastgelegd: boolean; wachtkamerSinds: Date | null }> = {}) => ({
@@ -42,4 +42,9 @@ test("weekBeslissing: andere week open → verder, al verwerkt → verkeerd", ()
   assert.equal(weekBeslissing("2026-W41", null, false), "zelfde");
   assert.equal(weekBeslissing("2026-W41", "2026-W39", false), "verder");
   assert.equal(weekBeslissing("2026-W41", "2026-W39", true), "verkeerd");
+});
+
+test("dubbelBesluit: open versie wordt vervangen, goedgekeurde blokkeert", () => {
+  for (const st of ["NEW", "EXTRACTED", "DISPUTED"]) assert.equal(dubbelBesluit(st), "vervang");
+  for (const st of ["APPROVED", "PAID", "INVOICED", "CONFIRMED"]) assert.equal(dubbelBesluit(st), "blokkeer");
 });

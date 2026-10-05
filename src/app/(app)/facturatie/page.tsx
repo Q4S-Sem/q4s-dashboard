@@ -176,7 +176,7 @@ export default async function FacturatiePage({
   const verwerkt = Number(sp.verwerkt ?? "");
   const tab: Tab =
     TABS.find((t) => t.key === sp.tab)?.key ??
-    (sp.gekoppeld || sp.verwijderd || sp.fout === "koppelen" ? "bestanden" : "personen");
+    (sp.gekoppeld || sp.verwijderd || sp.fout === "koppelen" || sp.fout === "dubbel" ? "bestanden" : "personen");
   const tabHref = (t: Tab) => {
     const q = new URLSearchParams({ week: week.mondayParam });
     if (t !== "personen") q.set("tab", t);
@@ -230,6 +230,11 @@ export default async function FacturatiePage({
       {sp.verwijderd && (
         <p className="rounded-sm border border-ink-200 bg-ink-50 px-3 py-2 text-[13px] text-ink-600">
           De losse upload is verwijderd.
+        </p>
+      )}
+      {sp.fout === "dubbel" && (
+        <p className="rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-900">
+          Niet gekoppeld: voor die week staat al een goedgekeurde factuur van deze persoon. De dubbele upload is verwijderd.
         </p>
       )}
       {sp.fout === "koppelen" && (
