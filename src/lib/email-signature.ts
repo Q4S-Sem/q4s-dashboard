@@ -136,7 +136,7 @@ export function renderSignatureHtml(d: SignatureData): string {
   // (tel/e-mail/website), rechts het adres. De linkerkolom krijgt een VASTE
   // breedte (COL_W) zodat de streep vóór het adres exact boven de streep vóór
   // KvK uitkomt — die gebruikt dezelfde breedte.
-  const COL_W = 180;
+  const COL_W = 210; // ruimte voor 4 keurmerken (DNV, VCU, SNA, NEN 4400-1)
   const contactCell = contactRows.length
     ? `<td width="${COL_W}" valign="top" style="width:${COL_W}px;padding:0 20px 0 0;vertical-align:top;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
@@ -159,9 +159,10 @@ export function renderSignatureHtml(d: SignatureData): string {
   const badgeImgs = badges
     .map(
       (src) =>
-        vasteImg(src, "Keurmerk", { h: 30 }, "display:inline-block;margin:0 14px 8px 0;vertical-align:middle;") + "&nbsp;&nbsp;",
+        vasteImg(src, "Keurmerk", { h: 28 }, "display:inline-block;margin:0 4px 4px 0;vertical-align:middle;"),
     )
-    .join("");
+    // &nbsp; ertussen: Word negeert de marge bij plakken.
+    .join("&nbsp;");
 
   const kvkCell = d.kvk
     ? `<td style="padding:0 0 0 20px;border-left:2px solid ${LINE};color:${MUTED};font-size:12px;line-height:1.5;vertical-align:middle;white-space:nowrap;">KvK ${esc(d.kvk)}</td>`
