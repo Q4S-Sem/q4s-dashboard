@@ -128,12 +128,6 @@ export default async function PlaatsingDossierLayout({
           { seg: "", label: "Gegevens", icon: <IdCard className="h-4 w-4" /> },
           { seg: "tarieven", label: "Tarieven", icon: <Coins className="h-4 w-4" /> },
           {
-            seg: "uren",
-            label: "Uren",
-            icon: <Clock className="h-4 w-4" />,
-            count: counts.timesheets,
-          },
-          {
             seg: "documenten",
             label: "Documenten",
             icon: <FileText className="h-4 w-4" />,
@@ -144,6 +138,12 @@ export default async function PlaatsingDossierLayout({
             label: "Contracten",
             icon: <ScrollText className="h-4 w-4" />,
             count: counts.contracts,
+          },
+          {
+            seg: "uren",
+            label: "Uren",
+            icon: <Clock className="h-4 w-4" />,
+            count: counts.timesheets,
           },
           {
             seg: "notities",
