@@ -30,10 +30,15 @@ function HubNav({
   // /kandidaten/beschikbaar highlights "Beschikbaar" and not its parent
   // "Talentpool" (/kandidaten) as well.
   const matching = hub.items.filter((it) => itemIsActive(pathname, it));
-  const activeHref = matching.reduce<string | null>(
+  const meestSpecifiek = matching.reduce<string | null>(
     (best, it) => (best && best.length >= it.href.length ? best : it.href),
     null,
   );
+  // Een verborgen scherm laat het zichtbare menu-item vlak erboven oplichten
+  // (bv. /website → "Vacatures"), zodat je altijd ziet waar je bent.
+  const idx = hub.items.findIndex((it) => it.href === meestSpecifiek);
+  let activeHref = meestSpecifiek;
+  for (let i = idx; i >= 0 && hub.items[i].hidden; i--) activeHref = hub.items[i - 1]?.href ?? null;
 
   // Group consecutive items by their optional section heading. `hidden` items
   // horen wel bij de hub (zijbalk + BackLink-label) maar niet in het menu; ze
