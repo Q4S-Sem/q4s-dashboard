@@ -387,6 +387,7 @@ function ToeslagBlock({
   suffix,
   step,
   nietDoorTekst,
+  altijd,
 }: {
   title: string;
   hint: string;
@@ -397,24 +398,26 @@ function ToeslagBlock({
   suffix: string;
   step: number | string;
   nietDoorTekst?: string;
+  /** Altijd aan: geen vinkje. */
+  altijd?: boolean;
 }) {
   const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
   // Uitgevinkt = geldt niet: beide bedragen gaan als 0 mee.
-  const [aan, setAan] = useState(buyDefault > 0 || sellDefault > 0);
+  const [aan, setAan] = useState(altijd || buyDefault > 0 || sellDefault > 0);
   return (
     <div className={cn(TOESLAG_GRID, !aan && "bg-ink-50/40")}>
       <ToeslagNaam
         title={title}
         hint={aan ? hint : "Uit — vink aan als het geldt"}
-        toggle={{ aan, set: setAan }}
+        toggle={altijd ? undefined : { aan, set: setAan }}
       />
       {!aan ? (
         <>
           <input type="hidden" name={buyName} value={0} />
           <input type="hidden" name={sellName} value={0} />
-          <span className="hidden text-xs text-ink-300 sm:block">—</span>
-          <span className="hidden sm:block" />
-          <span className="hidden text-xs text-ink-300 sm:block">—</span>
+          <span className="hidden text-xs italic text-ink-300 sm:col-span-3 sm:block">
+            Niet van toepassing
+          </span>
         </>
       ) : (
         <>
@@ -460,6 +463,7 @@ function ToeslagRow({
   unitDefault,
   sellUnitDefault,
   toggle,
+  altijd,
 }: {
   title: string;
   hint: string;
@@ -471,6 +475,8 @@ function ToeslagRow({
   sellUnitDefault: string;
   /** Offshore/ploegendienst/buitenland: eigen aan/uit-veld (bedragen blijven bewaard). */
   toggle?: { name: string; defaultOn: boolean };
+  /** Altijd aan: geen vinkje (met toggle: veld gaat als "on" mee). */
+  altijd?: boolean;
 }) {
   const [buyUnit, setBuyUnit] = useState<"PCT" | "FIXED">(
     unitDefault === "FIXED" ? "FIXED" : "PCT",
@@ -480,7 +486,7 @@ function ToeslagRow({
   );
   // Zonder eigen veld (meeruren, zaterdag, zondag): uitgevinkt = 0 = geldt niet.
   const [aan, setAan] = useState(
-    toggle?.defaultOn ?? (buyDefault > 0 || sellDefault > 0),
+    altijd || (toggle?.defaultOn ?? (buyDefault > 0 || sellDefault > 0)),
   );
   const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
   const uit = !aan;
@@ -496,8 +502,11 @@ function ToeslagRow({
       <ToeslagNaam
         title={title}
         hint={uit ? "Uit — vink aan als het geldt" : hint}
-        toggle={{ name: toggle?.name, aan, set: setAan }}
+        toggle={altijd ? undefined : { name: toggle?.name, aan, set: setAan }}
       />
+      {altijd && toggle && (
+        <input type="hidden" name={toggle.name} value="on" />
+      )}
       {/* De schakelaars reizen als verborgen velden mee (per zijde). */}
       <input type="hidden" name={`${prefix}SurchargeUnit`} value={buyUnit} />
       <input
@@ -515,9 +524,9 @@ function ToeslagRow({
             name={sellName}
             value={toggle ? sellDefault : 0}
           />
-          <span className="hidden text-xs text-ink-300 sm:block">—</span>
-          <span className="hidden sm:block" />
-          <span className="hidden text-xs text-ink-300 sm:block">—</span>
+          <span className="hidden text-xs italic text-ink-300 sm:col-span-3 sm:block">
+            Niet van toepassing
+          </span>
         </>
       ) : (
         <>
@@ -1540,10 +1549,92 @@ export function PlacementForm({
                 <div className="divide-y divide-ink-100">
                   <input type="hidden" name="weekendSurchargeBuy" value={0} />
                   <input type="hidden" name="weekendSurchargeSell" value={0} />
-                  {/* Reguliere ma–vr uren gaan tegen het NORMALE uurtarief (geen
-                  doordeweekse toeslag). Alleen echte overuren krijgen een hoger
-                  tarief — zie het Overuren-blok onderaan. We forceren de oude
-                  doordeweekse toeslag daarom op 0. */}
+                  <p className="flex items-baseline justify-between gap-2 bg-ink-50/70 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+                    Altijd van toepassing
+                    <span className="font-normal normal-case tracking-normal text-ink-400">
+                      0 = geldt niet
+                    </span>
+                  </p>
+                  <ToeslagRow
+                    title="Zaterdag"
+                    altijd
+                    hint="Uren op zaterdag"
+                    prefix="saturday"
+                    buyDefault={
+                      placement?.saturdaySurchargeBuy ||
+                      placement?.weekendSurchargeBuy ||
+                      0
+                    }
+                    sellDefault={
+                      placement?.saturdaySurchargeSell ||
+                      placement?.weekendSurchargeSell ||
+                      0
+                    }
+                    unitDefault={placement?.saturdaySurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.saturdaySurchargeSellUnit ??
+                      placement?.saturdaySurchargeUnit ??
+                      "PCT"
+                    }
+                  />
+                  <ToeslagRow
+                    title="Zondag & feestdag"
+                    altijd
+                    hint="Uren op zondag en feestdagen"
+                    prefix="sunday"
+                    buyDefault={
+                      placement?.sundaySurchargeBuy ||
+                      placement?.weekendSurchargeBuy ||
+                      0
+                    }
+                    sellDefault={
+                      placement?.sundaySurchargeSell ||
+                      placement?.weekendSurchargeSell ||
+                      0
+                    }
+                    unitDefault={placement?.sundaySurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.sundaySurchargeSellUnit ??
+                      placement?.sundaySurchargeUnit ??
+                      "PCT"
+                    }
+                  />
+                  <ToeslagRow
+                    title="Ploegendienst"
+                    hint="Over alle reguliere uren"
+                    prefix="shift"
+                    buyDefault={
+                      placement?.shiftEnabled ? placement.shiftSurchargeBuy : 0
+                    }
+                    sellDefault={
+                      placement?.shiftEnabled ? placement.shiftSurchargeSell : 0
+                    }
+                    unitDefault={placement?.shiftSurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.shiftSurchargeSellUnit ??
+                      placement?.shiftSurchargeUnit ??
+                      "PCT"
+                    }
+                    toggle={{ name: "shiftEnabled", defaultOn: true }}
+                    altijd
+                  />
+                  <ToeslagBlock
+                    title="Kilometervergoeding"
+                    hint="Per gereden kilometer"
+                    buyName="kmRateBuy"
+                    sellName="kmRateSell"
+                    buyDefault={placement?.kmRateBuy || 0.45}
+                    sellDefault={placement?.kmRateSell || 0.45}
+                    suffix="€/km"
+                    step={0.01}
+                    altijd
+                  />
+                  <p className="flex items-baseline justify-between gap-2 bg-ink-50/70 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+                    Optioneel
+                    <span className="font-normal normal-case tracking-normal text-ink-400">
+                      vink aan als het geldt
+                    </span>
+                  </p>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-ink-50/40 px-3 py-2.5 text-sm text-ink-700">
                     <span className="font-medium text-ink-900">
                       Meeruren ma–vr
@@ -1607,48 +1698,6 @@ export function PlacementForm({
                     }
                   />
                   <ToeslagRow
-                    title="Zaterdag"
-                    hint="Uren op zaterdag"
-                    prefix="saturday"
-                    buyDefault={
-                      placement?.saturdaySurchargeBuy ||
-                      placement?.weekendSurchargeBuy ||
-                      0
-                    }
-                    sellDefault={
-                      placement?.saturdaySurchargeSell ||
-                      placement?.weekendSurchargeSell ||
-                      0
-                    }
-                    unitDefault={placement?.saturdaySurchargeUnit ?? "PCT"}
-                    sellUnitDefault={
-                      placement?.saturdaySurchargeSellUnit ??
-                      placement?.saturdaySurchargeUnit ??
-                      "PCT"
-                    }
-                  />
-                  <ToeslagRow
-                    title="Zondag & feestdag"
-                    hint="Uren op zondag en feestdagen"
-                    prefix="sunday"
-                    buyDefault={
-                      placement?.sundaySurchargeBuy ||
-                      placement?.weekendSurchargeBuy ||
-                      0
-                    }
-                    sellDefault={
-                      placement?.sundaySurchargeSell ||
-                      placement?.weekendSurchargeSell ||
-                      0
-                    }
-                    unitDefault={placement?.sundaySurchargeUnit ?? "PCT"}
-                    sellUnitDefault={
-                      placement?.sundaySurchargeSellUnit ??
-                      placement?.sundaySurchargeUnit ??
-                      "PCT"
-                    }
-                  />
-                  <ToeslagRow
                     title="Offshore"
                     hint="Over alle reguliere uren"
                     prefix="offshore"
@@ -1663,23 +1712,6 @@ export function PlacementForm({
                     toggle={{
                       name: "offshoreEnabled",
                       defaultOn: placement?.offshoreEnabled ?? false,
-                    }}
-                  />
-                  <ToeslagRow
-                    title="Ploegendienst"
-                    hint="Over alle reguliere uren"
-                    prefix="shift"
-                    buyDefault={placement?.shiftSurchargeBuy ?? 0}
-                    sellDefault={placement?.shiftSurchargeSell ?? 0}
-                    unitDefault={placement?.shiftSurchargeUnit ?? "PCT"}
-                    sellUnitDefault={
-                      placement?.shiftSurchargeSellUnit ??
-                      placement?.shiftSurchargeUnit ??
-                      "PCT"
-                    }
-                    toggle={{
-                      name: "shiftEnabled",
-                      defaultOn: placement?.shiftEnabled ?? false,
                     }}
                   />
                   <ToeslagRow
@@ -1723,16 +1755,6 @@ export function PlacementForm({
                     suffix="€/u"
                     step={0.01}
                     nietDoorTekst="Klant betaalt overuren tegen het normale tarief — het verschil betalen wij uit de marge."
-                  />
-                  <ToeslagBlock
-                    title="Kilometervergoeding"
-                    hint="Per gereden kilometer"
-                    buyName="kmRateBuy"
-                    sellName="kmRateSell"
-                    buyDefault={placement?.kmRateBuy ?? 0}
-                    sellDefault={placement?.kmRateSell ?? 0}
-                    suffix="€/km"
-                    step={0.01}
                   />
                 </div>
               </div>
