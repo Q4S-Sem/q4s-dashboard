@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AutoFilterForm } from "@/components/ui/auto-filter-form";
+import { Select } from "@/components/ui/field";
 import { AlertTriangle, Ban, BellRing, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
@@ -60,6 +62,8 @@ type SP = {
   week?: string;
   /** Alleen de facturen van één klant (de link vanaf Klanten). */
   client?: string;
+  /** Alleen de facturen van één persoon (consultantId). */
+  persoon?: string;
   verzonden?: string;
   vrijgegeven?: string;
   verwijderd?: string;
@@ -164,15 +168,37 @@ export default async function VerkoopfacturenPage({
     where: {
       ...(klantFilter ? { clientId: klantFilter.id } : {}),
       ...(monday && volgendeMaandag ? { issueDate: { gte: monday, lt: volgendeMaandag } } : {}),
+      ...(sp.persoon ? { lines: { some: { placement: { consultantId: sp.persoon } } } } : {}),
     },
     orderBy: [{ issueDate: "desc" }, { number: "desc" }],
-    include: { client: { select: { companyName: true, email: true, invoiceEmail: true } } },
+    include: {
+      client: { select: { companyName: true, email: true, invoiceEmail: true } },
+      lines: {
+        select: {
+          weekNumber: true,
+          placement: { select: { consultant: { select: { id: true, firstName: true, lastName: true } } } },
+        },
+      },
+    },
   });
+  // Personen voor het filter: iedereen die ooit op een verkoopfactuur stond.
+  const personen = await db.consultant.findMany({
+    where: { placements: { some: { invoiceLines: { some: {} } } } },
+    select: { id: true, firstName: true, lastName: true },
+    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+  });
+  const persoonVan = (i: (typeof invoices)[number]) => {
+    const namen = [...new Set(i.lines.map((l) => l.placement?.consultant).filter(Boolean).map((c) => `${c!.firstName} ${c!.lastName}`.trim()))];
+    const wk = [...new Set(i.lines.map((l) => l.weekNumber).filter((n): n is number => n != null))].sort((a, b) => a - b);
+    const weken = wk.length === 0 ? "" : wk.length === 1 ? ` · wk ${wk[0]}` : ` · wk ${wk.join(", ")}`;
+    return namen.length ? `${namen.join(", ")}${weken}` : (i.subject ?? "");
+  };
 
   const alle: VerkoopFactuurRij[] = invoices.map((i) => ({
     id: i.id,
     number: i.number,
     clientName: i.client.companyName,
+    persoon: persoonVan(i),
     issueDate: i.issueDate.toISOString(),
     dueDate: i.dueDate.toISOString(),
     subtotal: i.subtotal,
@@ -189,7 +215,7 @@ export default async function VerkoopfacturenPage({
 
   const tellingen = verkoopTellingen(alle, now);
   const rows = alle.filter(
-    (r) => hoortBijVerkoopTab(r, tab, now) && matchtZoek(sp.q, r.number, r.clientName),
+    (r) => hoortBijVerkoopTab(r, tab, now) && matchtZoek(sp.q, r.number, r.clientName, r.persoon),
   );
 
   const omzet = round2(
@@ -206,6 +232,7 @@ export default async function VerkoopfacturenPage({
     if (key !== "alles") p.set("tab", key);
     if (weekParam) p.set("week", weekParam);
     if (klantFilter) p.set("client", klantFilter.id);
+    if (sp.persoon) p.set("persoon", sp.persoon);
     if (sp.q) p.set("q", sp.q);
     const qs = p.toString();
     return qs ? `/facturatie/verkoop?${qs}` : "/facturatie/verkoop";
@@ -222,7 +249,7 @@ export default async function VerkoopfacturenPage({
           huidig={weekSlotVanDatum(weekParam)?.key ?? null}
           vandaag={ymd(now)}
           alleWeken
-          extra={{ tab: tab === "alles" ? undefined : tab, client: klantFilter?.id, q: sp.q }}
+          extra={{ tab: tab === "alles" ? undefined : tab, client: klantFilter?.id, persoon: sp.persoon, q: sp.q }}
         />
         <a
           href="/api/facturen/export"
@@ -299,13 +326,29 @@ export default async function VerkoopfacturenPage({
       />
 
       <Card className="overflow-hidden">
-        <div className="border-b border-ink-100 p-4">
-          <TabelZoek
-            basePath="/facturatie/verkoop"
-            q={sp.q}
-            placeholder="Zoek op factuurnummer of klant…"
-            behoud={{ tab: tab === "alles" ? undefined : tab, week: weekParam || undefined, client: klantFilter?.id }}
-          />
+        <div className="flex flex-col gap-3 border-b border-ink-100 p-4 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <TabelZoek
+              basePath="/facturatie/verkoop"
+              q={sp.q}
+              placeholder="Zoek op factuurnummer, klant of persoon…"
+              behoud={{ tab: tab === "alles" ? undefined : tab, week: weekParam || undefined, client: klantFilter?.id, persoon: sp.persoon }}
+            />
+          </div>
+          <AutoFilterForm basePath="/facturatie/verkoop" className="sm:w-64">
+            {tab !== "alles" && <input type="hidden" name="tab" value={tab} />}
+            {weekParam && <input type="hidden" name="week" value={weekParam} />}
+            {klantFilter && <input type="hidden" name="client" value={klantFilter.id} />}
+            {sp.q && <input type="hidden" name="q" value={sp.q} />}
+            <Select name="persoon" defaultValue={sp.persoon ?? ""} aria-label="Filter op persoon">
+              <option value="">Alle personen</option>
+              {personen.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.firstName} {c.lastName}
+                </option>
+              ))}
+            </Select>
+          </AutoFilterForm>
         </div>
         {rows.length === 0 ? (
           <EmptyState

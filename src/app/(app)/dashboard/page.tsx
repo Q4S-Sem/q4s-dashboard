@@ -665,6 +665,7 @@ export default async function DashboardPage({
               <ResultRow label="Loonkosten eigen team" amount={costs.loonkosten} variant="cost" />
               <ResultRow label="Bonussen" amount={costs.bonussen} variant="cost" />
               <ResultRow label="Declaraties" amount={costs.declaraties} variant="cost" />
+              <ResultRow label="Bedrijfskosten" amount={costs.bedrijfskosten} variant="cost" />
               <ResultRow label="Nettowinst — wat Q4S overhoudt" amount={nettoWinst} variant="total" />
               {costs.loonkostenGeschat && (
                 <p className="mt-3 text-xs text-ink-400">

@@ -42,6 +42,8 @@ export type VerkoopFactuurRij = {
   id: string;
   number: string;
   clientName: string;
+  /** De persoon/personen op de factuurregels (+ weken), bv. "Jordy Balder · wk 38–40". */
+  persoon: string;
   /** ISO-datums; de server heeft ze al geformatteerd doorgegeven als Date-string. */
   issueDate: string;
   dueDate: string;
@@ -205,6 +207,7 @@ export function VerkoopLijst({ rows, tab }: { rows: VerkoopFactuurRij[]; tab: st
               />
             </TH>
             <TH>Nummer</TH>
+            <TH>Persoon</TH>
             <TH>Klant</TH>
             <TH>Factuurdatum</TH>
             <TH>Vervalt / betaald</TH>
@@ -242,7 +245,8 @@ export function VerkoopLijst({ rows, tab }: { rows: VerkoopFactuurRij[]; tab: st
                     <span className="block text-xs text-amber-700">geen e-mailadres bij de klant</span>
                   )}
                 </TD>
-                <TD>{r.clientName}</TD>
+                <TD className="font-medium text-ink-900">{r.persoon || <span className="text-ink-300">—</span>}</TD>
+                <TD className="text-ink-600">{r.clientName}</TD>
                 <TD className="whitespace-nowrap text-ink-600">{formatDate(r.issueDate)}</TD>
                 <TD className="whitespace-nowrap">
                   {r.status === "PAID" ? (

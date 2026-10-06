@@ -464,6 +464,7 @@ export type CompanyCosts = {
   loonkosten: number; // eigen team, dit kalenderjaar
   bonussen: number; // uitbetaalde/vastgelegde bonussen dit jaar
   declaraties: number; // goedgekeurde + betaalde declaraties dit jaar
+  bedrijfskosten: number; // handmatig ingevoerde eigen kosten (BedrijfsKost), ex btw
   totaal: number;
   /** true = loonkosten geschat op maandsalaris × verstreken maanden (nog geen loonstroken). */
   loonkostenGeschat: boolean;
@@ -498,7 +499,7 @@ export async function companyCostsThisYear(range?: { start: Date; end: Date }): 
   }
   const monthsElapsed = monthStarts.filter((d) => d <= now).length;
 
-  const [payslips, employees, bonuses, expenses] = await Promise.all([
+  const [payslips, employees, bonuses, expenses, eigenKosten] = await Promise.all([
     db.employeePayslip.findMany({ where: { year }, select: { grossAmount: true, month: true } }),
     db.employee.findMany({ where: { active: true }, select: { monthlySalary: true } }),
     db.employeeBonus.findMany({
@@ -510,6 +511,7 @@ export async function companyCostsThisYear(range?: { start: Date; end: Date }): 
       where: { status: { in: ["APPROVED", "PAID"] } },
       select: { amount: true, date: true, createdAt: true },
     }),
+    db.bedrijfsKost.aggregate({ where: { date: { gte: start, lt: end } }, _sum: { amount: true } }),
   ]);
 
   const payslipSum = round2(
@@ -526,6 +528,7 @@ export async function companyCostsThisYear(range?: { start: Date; end: Date }): 
     expenses.filter((e) => inRange(e.date ?? e.createdAt)).reduce((s, e) => s + e.amount, 0),
   );
 
-  const totaal = round2(loonkosten + bonussen + declaraties);
-  return { loonkosten, bonussen, declaraties, totaal, loonkostenGeschat, monthsElapsed, year };
+  const bedrijfskosten = round2(eigenKosten._sum.amount ?? 0);
+  const totaal = round2(loonkosten + bonussen + declaraties + bedrijfskosten);
+  return { loonkosten, bonussen, declaraties, bedrijfskosten, totaal, loonkostenGeschat, monthsElapsed, year };
 }

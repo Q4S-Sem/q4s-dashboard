@@ -2335,3 +2335,19 @@ model TimesheetHerinnering {
 
   @@unique([consultantId, weekKey])
 }
+
+/// Eigen bedrijfskosten van Q4S (huur, software, auto, verzekering, marketing …),
+/// handmatig ingevoerd op Facturatie → Kosten & winst. Telt mee in de nettowinst.
+model BedrijfsKost {
+  id          String   @id @default(cuid())
+  date        DateTime
+  /// Zie KOSTEN_CATEGORIEEN in src/lib/kosten.ts
+  category    String   @default("OVERIG")
+  description String   @default("")
+  /// Bedrag EX btw.
+  amount      Float    @default(0)
+  vatAmount   Float    @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+}
