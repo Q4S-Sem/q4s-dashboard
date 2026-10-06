@@ -1,3 +1,4 @@
+import { bonExBtw } from "@/lib/declaraties-doorbelasten";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangle, BellRing, BookUp, CheckCircle2, Printer, Send } from "lucide-react";
@@ -11,9 +12,10 @@ import { INVOICE_STATUSES } from "@/lib/domain";
 import { invoicePdfHref } from "@/lib/factuur-bulk";
 import { verkoopWeergaveStatus } from "@/lib/facturatie-lijsten";
 import { isSnelStartConnected, snelStartMessage } from "@/lib/snelstart";
-import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { InvoiceEditForm } from "../InvoiceEditForm";
 import {
+  declaratiesToevoegen,
   deleteInvoice,
   pushInvoiceToSnelStart,
   sendInvoiceReminder,
@@ -66,6 +68,7 @@ export default async function VerkoopfactuurPage({
     fout?: string;
     snelstart?: string;
     opgeslagen?: string;
+    declaraties?: string;
     herinnering?: string;
   }>;
 }) {
@@ -86,11 +89,47 @@ export default async function VerkoopfactuurPage({
   const teLaat = weergave === "OVERDUE";
   const heeftMail = Boolean(invoice.client.invoiceEmail?.trim() || invoice.client.email?.trim());
   const snelstartMelding = snelStartMessage(sp.snelstart);
+  // Open declaraties (doorbelasten, goedgekeurd) van de personen op deze factuur.
+  const personen = [
+    ...new Set(
+      (await db.placement.findMany({
+        where: { id: { in: invoice.lines.map((l) => l.placementId).filter((x): x is string => !!x) } },
+        select: { consultantId: true },
+      })).map((p) => p.consultantId),
+    ),
+  ];
+  const openBonnen =
+    ["DRAFT", "READY"].includes(invoice.status) && personen.length
+      ? await db.expense.findMany({
+          where: { consultantId: { in: personen }, rebill: true, status: { in: ["APPROVED", "PAID"] }, invoiceLineId: null },
+          select: { amount: true, vatAmount: true },
+        })
+      : [];
+  const openBedrag = round2(openBonnen.reduce((s, b) => s + bonExBtw(b), 0));
 
   return (
     <div className="space-y-6">
       <BackLink href="/facturatie/verkoop">Terug naar verkoopfacturen</BackLink>
 
+      {sp.declaraties === "1" && (
+        <p className="flex items-start gap-2 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> De declaraties staan nu als regels op de factuur (ex btw, onze btw erover).
+        </p>
+      )}
+      {openBonnen.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-violet-200 bg-violet-50 px-4 py-2.5 text-[13px] text-violet-900">
+          <span>
+            <strong className="font-semibold">{openBonnen.length}</strong> goedgekeurde declaratie{openBonnen.length === 1 ? "" : "s"} om door te
+            belasten ({formatCurrency(openBedrag)} ex btw) staan nog niet op een factuur.
+          </span>
+          <form action={declaratiesToevoegen}>
+            <input type="hidden" name="id" value={invoice.id} />
+            <SubmitButton size="sm" pendingLabel="Toevoegen…">
+              Declaraties toevoegen
+            </SubmitButton>
+          </form>
+        </div>
+      )}
       {sp.opgeslagen === "1" && (
         <p className="flex items-start gap-2 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> De factuur is opgeslagen.

@@ -25,6 +25,7 @@ import { renderInvoicePdf } from "@/lib/invoice-pdf";
 import { sendMail } from "@/lib/email";
 import { parseForm, type FormState } from "@/lib/form";
 import { round2 } from "@/lib/utils";
+import { voegBonnenToe } from "@/lib/declaraties-doorbelasten";
 import { isAdminSession } from "@/lib/session";
 import { isSnelStartConnected, pushSalesInvoice } from "@/lib/snelstart";
 
@@ -232,6 +233,8 @@ export async function setInvoiceStatus(formData: FormData) {
           data: { timesheetId: null },
         }),
         db.timesheet.updateMany({ where: { id: { in: tsIds } }, data: { status: "APPROVED" } }),
+        // Doorbelaste declaraties komen vrij: ze gaan mee op de volgende factuur.
+        db.expense.updateMany({ where: { invoiceLine: { invoiceId: id } }, data: { invoiceLineId: null } }),
         db.invoice.update({ where: { id }, data: { status: "CANCELLED", paidDate: null } }),
       ]);
     }
@@ -507,4 +510,32 @@ export async function naarAdministratie(formData: FormData) {
     if (outcome === "error") p.set("mislukt", "1");
   }
   redirect(`${LIJST}?${p.toString()}`);
+}
+
+/** Open declaraties (doorbelasten) van de personen op deze concept-/klaar-factuur erbij zetten. */
+export async function declaratiesToevoegen(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const inv = await db.invoice.findUnique({
+    where: { id },
+    include: { lines: { include: { placement: { include: { consultant: true } } } } },
+  });
+  if (!inv || !["DRAFT", "READY"].includes(inv.status)) redirect(detail(id));
+  const plaatsingVan = new Map(
+    inv.lines
+      .filter((l) => l.placement)
+      .map((l) => [
+        l.placement!.consultantId,
+        { placementId: l.placement!.id, naam: `${l.placement!.consultant.firstName} ${l.placement!.consultant.lastName}`, location: l.location },
+      ]),
+  );
+  await db.$transaction(async (tx) => {
+    const erbij = await voegBonnenToe(tx, id, plaatsingVan);
+    if (erbij <= 0) return;
+    const subtotal = round2(inv.subtotal + erbij);
+    const vatAmount = round2((subtotal * inv.vatRate) / 100);
+    await tx.invoice.update({ where: { id }, data: { subtotal, vatAmount, total: round2(subtotal + vatAmount) } });
+  });
+  herlaad();
+  revalidatePath(detail(id));
+  redirect(`${detail(id)}?declaraties=1`);
 }

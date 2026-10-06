@@ -441,6 +441,8 @@ model InvoiceLine {
   invoice     Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   placement   Placement? @relation(fields: [placementId], references: [id], onDelete: SetNull)
   timesheet   Timesheet? @relation(fields: [timesheetId], references: [id], onDelete: SetNull)
+  /// De doorbelaste declaratie op deze regel (lineKind EXPENSE).
+  expense     Expense?
 
   @@index([invoiceId])
 }
@@ -1652,6 +1654,12 @@ model Expense {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  /// Doorbelasten aan de klant: gaat mee op de volgende verkoopfactuur van deze persoon.
+  rebill        Boolean  @default(false)
+  /// De verkoopfactuurregel waarop hij is doorbelast. Regel weg (bewerkt,
+  /// factuur verwijderd) → SetNull → hij gaat mee op de volgende factuur.
+  invoiceLineId String?  @unique
+  invoiceLine   InvoiceLine? @relation(fields: [invoiceLineId], references: [id], onDelete: SetNull)
   consultant   Consultant? @relation(fields: [consultantId], references: [id], onDelete: SetNull)
 
   @@index([status])

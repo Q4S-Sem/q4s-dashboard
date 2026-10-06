@@ -39,7 +39,7 @@ export default async function DeclaratiePage({
   const { fout } = await searchParams;
 
   const [expense, personen] = await Promise.all([
-    db.expense.findUnique({ where: { id } }),
+    db.expense.findUnique({ where: { id }, include: { invoiceLine: { select: { invoice: { select: { number: true } } } } } }),
     db.consultant.findMany({
       where: { active: true },
       orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
@@ -182,6 +182,22 @@ export default async function DeclaratiePage({
                   <span className="mt-0.5 block text-ink-500">
                     Zet uit bij eten/horeca en andere niet-aftrekbare kosten — dan telt de btw niet
                     mee in de terugvordering onder Rapportage.
+                  </span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-ink-200 bg-ink-50/60 p-3">
+                <input
+                  type="checkbox"
+                  name="rebill"
+                  defaultChecked={expense.rebill}
+                  className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
+                />
+                <span className="min-w-0 text-[13px]">
+                  <span className="font-medium text-ink-900">Doorbelasten aan de klant</span>
+                  <span className="mt-0.5 block text-ink-500">
+                    {expense.invoiceLine
+                      ? `Staat al op verkoopfactuur ${expense.invoiceLine.invoice.number}. Een wijziging hier past die factuur niet aan.`
+                      : "Na goedkeuren gaat deze bon (ex btw) als regel mee op de volgende verkoopfactuur van deze persoon. Alleen met een persoon gekoppeld."}
                   </span>
                 </span>
               </label>

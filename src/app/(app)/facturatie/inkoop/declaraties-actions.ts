@@ -217,6 +217,7 @@ export async function updateExpense(formData: FormData) {
       vatAmount,
       vatDeductible,
       consultantId,
+      rebill: formData.get("rebill") === "on" && Boolean(consultantId),
     },
   });
 
@@ -250,6 +251,7 @@ export async function createManualExpense(formData: FormData) {
       vatAmount,
       vatDeductible,
       consultantId,
+      rebill: formData.get("rebill") === "on" && Boolean(consultantId),
     },
   });
 

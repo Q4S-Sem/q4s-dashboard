@@ -1,3 +1,4 @@
+import { voegBonnenToe } from "./declaraties-doorbelasten";
 import { db } from "./db";
 import { round2, getISOWeek } from "./utils";
 import { nextInvoiceNumber } from "./numbering";
@@ -131,6 +132,23 @@ export async function createSalesInvoice(opts: {
       where: { id: { in: timesheets.map((t) => t.id) } },
       data: { status: "INVOICED" },
     });
+    // Goedgekeurde declaraties met "doorbelasten" van deze personen gaan mee.
+    const plaatsingVan = new Map(
+      timesheets.map((t) => [
+        t.placement.consultantId,
+        {
+          placementId: t.placementId,
+          naam: `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`,
+          location: t.placement.workLocation ?? null,
+        },
+      ]),
+    );
+    const erbij = await voegBonnenToe(tx, inv.id, plaatsingVan);
+    if (erbij > 0) {
+      const sub = round2(subtotal + erbij);
+      const btw = round2((sub * vatRate) / 100);
+      return tx.invoice.update({ where: { id: inv.id }, data: { subtotal: sub, vatAmount: btw, total: round2(sub + btw) } });
+    }
     return inv;
   });
 

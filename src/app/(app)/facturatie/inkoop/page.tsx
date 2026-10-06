@@ -224,7 +224,10 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
           where:
             monday && volgendeMaandag ? { date: { gte: monday, lt: volgendeMaandag } } : {},
           orderBy: [{ date: "desc" }, { createdAt: "desc" }],
-          include: { consultant: { select: { firstName: true, lastName: true } } },
+          include: {
+            consultant: { select: { firstName: true, lastName: true } },
+            invoiceLine: { select: { invoice: { select: { id: true, number: true } } } },
+          },
         }),
         db.consultant.findMany({
           where: { active: true },
@@ -640,6 +643,8 @@ type DeclaratieRij = {
   amount: number;
   status: string;
   consultant: { firstName: string; lastName: string } | null;
+  rebill: boolean;
+  invoiceLine: { invoice: { id: string; number: string } } | null;
 };
 
 function DeclaratiesTab({
@@ -761,6 +766,15 @@ function DeclaratiesTab({
                 />
                 Btw aftrekbaar (uit bij eten/horeca)
               </label>
+              <label className="flex cursor-pointer items-center gap-2.5 text-[13px] text-ink-700">
+                <input
+                  type="checkbox"
+                  name="rebill"
+                  defaultChecked
+                  className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
+                />
+                Doorbelasten aan de klant (gaat mee op de verkoopfactuur van deze persoon)
+              </label>
               <div className="flex justify-end">
                 <SubmitButton pendingLabel="Toevoegen…">
                   <Receipt className="h-4 w-4" /> Bon toevoegen
@@ -816,6 +830,18 @@ function DeclaratiesTab({
                   </TD>
                   <TD className="text-right font-medium tabular-nums text-ink-900">
                     {e.amount > 0 ? formatCurrency(e.amount) : "—"}
+                    {e.invoiceLine ? (
+                      <Link
+                        href={`/facturatie/verkoop/${e.invoiceLine.invoice.id}`}
+                        className="block text-[11px] font-medium text-emerald-700 hover:underline"
+                      >
+                        doorbelast · {e.invoiceLine.invoice.number}
+                      </Link>
+                    ) : e.rebill ? (
+                      <span className="block text-[11px] font-medium text-violet-700">
+                        {e.status === "APPROVED" || e.status === "PAID" ? "gaat mee op volgende factuur" : "doorbelasten na goedkeuren"}
+                      </span>
+                    ) : null}
                   </TD>
                   <TD>
                     <ExpenseStatusSelect id={e.id} value={e.status} />
