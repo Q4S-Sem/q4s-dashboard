@@ -56,12 +56,41 @@ const ICON = {
   pin: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAAACXBIWXMAAAsTAAALEwEAmpwYAAABhUlEQVRYhe2XsUrDUBSGPwRFbC2oo0MrPoDgQ5TgpC6C1FWp9gmc3PQBBAd9A0W7iG6KswpugtpFQQeLtAgOUZQLNxACuTfmnrRD+8GBkpzz34+Q3CbQp0fIAyvAEXAPfOpSvw+Biu7JnAFgHXgDfi31ClT1TCbkgZMEItE6BQrSMkPAVQqZoC6BQUmhPQeZoHalZGaAHwEhlTErIVS3LOQD17p8S++xq8wo8GVY4AIohvqL+lhcv8rKuQjNGcIfY8LV0/hkmPNchNYMwepcHFXD3KqL0KYhuGyYKxvmVGZqahlcoQ0XIc8Q3NA3fRR1Xz2kvLJWxoFvyw5cCvVP6WNx/SprDEfOLXuLWuQGuLXIqzpDgIrALh3UsoRQDmgLyLRdN8UwOwJC2wgyAbQcZFo6Q5QtByE1K04BeEkh8xyzX4mwmEJonoyp//N9OnMmgWYCmabu7QgLCYSW6DAHBpl9usCw/g+LytwBI3SJEvAekvkApukynv7a8F3flyWp6erTe/wB53t8pe+HF8wAAAAASUVORK5CYII=",
 };
 
+/** Pixelmaat van een data-URI-afbeelding (PNG/JPEG). Word negeert CSS-maten bij
+ *  plakken en valt dan terug op de ware grootte — daarom altijd width+height. */
+export function afbeeldingMaat(src: string): { w: number; h: number } | null {
+  const m = /^data:image\/(png|jpe?g);base64,(.*)$/i.exec(src);
+  if (!m) return null;
+  const b = Buffer.from(m[2], "base64");
+  if (m[1].toLowerCase() === "png") return b.length > 24 ? { w: b.readUInt32BE(16), h: b.readUInt32BE(20) } : null;
+  for (let i = 2; i + 9 < b.length; ) {
+    if (b[i] !== 0xff) return null;
+    const marker = b[i + 1];
+    if (marker >= 0xc0 && marker <= 0xc3) return { h: b.readUInt16BE(i + 5), w: b.readUInt16BE(i + 7) };
+    i += 2 + b.readUInt16BE(i + 2);
+  }
+  return null;
+}
+
+/** <img> met vaste breedte óf hoogte; de andere maat volgt uit de verhouding. */
+function vasteImg(src: string, alt: string, maat: { w: number } | { h: number }, style: string): string {
+  const echt = afbeeldingMaat(src);
+  const w = "w" in maat ? maat.w : echt ? Math.round((maat.h * echt.w) / echt.h) : undefined;
+  const h = "h" in maat ? maat.h : echt ? Math.round((maat.w * echt.h) / echt.w) : undefined;
+  const attrs = `${w ? ` width="${w}"` : ""}${h ? ` height="${h}"` : ""}`;
+  const css = `${w ? `width:${w}px;` : ""}${h ? `height:${h}px;` : ""}`;
+  return `<img src="${esc(src)}" alt="${alt}"${attrs} style="${css}border:0;${style}">`;
+}
+
 /** Eén contactregel: icoon + (evt. gelinkte) waarde. */
 function contactRow(iconSrc: string, inner: string): string {
   const icon = iconSrc
     ? `<img src="${iconSrc}" width="14" height="14" alt="" style="display:block;border:0;">`
     : "";
-  return `<tr><td style="padding:3px 9px 3px 0;vertical-align:top;width:14px;line-height:1;">${icon}</td><td style="padding:3px 0;vertical-align:top;color:${INK};font-size:13px;line-height:1.5;word-break:break-word;">${inner}</td></tr>`;
+  // <p style="margin:0"> + font-family per cel: Word geeft anders elke cel zijn
+  // eigen alinea-witruimte en standaardlettertype (Aptos) bij het plakken.
+  const F = "font-family:Arial,Helvetica,sans-serif;";
+  return `<tr><td width="14" valign="top" style="${F}padding:3px 9px 3px 0;vertical-align:top;width:14px;line-height:1;"><p style="margin:0;">${icon}</p></td><td valign="top" style="${F}padding:3px 0;vertical-align:top;color:${INK};font-size:13px;line-height:1.5;word-break:break-word;"><p style="${F}margin:0;color:${INK};font-size:13px;line-height:1.5;">${inner}</p></td></tr>`;
 }
 
 /**
@@ -109,12 +138,12 @@ export function renderSignatureHtml(d: SignatureData): string {
   // KvK uitkomt — die gebruikt dezelfde breedte.
   const COL_W = 180;
   const contactCell = contactRows.length
-    ? `<td style="width:${COL_W}px;padding:0 20px 0 0;vertical-align:top;">
+    ? `<td width="${COL_W}" valign="top" style="width:${COL_W}px;padding:0 20px 0 0;vertical-align:top;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">${contactRows.join("")}</table>
       </td>`
-    : `<td style="width:${COL_W}px;padding:0;"></td>`;
+    : `<td width="${COL_W}" style="width:${COL_W}px;padding:0;"></td>`;
   const addressCell = addressRow
-    ? `<td style="padding:0 20px;border-left:2px solid ${LINE};vertical-align:top;">
+    ? `<td valign="top" style="padding:0 20px;border-left:2px solid ${LINE};vertical-align:top;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">${addressRow}</table>
       </td>`
     : "";
@@ -130,7 +159,7 @@ export function renderSignatureHtml(d: SignatureData): string {
   const badgeImgs = badges
     .map(
       (src) =>
-        `<img src="${esc(src)}" alt="Keurmerk" height="30" style="display:inline-block;border:0;height:30px;width:auto;margin:0 14px 8px 0;vertical-align:middle;">`,
+        vasteImg(src, "Keurmerk", { h: 30 }, "display:inline-block;margin:0 14px 8px 0;vertical-align:middle;") + "&nbsp;&nbsp;",
     )
     .join("");
 
@@ -142,7 +171,7 @@ export function renderSignatureHtml(d: SignatureData): string {
     badges.length || d.kvk
       ? `<tr><td style="padding:14px 0 0;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-            <td style="width:${COL_W}px;padding:0 20px 0 0;vertical-align:middle;">${badgeImgs}</td>
+            <td width="${COL_W}" valign="middle" style="width:${COL_W}px;padding:0 20px 0 0;vertical-align:middle;">${badgeImgs}</td>
             ${kvkCell}
           </tr></table>
         </td></tr>`
@@ -153,9 +182,7 @@ export function renderSignatureHtml(d: SignatureData): string {
     : "";
 
   const logoRow = d.logoSrc
-    ? `<tr><td style="padding:0 0 14px;"><img src="${esc(
-        d.logoSrc,
-      )}" alt="Q4S Project Partners" width="90" style="display:block;border:0;width:90px;max-width:45%;height:auto;"></td></tr>`
+    ? `<tr><td style="padding:0 0 14px;">${vasteImg(d.logoSrc, "Q4S Project Partners", { w: 90 }, "display:block;")}</td></tr>`
     : "";
 
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:${INK};max-width:600px;width:100%;">
@@ -166,7 +193,8 @@ export function renderSignatureHtml(d: SignatureData): string {
       ${d.role ? `<div style="color:${MUTED};font-size:13px;line-height:1.4;padding-top:2px;">${esc(d.role)}</div>` : ""}
     </td></tr>
     ${contactBlock}
-    <tr><td style="padding:16px 0 0;"><div style="border-top:1px solid ${LINE};font-size:0;line-height:0;">&nbsp;</div></td></tr>
+    <tr><td style="padding:16px 0 0;font-size:1px;line-height:1px;">&nbsp;</td></tr>
+    <tr><td style="border-top:1px solid ${LINE};font-size:1px;line-height:1px;">&nbsp;</td></tr>
     ${badgeRow}
     ${disclaimer}
   </table>`;

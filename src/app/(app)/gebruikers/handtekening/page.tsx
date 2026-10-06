@@ -150,7 +150,7 @@ export default async function HandtekeningPage({
             </div>
             <p className="mt-3 text-xs text-ink-400">
               Klik op <strong className="font-medium text-ink-600">Kopieer handtekening</strong> en plak
-              &apos;m in Outlook of Gmail (Instellingen → Handtekening) — logo, links en opmaak gaan mee.
+              &apos;m in Outlook, Gmail of Word (Instellingen → Handtekening) — logo, links en opmaak gaan mee.
             </p>
           </CardContent>
         </Card>
