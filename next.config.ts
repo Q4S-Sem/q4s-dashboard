@@ -30,6 +30,7 @@ const nextConfig: NextConfig = {
     "/**": [
       "./public/logo/**",
       "./assets/handtekening/**",
+      "./assets/excel/**",
       "./public/templates/**",
       "./public/fonts/**",
       // Alleen wat pdf-render.ts echt laadt — de .map/min/sandbox-varianten

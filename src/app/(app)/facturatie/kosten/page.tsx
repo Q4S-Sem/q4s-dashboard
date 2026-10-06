@@ -54,9 +54,19 @@ export default async function KostenPage({
             ›
           </Link>
         </div>
-        <a href={`/api/facturatie/excel?jaar=${jaar}`} className={buttonVariants({ variant: "outline" })}>
-          <Download /> Excel {jaar}
-        </a>
+        <div className={SEGMENT_GROEP} aria-label="Excel downloaden">
+          <span className="inline-flex items-center gap-1.5 px-2 text-[13px] font-medium text-ink-500">
+            <Download className="h-4 w-4" /> Excel
+          </span>
+          <a href={`/api/facturatie/excel?jaar=${jaar}`} className={segmentVariants(false)}>
+            {jaar}
+          </a>
+          {[1, 2, 3, 4].map((q) => (
+            <a key={q} href={`/api/facturatie/excel?jaar=${jaar}&kwartaal=${q}`} className={segmentVariants(false)}>
+              Q{q}
+            </a>
+          ))}
+        </div>
       </PaginaKop>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
