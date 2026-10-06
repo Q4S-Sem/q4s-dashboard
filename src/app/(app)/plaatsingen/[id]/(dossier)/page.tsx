@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { PLACEMENT_STATUSES, EMPLOYMENT_TYPES, DISCIPLINES, labelFor } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
 import { BillingForm } from "../../BillingForm";
-import { updatePlacementBilling } from "../../actions";
+import { updatePlacementBilling, zetHandmatigActief } from "../../actions";
 import { getPlacement } from "./data";
 import { ontbrekendVoorActief } from "@/lib/ontbrekende-gegevens";
 
@@ -80,7 +80,7 @@ export default async function PlaatsingGegevensPage({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
           <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
           <span className="font-medium">
-            {placement.status !== "ENDED" ? "Nog niet actief — eerst invullen:" : "Nog niet ingevuld:"}
+            {placement.forceActive ? "Handmatig op actief — nog aanvullen:" : placement.status !== "ENDED" ? "Nog niet actief — eerst invullen:" : "Nog niet ingevuld:"}
           </span>
           <span className="flex flex-wrap gap-1.5">
             {ontbreekt.map((k) => (
@@ -95,10 +95,24 @@ export default async function PlaatsingGegevensPage({
                 ? `/plaatsingen/${placement.id}/bewerken`
                 : `/plaatsingen/${placement.id}?edit=billing`
             }
-            className="ml-auto text-xs font-semibold text-amber-800 underline-offset-2 hover:underline"
+            className="text-xs font-semibold text-amber-800 underline-offset-2 hover:underline"
           >
             Aanvullen →
           </Link>
+          <span className="ml-auto flex items-center gap-3">
+            {placement.status !== "ENDED" && (
+              <form action={zetHandmatigActief}>
+                <input type="hidden" name="id" value={placement.id} />
+                <input type="hidden" name="aan" value={placement.forceActive ? "0" : "1"} />
+                <button
+                  type="submit"
+                  className={buttonVariants({ variant: placement.forceActive ? "ghost" : "outline", size: "sm" })}
+                >
+                  {placement.forceActive ? "Weer automatisch" : "Toch op actief zetten"}
+                </button>
+              </form>
+            )}
+          </span>
         </div>
       )}
       {isNew && (

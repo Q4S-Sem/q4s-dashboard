@@ -61,7 +61,7 @@ export default async function PlaatsingenPage({
       ...ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant),
       ...(heeftContract(p) ? [] : ["Getekend contract"]),
     ];
-    const bak = p.status === "ENDED" ? "beeindigd" : p.status === "ACTIVE" && ontbreekt.length === 0 ? "actief" : "voorbereiding";
+    const bak = p.status === "ENDED" ? "beeindigd" : p.status === "ACTIVE" && (ontbreekt.length === 0 || p.forceActive) ? "actief" : "voorbereiding";
     return { p, ontbreekt, bak };
   });
   const conceptKlanten = new Map(

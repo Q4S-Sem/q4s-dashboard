@@ -723,3 +723,15 @@ export async function neemContractTarievenOver(formData: FormData): Promise<void
   revalidatePath(`/plaatsingen/${placementId}`, "layout");
   redirect(`/plaatsingen/${placementId}/tarieven?overgenomen=1`);
 }
+
+/** Handmatig Actief (ook als er nog iets ontbreekt) — of terug naar automatisch. */
+export async function zetHandmatigActief(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const aan = formData.get("aan") !== "0";
+  await db.placement.update({ where: { id }, data: { forceActive: aan } });
+  await syncPlaatsingStatus({ id });
+  revalidatePath("/plaatsingen");
+  revalidatePath(`/plaatsingen/${id}`);
+  redirect(`/plaatsingen/${id}`);
+}

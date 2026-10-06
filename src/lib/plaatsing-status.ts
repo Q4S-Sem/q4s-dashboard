@@ -10,11 +10,11 @@ import { ontbrekendVoorActief } from "./ontbrekende-gegevens";
 export async function syncPlaatsingStatus(where: { id: string } | { consultantId: string }): Promise<void> {
   const plaatsingen = await db.placement.findMany({
     where: { ...where, status: { in: ["ACTIVE", "INCOMPLETE"] } },
-    select: { id: true, status: true, clientId: true, costRate: true, chargeRate: true, consultant: true },
+    select: { id: true, status: true, forceActive: true, clientId: true, costRate: true, chargeRate: true, consultant: true },
   });
   for (const p of plaatsingen) {
     const compleet = ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant).length === 0;
-    const status = compleet ? "ACTIVE" : "INCOMPLETE";
+    const status = compleet || p.forceActive ? "ACTIVE" : "INCOMPLETE";
     if (status !== p.status) await db.placement.update({ where: { id: p.id }, data: { status } });
   }
 }

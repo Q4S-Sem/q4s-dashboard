@@ -220,6 +220,8 @@ model Placement {
   title        String
   startDate    DateTime @default(now())
   endDate      DateTime?
+  /// Handmatig op Actief gezet, ook al ontbreekt er nog iets (blijft dan in de facturatie).
+  forceActive  Boolean  @default(false)
   /// What Q4S pays the consultant per hour (ex BTW).
   costRate     Float
   /// What Q4S charges the client per hour (ex BTW).
