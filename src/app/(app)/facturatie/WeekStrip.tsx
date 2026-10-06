@@ -25,7 +25,9 @@ export function WeekStrip({
   /** Toon een "Alle weken"-knop (lijsten die standaard niet op week filteren). */
   alleWeken?: boolean;
 }) {
-  const nu = weekSlotVanDatum(vandaag);
+  // Facturatie loopt een week achter: in week 41 verwerk je week 40.
+  const lopend = weekSlotVanDatum(vandaag);
+  const nu = vorigeWeek(lopend);
   const gekozen = weekSlotVanKey(huidig);
   // Geen week gekozen = "alle weken": de strip staat dan rond vandaag, zonder actieve week.
   const midden = gekozen ?? nu;
@@ -43,7 +45,7 @@ export function WeekStrip({
   for (let i = 0; i < 3; i++) weken.unshift(vorigeWeek(weken[0])!);
   weken.push(volgendeWeek(midden)!);
 
-  const pijl = segmentVariants(false, "w-8 justify-center px-0");
+  const pijl = segmentVariants(false, "h-11 w-8 justify-center px-0");
   return (
     <div className={SEGMENT_GROEP}>
       <Link href={href(vorigeWeek(midden))} scroll={false} className={pijl} aria-label="Vorige week">
@@ -52,6 +54,7 @@ export function WeekStrip({
       {weken.map((w) => {
         const actief = w.key === gekozen?.key;
         const isNu = w.key === nu.key;
+        const loopt = w.key === lopend?.key;
         return (
           <Link
             key={w.key}
@@ -59,12 +62,20 @@ export function WeekStrip({
             scroll={false}
             aria-current={actief ? "page" : undefined}
             title={`Week ${w.isoWeek}`}
-            className={segmentVariants(actief, "relative min-w-[3.25rem] justify-center px-2 tabular-nums")}
-          >
-            wk {w.isoWeek}
-            {isNu && (
-              <span className={cn("absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full", actief ? "bg-white" : "bg-ink-900")} />
+            className={segmentVariants(
+              actief,
+              cn("h-11 min-w-[4rem] flex-col justify-center gap-0 px-2 leading-tight tabular-nums", loopt && !actief && "text-ink-400"),
             )}
+          >
+            <span>wk {w.isoWeek}</span>
+            <span
+              className={cn(
+                "text-[10px] font-medium",
+                isNu ? (actief ? "text-emerald-300" : "text-emerald-600") : actief ? "text-ink-300" : "text-ink-400",
+              )}
+            >
+              {isNu ? "verwerken" : loopt ? "loopt nog" : "\u00a0"}
+            </span>
           </Link>
         );
       })}
@@ -77,7 +88,7 @@ export function WeekStrip({
           scroll={false}
           className={buttonVariants({ variant: "outline", size: "sm", className: "ml-1" })}
         >
-          Deze week
+          Naar verwerkweek
         </Link>
       )}
       {alleWeken && (

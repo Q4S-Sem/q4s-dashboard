@@ -83,6 +83,13 @@ export type WeekSlotInfo = {
  * met een datum, de dossier-route met een sleutel. Leeg/onleesbaar → de week
  * waarin `today` valt.
  */
+/** Een dag in de verwerkweek: altijd één week terug (we verwerken de afgelopen week). */
+export function verwerkDag(now: Date): Date {
+  const d = new Date(now);
+  d.setDate(d.getDate() - 7);
+  return d;
+}
+
 export function resolveWeek(value: string | null | undefined, today: Date): WeekSlotInfo {
   const raw = String(value ?? "").trim();
   const slot =
@@ -588,7 +595,9 @@ export async function getWeekOverview(
   weekParam: string | null | undefined,
   now: Date = new Date(),
 ): Promise<WeekOverview> {
-  const week = resolveWeek(weekParam, now);
+  // Zonder gekozen week: de VERWERKWEEK = vorige week. Facturen en urenstaten
+  // van week 40 komen binnen (en worden verwerkt) in week 41.
+  const week = resolveWeek(weekParam, weekParam ? now : verwerkDag(now));
   const settings = await getCompanySettings();
 
   const plaatsingen = await ladenPlaatsingen(week.monday, week.sunday);

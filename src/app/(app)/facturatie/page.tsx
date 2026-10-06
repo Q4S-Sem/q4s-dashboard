@@ -276,8 +276,14 @@ export default async function FacturatiePage({
           })}
         </nav>
         <div className="mb-2 ml-auto flex flex-wrap items-center gap-3">
-          <span className="text-[13px] tabular-nums text-ink-500">
-            {stand.klaar} van {stand.totaal} klaar
+          <span className="flex items-center gap-2 text-[13px] tabular-nums text-ink-500">
+            <span className="h-1.5 w-24 overflow-hidden rounded-full bg-ink-100" aria-hidden>
+              <span
+                className="block h-full rounded-full bg-emerald-500 transition-all"
+                style={{ width: `${stand.totaal ? Math.round((stand.klaar / stand.totaal) * 100) : 0}%` }}
+              />
+            </span>
+            {stand.klaar}/{stand.totaal} klaar
           </span>
           {eerste?.href ? (
             <Link href={eerste.href} className={buttonVariants({ size: "sm" })}>
