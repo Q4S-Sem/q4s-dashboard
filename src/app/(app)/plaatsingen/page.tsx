@@ -61,7 +61,9 @@ export default async function PlaatsingenPage({
     { key: "concepten", label: "Concepten", icon: <FileText className="h-4 w-4" />, aantal: drafts.length, hint: "Half ingevulde plaatsingen — maak ze af wanneer je alles hebt." },
     ...(tel("beeindigd") ? [{ key: "beeindigd", label: "Beëindigd", icon: <CircleSlash className="h-4 w-4" />, aantal: tel("beeindigd"), hint: "Afgelopen plaatsingen." }] : []),
   ];
-  const actiefMap = MAPPEN.find((m) => m.key === (map ?? (concept ? "concepten" : undefined))) ?? MAPPEN[0];
+  // Standaard de eerste map waar iets in staat (een lege "Actief" is geen startpunt).
+  const actiefMap =
+    MAPPEN.find((m) => m.key === (map ?? (concept ? "concepten" : undefined))) ?? MAPPEN.find((m) => m.aantal > 0) ?? MAPPEN[0];
   const zichtbaar = rijen.filter((r) => r.bak === actiefMap.key);
   const mapHref = (k: string) => {
     const q = new URLSearchParams({ map: k });
