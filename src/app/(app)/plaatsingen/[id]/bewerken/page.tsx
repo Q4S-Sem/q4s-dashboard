@@ -29,6 +29,19 @@ export default async function PlaatsingBewerkenPage({
   ]);
 
   if (!placement) notFound();
+  // Einddatum van het nieuwste contract van deze plaatsing (of persoon).
+  const contract = await db.contract.findFirst({
+    where: { endDate: { not: null }, OR: [{ placementId: placement.id }, { consultantId: placement.consultantId }] },
+    orderBy: [{ endDate: "desc" }],
+    select: { endDate: true, number: true },
+  });
+  const e = contract?.endDate;
+  const contractEinde = e
+    ? {
+        datum: `${e.getFullYear()}-${String(e.getMonth() + 1).padStart(2, "0")}-${String(e.getDate()).padStart(2, "0")}`,
+        label: contract.number ?? "",
+      }
+    : null;
 
   return (
     <div className="space-y-6">
@@ -43,6 +56,7 @@ export default async function PlaatsingBewerkenPage({
         clients={clients}
         submitLabel="Wijzigingen opslaan"
         cancelHref={`/plaatsingen/${placement.id}`}
+        contractEinde={contractEinde}
       />
     </div>
   );

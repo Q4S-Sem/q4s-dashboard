@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { eindeStatus, eindeTekst } from "@/lib/plaatsing-einde";
 import { notFound } from "next/navigation";
 import { IdCard, ReceiptText, StickyNote, Pencil, ClipboardCheck, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,8 +49,23 @@ export default async function PlaatsingGegevensPage({
     c.companyName || c.kvkNumber || c.vatNumber || c.iban || c.email || c.phone || c.address || c.city
   );
 
+  const einde = placement.status === "ENDED" || placement.status === "ARCHIVED" ? null : eindeStatus(placement.endDate);
+
   return (
     <div className="space-y-6">
+      {einde && (
+        <p
+          className={`flex flex-wrap items-center gap-2 rounded-lg border px-4 py-3 text-sm ${
+            einde.status === "verlopen" ? "border-red-200 bg-red-50 text-red-800" : "border-violet-200 bg-violet-50 text-violet-900"
+          }`}
+        >
+          <strong className="font-semibold">{eindeTekst(einde)}</strong>
+          <span>
+            — de plaatsing van {personName} loopt tot {formatDate(placement.endDate!)}. Verlengen? Pas de einddatum aan via Bewerken
+            (of neem hem over uit het nieuwe contract).
+          </span>
+        </p>
+      )}
       {error === "in-use" && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           Deze plaatsing kan niet verwijderd worden zolang er urenstaten aan gekoppeld zijn.

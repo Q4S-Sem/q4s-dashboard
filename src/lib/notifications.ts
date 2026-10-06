@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { eindeStatus } from "@/lib/plaatsing-einde";
 import { weekSlotVanDatum } from "@/lib/week-koppeling";
 import { countReceivedDiscrepancies } from "@/lib/received-invoices";
 
@@ -144,10 +145,27 @@ export async function getNotifications(): Promise<Notifications> {
       ? `/facturatie/${scan.placementId}/${scanWeek}`
       : `/facturatie?week=${scanWeek}${scan?.consultantId ? "" : "&tab=bestanden"}`;
 
+  // Plaatsingen in hun laatste maand (of al over de einddatum maar nog actief).
+  const lopend = await db.placement.findMany({
+    where: { status: { in: ["ACTIVE", "INCOMPLETE"] }, endDate: { not: null, lte: addDays(startToday, 32) } },
+    select: { id: true, endDate: true },
+  });
+  const eindes = lopend.map((p) => ({ id: p.id, e: eindeStatus(p.endDate, now) })).filter((x) => x.e);
+  const eindLate = eindes.filter((x) => x.e!.status === "verlopen").length;
+  const eindToday = eindes.length - eindLate;
+
   const all: NotifGroup[] = [
     { key: "agenda", label: "Agenda", href: "/agenda", late: agLate, today: agToday, future: agFuture },
     { key: "taken", label: "Taken", href: "/agenda/taken", late: tkLate, today: tkToday, future: tkFuture },
     { key: "sollicitaties", label: "Sollicitaties", href: "/sollicitaties?status=NEW", late: solLate, today: solToday, future: 0 },
+    {
+      key: "plaatsing-einde",
+      label: "Plaatsing loopt af",
+      href: eindes.length === 1 ? `/plaatsingen/${eindes[0].id}` : "/plaatsingen",
+      late: eindLate,
+      today: eindToday,
+      future: 0,
+    },
     { key: "certificeringen", label: "Certificaten", href: "/certificeringen", late: certLate, today: certToday, future: certFuture },
     {
       key: "facturen",
@@ -225,7 +243,7 @@ export function hubActionCounts(badges: NavBadges, notifs: Notifications): Recor
     // `verzenden` = vrijgegeven verkoopfacturen die nog verstuurd moeten worden.
     "/facturatie": badges.verwerken + badges.ontvangen + badges.verzenden + all("inbox"),
     // Personeelsgegevens: certificaten die (bijna) verlopen.
-    "/klanten": urgent("certificeringen"),
+    "/klanten": urgent("certificeringen") + urgent("plaatsing-einde"),
     // Agenda: afspraken + taken die te laat zijn of vandaag spelen.
     "/agenda": urgent("agenda") + urgent("taken"),
     // Recruitment: nieuwe sollicitaties + openstaande CRM-opvolgingen.

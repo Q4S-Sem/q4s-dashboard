@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { tariefSuffix } from "@/lib/toeslag";
-import { AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarClock, Pencil, Trash2 } from "lucide-react";
 import { SmartList, type SmartColumn, type SmartFilter, type SmartGroup } from "@/components/smart-list";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -25,6 +25,8 @@ export type PlaatsingRow = {
   status: string;
   /** Ontbrekende werknemergegevens (IBAN, telefoon, BTW, …). */
   ontbreekt: string[];
+  /** "Eindigt over 12 dagen" / "Contract verlopen" — alleen in de laatste maand. */
+  einde?: { tekst: string; verlopen: boolean } | null;
 };
 
 /** De effectieve overuren-marge/uur: expliciete rates indien gezet, anders de
@@ -59,6 +61,15 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
               className="ml-2 inline-flex items-center gap-1 rounded-sm bg-amber-50 px-1.5 py-0.5 align-middle text-[11px] font-medium text-amber-800 ring-1 ring-amber-200"
             >
               <AlertTriangle className="h-3 w-3" /> {r.ontbreekt.length} open
+            </span>
+          )}
+          {r.einde && (
+            <span
+              className={`ml-2 inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 align-middle text-[11px] font-medium ring-1 ${
+                r.einde.verlopen ? "bg-red-50 text-red-700 ring-red-200" : "bg-violet-50 text-violet-800 ring-violet-200"
+              }`}
+            >
+              <CalendarClock className="h-3 w-3" /> {r.einde.tekst}
             </span>
           )}
         </Link>

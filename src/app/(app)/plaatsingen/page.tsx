@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Archive, Briefcase, Plus, Users, CheckCircle2, Coins, FileText, Hourglass, Trash2, CircleSlash } from "lucide-react";
+import { Archive, Briefcase, Plus, Users, CheckCircle2, Coins, FileText, Hourglass, Trash2, CircleSlash, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -12,6 +12,7 @@ import { formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { PlaatsingenList } from "./PlaatsingenList";
 import { ontbrekendVoorActief } from "@/lib/ontbrekende-gegevens";
 import { deletePlacementDraft } from "./actions";
+import { eindeStatus, eindeTekst } from "@/lib/plaatsing-einde";
 
 export const metadata = { title: "Plaatsingen" };
 
@@ -134,6 +135,34 @@ export default async function PlaatsingenPage({
         </div>
       )}
 
+      {(() => {
+        const aflopend = rijen
+          .filter((r) => r.bak !== "beeindigd")
+          .map((r) => ({ ...r, e: eindeStatus(r.p.endDate) }))
+          .filter((r) => r.e)
+          .sort((a, b) => a.e!.dagen - b.e!.dagen);
+        if (aflopend.length === 0) return null;
+        return (
+          <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-[13px] text-violet-900">
+            <p className="mb-1.5 flex items-center gap-2 font-semibold">
+              <CalendarClock className="h-4 w-4" /> Contract loopt af — verlengen of afronden
+            </p>
+            <ul className="flex flex-wrap gap-x-5 gap-y-1">
+              {aflopend.map(({ p, e }) => (
+                <li key={p.id}>
+                  <Link href={`/plaatsingen/${p.id}`} className="font-medium underline-offset-2 hover:underline">
+                    {p.consultant.firstName} {p.consultant.lastName}
+                  </Link>{" "}
+                  <span className={e!.status === "verlopen" ? "text-red-700" : "text-violet-700"}>
+                    · {eindeTekst(e!)} ({formatDate(p.endDate!)})
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
+
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-ink-200">
         <nav aria-label="Plaatsingen" className="flex flex-wrap items-end gap-1">
           {MAPPEN.map((m) => {
@@ -226,6 +255,9 @@ export default async function PlaatsingenPage({
             // Alles wat nog ontbreekt (incl. getekend contract) → "Nog niet actief".
             status: p.status === "ACTIVE" && ontbreekt.length > 0 ? "INCOMPLETE" : p.status,
             ontbreekt,
+            einde: ((e) => (e ? { tekst: eindeTekst(e), verlopen: e.status === "verlopen" } : null))(
+              p.status === "ENDED" ? null : eindeStatus(p.endDate),
+            ),
           }))}
         />
       )}

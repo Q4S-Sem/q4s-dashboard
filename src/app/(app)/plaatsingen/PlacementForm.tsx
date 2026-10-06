@@ -725,6 +725,7 @@ export function PlacementForm({
   cancelHref,
   draft,
   draftId,
+  contractEinde,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   placement?: Placement;
@@ -735,6 +736,8 @@ export function PlacementForm({
   /** Bewaard concept om verder in te vullen (veld → waarde). */
   draft?: Record<string, string>;
   draftId?: string;
+  /** Einddatum uit het (nieuwste) contract van deze persoon, om over te nemen. */
+  contractEinde?: { datum: string; label: string } | null;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
@@ -1113,6 +1116,15 @@ export function PlacementForm({
             </Field>
             <Field label="Einddatum" htmlFor="endDate" error={e.endDate} hint="Leeg laten als de plaatsing nog loopt">
               <DateInput id="endDate" name="endDate" value={endDate} onValueChange={setEndDate} />
+              {contractEinde && contractEinde.datum !== endDate && (
+                <button
+                  type="button"
+                  onClick={() => setEndDate(contractEinde.datum)}
+                  className="mt-1 text-xs font-medium text-brand-700 underline underline-offset-2 hover:text-ink-900"
+                >
+                  Overnemen uit contract {contractEinde.label} ({contractEinde.datum.split("-").reverse().join("-")})
+                </button>
+              )}
             </Field>
           </div>
 
