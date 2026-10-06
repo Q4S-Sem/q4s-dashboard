@@ -92,6 +92,8 @@ export async function PersonenPerWeek({
   q?: string;
   pf?: string;
 }) {
+  // Alleen verkoopfacturen gaan naar de administratie van de klant; inkoop niet.
+  const verkoop = basePath.endsWith("/verkoop");
   const { week: slot, rows } = await getWeekOverview(week);
   const inkoopIds = rows.map((r) => r.receivedInvoiceId).filter((x): x is string => !!x);
   const verkoopIds = rows.map((r) => r.verkoopFactuurId).filter((x): x is string => !!x);
@@ -190,7 +192,7 @@ export async function PersonenPerWeek({
                   <TH>Verkoopfactuur (klant)</TH>
                   <TH className="text-right">Marge ex btw</TH>
                   <TH>Wat mist er</TH>
-                  <TH className="text-right">Naar administratie</TH>
+                  {verkoop && <TH className="text-right">Naar administratie</TH>}
                 </TR>
               </THead>
               <TBody>
@@ -256,9 +258,11 @@ export async function PersonenPerWeek({
                         </span>
                       )}
                     </TD>
-                    <TD className="text-right">
-                      <NaarAdministratie v={v} />
-                    </TD>
+                    {verkoop && (
+                      <TD className="text-right">
+                        <NaarAdministratie v={v} />
+                      </TD>
+                    )}
                   </TR>
                 ))}
               </TBody>
