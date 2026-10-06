@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PersonenPerWeek } from "../PersonenPerWeek";
 import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Select } from "@/components/ui/field";
 import { AlertTriangle, Ban, BellRing, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
@@ -259,6 +260,9 @@ export default async function VerkoopfacturenPage({
           <Download className="h-4 w-4" /> Export
         </a>
       </PaginaKop>
+
+      {/* Iedereen vast in beeld: wat is er al, wat mist er (gekozen week, anders deze week). */}
+      <PersonenPerWeek week={weekParam || null} />
 
       {klantFilter && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-ink-200 bg-ink-50 px-4 py-2.5 text-[13px]">

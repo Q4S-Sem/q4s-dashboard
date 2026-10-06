@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { volgendePersoon, voortgang, weekBeslissing, dubbelBesluit, wekenInPeriode } from "../src/lib/facturatie-volgende";
+import { volgendePersoon, voortgang, weekBeslissing, dubbelBesluit, wekenInPeriode, watMist } from "../src/lib/facturatie-volgende";
 import { herinneringMail } from "../src/lib/timesheet-herinnering";
 
 const rij = (key: string, extra: Partial<{ href: string | null; gefactureerd: boolean; vastgelegd: boolean; wachtkamerSinds: Date | null }> = {}) => ({
@@ -55,4 +55,13 @@ test("wekenInPeriode: verzamelfactuur over 3 weken → 3 weeksleutels", () => {
   assert.deepEqual(wekenInPeriode("2026-09-21", null), ["2026-W39"]);
   assert.deepEqual(wekenInPeriode(null, null), []);
   assert.deepEqual(wekenInPeriode("2025-12-22", "2026-01-11"), ["2025-W52", "2026-W01", "2026-W02"]);
+});
+
+test("watMist: per stap wat er nog ontbreekt, leeg = compleet", () => {
+  const leeg = { timesheetOntvangen: false, factuurOntvangen: false, factuurNvt: false, vastgelegd: false, inkoopStatus: null, verkoopStatus: null };
+  assert.deepEqual(watMist(leeg), ["Urenstaat", "Factuur freelancer", "Akkoord"]);
+  assert.deepEqual(watMist({ ...leeg, timesheetOntvangen: true, factuurNvt: true }), ["Akkoord"]);
+  const klaar = { timesheetOntvangen: true, factuurOntvangen: true, factuurNvt: false, vastgelegd: true, inkoopStatus: "PAID", verkoopStatus: "PAID" };
+  assert.deepEqual(watMist(klaar), []);
+  assert.deepEqual(watMist({ ...klaar, verkoopStatus: "DRAFT", inkoopStatus: "APPROVED" }), ["Versturen", "Freelancer betalen"]);
 });

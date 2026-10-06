@@ -81,3 +81,25 @@ export function wekenInPeriode(start: string | Date | null | undefined, eind: st
   }
   return keys;
 }
+
+/**
+ * Wat ontbreekt er nog bij deze persoon in deze week? Leeg = compleet.
+ * Volgorde = de volgorde waarin het werk gebeurt.
+ */
+export function watMist(r: {
+  timesheetOntvangen: boolean;
+  factuurOntvangen: boolean;
+  factuurNvt: boolean;
+  vastgelegd: boolean;
+  inkoopStatus: string | null;
+  verkoopStatus: string | null;
+}): string[] {
+  const mist: string[] = [];
+  if (!r.timesheetOntvangen) mist.push("Urenstaat");
+  if (!r.factuurNvt && !r.factuurOntvangen) mist.push("Factuur freelancer");
+  if (!r.verkoopStatus) mist.push(r.vastgelegd ? "Verkoopfactuur" : "Akkoord");
+  else if (r.verkoopStatus === "DRAFT" || r.verkoopStatus === "READY") mist.push("Versturen");
+  if (r.verkoopStatus === "SENT") mist.push("Betaling klant");
+  if (!r.factuurNvt && r.inkoopStatus && r.inkoopStatus !== "PAID") mist.push("Freelancer betalen");
+  return mist;
+}

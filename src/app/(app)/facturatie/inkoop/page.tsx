@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PersonenPerWeek } from "../PersonenPerWeek";
 import {
   AlertTriangle,
   Banknote,
@@ -267,6 +268,9 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
           <Download className="h-4 w-4" /> SEPA ({betaalbaar.length})
         </a>
       </PaginaKop>
+
+      {/* Iedereen vast in beeld: wat is er al, wat mist er (gekozen week, anders deze week). */}
+      <PersonenPerWeek week={weekParam || null} />
 
       {sp.reset === "ok" && (
         <p className="flex items-start gap-2 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
