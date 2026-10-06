@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { CheckCircle2, ClipboardList, FileText, Receipt, Send, Users, Wallet } from "lucide-react";
+import { CheckCircle2, ClipboardList, FileText, Mail, Receipt, Send, Users, Wallet } from "lucide-react";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { naarAdministratie } from "./verkoop/actions";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
-import { mapTabVariants } from "@/components/ui/button";
+import { buttonVariants, mapTabVariants } from "@/components/ui/button";
 import { FilterTegels } from "@/components/ui/filter-tegels";
 import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -98,7 +100,10 @@ export async function PersonenPerWeek({
       where: { id: { in: inkoopIds } },
       select: { id: true, number: true, amount: true, vatAmount: true, status: true },
     }),
-    db.invoice.findMany({ where: { id: { in: verkoopIds } }, select: { id: true, number: true, status: true } }),
+    db.invoice.findMany({
+      where: { id: { in: verkoopIds } },
+      select: { id: true, number: true, status: true, client: { select: { companyName: true, email: true, invoiceEmail: true } } },
+    }),
     db.invoiceLine.findMany({
       where: { invoiceId: { in: verkoopIds }, weekNumber: slot.isoWeek },
       select: { invoiceId: true, placementId: true, amount: true },
@@ -185,6 +190,7 @@ export async function PersonenPerWeek({
                   <TH>Verkoopfactuur (klant)</TH>
                   <TH className="text-right">Marge ex btw</TH>
                   <TH>Wat mist er</TH>
+                  <TH className="text-right">Naar administratie</TH>
                 </TR>
               </THead>
               <TBody>
@@ -250,6 +256,9 @@ export async function PersonenPerWeek({
                         </span>
                       )}
                     </TD>
+                    <TD className="text-right">
+                      <NaarAdministratie v={v} />
+                    </TD>
                   </TR>
                 ))}
               </TBody>
@@ -258,5 +267,49 @@ export async function PersonenPerWeek({
         )}
       </Card>
     </>
+  );
+}
+
+/**
+ * Doorzichtig tot er een geldige verkoopfactuur is (concept of klaar, en de klant
+ * heeft een factuur-e-mailadres). Dan: na bevestiging naar de administratie van
+ * het bedrijf waar de freelancer werkt.
+ */
+function NaarAdministratie({
+  v,
+}: {
+  v?: { id: string; number: string; status: string; client: { companyName: string; email: string | null; invoiceEmail: string | null } };
+}) {
+  const adres = v?.client.invoiceEmail?.trim() || v?.client.email?.trim() || "";
+  const reden = !v
+    ? "Nog geen verkoopfactuur"
+    : v.status === "SENT" || v.status === "PAID"
+      ? "Al verstuurd"
+      : v.status === "CANCELLED"
+        ? "Geannuleerd"
+        : !adres
+          ? `Geen factuur-e-mailadres bij ${v.client.companyName}`
+          : null;
+  if (reden || !v) {
+    return (
+      <span title={reden ?? undefined} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "pointer-events-none opacity-35")}>
+        {v && (v.status === "SENT" || v.status === "PAID") ? <CheckCircle2 /> : <Mail />} {reden === "Al verstuurd" ? "Verstuurd" : "Versturen"}
+      </span>
+    );
+  }
+  return (
+    <ConfirmSubmit
+      action={naarAdministratie}
+      hidden={{ id: v.id }}
+      trigger="button"
+      size="sm"
+      variant="primary"
+      confirmVariant="primary"
+      confirmLabel="Versturen"
+      message={`Factuur ${v.number} versturen naar ${v.client.companyName}?`}
+      description={`De factuur gaat als PDF naar ${adres}. Daarna staat hij op Verzonden.`}
+    >
+      <Mail /> Versturen
+    </ConfirmSubmit>
   );
 }

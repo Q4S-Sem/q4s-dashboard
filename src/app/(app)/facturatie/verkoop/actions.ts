@@ -485,3 +485,24 @@ export async function sendDueReminders() {
   herlaad();
   redirect(`${LIJST}?tab=telaat&herinneringen=${telling.ok}&geenmail=${telling["geen-adres"]}&mislukt=${telling.mislukt}`);
 }
+
+/**
+ * Eén verkoopfactuur naar de administratie van de klant (factuur-e-mailadres).
+ * Een concept wordt eerst vrijgegeven; verzenden loopt via sendSalesInvoiceById,
+ * dat atomair READY → SENT claimt (dus nooit dubbel). Alleen na bevestiging.
+ */
+export async function naarAdministratie(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect(LIJST);
+  await db.invoice.updateMany({ where: { id, status: "DRAFT" }, data: { status: "READY" } });
+  const outcome = await sendSalesInvoiceById(id);
+  herlaad();
+  const p = new URLSearchParams({ weergave: "facturen" });
+  if (outcome === "sent" || outcome === "simulated") {
+    p.set("verzonden", "1");
+    p.set("modus", outcome === "simulated" ? "sim" : "live");
+  } else if (outcome === "no-email") p.set("verzonden", "0"), p.set("geenmail", "1");
+  else if (outcome === "error") p.set("verzonden", "0"), p.set("mislukt", "1");
+  else p.set("verzonden", "0");
+  redirect(`${LIJST}?${p.toString()}`);
+}
