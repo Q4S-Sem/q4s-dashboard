@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card } from "@/components/ui/card";
+import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { buttonVariants, mapTabVariants } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatCurrency, formatDate, round2 } from "@/lib/utils";
@@ -15,6 +16,14 @@ import { deletePlacementDraft } from "./actions";
 import { eindeStatus, eindeTekst } from "@/lib/plaatsing-einde";
 
 export const metadata = { title: "Plaatsingen" };
+
+/** Groen = actief, oranje = in voorbereiding, rood = concept. */
+const KLEUR: Record<string, { icoon: string; teller: string }> = {
+  actief: { icoon: "text-emerald-600", teller: "bg-emerald-100 text-emerald-800" },
+  voorbereiding: { icoon: "text-orange-500", teller: "bg-orange-100 text-orange-800" },
+  concepten: { icoon: "text-red-600", teller: "bg-red-100 text-red-700" },
+  beeindigd: { icoon: "text-ink-400", teller: "bg-ink-100 text-ink-500" },
+};
 
 export default async function PlaatsingenPage({
   searchParams,
@@ -55,6 +64,9 @@ export default async function PlaatsingenPage({
     const bak = p.status === "ENDED" ? "beeindigd" : p.status === "ACTIVE" && ontbreekt.length === 0 ? "actief" : "voorbereiding";
     return { p, ontbreekt, bak };
   });
+  const conceptKlanten = new Map(
+    (await db.client.findMany({ select: { id: true, companyName: true } })).map((c) => [c.id, c.companyName]),
+  );
   const tel = (b: string) => rijen.filter((r) => r.bak === b).length;
   const MAPPEN = [
     { key: "actief", label: "Actief", icon: <CheckCircle2 className="h-4 w-4" />, aantal: tel("actief"), hint: "Alles compleet en getekend — loopt mee in de facturatie." },
@@ -169,14 +181,9 @@ export default async function PlaatsingenPage({
             const on = m.key === actiefMap.key;
             return (
               <Link key={m.key} href={mapHref(m.key)} scroll={false} aria-current={on ? "page" : undefined} className={mapTabVariants(on)}>
-                <span className={on ? "text-brand-600" : "text-ink-400"}>{m.icon}</span>
+                <span className={KLEUR[m.key].icoon}>{m.icon}</span>
                 {m.label}
-                <span
-                  className={cn(
-                    "rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
-                    m.key === "voorbereiding" && m.aantal > 0 ? "bg-amber-100 text-amber-800" : "bg-ink-100 text-ink-500",
-                  )}
-                >
+                <span className={cn("rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums", KLEUR[m.key].teller)}>
                   {m.aantal}
                 </span>
               </Link>
@@ -187,38 +194,72 @@ export default async function PlaatsingenPage({
       </div>
 
       {actiefMap.key === "concepten" && (
-        <Card>
-          {drafts.length === 0 && (
+        <Card className="overflow-hidden">
+          {drafts.length === 0 ? (
             <p className="px-5 py-10 text-center text-[13px] text-ink-400">Geen concepten. Een half ingevulde plaatsing kun je opslaan als concept.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Werknemer</TH>
+                    <TH>Klant</TH>
+                    <TH>Functie</TH>
+                    <TH className="text-right">Inkoop</TH>
+                    <TH className="text-right">Verkoop</TH>
+                    <TH className="text-right">Marge</TH>
+                    <TH>Status</TH>
+                    <TH className="text-right">Acties</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {drafts.map((d) => {
+                    // Het concept bewaart de formuliervelden als JSON.
+                    let v: Record<string, string> = {};
+                    try {
+                      v = JSON.parse(d.data) as Record<string, string>;
+                    } catch {}
+                    const [kop, functie] = (d.label ?? "").split(" — ");
+                    const naam = kop?.split(" · ")[0] || "Nieuwe werknemer";
+                    const klant = conceptKlanten.get(v.clientId ?? "") ?? (kop?.split(" · ")[1] || "—");
+                    const inkoop = Number(String(v.costRate ?? "").replace(",", ".")) || 0;
+                    const verkoop = Number(String(v.chargeRate ?? "").replace(",", ".")) || 0;
+                    const geld = (n: number) => (n > 0 ? `${formatCurrency(n)}/u` : <span className="text-ink-300">—</span>);
+                    return (
+                      <TR key={d.id}>
+                        <TD>
+                          <Link href={`/plaatsingen/nieuw?draft=${d.id}`} className="font-medium text-ink-900 hover:text-brand-700">
+                            {naam}
+                          </Link>
+                          <span className="block text-xs text-ink-400">Laatst bewerkt {formatDate(d.updatedAt)}</span>
+                        </TD>
+                        <TD>{klant}</TD>
+                        <TD>{v.title || functie || "—"}</TD>
+                        <TD className="text-right tabular-nums">{geld(inkoop)}</TD>
+                        <TD className="text-right tabular-nums">{geld(verkoop)}</TD>
+                        <TD className="text-right font-semibold tabular-nums text-emerald-700">
+                          {inkoop > 0 && verkoop > 0 ? `${formatCurrency(round2(verkoop - inkoop))}/u` : <span className="font-normal text-ink-300">—</span>}
+                        </TD>
+                        <TD>
+                          <span className="rounded-sm bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-700 ring-1 ring-red-200">Concept</span>
+                        </TD>
+                        <TD>
+                          <div className="flex items-center justify-end gap-1">
+                            <Link href={`/plaatsingen/nieuw?draft=${d.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                              Verder gaan
+                            </Link>
+                            <ConfirmSubmit action={deletePlacementDraft} id={d.id} message="Dit concept verwijderen?" variant="ghost" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </ConfirmSubmit>
+                          </div>
+                        </TD>
+                      </TR>
+                    );
+                  })}
+                </TBody>
+              </Table>
+            </div>
           )}
-          <ul className="divide-y divide-ink-100">
-            {drafts.map((d) => (
-              <li key={d.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
-                <FileText className="h-4 w-4 shrink-0 text-amber-500" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-ink-900">
-                    {d.label || "Concept-plaatsing"}
-                  </p>
-                  <p className="text-xs text-ink-400">Laatst bewerkt {formatDate(d.updatedAt)}</p>
-                </div>
-                <Link
-                  href={`/plaatsingen/nieuw?draft=${d.id}`}
-                  className={buttonVariants({ variant: "primary", size: "sm" })}
-                >
-                  Verder gaan
-                </Link>
-                <ConfirmSubmit
-                  action={deletePlacementDraft}
-                  id={d.id}
-                  message="Dit concept verwijderen?"
-                  variant="ghost"
-                  size="sm"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </ConfirmSubmit>
-              </li>
-            ))}
-          </ul>
         </Card>
       )}
 
