@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { eindeStatus, eindeTekst } from "@/lib/plaatsing-einde";
 import { notFound } from "next/navigation";
-import { IdCard, ReceiptText, StickyNote, Pencil, ClipboardCheck, AlertTriangle } from "lucide-react";
+import { IdCard, ReceiptText, StickyNote, Pencil, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -127,14 +127,6 @@ export default async function PlaatsingGegevensPage({
           <CardTitle className="flex items-center gap-2">
             <IdCard className="h-5 w-5 text-ink-500" /> Gegevens
           </CardTitle>
-          {/* Opent het evaluatieformulier met medewerker, klant, functie en
-              werklocatie van déze plaatsing al ingevuld — opslaan doe je zelf. */}
-          <Link
-            href={`/evaluaties/nieuw?type=VCU&placementId=${placement.id}`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            <ClipboardCheck className="h-4 w-4" /> Kwartaalevaluatie
-          </Link>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-5 sm:grid-cols-4">
