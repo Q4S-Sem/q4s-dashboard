@@ -199,7 +199,18 @@ export async function PersonenPerWeek({
                 {lijst.map(({ r, i, v, verkoopEx, inkoopEx, marge, mist }) => (
                   <TR key={r.key}>
                     <TD>
-                      <Link href={r.href ?? "#"} className="flex items-center gap-3 hover:underline">
+                      <Link
+                        href={
+                          // Verkoop: naar de verkoopfactuur zelf (bekijken + aanpassen), of naar
+                          // alle verkoopfacturen van deze persoon als er voor deze week nog geen is.
+                          isVerkoop
+                            ? v
+                              ? `/facturatie/verkoop/${v.id}`
+                              : `/facturatie/verkoop?weergave=facturen&persoon=${r.consultantId}`
+                            : (r.href ?? "#")
+                        }
+                        className="flex items-center gap-3 hover:underline"
+                      >
                         <PersoonVierkant naam={r.naam} />
                         <span className="min-w-0">
                           <span className="block font-medium text-ink-900">{r.naam}</span>
