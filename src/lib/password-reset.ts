@@ -105,6 +105,7 @@ export async function requestPasswordReset(
   };
 
   const mail = await sendMail({
+    handmatig: true, // na klik van een gebruiker
     to: user.email,
     subject: `Wachtwoord opnieuw instellen — ${company}`,
     html: renderQ4sEmail(content),

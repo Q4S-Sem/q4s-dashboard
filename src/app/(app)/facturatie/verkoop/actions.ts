@@ -448,6 +448,7 @@ async function stuurHerinnering(id: string, settings: Awaited<ReturnType<typeof 
 
   const factuur = salesSendData(inv, settings);
   const res = await sendMail({
+    handmatig: true, // na klik van een gebruiker
     to: data.to,
     subject: data.subject,
     html: data.html,

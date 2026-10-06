@@ -94,6 +94,7 @@ export async function startPasswordChange(
   };
 
   const res = await sendMail({
+    handmatig: true, // na klik van een gebruiker
     to: user.email,
     subject: `Je verificatiecode: ${code}`,
     html: renderQ4sEmail(content),

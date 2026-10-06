@@ -245,6 +245,7 @@ export async function sendCertificateReminder(formData: FormData) {
 
   const content = reminderContent(cert, settings, new Date());
   const res = await sendMail({
+    handmatig: true, // na klik van een gebruiker
     to,
     subject: `Herinnering: certificaat ${cert.name} ${
       cert.expiryDate ? "verloopt binnenkort" : ""

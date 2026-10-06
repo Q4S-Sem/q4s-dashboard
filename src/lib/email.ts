@@ -48,7 +48,15 @@ export type MailInput = {
   attachments?: MailAttachment[];
   /** Afzender, bijv. "Q4S Administratie <admin@q4s.nl>"; leeg = emailFrom(). */
   from?: string;
+  /** Verplicht voor mail buiten @q4s.nl: alleen zetten waar een mens net op een
+   *  knop heeft geklikt (na controle). Jobs/automaten zetten dit nooit. */
+  handmatig?: true;
 };
+
+/** Mail naar klanten/freelancers gaat NOOIT automatisch — alleen na een klik. */
+export function magVersturen(input: Pick<MailInput, "to" | "handmatig">): boolean {
+  return input.handmatig === true || /@q4s\.nl$/i.test(input.to.trim());
+}
 
 export type MailResult = {
   ok: boolean;
@@ -97,6 +105,9 @@ export async function getMailRedirect(): Promise<string | null> {
 /** Send a mail via SMTP — or, when SMTP isn't configured, report a simulated send.
  *  Bij een actieve omleiding (testmodus) gaat de mail naar het omleidingsadres. */
 export async function sendMail(input: MailInput): Promise<MailResult> {
+  if (!magVersturen(input)) {
+    return { ok: false, simulated: false, error: "Geblokkeerd: externe mail gaat alleen na handmatige controle en klik." };
+  }
   if (!isEmailConfigured()) return { ok: true, simulated: true };
 
   // Veiligheidsnet: leid alle mail om zolang testmodus aanstaat.

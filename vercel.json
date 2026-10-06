@@ -9,10 +9,6 @@
     {
       "path": "/api/jobs/mail-intake",
       "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/jobs/timesheet-herinnering",
-      "schedule": "15 11 * * *"
     }
   ]
 }

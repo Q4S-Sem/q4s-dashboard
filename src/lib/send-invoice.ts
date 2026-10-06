@@ -21,6 +21,7 @@ async function dispatch(data: SendData): Promise<SendOutcome> {
   if (!data.to) return "no-email";
   const pdf = await renderInvoicePdf(data.pdfDoc);
   const res = await sendMail({
+    handmatig: true, // na klik van een gebruiker
     to: data.to,
     subject: data.subject,
     html: data.html,

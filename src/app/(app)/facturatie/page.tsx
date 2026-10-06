@@ -23,7 +23,7 @@ import { cn, formatDate, formatHours } from "@/lib/utils";
 import { ymd } from "@/lib/week-nav";
 import { UploadPaneel } from "./UploadPaneel";
 import { WeekStrip } from "./WeekStrip";
-import { koppelLosseUpload, verwerkGroeneWeken, verwijderLosseUpload, zetHerinnering } from "./actions";
+import { koppelLosseUpload, verwerkGroeneWeken, verwijderLosseUpload } from "./actions";
 import { volgendePersoon, voortgang } from "@/lib/facturatie-volgende";
 import { getCompanySettings } from "@/lib/settings";
 import { buttonVariants, mapTabVariants } from "@/components/ui/button";
@@ -184,7 +184,6 @@ export default async function FacturatiePage({
   };
   const eerste = volgendePersoon(rows);
   const stand = voortgang(rows);
-  const herinneringAan = settings.timesheetReminderEnabled;
 
   return (
     <div className="space-y-6">
@@ -591,26 +590,8 @@ export default async function FacturatiePage({
           )}
         <div className="flex flex-wrap items-center gap-2 border-t border-ink-100 px-4 py-3">
           <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-600">
-            <Bell className="h-4 w-4 text-ink-400" /> Herinnering-mail na {DEADLINE_LABEL}
+            <Bell className="h-4 w-4 text-ink-400" /> Mail naar freelancers of klanten gaat nooit automatisch — alleen na jouw controle en klik.
           </span>
-          <form action={zetHerinnering}>
-            <input type="hidden" name="aan" value={herinneringAan ? "0" : "1"} />
-            <button
-              type="submit"
-              role="switch"
-              aria-checked={herinneringAan}
-              title={herinneringAan ? "Staat aan — klik om uit te zetten" : "Staat uit — klik om aan te zetten"}
-              className={cn(
-                "inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-[13px] font-semibold transition-colors",
-                herinneringAan ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-ink-200 bg-white text-ink-600 hover:bg-ink-50",
-              )}
-            >
-              <span className={cn("relative h-4 w-7 rounded-full transition-colors", herinneringAan ? "bg-emerald-600" : "bg-ink-300")}>
-                <span className={cn("absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all", herinneringAan ? "left-3.5" : "left-0.5")} />
-              </span>
-              {herinneringAan ? "Aan" : "Uit"}
-            </button>
-          </form>
           <Link href="/facturatie/herinnering" className={buttonVariants({ variant: "outline", size: "sm" })}>
             Voorbeeld
           </Link>

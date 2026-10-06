@@ -436,6 +436,7 @@ export async function mailReceivedDiscrepancy(invoiceId: string): Promise<Discre
   };
 
   const res = await sendMail({
+    handmatig: true, // na klik van een gebruiker
     to,
     subject: `Kleine controle op je factuur${nr} — ${settings.companyName || "Q4S"}`,
     html: renderQ4sEmail(content),

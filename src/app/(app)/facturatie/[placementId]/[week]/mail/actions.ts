@@ -52,6 +52,7 @@ export async function verstuurConceptMail(formData: FormData) {
   if (!data.to) redirect(mailPad(placementId, weekKey, notitie, { fout: "geen-adres" }));
 
   const res = await sendMail({
+    handmatig: true, // na klik van een gebruiker
     to: data.to,
     subject: data.subject,
     html: renderQ4sEmail(data.content),
