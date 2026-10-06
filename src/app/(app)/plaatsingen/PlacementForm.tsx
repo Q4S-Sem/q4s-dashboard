@@ -879,7 +879,11 @@ export function PlacementForm({
     | "phone"
     | "address"
     | "postalCode"
-    | "city",
+    | "city"
+    | "dateOfBirth"
+    | "nationality"
+    | "bsn"
+    | "employmentType",
     string | null
   > | null;
 }) {
@@ -1124,13 +1128,13 @@ export function PlacementForm({
                   <div className="space-y-3 border-t border-ink-100 pt-5">
                     <div>
                       <p className="text-sm font-semibold text-ink-900">
-                        Factuur- &amp; betaalgegevens {currentPersonName}
+                        Gegevens {currentPersonName}
                       </p>
                       <p className="text-xs text-ink-400">
-                        Voor de inkoopfactuur. Hoort bij de persoon en geldt
-                        voor al zijn plaatsingen. Kies je hierboven een andere
-                        werknemer, dan blijven deze gegevens bij{" "}
-                        {currentPersonName}.
+                        Persoons-, factuur- en betaalgegevens. Hoort bij de
+                        persoon en geldt voor al zijn plaatsingen. Kies je
+                        hierboven een andere werknemer, dan blijven deze
+                        gegevens bij {currentPersonName}.
                       </p>
                     </div>
                     {/* bill_-voorvoegsel: geen botsing met de klant-/persoonvelden in dit formulier. */}
@@ -1140,13 +1144,32 @@ export function PlacementForm({
                       value={placement.consultantId}
                     />
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Bedrijfsnaam" htmlFor="bill_companyName">
+                      <Field label="Geboortedatum" htmlFor="bill_dateOfBirth">
                         <Input
-                          id="bill_companyName"
-                          name="bill_companyName"
-                          defaultValue={billing["companyName"] ?? ""}
+                          id="bill_dateOfBirth"
+                          name="bill_dateOfBirth"
+                          type="date"
+                          defaultValue={billing["dateOfBirth"] ?? ""}
                         />
                       </Field>
+                      <Field label="Nationaliteit" htmlFor="bill_nationality">
+                        <Input
+                          id="bill_nationality"
+                          name="bill_nationality"
+                          defaultValue={billing["nationality"] ?? ""}
+                        />
+                      </Field>
+                      {billing["employmentType"] !== "ZZP" && (
+                        <Field label="BSN" htmlFor="bill_bsn">
+                          <Input
+                            id="bill_bsn"
+                            name="bill_bsn"
+                            defaultValue={billing["bsn"] ?? ""}
+                          />
+                        </Field>
+                      )}
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
                       <Field label="IBAN" htmlFor="bill_iban">
                         <Input
                           id="bill_iban"
@@ -1154,20 +1177,34 @@ export function PlacementForm({
                           defaultValue={billing["iban"] ?? ""}
                         />
                       </Field>
-                      <Field label="KvK-nummer" htmlFor="bill_kvkNumber">
-                        <Input
-                          id="bill_kvkNumber"
-                          name="bill_kvkNumber"
-                          defaultValue={billing["kvkNumber"] ?? ""}
-                        />
-                      </Field>
-                      <Field label="BTW-nummer" htmlFor="bill_vatNumber">
-                        <Input
-                          id="bill_vatNumber"
-                          name="bill_vatNumber"
-                          defaultValue={billing["vatNumber"] ?? ""}
-                        />
-                      </Field>
+                      {billing["employmentType"] === "ZZP" && (
+                        <>
+                          <Field
+                            label="Bedrijfsnaam"
+                            htmlFor="bill_companyName"
+                          >
+                            <Input
+                              id="bill_companyName"
+                              name="bill_companyName"
+                              defaultValue={billing["companyName"] ?? ""}
+                            />
+                          </Field>
+                          <Field label="KvK-nummer" htmlFor="bill_kvkNumber">
+                            <Input
+                              id="bill_kvkNumber"
+                              name="bill_kvkNumber"
+                              defaultValue={billing["kvkNumber"] ?? ""}
+                            />
+                          </Field>
+                          <Field label="BTW-nummer" htmlFor="bill_vatNumber">
+                            <Input
+                              id="bill_vatNumber"
+                              name="bill_vatNumber"
+                              defaultValue={billing["vatNumber"] ?? ""}
+                            />
+                          </Field>
+                        </>
+                      )}
                       <Field
                         label="E-mail"
                         htmlFor="bill_email"

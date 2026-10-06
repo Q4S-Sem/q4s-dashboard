@@ -20,7 +20,7 @@ export default async function PlaatsingBewerkenPage({
       where: { id },
       include: {
         consultant: {
-          select: { companyName: true, iban: true, kvkNumber: true, vatNumber: true, email: true, phone: true, address: true, postalCode: true, city: true, employmentType: true },
+          select: { companyName: true, iban: true, kvkNumber: true, vatNumber: true, email: true, phone: true, address: true, postalCode: true, city: true, employmentType: true, dateOfBirth: true, nationality: true, bsn: true },
         },
       },
     }),
@@ -65,7 +65,10 @@ export default async function PlaatsingBewerkenPage({
         submitLabel="Wijzigingen opslaan"
         cancelHref={`/plaatsingen/${placement.id}`}
         contractEinde={contractEinde}
-        billing={placement.consultant.employmentType === "LOONDIENST" ? null : placement.consultant}
+        billing={{
+          ...placement.consultant,
+          dateOfBirth: placement.consultant.dateOfBirth?.toISOString().slice(0, 10) ?? null,
+        }}
       />
     </div>
   );

@@ -90,14 +90,10 @@ export default async function PlaatsingGegevensPage({
             ))}
           </span>
           <Link
-            href={
-              ontbreekt.some((k) => ["Klant", "Inkooptarief", "Verkooptarief"].includes(k))
-                ? `/plaatsingen/${placement.id}/bewerken`
-                : `/plaatsingen/${placement.id}?edit=billing`
-            }
-            className="text-xs font-semibold text-amber-800 underline-offset-2 hover:underline"
+            href={`/plaatsingen/${placement.id}/bewerken`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
           >
-            Aanvullen →
+            <Pencil className="h-4 w-4" /> Bewerken
           </Link>
           <span className="ml-auto flex items-center gap-3">
             {placement.status !== "ENDED" && (
@@ -193,7 +189,7 @@ export default async function PlaatsingGegevensPage({
           </CardTitle>
           {!ownStaff && !editingBilling && (
             <Link
-              href={`/plaatsingen/${placement.id}?edit=billing`}
+              href={`/plaatsingen/${placement.id}/bewerken`}
               scroll={false}
               aria-label="Factuurgegevens bewerken"
               className={buttonVariants({ variant: "outline", size: "sm" })}

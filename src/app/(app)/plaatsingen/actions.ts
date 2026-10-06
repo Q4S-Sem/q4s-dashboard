@@ -407,21 +407,17 @@ export async function updatePlacement(
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return { fieldErrors: { bill_email: "Ongeldig e-mailadres" }, error: "Controleer het e-mailadres bij de factuurgegevens." };
     }
+    // Alleen velden die in het formulier stonden (loondienst heeft bv. geen KvK).
+    const data: Record<string, string | Date | null> = { email };
+    for (const k of ["companyName", "iban", "kvkNumber", "vatNumber", "phone", "address", "postalCode", "city", "nationality", "bsn"]) {
+      if (formData.has(`bill_${k}`)) data[k] = v(k);
+    }
+    if (formData.has("bill_dateOfBirth")) {
+      const d = v("dateOfBirth");
+      data.dateOfBirth = d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(`${d}T00:00:00`) : null;
+    }
     try {
-      await db.consultant.update({
-        where: { id: billId },
-        data: {
-          companyName: v("companyName"),
-          iban: v("iban"),
-          kvkNumber: v("kvkNumber"),
-          vatNumber: v("vatNumber"),
-          email,
-          phone: v("phone"),
-          address: v("address"),
-          postalCode: v("postalCode"),
-          city: v("city"),
-        },
-      });
+      await db.consultant.update({ where: { id: billId }, data });
     } catch {
       return { error: "Factuurgegevens opslaan mislukt — dit e-mailadres is mogelijk al in gebruik." };
     }
