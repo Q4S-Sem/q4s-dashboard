@@ -115,7 +115,7 @@ export function UrenstaatVel({
           <div className="ts-co2">
             <span><b>KvK</b> 69073287</span>
             <span><b>BTW</b> NL857718137B01</span>
-            <span><b>Tel</b> +31 6 85 782 6818</span>
+            <span><b>Tel</b> +31 6 857826818</span>
             <span><b>E-mail</b> <em>admin@q4s.nl</em></span>
           </div>
           <div className="ts-meta">
@@ -254,7 +254,7 @@ export function UrenstaatVel({
         <p className="ts-note">{t.note}</p>
         <div className="ts-footer">
           <p>Q4S B.V., Arnhemseweg 12, 2994LA, Barendrecht, the Netherlands, www.q4s.nl, email: info@q4s.nl</p>
-          <p>Tel: +31(0) 857826818, KvK:69073287, Btw: NL857718137B01, IBAN: NL96INGB0007873625</p>
+          <p>Tel: +31 6 857826818, KvK:69073287, Btw: NL857718137B01, IBAN: NL96INGB0007873625</p>
         </div>
       </article>
     </div>

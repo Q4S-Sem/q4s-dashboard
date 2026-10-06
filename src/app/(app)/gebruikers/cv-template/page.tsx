@@ -44,7 +44,7 @@ const VOORBEELD: CvDoc = {
     { name: "NEN-EN-ISO 9712 VT2", issuer: "Kiwa", year: "geldig t/m 2028" },
   ],
   contactLabel: "Contact via Q4S",
-  contactLines: ["info@q4s.nl", "+31 6 85 782 6818", "www.q4s.nl"],
+  contactLines: ["info@q4s.nl", "+31 6 857826818", "www.q4s.nl"],
   companyName: "Q4S",
   footerLine: "Q4S Project Partners  ·  info@q4s.nl  ·  www.q4s.nl",
   anonymized: true,
