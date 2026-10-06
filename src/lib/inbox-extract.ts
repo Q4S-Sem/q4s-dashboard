@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { aiJSON, aiJSONFromFile } from "@/lib/ai";
-import { deleteInboxUpload, readInboxBase64, readInboxBuffer } from "@/lib/uploads";
+import { deleteInboxUpload, readInboxBase64, readInboxBuffer, saveInboxBytes } from "@/lib/uploads";
 import { excelToText, isSpreadsheet } from "@/lib/excel";
 import { matchByName } from "@/lib/name-match";
 import {
@@ -62,6 +62,8 @@ type Extracted = {
   travelHours: number;
   expenses: number;
   pagesComplete: boolean;
+  /** Maandagen van de ANDERE weken in hetzelfde document (verzamelstaat). */
+  andereWeken?: string[];
 };
 
 const EXTRACT_SCHEMA = {
@@ -101,16 +103,17 @@ const EXTRACT_SCHEMA = {
     poNumber: { type: "string", description: "Het inkoop-order-/PO-nummer van de klant zoals op de staat vermeld ('PO', 'Inkoopordernummer', 'Order no.'), bv. '4500123'. Lege string als er geen PO op de staat staat — verwar het niet met een project- of werknemersnummer." },
     travelHours: { type: "number", description: "REISUREN die apart als zodanig op de staat staan ('reisuren', 'travel hours', 'travel time'), dus NIET gewerkte uren en NIET kilometers. 0 als die regel er niet is." },
     expenses: { type: "number", description: "Het bedrag in EURO's aan losse onkosten/declaraties dat op de staat genoemd wordt (parkeren, verblijf, bonnetjes). Alleen het bedrag, niet de kilometers. 0 als er geen onkosten op de staat staan." },
+    andereWeken: { type: "array", items: { type: "string" }, description: "Staan er in dit document MEER weken (een verzamelstaat van 2-4 weken)? Geef dan de MAANDAG (YYYY-MM-DD) van ELKE ANDERE week dan de week die je nu uitleest. Eén week in het document → lege lijst []." },
     pagesComplete: { type: "boolean", description: "Is het document COMPLEET en leesbaar? false als er pagina's lijken te ontbreken, de scan is afgesneden, of een deel van het raster onleesbaar is. true als je alles kon lezen." },
   },
-  required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes", "confidence", "signaturePresent", "signerName", "clientName", "projectName", "location", "poNumber", "travelHours", "expenses", "pagesComplete"],
+  required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes", "confidence", "signaturePresent", "signerName", "clientName", "projectName", "location", "poNumber", "travelHours", "expenses", "pagesComplete", "andereWeken"],
 };
 
 const SYSTEM_EXTRACT = `Je bent een uiterst nauwkeurige administratieve assistent bij Q4S, een Nederlands detacheringsbureau. Je leest binnengekomen WEEKstaten (timesheets) uit die door gedetacheerde vakmensen worden aangeleverd. Elke aanleverder gebruikt een eigen opmaak; herken ook het Q4S-formulier (FO-Q4S-18).
 
 Haal de gegevens er EXACT uit zoals ze er staan. Verzin niets: laat een tekstveld leeg of zet een getal op 0 als je het niet zeker uit het document kunt halen. Antwoord volgens het JSON-schema.
 
-BELANGRIJK — ÉÉN WEEK PER BESTAND: dit document is ÉÉN weekstaat. Bevat het toch meerdere weken, lees dan ALLEEN de week die bij dit bestand hoort (meestal de eerste/bovenste week-tabel) en negeer de rest; meng nooit dagen van verschillende weken door elkaar.
+BELANGRIJK — ÉÉN WEEK PER UITLEZING: je leest steeds precies ÉÉN week uit. Bevat het document meerdere weken (een freelancer stuurt soms 2-4 weken tegelijk), lees dan de eerste/oudste week-tabel (of de week die hieronder expliciet gevraagd wordt) en zet de maandagen van ALLE ANDERE weken in "andereWeken" — die worden apart uitgelezen. Meng nooit dagen van verschillende weken door elkaar.
 
 TAAL: schrijf alle vrije tekst — met name het veld "notes"/opmerkingen — ALTIJD in het NEDERLANDS, ook als de urenstaat in het Engels is. Feitelijke waarden (namen, projectcodes, nummers) neem je letterlijk over.
 
@@ -248,7 +251,7 @@ function suggestieLabel(s: LearnedSuggestion): string {
  * manual "uitlezen" button, the bulk/ZIP upload auto-read, én de e-mail-webhook.
  * De week komt UIT de staat zelf → meerdere bijlagen sorteren elk op hun eigen week.
  */
-export async function runInboxExtraction(id: string): Promise<void> {
+export async function runInboxExtraction(id: string, alleenWeek?: string): Promise<void> {
   const item = await db.timesheetInbox.findUnique({ where: { id } });
   if (!item) throw new Error("Inbox-item niet gevonden.");
 
@@ -294,7 +297,10 @@ export async function runInboxExtraction(id: string): Promise<void> {
     (senderHints
       ? `\n\nLET OP — AANDACHTSPUNTEN bij deze afzender (uit eerdere correcties; deze gingen eerder mis, controleer ze hier extra — laat je niet leiden naar één vast getal, kijk gewoon extra goed):\n${senderHints}`
       : "") +
-    (correctieHint ? `\n\n${correctieHint}` : "");
+    (correctieHint ? `\n\n${correctieHint}` : "") +
+    (alleenWeek
+      ? `\n\nGEVRAAGDE WEEK: lees UITSLUITEND de week die begint op maandag ${alleenWeek}. Negeer alle andere weken in het document; "andereWeken" = [].`
+      : "");
 
   const data = spreadsheet
     ? await aiJSON<Extracted>({
@@ -481,7 +487,43 @@ export async function runInboxExtraction(id: string): Promise<void> {
     },
   });
 
-  await ontdubbelUrenstaat(id, consultantId, weekStart);
+  // Verzamelstaat (2-4 weken in één bestand): elke andere week wordt een eigen
+  // scan met een eigen kopie van het bestand en wordt los uitgelezen. Zo komt
+  // iedere week in zijn eigen dossier terecht. Fouten per week (bv. al vastgelegd)
+  // stoppen de andere weken niet.
+  const fouten: string[] = [];
+  if (!alleenWeek && weekStart) {
+    const eigen = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
+    const andere = [...new Set((data.andereWeken ?? []).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && d !== eigen))].slice(0, 8);
+    if (andere.length) {
+      const bytes = await readInboxBuffer(item.fileName);
+      for (const maandag of andere) {
+        const kopie = await saveInboxBytes(new Uint8Array(bytes), item.originalName);
+        const extra = await db.timesheetInbox.create({
+          data: {
+            source: item.source,
+            fileName: kopie,
+            originalName: `${item.originalName} (week van ${maandag})`,
+            mimeType: item.mimeType,
+            size: item.size,
+            senderEmail: item.senderEmail,
+            emailSubject: item.emailSubject,
+            receivedAt: item.receivedAt,
+            consultantId: item.consultantId,
+            placementId: item.placementId,
+          },
+        });
+        await runInboxExtraction(extra.id, maandag).catch((e) => fouten.push(`week van ${maandag}: ${(e as Error).message}`));
+      }
+    }
+  }
+
+  try {
+    await ontdubbelUrenstaat(id, consultantId, weekStart);
+  } catch (e) {
+    fouten.unshift((e as Error).message);
+  }
+  if (fouten.length) throw new Error(fouten.join(" · "));
 }
 
 /**

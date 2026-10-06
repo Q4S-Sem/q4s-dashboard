@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { volgendePersoon, voortgang, weekBeslissing, dubbelBesluit } from "../src/lib/facturatie-volgende";
+import { volgendePersoon, voortgang, weekBeslissing, dubbelBesluit, wekenInPeriode } from "../src/lib/facturatie-volgende";
 import { herinneringMail } from "../src/lib/timesheet-herinnering";
 
 const rij = (key: string, extra: Partial<{ href: string | null; gefactureerd: boolean; vastgelegd: boolean; wachtkamerSinds: Date | null }> = {}) => ({
@@ -47,4 +47,12 @@ test("weekBeslissing: andere week open → verder, al verwerkt → verkeerd", ()
 test("dubbelBesluit: open versie wordt vervangen, goedgekeurde blokkeert", () => {
   for (const st of ["NEW", "EXTRACTED", "DISPUTED"]) assert.equal(dubbelBesluit(st), "vervang");
   for (const st of ["APPROVED", "PAID", "INVOICED", "CONFIRMED"]) assert.equal(dubbelBesluit(st), "blokkeer");
+});
+
+test("wekenInPeriode: verzamelfactuur over 3 weken → 3 weeksleutels", () => {
+  assert.deepEqual(wekenInPeriode("2026-09-14", "2026-10-04"), ["2026-W38", "2026-W39", "2026-W40"]);
+  assert.deepEqual(wekenInPeriode("2026-09-21", "2026-09-27"), ["2026-W39"]);
+  assert.deepEqual(wekenInPeriode("2026-09-21", null), ["2026-W39"]);
+  assert.deepEqual(wekenInPeriode(null, null), []);
+  assert.deepEqual(wekenInPeriode("2025-12-22", "2026-01-11"), ["2025-W52", "2026-W01", "2026-W02"]);
 });

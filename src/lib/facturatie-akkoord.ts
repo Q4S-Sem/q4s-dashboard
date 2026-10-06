@@ -4,6 +4,7 @@ import { createSalesInvoice } from "./invoicing";
 import { groupVerkoopByClient, type VerkoopbareWeek } from "./verkoop-groepering";
 import { beoordeelBestaandeUrenstaat, BESTAANDE_URENSTAAT_NOTITIE } from "./urenstaat-hergebruik";
 import { formatHours, round2 } from "./utils";
+import { wekenInPeriode } from "./facturatie-volgende";
 import { getWeekDossier, getWeekOverview, type WeekDossier } from "./facturatie-week";
 
 // ---------------------------------------------------------------------------
@@ -165,13 +166,16 @@ async function keurInkoopGoed(dossier: WeekDossier): Promise<string[]> {
   }
   const inv = await db.receivedInvoice.findUnique({
     where: { id: row.receivedInvoiceId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, periodStart: true, periodEnd: true },
   });
   if (!inv) return ["De ontvangen factuur van deze week is intussen verdwenen."];
+  // Verzamelfactuur (meerdere weken) NIET aan één week vastpinnen, anders
+  // verdwijnt hij uit de andere weken die hij ook dekt.
+  const verzamel = wekenInPeriode(inv.periodStart, inv.periodEnd).length > 1;
   await db.receivedInvoice.update({
     where: { id: inv.id },
     data: {
-      weekKey: week.key,
+      weekKey: verzamel ? null : week.key,
       countForVat: true,
       // Nooit een betaalde factuur terugzetten naar "gecontroleerd".
       ...(inv.status === "PAID" ? {} : { status: "APPROVED" }),

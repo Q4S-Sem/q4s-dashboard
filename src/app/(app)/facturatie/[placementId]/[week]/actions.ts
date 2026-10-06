@@ -16,7 +16,7 @@ import {
 import { deleteInboxUpload } from "@/lib/uploads";
 import { resetWeekForReceivedInvoice, resetWeekForTimesheet } from "@/lib/week-reset";
 import { currentUser } from "@/lib/session";
-import { volgendePersoon } from "@/lib/facturatie-volgende";
+import { volgendePersoon, wekenInPeriode } from "@/lib/facturatie-volgende";
 
 // ---------------------------------------------------------------------------
 // De acties van het dossier (/facturatie/[placementId]/[week]).
@@ -161,7 +161,11 @@ export async function bewaarCorrecties(
           amount: bedrag ?? 0,
           vatAmount: btw !== null && btw > 0 ? btw : null,
           kilometers: km !== null && km > 0 ? km : null,
-          weekKey,
+          // Verzamelfactuur blijft over al zijn weken lopen (geen vaste week).
+          weekKey:
+            wekenInPeriode(tekst(formData, "factuurPeriodeStart"), tekst(formData, "factuurPeriodeEind")).length > 1
+              ? null
+              : weekKey,
           extractedJson: JSON.stringify(gelezen),
         },
       });

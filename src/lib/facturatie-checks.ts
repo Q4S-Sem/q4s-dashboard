@@ -164,6 +164,8 @@ export type InvoiceExtraction = {
   mentionsAttachment: boolean | null;
   amountExclVat: number | null;
   totalAmount: number | null;
+  /** Gezet bij een verzamelfactuur: bedragen/uren hierboven zijn al het deel van DEZE week. */
+  verzamel?: { weken: number; ontbreekt: number[] } | null;
 };
 
 /** Een eerder van deze persoon ontvangen factuur (voor dubbel-detectie). */
@@ -1150,6 +1152,17 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
         "ok",
         "Factuurperiode",
         "De factuur noemt geen periode, dus er valt geen week-specificatie te vragen.",
+      );
+    } else if (weken > 1 && inv.verzamel) {
+      const mist = inv.verzamel.ontbreekt;
+      add(
+        "factuur",
+        "factuur-periode",
+        mist.length ? "warn" : "ok",
+        mist.length ? "Verzamelfactuur — urenstaat ontbreekt nog" : "Verzamelfactuur over meerdere weken",
+        mist.length
+          ? `Deze factuur dekt ${weken} weken; de urenstaat van week ${mist.join(", ")} ontbreekt nog. Tot die binnen is, is de factuur gelijk over de weken verdeeld.`
+          : `Deze factuur dekt ${weken} weken (${formatDate(inv.periodStart)} – ${formatDate(inv.periodEnd)}). Per week vergeleken met de urenstaat, naar rato van de uren.`,
       );
     } else if (weken > 1) {
       add(

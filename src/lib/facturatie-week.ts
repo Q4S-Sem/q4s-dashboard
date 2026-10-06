@@ -6,6 +6,7 @@ import { computeTimesheetMoney } from "./toeslag";
 import { formatWeekLabel, round2, startOfISOWeek } from "./utils";
 import { weekBereikLabel, weekKeyVanDatum, weekSlotVanKey } from "./wizard-weeknav";
 import { weekSlotVanDatum } from "./week-koppeling";
+import { wekenInPeriode } from "./facturatie-volgende";
 import { parseWeekNumber } from "./invoice-extract";
 import { weekNummerUitTekst } from "./week-koppeling";
 import {
@@ -421,8 +422,69 @@ function timesheetExtractionVan(args: {
 
 /** Zijn factuur in de vorm die de machine wil: de vastgelegde kolommen plus de
  *  controlevelden uit `extractedJson`. De kolommen winnen (die zijn nagekeken). */
-function invoiceExtractionVan(inv: ReceivedRow | null): InvoiceExtraction | null {
+/**
+ * Verzamelfactuur (één factuur over 2-4 weken): welk DEEL hoort bij deze week?
+ * Naar rato van de uren per week (vastgelegde urenstaat, anders de scan). Zolang
+ * niet alle weken een urenstaat hebben: gelijk verdeeld + melding wat ontbreekt.
+ */
+type VerzamelDeel = { aandeel: number; weken: number; ontbreekt: number[] };
+async function verzamelDeel(inv: ReceivedRow | null, consultantId: string, week: WeekSlotInfo): Promise<VerzamelDeel | null> {
+  if (!inv || inv.weekKey) return null;
+  const weken = wekenInPeriode(inv.periodStart, inv.periodEnd);
+  if (weken.length < 2 || !weken.includes(week.key)) return null;
+  const van = new Date(`${weekSlotVanKey(weken[0])!.monday}T00:00:00`);
+  const tot = new Date(`${weekSlotVanKey(weken[weken.length - 1])!.monday}T00:00:00`);
+  tot.setDate(tot.getDate() + 7);
+  const bereik = { gte: rondMaandag(van, -12), lt: rondMaandag(tot, -12) };
+  const [staten, scans] = await Promise.all([
+    db.timesheet.findMany({
+      where: { placement: { consultantId }, weekStart: bereik },
+      select: { weekStart: true, entries: { select: { hours: true } } },
+    }),
+    db.timesheetInbox.findMany({
+      where: { consultantId, timesheetId: null, status: { in: ["NEW", "EXTRACTED"] }, extractedWeekStart: bereik },
+      select: { extractedWeekStart: true, extractedTotalHours: true },
+    }),
+  ]);
+  // +12 uur: maandagen die als zondag 22:00 UTC zijn opgeslagen tellen goed mee.
+  const sleutel = (d: Date | null) => (d ? weekSlotVanDatum(new Date(d.getTime() + 12 * 3_600_000))?.key : undefined);
+  const uren = new Map<string, number>();
+  for (const sc of scans) {
+    const k = sleutel(sc.extractedWeekStart);
+    if (k) uren.set(k, sc.extractedTotalHours ?? 0);
+  }
+  for (const t of staten) {
+    const k = sleutel(t.weekStart);
+    if (k) uren.set(k, round2(t.entries.reduce((a, e) => a + e.hours, 0)));
+  }
+  const ontbreekt = weken.filter((k) => !((uren.get(k) ?? 0) > 0));
+  const totaal = weken.reduce((a, k) => a + (uren.get(k) ?? 0), 0);
+  return {
+    aandeel: ontbreekt.length || totaal <= 0 ? 1 / weken.length : (uren.get(week.key) ?? 0) / totaal,
+    weken: weken.length,
+    ontbreekt: ontbreekt.map((k) => Number(k.split("-W")[1])),
+  };
+}
+
+function invoiceExtractionVan(inv: ReceivedRow | null, deel?: VerzamelDeel | null): InvoiceExtraction | null {
   if (!inv) return null;
+  const ex = invoiceExtractionHeel(inv);
+  if (!deel) return ex;
+  // Alleen het deel van DEZE week vergelijken met de urenstaat van deze week.
+  const x = (n: number | null) => (n == null ? null : round2(n * deel.aandeel));
+  return {
+    ...ex,
+    hours: x(ex.hours),
+    overtimeHours: x(ex.overtimeHours),
+    kilometers: x(ex.kilometers),
+    amountExclVat: x(ex.amountExclVat),
+    totalAmount: x(ex.totalAmount),
+    surchargeLines: ex.surchargeLines.map((r) => ({ ...r, quantity: x(r.quantity), amount: x(r.amount) })),
+    verzamel: { weken: deel.weken, ontbreekt: deel.ontbreekt },
+  };
+}
+
+function invoiceExtractionHeel(inv: ReceivedRow): InvoiceExtraction {
   const raw = leesJson(inv.extractedJson);
   const btwPct = getal(raw.vatPercent);
   const verlegd = bool(raw.vatShifted);
@@ -839,6 +901,7 @@ async function beoordeelRij(args: {
     alleFacturen: args.alleFacturen,
     consultantId,
     geaccepteerd: args.geaccepteerd,
+    verzamel: await verzamelDeel(factuur, consultantId, week),
   });
 
   const result = beoordeelMetPlaatsing(input, p);
@@ -905,6 +968,7 @@ function bouwCheckInput(args: {
   }[];
   consultantId: string;
   geaccepteerd: boolean;
+  verzamel?: VerzamelDeel | null;
 }): FacturatieCheckInput {
   const { week, consultantId } = args;
   const samenvatting = summarizeRecentWeeks(args.historie, { before: week.monday });
@@ -941,7 +1005,7 @@ function bouwCheckInput(args: {
       timesheet: args.urenstaat,
       monday: week.monday,
     }),
-    invoice: invoiceExtractionVan(args.factuur),
+    invoice: invoiceExtractionVan(args.factuur, args.verzamel),
     prior: {
       otherTimesheetDays: [...new Set(andereDagen)],
       priorInvoices: args.alleFacturen
@@ -1148,6 +1212,7 @@ export async function getWeekDossier(
     alleFacturen,
     consultantId: p.consultantId,
     geaccepteerd: Boolean(accepteerNotitie),
+    verzamel: await verzamelDeel(factuur, p.consultantId, week),
   });
   const result = beoordeelMetPlaatsing(input, p);
 

@@ -1,3 +1,5 @@
+import { weekSlotVanDatum } from "./week-koppeling";
+
 // ---------------------------------------------------------------------------
 // "Persoon voor persoon" door de week: wie is de volgende die nog werk heeft?
 // Puur (geen DB), zodat het weekoverzicht, het dossier en de akkoord-actie
@@ -60,4 +62,22 @@ export function weekBeslissing(
  */
 export function dubbelBesluit(bestaandeStatus: string): "vervang" | "blokkeer" {
   return ["APPROVED", "PAID", "INVOICED", "CONFIRMED"].includes(bestaandeStatus) ? "blokkeer" : "vervang";
+}
+
+/**
+ * Alle ISO-weeksleutels die een factuurperiode raakt (verzamelfactuur over 2-4
+ * weken). Zonder (geldige) periode → []. Maximaal 8 weken als vangnet.
+ */
+export function wekenInPeriode(start: string | Date | null | undefined, eind: string | Date | null | undefined): string[] {
+  const a = weekSlotVanDatum(start);
+  const b = weekSlotVanDatum(eind) ?? a;
+  if (!a || !b) return [];
+  const keys: string[] = [];
+  const d = new Date(`${a.monday}T12:00:00Z`);
+  const laatste = new Date(`${b.monday}T12:00:00Z`).getTime();
+  while (d.getTime() <= laatste && keys.length < 8) {
+    keys.push(weekSlotVanDatum(d.toISOString().slice(0, 10))!.key);
+    d.setUTCDate(d.getUTCDate() + 7);
+  }
+  return keys;
 }

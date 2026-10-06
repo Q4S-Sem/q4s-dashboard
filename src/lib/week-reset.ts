@@ -19,6 +19,7 @@
 
 import { db } from "./db";
 import { deleteReceivedUpload } from "./uploads";
+import { wekenInPeriode } from "./facturatie-volgende";
 import { formatWeekLabel } from "./utils";
 import {
   mayDeleteConceptInvoice,
@@ -84,10 +85,13 @@ async function resetTimesheetCore(timesheetId: string): Promise<
               { periodStart: ts.weekStart },
             ],
           },
-          select: { id: true, status: true, fileName: true },
+          select: { id: true, status: true, fileName: true, periodStart: true, periodEnd: true },
           orderBy: { createdAt: "desc" },
         })
       : null;
+  // Een verzamelfactuur dekt ook andere weken: die blijft staan (terug naar
+  // "nieuw"), alleen deze week wordt teruggezet.
+  const verzamel = received ? wekenInPeriode(received.periodStart, received.periodEnd).length > 1 : false;
 
   if (received && !isReceivedInvoiceResettable(received.status)) {
     return {
@@ -101,7 +105,7 @@ async function resetTimesheetCore(timesheetId: string): Promise<
   }
 
   const filesToDelete: string[] = [];
-  if (received?.fileName) filesToDelete.push(received.fileName);
+  if (received?.fileName && !verzamel) filesToDelete.push(received.fileName);
 
   await db.$transaction(async (tx) => {
     // 1) Concept-verkoopfactuur weg (regels casceren via de FK, maar expliciet
@@ -112,7 +116,9 @@ async function resetTimesheetCore(timesheetId: string): Promise<
       await tx.invoice.delete({ where: { id: invoice.id } });
     }
     // 2) Ontvangen (inkoop)factuur weg.
-    if (received) {
+    if (received && verzamel) {
+      await tx.receivedInvoice.update({ where: { id: received.id }, data: { status: "NEW" } });
+    } else if (received) {
       await tx.receivedInvoice.delete({ where: { id: received.id } });
     }
     // 3) De uitgelezen weekstaat terug in de inbox: status EXTRACTED, losgekoppeld

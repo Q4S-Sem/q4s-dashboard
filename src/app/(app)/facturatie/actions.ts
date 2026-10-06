@@ -14,10 +14,11 @@ import {
 } from "@/lib/invoice-extract";
 import { akkoordWeken } from "@/lib/facturatie-akkoord";
 import { getWeekDossier, resolveWeek } from "@/lib/facturatie-week";
-import { dubbelBesluit, weekBeslissing } from "@/lib/facturatie-volgende";
+import { dubbelBesluit, weekBeslissing, wekenInPeriode } from "@/lib/facturatie-volgende";
 import { nameMatches } from "@/lib/name-match";
 import { syncPlaatsingStatus } from "@/lib/plaatsing-status";
 import { weekSlotVanDatum } from "@/lib/week-koppeling";
+import { weekSlotVanKey } from "@/lib/wizard-weeknav";
 import {
   MAX_UPLOAD_BYTES,
   deleteInboxUpload,
@@ -227,7 +228,10 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
           mimeType,
         });
         if (!gelezen.ok) throw new Error(gelezen.message);
-        const factuurWeek = weekSlotVanDatum(toReceivedInvoiceFormValues(gelezen.data, new Date()).periodStart)?.key;
+        const fv = toReceivedInvoiceFormValues(gelezen.data, new Date());
+        const fWeken = wekenInPeriode(fv.periodStart, fv.periodEnd);
+        // Verzamelfactuur die deze week óók dekt hoort gewoon hier.
+        const factuurWeek = fWeken.includes(weekKey) ? weekKey : fWeken[0];
         const besluit = await beslis(factuurWeek);
         if (besluit === "verkeerd") {
           await deleteReceivedUpload(fileName).catch(() => {});
@@ -336,7 +340,10 @@ async function registreerOntvangenFactuur(args: {
   const velden = toReceivedInvoiceFormValues(data, new Date());
   // De week komt van de FACTUUR zelf (periode of weeknummer), niet van het scherm
   // waarop hij binnenkwam; alleen zonder periode valt hij terug op die week.
-  const weekKey = weekSlotVanDatum(velden.periodStart)?.key ?? args.weekKey;
+  // Verzamelfactuur (periode over meerdere weken): GEEN vaste weeksleutel, dan
+  // hoort hij via de periode bij élke week erin (facturatie-week.ts).
+  const weken = wekenInPeriode(velden.periodStart, velden.periodEnd);
+  const weekKey: string | null = weken.length > 1 ? null : (weken[0] ?? args.weekKey);
   const bedrag = parseBedrag(velden.amount) ?? 0;
   const btw = parseBedrag(velden.vatAmount ?? "");
   const km = parseBedrag(velden.kilometers);
@@ -377,13 +384,29 @@ async function registreerOntvangenFactuur(args: {
     return bestaand.id;
   }
   // ÉÉN FACTUUR PER PERSOON PER WEEK: anders telt de week dubbel ("Dubbele facturatie").
+  // Ook een verzamelfactuur die (een van) deze weken al dekt telt als "dezelfde".
+  const dekt = weken.length ? weken : weekKey ? [weekKey] : [];
+  const eerste = dekt.length ? weekSlotVanKey(dekt[0]) : null;
+  const laatste = dekt.length ? weekSlotVanKey(dekt[dekt.length - 1]) : null;
   const zelfdeWeek = await db.receivedInvoice.findFirst({
-    where: { consultantId, weekKey },
+    where: {
+      consultantId,
+      OR: [
+        { weekKey: { in: dekt } },
+        ...(eerste && laatste
+          ? [{
+              weekKey: null,
+              periodStart: { lte: new Date(`${laatste.monday}T23:59:59`) },
+              periodEnd: { gte: new Date(`${eerste.monday}T00:00:00`) },
+            }]
+          : []),
+      ],
+    },
     orderBy: { createdAt: "desc" },
     select: { id: true, status: true, number: true, fileName: true },
   });
   if (zelfdeWeek) {
-    const weekNr = weekKey.split("-W")[1];
+    const weekNr = dekt.map((k) => Number(k.split("-W")[1])).join("+");
     if (dubbelBesluit(zelfdeWeek.status) === "blokkeer") {
       await deleteReceivedUpload(bestand.fileName).catch(() => {});
       throw new Error(
