@@ -132,7 +132,7 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
     attachmentNote: hasHours ? "Signed timesheets attached" : null,
     footerLines: [],
     paymentBox: [
-      `Please pay the total amount within ${c.paymentTermDays} days of the invoice date.`,
+      "We kindly request you to transfer the amount within the agreed payment term.",
       "Kindly quote the invoice number with your payment.",
     ],
     closing: {
@@ -190,7 +190,7 @@ export function sampleInvoiceDoc(s: CompanySettings): InvoiceDoc {
     attachmentNote: "Signed timesheets attached",
     footerLines: [],
     paymentBox: [
-      "Please pay the total amount within 30 days of the invoice date.",
+      "We kindly request you to transfer the amount within the agreed payment term.",
       "Kindly quote the invoice number with your payment.",
     ],
     closing: {
