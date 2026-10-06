@@ -381,11 +381,41 @@ export async function updatePlacement(
   const parsed = parseForm(PlacementSchema, formData);
   if (!parsed.success) return parsed.state;
 
+  // Factuur- & betaalgegevens van de (oorspronkelijke) werknemer, als ze meekwamen.
+  const billId = String(formData.get("bill_consultantId") ?? "");
+  if (billId) {
+    const v = (k: string) => String(formData.get(`bill_${k}`) ?? "").trim() || null;
+    const email = v("email");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return { fieldErrors: { bill_email: "Ongeldig e-mailadres" }, error: "Controleer het e-mailadres bij de factuurgegevens." };
+    }
+    try {
+      await db.consultant.update({
+        where: { id: billId },
+        data: {
+          companyName: v("companyName"),
+          iban: v("iban"),
+          kvkNumber: v("kvkNumber"),
+          vatNumber: v("vatNumber"),
+          email,
+          phone: v("phone"),
+          address: v("address"),
+          postalCode: v("postalCode"),
+          city: v("city"),
+        },
+      });
+    } catch {
+      return { error: "Factuurgegevens opslaan mislukt — dit e-mailadres is mogelijk al in gebruik." };
+    }
+    revalidatePath(`/werknemers/${billId}`);
+  }
+
   await db.placement.update({
     where: { id },
     data: { consultantId: parsed.data.consultantId, ...coreToData(parsed.data) },
   });
   await syncPlaatsingStatus({ id });
+  if (billId && billId !== parsed.data.consultantId) await syncPlaatsingStatus({ consultantId: billId });
   revalidatePath("/plaatsingen");
   revalidatePath(`/plaatsingen/${id}`);
   redirect(`/plaatsingen/${id}`);

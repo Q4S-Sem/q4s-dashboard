@@ -15,7 +15,6 @@ import {
   FileSignature,
   GraduationCap,
   Upload,
-  Lock,
   Plus,
   X,
   Building2,
@@ -52,6 +51,7 @@ type Tab = "bestanden" | "werknemer" | "bedrijf" | "documenten" | "plaatsing";
 /** Waar staat een veld (voor fouten van de server)? Onbekend = Plaatsing & tarief. */
 const VELD_TAB: Record<string, Tab> = {
   consultantId: "werknemer",
+  bill_email: "werknemer",
   firstName: "werknemer",
   lastName: "werknemer",
   dateOfBirth: "werknemer",
@@ -714,8 +714,8 @@ function ClientPicker({
                 Nieuw bedrijf toevoegen
               </p>
               <p className="text-xs text-ink-500">
-                Vul in wat je hebt — later aanvullen of wijzigen kan
-                altijd op de klantpagina.
+                Vul in wat je hebt — later aanvullen of wijzigen kan altijd op
+                de klantpagina.
               </p>
             </div>
           </div>
@@ -856,6 +856,7 @@ export function PlacementForm({
   draft,
   draftId,
   contractEinde,
+  billing,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   placement?: Placement;
@@ -868,6 +869,19 @@ export function PlacementForm({
   draftId?: string;
   /** Einddatum uit het (nieuwste) contract van deze persoon, om over te nemen. */
   contractEinde?: { datum: string; label: string } | null;
+  /** Bewerken: factuur- & betaalgegevens van de huidige werknemer. */
+  billing?: Record<
+    | "companyName"
+    | "iban"
+    | "kvkNumber"
+    | "vatNumber"
+    | "email"
+    | "phone"
+    | "address"
+    | "postalCode"
+    | "city",
+    string | null
+  > | null;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
@@ -1077,28 +1091,123 @@ export function PlacementForm({
             sub={placement ? undefined : "Wie gaan we plaatsen?"}
           >
             {placement ? (
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Field label="Werknemer" error={e.consultantId}>
-                  {/* Fixed — the person on a plaatsing cannot be changed here. */}
-                  <input
-                    type="hidden"
-                    name="consultantId"
-                    value={placement.consultantId}
+              <div className="space-y-6">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field
+                    label="Werknemer"
+                    htmlFor="consultantId"
+                    required
+                    error={e.consultantId}
+                  >
+                    <SearchSelect
+                      id="consultantId"
+                      name="consultantId"
+                      defaultValue={placement.consultantId}
+                      options={consultants.map((c) => ({
+                        value: c.id,
+                        label: `${c.firstName} ${c.lastName}`,
+                      }))}
+                      placeholder="Typ een naam om te zoeken…"
+                      emptyText="Geen werknemer gevonden."
+                    />
+                  </Field>
+                  <ClientPicker
+                    initialClients={clients}
+                    initialClientId={placement.clientId}
+                    error={e.clientId}
                   />
-                  <div className="flex items-center gap-2 rounded-lg border border-ink-200 bg-ink-50 px-3 py-2">
-                    <span className="text-sm font-medium text-ink-900">
-                      {currentPersonName}
-                    </span>
-                    <span className="ml-auto inline-flex items-center gap-1 text-xs text-ink-400">
-                      <Lock className="h-3 w-3" /> Vast
-                    </span>
+                </div>
+                {billing && (
+                  <div className="space-y-3 border-t border-ink-100 pt-5">
+                    <div>
+                      <p className="text-sm font-semibold text-ink-900">
+                        Factuur- &amp; betaalgegevens {currentPersonName}
+                      </p>
+                      <p className="text-xs text-ink-400">
+                        Voor de inkoopfactuur. Hoort bij de persoon en geldt
+                        voor al zijn plaatsingen. Kies je hierboven een andere
+                        werknemer, dan blijven deze gegevens bij{" "}
+                        {currentPersonName}.
+                      </p>
+                    </div>
+                    {/* bill_-voorvoegsel: geen botsing met de klant-/persoonvelden in dit formulier. */}
+                    <input
+                      type="hidden"
+                      name="bill_consultantId"
+                      value={placement.consultantId}
+                    />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Bedrijfsnaam" htmlFor="bill_companyName">
+                        <Input
+                          id="bill_companyName"
+                          name="bill_companyName"
+                          defaultValue={billing["companyName"] ?? ""}
+                        />
+                      </Field>
+                      <Field label="IBAN" htmlFor="bill_iban">
+                        <Input
+                          id="bill_iban"
+                          name="bill_iban"
+                          defaultValue={billing["iban"] ?? ""}
+                        />
+                      </Field>
+                      <Field label="KvK-nummer" htmlFor="bill_kvkNumber">
+                        <Input
+                          id="bill_kvkNumber"
+                          name="bill_kvkNumber"
+                          defaultValue={billing["kvkNumber"] ?? ""}
+                        />
+                      </Field>
+                      <Field label="BTW-nummer" htmlFor="bill_vatNumber">
+                        <Input
+                          id="bill_vatNumber"
+                          name="bill_vatNumber"
+                          defaultValue={billing["vatNumber"] ?? ""}
+                        />
+                      </Field>
+                      <Field
+                        label="E-mail"
+                        htmlFor="bill_email"
+                        error={e.bill_email}
+                      >
+                        <Input
+                          id="bill_email"
+                          name="bill_email"
+                          type="email"
+                          defaultValue={billing["email"] ?? ""}
+                        />
+                      </Field>
+                      <Field label="Telefoon" htmlFor="bill_phone">
+                        <Input
+                          id="bill_phone"
+                          name="bill_phone"
+                          defaultValue={billing["phone"] ?? ""}
+                        />
+                      </Field>
+                      <Field label="Adres" htmlFor="bill_address">
+                        <Input
+                          id="bill_address"
+                          name="bill_address"
+                          defaultValue={billing["address"] ?? ""}
+                        />
+                      </Field>
+                      <Field label="Postcode" htmlFor="bill_postalCode">
+                        <Input
+                          id="bill_postalCode"
+                          name="bill_postalCode"
+                          defaultValue={billing["postalCode"] ?? ""}
+                        />
+                      </Field>
+                      <Field label="Plaats" htmlFor="bill_city">
+                        <Input
+                          id="bill_city"
+                          name="bill_city"
+                          defaultValue={billing["city"] ?? ""}
+                        />
+                      </Field>
+                    </div>
                   </div>
-                </Field>
-                <ClientPicker
-                  initialClients={clients}
-                  initialClientId={placement.clientId}
-                  error={e.clientId}
-                />
+                )}
               </div>
             ) : (
               <div className="space-y-4">

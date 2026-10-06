@@ -16,9 +16,17 @@ export default async function PlaatsingBewerkenPage({
 }) {
   const { id } = await params;
   const [placement, consultants, clients] = await Promise.all([
-    db.placement.findUnique({ where: { id } }),
+    db.placement.findUnique({
+      where: { id },
+      include: {
+        consultant: {
+          select: { companyName: true, iban: true, kvkNumber: true, vatNumber: true, email: true, phone: true, address: true, postalCode: true, city: true, employmentType: true },
+        },
+      },
+    }),
     db.consultant.findMany({
-      where: { active: true },
+      // Ook inactieve: de huidige werknemer moet altijd in de keuzelijst staan.
+      where: { OR: [{ active: true }, { placements: { some: { id } } }] },
       orderBy: { lastName: "asc" },
       select: { id: true, firstName: true, lastName: true },
     }),
@@ -57,6 +65,7 @@ export default async function PlaatsingBewerkenPage({
         submitLabel="Wijzigingen opslaan"
         cancelHref={`/plaatsingen/${placement.id}`}
         contractEinde={contractEinde}
+        billing={placement.consultant.employmentType === "LOONDIENST" ? null : placement.consultant}
       />
     </div>
   );
