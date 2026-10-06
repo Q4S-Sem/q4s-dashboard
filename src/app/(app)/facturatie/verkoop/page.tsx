@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PersonenPerWeek } from "../PersonenPerWeek";
+import { PersonenPerWeek, WeergaveTabs, kiesWeergave } from "../PersonenPerWeek";
 import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Select } from "@/components/ui/field";
 import { AlertTriangle, Ban, BellRing, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
@@ -65,6 +65,8 @@ type SP = {
   client?: string;
   /** Alleen de facturen van één persoon (consultantId). */
   persoon?: string;
+  weergave?: string;
+  pf?: string;
   verzonden?: string;
   vrijgegeven?: string;
   verwijderd?: string;
@@ -148,6 +150,7 @@ export default async function VerkoopfacturenPage({
   searchParams: Promise<SP>;
 }) {
   const sp = await searchParams;
+  const weergave = kiesWeergave(sp as Record<string, string | undefined>);
   const now = new Date();
   const tab = (VERKOOP_TABS.find((t) => t.key === sp.tab)?.key ?? "alles") as VerkoopTab;
 
@@ -230,7 +233,7 @@ export default async function VerkoopfacturenPage({
   const m = melding(sp);
   const tabHref = (key: VerkoopTab) => {
     const p = new URLSearchParams();
-    if (key !== "alles") p.set("tab", key);
+    p.set("tab", key); // altijd: dan blijft de factuurlijst open (zie kiesWeergave)
     if (weekParam) p.set("week", weekParam);
     if (klantFilter) p.set("client", klantFilter.id);
     if (sp.persoon) p.set("persoon", sp.persoon);
@@ -250,7 +253,7 @@ export default async function VerkoopfacturenPage({
           huidig={weekSlotVanDatum(weekParam)?.key ?? null}
           vandaag={ymd(now)}
           alleWeken
-          extra={{ tab: tab === "alles" ? undefined : tab, client: klantFilter?.id, persoon: sp.persoon, q: sp.q }}
+          extra={weergave === "personen" ? { weergave } : { tab, client: klantFilter?.id, persoon: sp.persoon, q: sp.q }}
         />
         <a
           href="/api/facturen/export"
@@ -261,8 +264,18 @@ export default async function VerkoopfacturenPage({
         </a>
       </PaginaKop>
 
-      {/* Iedereen vast in beeld: wat is er al, wat mist er (gekozen week, anders deze week). */}
-      <PersonenPerWeek week={weekParam || null} />
+      <WeergaveTabs
+        actief={weergave}
+        basePath="/facturatie/verkoop"
+        week={weekParam}
+        facturenLabel="Facturen"
+        aantalFacturen={tellingen.alles}
+      />
+
+      {weergave === "personen" ? (
+        <PersonenPerWeek week={weekParam || null} basePath="/facturatie/verkoop" q={sp.q} pf={sp.pf} />
+      ) : (
+        <>
 
       {klantFilter && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-ink-200 bg-ink-50 px-4 py-2.5 text-[13px]">
@@ -336,11 +349,11 @@ export default async function VerkoopfacturenPage({
               basePath="/facturatie/verkoop"
               q={sp.q}
               placeholder="Zoek op factuurnummer, klant of persoon…"
-              behoud={{ tab: tab === "alles" ? undefined : tab, week: weekParam || undefined, client: klantFilter?.id, persoon: sp.persoon }}
+              behoud={{ tab, week: weekParam || undefined, client: klantFilter?.id, persoon: sp.persoon }}
             />
           </div>
           <AutoFilterForm basePath="/facturatie/verkoop" className="sm:w-64">
-            {tab !== "alles" && <input type="hidden" name="tab" value={tab} />}
+            <input type="hidden" name="tab" value={tab} />
             {weekParam && <input type="hidden" name="week" value={weekParam} />}
             {klantFilter && <input type="hidden" name="client" value={klantFilter.id} />}
             {sp.q && <input type="hidden" name="q" value={sp.q} />}
@@ -390,6 +403,8 @@ export default async function VerkoopfacturenPage({
         en na een bevestiging. Verstuurde of betaalde facturen kunnen niet verwijderd worden — die
         crediteer je met <strong className="font-semibold text-ink-600">Annuleren</strong> op de factuur zelf.
       </p>
+        </>
+      )}
     </div>
   );
 }

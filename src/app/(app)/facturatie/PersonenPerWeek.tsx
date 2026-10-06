@@ -1,8 +1,11 @@
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ClipboardList, FileText, Receipt, Send, Users, Wallet } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
+import { mapTabVariants } from "@/components/ui/button";
+import { FilterTegels } from "@/components/ui/filter-tegels";
+import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { getWeekOverview } from "@/lib/facturatie-week";
@@ -13,13 +16,80 @@ import { cn, formatCurrency, formatHours, round2 } from "@/lib/utils";
 // ---------------------------------------------------------------------------
 // PER PERSOON — dezelfde vaste lijst als Week verwerken (iedereen met een
 // actieve plaatsing), maar dan met de facturen: zijn inkoopfactuur, onze
-// verkoopfactuur, de marge en in één woord wat er nog mist. Staat bovenaan
-// zowel Verkoopfacturen als Inkoop.
+// verkoopfactuur, de marge en wat er nog mist. Zelfde opbouw als Week
+// verwerken: mapjes → filtertegels → kaart met zoekveld en tabel.
+// Gebruikt op Verkoopfacturen en Inkoop.
 // ---------------------------------------------------------------------------
+
+export type Weergave = "personen" | "facturen";
+
+/** Zonder keuze: "personen", tenzij de URL al iets van de factuurlijst bevat (tab, actie-melding …). */
+export function kiesWeergave(sp: Record<string, string | undefined>): Weergave {
+  if (sp.weergave === "personen" || sp.weergave === "facturen") return sp.weergave;
+  return Object.keys(sp).some((k) => !["week", "q", "pf", "weergave"].includes(k)) ? "facturen" : "personen";
+}
+
+/** De twee mapjes bovenaan, net als Personen | Bestanden op Week verwerken. */
+export function WeergaveTabs({
+  actief,
+  basePath,
+  week,
+  facturenLabel,
+  aantalFacturen,
+}: {
+  actief: Weergave;
+  basePath: string;
+  week: string;
+  facturenLabel: string;
+  aantalFacturen: number;
+}) {
+  const href = (w: Weergave) => {
+    const q = new URLSearchParams({ weergave: w });
+    if (week) q.set("week", week);
+    return `${basePath}?${q.toString()}`;
+  };
+  const tabs = [
+    { key: "personen" as const, label: "Per persoon", icon: <Users className="h-4 w-4" />, aantal: null },
+    { key: "facturen" as const, label: facturenLabel, icon: <Receipt className="h-4 w-4" />, aantal: aantalFacturen },
+  ];
+  return (
+    <nav aria-label="Weergave" className="flex flex-wrap items-end gap-1 border-b border-ink-200">
+      {tabs.map((t) => (
+        <Link key={t.key} href={href(t.key)} scroll={false} aria-current={actief === t.key ? "page" : undefined} className={mapTabVariants(actief === t.key)}>
+          <span className={actief === t.key ? "text-brand-600" : "text-ink-400"}>{t.icon}</span>
+          {t.label}
+          {t.aantal != null && t.aantal > 0 && (
+            <span className="rounded-sm bg-ink-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-ink-500">{t.aantal}</span>
+          )}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+/** Filtertegels: tegelijk teller én filter, zoals op Week verwerken. */
+const FILTERS = [
+  { key: "alles", label: "compleet", icon: <Users className="h-3.5 w-3.5" />, toon: "slate" as const, past: () => true },
+  { key: "urenstaat", label: "Urenstaat mist", icon: <ClipboardList className="h-3.5 w-3.5" />, toon: "red" as const, past: (m: string[]) => m.includes("Urenstaat") },
+  { key: "factuur", label: "Factuur freelancer mist", icon: <FileText className="h-3.5 w-3.5" />, toon: "amber" as const, past: (m: string[]) => m.includes("Factuur freelancer") },
+  { key: "factureren", label: "Nog factureren", icon: <Send className="h-3.5 w-3.5" />, toon: "violet" as const, past: (m: string[]) => m.some((x) => ["Akkoord", "Verkoopfactuur", "Versturen"].includes(x)) },
+  { key: "betaling", label: "Betaling open", icon: <Wallet className="h-3.5 w-3.5" />, toon: "blue" as const, past: (m: string[]) => m.some((x) => ["Betaling klant", "Freelancer betalen"].includes(x)) },
+  { key: "compleet", label: "Compleet", icon: <CheckCircle2 className="h-3.5 w-3.5" />, toon: "green" as const, past: (m: string[]) => m.length === 0 },
+];
 
 const stip = (ok: boolean) => cn("h-2 w-2 shrink-0 rounded-full", ok ? "bg-emerald-500" : "bg-red-500");
 
-export async function PersonenPerWeek({ week }: { week: string | null }) {
+export async function PersonenPerWeek({
+  week,
+  basePath,
+  q,
+  pf,
+}: {
+  week: string | null;
+  basePath: string;
+  q?: string;
+  pf?: string;
+}) {
   const { week: slot, rows } = await getWeekOverview(week);
   const inkoopIds = rows.map((r) => r.receivedInvoiceId).filter((x): x is string => !!x);
   const verkoopIds = rows.map((r) => r.verkoopFactuurId).filter((x): x is string => !!x);
@@ -37,7 +107,7 @@ export async function PersonenPerWeek({ week }: { week: string | null }) {
   const ink = new Map(inkoop.map((i) => [i.id, i]));
   const ver = new Map(verkoop.map((i) => [i.id, i]));
 
-  const lijst = rows.map((r) => {
+  const alle = rows.map((r) => {
     const i = r.receivedInvoiceId ? ink.get(r.receivedInvoiceId) : undefined;
     const v = r.verkoopFactuurId ? ver.get(r.verkoopFactuurId) : undefined;
     // Alleen de regels van DEZE persoon in deze week (één factuur kan meer mensen dekken).
@@ -57,104 +127,136 @@ export async function PersonenPerWeek({ week }: { week: string | null }) {
     });
     return { r, i, v, verkoopEx, inkoopEx, marge, mist };
   });
-  const compleet = lijst.filter((x) => x.mist.length === 0).length;
+
+  const filter = FILTERS.find((f) => f.key === pf) ?? FILTERS[0];
+  const compleet = alle.filter((x) => x.mist.length === 0).length;
+  const lijst = alle.filter(
+    (x) => filter.past(x.mist) && matchtZoek(q, x.r.naam, x.r.klantNaam, x.r.locatie, ...x.mist, x.i?.number, x.v?.number),
+  );
+  const href = (key: string) => {
+    const p = new URLSearchParams({ weergave: "personen" });
+    if (week) p.set("week", week);
+    if (key !== "alles") p.set("pf", key);
+    if (q) p.set("q", q);
+    return `${basePath}?${p.toString()}`;
+  };
 
   return (
-    <Card className="overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 px-5 py-3">
-        <div>
-          <h2 className="text-[15px] font-semibold text-ink-900">Per persoon · week {slot.isoWeek}</h2>
-          <p className="text-xs text-ink-500">Iedereen met een plaatsing staat hier vast. Rood = ontbreekt nog.</p>
+    <>
+      <FilterTegels
+        label="Filter op wat er mist"
+        items={FILTERS.map((f) => {
+          const aantal = alle.filter((x) => f.past(x.mist)).length;
+          return {
+            key: f.key,
+            label: f.label,
+            waarde: f.key === "alles" ? `${compleet}/${alle.length}` : aantal,
+            icon: f.icon,
+            toon: f.toon,
+            href: href(f.key),
+            actief: filter.key === f.key,
+            rood: f.key === "urenstaat" && aantal > 0,
+          };
+        })}
+      />
+
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-center gap-3 border-b border-ink-100 p-4">
+          <div className="min-w-0 flex-1">
+            <TabelZoek
+              basePath={basePath}
+              q={q}
+              placeholder="Zoek op naam, klant, factuurnummer of wat er mist…"
+              behoud={{ weergave: "personen", week: week ?? undefined, pf: filter.key === "alles" ? undefined : filter.key }}
+            />
+          </div>
+          <span className="text-[13px] tabular-nums text-ink-500">Week {slot.isoWeek}</span>
         </div>
-        <span
-          className={cn(
-            "rounded-sm px-2 py-1 text-xs font-semibold tabular-nums",
-            compleet === lijst.length && lijst.length > 0 ? "bg-emerald-50 text-emerald-700" : "bg-ink-100 text-ink-600",
-          )}
-        >
-          {compleet}/{lijst.length} compleet
-        </span>
-      </div>
-      <div className="overflow-x-auto">
-        <Table>
-          <THead>
-            <TR>
-              <TH>Persoon</TH>
-              <TH className="text-right">Uren</TH>
-              <TH>Inkoopfactuur (freelancer)</TH>
-              <TH>Verkoopfactuur (klant)</TH>
-              <TH className="text-right">Marge ex btw</TH>
-              <TH>Wat mist er</TH>
-            </TR>
-          </THead>
-          <TBody>
-            {lijst.map(({ r, i, v, verkoopEx, inkoopEx, marge, mist }) => (
-              <TR key={r.key}>
-                <TD>
-                  <Link href={r.href ?? "#"} className="flex items-center gap-3 hover:underline">
-                    <PersoonVierkant naam={r.naam} size="sm" />
-                    <span className="min-w-0">
-                      <span className="block font-medium text-ink-900">{r.naam}</span>
-                      <span className="block text-xs text-ink-500">{r.klantNaam ?? "—"}</span>
-                    </span>
-                  </Link>
-                </TD>
-                <TD className="text-right tabular-nums">
-                  {r.uren != null ? formatHours(r.uren) : <span className="text-ink-300">—</span>}
-                </TD>
-                <TD>
-                  {r.factuurNvt ? (
-                    <span className="text-[13px] text-ink-400">— n.v.t. (in dienst)</span>
-                  ) : i ? (
-                    <span className="flex items-center gap-2 text-[13px]">
-                      <span className={stip(true)} />
-                      <span className="tabular-nums text-ink-900">{i.number ?? "zonder nr"}</span>
-                      <span className="tabular-nums text-ink-500">{formatCurrency(inkoopEx ?? 0)}</span>
-                      <StatusBadge options={RECEIVED_INVOICE_STATUSES} value={i.status} />
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2 text-[13px] text-ink-700">
-                      <span className={stip(false)} /> ontbreekt
-                    </span>
-                  )}
-                </TD>
-                <TD>
-                  {v ? (
-                    <Link href={`/facturatie/verkoop/${v.id}`} className="flex items-center gap-2 text-[13px] hover:underline">
-                      <span className={stip(true)} />
-                      <span className="tabular-nums text-ink-900">{v.number}</span>
-                      <span className="tabular-nums text-ink-500">{formatCurrency(verkoopEx ?? 0)}</span>
-                      <StatusBadge options={INVOICE_STATUSES} value={v.status} />
-                    </Link>
-                  ) : (
-                    <span className="flex items-center gap-2 text-[13px] text-ink-700">
-                      <span className={stip(false)} /> nog niet gemaakt
-                    </span>
-                  )}
-                </TD>
-                <TD className={cn("text-right font-semibold tabular-nums", marge != null && marge < 0 ? "text-red-600" : "text-ink-900")}>
-                  {marge != null ? formatCurrency(marge) : <span className="font-normal text-ink-300">—</span>}
-                </TD>
-                <TD>
-                  {mist.length === 0 ? (
-                    <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-emerald-700">
-                      <CheckCircle2 className="h-4 w-4" /> Compleet
-                    </span>
-                  ) : (
-                    <span className="flex flex-wrap gap-1">
-                      {mist.map((m) => (
-                        <span key={m} className="rounded-sm bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800">
-                          {m}
+        {lijst.length === 0 ? (
+          <p className="px-5 py-10 text-center text-[13px] text-ink-400">Niemand in deze selectie.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Persoon</TH>
+                  <TH className="text-right">Uren</TH>
+                  <TH>Inkoopfactuur (freelancer)</TH>
+                  <TH>Verkoopfactuur (klant)</TH>
+                  <TH className="text-right">Marge ex btw</TH>
+                  <TH>Wat mist er</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {lijst.map(({ r, i, v, verkoopEx, inkoopEx, marge, mist }) => (
+                  <TR key={r.key}>
+                    <TD>
+                      <Link href={r.href ?? "#"} className="flex items-center gap-3 hover:underline">
+                        <PersoonVierkant naam={r.naam} />
+                        <span className="min-w-0">
+                          <span className="block font-medium text-ink-900">{r.naam}</span>
+                          <span className="block text-xs text-ink-500">{r.klantNaam ?? "—"}</span>
                         </span>
-                      ))}
-                    </span>
-                  )}
-                </TD>
-              </TR>
-            ))}
-          </TBody>
-        </Table>
-      </div>
-    </Card>
+                      </Link>
+                    </TD>
+                    <TD className="text-right tabular-nums">
+                      {r.uren != null ? formatHours(r.uren) : <span className="text-ink-300">—</span>}
+                    </TD>
+                    <TD>
+                      {r.factuurNvt ? (
+                        <span className="text-[13px] text-ink-400">— n.v.t. (in dienst)</span>
+                      ) : i ? (
+                        <span className="flex items-center gap-2 text-[13px]">
+                          <span className={stip(true)} />
+                          <span className="tabular-nums text-ink-900">{i.number ?? "zonder nr"}</span>
+                          <span className="tabular-nums text-ink-500">{formatCurrency(inkoopEx ?? 0)}</span>
+                          <StatusBadge options={RECEIVED_INVOICE_STATUSES} value={i.status} />
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2 text-[13px] text-ink-700">
+                          <span className={stip(false)} /> ontbreekt
+                        </span>
+                      )}
+                    </TD>
+                    <TD>
+                      {v ? (
+                        <Link href={`/facturatie/verkoop/${v.id}`} className="flex items-center gap-2 text-[13px] hover:underline">
+                          <span className={stip(true)} />
+                          <span className="tabular-nums text-ink-900">{v.number}</span>
+                          <span className="tabular-nums text-ink-500">{formatCurrency(verkoopEx ?? 0)}</span>
+                          <StatusBadge options={INVOICE_STATUSES} value={v.status} />
+                        </Link>
+                      ) : (
+                        <span className="flex items-center gap-2 text-[13px] text-ink-700">
+                          <span className={stip(false)} /> nog niet gemaakt
+                        </span>
+                      )}
+                    </TD>
+                    <TD className={cn("text-right font-semibold tabular-nums", marge != null && marge < 0 ? "text-red-600" : "text-ink-900")}>
+                      {marge != null ? formatCurrency(marge) : <span className="font-normal text-ink-300">—</span>}
+                    </TD>
+                    <TD>
+                      {mist.length === 0 ? (
+                        <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-emerald-700">
+                          <CheckCircle2 className="h-4 w-4" /> Compleet
+                        </span>
+                      ) : (
+                        <span className="flex flex-wrap gap-1">
+                          {mist.map((m) => (
+                            <span key={m} className="rounded-sm bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-800">
+                              {m}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </div>
+        )}
+      </Card>
+    </>
   );
 }

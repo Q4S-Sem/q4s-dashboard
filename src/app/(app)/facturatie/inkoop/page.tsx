@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PersonenPerWeek } from "../PersonenPerWeek";
+import { PersonenPerWeek, WeergaveTabs, kiesWeergave } from "../PersonenPerWeek";
 import {
   AlertTriangle,
   Banknote,
@@ -114,10 +114,13 @@ type SP = {
   overgeslagen?: string;
   fout?: string;
   snelstart?: string;
+  weergave?: string;
+  pf?: string;
 };
 
 export default async function InkoopPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
+  const weergave = kiesWeergave(sp as Record<string, string | undefined>);
   const now = new Date();
   const tab = (INKOOP_TABS.find((t) => t.key === sp.tab)?.key ?? "controleren") as InkoopTab;
 
@@ -254,7 +257,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
           huidig={weekSlotVanDatum(weekParam)?.key ?? null}
           vandaag={ymd(now)}
           alleWeken
-          extra={{ tab: tab === "controleren" ? undefined : tab, q: sp.q }}
+          extra={weergave === "personen" ? { weergave } : { tab, q: sp.q }}
         />
         <a
           href="/api/betalingen/sepa"
@@ -269,8 +272,18 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
         </a>
       </PaginaKop>
 
-      {/* Iedereen vast in beeld: wat is er al, wat mist er (gekozen week, anders deze week). */}
-      <PersonenPerWeek week={weekParam || null} />
+      <WeergaveTabs
+        actief={weergave}
+        basePath="/facturatie/inkoop"
+        week={weekParam}
+        facturenLabel="Facturen & betalingen"
+        aantalFacturen={tellingen.alles}
+      />
+
+      {weergave === "personen" ? (
+        <PersonenPerWeek week={weekParam || null} basePath="/facturatie/inkoop" q={sp.q} pf={sp.pf} />
+      ) : (
+        <>
 
       {sp.reset === "ok" && (
         <p className="flex items-start gap-2 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
@@ -398,7 +411,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
               basePath="/facturatie/inkoop"
               q={sp.q}
               placeholder="Zoek op freelancer of factuurnummer…"
-              behoud={{ tab: tab === "controleren" ? undefined : tab, week: weekParam || undefined }}
+              behoud={{ tab, week: weekParam || undefined }}
             />
           </div>
           {rows.length === 0 ? (
@@ -607,6 +620,8 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
             verkoopfactuur nog niet betaald heeft.
           </p>
         </div>
+      )}
+        </>
       )}
     </div>
   );
