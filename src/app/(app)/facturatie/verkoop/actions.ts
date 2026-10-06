@@ -501,8 +501,10 @@ export async function naarAdministratie(formData: FormData) {
   if (outcome === "sent" || outcome === "simulated") {
     p.set("verzonden", "1");
     p.set("modus", outcome === "simulated" ? "sim" : "live");
-  } else if (outcome === "no-email") p.set("verzonden", "0"), p.set("geenmail", "1");
-  else if (outcome === "error") p.set("verzonden", "0"), p.set("mislukt", "1");
-  else p.set("verzonden", "0");
+  } else {
+    p.set("verzonden", "0");
+    if (outcome === "no-email") p.set("geenmail", "1");
+    if (outcome === "error") p.set("mislukt", "1");
+  }
   redirect(`${LIJST}?${p.toString()}`);
 }
