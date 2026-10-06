@@ -44,9 +44,16 @@ export function vulBlad(xml: string, waarden: Record<string, Waarde>): string {
 }
 
 export function vulSjabloon(vulling: Vulling): Uint8Array {
-  const bestanden = unzipSync(fs.readFileSync(path.join(process.cwd(), "assets", "excel", "factuuroverzicht.xlsx")));
-  for (const [blad, waarden] of Object.entries(vulling) as [keyof typeof BLAD, Record<string, Waarde>][]) {
-    const pad = BLAD[blad];
+  return vulXlsx(
+    "factuuroverzicht.xlsx",
+    Object.fromEntries(Object.entries(vulling).map(([blad, w]) => [BLAD[blad as keyof typeof BLAD], w!])),
+  );
+}
+
+/** Elk sjabloon in assets/excel: blad-xml-pad → (celadres → waarde). */
+export function vulXlsx(bestand: string, bladen: Record<string, Record<string, Waarde>>): Uint8Array {
+  const bestanden = unzipSync(fs.readFileSync(path.join(process.cwd(), "assets", "excel", bestand)));
+  for (const [pad, waarden] of Object.entries(bladen)) {
     bestanden[pad] = strToU8(vulBlad(strFromU8(bestanden[pad]), waarden));
   }
   return zipSync(bestanden, { level: 6 });

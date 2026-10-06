@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Archive, Briefcase, Plus, Users, CheckCircle2, Coins, FileText, Hourglass, Trash2, CircleSlash, CalendarClock } from "lucide-react";
+import { FileSpreadsheet, Archive, Briefcase, Plus, Users, CheckCircle2, Coins, FileText, Hourglass, Trash2, CircleSlash, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -14,6 +14,7 @@ import { PlaatsingenList } from "./PlaatsingenList";
 import { ontbrekendVoorActief } from "@/lib/ontbrekende-gegevens";
 import { deletePlacementDraft } from "./actions";
 import { eindeStatus, eindeTekst } from "@/lib/plaatsing-einde";
+import { isAdminSession } from "@/lib/session";
 
 export const metadata = { title: "Plaatsingen" };
 
@@ -101,6 +102,12 @@ export default async function PlaatsingenPage({
         description="Werknemers gekoppeld aan klanten, met de marges die we hanteren."
         actions={
           <>
+            {(await isAdminSession()) && (
+              // Gewone <a>: een download, geen pagina-navigatie.
+              <a href="/api/plaatsingen/excel" className={buttonVariants({ variant: "outline" })}>
+                <FileSpreadsheet className="h-4 w-4" /> Excel
+              </a>
+            )}
             <Link href="/archief?type=uit-dienst" className={buttonVariants({ variant: "outline" })}>
               <Archive className="h-4 w-4" /> Archief{gearchiveerdAantal > 0 ? ` (${gearchiveerdAantal})` : ""}
             </Link>
