@@ -894,6 +894,9 @@ export function PlacementForm({
     if (eersteFout) setTab(VELD_TAB[eersteFout] ?? "plaatsing");
   }
   const dv = (name: string, fallback = "") => draft?.[name] ?? fallback;
+  const [allIn, setAllIn] = useState(
+    draft ? draft.allIn === "on" : (placement?.allIn ?? false),
+  );
 
   // Create mode only: fill in a new person inline (default) or pick an existing one.
   const [personMode, setPersonMode] = useState<"existing" | "new">(
@@ -1645,16 +1648,51 @@ export function PlacementForm({
               {/* Toeslagen als één compacte tabel. */}
               <div className="overflow-hidden rounded-lg border border-ink-200">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-ink-200 px-3 py-2.5">
-                  <p className="text-sm font-semibold text-ink-900">
-                    Toeslagen, overuren &amp; kilometers
-                  </p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-sm font-semibold text-ink-900">
+                      Toeslagen, overuren &amp; kilometers
+                    </p>
+                    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-ink-200 bg-white px-2.5 py-1 text-[13px] font-medium text-ink-800">
+                      <input
+                        type="checkbox"
+                        name="allIn"
+                        checked={allIn}
+                        onChange={(ev) => setAllIn(ev.target.checked)}
+                        className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
+                      />
+                      All-in tarief
+                    </label>
+                  </div>
                   <p className="text-xs text-ink-400">
                     Klant betaalt? Nee = wij betalen, gaat van de marge af · 0 =
                     geldt niet
                   </p>
                 </div>
                 <ToeslagKop />
-                <div className="divide-y divide-ink-100">
+                {allIn && (
+                  <p className="border-b border-ink-100 bg-ink-50/60 px-3 py-2 text-xs text-ink-500">
+                    All-in: alleen het uurtarief hierboven (inkoop → verkoop) +
+                    kilometervergoeding. Geen overuren of toeslagen — die gaan
+                    bij opslaan op 0.
+                  </p>
+                )}
+                {/* Km staat altijd zichtbaar, ook bij all-in. */}
+                <div className="border-b border-ink-100">
+                  <ToeslagBlock
+                    title="Kilometervergoeding"
+                    hint="Per gereden kilometer"
+                    buyName="kmRateBuy"
+                    sellName="kmRateSell"
+                    buyDefault={placement ? placement.kmRateBuy : 0.45}
+                    sellDefault={placement ? placement.kmRateSell : 0.45}
+                    suffix="€/km"
+                    step={0.01}
+                    standaardAan
+                  />
+                </div>
+                <div
+                  className={cn("divide-y divide-ink-100", allIn && "hidden")}
+                >
                   <input type="hidden" name="weekendSurchargeBuy" value={0} />
                   <input type="hidden" name="weekendSurchargeSell" value={0} />
                   <ToeslagRow
@@ -1718,17 +1756,6 @@ export function PlacementForm({
                       "PCT"
                     }
                     toggle={{ name: "shiftEnabled", defaultOn: true }}
-                    standaardAan
-                  />
-                  <ToeslagBlock
-                    title="Kilometervergoeding"
-                    hint="Per gereden kilometer"
-                    buyName="kmRateBuy"
-                    sellName="kmRateSell"
-                    buyDefault={placement ? placement.kmRateBuy : 0.45}
-                    sellDefault={placement ? placement.kmRateSell : 0.45}
-                    suffix="€/km"
-                    step={0.01}
                     standaardAan
                   />
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-ink-50/40 px-3 py-2.5 text-sm text-ink-700">

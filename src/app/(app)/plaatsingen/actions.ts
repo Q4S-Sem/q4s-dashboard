@@ -72,6 +72,7 @@ const PlacementCoreSchema = z.object({
   offshoreSurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
   offshoreSurchargeSellUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
   shiftEnabled: z.coerce.boolean().default(false),
+  allIn: z.coerce.boolean().default(false),
   shiftSurchargeBuy: z.coerce.number().min(0).default(0),
   shiftSurchargeSell: z.coerce.number().min(0).default(0),
   shiftSurchargeUnit: z.enum(SURCHARGE_UNIT_VALUES).default("PCT"),
@@ -184,8 +185,25 @@ function coreToData(d: z.infer<typeof PlacementCoreSchema>) {
     abroadSurchargeSellUnit: d.abroadSurchargeSellUnit,
     status: d.status,
     notes: d.notes ?? null,
+    allIn: d.allIn,
+    // All-in: alleen het uurtarief (+ km). Alle toeslagen en overuren hard op 0/uit,
+    // zodat de facturatie gewoon uren × tarief rekent.
+    ...(d.allIn ? ALL_IN_NUL : {}),
   };
 }
+
+const ALL_IN_NUL = {
+  weekendSurchargeBuy: 0, weekendSurchargeSell: 0,
+  overtimeSurchargeBuy: 0, overtimeSurchargeSell: 0,
+  overtimeCostRate: 0, overtimeChargeRate: 0,
+  weekdaySurchargeBuy: 0, weekdaySurchargeSell: 0, otFromHours: null,
+  weekday2SurchargeBuy: 0, weekday2SurchargeSell: 0,
+  saturdaySurchargeBuy: 0, saturdaySurchargeSell: 0,
+  sundaySurchargeBuy: 0, sundaySurchargeSell: 0,
+  offshoreEnabled: false, offshoreSurchargeBuy: 0, offshoreSurchargeSell: 0,
+  shiftEnabled: false, shiftSurchargeBuy: 0, shiftSurchargeSell: 0,
+  abroadEnabled: false, abroadSurchargeBuy: 0, abroadSurchargeSell: 0,
+} as const;
 
 /** Optional CV / contract / diploma uploads from the new-person form. */
 function collectPersonDocs(formData: FormData) {

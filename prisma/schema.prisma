@@ -222,6 +222,8 @@ model Placement {
   endDate      DateTime?
   /// Handmatig op Actief gezet, ook al ontbreekt er nog iets (blijft dan in de facturatie).
   forceActive  Boolean  @default(false)
+  /// All-in tarief: alleen inkoop/verkoop per uur + km-vergoeding; alle toeslagen/overuren 0.
+  allIn        Boolean  @default(false)
   /// What Q4S pays the consultant per hour (ex BTW).
   costRate     Float
   /// What Q4S charges the client per hour (ex BTW).
