@@ -1,13 +1,11 @@
-import { SollicitatiesList } from "../../sollicitaties/SollicitatiesList";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Sollicitaties — Website" };
-export const dynamic = "force-dynamic";
-
-export default async function WebsiteSollicitatiesPage({
+// Sollicitaties staan nu op één plek: Recruitment → Sollicitaties.
+export default async function WebsiteSollicitatiesRedirect({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const sp = await searchParams;
-  return <SollicitatiesList sp={sp} basePath="/website/sollicitaties" />;
+  const { status } = await searchParams;
+  redirect(status ? `/sollicitaties?status=${status}` : "/sollicitaties");
 }

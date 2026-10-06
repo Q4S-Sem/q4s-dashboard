@@ -2351,3 +2351,18 @@ model BedrijfsKost {
 
   @@index([date])
 }
+
+/// Een eigen social-kanaal van Q4S (LinkedIn-bedrijfspagina, Instagram, …) om
+/// volgers en bereik bij te houden op Socials → Overzicht.
+model SocialChannel {
+  id         String   @id @default(cuid())
+  /// RECRUITMENT_CHANNELS-waarde (LINKEDIN, INSTAGRAM, FACEBOOK, TIKTOK, …)
+  platform   String
+  name       String
+  url        String   @default("")
+  followers  Int      @default(0)
+  /// Volgers bij de vorige update, voor de groei sinds de laatste keer.
+  prevFollowers Int   @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

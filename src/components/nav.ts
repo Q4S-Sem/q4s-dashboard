@@ -45,6 +45,8 @@ import {
   Plus,
   type LucideIcon,
   Scale,
+  Megaphone,
+  Share2,
 } from "lucide-react";
 
 // Single source of truth for navigation — used by the app-launcher (home grid)
@@ -173,7 +175,12 @@ const HUB_LIST: NavHub[] = [
       { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, section: "Kandidaten" },
       { href: "/sollicitaties", label: "Sollicitaties", icon: ClipboardList, section: "Kandidaten" },
       { href: "/crm", label: "Pipeline", icon: Kanban, section: "CRM" },
+      // Vacatures = alles in één: werving (open/pipeline) én website (concept/gereed/online).
       { href: "/crm/vacatures", label: "Vacatures", icon: Briefcase, section: "CRM" },
+      // Bereikbaar via de mappen op Vacatures, niet als los menu-item:
+      { href: "/website", label: "Vacatures op de website", icon: Globe, hidden: true },
+      { href: "/vacatures", label: "Uitwerken & publiceren", icon: PencilLine, hidden: true },
+      { href: "/vacaturehub", label: "Vacaturehub", icon: Filter, hidden: true },
       { href: "/crm/contacten", label: "Contacten", icon: Contact, section: "CRM" },
       { href: "/crm/opvolging", label: "Opvolging", icon: CalendarClock, section: "CRM" },
       { href: "/opdrachtgevers", label: "Klanten", icon: Factory, section: "CRM" },
@@ -181,21 +188,16 @@ const HUB_LIST: NavHub[] = [
     ],
   },
   {
-    label: "Vacatures",
-    href: "/website",
-    icon: FileText,
+    // Marketing: kanalen bijhouden, posts plannen, teksten genereren, campagnes meten.
+    label: "Socials",
+    href: "/socials",
+    icon: Megaphone,
     items: [
-      { href: "/website", label: "Vacatures", icon: Briefcase, exact: true, section: "Website" },
-      { href: "/website/sollicitaties", label: "Sollicitaties", icon: Inbox, section: "Website" },
-      { href: "/website/linkedin", label: "LinkedIn", icon: Sparkles, section: "Website" },
-      // Bereikbaar via de acties op de vacaturelijst, niet als los menu-item:
-      // - /website/vacatures  = redirect naar /crm/vacatures; subroute
-      //   /website/vacatures/[id]/sollicitaties toont sollicitaties per vacature
-      // - /vacatures          = de uitwerk/publiceer-pagina per vacature
-      // - /vacaturehub        = MSP-instroom, staat onder onderhoud
-      { href: "/website/vacatures", label: "Op de website", icon: Globe, hidden: true },
-      { href: "/vacatures", label: "Uitwerken & publiceren", icon: PencilLine, hidden: true },
-      { href: "/vacaturehub", label: "Vacaturehub", icon: Filter, hidden: true },
+      { href: "/socials", label: "Overzicht", icon: LayoutDashboard, exact: true },
+      { href: "/posts", label: "Posts & planning", icon: CalendarClock, section: "Content" },
+      { href: "/website/linkedin", label: "Teksten & beelden", icon: Sparkles, section: "Content" },
+      { href: "/socials/talentpool", label: "Campagnelinks", icon: Share2, section: "Meten" },
+      { href: "/website/linkedin-afbeelding", label: "LinkedIn-afbeelding", icon: Sparkles, hidden: true },
     ],
   },
   {
@@ -258,7 +260,7 @@ const HUB_ORDER = [
   "/facturatie",
   "/contracten",
   "/recruitment",
-  "/website", // Vacatures
+  "/socials", // Marketing
   "/website/cv-inbox", // CV's
   "/agenda",
   "/evaluaties",
@@ -342,7 +344,7 @@ export function isFullAccess(access: UserAccess | null | undefined): boolean {
 /** Mag deze gebruiker deze hub (werkplek) zien? */
 export function canSeeHub(hub: NavHub, access: UserAccess | null | undefined): boolean {
   if (isFullAccess(access)) return true;
-  return access!.allowedHubs.includes(hub.href);
+  return migrateAccessHrefs(access!.allowedHubs).includes(hub.href);
 }
 
 /**
@@ -399,6 +401,9 @@ const LEGACY_HREFS: Record<string, string> = {
   "/inbox": "/facturatie",
   "/uren": "/facturatie",
   "/facturen": "/facturatie/verkoop",
+  // De Vacatures-werkplek is opgegaan in Recruitment; de plek heet nu Socials.
+  "/website": "/socials",
+  "/website/sollicitaties": "/sollicitaties",
   "/verzenden": "/facturatie/verkoop",
   "/ontvangen-facturen": "/facturatie/inkoop",
   "/declaraties": "/facturatie/inkoop",

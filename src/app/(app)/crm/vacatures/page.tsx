@@ -5,19 +5,14 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants, mapTabVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { DISCIPLINES, type BadgeColor } from "@/lib/domain";
+import { VacatureTabs } from "./VacatureTabs";
 
 export const metadata = { title: "Vacatures" };
 export const dynamic = "force-dynamic";
-
-/** De twee vacature-tabs (view-key → label + kleurstip). */
-const VIEW_TABS = [
-  { key: "open", label: "Openstaand", dot: "bg-brand-500" },
-  { key: "pipeline", label: "In pipeline", dot: "bg-violet-500" },
-] as const;
 
 /**
  * Vacatures = deals bij bedrijven, in een tab-switch:
@@ -55,14 +50,13 @@ export default async function VacaturesPage({
   const totalValue = open.reduce((s, k) => s + k.value, 0);
   const totalPositions = open.reduce((s, k) => s + k.positions, 0);
 
-  const countFor = (key: string) => (key === "pipeline" ? filled.length : open.length);
   const rows = view === "pipeline" ? filled : open;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Vacatures"
-        description="Alle vacatures bij je bedrijven. Voor de openstaande vacatures zoek je met één klik met AI de best passende kandidaat uit de talentpool; koppel je iemand, dan stroomt de vacature door naar de pipeline."
+        description="Alle vacatures op één plek: zoek met AI de juiste kandidaat, volg de pipeline en zet de vacature online op de website."
         actions={
           <Link href="/crm/vacatures/nieuw" className={buttonVariants()}>
             <Plus className="h-4 w-4" /> Nieuwe vacature
@@ -77,36 +71,7 @@ export default async function VacaturesPage({
         <StatCard label="Verwachte waarde" value={formatCurrency(totalValue)} icon={<Coins className="h-5 w-5" />} accent="amber" />
       </div>
 
-      {/* Tabs — schakel tussen openstaande en geplaatste vacatures */}
-      <nav
-        aria-label="Vacatures"
-        className="flex items-end gap-1 overflow-x-auto border-b border-ink-200"
-      >
-        {VIEW_TABS.map((t) => {
-          const active = t.key === view;
-          const count = countFor(t.key);
-          return (
-            <Link
-              key={t.key}
-              href={`/crm/vacatures?view=${t.key}`}
-              scroll={false}
-              aria-current={active ? "page" : undefined}
-              className={mapTabVariants(active)}
-            >
-              <span className={cn("h-2.5 w-2.5 rounded-full", t.dot)} />
-              {t.label}
-              <span
-                className={cn(
-                  "rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
-                  active ? "bg-brand-50 text-brand-700" : "bg-ink-100 text-ink-500",
-                )}
-              >
-                {count}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
+      <VacatureTabs actief={view} />
 
       {rows.length === 0 ? (
         <EmptyState

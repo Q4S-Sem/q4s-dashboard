@@ -229,8 +229,7 @@ export function hubActionCounts(badges: NavBadges, notifs: Notifications): Recor
     // Agenda: afspraken + taken die te laat zijn of vandaag spelen.
     "/agenda": urgent("agenda") + urgent("taken"),
     // Recruitment: nieuwe sollicitaties + openstaande CRM-opvolgingen.
-    "/recruitment": all("sollicitaties") + all("opvolging"),
-    // Vacatures: ongelezen meldingen uit de intake (vacaturehub).
-    "/website": all("msp"),
+    // + ongelezen meldingen uit de vacature-intake (vacaturehub, nu onder Recruitment).
+    "/recruitment": all("sollicitaties") + all("opvolging") + all("msp"),
   };
 }

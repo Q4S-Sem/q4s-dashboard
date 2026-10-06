@@ -55,3 +55,46 @@ export async function generateTalentpoolPost() {
   // redirect() stays OUTSIDE the try/catch so its control-flow throw isn't caught.
   redirect(aiFailed ? `/posts/${post.id}?error=ai` : `/posts/${post.id}`);
 }
+
+// ---------------------------------------------------------------------------
+// Kanalen bijhouden (Socials → Overzicht)
+// ---------------------------------------------------------------------------
+
+const volgers = (v: FormDataEntryValue | null) => {
+  const n = Math.round(Number(String(v ?? "").replace(/[.\s]/g, "")));
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+};
+
+export async function voegKanaalToe(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim().slice(0, 80);
+  const url = String(formData.get("url") ?? "").trim().slice(0, 300);
+  if (!name) redirect("/socials?fout=kanaal");
+  const n = volgers(formData.get("followers"));
+  await db.socialChannel.create({
+    data: {
+      platform: String(formData.get("platform") ?? "OVERIG"),
+      name,
+      url: url && !/^https?:\/\//i.test(url) ? `https://${url}` : url,
+      followers: n,
+      prevFollowers: n,
+    },
+  });
+  revalidatePath("/socials");
+}
+
+/** Nieuw volgersaantal: het oude wordt bewaard voor de groei. */
+export async function werkVolgersBij(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const k = await db.socialChannel.findUnique({ where: { id }, select: { followers: true } });
+  if (!k) return;
+  await db.socialChannel.update({
+    where: { id },
+    data: { prevFollowers: k.followers, followers: volgers(formData.get("followers")) },
+  });
+  revalidatePath("/socials");
+}
+
+export async function verwijderKanaal(formData: FormData) {
+  await db.socialChannel.delete({ where: { id: String(formData.get("id") ?? "") } }).catch(() => null);
+  revalidatePath("/socials");
+}

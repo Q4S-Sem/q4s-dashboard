@@ -9,7 +9,7 @@ import {
   Eye,
   Plus,
 } from "lucide-react";
-import { buttonVariants, mapTabVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -20,6 +20,7 @@ import { sendDealToWebsite } from "./actions";
 import { pauseVacancy, resumeVacancy } from "../vacatures/actions";
 import { CloudOff, CloudUpload } from "lucide-react";
 import { publicVacancyUrl } from "@/lib/public-site";
+import { VacatureTabs, websiteFase } from "../crm/vacatures/VacatureTabs";
 
 /** LinkedIn-logo (lucide heeft geen merk-icoon). */
 function LinkedinIcon({ className }: { className?: string }) {
@@ -53,11 +54,7 @@ type Bucket = "concept" | "gereed" | "online";
  *  - gereed   = website-tekst uitgewerkt, nog niet live (IMPROVED / PAUSED)
  *  - online   = live op q4s.nl (PUBLISHED)
  */
-function bucketOf(vac: { status: string } | null): Bucket {
-  if (!vac || vac.status === "CONCEPT") return "concept";
-  if (vac.status === "PUBLISHED") return "online";
-  return "gereed";
-}
+const bucketOf = websiteFase;
 
 const TABS: { key: Bucket; label: string; dot: string }[] = [
   { key: "concept", label: "Concept", dot: "bg-ink-400" },
@@ -103,11 +100,6 @@ export default async function WebsitePage({
 
   // Verrijk met de bucket zodat we niet steeds opnieuw hoeven te bepalen.
   const rows = openDeals.map((d) => ({ d, bucket: bucketOf(d.vacancy) }));
-  const counts: Record<Bucket, number> = {
-    concept: rows.filter((r) => r.bucket === "concept").length,
-    gereed: rows.filter((r) => r.bucket === "gereed").length,
-    online: rows.filter((r) => r.bucket === "online").length,
-  };
 
   const validTab = new Set<string>(TABS.map((t) => t.key));
   const active: Bucket = validTab.has(sp.tab ?? "") ? (sp.tab as Bucket) : "concept";
@@ -117,7 +109,7 @@ export default async function WebsitePage({
     <div className="space-y-6">
       <PageHeader
         title="Vacatures"
-        description="Alle openstaande vacatures uit de recruitment-hub. Werk ze hier uit voor de website en maak er een LinkedIn-post van — recruitment blijft leidend."
+        description="Werk de openstaande vacatures uit voor de website en zet ze online. Maak er daarna in Socials een post van."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {url && (
@@ -139,35 +131,7 @@ export default async function WebsitePage({
         }
       />
 
-      {/* Tabs — zelfde layout als de Sollicitaties-pagina */}
-      <nav
-        aria-label="Websitestatus"
-        className="flex items-end gap-1 overflow-x-auto border-b border-ink-200"
-      >
-        {TABS.map((t) => {
-          const on = t.key === active;
-          return (
-            <Link
-              key={t.key}
-              href={`/website?tab=${t.key}`}
-              scroll={false}
-              aria-current={on ? "page" : undefined}
-              className={mapTabVariants(on)}
-            >
-              <span className={cn("h-2.5 w-2.5 rounded-full", t.dot)} />
-              {t.label}
-              <span
-                className={cn(
-                  "rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
-                  on ? "bg-brand-50 text-brand-700" : "bg-ink-100 text-ink-500",
-                )}
-              >
-                {counts[t.key]}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
+      <VacatureTabs actief={active} />
 
       <Card>
         {visible.length === 0 ? (
