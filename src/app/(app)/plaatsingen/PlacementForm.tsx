@@ -387,7 +387,7 @@ function ToeslagBlock({
   suffix,
   step,
   nietDoorTekst,
-  altijd,
+  standaardAan,
 }: {
   title: string;
   hint: string;
@@ -398,18 +398,20 @@ function ToeslagBlock({
   suffix: string;
   step: number | string;
   nietDoorTekst?: string;
-  /** Altijd aan: geen vinkje. */
-  altijd?: boolean;
+  /** Standaard aangevinkt (staat klaar), uit te vinken. */
+  standaardAan?: boolean;
 }) {
   const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
   // Uitgevinkt = geldt niet: beide bedragen gaan als 0 mee.
-  const [aan, setAan] = useState(altijd || buyDefault > 0 || sellDefault > 0);
+  const [aan, setAan] = useState(
+    standaardAan || buyDefault > 0 || sellDefault > 0,
+  );
   return (
     <div className={cn(TOESLAG_GRID, !aan && "bg-ink-50/40")}>
       <ToeslagNaam
         title={title}
         hint={aan ? hint : "Uit — vink aan als het geldt"}
-        toggle={altijd ? undefined : { aan, set: setAan }}
+        toggle={{ aan, set: setAan }}
       />
       {!aan ? (
         <>
@@ -463,7 +465,7 @@ function ToeslagRow({
   unitDefault,
   sellUnitDefault,
   toggle,
-  altijd,
+  standaardAan,
 }: {
   title: string;
   hint: string;
@@ -475,8 +477,8 @@ function ToeslagRow({
   sellUnitDefault: string;
   /** Offshore/ploegendienst/buitenland: eigen aan/uit-veld (bedragen blijven bewaard). */
   toggle?: { name: string; defaultOn: boolean };
-  /** Altijd aan: geen vinkje (met toggle: veld gaat als "on" mee). */
-  altijd?: boolean;
+  /** Standaard aangevinkt (staat klaar), uit te vinken. */
+  standaardAan?: boolean;
 }) {
   const [buyUnit, setBuyUnit] = useState<"PCT" | "FIXED">(
     unitDefault === "FIXED" ? "FIXED" : "PCT",
@@ -486,7 +488,7 @@ function ToeslagRow({
   );
   // Zonder eigen veld (meeruren, zaterdag, zondag): uitgevinkt = 0 = geldt niet.
   const [aan, setAan] = useState(
-    altijd || (toggle?.defaultOn ?? (buyDefault > 0 || sellDefault > 0)),
+    standaardAan || (toggle?.defaultOn ?? (buyDefault > 0 || sellDefault > 0)),
   );
   const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
   const uit = !aan;
@@ -502,11 +504,8 @@ function ToeslagRow({
       <ToeslagNaam
         title={title}
         hint={uit ? "Uit — vink aan als het geldt" : hint}
-        toggle={altijd ? undefined : { name: toggle?.name, aan, set: setAan }}
+        toggle={{ name: toggle?.name, aan, set: setAan }}
       />
-      {altijd && toggle && (
-        <input type="hidden" name={toggle.name} value="on" />
-      )}
       {/* De schakelaars reizen als verborgen velden mee (per zijde). */}
       <input type="hidden" name={`${prefix}SurchargeUnit`} value={buyUnit} />
       <input
@@ -715,8 +714,8 @@ function ClientPicker({
                 Nieuw bedrijf toevoegen
               </p>
               <p className="text-xs text-ink-500">
-                Vul in wat je hebt — later aanvullen of wijzigen kan altijd op
-                de klantpagina.
+                Vul in wat je hebt — later aanvullen of wijzigen kan
+                altijd op de klantpagina.
               </p>
             </div>
           </div>
@@ -1549,15 +1548,9 @@ export function PlacementForm({
                 <div className="divide-y divide-ink-100">
                   <input type="hidden" name="weekendSurchargeBuy" value={0} />
                   <input type="hidden" name="weekendSurchargeSell" value={0} />
-                  <p className="flex items-baseline justify-between gap-2 bg-ink-50/70 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-                    Altijd van toepassing
-                    <span className="font-normal normal-case tracking-normal text-ink-400">
-                      0 = geldt niet
-                    </span>
-                  </p>
                   <ToeslagRow
                     title="Zaterdag"
-                    altijd
+                    standaardAan
                     hint="Uren op zaterdag"
                     prefix="saturday"
                     buyDefault={
@@ -1579,7 +1572,7 @@ export function PlacementForm({
                   />
                   <ToeslagRow
                     title="Zondag & feestdag"
-                    altijd
+                    standaardAan
                     hint="Uren op zondag en feestdagen"
                     prefix="sunday"
                     buyDefault={
@@ -1616,25 +1609,19 @@ export function PlacementForm({
                       "PCT"
                     }
                     toggle={{ name: "shiftEnabled", defaultOn: true }}
-                    altijd
+                    standaardAan
                   />
                   <ToeslagBlock
                     title="Kilometervergoeding"
                     hint="Per gereden kilometer"
                     buyName="kmRateBuy"
                     sellName="kmRateSell"
-                    buyDefault={placement?.kmRateBuy || 0.45}
-                    sellDefault={placement?.kmRateSell || 0.45}
+                    buyDefault={placement ? placement.kmRateBuy : 0.45}
+                    sellDefault={placement ? placement.kmRateSell : 0.45}
                     suffix="€/km"
                     step={0.01}
-                    altijd
+                    standaardAan
                   />
-                  <p className="flex items-baseline justify-between gap-2 bg-ink-50/70 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-                    Optioneel
-                    <span className="font-normal normal-case tracking-normal text-ink-400">
-                      vink aan als het geldt
-                    </span>
-                  </p>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-ink-50/40 px-3 py-2.5 text-sm text-ink-700">
                     <span className="font-medium text-ink-900">
                       Meeruren ma–vr
