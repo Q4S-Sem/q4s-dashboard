@@ -15,7 +15,9 @@ import {
 } from "@/lib/facturatie-checks";
 import { formatCurrency, formatHours } from "@/lib/utils";
 import { SettingsForm } from "./SettingsForm";
-import { updateSettings, wisTestdata } from "./actions";
+import { stuurVoorbeeldFactuurmail, updateSettings, wisTestdata } from "./actions";
+import { Input } from "@/components/ui/field";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { isAdminSession } from "@/lib/session";
 import { facturatieTellingen } from "@/lib/facturatie-wissen";
@@ -53,9 +55,9 @@ function Regel({ label, value, uitleg }: { label: string; value: string; uitleg:
 export default async function FacturatieInstellingenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ opgeslagen?: string; gewist?: string }>;
+  searchParams: Promise<{ opgeslagen?: string; gewist?: string; voorbeeld?: string }>;
 }) {
-  const { opgeslagen, gewist } = await searchParams;
+  const { opgeslagen, gewist, voorbeeld } = await searchParams;
   const settings = await getCompanySettings();
   const admin = await isAdminSession();
   const tel = admin ? await facturatieTellingen() : null;
@@ -150,6 +152,35 @@ export default async function FacturatieInstellingenPage({
           .
         </p>
       </div>
+      {tel && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Factuurmail — voorbeeld</CardTitle>
+            <span className="text-xs text-ink-400">alleen beheerder</span>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {voorbeeld && (
+              <p className="rounded-sm border border-ink-200 bg-ink-50 px-3 py-2 text-[13px] text-ink-700">
+                {
+                  {
+                    verstuurd: "Voorbeeld verstuurd vanaf admin@q4s.nl — kijk in je inbox.",
+                    test: "Mail staat niet aan (geen SMTP): er is niets echt verstuurd.",
+                    fout: "Versturen mislukt — controleer de mailinstellingen (SMTP).",
+                    adres: "Alleen naar een @q4s.nl-adres.",
+                  }[voorbeeld]
+                }
+              </p>
+            )}
+            <form action={stuurVoorbeeldFactuurmail} className="flex flex-wrap items-center gap-2">
+              <Input name="to" type="email" defaultValue="semdesnoo@q4s.nl" className="w-64" aria-label="Naar" />
+              <SubmitButton size="sm" pendingLabel="Versturen…">
+                Stuur voorbeeld
+              </SubmitButton>
+              <span className="text-xs text-ink-400">Fictieve factuur met PDF, zoals de klant hem krijgt.</span>
+            </form>
+          </CardContent>
+        </Card>
+      )}
       {tel && (
         <Card className="border-red-200">
           <CardHeader>

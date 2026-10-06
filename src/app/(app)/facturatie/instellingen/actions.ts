@@ -7,6 +7,10 @@ import { db } from "@/lib/db";
 import { isAdminSession } from "@/lib/session";
 import { wisFacturatieTestdata } from "@/lib/facturatie-wissen";
 import { parseForm, type FormState } from "@/lib/form";
+import { getCompanySettings } from "@/lib/settings";
+import { sampleSalesSendData } from "@/lib/verzenden";
+import { renderInvoicePdf } from "@/lib/invoice-pdf";
+import { sendMail } from "@/lib/email";
 
 const SettingsSchema = z.object({
   companyName: z.string().default("Q4S"),
@@ -92,4 +96,23 @@ export async function wisTestdata() {
   await wisFacturatieTestdata();
   revalidatePath("/", "layout");
   redirect("/facturatie/instellingen?gewist=1");
+}
+
+/** Voorbeeld van de verkoopfactuur-mail (fictieve factuur) naar een intern adres — alleen beheerder. */
+export async function stuurVoorbeeldFactuurmail(formData: FormData) {
+  if (!(await isAdminSession())) redirect("/facturatie/instellingen");
+  const to = String(formData.get("to") ?? "").trim().toLowerCase();
+  // Alleen naar eigen Q4S-adressen: dit is een opmaakvoorbeeld, nooit naar klanten.
+  if (!/^[^\s@]+@q4s\.nl$/.test(to)) redirect("/facturatie/instellingen?voorbeeld=adres");
+  const data = sampleSalesSendData(await getCompanySettings());
+  const pdf = await renderInvoicePdf(data.pdfDoc);
+  const res = await sendMail({
+    to,
+    from: "Q4S <admin@q4s.nl>",
+    subject: `[Voorbeeld] ${data.subject}`,
+    html: data.html,
+    text: data.text,
+    attachments: [{ filename: data.pdfName, content: Buffer.from(pdf), contentType: "application/pdf" }],
+  });
+  redirect(`/facturatie/instellingen?voorbeeld=${!res.ok ? "fout" : res.simulated ? "test" : "verstuurd"}`);
 }

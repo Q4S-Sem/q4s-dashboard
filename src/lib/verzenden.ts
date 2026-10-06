@@ -16,7 +16,7 @@ type Line = {
   lineKind?: string | null;
 };
 
-type SalesInvoiceFull = {
+export type SalesInvoiceFull = {
   number: string;
   issueDate: Date;
   dueDate: Date;
@@ -204,25 +204,34 @@ export function sampleInvoiceDoc(s: CompanySettings): InvoiceDoc {
 export function salesEmailContent(inv: SalesInvoiceFull, s: CompanySettings): EmailContent {
   const c = inv.client;
   const naam = c.contactName || c.companyName;
+  const weken = [...new Set(inv.lines.map((l) => l.weekNumber).filter((w): w is number => w != null))].sort((x, y) => x - y);
+  const periode = weken.length === 0 ? null : weken.length === 1 ? `Week ${weken[0]}` : `Week ${weken[0]} t/m ${weken[weken.length - 1]}`;
+  const betreft = [inv.subject, inv.services].filter(Boolean).join(" · ");
   return {
     kicker: "Factuur",
     heading: `Factuur ${inv.number}`,
     greeting: `Beste ${naam},`,
     paragraphs: compact([
-      `Hierbij ontvangt u factuur ${inv.number} voor de door Q4S geleverde diensten. De factuur vindt u als PDF in de bijlage.`,
-      s.iban
-        ? `Wij verzoeken u vriendelijk het totaalbedrag van ${formatCurrency(inv.total)} binnen ${c.paymentTermDays} dagen te voldoen op ${s.iban} o.v.v. factuurnummer ${inv.number}.`
-        : `Wij verzoeken u vriendelijk het totaalbedrag van ${formatCurrency(inv.total)} binnen ${c.paymentTermDays} dagen te voldoen o.v.v. factuurnummer ${inv.number}.`,
+      `Hierbij ontvangt u factuur ${inv.number}${inv.subject ? ` voor de inzet van ${inv.subject}` : ""}${periode ? ` over ${periode.toLowerCase()}` : ""}. De factuur en de getekende urenstaten vindt u als PDF in de bijlage.`,
+      `Wij verzoeken u het bedrag binnen ${c.paymentTermDays} dagen over te maken onder vermelding van factuurnummer ${inv.number}. Vragen over deze factuur? Beantwoord dan gewoon deze e-mail.`,
       inv.notes,
     ]),
+    highlight: {
+      label: "Te betalen",
+      value: formatCurrency(inv.total),
+      note: `Vóór ${formatDate(inv.dueDate)} · o.v.v. ${inv.number}`,
+    },
     summary: [
       { label: "Factuurnummer", value: inv.number },
       { label: "Factuurdatum", value: formatDate(inv.issueDate) },
-      { label: "Vervaldatum", value: formatDate(inv.dueDate) },
-      { label: "Totaal incl. BTW", value: formatCurrency(inv.total) },
+      ...(periode ? [{ label: "Periode", value: periode }] : []),
+      ...(betreft ? [{ label: "Betreft", value: betreft }] : []),
+      { label: "Bedrag excl. btw", value: formatCurrency(inv.subtotal) },
+      { label: inv.vatReverseCharge ? "Btw (verlegd)" : `Btw ${inv.vatRate}%`, value: formatCurrency(inv.vatAmount) },
+      ...(s.iban ? [{ label: "Rekening", value: `${s.iban} t.n.v. ${s.companyName || "Q4S"}` }] : []),
     ],
     footerLines: companyFooterLines(s),
-    attachmentNote: "De factuur is als PDF bijgevoegd bij deze e-mail.",
+    attachmentNote: "📎 Bijlage: factuur (PDF).",
   };
 }
 
@@ -252,6 +261,49 @@ export function salesSendData(inv: SalesInvoiceFull, s: CompanySettings): SendDa
     html: renderQ4sEmail(content),
     text: renderQ4sEmailText(content),
     pdfDoc: salesInvoiceDoc(inv, s),
+    pdfName: `factuur-${fileSafe(inv.number)}.pdf`,
+  };
+}
+
+/** Voorbeeldmail (fictieve factuur, zelfde regels als sampleInvoiceDoc) — om de opmaak te bekijken. */
+export function sampleSalesSendData(s: CompanySettings): SendData {
+  const doc = sampleInvoiceDoc(s);
+  const inv: SalesInvoiceFull = {
+    number: doc.number,
+    issueDate: doc.issueDate,
+    dueDate: doc.dueDate,
+    vatRate: doc.vatRate,
+    subtotal: doc.subtotal,
+    vatAmount: doc.vatAmount,
+    total: doc.total,
+    notes: null,
+    subject: doc.subject,
+    services: doc.services,
+    ourReference: null,
+    purchaseOrder: null,
+    lines: [27, 28].map((w) => ({ description: "", quantity: 0, unitPrice: 0, amount: 0, weekNumber: w })),
+    client: {
+      companyName: "Sif Netherlands B.V.",
+      contactName: "mevrouw Van den Borne",
+      email: null,
+      invoiceEmail: null,
+      address: null,
+      postalCode: null,
+      city: null,
+      country: "NL",
+      vatNumber: null,
+      paymentTermDays: s.defaultPaymentTermDays || 30,
+    },
+  };
+  const content = salesEmailContent(inv, s);
+  return {
+    to: null,
+    recipientName: inv.client.companyName,
+    subject: `Factuur ${inv.number} — ${s.companyName || "Q4S"}`,
+    content,
+    html: renderQ4sEmail(content),
+    text: renderQ4sEmailText(content),
+    pdfDoc: doc,
     pdfName: `factuur-${fileSafe(inv.number)}.pdf`,
   };
 }
