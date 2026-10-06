@@ -107,6 +107,16 @@ export function FormAutosave() {
       return; // opslag niet beschikbaar (privémodus e.d.) → stil overslaan
     }
 
+    // Eenmalig: oude vinkje-concepten (ook van alleen-bekeken pagina's) opruimen.
+    // ponytail: wist ook tekstvelden met exact "0"/"1" — klein verlies, eenmalig.
+    if (!store.getItem("q4s-draft-vinkjes-v2")) {
+      for (let i = store.length - 1; i >= 0; i--) {
+        const k = store.key(i);
+        if (k?.startsWith(PREFIX) && /^[01]$/.test(store.getItem(k) ?? "")) store.removeItem(k);
+      }
+      store.setItem("q4s-draft-vinkjes-v2", "1");
+    }
+
     // Terugzetten ná de eerste paint én ná hydratie, zodat React zijn handlers al
     // heeft en onze 'input'-events oppikt. We doen het in twee stappen (rAF +
     // korte timeout) om zeker te zijn dat controlled inputs klaar zijn.
@@ -152,7 +162,14 @@ export function FormAutosave() {
     // verlaten/verbergen van de pagina en vlak vóór een update-reload.
     const saveAll = () => {
       document.querySelectorAll<Field>("input, textarea, select").forEach((el) => {
-        if (persistable(el)) saveField(el);
+        if (!persistable(el)) return;
+        // Een vinkje dat niemand heeft aangeraakt is geen concept: anders blijft de
+        // stand van een eerder bezoek eeuwig de standaard (of de DB-waarde) overschrijven.
+        if (isToggle(el) && (el as HTMLInputElement).checked === (el as HTMLInputElement).defaultChecked) {
+          store.removeItem(keyFor(pathname, el));
+          return;
+        }
+        saveField(el);
       });
     };
 
