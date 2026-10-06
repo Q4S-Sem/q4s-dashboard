@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { formatCurrency, formatDate, round2 } from "./utils";
+import { round2 } from "./utils";
 import type { InvoiceDoc } from "./invoice-pdf";
 import { renderQ4sEmail, renderQ4sEmailText, type EmailContent } from "./email";
 import type { CompanySettings } from "./settings";
@@ -202,36 +202,19 @@ export function sampleInvoiceDoc(s: CompanySettings): InvoiceDoc {
 }
 
 export function salesEmailContent(inv: SalesInvoiceFull, s: CompanySettings): EmailContent {
-  const c = inv.client;
-  const naam = c.contactName || c.companyName;
-  const weken = [...new Set(inv.lines.map((l) => l.weekNumber).filter((w): w is number => w != null))].sort((x, y) => x - y);
-  const periode = weken.length === 0 ? null : weken.length === 1 ? `Week ${weken[0]}` : `Week ${weken[0]} t/m ${weken[weken.length - 1]}`;
-  const betreft = [inv.subject, inv.services].filter(Boolean).join(" · ");
+  // Alleen tekst + de factuur als PDF-bijlage, in het Engels (net als de factuur zelf).
   return {
-    kicker: "Factuur",
-    heading: `Factuur ${inv.number}`,
-    greeting: `Beste ${naam},`,
+    lang: "en",
+    kicker: "Invoice",
+    heading: `Invoice ${inv.number}`,
+    greeting: "Dear financial administration,",
     paragraphs: compact([
-      `Hierbij ontvangt u factuur ${inv.number}${inv.subject ? ` voor de inzet van ${inv.subject}` : ""}${periode ? ` over ${periode.toLowerCase()}` : ""}. De factuur en de getekende urenstaten vindt u als PDF in de bijlage.`,
-      `Wij verzoeken u het bedrag binnen ${c.paymentTermDays} dagen over te maken onder vermelding van factuurnummer ${inv.number}. Vragen over deze factuur? Beantwoord dan gewoon deze e-mail.`,
+      `Please find attached invoice ${inv.number}${inv.subject ? ` for the services of ${inv.subject}` : ""}.`,
+      `We kindly request you to transfer the amount within the agreed payment term, stating invoice number ${inv.number}. If you have any questions about this invoice, simply reply to this e-mail.`,
       inv.notes,
     ]),
-    highlight: {
-      label: "Te betalen",
-      value: formatCurrency(inv.total),
-      note: `Vóór ${formatDate(inv.dueDate)} · o.v.v. ${inv.number}`,
-    },
-    summary: [
-      { label: "Factuurnummer", value: inv.number },
-      { label: "Factuurdatum", value: formatDate(inv.issueDate) },
-      ...(periode ? [{ label: "Periode", value: periode }] : []),
-      ...(betreft ? [{ label: "Betreft", value: betreft }] : []),
-      { label: "Bedrag excl. btw", value: formatCurrency(inv.subtotal) },
-      { label: inv.vatReverseCharge ? "Btw (verlegd)" : `Btw ${inv.vatRate}%`, value: formatCurrency(inv.vatAmount) },
-      ...(s.iban ? [{ label: "Rekening", value: `${s.iban} t.n.v. ${s.companyName || "Q4S"}` }] : []),
-    ],
+    summary: [],
     footerLines: companyFooterLines(s),
-    attachmentNote: "📎 Bijlage: factuur (PDF).",
   };
 }
 
@@ -256,12 +239,12 @@ export function salesSendData(inv: SalesInvoiceFull, s: CompanySettings): SendDa
   return {
     to: inv.client.invoiceEmail?.trim() || inv.client.email?.trim() || null,
     recipientName: inv.client.companyName,
-    subject: `Factuur ${inv.number} — ${s.companyName || "Q4S"}`,
+    subject: `Invoice ${inv.number} — ${s.companyName || "Q4S"}`,
     content,
     html: renderQ4sEmail(content),
     text: renderQ4sEmailText(content),
     pdfDoc: salesInvoiceDoc(inv, s),
-    pdfName: `factuur-${fileSafe(inv.number)}.pdf`,
+    pdfName: `invoice-${fileSafe(inv.number)}.pdf`,
   };
 }
 
@@ -299,12 +282,12 @@ export function sampleSalesSendData(s: CompanySettings): SendData {
   return {
     to: null,
     recipientName: inv.client.companyName,
-    subject: `Factuur ${inv.number} — ${s.companyName || "Q4S"}`,
+    subject: `Invoice ${inv.number} — ${s.companyName || "Q4S"}`,
     content,
     html: renderQ4sEmail(content),
     text: renderQ4sEmailText(content),
     pdfDoc: doc,
-    pdfName: `factuur-${fileSafe(inv.number)}.pdf`,
+    pdfName: `invoice-${fileSafe(inv.number)}.pdf`,
   };
 }
 

@@ -177,8 +177,8 @@ export type EmailContent = {
   footerLines: string[];
   /** Optional "📎 … bijgevoegd" note — only shown when there's an attachment. */
   attachmentNote?: string;
-  /** Groot bedrag-blok (factuur): "Te betalen € 10.912,34 — vóór 05-11-2026". */
-  highlight?: { label: string; value: string; note?: string };
+  /** "en" = Engelse afsluiting (verkoopfacturen aan klanten). Standaard Nederlands. */
+  lang?: "en";
 };
 
 function esc(s: string): string {
@@ -229,20 +229,12 @@ export function renderQ4sEmail(c: EmailContent, opts?: { logoSrc?: string }): st
       )}</a></td></tr></table>`
     : "";
 
-  const highlight = c.highlight
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 18px;background:${BRAND};"><tr><td style="padding:20px 22px;">
-<p style="margin:0 0 6px;color:${KICKER};font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;">${esc(c.highlight.label)}</p>
-<p style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-.3px;line-height:1.15;">${esc(c.highlight.value)}</p>
-${c.highlight.note ? `<p style="margin:8px 0 0;color:#d4d4d4;font-size:13px;">${esc(c.highlight.note)}</p>` : ""}
-</td></tr></table>`
-    : "";
-
   const footerAll = c.footerLines.filter(Boolean);
   const footerHead = footerAll[0] ? esc(footerAll[0]) : "Q4S Project Partners";
   const footerRest = footerAll.slice(1).map(esc).join("&nbsp; · &nbsp;");
 
   return `<!doctype html>
-<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
+<html lang="${c.lang ?? "nl"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
 <body style="margin:0;padding:0;background:#f4f4f5;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;">
     <tr><td align="center" style="padding:32px 12px;">
@@ -263,10 +255,9 @@ ${c.highlight.note ? `<p style="margin:8px 0 0;color:#d4d4d4;font-size:13px;">${
           )}</h1>
           <p style="margin:0 0 14px;color:#374151;font-size:14px;line-height:1.65;">${esc(c.greeting)}</p>
           ${paras}
-          ${highlight}
           ${cta}
           ${summaryTable}
-          <p style="margin:22px 0 2px;color:#374151;font-size:14px;line-height:1.6;">Met vriendelijke groet,</p>
+          <p style="margin:22px 0 2px;color:#374151;font-size:14px;line-height:1.6;">${c.lang === "en" ? "Kind regards," : "Met vriendelijke groet,"}</p>
           <p style="margin:0;color:${INK};font-size:14px;font-weight:700;">Team Q4S</p>
           ${
             c.attachmentNote
@@ -296,12 +287,11 @@ export function renderQ4sEmailText(c: EmailContent): string {
     "",
     ...c.paragraphs,
     "",
-    ...(c.highlight ? [`${c.highlight.label}: ${c.highlight.value}${c.highlight.note ? ` (${c.highlight.note})` : ""}`, ""] : []),
     ...(c.cta ? [c.cta.label + ": " + c.cta.url, ""] : []),
     ...c.summary.map((s) => `${s.label}: ${s.value}`),
     ...(c.summary.length ? [""] : []),
     ...(c.attachmentNote ? [c.attachmentNote, ""] : []),
-    "Met vriendelijke groet,",
+    c.lang === "en" ? "Kind regards," : "Met vriendelijke groet,",
     "Team Q4S",
     "",
     c.footerLines.filter(Boolean).join(" · "),
