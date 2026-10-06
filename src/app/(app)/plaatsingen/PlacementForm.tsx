@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useActionState, useContext, useEffect, useState, type ReactNode, type KeyboardEvent } from "react";
+import {
+  createContext,
+  useActionState,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+  type KeyboardEvent,
+} from "react";
 import type { Placement } from "@prisma/client";
 import {
   FileText,
@@ -26,7 +34,11 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmCancel } from "@/components/confirm-cancel";
 import { FolderTab, FolderTabBar } from "@/components/dossier-tabs";
-import { PLACEMENT_STATUSES, DISCIPLINES, EMPLOYMENT_TYPES } from "@/lib/domain";
+import {
+  PLACEMENT_STATUSES,
+  DISCIPLINES,
+  EMPLOYMENT_TYPES,
+} from "@/lib/domain";
 import { cn, formatCurrency } from "@/lib/utils";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { quickCreateClient } from "../klanten/actions";
@@ -134,7 +146,11 @@ function UploadCard({
         className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-ink-300 bg-ink-50 px-3 py-2 text-sm font-medium text-ink-600 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
       >
         <Upload className="h-4 w-4" />
-        {files.length > 0 ? "Wijzigen" : multiple ? "Bestanden kiezen" : "Bestand kiezen"}
+        {files.length > 0
+          ? "Wijzigen"
+          : multiple
+            ? "Bestanden kiezen"
+            : "Bestand kiezen"}
       </label>
       <input
         id={id}
@@ -143,12 +159,17 @@ function UploadCard({
         multiple={multiple}
         aria-label={label}
         className="sr-only"
-        onChange={(ev) => setFiles(Array.from(ev.target.files ?? []).map((f) => f.name))}
+        onChange={(ev) =>
+          setFiles(Array.from(ev.target.files ?? []).map((f) => f.name))
+        }
       />
       {files.length > 0 ? (
         <ul className="mt-2 space-y-1">
           {files.map((f, i) => (
-            <li key={i} className="flex items-center gap-1.5 text-xs text-ink-600">
+            <li
+              key={i}
+              className="flex items-center gap-1.5 text-xs text-ink-600"
+            >
               <FileText className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
               <span className="truncate">{f}</span>
             </li>
@@ -183,7 +204,11 @@ function ToeslagField({
 }) {
   return (
     <label className={cn("block min-w-0 flex-1", disabled && "opacity-60")}>
-      {label && <span className="mb-1 block text-xs font-medium text-ink-500">{label}</span>}
+      {label && (
+        <span className="mb-1 block text-xs font-medium text-ink-500">
+          {label}
+        </span>
+      )}
       <div className="relative">
         <NumberInput
           name={name}
@@ -206,7 +231,12 @@ function ToeslagField({
 /** Kopregel boven de toeslagentabel (alleen op brede schermen). */
 function ToeslagKop() {
   return (
-    <div className={cn(TOESLAG_GRID, "hidden border-b border-ink-200 bg-ink-50/60 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-500 sm:grid")}>
+    <div
+      className={cn(
+        TOESLAG_GRID,
+        "hidden border-b border-ink-200 bg-ink-50/60 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-500 sm:grid",
+      )}
+    >
       <span>Toeslag</span>
       <span>Inkoop — wij betalen</span>
       <span>Klant betaalt?</span>
@@ -219,7 +249,15 @@ function ToeslagKop() {
  * Rekenen we deze toeslag door aan de klant? Uit = verkoop 0: wij betalen hem,
  * het gaat van de marge af (en hij komt niet op de verkoopfactuur).
  */
-function Doorrekenen({ aan, onChange, label }: { aan: boolean; onChange: (v: boolean) => void; label: string }) {
+function Doorrekenen({
+  aan,
+  onChange,
+  label,
+}: {
+  aan: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
   return (
     <button
       type="button"
@@ -229,7 +267,12 @@ function Doorrekenen({ aan, onChange, label }: { aan: boolean; onChange: (v: boo
       onClick={() => onChange(!aan)}
       className="inline-flex items-center gap-2 text-xs font-medium text-ink-600"
     >
-      <span className={cn("relative h-5 w-9 rounded-full transition-colors", aan ? "bg-ink-900" : "bg-ink-200")}>
+      <span
+        className={cn(
+          "relative h-5 w-9 rounded-full transition-colors",
+          aan ? "bg-ink-900" : "bg-ink-200",
+        )}
+      >
         <span
           className={cn(
             "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all",
@@ -266,7 +309,9 @@ function UnitSchakelaar({
   const tab = (active: boolean) =>
     cn(
       "flex h-9 w-8 items-center justify-center text-xs font-semibold transition-colors",
-      active ? "bg-ink-900 text-white" : "bg-white text-ink-400 hover:text-ink-700",
+      active
+        ? "bg-ink-900 text-white"
+        : "bg-white text-ink-400 hover:text-ink-700",
     );
   return (
     <div
@@ -306,7 +351,7 @@ function ToeslagNaam({
 }: {
   title: string;
   hint: string;
-  toggle?: { name: string; aan: boolean; set: (v: boolean) => void };
+  toggle?: { name?: string; aan: boolean; set: (v: boolean) => void };
 }) {
   return (
     <div className="min-w-0">
@@ -354,15 +399,45 @@ function ToeslagBlock({
   nietDoorTekst?: string;
 }) {
   const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
+  // Uitgevinkt = geldt niet: beide bedragen gaan als 0 mee.
+  const [aan, setAan] = useState(buyDefault > 0 || sellDefault > 0);
   return (
-    <div className={TOESLAG_GRID}>
-      <ToeslagNaam title={title} hint={hint} />
-      <ToeslagField name={buyName} def={buyDefault} suffix={suffix} step={step} label="" />
-      <Doorrekenen aan={door} onChange={setDoor} label={title} />
-      {door ? (
-        <ToeslagField name={sellName} def={sellDefault} suffix={suffix} step={step} label="" />
+    <div className={cn(TOESLAG_GRID, !aan && "bg-ink-50/40")}>
+      <ToeslagNaam
+        title={title}
+        hint={aan ? hint : "Uit — vink aan als het geldt"}
+        toggle={{ aan, set: setAan }}
+      />
+      {!aan ? (
+        <>
+          <input type="hidden" name={buyName} value={0} />
+          <input type="hidden" name={sellName} value={0} />
+          <span className="hidden text-xs text-ink-300 sm:block">—</span>
+          <span className="hidden sm:block" />
+          <span className="hidden text-xs text-ink-300 sm:block">—</span>
+        </>
       ) : (
-        <NietDoor name={sellName} tekst={nietDoorTekst} />
+        <>
+          <ToeslagField
+            name={buyName}
+            def={buyDefault}
+            suffix={suffix}
+            step={step}
+            label=""
+          />
+          <Doorrekenen aan={door} onChange={setDoor} label={title} />
+          {door ? (
+            <ToeslagField
+              name={sellName}
+              def={sellDefault}
+              suffix={suffix}
+              step={step}
+              label=""
+            />
+          ) : (
+            <NietDoor name={sellName} tekst={nietDoorTekst} />
+          )}
+        </>
       )}
     </div>
   );
@@ -394,35 +469,52 @@ function ToeslagRow({
   sellDefault: number;
   unitDefault: string;
   sellUnitDefault: string;
-  /** Alleen voor offshore/ploegendienst/buitenland. */
+  /** Offshore/ploegendienst/buitenland: eigen aan/uit-veld (bedragen blijven bewaard). */
   toggle?: { name: string; defaultOn: boolean };
 }) {
-  const [buyUnit, setBuyUnit] = useState<"PCT" | "FIXED">(unitDefault === "FIXED" ? "FIXED" : "PCT");
-  const [sellUnit, setSellUnit] = useState<"PCT" | "FIXED">(sellUnitDefault === "FIXED" ? "FIXED" : "PCT");
-  const [aan, setAan] = useState(toggle?.defaultOn ?? true);
+  const [buyUnit, setBuyUnit] = useState<"PCT" | "FIXED">(
+    unitDefault === "FIXED" ? "FIXED" : "PCT",
+  );
+  const [sellUnit, setSellUnit] = useState<"PCT" | "FIXED">(
+    sellUnitDefault === "FIXED" ? "FIXED" : "PCT",
+  );
+  // Zonder eigen veld (meeruren, zaterdag, zondag): uitgevinkt = 0 = geldt niet.
+  const [aan, setAan] = useState(
+    toggle?.defaultOn ?? (buyDefault > 0 || sellDefault > 0),
+  );
   const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
-  const uit = Boolean(toggle) && !aan;
+  const uit = !aan;
   const buyName = `${prefix}SurchargeBuy`;
   const sellName = `${prefix}SurchargeSell`;
   const unitInfo = (u: "PCT" | "FIXED") =>
-    u === "PCT" ? { suffix: "%", step: "any" as const } : { suffix: "€/u", step: 0.01 };
+    u === "PCT"
+      ? { suffix: "%", step: "any" as const }
+      : { suffix: "€/u", step: 0.01 };
 
   return (
     <div className={cn(TOESLAG_GRID, uit && "bg-ink-50/40")}>
       <ToeslagNaam
         title={title}
         hint={uit ? "Uit — vink aan als het geldt" : hint}
-        toggle={toggle ? { name: toggle.name, aan, set: setAan } : undefined}
+        toggle={{ name: toggle?.name, aan, set: setAan }}
       />
       {/* De schakelaars reizen als verborgen velden mee (per zijde). */}
       <input type="hidden" name={`${prefix}SurchargeUnit`} value={buyUnit} />
-      <input type="hidden" name={`${prefix}SurchargeSellUnit`} value={sellUnit} />
+      <input
+        type="hidden"
+        name={`${prefix}SurchargeSellUnit`}
+        value={sellUnit}
+      />
 
       {uit ? (
         // Uitgevinkt: de bedragen blijven bewaard, maar zijn niet te bewerken.
         <>
-          <input type="hidden" name={buyName} value={buyDefault} />
-          <input type="hidden" name={sellName} value={sellDefault} />
+          <input type="hidden" name={buyName} value={toggle ? buyDefault : 0} />
+          <input
+            type="hidden"
+            name={sellName}
+            value={toggle ? sellDefault : 0}
+          />
           <span className="hidden text-xs text-ink-300 sm:block">—</span>
           <span className="hidden sm:block" />
           <span className="hidden text-xs text-ink-300 sm:block">—</span>
@@ -430,14 +522,32 @@ function ToeslagRow({
       ) : (
         <>
           <div className="flex items-center gap-1.5">
-            <UnitSchakelaar unit={buyUnit} onChange={setBuyUnit} label={`${title} inkoop`} />
-            <ToeslagField name={buyName} def={buyDefault} {...unitInfo(buyUnit)} label="" />
+            <UnitSchakelaar
+              unit={buyUnit}
+              onChange={setBuyUnit}
+              label={`${title} inkoop`}
+            />
+            <ToeslagField
+              name={buyName}
+              def={buyDefault}
+              {...unitInfo(buyUnit)}
+              label=""
+            />
           </div>
           <Doorrekenen aan={door} onChange={setDoor} label={title} />
           {door ? (
             <div className="flex items-center gap-1.5">
-              <UnitSchakelaar unit={sellUnit} onChange={setSellUnit} label={`${title} verkoop`} />
-              <ToeslagField name={sellName} def={sellDefault} {...unitInfo(sellUnit)} label="" />
+              <UnitSchakelaar
+                unit={sellUnit}
+                onChange={setSellUnit}
+                label={`${title} verkoop`}
+              />
+              <ToeslagField
+                name={sellName}
+                def={sellDefault}
+                {...unitInfo(sellUnit)}
+                label=""
+              />
             </div>
           ) : (
             <NietDoor name={sellName} />
@@ -538,7 +648,11 @@ function ClientPicker({
     <div className="space-y-0">
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <Label htmlFor="clientId" className="mb-0">
-          Klant <span className="font-normal text-ink-400">— wie de factuur krijgt (bij inhuur via een partij: die partij, bijv. IMG Tech)</span>
+          Klant{" "}
+          <span className="font-normal text-ink-400">
+            — wie de factuur krijgt (bij inhuur via een partij: die partij,
+            bijv. IMG Tech)
+          </span>
         </Label>
         <button
           type="button"
@@ -548,7 +662,11 @@ function ClientPicker({
           }}
           className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50"
         >
-          {open ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+          {open ? (
+            <X className="h-3.5 w-3.5" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
           {open ? "Sluiten" : "Nieuw bedrijf"}
         </button>
       </div>
@@ -569,9 +687,10 @@ function ClientPicker({
         <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
           <span>
-            <strong>Geen bedrijf gekoppeld.</strong> Je kunt deze plaatsing gewoon opslaan, maar
-            er kan pas een verkoopfactuur gemaakt worden zodra je een klant koppelt. Voeg het bedrijf
-            later toe door de plaatsing te bewerken.
+            <strong>Geen bedrijf gekoppeld.</strong> Je kunt deze plaatsing
+            gewoon opslaan, maar er kan pas een verkoopfactuur gemaakt worden
+            zodra je een klant koppelt. Voeg het bedrijf later toe door de
+            plaatsing te bewerken.
           </span>
         </div>
       )}
@@ -583,9 +702,12 @@ function ClientPicker({
               <Building2 className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink-800">Nieuw bedrijf toevoegen</p>
+              <p className="text-sm font-semibold text-ink-800">
+                Nieuw bedrijf toevoegen
+              </p>
               <p className="text-xs text-ink-500">
-                Vul in wat je hebt — later aanvullen of wijzigen kan altijd op de klantpagina.
+                Vul in wat je hebt — later aanvullen of wijzigen kan altijd op
+                de klantpagina.
               </p>
             </div>
           </div>
@@ -758,13 +880,19 @@ export function PlacementForm({
 
   // Mirror the rate inputs into state purely to render a live margin panel.
   const [costRate, setCostRate] = useState<number>(
-    draft?.costRate ? Number(draft.costRate) || 0 : placement?.costRate ?? 0,
+    draft?.costRate ? Number(draft.costRate) || 0 : (placement?.costRate ?? 0),
   );
   const [chargeRate, setChargeRate] = useState<number>(
-    draft?.chargeRate ? Number(draft.chargeRate) || 0 : placement?.chargeRate ?? 0,
+    draft?.chargeRate
+      ? Number(draft.chargeRate) || 0
+      : (placement?.chargeRate ?? 0),
   );
   const [rateUnit, setRateUnit] = useState<string>(
-    draft?.rateUnit === "DAY" ? "DAY" : placement?.rateUnit === "DAY" ? "DAY" : "HOUR",
+    draft?.rateUnit === "DAY"
+      ? "DAY"
+      : placement?.rateUnit === "DAY"
+        ? "DAY"
+        : "HOUR",
   );
   const eenheid = rateUnit === "DAY" ? "dag" : "uur";
 
@@ -777,7 +905,9 @@ export function PlacementForm({
   );
   const [endDate, setEndDate] = useState<string>(
     draft?.endDate ??
-      (placement?.endDate ? new Date(placement.endDate).toISOString().slice(0, 10) : ""),
+      (placement?.endDate
+        ? new Date(placement.endDate).toISOString().slice(0, 10)
+        : ""),
   );
 
   // Concept terugzetten: vul de gewone tekstvelden uit het opgeslagen concept.
@@ -800,9 +930,14 @@ export function PlacementForm({
       if (CUSTOM.has(name)) continue;
       document.getElementsByName(name).forEach((el) => {
         const isField =
-          (el instanceof HTMLInputElement && el.type !== "hidden" && el.type !== "file") ||
+          (el instanceof HTMLInputElement &&
+            el.type !== "hidden" &&
+            el.type !== "file") ||
           el instanceof HTMLTextAreaElement;
-        if (isField && (el as HTMLInputElement | HTMLTextAreaElement).value !== value) {
+        if (
+          isField &&
+          (el as HTMLInputElement | HTMLTextAreaElement).value !== value
+        ) {
           (el as HTMLInputElement | HTMLTextAreaElement).value = value;
           el.dispatchEvent(new Event("input", { bubbles: true }));
         }
@@ -820,7 +955,8 @@ export function PlacementForm({
     : "Onbekende werknemer";
 
   const marginPerHour = chargeRate - costRate;
-  const marginPct = chargeRate > 0 ? ((chargeRate - costRate) / chargeRate) * 100 : 0;
+  const marginPct =
+    chargeRate > 0 ? ((chargeRate - costRate) / chargeRate) * 100 : 0;
 
   return (
     <form action={formAction} data-no-persist={draft ? "" : undefined}>
@@ -845,7 +981,9 @@ export function PlacementForm({
       </div>
 
       {state.error && (
-        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {state.error}
+        </p>
       )}
 
       {/* Mapjes: zelfde look als de dossiers. Een veld dat de browser afkeurt
@@ -854,122 +992,186 @@ export function PlacementForm({
         <FolderTabBar label="Plaatsing">
           {(placement || personMode === "existing"
             ? ([
-                ["werknemer", "Werknemer", <UserRound key="i" className="h-4 w-4" />],
-                ["plaatsing", "Plaatsing & tarief", <Coins key="i" className="h-4 w-4" />],
+                [
+                  "werknemer",
+                  "Werknemer",
+                  <UserRound key="i" className="h-4 w-4" />,
+                ],
+                [
+                  "plaatsing",
+                  "Plaatsing & tarief",
+                  <Coins key="i" className="h-4 w-4" />,
+                ],
               ] as const)
             : ([
-                ["bestanden", "Bestanden uitlezen", <Sparkles key="i" className="h-4 w-4" />],
-                ["werknemer", "Werknemer", <UserRound key="i" className="h-4 w-4" />],
-                ["bedrijf", "Bedrijf ZZP", <Building2 key="i" className="h-4 w-4" />],
-                ["documenten", "Documenten", <FileText key="i" className="h-4 w-4" />],
-                ["plaatsing", "Plaatsing & tarief", <Coins key="i" className="h-4 w-4" />],
+                [
+                  "bestanden",
+                  "Bestanden uitlezen",
+                  <Sparkles key="i" className="h-4 w-4" />,
+                ],
+                [
+                  "werknemer",
+                  "Werknemer",
+                  <UserRound key="i" className="h-4 w-4" />,
+                ],
+                [
+                  "bedrijf",
+                  "Bedrijf ZZP",
+                  <Building2 key="i" className="h-4 w-4" />,
+                ],
+                [
+                  "documenten",
+                  "Documenten",
+                  <FileText key="i" className="h-4 w-4" />,
+                ],
+                [
+                  "plaatsing",
+                  "Plaatsing & tarief",
+                  <Coins key="i" className="h-4 w-4" />,
+                ],
               ] as const)
           ).map(([key, label, icon]) => (
-            <FolderTab key={key} icon={icon} label={label} active={tab === key} onClick={() => setTab(key)} />
+            <FolderTab
+              key={key}
+              icon={icon}
+              label={label}
+              active={tab === key}
+              onClick={() => setTab(key)}
+            />
           ))}
         </FolderTabBar>
 
-      <div
-        className="space-y-4 pt-4"
-        onInvalidCapture={(ev) => {
-          const t = (ev.target as HTMLElement).closest("[data-tab]")?.getAttribute("data-tab") as Tab | null;
-          if (t && t !== tab) setTab(t);
-        }}
-      >
-        {/* 1. Eerst de bestanden: de AI vult de rest zoveel mogelijk in. */}
-        {!placement && personMode === "new" && (
-          <Sectie tab="bestanden" nr={1} titel="Bestanden uitlezen" sub="Begin hier — sleep het CV erin, de AI vult de gegevens hieronder in.">
-            <WerknemerCvIntake />
-          </Sectie>
-        )}
+        <div
+          className="space-y-4 pt-4"
+          onInvalidCapture={(ev) => {
+            const t = (ev.target as HTMLElement)
+              .closest("[data-tab]")
+              ?.getAttribute("data-tab") as Tab | null;
+            if (t && t !== tab) setTab(t);
+          }}
+        >
+          {/* 1. Eerst de bestanden: de AI vult de rest zoveel mogelijk in. */}
+          {!placement && personMode === "new" && (
+            <Sectie
+              tab="bestanden"
+              nr={1}
+              titel="Bestanden uitlezen"
+              sub="Begin hier — sleep het CV erin, de AI vult de gegevens hieronder in."
+            >
+              <WerknemerCvIntake />
+            </Sectie>
+          )}
 
-        <Sectie tab="werknemer" nr={placement ? 1 : 2} titel="Werknemer" sub={placement ? undefined : "Wie gaan we plaatsen?"}>
-          {placement ? (
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Werknemer" error={e.consultantId}>
-                {/* Fixed — the person on a plaatsing cannot be changed here. */}
-                <input type="hidden" name="consultantId" value={placement.consultantId} />
-                <div className="flex items-center gap-2 rounded-lg border border-ink-200 bg-ink-50 px-3 py-2">
-                  <span className="text-sm font-medium text-ink-900">
-                    {currentPersonName}
-                  </span>
-                  <span className="ml-auto inline-flex items-center gap-1 text-xs text-ink-400">
-                    <Lock className="h-3 w-3" /> Vast
-                  </span>
-                </div>
-              </Field>
-              <ClientPicker
-                initialClients={clients}
-                initialClientId={placement.clientId}
-                error={e.clientId}
-              />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <input type="hidden" name="personMode" value={personMode} />
-              <div>
-                <Label>Werknemer</Label>
-                <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-1 text-sm">
-                  <button
-                    type="button"
-                    onClick={() => setPersonMode("new")}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 font-medium transition-colors",
-                      personMode === "new"
-                        ? "bg-white text-brand-700 shadow-sm"
-                        : "text-ink-600 hover:text-ink-900",
-                    )}
-                  >
-                    Nieuwe werknemer
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPersonMode("existing")}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 font-medium transition-colors",
-                      personMode === "existing"
-                        ? "bg-white text-brand-700 shadow-sm"
-                        : "text-ink-600 hover:text-ink-900",
-                    )}
-                  >
-                    Bestaande werknemer
-                  </button>
-                </div>
-              </div>
-
-              {personMode === "existing" ? (
-                <Field
-                  label="Kies werknemer"
-                  htmlFor="consultantId"
-                  required
-                  error={e.consultantId}
-                  hint="Dezelfde persoon mag meerdere plaatsingen tegelijk hebben — bijv. bij verschillende bedrijven. Kies 'm hier gewoon opnieuw voor een extra plaatsing."
-                >
-                  <SearchSelect
-                    id="consultantId"
+          <Sectie
+            tab="werknemer"
+            nr={placement ? 1 : 2}
+            titel="Werknemer"
+            sub={placement ? undefined : "Wie gaan we plaatsen?"}
+          >
+            {placement ? (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label="Werknemer" error={e.consultantId}>
+                  {/* Fixed — the person on a plaatsing cannot be changed here. */}
+                  <input
+                    type="hidden"
                     name="consultantId"
-                    defaultValue={dv("consultantId")}
-                    options={consultants.map((c) => ({
-                      value: c.id,
-                      label: `${c.firstName} ${c.lastName}`,
-                    }))}
-                    placeholder="Typ een naam om te zoeken…"
-                    emptyText={
-                      consultants.length === 0
-                        ? "Nog geen werknemers — gebruik ‘Nieuwe werknemer’ of detacheer een medewerker."
-                        : "Geen werknemer gevonden."
-                    }
+                    value={placement.consultantId}
                   />
+                  <div className="flex items-center gap-2 rounded-lg border border-ink-200 bg-ink-50 px-3 py-2">
+                    <span className="text-sm font-medium text-ink-900">
+                      {currentPersonName}
+                    </span>
+                    <span className="ml-auto inline-flex items-center gap-1 text-xs text-ink-400">
+                      <Lock className="h-3 w-3" /> Vast
+                    </span>
+                  </div>
                 </Field>
-              ) : (
+                <ClientPicker
+                  initialClients={clients}
+                  initialClientId={placement.clientId}
+                  error={e.clientId}
+                />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <input type="hidden" name="personMode" value={personMode} />
+                <div>
+                  <Label>Werknemer</Label>
+                  <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-1 text-sm">
+                    <button
+                      type="button"
+                      onClick={() => setPersonMode("new")}
+                      className={cn(
+                        "rounded-md px-3 py-1.5 font-medium transition-colors",
+                        personMode === "new"
+                          ? "bg-white text-brand-700 shadow-sm"
+                          : "text-ink-600 hover:text-ink-900",
+                      )}
+                    >
+                      Nieuwe werknemer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPersonMode("existing")}
+                      className={cn(
+                        "rounded-md px-3 py-1.5 font-medium transition-colors",
+                        personMode === "existing"
+                          ? "bg-white text-brand-700 shadow-sm"
+                          : "text-ink-600 hover:text-ink-900",
+                      )}
+                    >
+                      Bestaande werknemer
+                    </button>
+                  </div>
+                </div>
+
+                {personMode === "existing" ? (
+                  <Field
+                    label="Kies werknemer"
+                    htmlFor="consultantId"
+                    required
+                    error={e.consultantId}
+                    hint="Dezelfde persoon mag meerdere plaatsingen tegelijk hebben — bijv. bij verschillende bedrijven. Kies 'm hier gewoon opnieuw voor een extra plaatsing."
+                  >
+                    <SearchSelect
+                      id="consultantId"
+                      name="consultantId"
+                      defaultValue={dv("consultantId")}
+                      options={consultants.map((c) => ({
+                        value: c.id,
+                        label: `${c.firstName} ${c.lastName}`,
+                      }))}
+                      placeholder="Typ een naam om te zoeken…"
+                      emptyText={
+                        consultants.length === 0
+                          ? "Nog geen werknemers — gebruik ‘Nieuwe werknemer’ of detacheer een medewerker."
+                          : "Geen werknemer gevonden."
+                      }
+                    />
+                  </Field>
+                ) : (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Voornaam" htmlFor="firstName" required error={e.firstName}>
+                    <Field
+                      label="Voornaam"
+                      htmlFor="firstName"
+                      required
+                      error={e.firstName}
+                    >
                       <Input id="firstName" name="firstName" required />
                     </Field>
-                    <Field label="Achternaam" htmlFor="lastName" required error={e.lastName}>
+                    <Field
+                      label="Achternaam"
+                      htmlFor="lastName"
+                      required
+                      error={e.lastName}
+                    >
                       <Input id="lastName" name="lastName" required />
                     </Field>
-                    <Field label="Geboortedatum" htmlFor="dateOfBirth" error={e.dateOfBirth}>
+                    <Field
+                      label="Geboortedatum"
+                      htmlFor="dateOfBirth"
+                      error={e.dateOfBirth}
+                    >
                       <Input id="dateOfBirth" name="dateOfBirth" type="date" />
                     </Field>
                     <Field
@@ -992,8 +1194,16 @@ export function PlacementForm({
                         ))}
                       </datalist>
                     </Field>
-                    <Field label="Dienstverband" htmlFor="employmentType" error={e.employmentType}>
-                      <Select id="employmentType" name="employmentType" defaultValue={dv("employmentType", "ZZP")}>
+                    <Field
+                      label="Dienstverband"
+                      htmlFor="employmentType"
+                      error={e.employmentType}
+                    >
+                      <Select
+                        id="employmentType"
+                        name="employmentType"
+                        defaultValue={dv("employmentType", "ZZP")}
+                      >
                         {EMPLOYMENT_TYPES.map((o) => (
                           <option key={o.value} value={o.value}>
                             {o.label}
@@ -1010,335 +1220,598 @@ export function PlacementForm({
                     <Field label="BSN" htmlFor="bsn" error={e.bsn}>
                       <Input id="bsn" name="bsn" />
                     </Field>
-                    <Field label="Nationaliteit" htmlFor="nationality" error={e.nationality}>
+                    <Field
+                      label="Nationaliteit"
+                      htmlFor="nationality"
+                      error={e.nationality}
+                    >
                       <Input id="nationality" name="nationality" />
                     </Field>
                   </div>
-              )}
-            </div>
-          )}
-        </Sectie>
-
-        {!placement && personMode === "new" && (
-          <>
-            <Sectie tab="bedrijf" nr={3} titel="Bedrijfsgegevens ZZP" sub="Voor de inkoopfactuur en de betaling — leeg laten bij loondienst.">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Bedrijfsnaam" htmlFor="p-companyName" error={e.companyName}>
-                        <Input id="p-companyName" name="companyName" placeholder="Bijv. Balder Quality Service" />
-                      </Field>
-                      <Field label="KvK-nummer" htmlFor="p-kvk" error={e.kvkNumber}>
-                        <Input id="p-kvk" name="kvkNumber" placeholder="8 cijfers" />
-                      </Field>
-                      <Field label="BTW-nummer" htmlFor="p-vat" error={e.vatNumber}>
-                        <Input id="p-vat" name="vatNumber" placeholder="NL000000000B00" />
-                      </Field>
-                      <Field label="IBAN" htmlFor="p-iban" error={e.iban}>
-                        <Input id="p-iban" name="iban" placeholder="NL00 BANK 0000 0000 00" />
-                      </Field>
-                      <Field
-                        label="Adres"
-                        htmlFor="p-address"
-                        error={e.address}
-                      >
-                        <Input
-                          id="p-address"
-                          name="address"
-                          placeholder="Straat en huisnummer"
-                          autoComplete="off"
-                        />
-                      </Field>
-                      <div className="grid grid-cols-2 gap-3">
-                        <Field label="Postcode" htmlFor="p-postalCode" error={e.postalCode}>
-                          <Input id="p-postalCode" name="postalCode" placeholder="1234 AB" />
-                        </Field>
-                        <Field label="Plaats" htmlFor="p-city" error={e.city}>
-                          <Input id="p-city" name="city" />
-                        </Field>
-                      </div>
-                    </div>
-            </Sectie>
-
-            <Sectie tab="documenten" nr={4} titel="Documenten" sub="Optioneel — kan ook later in het dossier.">
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <UploadCard
-                        id="cvFile"
-                        name="cvFile"
-                        label="CV"
-                        hint="Automatisch gevuld via 'CV inlezen' hierboven"
-                        icon={<FileText className="h-[18px] w-[18px]" />}
-                      />
-                      <UploadCard
-                        id="contractFile"
-                        name="contractFile"
-                        label="Contract"
-                        hint="Arbeids-/opdrachtovereenkomst"
-                        icon={<FileSignature className="h-[18px] w-[18px]" />}
-                      />
-                      <UploadCard
-                        id="diplomaFiles"
-                        name="diplomaFiles"
-                        label="Diploma's"
-                        hint="Certificaten · meerdere mogelijk"
-                        icon={<GraduationCap className="h-[18px] w-[18px]" />}
-                        multiple
-                      />
-                    </div>
-                    <p className="mt-2.5 text-xs text-ink-400">
-                      Je kunt deze ook later op de plaatsing toevoegen.
-                    </p>
-            </Sectie>
-          </>
-        )}
-
-        <Sectie tab="plaatsing" nr={placement ? 2 : 5} titel="Plaatsing & tarief" sub="Bij welke klant, vanaf wanneer en tegen welk tarief.">
-          <div className="space-y-5">
-            {!placement && <ClientPicker initialClients={clients} initialClientId={dv("clientId")} error={e.clientId} />}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Functie" htmlFor="title" required error={e.title}>
-              <Input id="title" name="title" defaultValue={placement?.title ?? ""} placeholder="Bijv. NDT Inspector Level 2" required />
-            </Field>
-            <Field label="PO-nummer klant" htmlFor="poNumber" error={e.poNumber} hint="Optioneel — komt als “PO” op de verkoopfactuur.">
-              <Input id="poNumber" name="poNumber" defaultValue={placement?.poNumber ?? ""} placeholder="Bijv. 4500123456" />
-            </Field>
-            <Field
-              label="Werklocatie / eindklant"
-              htmlFor="workLocation"
-              hint="Waar hij écht werkt (bijv. “LyondellBasell via KWR”). Alleen info op de factuur (kolom LOCATIE) — de factuur gaat altijd naar de Klant hierboven."
-              className="sm:col-span-2"
-            >
-              <Input id="workLocation" name="workLocation" defaultValue={placement?.workLocation ?? ""} placeholder="Bijv. LyondellBasell Moerdijk via KWR" />
-            </Field>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Startdatum" htmlFor="startDate" required error={e.startDate}>
-              <DateInput id="startDate" name="startDate" required value={startDate} onValueChange={setStartDate} />
-            </Field>
-            <Field label="Einddatum" htmlFor="endDate" error={e.endDate} hint="Leeg laten als de plaatsing nog loopt">
-              <DateInput id="endDate" name="endDate" value={endDate} onValueChange={setEndDate} />
-              {contractEinde && contractEinde.datum !== endDate && (
-                <button
-                  type="button"
-                  onClick={() => setEndDate(contractEinde.datum)}
-                  className="mt-1 text-xs font-medium text-brand-700 underline underline-offset-2 hover:text-ink-900"
-                >
-                  Overnemen uit contract {contractEinde.label} ({contractEinde.datum.split("-").reverse().join("-")})
-                </button>
-              )}
-            </Field>
-          </div>
-
-          {/* Basistarief + marge op één regel. */}
-          <div className="rounded-lg border border-ink-200">
-            <div className="grid gap-4 p-3 sm:grid-cols-[9rem_1fr_1fr_11rem] sm:items-end">
-              <Field label="Tarief per" htmlFor="rateUnit">
-                <Select id="rateUnit" name="rateUnit" defaultValue={rateUnit} onValueChange={setRateUnit}>
-                  <option value="HOUR">Uur</option>
-                  <option value="DAY">Dag (dayrate)</option>
-                </Select>
-              </Field>
-              <Field label={`Inkoop — wij betalen (per ${eenheid})`} htmlFor="costRate" required error={e.costRate}>
-                <Input id="costRate" name="costRate" type="number" step="0.01" min={0} defaultValue={placement?.costRate ?? ""} onChange={(ev) => setCostRate(Number(ev.target.value) || 0)} required className="tabular-nums" />
-              </Field>
-              <Field label={`Verkoop — klant betaalt (per ${eenheid})`} htmlFor="chargeRate" required error={e.chargeRate}>
-                <Input id="chargeRate" name="chargeRate" type="number" step="0.01" min={0} defaultValue={placement?.chargeRate ?? ""} onChange={(ev) => setChargeRate(Number(ev.target.value) || 0)} required className="tabular-nums" />
-              </Field>
-              <div className={cn("rounded-md px-3 py-1.5", marginPerHour < 0 ? "bg-red-50" : "bg-emerald-50")}>
-                <p className={cn("text-[11px] font-semibold uppercase tracking-wide", marginPerHour < 0 ? "text-red-700" : "text-emerald-700")}>Marge</p>
-                <p className={cn("text-base font-bold tabular-nums", marginPerHour < 0 ? "text-red-700" : "text-emerald-700")}>
-                  {formatCurrency(marginPerHour)}/{eenheid}{" "}
-                  <span className="text-xs font-medium">({marginPct.toFixed(1)}%)</span>
-                </p>
+                )}
               </div>
-            </div>
-            <label className="flex cursor-pointer items-center gap-2 border-t border-ink-100 px-3 py-2 text-sm">
-              <input
-                type="checkbox"
-                name="vatReverseCharge"
-                defaultChecked={placement?.vatReverseCharge ?? false}
-                className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
-              />
-              <span className="font-medium text-ink-900">BTW verlegd</span>
-              <span className="text-xs text-ink-400">— verkoopfactuur met 0% BTW en de verplichte vermelding</span>
-            </label>
-          </div>
+            )}
+          </Sectie>
 
-          {/* Toeslagen als één compacte tabel. */}
-          <div className="overflow-hidden rounded-lg border border-ink-200">
-            <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-ink-200 px-3 py-2.5">
-              <p className="text-sm font-semibold text-ink-900">Toeslagen, overuren &amp; kilometers</p>
-              <p className="text-xs text-ink-400">Klant betaalt? Nee = wij betalen, gaat van de marge af · 0 = geldt niet</p>
-            </div>
-            <ToeslagKop />
-            <div className="divide-y divide-ink-100">
-              <input type="hidden" name="weekendSurchargeBuy" value={0} />
-              <input type="hidden" name="weekendSurchargeSell" value={0} />
-              {/* Reguliere ma–vr uren gaan tegen het NORMALE uurtarief (geen
+          {!placement && personMode === "new" && (
+            <>
+              <Sectie
+                tab="bedrijf"
+                nr={3}
+                titel="Bedrijfsgegevens ZZP"
+                sub="Voor de inkoopfactuur en de betaling — leeg laten bij loondienst."
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field
+                    label="Bedrijfsnaam"
+                    htmlFor="p-companyName"
+                    error={e.companyName}
+                  >
+                    <Input
+                      id="p-companyName"
+                      name="companyName"
+                      placeholder="Bijv. Balder Quality Service"
+                    />
+                  </Field>
+                  <Field label="KvK-nummer" htmlFor="p-kvk" error={e.kvkNumber}>
+                    <Input
+                      id="p-kvk"
+                      name="kvkNumber"
+                      placeholder="8 cijfers"
+                    />
+                  </Field>
+                  <Field label="BTW-nummer" htmlFor="p-vat" error={e.vatNumber}>
+                    <Input
+                      id="p-vat"
+                      name="vatNumber"
+                      placeholder="NL000000000B00"
+                    />
+                  </Field>
+                  <Field label="IBAN" htmlFor="p-iban" error={e.iban}>
+                    <Input
+                      id="p-iban"
+                      name="iban"
+                      placeholder="NL00 BANK 0000 0000 00"
+                    />
+                  </Field>
+                  <Field label="Adres" htmlFor="p-address" error={e.address}>
+                    <Input
+                      id="p-address"
+                      name="address"
+                      placeholder="Straat en huisnummer"
+                      autoComplete="off"
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field
+                      label="Postcode"
+                      htmlFor="p-postalCode"
+                      error={e.postalCode}
+                    >
+                      <Input
+                        id="p-postalCode"
+                        name="postalCode"
+                        placeholder="1234 AB"
+                      />
+                    </Field>
+                    <Field label="Plaats" htmlFor="p-city" error={e.city}>
+                      <Input id="p-city" name="city" />
+                    </Field>
+                  </div>
+                </div>
+              </Sectie>
+
+              <Sectie
+                tab="documenten"
+                nr={4}
+                titel="Documenten"
+                sub="Optioneel — kan ook later in het dossier."
+              >
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <UploadCard
+                    id="cvFile"
+                    name="cvFile"
+                    label="CV"
+                    hint="Automatisch gevuld via 'CV inlezen' hierboven"
+                    icon={<FileText className="h-[18px] w-[18px]" />}
+                  />
+                  <UploadCard
+                    id="contractFile"
+                    name="contractFile"
+                    label="Contract"
+                    hint="Arbeids-/opdrachtovereenkomst"
+                    icon={<FileSignature className="h-[18px] w-[18px]" />}
+                  />
+                  <UploadCard
+                    id="diplomaFiles"
+                    name="diplomaFiles"
+                    label="Diploma's"
+                    hint="Certificaten · meerdere mogelijk"
+                    icon={<GraduationCap className="h-[18px] w-[18px]" />}
+                    multiple
+                  />
+                </div>
+                <p className="mt-2.5 text-xs text-ink-400">
+                  Je kunt deze ook later op de plaatsing toevoegen.
+                </p>
+              </Sectie>
+            </>
+          )}
+
+          <Sectie
+            tab="plaatsing"
+            nr={placement ? 2 : 5}
+            titel="Plaatsing & tarief"
+            sub="Bij welke klant, vanaf wanneer en tegen welk tarief."
+          >
+            <div className="space-y-5">
+              {!placement && (
+                <ClientPicker
+                  initialClients={clients}
+                  initialClientId={dv("clientId")}
+                  error={e.clientId}
+                />
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Functie" htmlFor="title" required error={e.title}>
+                  <Input
+                    id="title"
+                    name="title"
+                    defaultValue={placement?.title ?? ""}
+                    placeholder="Bijv. NDT Inspector Level 2"
+                    required
+                  />
+                </Field>
+                <Field
+                  label="PO-nummer klant"
+                  htmlFor="poNumber"
+                  error={e.poNumber}
+                  hint="Optioneel — komt als “PO” op de verkoopfactuur."
+                >
+                  <Input
+                    id="poNumber"
+                    name="poNumber"
+                    defaultValue={placement?.poNumber ?? ""}
+                    placeholder="Bijv. 4500123456"
+                  />
+                </Field>
+                <Field
+                  label="Werklocatie / eindklant"
+                  htmlFor="workLocation"
+                  hint="Waar hij écht werkt (bijv. “LyondellBasell via KWR”). Alleen info op de factuur (kolom LOCATIE) — de factuur gaat altijd naar de Klant hierboven."
+                  className="sm:col-span-2"
+                >
+                  <Input
+                    id="workLocation"
+                    name="workLocation"
+                    defaultValue={placement?.workLocation ?? ""}
+                    placeholder="Bijv. LyondellBasell Moerdijk via KWR"
+                  />
+                </Field>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Startdatum"
+                  htmlFor="startDate"
+                  required
+                  error={e.startDate}
+                >
+                  <DateInput
+                    id="startDate"
+                    name="startDate"
+                    required
+                    value={startDate}
+                    onValueChange={setStartDate}
+                  />
+                </Field>
+                <Field
+                  label="Einddatum"
+                  htmlFor="endDate"
+                  error={e.endDate}
+                  hint="Leeg laten als de plaatsing nog loopt"
+                >
+                  <DateInput
+                    id="endDate"
+                    name="endDate"
+                    value={endDate}
+                    onValueChange={setEndDate}
+                  />
+                  {contractEinde && contractEinde.datum !== endDate && (
+                    <button
+                      type="button"
+                      onClick={() => setEndDate(contractEinde.datum)}
+                      className="mt-1 text-xs font-medium text-brand-700 underline underline-offset-2 hover:text-ink-900"
+                    >
+                      Overnemen uit contract {contractEinde.label} (
+                      {contractEinde.datum.split("-").reverse().join("-")})
+                    </button>
+                  )}
+                </Field>
+              </div>
+
+              {/* Basistarief + marge op één regel. */}
+              <div className="rounded-lg border border-ink-200">
+                <div className="grid gap-4 p-3 sm:grid-cols-[9rem_1fr_1fr_11rem] sm:items-end">
+                  <Field label="Tarief per" htmlFor="rateUnit">
+                    <Select
+                      id="rateUnit"
+                      name="rateUnit"
+                      defaultValue={rateUnit}
+                      onValueChange={setRateUnit}
+                    >
+                      <option value="HOUR">Uur</option>
+                      <option value="DAY">Dag (dayrate)</option>
+                    </Select>
+                  </Field>
+                  <Field
+                    label={`Inkoop — wij betalen (per ${eenheid})`}
+                    htmlFor="costRate"
+                    required
+                    error={e.costRate}
+                  >
+                    <Input
+                      id="costRate"
+                      name="costRate"
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      defaultValue={placement?.costRate ?? ""}
+                      onChange={(ev) =>
+                        setCostRate(Number(ev.target.value) || 0)
+                      }
+                      required
+                      className="tabular-nums"
+                    />
+                  </Field>
+                  <Field
+                    label={`Verkoop — klant betaalt (per ${eenheid})`}
+                    htmlFor="chargeRate"
+                    required
+                    error={e.chargeRate}
+                  >
+                    <Input
+                      id="chargeRate"
+                      name="chargeRate"
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      defaultValue={placement?.chargeRate ?? ""}
+                      onChange={(ev) =>
+                        setChargeRate(Number(ev.target.value) || 0)
+                      }
+                      required
+                      className="tabular-nums"
+                    />
+                  </Field>
+                  <div
+                    className={cn(
+                      "rounded-md px-3 py-1.5",
+                      marginPerHour < 0 ? "bg-red-50" : "bg-emerald-50",
+                    )}
+                  >
+                    <p
+                      className={cn(
+                        "text-[11px] font-semibold uppercase tracking-wide",
+                        marginPerHour < 0 ? "text-red-700" : "text-emerald-700",
+                      )}
+                    >
+                      Marge
+                    </p>
+                    <p
+                      className={cn(
+                        "text-base font-bold tabular-nums",
+                        marginPerHour < 0 ? "text-red-700" : "text-emerald-700",
+                      )}
+                    >
+                      {formatCurrency(marginPerHour)}/{eenheid}{" "}
+                      <span className="text-xs font-medium">
+                        ({marginPct.toFixed(1)}%)
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <label className="flex cursor-pointer items-center gap-2 border-t border-ink-100 px-3 py-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="vatReverseCharge"
+                    defaultChecked={placement?.vatReverseCharge ?? false}
+                    className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
+                  />
+                  <span className="font-medium text-ink-900">BTW verlegd</span>
+                  <span className="text-xs text-ink-400">
+                    — verkoopfactuur met 0% BTW en de verplichte vermelding
+                  </span>
+                </label>
+              </div>
+
+              {/* Toeslagen als één compacte tabel. */}
+              <div className="overflow-hidden rounded-lg border border-ink-200">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-ink-200 px-3 py-2.5">
+                  <p className="text-sm font-semibold text-ink-900">
+                    Toeslagen, overuren &amp; kilometers
+                  </p>
+                  <p className="text-xs text-ink-400">
+                    Klant betaalt? Nee = wij betalen, gaat van de marge af · 0 =
+                    geldt niet
+                  </p>
+                </div>
+                <ToeslagKop />
+                <div className="divide-y divide-ink-100">
+                  <input type="hidden" name="weekendSurchargeBuy" value={0} />
+                  <input type="hidden" name="weekendSurchargeSell" value={0} />
+                  {/* Reguliere ma–vr uren gaan tegen het NORMALE uurtarief (geen
                   doordeweekse toeslag). Alleen echte overuren krijgen een hoger
                   tarief — zie het Overuren-blok onderaan. We forceren de oude
                   doordeweekse toeslag daarom op 0. */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-ink-50/40 px-3 py-2.5 text-sm text-ink-700">
-                <span className="font-medium text-ink-900">Meeruren ma–vr</span>
-                <span className="text-ink-500">vanaf</span>
-                <div className="w-28">
-                  <ToeslagField name="otFromHours" def={placement?.otFromHours ?? 0} suffix="u/dag" step={0.5} label="" />
-                </div>
-                <span className="text-ink-500">per dag, eerste trede</span>
-                <div className="w-24">
-                  <ToeslagField name="ot1Hours" def={placement?.ot1Hours ?? 2} suffix="uur" step={0.5} label="" />
-                </div>
-                <span className="text-xs text-ink-400">Leeg = geen meeruren-toeslag · feestdag telt als zondag</span>
-              </div>
-              <ToeslagRow
-                title="Meeruren · trede 1"
-                hint="Bijv. 9e & 10e uur"
-                prefix="weekday"
-                buyDefault={placement?.otFromHours != null ? placement.weekdaySurchargeBuy : 0}
-                sellDefault={placement?.otFromHours != null ? placement.weekdaySurchargeSell : 0}
-                unitDefault={placement?.weekdaySurchargeUnit ?? "PCT"}
-                sellUnitDefault={placement?.weekdaySurchargeSellUnit ?? placement?.weekdaySurchargeUnit ?? "PCT"}
-              />
-              <ToeslagRow
-                title="Meeruren · trede 2"
-                hint="Boven de eerste trede"
-                prefix="weekday2"
-                buyDefault={placement?.weekday2SurchargeBuy ?? 0}
-                sellDefault={placement?.weekday2SurchargeSell ?? 0}
-                unitDefault={placement?.weekday2SurchargeUnit ?? "PCT"}
-                sellUnitDefault={placement?.weekday2SurchargeSellUnit ?? placement?.weekday2SurchargeUnit ?? "PCT"}
-              />
-              <ToeslagRow
-                title="Zaterdag"
-                hint="Uren op zaterdag"
-                prefix="saturday"
-                buyDefault={placement?.saturdaySurchargeBuy || placement?.weekendSurchargeBuy || 0}
-                sellDefault={placement?.saturdaySurchargeSell || placement?.weekendSurchargeSell || 0}
-                unitDefault={placement?.saturdaySurchargeUnit ?? "PCT"}
-                sellUnitDefault={placement?.saturdaySurchargeSellUnit ?? placement?.saturdaySurchargeUnit ?? "PCT"}
-              />
-              <ToeslagRow
-                title="Zondag & feestdag"
-                hint="Uren op zondag en feestdagen"
-                prefix="sunday"
-                buyDefault={placement?.sundaySurchargeBuy || placement?.weekendSurchargeBuy || 0}
-                sellDefault={placement?.sundaySurchargeSell || placement?.weekendSurchargeSell || 0}
-                unitDefault={placement?.sundaySurchargeUnit ?? "PCT"}
-                sellUnitDefault={placement?.sundaySurchargeSellUnit ?? placement?.sundaySurchargeUnit ?? "PCT"}
-              />
-              <ToeslagRow
-                title="Offshore"
-                hint="Over alle reguliere uren"
-                prefix="offshore"
-                buyDefault={placement?.offshoreSurchargeBuy ?? 0}
-                sellDefault={placement?.offshoreSurchargeSell ?? 0}
-                unitDefault={placement?.offshoreSurchargeUnit ?? "PCT"}
-                sellUnitDefault={placement?.offshoreSurchargeSellUnit ?? placement?.offshoreSurchargeUnit ?? "PCT"}
-                toggle={{ name: "offshoreEnabled", defaultOn: placement?.offshoreEnabled ?? false }}
-              />
-              <ToeslagRow
-                title="Ploegendienst"
-                hint="Over alle reguliere uren"
-                prefix="shift"
-                buyDefault={placement?.shiftSurchargeBuy ?? 0}
-                sellDefault={placement?.shiftSurchargeSell ?? 0}
-                unitDefault={placement?.shiftSurchargeUnit ?? "PCT"}
-                sellUnitDefault={placement?.shiftSurchargeSellUnit ?? placement?.shiftSurchargeUnit ?? "PCT"}
-                toggle={{ name: "shiftEnabled", defaultOn: placement?.shiftEnabled ?? false }}
-              />
-              <ToeslagRow
-                title="Buitenland"
-                hint="Over alle reguliere uren"
-                prefix="abroad"
-                buyDefault={placement?.abroadSurchargeBuy ?? 0}
-                sellDefault={placement?.abroadSurchargeSell ?? 0}
-                unitDefault={placement?.abroadSurchargeUnit ?? "PCT"}
-                sellUnitDefault={placement?.abroadSurchargeSellUnit ?? placement?.abroadSurchargeUnit ?? "PCT"}
-                toggle={{ name: "abroadEnabled", defaultOn: placement?.abroadEnabled ?? false }}
-              />
-              {/* Overuren: een APART uurtarief (€/u) dat alléén over de losse
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-ink-50/40 px-3 py-2.5 text-sm text-ink-700">
+                    <span className="font-medium text-ink-900">
+                      Meeruren ma–vr
+                    </span>
+                    <span className="text-ink-500">vanaf</span>
+                    <div className="w-28">
+                      <ToeslagField
+                        name="otFromHours"
+                        def={placement?.otFromHours ?? 0}
+                        suffix="u/dag"
+                        step={0.5}
+                        label=""
+                      />
+                    </div>
+                    <span className="text-ink-500">per dag, eerste trede</span>
+                    <div className="w-24">
+                      <ToeslagField
+                        name="ot1Hours"
+                        def={placement?.ot1Hours ?? 2}
+                        suffix="uur"
+                        step={0.5}
+                        label=""
+                      />
+                    </div>
+                    <span className="text-xs text-ink-400">
+                      Leeg = geen meeruren-toeslag · feestdag telt als zondag
+                    </span>
+                  </div>
+                  <ToeslagRow
+                    title="Meeruren · trede 1"
+                    hint="Bijv. 9e & 10e uur"
+                    prefix="weekday"
+                    buyDefault={
+                      placement?.otFromHours != null
+                        ? placement.weekdaySurchargeBuy
+                        : 0
+                    }
+                    sellDefault={
+                      placement?.otFromHours != null
+                        ? placement.weekdaySurchargeSell
+                        : 0
+                    }
+                    unitDefault={placement?.weekdaySurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.weekdaySurchargeSellUnit ??
+                      placement?.weekdaySurchargeUnit ??
+                      "PCT"
+                    }
+                  />
+                  <ToeslagRow
+                    title="Meeruren · trede 2"
+                    hint="Boven de eerste trede"
+                    prefix="weekday2"
+                    buyDefault={placement?.weekday2SurchargeBuy ?? 0}
+                    sellDefault={placement?.weekday2SurchargeSell ?? 0}
+                    unitDefault={placement?.weekday2SurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.weekday2SurchargeSellUnit ??
+                      placement?.weekday2SurchargeUnit ??
+                      "PCT"
+                    }
+                  />
+                  <ToeslagRow
+                    title="Zaterdag"
+                    hint="Uren op zaterdag"
+                    prefix="saturday"
+                    buyDefault={
+                      placement?.saturdaySurchargeBuy ||
+                      placement?.weekendSurchargeBuy ||
+                      0
+                    }
+                    sellDefault={
+                      placement?.saturdaySurchargeSell ||
+                      placement?.weekendSurchargeSell ||
+                      0
+                    }
+                    unitDefault={placement?.saturdaySurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.saturdaySurchargeSellUnit ??
+                      placement?.saturdaySurchargeUnit ??
+                      "PCT"
+                    }
+                  />
+                  <ToeslagRow
+                    title="Zondag & feestdag"
+                    hint="Uren op zondag en feestdagen"
+                    prefix="sunday"
+                    buyDefault={
+                      placement?.sundaySurchargeBuy ||
+                      placement?.weekendSurchargeBuy ||
+                      0
+                    }
+                    sellDefault={
+                      placement?.sundaySurchargeSell ||
+                      placement?.weekendSurchargeSell ||
+                      0
+                    }
+                    unitDefault={placement?.sundaySurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.sundaySurchargeSellUnit ??
+                      placement?.sundaySurchargeUnit ??
+                      "PCT"
+                    }
+                  />
+                  <ToeslagRow
+                    title="Offshore"
+                    hint="Over alle reguliere uren"
+                    prefix="offshore"
+                    buyDefault={placement?.offshoreSurchargeBuy ?? 0}
+                    sellDefault={placement?.offshoreSurchargeSell ?? 0}
+                    unitDefault={placement?.offshoreSurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.offshoreSurchargeSellUnit ??
+                      placement?.offshoreSurchargeUnit ??
+                      "PCT"
+                    }
+                    toggle={{
+                      name: "offshoreEnabled",
+                      defaultOn: placement?.offshoreEnabled ?? false,
+                    }}
+                  />
+                  <ToeslagRow
+                    title="Ploegendienst"
+                    hint="Over alle reguliere uren"
+                    prefix="shift"
+                    buyDefault={placement?.shiftSurchargeBuy ?? 0}
+                    sellDefault={placement?.shiftSurchargeSell ?? 0}
+                    unitDefault={placement?.shiftSurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.shiftSurchargeSellUnit ??
+                      placement?.shiftSurchargeUnit ??
+                      "PCT"
+                    }
+                    toggle={{
+                      name: "shiftEnabled",
+                      defaultOn: placement?.shiftEnabled ?? false,
+                    }}
+                  />
+                  <ToeslagRow
+                    title="Buitenland"
+                    hint="Over alle reguliere uren"
+                    prefix="abroad"
+                    buyDefault={placement?.abroadSurchargeBuy ?? 0}
+                    sellDefault={placement?.abroadSurchargeSell ?? 0}
+                    unitDefault={placement?.abroadSurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.abroadSurchargeSellUnit ??
+                      placement?.abroadSurchargeUnit ??
+                      "PCT"
+                    }
+                    toggle={{
+                      name: "abroadEnabled",
+                      defaultOn: placement?.abroadEnabled ?? false,
+                    }}
+                  />
+                  {/* Overuren: een APART uurtarief (€/u) dat alléén over de losse
                   overuren-uren rekent (het aantal vul je per week in bij 'Week
                   verwerken'). Leeg = overuren tegen het normale tarief. De oude
                   percentage-velden bewaren we verborgen voor terugval. */}
-              <input type="hidden" name="overtimeSurchargeBuy" value={placement?.overtimeSurchargeBuy ?? 0} />
-              <input type="hidden" name="overtimeSurchargeSell" value={placement?.overtimeSurchargeSell ?? 0} />
-              <ToeslagBlock
-                title="Overuren-tarief"
-                hint="Vast €/u voor losse overuren · leeg = normaal tarief"
-                buyName="overtimeCostRate"
-                sellName="overtimeChargeRate"
-                buyDefault={placement?.overtimeCostRate ?? 0}
-                sellDefault={placement?.overtimeChargeRate ?? 0}
-                suffix="€/u"
-                step={0.01}
-                nietDoorTekst="Klant betaalt overuren tegen het normale tarief — het verschil betalen wij uit de marge."
-              />
-              <ToeslagBlock
-                title="Kilometervergoeding"
-                hint="Per gereden kilometer"
-                buyName="kmRateBuy"
-                sellName="kmRateSell"
-                buyDefault={placement?.kmRateBuy ?? 0}
-                sellDefault={placement?.kmRateSell ?? 0}
-                suffix="€/km"
-                step={0.01}
-              />
+                  <input
+                    type="hidden"
+                    name="overtimeSurchargeBuy"
+                    value={placement?.overtimeSurchargeBuy ?? 0}
+                  />
+                  <input
+                    type="hidden"
+                    name="overtimeSurchargeSell"
+                    value={placement?.overtimeSurchargeSell ?? 0}
+                  />
+                  <ToeslagBlock
+                    title="Overuren-tarief"
+                    hint="Vast €/u voor losse overuren · leeg = normaal tarief"
+                    buyName="overtimeCostRate"
+                    sellName="overtimeChargeRate"
+                    buyDefault={placement?.overtimeCostRate ?? 0}
+                    sellDefault={placement?.overtimeChargeRate ?? 0}
+                    suffix="€/u"
+                    step={0.01}
+                    nietDoorTekst="Klant betaalt overuren tegen het normale tarief — het verschil betalen wij uit de marge."
+                  />
+                  <ToeslagBlock
+                    title="Kilometervergoeding"
+                    hint="Per gereden kilometer"
+                    buyName="kmRateBuy"
+                    sellName="kmRateSell"
+                    buyDefault={placement?.kmRateBuy ?? 0}
+                    sellDefault={placement?.kmRateSell ?? 0}
+                    suffix="€/km"
+                    step={0.01}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-[14rem_1fr]">
+                <Field
+                  label="Status"
+                  htmlFor="status"
+                  required
+                  error={e.status}
+                  hint="Actief = gaat door de facturatie. Ontbreken er nog gegevens (werknemer, klant, tarieven), dan wordt het vanzelf “Nog niet actief”."
+                >
+                  <Select
+                    id="status"
+                    name="status"
+                    defaultValue={dv("status", placement?.status ?? "ACTIVE")}
+                  >
+                    {PLACEMENT_STATUSES.filter(
+                      (o) =>
+                        o.value !== "ARCHIVED" ||
+                        placement?.status === "ARCHIVED",
+                    ).map((o) => (
+                      <option
+                        key={o.value}
+                        value={o.value}
+                        data-color={o.color}
+                      >
+                        {o.label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Notities" htmlFor="notes" error={e.notes}>
+                  <Textarea
+                    id="notes"
+                    name="notes"
+                    rows={2}
+                    defaultValue={placement?.notes ?? ""}
+                  />
+                </Field>
+              </div>
             </div>
-          </div>
+          </Sectie>
 
-          <div className="grid gap-4 sm:grid-cols-[14rem_1fr]">
-            <Field
-              label="Status"
-              htmlFor="status"
-              required
-              error={e.status}
-              hint="Actief = gaat door de facturatie. Ontbreken er nog gegevens (werknemer, klant, tarieven), dan wordt het vanzelf “Nog niet actief”."
-            >
-              <Select
-                id="status"
-                name="status"
-                defaultValue={dv("status", placement?.status ?? "ACTIVE")}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {tab !== "plaatsing" && (
+              <button
+                type="button"
+                onClick={() =>
+                  setTab(
+                    placement || personMode === "existing"
+                      ? "plaatsing"
+                      : VOLGENDE[tab],
+                  )
+                }
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "mr-auto",
+                )}
               >
-                {PLACEMENT_STATUSES.filter((o) => o.value !== "ARCHIVED" || placement?.status === "ARCHIVED").map((o) => (
-                  <option key={o.value} value={o.value} data-color={o.color}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Notities" htmlFor="notes" error={e.notes}>
-              <Textarea id="notes" name="notes" rows={2} defaultValue={placement?.notes ?? ""} />
-            </Field>
+                Volgende →
+              </button>
+            )}
+
+            <ConfirmCancel href={cancelHref} />
+            {!placement && (
+              <button
+                type="submit"
+                formAction={savePlacementDraft}
+                formNoValidate
+                className={buttonVariants({ variant: "outline" })}
+                title="Bewaar wat je nu hebt als concept — verschijnt bovenaan bij Plaatsingen"
+              >
+                Bewaar als concept
+              </button>
+            )}
+            <SubmitButton>{submitLabel}</SubmitButton>
           </div>
-          </div>
-        </Sectie>
-
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {tab !== "plaatsing" && (
-            <button
-              type="button"
-              onClick={() => setTab(placement || personMode === "existing" ? "plaatsing" : VOLGENDE[tab])}
-              className={cn(buttonVariants({ variant: "outline" }), "mr-auto")}
-            >
-              Volgende →
-            </button>
-          )}
-
-          <ConfirmCancel href={cancelHref} />
-          {!placement && (
-            <button
-              type="submit"
-              formAction={savePlacementDraft}
-              formNoValidate
-              className={buttonVariants({ variant: "outline" })}
-              title="Bewaar wat je nu hebt als concept — verschijnt bovenaan bij Plaatsingen"
-            >
-              Bewaar als concept
-            </button>
-          )}
-          <SubmitButton>{submitLabel}</SubmitButton>
-
         </div>
-      </div>
       </TabContext.Provider>
     </form>
   );
