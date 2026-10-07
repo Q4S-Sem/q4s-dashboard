@@ -7,6 +7,25 @@ import { ontbrekendVoorActief } from "./ontbrekende-gegevens";
  * ACTIVE. Beëindigd/gearchiveerd blijft altijd ongemoeid.
  * Aanroepen na elke wijziging aan een plaatsing óf aan de werknemer.
  */
+/** Plakt `getekendContract` aan elke plaatsing: getekend contract op de plaatsing óf op de persoon. */
+export async function metContract<T extends { id: string; consultantId: string }>(
+  ps: T[],
+): Promise<(T & { getekendContract: boolean })[]> {
+  const getekend = ps.length
+    ? await db.contract.findMany({
+        where: {
+          status: "SIGNED",
+          OR: [{ placementId: { in: ps.map((p) => p.id) } }, { consultantId: { in: ps.map((p) => p.consultantId) } }],
+        },
+        select: { consultantId: true, placementId: true },
+      })
+    : [];
+  return ps.map((p) => ({
+    ...p,
+    getekendContract: getekend.some((c) => c.placementId === p.id || c.consultantId === p.consultantId),
+  }));
+}
+
 export async function syncPlaatsingStatus(where: { id: string } | { consultantId: string }): Promise<void> {
   const plaatsingen = await db.placement.findMany({
     where: { ...where, status: { in: ["ACTIVE", "INCOMPLETE"] } },

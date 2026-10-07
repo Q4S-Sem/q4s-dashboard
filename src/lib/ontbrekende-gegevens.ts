@@ -48,12 +48,27 @@ export function ontbrekendeGegevens(c: WerknemerGegevens): string[] {
  * tarieven. Leeg = compleet.
  */
 export function ontbrekendVoorActief(
-  p: { heeftKlant: boolean; costRate?: number | null; chargeRate?: number | null },
+  p: { heeftKlant: boolean; costRate?: number | null; chargeRate?: number | null; getekendContract?: boolean },
   c: WerknemerGegevens,
 ): string[] {
   const plaatsing: string[] = [];
   if (!p.heeftKlant) plaatsing.push("Klant");
   if (!(Number(p.costRate) > 0)) plaatsing.push("Inkooptarief");
   if (!(Number(p.chargeRate) > 0)) plaatsing.push("Verkooptarief");
+  // Alleen meetellen waar het contract is opgezocht (zie metContract).
+  if (p.getekendContract === false) plaatsing.push("Getekend contract");
   return [...plaatsing, ...ontbrekendeGegevens(c)];
+}
+
+/**
+ * Staat de plaatsing in de map "Actief"? Dé regel voor zowel Plaatsingen als de
+ * facturatie: alleen wie hier staat, komt in Week verwerken.
+ */
+export function inMapActief(p: { status: string; forceActive?: boolean | null }, ontbreekt: string[]): boolean {
+  return p.status === "ACTIVE" && (ontbreekt.length === 0 || Boolean(p.forceActive));
+}
+
+/** Status om te tonen: ACTIVE buiten de map Actief heet "Nog niet actief". */
+export function getoondeStatus(p: { status: string; forceActive?: boolean | null }, ontbreekt: string[]): string {
+  return p.status === "ACTIVE" && !inMapActief(p, ontbreekt) ? "INCOMPLETE" : p.status;
 }

@@ -11,7 +11,8 @@ import { buttonVariants, mapTabVariants } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { PlaatsingenList } from "./PlaatsingenList";
-import { ontbrekendVoorActief } from "@/lib/ontbrekende-gegevens";
+import { getoondeStatus, inMapActief, ontbrekendVoorActief } from "@/lib/ontbrekende-gegevens";
+import { metContract } from "@/lib/plaatsing-status";
 import { deletePlacementDraft } from "./actions";
 import { eindeStatus, eindeTekst } from "@/lib/plaatsing-einde";
 import { isAdminSession } from "@/lib/session";
@@ -38,31 +39,23 @@ export default async function PlaatsingenPage({
         select: { id: true, companyName: true },
       })
     : null;
-  const placements = await db.placement.findMany({
-    where: { status: { not: "ARCHIVED" }, ...(filterClient ? { clientId: filterClient.id } : {}) },
-    orderBy: { startDate: "desc" },
-    include: { consultant: true, client: true },
-  });
+  const placements = await metContract(
+    await db.placement.findMany({
+      where: { status: { not: "ARCHIVED" }, ...(filterClient ? { clientId: filterClient.id } : {}) },
+      orderBy: { startDate: "desc" },
+      include: { consultant: true, client: true },
+    }),
+  );
   const gearchiveerdAantal = await db.placement.count({ where: { status: "ARCHIVED" } });
   // Concepten (half ingevulde plaatsingen) — bovenaan, om af te maken.
   const drafts = filterClient
     ? []
     : await db.placementDraft.findMany({ orderBy: { updatedAt: "desc" } });
 
-  // Getekend contract per persoon (of per plaatsing): pas dan is iemand echt "gereed".
-  const getekend = await db.contract.findMany({
-    where: { status: "SIGNED", OR: [{ consultantId: { in: placements.map((p) => p.consultantId) } }, { placementId: { in: placements.map((p) => p.id) } }] },
-    select: { consultantId: true, placementId: true },
-  });
-  const heeftContract = (p: { id: string; consultantId: string }) =>
-    getekend.some((c) => c.placementId === p.id || c.consultantId === p.consultantId);
-  // ponytail: het contract telt hier mee voor "gereed", maar blokkeert de facturatie (nog) niet.
+  // Map "Actief" = zelfde regel als de facturatie (inMapActief): alleen dan factureren.
   const rijen = placements.map((p) => {
-    const ontbreekt = [
-      ...ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant),
-      ...(heeftContract(p) ? [] : ["Getekend contract"]),
-    ];
-    const bak = p.status === "ENDED" ? "beeindigd" : p.status === "ACTIVE" && (ontbreekt.length === 0 || p.forceActive) ? "actief" : "voorbereiding";
+    const ontbreekt = ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant);
+    const bak = p.status === "ENDED" ? "beeindigd" : inMapActief(p, ontbreekt) ? "actief" : "voorbereiding";
     return { p, ontbreekt, bak };
   });
   const conceptKlanten = new Map(
@@ -301,7 +294,7 @@ export default async function PlaatsingenPage({
             overtimeCostRate: p.overtimeCostRate,
             overtimeChargeRate: p.overtimeChargeRate,
             // Alles wat nog ontbreekt (incl. getekend contract) → "Nog niet actief".
-            status: p.status === "ACTIVE" && ontbreekt.length > 0 ? "INCOMPLETE" : p.status,
+            status: getoondeStatus(p, ontbreekt),
             ontbreekt,
             einde: ((e) => (e ? { tekst: eindeTekst(e), verlopen: e.status === "verlopen" } : null))(
               p.status === "ENDED" ? null : eindeStatus(p.endDate),

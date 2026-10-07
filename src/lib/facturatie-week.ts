@@ -1,5 +1,6 @@
 import { db } from "./db";
-import { ontbrekendVoorActief } from "./ontbrekende-gegevens";
+import { inMapActief, ontbrekendVoorActief } from "./ontbrekende-gegevens";
+import { metContract } from "./plaatsing-status";
 import { getCompanySettings } from "./settings";
 import { summarizeRecentWeeks } from "./timesheet-gate-history";
 import { computeTimesheetMoney } from "./toeslag";
@@ -193,21 +194,25 @@ export type WeekOverview = {
 
 type PlacementRow = Awaited<ReturnType<typeof ladenPlaatsingen>>[number];
 
-function ladenPlaatsingen(monday: Date, sunday: Date) {
-  return db.placement.findMany({
-    where: {
-      // Ook "nog niet actief": die staan erin met een rode melding wat er
-      // ontbreekt, zodat een binnengekomen urenstaat niet onzichtbaar wordt.
-      status: { in: ["ACTIVE", "INCOMPLETE"] },
-      startDate: { lte: sunday },
-      OR: [{ endDate: null }, { endDate: { gte: monday } }],
-    },
-    include: {
-      consultant: true,
-      client: { select: { id: true, companyName: true } },
-    },
-    orderBy: [{ consultant: { lastName: "asc" } }, { startDate: "desc" }],
-  });
+async function ladenPlaatsingen(monday: Date, sunday: Date) {
+  const alle = await metContract(
+    await db.placement.findMany({
+      where: {
+        status: "ACTIVE",
+        startDate: { lte: sunday },
+        OR: [{ endDate: null }, { endDate: { gte: monday } }],
+      },
+      include: {
+        consultant: true,
+        client: { select: { id: true, companyName: true } },
+      },
+      orderBy: [{ consultant: { lastName: "asc" } }, { startDate: "desc" }],
+    }),
+  );
+  // Alleen de map "Actief" (compleet + getekend contract) gaat door de facturatie.
+  // Stuurt iemand buiten die map toch iets in, dan staat hij als "zonder actieve
+  // plaatsing" in het overzicht — niets raakt onzichtbaar.
+  return alle.filter((p) => inMapActief(p, ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant)));
 }
 
 /** De contractvoorwaarden van een plaatsing, in de vorm die de machine wil. */
@@ -1105,14 +1110,16 @@ export async function getWeekDossier(
   now: Date = new Date(),
 ): Promise<WeekDossier | null> {
   const week = resolveWeek(weekParam, now);
-  const p = await db.placement.findUnique({
+  const gevonden = await db.placement.findUnique({
     where: { id: placementId },
     include: {
       consultant: true,
       client: { select: { id: true, companyName: true } },
     },
   });
-  if (!p) return null;
+  if (!gevonden) return null;
+  // Met contract-check: zo blokkeert beoordeelMetPlaatsing ook hier zonder getekend contract.
+  const [p] = await metContract([gevonden]);
 
   const settings = await getCompanySettings();
   const company = { companyName: settings.companyName || "Q4S", aliases: ["Q4S", "Q4Solutions"] };

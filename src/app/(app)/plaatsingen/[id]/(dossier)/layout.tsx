@@ -112,7 +112,7 @@ export default async function PlaatsingDossierLayout({
 
       {/* Kerngegevens in één oogopslag */}
       <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge options={PLACEMENT_STATUSES} value={placement.status} />
+        <StatusBadge options={PLACEMENT_STATUSES} value={placement.getoondeStatus} />
         <Chip icon={<CalendarRange className="h-3.5 w-3.5" />}>
           {formatDate(placement.startDate)} – {placement.endDate ? formatDate(placement.endDate) : "heden"}
         </Chip>

@@ -1,19 +1,26 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
+import { getoondeStatus, ontbrekendVoorActief } from "@/lib/ontbrekende-gegevens";
+import { metContract } from "@/lib/plaatsing-status";
 
 // Gedeelde queries van het plaatsing-dossier. De layout (kop + mappen) en het
 // geopende tabblad vragen dezelfde plaatsing op; `cache` dedupliceert dat binnen
 // één request.
 
-export const getPlacement = cache(async (id: string) =>
-  db.placement.findUnique({
+export const getPlacement = cache(async (id: string) => {
+  const p = await db.placement.findUnique({
     where: { id },
     include: {
       consultant: { include: { documents: { orderBy: { createdAt: "desc" } } } },
       client: true,
     },
-  }),
-);
+  });
+  if (!p) return null;
+  const [mc] = await metContract([p]);
+  // Zelfde regel als de lijst en de facturatie (inMapActief).
+  const ontbreekt = ontbrekendVoorActief({ heeftKlant: Boolean(mc.clientId), ...mc }, mc.consultant);
+  return { ...mc, ontbreekt, getoondeStatus: getoondeStatus(mc, ontbreekt) };
+});
 
 /** Urenstaten met dag-uren — voor het mapje Uren én de gerealiseerde marge. */
 export const getTimesheets = cache(async (id: string) =>
