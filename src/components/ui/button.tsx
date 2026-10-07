@@ -52,7 +52,7 @@ export function buttonVariants({
 export const ICOON_GROEP =
   "inline-flex items-center divide-x divide-ink-200 overflow-hidden rounded-md border border-ink-200 bg-white shadow-sm";
 export const ICOON_KNOP =
-  "inline-flex h-8 w-9 items-center justify-center text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900 disabled:pointer-events-none disabled:opacity-40 cursor-pointer [&_svg]:size-4";
+  "inline-flex h-[30px] w-9 items-center justify-center text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900 disabled:pointer-events-none disabled:opacity-40 cursor-pointer [&_svg]:size-4";
 
 /**
  * Gesegmenteerde schakelaar (periode, taal, weergave, documentsoort): ÉÉN stijl
