@@ -33,8 +33,9 @@ const PlacementCoreSchema = z.object({
   vatReverseCharge: z.coerce.boolean().default(false),
   startDate: z.coerce.date({ message: "Startdatum is verplicht" }),
   endDate: z.coerce.date().optional(),
-  costRate: z.coerce.number().min(0, "Inkooptarief mag niet negatief zijn"),
-  chargeRate: z.coerce.number().min(0, "Verkooptarief mag niet negatief zijn"),
+  // Leeg inkooptarief = 0 (werknemer in dienst heeft er geen); leeg verkooptarief = nette melding.
+  costRate: z.coerce.number().min(0, "Inkooptarief mag niet negatief zijn").default(0),
+  chargeRate: z.coerce.number({ message: "Vul het verkooptarief in" }).min(0, "Verkooptarief mag niet negatief zijn"),
   rateUnit: z.enum(["HOUR", "DAY"]).default("HOUR"),
   // Toeslagen (%) + km-vergoeding (€/km), per side. Default 0 = geen toeslag.
   weekendSurchargeBuy: z.coerce.number().min(0).default(0),

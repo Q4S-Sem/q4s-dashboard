@@ -232,8 +232,21 @@ function ToeslagField({
   );
 }
 
+/** Werknemer in dienst: geen inkoopkant bij de toeslagen (loon loopt via de salarisadministratie). */
+const InkoopUitContext = createContext(false);
+
+function GeenInkoop({ name }: { name: string }) {
+  return (
+    <div className="flex h-9 items-center rounded-md border border-dashed border-ink-200 px-3 text-xs text-ink-400">
+      <input type="hidden" name={name} value={0} />
+      Geen inkoop — in dienst
+    </div>
+  );
+}
+
 /** Kopregel boven de toeslagentabel (alleen op brede schermen). */
 function ToeslagKop() {
+  const inkoopUit = useContext(InkoopUitContext);
   return (
     <div
       className={cn(
@@ -242,7 +255,7 @@ function ToeslagKop() {
       )}
     >
       <span>Toeslag</span>
-      <span>Inkoop — wij betalen</span>
+      <span>{inkoopUit ? "Inkoop — n.v.t. (in dienst)" : "Inkoop — wij betalen"}</span>
       <span>Klant betaalt?</span>
       <span>Verkoop — klant</span>
     </div>
@@ -405,6 +418,7 @@ function ToeslagBlock({
   /** Standaard aangevinkt (staat klaar), uit te vinken. */
   standaardAan?: boolean;
 }) {
+  const inkoopUit = useContext(InkoopUitContext);
   const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
   // Uitgevinkt = geldt niet: beide bedragen gaan als 0 mee.
   const [aan, setAan] = useState(
@@ -427,13 +441,17 @@ function ToeslagBlock({
         </>
       ) : (
         <>
-          <ToeslagField
-            name={buyName}
-            def={buyDefault}
-            suffix={suffix}
-            step={step}
-            label=""
-          />
+          {inkoopUit ? (
+            <GeenInkoop name={buyName} />
+          ) : (
+            <ToeslagField
+              name={buyName}
+              def={buyDefault}
+              suffix={suffix}
+              step={step}
+              label=""
+            />
+          )}
           <Doorrekenen aan={door} onChange={setDoor} label={title} />
           {door ? (
             <ToeslagField
@@ -495,6 +513,7 @@ function ToeslagRow({
     standaardAan || (toggle?.defaultOn ?? (buyDefault > 0 || sellDefault > 0)),
   );
   const [door, setDoor] = useState(sellDefault > 0 || buyDefault === 0);
+  const inkoopUit = useContext(InkoopUitContext);
   const uit = !aan;
   const buyName = `${prefix}SurchargeBuy`;
   const sellName = `${prefix}SurchargeSell`;
@@ -533,19 +552,23 @@ function ToeslagRow({
         </>
       ) : (
         <>
-          <div className="flex items-center gap-1.5">
-            <UnitSchakelaar
-              unit={buyUnit}
-              onChange={setBuyUnit}
-              label={`${title} inkoop`}
-            />
-            <ToeslagField
-              name={buyName}
-              def={buyDefault}
-              {...unitInfo(buyUnit)}
-              label=""
-            />
-          </div>
+          {inkoopUit ? (
+            <GeenInkoop name={buyName} />
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <UnitSchakelaar
+                unit={buyUnit}
+                onChange={setBuyUnit}
+                label={`${title} inkoop`}
+              />
+              <ToeslagField
+                name={buyName}
+                def={buyDefault}
+                {...unitInfo(buyUnit)}
+                label=""
+              />
+            </div>
+          )}
           <Doorrekenen aan={door} onChange={setDoor} label={title} />
           {door ? (
             <div className="flex items-center gap-1.5">
@@ -1794,6 +1817,7 @@ export function PlacementForm({
                     geldt niet
                   </p>
                 </div>
+                <InkoopUitContext.Provider value={inDienst}>
                 <ToeslagKop />
                 {allIn && (
                   <p className="border-b border-ink-100 bg-ink-50/60 px-3 py-2 text-xs text-ink-500">
@@ -2006,6 +2030,7 @@ export function PlacementForm({
                     nietDoorTekst="Klant betaalt overuren tegen het normale tarief — het verschil betalen wij uit de marge."
                   />
                 </div>
+                </InkoopUitContext.Provider>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-[14rem_1fr]">
