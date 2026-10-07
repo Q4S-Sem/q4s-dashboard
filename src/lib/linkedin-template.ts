@@ -209,6 +209,13 @@ export function disciplineLabelOf(discipline: string): string {
 // de post — ook als een aanroeper per ongeluk niets meegeeft.
 export const Q4S_CONTACT_PHONE = "+31 6 83859566";
 export const Q4S_CONTACT_EMAIL = "cv@q4s.nl";
+/** De openbare Q4S-site (vacatures + sollicitatieformulier). */
+export const Q4S_SITE = "https://www.q4s.nl";
+
+/** Link naar de vacature op q4s.nl; zonder slug het vacature-overzicht. */
+export function vacatureUrl(slug?: string | null): string {
+  return slug ? `${Q4S_SITE}/nl/vacatures/${slug}` : `${Q4S_SITE}/nl/vacatures`;
+}
 
 /** Bouw de LinkedIn-post in het vaste Q4S-format (met Unicode-vet + emoji's). */
 export function buildLinkedinPost(inp: PostInput): string {
@@ -293,8 +300,17 @@ export function buildLinkedinPost(inp: PostInput): string {
 
   // Interesse — vast blok zoals het voorbeeld.
   L.push(boldize("Interesse of ken je iemand?"));
-  L.push("Neem gerust contact op!");
+  L.push("Neem gerust contact op of solliciteer direct via onze website.");
   L.push("");
+
+  // Links naar q4s.nl: de vacature zelf + direct solliciteren (met de vacature voorgeselecteerd).
+  const url = inp.applyUrl.trim();
+  if (url) {
+    L.push(`👉 Bekijk de vacature: ${url}`);
+    const slug = /\/vacatures\/([^/?#]+)/.exec(url)?.[1];
+    if (slug) L.push(`📄 Direct solliciteren: ${Q4S_SITE}/nl/cv-uploaden?vacancy=${slug}`);
+    L.push("");
+  }
 
   // Contact — ALTIJD Gjils nummer + cv@q4s.nl (terugval op de vaste waarden als
   // een aanroeper niets meegeeft). Kaal zonder labels: klikbaar/kopieerbaar.

@@ -21,6 +21,7 @@ import {
   postLength,
   LINKEDIN_MAX,
   type PostInput,
+  vacatureUrl,
 } from "@/lib/linkedin-template";
 import { buttonVariants } from "@/components/ui/button";
 import { ZOEK_ICOON } from "@/components/ui/tabel-zoek";
@@ -148,17 +149,12 @@ export function LinkedInGenerator({
   const [vacQuery, setVacQuery] = useState("");
   const [vacOpen, setVacOpen] = useState(false);
   const vacRef = useRef<HTMLDivElement>(null);
-  const [origin, setOrigin] = useState(siteUrl);
 
   // File upload state
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!siteUrl && typeof window !== "undefined") setOrigin(window.location.origin);
-  }, [siteUrl]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -289,10 +285,8 @@ export function LinkedInGenerator({
     .slice()
     .slice(0, 10);
 
-  const base = (origin || "").replace(/\/+$/, "");
-  const applyUrl = selectedVacancy?.slug
-    ? `${base}/vacature/${selectedVacancy.slug}`
-    : `${base}/talentpool`;
+  // Altijd naar de openbare vacaturepagina op q4s.nl (niet het dashboard).
+  const applyUrl = vacatureUrl(selectedVacancy?.slug);
 
   const input: PostInput = useMemo(
     () => ({
