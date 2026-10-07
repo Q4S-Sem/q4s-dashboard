@@ -1,3 +1,4 @@
+import { ICOON_GROEP } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/ui/page-header";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
@@ -32,8 +33,10 @@ export default async function NieuwContractPage({ searchParams }: { searchParams
           taal,
           acties: (
             <>
-              <WordKnop icoon bestandsnaam="Overeenkomst van opdracht" />
-              <PrintKnop icoon />
+              <div className={ICOON_GROEP}>
+                <WordKnop icoon bestandsnaam="Overeenkomst van opdracht" />
+                <PrintKnop icoon />
+              </div>
             </>
           ),
         }}

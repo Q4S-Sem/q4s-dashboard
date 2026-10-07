@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { FileText } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { FileText, Loader2 } from "lucide-react";
+import { buttonVariants, ICOON_KNOP } from "@/components/ui/button";
 
 /**
  * Download het vel dat op de pagina staat (element met `data-word-bron`) als
@@ -43,9 +43,10 @@ export function WordKnop({ bestandsnaam, size = "sm", icoon = false }: { bestand
       disabled={bezig}
       title="Download Word"
       aria-label="Download Word"
-      className={buttonVariants({ variant: "outline", size: icoon ? "icon" : size, className: icoon ? "h-8 w-8" : undefined })}
+      className={icoon ? ICOON_KNOP : buttonVariants({ variant: "outline", size })}
     >
-      <FileText className="h-4 w-4" /> {icoon ? (fout ? "!" : null) : bezig ? "Word maken…" : fout ? "Mislukt — opnieuw" : "Download Word"}
+      {icoon && bezig ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className={icoon && fout ? "h-4 w-4 text-red-600" : "h-4 w-4"} />}{" "}
+      {icoon ? null : bezig ? "Word maken…" : fout ? "Mislukt — opnieuw" : "Download Word"}
     </button>
   );
 }

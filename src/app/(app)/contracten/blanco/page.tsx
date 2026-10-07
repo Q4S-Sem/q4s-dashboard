@@ -8,7 +8,7 @@ import { ArbeidsovereenkomstVel } from "@/components/contract/Arbeidsovereenkoms
 import { UrenstaatVel } from "@/components/contract/UrenstaatVel";
 import { BriefcaseBusiness, Clock, Download, FileSignature, Receipt, UserRound, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { buttonVariants, mapTabVariants } from "@/components/ui/button";
+import { mapTabVariants, ICOON_GROEP, ICOON_KNOP } from "@/components/ui/button";
 import { TaalSchakelaar } from "@/components/contract/TaalSchakelaar";
 import { getCompanySettings } from "@/lib/settings";
 import { buildContractDoc } from "@/lib/contract-doc";
@@ -67,14 +67,16 @@ export default async function BlancoPage({ searchParams }: { searchParams: Promi
         </nav>
         <div className="mb-2 ml-auto flex flex-wrap items-center gap-2">
           <TaalSchakelaar taal={taal} href={(t) => url(doc, t)} />
-          {doc === "timesheet" ? (
-            <a href={`/templates/urenstaat/Q4S-Timesheet-${taal.toUpperCase()}.xlsx`} download className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <Download className="h-4 w-4" /> Excel
-            </a>
-          ) : (
-            <WordKnop bestandsnaam={`Q4S ${SOORTEN.find(([k]) => k === doc)?.[1] ?? doc} (${taal.toUpperCase()})`} />
-          )}
-          <PrintKnop />
+          <div className={ICOON_GROEP}>
+            {doc === "timesheet" ? (
+              <a href={`/templates/urenstaat/Q4S-Timesheet-${taal.toUpperCase()}.xlsx`} download className={ICOON_KNOP} title="Download Excel" aria-label="Download Excel">
+                <Download className="h-4 w-4" />
+              </a>
+            ) : (
+              <WordKnop icoon bestandsnaam={`Q4S ${SOORTEN.find(([k]) => k === doc)?.[1] ?? doc} (${taal.toUpperCase()})`} />
+            )}
+            <PrintKnop icoon />
+          </div>
         </div>
       </div>
 

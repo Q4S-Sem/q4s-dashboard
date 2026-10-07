@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Check, Eraser, Save } from "lucide-react";
 import { bewaarDoc } from "../../actions";
-import { Button } from "@/components/ui/button";
+import { Button, ICOON_GROEP, ICOON_KNOP } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Select, fieldBase } from "@/components/ui/field";
 import { WordKnop } from "@/components/contract/WordKnop";
@@ -233,20 +233,23 @@ export function DocInvullen({
     <InvulTabs
       acties={
         <>
-          {soort !== "persoonsgegevens" ? (
+          {soort !== "persoonsgegevens" && (
             <Button type="button" variant="outline" size="sm" onClick={() => opslaan(false)} disabled={bezig}>
               <Save className="h-4 w-4" /> {bezig ? "Opslaan…" : melding ?? "Opslaan als concept"}
             </Button>
-          ) : (
-            <Button type="button" variant="outline" size="sm" onClick={leegmaken}>
-              <Eraser className="h-4 w-4" /> Leegmaken
-            </Button>
+          )}
+          <div className={ICOON_GROEP}>
+          {soort === "persoonsgegevens" && (
+            <button type="button" className={ICOON_KNOP} onClick={leegmaken} title="Leegmaken" aria-label="Leegmaken">
+              <Eraser className="h-4 w-4" />
+            </button>
           )}
           <WordKnop
             icoon
             bestandsnaam={`Q4S ${soort === "offerte" ? "Offerte" : soort === "arbeidsovereenkomst" ? "Arbeidsovereenkomst" : "Persoonsgegevens"}${w.companyName || w.to || w.naam ? ` - ${w.companyName || w.to || w.naam}` : ""}`}
           />
           <PrintKnop icoon />
+          </div>
           {soort !== "persoonsgegevens" && (
             <Button type="button" variant="success" size="sm" onClick={() => opslaan(true)} disabled={bezig}>
               <Check className="h-4 w-4" /> Klaar

@@ -1,3 +1,4 @@
+import { ICOON_GROEP } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { WordKnop } from "@/components/contract/WordKnop";
 import { db } from "@/lib/db";
@@ -80,8 +81,10 @@ export default async function ContractDetailPage({
           taal,
           acties: (
             <>
-              <WordKnop icoon bestandsnaam={`Overeenkomst van opdracht - ${contract.contractorName || contract.number || ""}`} />
+              <div className={ICOON_GROEP}>
+                <WordKnop icoon bestandsnaam={`Overeenkomst van opdracht - ${contract.contractorName || contract.number || ""}`} />
               <PrintMetControle href={`/contracten/${id}/print${taal === "en" ? "?taal=en" : ""}`} ontbreekt={ontbreekt} />
+              </div>
             </>
           ),
         }}

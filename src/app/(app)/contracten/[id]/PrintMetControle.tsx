@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Printer, TriangleAlert } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, ICOON_KNOP } from "@/components/ui/button";
 
 /**
  * "Printen / PDF" met een controle vooraf: mist het contract nog gegevens,
@@ -20,7 +20,7 @@ export function PrintMetControle({ href, ontbreekt }: { href: string; ontbreekt:
       <button
         type="button"
         onClick={() => (ontbreekt.length ? setOpen(true) : router.push(href))}
-        className={buttonVariants({ variant: "outline", size: "icon", className: "h-8 w-8" })}
+        className={ICOON_KNOP}
         title="Printen / PDF"
         aria-label="Printen / PDF"
       >

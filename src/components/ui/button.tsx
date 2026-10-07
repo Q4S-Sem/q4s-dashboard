@@ -46,6 +46,15 @@ export function buttonVariants({
 }
 
 /**
+ * Icoonknoppen (Word, printen, leegmaken…) als één strak blokje: zet ze in een
+ * `<div className={ICOON_GROEP}>` met elk `className={ICOON_KNOP}`.
+ */
+export const ICOON_GROEP =
+  "inline-flex items-center divide-x divide-ink-200 overflow-hidden rounded-md border border-ink-200 bg-white shadow-sm";
+export const ICOON_KNOP =
+  "inline-flex h-8 w-9 items-center justify-center text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900 disabled:pointer-events-none disabled:opacity-40 cursor-pointer [&_svg]:size-4";
+
+/**
  * Gesegmenteerde schakelaar (periode, taal, weergave, documentsoort): ÉÉN stijl
  * in het hele dashboard. Zet de knoppen in een `<div className={SEGMENT_GROEP}>`.
  * Actief = zwart, net als de primaire knoppen; nooit een eigen kleur per pagina.
