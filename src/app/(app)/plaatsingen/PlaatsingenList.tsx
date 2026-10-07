@@ -53,19 +53,22 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
       header: "Werknemer",
       sortValue: (r) => r.person.toLowerCase(),
       render: (r) => (
-        <Link href={`/plaatsingen/${r.id}`} className="font-medium text-ink-900 hover:text-brand-700">
-          {r.person}
-          {r.ontbreekt.length > 0 && (
+        <Link href={`/plaatsingen/${r.id}`} className="grid grid-cols-[10rem_5rem_auto] items-center gap-2 font-medium text-ink-900 hover:text-brand-700">
+          {/* Vaste kolommen: alle 'open'-badges recht onder elkaar. */}
+          <span className="truncate" title={r.person}>{r.person}</span>
+          {r.ontbreekt.length > 0 ? (
             <span
               title={`Nog niet ingevuld: ${r.ontbreekt.join(", ")}`}
-              className="ml-2 inline-flex items-center gap-1 rounded-sm bg-amber-50 px-1.5 py-0.5 align-middle text-[11px] font-medium text-amber-800 ring-1 ring-amber-200"
+              className="inline-flex items-center justify-self-center gap-1 rounded-sm bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-200"
             >
               <AlertTriangle className="h-3 w-3" /> {r.ontbreekt.length} open
             </span>
+          ) : (
+            <span />
           )}
           {r.einde && (
             <span
-              className={`ml-2 inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 align-middle text-[11px] font-medium ring-1 ${
+              className={`inline-flex w-fit items-center gap-1 rounded-sm px-1.5 py-0.5 align-middle text-[11px] font-medium ring-1 ${
                 r.einde.verlopen ? "bg-red-50 text-red-700 ring-red-200" : "bg-violet-50 text-violet-800 ring-violet-200"
               }`}
             >
