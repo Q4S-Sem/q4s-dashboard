@@ -415,8 +415,8 @@ export async function extractReceivedInvoiceFromFile(input: {
         system,
         prompt: `Hieronder de inhoud van een factuur die als werkblad is aangeleverd, elk blad als CSV (kolommen gescheiden door ';'). Door samengevoegde cellen kan het rommelig ogen — lees zorgvuldig en haal factuurnummer, factuurdatum, periode/week, uren, uurtarief, bedragen, btw en kilometers eruit. Geef het resultaat volgens het schema.\n\n${sheetText}`,
         schema: EXTRACT_SCHEMA,
-        maxTokens: 2500,
-        effort: "medium",
+        maxTokens: 4000,
+        effort: "high",
       });
     } else {
       const mediaType = invoiceMediaType(input.originalName, input.mimeType, input.mediaType);
@@ -430,8 +430,10 @@ export async function extractReceivedInvoiceFromFile(input: {
           "Lees deze factuur van een zelfstandige (ZZP'er) uit. Geef factuurnummer, factuurdatum, de gefactureerde periode (of het weeknummer + jaar), de uren, het uurtarief, eventuele overuren, het bedrag excl. btw, het btw-bedrag (of dat de btw verlegd is), de kilometers, het totaalbedrag en de naam van de afzender terug. Neem daarnaast de controlevelden letterlijk over: valuta, geadresseerde, PO-nummer, IBAN, zijn KvK- en btw-nummer, het btw-percentage, elke toeslagregel apart en of er naar een bijlage verwezen wordt. Antwoord volgens het schema.",
         schema: EXTRACT_SCHEMA,
         file: { base64: input.base64, mediaType },
-        maxTokens: 2500,
-        effort: "medium",
+        // Geld: meteen het sterke model, grondig (zie inbox-extract).
+        strong: true,
+        maxTokens: 8000,
+        effort: "high",
         retryIf: twijfelFactuur,
       });
     }

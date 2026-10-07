@@ -307,8 +307,8 @@ export async function runInboxExtraction(id: string, alleenWeek?: string): Promi
         system,
         prompt: `Hieronder de inhoud van een binnengekomen Excel-urenstaat, elk werkblad als CSV (kolommen gescheiden door ';'). Door samengevoegde cellen en soms een twee-koloms layout (uren links, kilometers rechts) kan het rommelig ogen — lees zorgvuldig, TEL meerdere uren-regels per dag op tot één dagtotaal (excl. overuren), haal de overuren uit de aparte overuren-sectie en de kilometers uit het reisblok of het 'Total Kilometers'-totaal. Geef het resultaat volgens het schema.\n\n${sheetText}`,
         schema: EXTRACT_SCHEMA,
-        maxTokens: 2500,
-        effort: "medium",
+        maxTokens: 4000,
+        effort: "high",
       })
     : await aiJSONFromFile<Extracted>({
         system,
@@ -316,8 +316,11 @@ export async function runInboxExtraction(id: string, alleenWeek?: string): Promi
           "Lees deze weekstaat (timesheet) uit. Let op: tel per dag ALLE reguliere uren-regels op tot één dagtotaal (excl. overuren), haal de overuren uit de aparte overuren-sectie, en de kilometers uit het reisblok (From/To/Km) of het 'Total Kilometers'-veld. Kijk daarnaast of er een handtekening van de opdrachtgever op staat (en van wie) en neem klant, project, locatie en PO-nummer letterlijk over. Geef naam, week (maandag), de uren per dag, het weektotaal, de kilometers, de overuren en die controlevelden terug volgens het schema.",
         schema: EXTRACT_SCHEMA,
         file: { base64: await readInboxBase64(item.fileName), mediaType },
-        maxTokens: 2500,
-        effort: "medium",
+        // Geld hangt eraan: meteen het sterke model, grondig. Ruim tokenbudget —
+        // het denkwerk van het sterke model telt mee (anders afgekapte JSON).
+        strong: true,
+        maxTokens: 8000,
+        effort: "high",
         retryIf: twijfelUrenstaat,
       });
 
