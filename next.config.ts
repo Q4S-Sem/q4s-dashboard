@@ -32,6 +32,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/**": [
       "./public/logo/**",
+      "./public/linkedin/**",
       "./assets/handtekening/**",
       "./assets/excel/**",
       "./public/templates/**",

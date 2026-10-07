@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { cardFromParams, CARD_W, CARD_H } from "@/lib/linkedin-card";
+import { DISCIPLINES } from "@/lib/domain";
 
 // Assets worden per proces één keer ingelezen en gecachet.
 let assets: {
@@ -31,6 +32,17 @@ async function loadAssets() {
   return assets;
 }
 
+/**
+ * Foto rechtsboven, per vakgebied: public/linkedin/foto/<DISCIPLINE>.jpg
+ * (Pexels, vrij te gebruiken). Onbekend vakgebied → OVERIG.
+ */
+async function fotoVoor(disciplineLabel: string): Promise<string> {
+  const d = DISCIPLINES.find((x) => x.label === disciplineLabel || x.value === disciplineLabel)?.value ?? "OVERIG";
+  const dir = path.join(process.cwd(), "public", "linkedin", "foto");
+  const buf = await readFile(path.join(dir, `${d}.jpg`)).catch(() => readFile(path.join(dir, "OVERIG.jpg")));
+  return `data:image/jpeg;base64,${buf.toString("base64")}`;
+}
+
 // Q4S-huisstijl (q4s.nl): zwart/wit + oranje #E8430A, Inter.
 // Opbouw = het logo zelf: een vlak dat horizontaal in tweeën is gedeeld (boven
 // wit, onder zwart) met een schuine "4"-balk die over de deellijn van vorm wisselt.
@@ -41,8 +53,14 @@ const INK = "#0b0b0c";
 const GRIJS = "#8a8a90";
 const SPLIT = 600; // y van de deellijn
 const BALK_H = 132; // oranje actiebalk onderaan
+const FOTO_W = 560; // foto rechtsboven
+const FOTO_SCHUIN = 150; // horizontale verschuiving van de schuine rand over SPLIT
 
 const svgUri = (svg: string) => `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+
+const WIG = svgUri(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${FOTO_SCHUIN}" height="${SPLIT}"><polygon points="0,0 ${FOTO_SCHUIN},0 0,${SPLIT}" fill="#ffffff"/></svg>`,
+);
 
 const PIN = svgUri(
   `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${ORANJE}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
@@ -78,13 +96,16 @@ function fonts(a: { interReg: Buffer; interSemi: Buffer; interBold: Buffer }) {
 }
 
 /** Het gedeelde canvas: wit boven, zwart onder, balken rechts, actiebalk onderaan. */
-function Canvas({ boven, onder, actie, actieRechts }: { boven: React.ReactNode; onder: React.ReactNode; actie: string; actieRechts: string }) {
+function Canvas({ boven, onder, actie, actieRechts, foto }: { boven: React.ReactNode; onder: React.ReactNode; actie: string; actieRechts: string; foto?: string }) {
   const balkTop = 380;
   return (
     <div style={{ width: CARD_W, height: CARD_H, display: "flex", flexDirection: "column", backgroundColor: INK, fontFamily: "Inter", position: "relative" }}>
       <div style={{ display: "flex", flexDirection: "column", height: SPLIT, backgroundColor: "#ffffff", padding: "70px 80px 56px", position: "relative" }}>
         <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>{boven}</div>
       </div>
+      {/* Foto rechtsboven; witte wig = schuine linkerrand in de hoek van de "4" */}
+      {foto ? <img src={foto} width={FOTO_W} height={SPLIT} alt="" style={{ position: "absolute", left: CARD_W - FOTO_W, top: 0, objectFit: "cover" }} /> : null}
+      {foto ? <img src={WIG} width={FOTO_SCHUIN} height={SPLIT} alt="" style={{ position: "absolute", left: CARD_W - FOTO_W, top: 0 }} /> : null}
       <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "56px 80px 0" }}>
         <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>{onder}</div>
       </div>
@@ -104,51 +125,12 @@ function Canvas({ boven, onder, actie, actieRechts }: { boven: React.ReactNode; 
   );
 }
 
-/** CARROUSEL-COVER (1080x1350): "3 nieuwe opdrachten" over de deellijn. */
-export async function renderLinkedInCover(searchParams: URLSearchParams): Promise<ImageResponse> {
-  const a = await loadAssets();
-  const count = (searchParams.get("count") || "3").trim();
-  const kicker = (searchParams.get("kicker") || "Voor vakmensen in staalbouw, QA/QC en industrie").trim();
-  const line1 = (searchParams.get("line1") || "nieuwe").trim();
-  const line2 = (searchParams.get("line2") || "opdrachten").trim();
-  const pages = (searchParams.get("pages") || "").trim();
-
-  return new ImageResponse(
-    (
-      <Canvas
-        actie="Swipe voor alle opdrachten"
-        actieRechts="q4s.nl/vacatures"
-        boven={
-          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-            <img src={a.logoBlack} height={84} alt="Q4S Project Partners" style={{ objectFit: "contain", alignSelf: "flex-start" }} />
-            <div style={{ display: "flex", fontSize: 140, fontWeight: 700, letterSpacing: -5, lineHeight: 0.95, color: INK, marginTop: "auto" }}>{line1}</div>
-            <div style={{ display: "flex", fontSize: 140, fontWeight: 700, letterSpacing: -5, lineHeight: 0.95, color: ORANJE }}>{line2}</div>
-          </div>
-        }
-        onder={
-          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <div style={{ display: "flex", fontSize: 300, fontWeight: 700, letterSpacing: -12, lineHeight: 1, color: "#fff" }}>{count}</div>
-              <div style={{ display: "flex", flexDirection: "column", marginLeft: 36, maxWidth: 380 }}>
-                <div style={{ display: "flex", width: 60, height: 8, backgroundColor: ORANJE, marginBottom: 20 }} />
-                <div style={{ display: "flex", fontSize: 30, fontWeight: 600, lineHeight: 1.3, color: "#fff" }}>{kicker}</div>
-                {pages ? <div style={{ display: "flex", fontSize: 24, color: GRIJS, marginTop: 10 }}>{pages}</div> : null}
-              </div>
-            </div>
-          </div>
-        }
-      />
-    ),
-    { width: CARD_W, height: CARD_H, fonts: fonts(a) },
-  );
-}
-
 /** VACATUREKAART (1080x1350), AIDA: haak boven, feiten + punten onder, actiebalk. */
 export async function renderLinkedInCard(searchParams: URLSearchParams): Promise<ImageResponse> {
   const c = cardFromParams(searchParams);
-  const a = await loadAssets();
+  const [a, foto] = await Promise.all([loadAssets(), fotoVoor(c.discipline)]);
 
-  const titleSize = c.title.length > 30 ? 76 : c.title.length > 20 ? 88 : 100;
+  const titleSize = c.title.length > 30 ? 60 : c.title.length > 16 ? 70 : 84;
   const feiten = [
     { label: "Locatie", value: c.location },
     { label: "Duur", value: c.duration },
@@ -161,12 +143,13 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
   return new ImageResponse(
     (
       <Canvas
+        foto={foto}
         actie={c.cta || "Solliciteer in 2 minuten"}
         actieRechts="q4s.nl/vacatures"
         boven={
           <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
             <img src={a.logoBlack} height={84} alt="Q4S Project Partners" style={{ objectFit: "contain", alignSelf: "flex-start" }} />
-            <div style={{ display: "flex", flexDirection: "column", marginTop: "auto", maxWidth: 700 }}>
+            <div style={{ display: "flex", flexDirection: "column", marginTop: "auto", maxWidth: CARD_W - FOTO_W - 80 }}>
               <div style={{ display: "flex", fontSize: 24, fontWeight: 700, letterSpacing: 3, color: ORANJE, textTransform: "uppercase" }}>
                 {[c.badge, c.discipline].filter(Boolean).join("  ·  ")}
               </div>
