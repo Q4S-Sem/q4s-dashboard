@@ -12,7 +12,6 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { PlaatsingenList } from "./PlaatsingenList";
 import { getoondeStatus, inMapActief, ontbrekendVoorActief } from "@/lib/ontbrekende-gegevens";
-import { metContract } from "@/lib/plaatsing-status";
 import { deletePlacementDraft } from "./actions";
 import { eindeStatus, eindeTekst } from "@/lib/plaatsing-einde";
 import { isAdminSession } from "@/lib/session";
@@ -39,13 +38,11 @@ export default async function PlaatsingenPage({
         select: { id: true, companyName: true },
       })
     : null;
-  const placements = await metContract(
-    await db.placement.findMany({
-      where: { status: { not: "ARCHIVED" }, ...(filterClient ? { clientId: filterClient.id } : {}) },
-      orderBy: { startDate: "desc" },
-      include: { consultant: true, client: true },
-    }),
-  );
+  const placements = await db.placement.findMany({
+    where: { status: { not: "ARCHIVED" }, ...(filterClient ? { clientId: filterClient.id } : {}) },
+    orderBy: { startDate: "desc" },
+    include: { consultant: true, client: true },
+  });
   const gearchiveerdAantal = await db.placement.count({ where: { status: "ARCHIVED" } });
   // Concepten (half ingevulde plaatsingen) — bovenaan, om af te maken.
   const drafts = filterClient
@@ -63,8 +60,8 @@ export default async function PlaatsingenPage({
   );
   const tel = (b: string) => rijen.filter((r) => r.bak === b).length;
   const MAPPEN = [
-    { key: "actief", label: "Actief", icon: <CheckCircle2 className="h-4 w-4" />, aantal: tel("actief"), hint: "Alles compleet en getekend — loopt mee in de facturatie." },
-    { key: "voorbereiding", label: "In voorbereiding", icon: <Hourglass className="h-4 w-4" />, aantal: tel("voorbereiding"), hint: "Wacht nog op gegevens of een getekend contract. Is alles er, dan gaat de plaatsing vanzelf naar Actief." },
+    { key: "actief", label: "Actief", icon: <CheckCircle2 className="h-4 w-4" />, aantal: tel("actief"), hint: "Alles compleet — loopt mee in de facturatie." },
+    { key: "voorbereiding", label: "In voorbereiding", icon: <Hourglass className="h-4 w-4" />, aantal: tel("voorbereiding"), hint: "Wacht nog op gegevens (klant, tarieven, werknemer). Is alles er, dan gaat de plaatsing vanzelf naar Actief." },
     { key: "concepten", label: "Concepten", icon: <FileText className="h-4 w-4" />, aantal: drafts.length, hint: "Half ingevulde plaatsingen — maak ze af wanneer je alles hebt." },
     ...(tel("beeindigd") ? [{ key: "beeindigd", label: "Beëindigd", icon: <CircleSlash className="h-4 w-4" />, aantal: tel("beeindigd"), hint: "Afgelopen plaatsingen." }] : []),
   ];
@@ -293,7 +290,7 @@ export default async function PlaatsingenPage({
             rateUnit: p.rateUnit,
             overtimeCostRate: p.overtimeCostRate,
             overtimeChargeRate: p.overtimeChargeRate,
-            // Alles wat nog ontbreekt (incl. getekend contract) → "Nog niet actief".
+            // Alles wat nog ontbreekt → "Nog niet actief".
             status: getoondeStatus(p, ontbreekt),
             ontbreekt,
             einde: ((e) => (e ? { tekst: eindeTekst(e), verlopen: e.status === "verlopen" } : null))(

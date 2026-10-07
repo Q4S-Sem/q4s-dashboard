@@ -37,17 +37,10 @@ test("plaatsing pas actief met klant, beide tarieven en complete werknemer", () 
   );
 });
 
-test("map Actief (= facturatie): pas met getekend contract, of handmatig geforceerd", () => {
-  const compleet = {
-    employmentType: "LOONDIENST", phone: "06", email: "a@b.nl", address: "Straat 1",
-    postalCode: "1234AB", city: "Rotterdam", dateOfBirth: new Date(1990, 0, 1),
-    nationality: "NL", iban: "NL96INGB0007873625", bsn: "123456789",
-  };
-  const zonder = ontbrekendVoorActief({ heeftKlant: true, costRate: 80, chargeRate: 95, getekendContract: false }, compleet);
-  assert.deepEqual(zonder, ["Getekend contract"]);
-  assert.equal(inMapActief({ status: "ACTIVE" }, zonder), false);
-  assert.equal(getoondeStatus({ status: "ACTIVE" }, zonder), "INCOMPLETE");
-  assert.equal(inMapActief({ status: "ACTIVE", forceActive: true }, zonder), true);
+test("map Actief (= facturatie): compleet of handmatig geforceerd; contract telt niet mee", () => {
+  assert.equal(inMapActief({ status: "ACTIVE" }, ["IBAN"]), false);
+  assert.equal(getoondeStatus({ status: "ACTIVE" }, ["IBAN"]), "INCOMPLETE");
+  assert.equal(inMapActief({ status: "ACTIVE", forceActive: true }, ["IBAN"]), true);
   assert.equal(inMapActief({ status: "ACTIVE" }, []), true);
   assert.equal(inMapActief({ status: "INCOMPLETE" }, []), false);
 });

@@ -1,12 +1,17 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FileText, ExternalLink, Trash2 } from "lucide-react";
+import { FileText, ExternalLink, Trash2, ScrollText, Plus, FileDown } from "lucide-react";
+import { db } from "@/lib/db";
+import { buttonVariants } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { CONTRACT_STATUSES } from "@/lib/domain";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { DOCUMENT_CATEGORIES } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
-import { deletePlacementDocument } from "../../../actions";
+import { deletePlacementDocument, neemContractTarievenOver } from "../../../actions";
 import { getPlacement } from "../data";
 import { DocumentUpload } from "./DocumentUpload";
 
@@ -21,15 +26,18 @@ export default async function PlaatsingDocumentenPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; saved?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; tarieven?: string }>;
 }) {
   const { id } = await params;
-  const { error, saved } = await searchParams;
+  const { error, saved, tarieven } = await searchParams;
 
   const placement = await getPlacement(id);
   if (!placement) notFound();
 
   const documents = placement.consultant.documents;
+  // Contracten die in het dashboard gemaakt zijn — staan hier samen met de documenten.
+  const contracts = await db.contract.findMany({ where: { placementId: id }, orderBy: { updatedAt: "desc" } });
+  const newHref = `/contracten/nieuw?consultantId=${placement.consultantId}&placementId=${id}`;
   const personName = `${placement.consultant.firstName} ${placement.consultant.lastName}`;
 
   return (
@@ -42,6 +50,11 @@ export default async function PlaatsingDocumentenPage({
       {error === "size" && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
           Bestand is te groot (max. 15 MB).
+        </p>
+      )}
+      {tarieven === "fout" && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          De tarieven konden niet overgenomen worden — lees het contract opnieuw in.
         </p>
       )}
       {saved === "doc" && (
@@ -120,6 +133,76 @@ export default async function PlaatsingDocumentenPage({
           )}
 
           <DocumentUpload placementId={placement.id} consultantId={placement.consultantId} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ScrollText className="h-5 w-5 text-ink-500" /> Contracten uit het dashboard
+            <span className="text-sm font-normal text-ink-400">({contracts.length})</span>
+          </CardTitle>
+          <Link href={newHref} className={buttonVariants({ size: "sm" })}>
+            <Plus className="h-4 w-4" /> Nieuw contract
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {contracts.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-ink-200 px-4 py-6 text-center text-sm text-ink-400">
+              Nog geen contract in het dashboard gemaakt. Een getekend contract kun je hierboven gewoon uploaden.
+            </p>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-ink-100">
+              <Table>
+                <THead>
+                  <TR className="hover:bg-transparent">
+                    <TH>Opdrachtnemer</TH>
+                    <TH>Referentie</TH>
+                    <TH>Status</TH>
+                    <TH>Bijgewerkt</TH>
+                    <TH className="text-right">Acties</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {contracts.map((c) => (
+                    <TR key={c.id}>
+                      <TD>
+                        <Link href={`/contracten/${c.id}`} className="font-medium text-brand-700 hover:underline">
+                          {c.contractorName}
+                        </Link>
+                      </TD>
+                      <TD>{c.number ?? "—"}</TD>
+                      <TD>
+                        <StatusBadge options={CONTRACT_STATUSES} value={c.status} />
+                      </TD>
+                      <TD className="text-ink-500">{formatDate(c.updatedAt)}</TD>
+                      <TD>
+                        <div className="flex justify-end gap-2">
+                          <Link
+                            href={`/contracten/${c.id}/print`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={buttonVariants({ variant: "ghost", size: "sm" })}
+                          >
+                            <FileDown className="h-3.5 w-3.5" /> PDF
+                          </Link>
+                          {/* Dashboard-contract = met de ZZP'er → inkoopkant. */}
+                          <form action={neemContractTarievenOver}>
+                            <input type="hidden" name="placementId" value={id} />
+                            <input type="hidden" name="contractId" value={c.id} />
+                            <input type="hidden" name="kant" value="inkoop" />
+                            <SubmitButton size="sm" variant="outline">
+                              Tarieven overnemen
+                            </SubmitButton>
+                          </form>
+                        </div>
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

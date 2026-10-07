@@ -520,7 +520,7 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
       "contract-plaatsing",
       "error",
       "Geen actieve plaatsing",
-      `${volledigeNaam || "Deze persoon"} heeft geen actieve plaatsing in deze week — maak de plaatsing eerst compleet (incl. getekend contract) zodat hij in de map Actief staat; pas dan kan de week verwerkt worden.`,
+      `${volledigeNaam || "Deze persoon"} heeft geen actieve plaatsing in deze week — maak de plaatsing eerst compleet zodat hij in de map Actief staat; pas dan kan de week verwerkt worden.`,
     );
   } else {
     add(

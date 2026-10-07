@@ -7,6 +7,7 @@ import { Field, Input, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { DOCUMENT_CATEGORIES } from "@/lib/domain";
 import { uploadPlacementDocument, readDocumentMeta } from "../../../actions";
+import { ContractTarieven } from "./ContractTarieven";
 
 /**
  * Documenten-upload met sleepvak: zodra je een bestand in de Dropzone laat vallen
@@ -23,13 +24,13 @@ export function DocumentUpload({
 }) {
   const [category, setCategory] = useState("CONTRACT");
   const [title, setTitle] = useState("");
-  const [hasFile, setHasFile] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const [reading, startReading] = useTransition();
   const [status, setStatus] = useState<{ kind: "done" | "error"; msg: string } | null>(null);
 
   function onFiles(files: File[]) {
-    const file = files[0];
-    setHasFile(Boolean(file));
+    const file = files[0] ?? null;
+    setFile(file);
     setStatus(null);
     if (!file) return;
     // Automatisch uitlezen zodra het bestand er is.
@@ -48,6 +49,7 @@ export function DocumentUpload({
   }
 
   return (
+    <div className="space-y-4">
     <form action={uploadPlacementDocument} className="space-y-4 rounded-xl border border-dashed border-ink-200 p-4">
       <input type="hidden" name="placementId" value={placementId} />
       <input type="hidden" name="consultantId" value={consultantId} />
@@ -56,7 +58,7 @@ export function DocumentUpload({
         name="file"
         accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,application/pdf"
         label="Sleep een document hierheen of klik om te kiezen"
-        hint="Contract, ID, certificaat, CV… — PDF, Word (.docx) of afbeelding. De soort en titel worden automatisch herkend."
+        hint="Contract, ID, certificaat, CV… — PDF, Word (.docx) of afbeelding. Soort en titel worden herkend; bij een contract ook de tarieven."
         onFilesChange={onFiles}
       />
 
@@ -102,10 +104,12 @@ export function DocumentUpload({
             placeholder="Bijv. Arbeidsovereenkomst 2026"
           />
         </Field>
-        <SubmitButton pendingLabel="Uploaden…" disabled={!hasFile || reading}>
+        <SubmitButton pendingLabel="Uploaden…" disabled={!file || reading}>
           Upload
         </SubmitButton>
       </div>
     </form>
+    {file && !reading && category === "CONTRACT" && <ContractTarieven key={`${file.name}-${file.size}-${file.lastModified}`} placementId={placementId} file={file} />}
+    </div>
   );
 }

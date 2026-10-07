@@ -48,15 +48,13 @@ export function ontbrekendeGegevens(c: WerknemerGegevens): string[] {
  * tarieven. Leeg = compleet.
  */
 export function ontbrekendVoorActief(
-  p: { heeftKlant: boolean; costRate?: number | null; chargeRate?: number | null; getekendContract?: boolean },
+  p: { heeftKlant: boolean; costRate?: number | null; chargeRate?: number | null},
   c: WerknemerGegevens,
 ): string[] {
   const plaatsing: string[] = [];
   if (!p.heeftKlant) plaatsing.push("Klant");
   if (!(Number(p.costRate) > 0)) plaatsing.push("Inkooptarief");
   if (!(Number(p.chargeRate) > 0)) plaatsing.push("Verkooptarief");
-  // Alleen meetellen waar het contract is opgezocht (zie metContract).
-  if (p.getekendContract === false) plaatsing.push("Getekend contract");
   return [...plaatsing, ...ontbrekendeGegevens(c)];
 }
 

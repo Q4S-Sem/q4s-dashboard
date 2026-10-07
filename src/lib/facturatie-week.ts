@@ -1,6 +1,5 @@
 import { db } from "./db";
 import { inMapActief, ontbrekendVoorActief } from "./ontbrekende-gegevens";
-import { metContract } from "./plaatsing-status";
 import { getCompanySettings } from "./settings";
 import { summarizeRecentWeeks } from "./timesheet-gate-history";
 import { computeTimesheetMoney } from "./toeslag";
@@ -195,21 +194,19 @@ export type WeekOverview = {
 type PlacementRow = Awaited<ReturnType<typeof ladenPlaatsingen>>[number];
 
 async function ladenPlaatsingen(monday: Date, sunday: Date) {
-  const alle = await metContract(
-    await db.placement.findMany({
-      where: {
-        status: "ACTIVE",
-        startDate: { lte: sunday },
-        OR: [{ endDate: null }, { endDate: { gte: monday } }],
-      },
-      include: {
-        consultant: true,
-        client: { select: { id: true, companyName: true } },
-      },
-      orderBy: [{ consultant: { lastName: "asc" } }, { startDate: "desc" }],
-    }),
-  );
-  // Alleen de map "Actief" (compleet + getekend contract) gaat door de facturatie.
+  const alle = await db.placement.findMany({
+    where: {
+      status: "ACTIVE",
+      startDate: { lte: sunday },
+      OR: [{ endDate: null }, { endDate: { gte: monday } }],
+    },
+    include: {
+      consultant: true,
+      client: { select: { id: true, companyName: true } },
+    },
+    orderBy: [{ consultant: { lastName: "asc" } }, { startDate: "desc" }],
+  });
+  // Alleen de map "Actief" (compleet) gaat door de facturatie.
   // Stuurt iemand buiten die map toch iets in, dan staat hij als "zonder actieve
   // plaatsing" in het overzicht — niets raakt onzichtbaar.
   return alle.filter((p) => inMapActief(p, ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant)));
@@ -1110,16 +1107,14 @@ export async function getWeekDossier(
   now: Date = new Date(),
 ): Promise<WeekDossier | null> {
   const week = resolveWeek(weekParam, now);
-  const gevonden = await db.placement.findUnique({
+  const p = await db.placement.findUnique({
     where: { id: placementId },
     include: {
       consultant: true,
       client: { select: { id: true, companyName: true } },
     },
   });
-  if (!gevonden) return null;
-  // Met contract-check: zo blokkeert beoordeelMetPlaatsing ook hier zonder getekend contract.
-  const [p] = await metContract([gevonden]);
+  if (!p) return null;
 
   const settings = await getCompanySettings();
   const company = { companyName: settings.companyName || "Q4S", aliases: ["Q4S", "Q4Solutions"] };

@@ -619,7 +619,7 @@ const DOCUMENT_META_SYSTEM =
   "document en bepaalt (1) de soort en (2) een korte, nette Nederlandse titel. Antwoord uitsluitend als JSON.";
 
 const DOCUMENT_META_PROMPT =
-  "Bepaal het soort document en een korte titel.\n\n" +
+  "Lees het HELE document (alle pagina's: kop, artikelen, handtekeningblok) en bepaal het soort document en een korte titel.\n\n" +
   "Kies 'category' uit exact deze waarden:\n" +
   "- CONTRACT = arbeids-, opdracht-, detacherings- of uitzendovereenkomst, addendum, verlenging\n" +
   "- ID = identiteitsbewijs, paspoort, rijbewijs, ID-kaart, BSN-document\n" +
@@ -671,8 +671,11 @@ export async function extractDocumentMeta(
         base64: bytes.toString("base64"),
         mediaType: kind === "pdf" ? "application/pdf" : mimeType || "image/jpeg",
       },
-      maxTokens: 300,
-      effort: "low",
+      maxTokens: 400,
+      effort: "medium",
+      // Twijfel (Overig / geen titel) → het sterke model leest het nog eens.
+      retryIf: (r: { category?: string; title?: string }) =>
+        r?.category === "OVERIG" || !r?.title?.trim() ? "soort of titel niet herkend" : null,
     });
   }
 
@@ -730,10 +733,12 @@ export async function extractContractRates(bytes: Buffer, fileName: string, mime
   if (!kind) throw new CvExtractError("Alleen een PDF, Word (.docx) of foto van het contract kan uitgelezen worden.");
   const opts = {
     system: CONTRACT_RATES_SYSTEM,
-    prompt: "Lees de tarieven en de looptijd uit deze overeenkomst.",
+    prompt:
+      "Lees de tarieven en de looptijd uit deze overeenkomst. Lees ALLE pagina's, ook bijlagen en tabellen " +
+      "(tarieven staan soms in een bijlage of tabel i.p.v. artikel 6). Controleer elk bedrag twee keer tegen het document.",
     schema: CONTRACT_RATES_AI_SCHEMA,
     schemaName: "contract_rates",
-    maxTokens: 600,
+    maxTokens: 2000,
   };
   let raw: unknown;
   if (kind === "docx") {
@@ -745,7 +750,9 @@ export async function extractContractRates(bytes: Buffer, fileName: string, mime
     raw = await aiJSONFromFile<unknown>({
       ...opts,
       file: { base64: bytes.toString("base64"), mediaType: kind === "pdf" ? "application/pdf" : mimeType || "image/jpeg" },
-      effort: "low",
+      // Geld: meteen het sterke model, grondig — een fout tarief kost meer dan een paar seconden.
+      strong: true,
+      effort: "high",
     });
   }
   const parsed = contractRatesSchema.safeParse(raw);

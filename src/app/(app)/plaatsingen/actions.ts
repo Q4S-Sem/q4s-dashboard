@@ -687,7 +687,7 @@ export async function neemContractTarievenOver(formData: FormData): Promise<void
     const parsed = TarievenSchema.safeParse(json);
     if (parsed.success) tarieven = parsed.data;
   }
-  if (!placementId || !tarieven) redirect(`/plaatsingen/${placementId}/contracten?tarieven=fout`);
+  if (!placementId || !tarieven) redirect(`/plaatsingen/${placementId}/documenten?tarieven=fout`);
   const { data } = plaatsingUitContract(tarieven, kant);
   if (Object.keys(data).length > 0) {
     await db.placement.update({ where: { id: placementId }, data });
