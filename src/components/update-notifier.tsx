@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Loader2, CheckCircle2, RefreshCw } from "lucide-react";
 
@@ -22,6 +23,32 @@ export function UpdateNotifier() {
   const [mounted, setMounted] = useState(false);
   const baseline = useRef<string | null>(null);
   const applied = useRef(false);
+  // Is er op deze pagina iets ingetypt dat nog niet is verstuurd? Dan NOOIT
+  // automatisch herladen — pas bij de volgende paginawissel of op jouw klik.
+  const bezig = useRef(false);
+  const [wacht, setWacht] = useState(false);
+  const pathname = usePathname();
+  const vorigePad = useRef(pathname);
+
+  useEffect(() => {
+    const typt = () => (bezig.current = true);
+    const verstuurd = () => (bezig.current = false);
+    document.addEventListener("input", typt, true);
+    document.addEventListener("submit", verstuurd, true);
+    return () => {
+      document.removeEventListener("input", typt, true);
+      document.removeEventListener("submit", verstuurd, true);
+    };
+  }, []);
+
+  // Andere pagina geopend: niets meer half ingevuld → update nu veilig toepassen.
+  useEffect(() => {
+    if (vorigePad.current === pathname) return;
+    vorigePad.current = pathname;
+    bezig.current = false;
+    if (wacht) apply();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => {
     setMounted(true);
@@ -85,6 +112,10 @@ export function UpdateNotifier() {
   // Zodra de update is gezien: automatisch toepassen (met zichtbare spinner).
   useEffect(() => {
     if (phase === "available") {
+      if (bezig.current) {
+        setWacht(true);
+        return;
+      }
       const t = setTimeout(apply, 900);
       return () => clearTimeout(t);
     }
@@ -116,13 +147,19 @@ export function UpdateNotifier() {
           </>
         ) : (
           <>
-            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-white/90" />
+            {wacht && phase !== "applying" ? (
+              <RefreshCw className="h-5 w-5 shrink-0 text-white/90" />
+            ) : (
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-white/90" />
+            )}
             <div className="min-w-0">
               <p className="text-sm font-semibold">Er is een nieuwe update</p>
               <p className="text-xs text-white/70">
                 {phase === "applying"
                   ? "Bezig met toepassen op jouw dashboard…"
-                  : "Wordt zo automatisch toegepast op jouw dashboard…"}
+                  : wacht
+                    ? "Je bent iets aan het invullen — sla eerst op. De update volgt bij de volgende pagina."
+                    : "Wordt zo automatisch toegepast op jouw dashboard…"}
               </p>
             </div>
             <button
