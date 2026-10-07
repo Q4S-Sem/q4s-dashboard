@@ -24,6 +24,7 @@ type ContractDefaults = {
   contractorKvk?: string;
   contractorVat?: string;
   contractorIban?: string;
+  kmRate?: string;
 };
 
 /** Wat nu in het formulier staat, als Contract — voor het live voorbeeld. */
