@@ -67,7 +67,7 @@ export default async function WebsiteLinkedInPage({
     <div className="space-y-6">
       <PageHeader
         title="LinkedIn"
-        description="Maak in het vaste Q4S-format een LinkedIn-post: schakel tussen de vacaturetekst en de afbeelding."
+        description="Kies een vacature: de post (AIDA: haak, werk, wat het oplevert, solliciteer-link) en de afbeelding in Q4S-huisstijl worden automatisch gemaakt. Alleen nog kopiëren en plaatsen."
       />
       <LinkedInTabs
         initialView={view === "afbeelding" ? "afbeelding" : "tekst"}

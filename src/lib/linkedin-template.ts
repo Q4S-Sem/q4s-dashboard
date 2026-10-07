@@ -166,25 +166,22 @@ function tag(s: string): string {
   return `#${camel}`;
 }
 
-const STOP = new Set(["voor", "level", "senior", "junior", "medior", "van", "de", "het", "een"]);
-
 function buildHashtags(inp: PostInput, discipline: string, loc: string): string {
   const tags: string[] = ["#Vacature"];
   const push = (t: string) => {
     const x = tag(t);
     if (x && x.length > 2) tags.push(x);
   };
+  // De functie als één tag (#QualityManager), dan het vakgebied.
+  push(inp.title.replace(/\(.*?\)/g, "").split(/[/,|]/)[0]);
   if (discipline) push(discipline.split(/[/—|]/)[0]);
-  // Betekenisvolle woorden uit de titel.
-  for (const w of inp.title.split(/[\s&/,]+/)) {
-    if (w.length >= 5 && !STOP.has(w.toLowerCase())) push(w);
-  }
   // Normen / acroniemen uit eisen + werkzaamheden (EN 1090 → #EN1090).
   const acr = new Set<string>();
   for (const line of [...inp.requirements, ...inp.responsibilities]) {
     for (const m of line.matchAll(/\b[A-Z]{2,}\s?\d{2,}\b|\b[A-Z]{3,}\b/g)) acr.add(m[0].replace(/\s+/g, ""));
   }
-  for (const a of acr) push(a);
+  // Alleen echte normen/certificaten (letters+cijfers), geen losse afkortingen als VOL/HBO.
+  for (const a of acr) if (/\d/.test(a)) push(a);
   if (loc) push(loc);
   if (/deeltijd|parttime|\d+\s*uur/i.test(inp.employmentType)) tags.push("#Parttime");
   push("Techniek");
@@ -194,7 +191,8 @@ function buildHashtags(inp: PostInput, discipline: string, loc: string): string 
     if (out.length >= 5) break;
     if (!out.includes(f)) out.push(f);
   }
-  return out.slice(0, 12).join(" ");
+  // LinkedIn: 3-5 relevante hashtags werken beter dan een lange rij.
+  return out.slice(0, 5).join(" ");
 }
 
 /** Het leesbare label van een discipline (valt terug op de vrije tekst). */
@@ -217,110 +215,83 @@ export function vacatureUrl(slug?: string | null): string {
   return slug ? `${Q4S_SITE}/nl/vacatures/${slug}` : `${Q4S_SITE}/nl/vacatures`;
 }
 
-/** Bouw de LinkedIn-post in het vaste Q4S-format (met Unicode-vet + emoji's). */
+/**
+ * De LinkedIn-post volgens AIDA, het format dat op LinkedIn converteert:
+ *  A  Attention — de eerste 2 regels (vóór "…meer weergeven"): een vraag aan de
+ *     juiste vakman + het concrete feit (project, plaats, duur).
+ *  I  Interest  — wat het werk is: context + max 4 werkzaamheden.
+ *  D  Desire    — wat het jou oplevert + of je erbij past (max 5 eisen).
+ *  A  Action    — één duidelijke stap met de links naar q4s.nl, dan contact.
+ * Schrijfregels (marketing-skill): geen emoji als opsommingsteken, geen
+ * gedachtestreepjes, geen "Thoughts?"-afsluiter, max 5 hashtags.
+ */
 export function buildLinkedinPost(inp: PostInput): string {
   const title = inp.title.trim() || "Nieuwe vacature";
   const discipline = disciplineLabelOf(inp.discipline);
   const loc = inp.location.trim();
   const company = inp.companyName.trim() || "Q4S";
-  const resp = inp.responsibilities.map((r) => r.trim()).filter(Boolean);
-  const reqs = inp.requirements.map((r) => r.trim()).filter(Boolean);
+  const resp = inp.responsibilities.map((r) => r.trim()).filter((r) => r && !isSublabel(r));
+  const reqs = inp.requirements.map((r) => r.trim()).filter((r) => r && !isSublabel(r));
   const offer = inp.offer.map((r) => r.trim()).filter(Boolean);
   const profile = inp.profile.trim();
-  const summary = inp.summary.trim();
+  const summary = stripFormatting(inp.summary.trim()).replace(/\s+/g, " ");
   const salary = inp.salary.trim();
+  const zinnen = summary.match(/[^.!?]+[.!?]+/g)?.map((z) => z.trim()) ?? (summary ? [summary] : []);
+  const duur = /(\d+\s*\+?\s*(?:maanden|maand|weken|jaar))/i.exec(summary)?.[1];
+  const punt = (r: string) => `• ${autoBold(respLine(r))}`;
 
   const L: string[] = [];
 
-  // Kop — vet met 📍, zoals het vaste voorbeeld: "📍 Gezocht: Voorman / NDO".
-  const kop = discipline && !title.toLowerCase().includes(discipline.toLowerCase())
-    ? `Gezocht: ${title} / ${discipline}`
-    : `Gezocht: ${title}`;
-  L.push(`📍 ${boldize(kop)}`);
+  // A — Attention: de vraag uit de tekst, anders een eigen vraag + het feit.
+  const vraag = zinnen.find((z) => z.endsWith("?"));
+  L.push(boldize(vraag ?? `Ervaren ${title} en klaar voor je volgende project?`));
+  const feit = [`📍 ${loc || "Nederland"}`, duur ? `${duur}` : "", inp.employmentType.trim()].filter(Boolean).join(" · ");
+  L.push(feit);
   L.push("");
 
-  // Korte intro als GEWONE tekst (goed leesbaar, zoals het voorbeeld) — max 2
-  // zinnen; de blokken eronder vertellen de rest.
-  if (summary) {
-    L.push(firstSentences(stripFormatting(summary), 2));
-  } else {
-    L.push(
-      `Voor een technisch project${loc ? ` in de regio ${loc}` : ""} zijn wij op zoek naar een ervaren ${title.toLowerCase()}${
-        discipline ? ` met een sterke achtergrond in ${discipline}` : ""
-      }.`,
-    );
+  // I — Interest: context + wat je gaat doen.
+  const context = zinnen.filter((z) => !z.endsWith("?")).slice(0, 2).join(" ");
+  if (context) {
+    L.push(context);
+    L.push("");
   }
-  L.push("");
-
-  // Wat ga je doen? — vetgedrukt kopje, 🔹 per taak.
   if (resp.length) {
-    L.push(boldize("Wat ga je doen?"));
-    for (const r of resp) L.push(`🔹 ${autoBold(respLine(r))}`);
+    L.push(boldize("Wat je gaat doen"));
+    for (const r of resp.slice(0, 4)) L.push(punt(r));
     L.push("");
   }
 
-  // Wat vragen wij? — vetgedrukt kopje, ✅ per eis (met auto-vette normen/acroniemen).
-  if (reqs.length) {
-    L.push(boldize("Wat vragen wij?"));
-    for (const r of reqs) {
-      if (isSublabel(r)) {
-        // Tussenkopje: vet, zonder vinkje, met een witregel ervoor zodat het los komt.
-        L.push("");
-        L.push(boldize(r.replace(/:\s*$/, "")));
-      } else {
-        L.push(`✅ ${autoBold(md(r))}`);
-      }
-    }
-    L.push("");
-  }
-
-  // Wie ben jij? — persoonsprofiel als lopende tekst.
-  if (profile) {
-    L.push(boldize("Wie ben jij?"));
-    L.push(autoBold(md(profile)));
-    L.push("");
-  }
-
-  // Wat bieden wij? — de ingevulde punten; anders (alleen bij een salaris) een
-  // nette terugval zodat de echte vacaturetekst nooit stilletjes verdwijnt.
+  // D — Desire: wat het oplevert + of je erbij past.
   const offerLines = offer.length
     ? offer
-    : salary
-      ? [
-          `Een marktconform ${/uur|€|\d/.test(salary) ? "tarief" : "salaris"}: ${salary}`,
-          "Mooie projecten bij toonaangevende opdrachtgevers",
-          `Persoonlijke begeleiding en korte lijnen bij ${company}`,
-        ]
-      : [];
-  if (offerLines.length) {
-    L.push(boldize("Wat bieden wij?"));
-    for (const o of offerLines) L.push(`🔹 ${autoBold(respLine(o))}`);
+    : [
+        ...(salary ? [`${/uur|€|\d/.test(salary) ? "Tarief" : "Vergoeding"}: ${salary}`] : []),
+        ...(duur ? [`Een opdracht van ${duur} met een vaste opdrachtgever`] : []),
+        `Persoonlijke begeleiding en korte lijnen met ${company}`,
+      ];
+  L.push(boldize("Wat je ervoor terugkrijgt"));
+  for (const o of offerLines.slice(0, 4)) L.push(punt(o));
+  L.push("");
+  if (reqs.length || profile) {
+    L.push(boldize("Herken je jezelf hierin?"));
+    for (const r of reqs.slice(0, 5)) L.push(`• ${autoBold(md(r))}`);
+    if (profile) L.push(autoBold(md(firstSentences(profile, 2))));
     L.push("");
   }
 
-  // Interesse — vast blok zoals het voorbeeld.
-  L.push(boldize("Interesse of ken je iemand?"));
-  L.push("Neem gerust contact op of solliciteer direct via onze website.");
-  L.push("");
-
-  // Links naar q4s.nl: de vacature zelf + direct solliciteren (met de vacature voorgeselecteerd).
+  // A — Action: één stap, met de links naar q4s.nl.
+  L.push(boldize("Solliciteer in 2 minuten"));
   const url = inp.applyUrl.trim();
-  if (url) {
-    L.push(`👉 Bekijk de vacature: ${url}`);
-    const slug = /\/vacatures\/([^/?#]+)/.exec(url)?.[1];
-    if (slug) L.push(`📄 Direct solliciteren: ${Q4S_SITE}/nl/cv-uploaden?vacancy=${slug}`);
-    L.push("");
-  }
-
-  // Contact — ALTIJD Gjils nummer + cv@q4s.nl (terugval op de vaste waarden als
-  // een aanroeper niets meegeeft). Kaal zonder labels: klikbaar/kopieerbaar.
-  L.push(`📞 ${inp.contactPhone.trim() || Q4S_CONTACT_PHONE}`);
-  L.push(`📧 ${inp.contactEmail.trim() || Q4S_CONTACT_EMAIL}`);
+  const slug = /\/vacatures\/([^/?#]+)/.exec(url)?.[1];
+  if (slug) L.push(`👉 ${Q4S_SITE}/nl/cv-uploaden?vacancy=${slug}`);
+  if (url) L.push(`Alle details: ${url}`);
+  L.push(`Liever eerst bellen? ${inp.contactPhone.trim() || Q4S_CONTACT_PHONE} of mail ${inp.contactEmail.trim() || Q4S_CONTACT_EMAIL}`);
   const contactName = inp.contactName.trim();
-  if (contactName) L.push(`🤝 ${contactName} · ${company}`);
+  if (contactName) L.push(`${contactName}, ${company}`);
+  L.push("");
+  L.push("Ken je iemand die hier perfect bij past? Tag diegene in de reacties.");
   L.push("");
 
-  // Hashtags.
   L.push(buildHashtags(inp, discipline, loc));
 
   return L.join("\n").replace(/\n{3,}/g, "\n\n").trim();
