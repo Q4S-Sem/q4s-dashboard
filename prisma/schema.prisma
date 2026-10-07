@@ -890,6 +890,20 @@ model TimesheetCorrection {
 /// later af te maken (bv. terwijl je nog een nieuw bedrijf toevoegt). Alle
 /// veldwaarden staan als JSON in `data`; het is nog GEEN echte Placement (geen
 /// verplichte relaties). Verschijnt bovenaan op /plaatsingen tot je 'm afmaakt.
+/// Opgeslagen offerte of arbeidsovereenkomst (Contracten → Nieuw contract):
+/// alle formuliervelden als JSON, om later verder te bewerken.
+model DocConcept {
+  id        String   @id @default(cuid())
+  /// "offerte" | "arbeidsovereenkomst"
+  soort     String
+  label     String   @default("")
+  data      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([soort, updatedAt])
+}
+
 model PlacementDraft {
   id        String   @id @default(cuid())
   /// Herkenbare titel (werknemer + klant) voor de conceptenlijst.

@@ -6,6 +6,8 @@ import type { Contract } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { Button } from "@/components/ui/button";
+import { Save } from "lucide-react";
 import { ConfirmCancel } from "@/components/confirm-cancel";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { CONTRACT_STATUSES } from "@/lib/domain";
@@ -91,7 +93,8 @@ export function ContractForm({
   const d = defaults;
 
   const form = (
-    <form ref={formRef} action={formAction} onChange={lees} onInput={lees} className="space-y-6">
+    // noValidate: de server controleert; anders blokkeert de browser stil als het formulier-mapje verborgen is.
+    <form id="contract-form" noValidate ref={formRef} action={formAction} onChange={lees} onInput={lees} className="space-y-6">
       {c && <input type="hidden" name="id" value={c.id} />}
 
       {state.error && (
@@ -296,9 +299,23 @@ export function ContractForm({
   );
   if (!voorbeeld) return form;
   const bron = waarden ?? c ?? ({ ...d, contractorName: d?.contractorName ?? "" } as unknown as Contract);
+  const fouten = state.error || Object.keys(e).length > 0;
   return (
+    <>
+    {fouten && (
+      <p className="no-print rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        Niet opgeslagen: {state.error ?? `controleer ${Object.values(e).join(", ").toLowerCase()}`}
+      </p>
+    )}
     <InvulTabs
-      acties={voorbeeld.acties}
+      acties={
+        <>
+          {voorbeeld.acties}
+          <Button type="submit" form="contract-form" size="sm">
+            <Save className="h-4 w-4" /> Opslaan
+          </Button>
+        </>
+      }
       formulier={form}
       voorbeeld={
         <ContractVel
@@ -310,6 +327,7 @@ export function ContractForm({
         />
       }
     />
+    </>
   );
 }
 

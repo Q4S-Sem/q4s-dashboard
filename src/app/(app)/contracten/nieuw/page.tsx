@@ -8,6 +8,9 @@ import { CONTRACT_STATUSES } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { TabelZoek } from "@/components/ui/tabel-zoek";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { verwijderDoc } from "../actions";
+import { Trash2 } from "lucide-react";
 
 export const metadata = { title: "Nieuw contract" };
 export const dynamic = "force-dynamic";
@@ -56,6 +59,12 @@ export default async function NieuwContractPage({
     where: q ? { OR: [{ contractorName: zoek }, { number: zoek }, { thirdParty: zoek }] } : undefined,
     orderBy: { updatedAt: "desc" },
     select: { id: true, number: true, contractorName: true, thirdParty: true, status: true, updatedAt: true, rateDay: true },
+  });
+
+  const docs = await db.docConcept.findMany({
+    where: q ? { label: zoek } : undefined,
+    orderBy: { updatedAt: "desc" },
+    select: { id: true, soort: true, label: true, updatedAt: true },
   });
 
   return (
@@ -114,6 +123,41 @@ export default async function NieuwContractPage({
                     <span className="hidden w-24 text-right text-xs text-ink-400 sm:block">{formatDate(c.updatedAt)}</span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-ink-400" />
                   </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      <div className="space-y-3 pt-2">
+        <div>
+          <h2 className="text-base font-bold text-ink-900">Opgeslagen offertes &amp; arbeidsovereenkomsten ({docs.length})</h2>
+          <p className="text-sm text-ink-500">Klik om verder te bewerken, te printen of als Word te downloaden.</p>
+        </div>
+        <Card className="overflow-hidden">
+          {docs.length === 0 ? (
+            <p className="px-5 py-8 text-center text-sm text-ink-400">Nog niets opgeslagen — klik in een offerte of arbeidsovereenkomst op Opslaan.</p>
+          ) : (
+            <ul className="divide-y divide-ink-100">
+              {docs.map((d) => (
+                <li key={d.id} className="flex items-center gap-2 pr-3 hover:bg-ink-50">
+                  <Link href={`/contracten/nieuw/${d.soort}?doc=${d.id}`} className="flex min-w-0 flex-1 items-center gap-4 px-5 py-3 text-sm">
+                    {d.soort === "offerte" ? (
+                      <Receipt className="h-4 w-4 shrink-0 text-amber-600" />
+                    ) : (
+                      <BriefcaseBusiness className="h-4 w-4 shrink-0 text-emerald-600" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-ink-900">{d.label || "Naamloos"}</span>
+                      <span className="block text-xs text-ink-400">{d.soort === "offerte" ? "Offerte" : "Arbeidsovereenkomst"}</span>
+                    </span>
+                    <span className="hidden w-24 text-right text-xs text-ink-400 sm:block">{formatDate(d.updatedAt)}</span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-ink-400" />
+                  </Link>
+                  <ConfirmSubmit action={verwijderDoc} id={d.id} message="Dit document verwijderen?" variant="ghost" size="sm">
+                    <Trash2 className="h-4 w-4" />
+                  </ConfirmSubmit>
                 </li>
               ))}
             </ul>

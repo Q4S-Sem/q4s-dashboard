@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
-import { Eraser } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Check, Eraser, Save } from "lucide-react";
+import { bewaarDoc } from "../../actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Select, fieldBase } from "@/components/ui/field";
@@ -159,6 +160,7 @@ export function DocInvullen({
   handtekening,
   footerLine,
   taalKeuze,
+  opgeslagen,
 }: {
   /** NL/EN-schakelaar (server-gerenderd, want hij maakt links). */
   taalKeuze: React.ReactNode;
@@ -167,11 +169,38 @@ export function DocInvullen({
   logoSrc: string | null;
   handtekening: string | null;
   footerLine: string;
+  /** Eerder opgeslagen document (uit de database) om verder te bewerken. */
+  opgeslagen?: { id: string; waarden: Record<string, string> } | null;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [docId, setDocId] = useState(opgeslagen?.id ?? null);
+  const [melding, setMelding] = useState<string | null>(null);
+  const [bezig, startOpslaan] = useTransition();
   // Offerte: standaardpercentages staan al ingevuld (gewoon aan te passen).
   const start = soort === "offerte" ? OFFERTE_STANDAARD : {};
-  const [w, setW] = useState<Record<string, string>>(start);
+  const [w, setW] = useState<Record<string, string>>(opgeslagen?.waarden ?? start);
+  // Opgeslagen document geopend: het lokale concept mag het niet overschrijven.
+  useEffect(() => {
+    if (!opgeslagen) return;
+    try {
+      const prefix = `q4s-draft:${pathname}::`;
+      Object.keys(localStorage).filter((k) => k.startsWith(prefix)).forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // geen opslag
+    }
+  }, [opgeslagen, pathname]);
+
+  function opslaan() {
+    startOpslaan(async () => {
+      const r = await bewaarDoc(soort, docId, w);
+      if ("error" in r) return setMelding(r.error);
+      setDocId(r.id);
+      setMelding("Opgeslagen");
+      router.replace(`${pathname}?taal=${taal}&doc=${r.id}`, { scroll: false });
+      setTimeout(() => setMelding(null), 2500);
+    });
+  }
 
   const zet = (k: string, v: string) => setW((o) => ({ ...o, [k]: v }));
 
@@ -208,6 +237,12 @@ export function DocInvullen({
       acties={
         <>
           {taalKeuze}
+          {soort !== "persoonsgegevens" && (
+            <Button type="button" size="sm" onClick={opslaan} disabled={bezig}>
+              {melding === "Opgeslagen" ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+              {bezig ? "Opslaan…" : melding ?? "Opslaan"}
+            </Button>
+          )}
           <Button type="button" variant="outline" size="sm" onClick={leegmaken}>
             <Eraser className="h-4 w-4" /> Leegmaken
           </Button>
