@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   // @napi-rs/canvas is een native N-API addon (.node): die kan sowieso niet
   // gebundeld worden en moet als require() blijven staan.
   serverExternalPackages: ["xlsx", "pdfjs-dist", "@napi-rs/canvas"],
+  // Standaard 1 MB per server action — een CV/contract bij "Nieuwe plaatsing"
+  // gaat daar makkelijk overheen en dan mislukt opslaan. Vercel kapt op ~4,5 MB.
+  experimental: { serverActions: { bodySizeLimit: "4mb" } },
   // Build verification can target a separate output dir (set NEXT_DIST_DIR) so a
   // `next build` never clobbers the running dev server's `.next` — keeps
   // localhost up while iterating. Dev/prod use `.next` by default.

@@ -5,6 +5,7 @@ import {
   useActionState,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
   type KeyboardEvent,
@@ -888,6 +889,36 @@ export function PlacementForm({
   > | null;
 }) {
   const [state, formAction] = useActionState(action, emptyFormState);
+  // Nieuwe plaatsing: tussentijds automatisch als concept bewaren (Plaatsingen →
+  // Concepten), zodat een herlaad/update of mislukte opslag niets kost.
+  const formRef = useRef<HTMLFormElement>(null);
+  const [conceptId, setConceptId] = useState(draftId ?? "");
+  const [autoBewaard, setAutoBewaard] = useState<Date | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const conceptRef = useRef(conceptId);
+  function autoOpslaan() {
+    if (placement || !formRef.current) return;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      const fd = new FormData(formRef.current!);
+      for (const [k, v] of [...fd.entries()])
+        if (typeof v !== "string") fd.delete(k);
+      if (conceptRef.current) fd.set("draftId", conceptRef.current);
+      try {
+        const res = await fetch("/api/plaatsingen/concept", {
+          method: "POST",
+          body: fd,
+        });
+        if (!res.ok) return;
+        const { id } = (await res.json()) as { id: string };
+        conceptRef.current = id;
+        setConceptId(id);
+        setAutoBewaard(new Date());
+      } catch {
+        // offline e.d. — volgende wijziging probeert opnieuw
+      }
+    }, 2000);
+  }
   const e = state.fieldErrors ?? {};
   const [tab, setTab] = useState<Tab>(placement ? "werknemer" : "bestanden");
   const [eerderState, setEerderState] = useState(state);
@@ -988,12 +1019,27 @@ export function PlacementForm({
     chargeRate > 0 ? ((chargeRate - costRate) / chargeRate) * 100 : 0;
 
   return (
-    <form action={formAction} data-no-persist={draft ? "" : undefined}>
+    <form
+      ref={formRef}
+      action={formAction}
+      onInput={autoOpslaan}
+      onChange={autoOpslaan}
+      data-no-persist={draft ? "" : undefined}
+    >
       {placement && <input type="hidden" name="id" value={placement.id} />}
-      {draftId && <input type="hidden" name="draftId" value={draftId} />}
+      {conceptId && <input type="hidden" name="draftId" value={conceptId} />}
 
       {/* Snel opslaan — blijft bovenaan in beeld tijdens het scrollen. */}
       <div className="sticky top-16 z-20 mb-4 flex flex-wrap items-center justify-end gap-2 rounded-lg border border-ink-200 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur">
+        {autoBewaard && (
+          <span className="mr-auto text-xs text-ink-400">
+            Automatisch bewaard als concept om{" "}
+            {autoBewaard.toLocaleTimeString("nl-NL", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        )}
         <ConfirmCancel href={cancelHref} size="sm" />
         {!placement && (
           <button
