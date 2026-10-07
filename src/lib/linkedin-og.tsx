@@ -31,62 +31,40 @@ async function loadAssets() {
   return assets;
 }
 
-// Q4S-huisstijl (q4s.nl): zwart/wit met het oranje accent #E8430A, Inter.
-// Opbouw zoals de kWh-carrousel: lichte infokaart + chips bovenaan, donker
-// blok met citaat eronder, oranje geometrie rechtsonder, logo linksonder.
+// Q4S-huisstijl (q4s.nl): zwart/wit + oranje #E8430A, Inter.
+// Opbouw = het logo zelf: een vlak dat horizontaal in tweeën is gedeeld (boven
+// wit, onder zwart) met een schuine "4"-balk die over de deellijn van vorm wisselt.
+// De inhoud volgt AIDA: boven de haak (functie), onder interesse/verlangen
+// (feiten + punten), onderaan één oranje actiebalk.
 const ORANJE = "#E8430A";
 const INK = "#0b0b0c";
-const INK_SOFT = "#55555b";
-const LICHT = "#f2f2f0";
-const ZWART_VERLOOP = "linear-gradient(135deg, #1c1c1e 0%, #0b0b0c 55%, #000000 100%)";
+const GRIJS = "#8a8a90";
+const SPLIT = 600; // y van de deellijn
+const BALK_H = 132; // oranje actiebalk onderaan
 
 const svgUri = (svg: string) => `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 
-/** Locatie-pin in Q4S-oranje. */
 const PIN = svgUri(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${ORANJE}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${ORANJE}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
 );
 
 /**
- * Beeldmerk rechtsonder, afgeleid van het Q4S-logo: het kader met de horizontale
- * deellijn (boven gevuld, onder open) en de schuine "4"-balken die over de
- * deellijn heen van kleur wisselen — boven uitgespaard, onder oranje. Als SVG
- * (resvg kent clipPath; de Satori-layout niet).
+ * De schuine logo-balken over de deellijn: boven (op wit) massief oranje,
+ * onder (op zwart) alleen de omtrek — dezelfde omkering als in het logo.
  */
-function logoVormSvg(): string {
-  const balk = (x: number) => `<polygon points="${x},640 ${x + 70},640 ${x + 370},40 ${x + 300},40"/>`;
-  const balken = [120, 245, 370].map(balk).join("");
-  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+function balkenSvg(h: number, split: number): string {
+  const w = 420;
+  const dx = 230; // schuinte, zoals de "4" in het logo
+  const balk = (x: number) => `<polygon points="${x},${h} ${x + 64},${h} ${x + 64 + dx},0 ${x + dx},0"/>`;
+  const balken = [20, 116].map(balk).join("");
+  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
   <defs>
-    <linearGradient id="o" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${ORANJE}"/><stop offset="1" stop-color="#9c2a05"/></linearGradient>
-    <clipPath id="kader"><rect x="90" y="150" width="620" height="420"/></clipPath>
-    <clipPath id="boven"><rect x="0" y="0" width="640" height="360"/></clipPath>
-    <clipPath id="onder"><rect x="0" y="360" width="640" height="280"/></clipPath>
+    <clipPath id="b"><rect x="0" y="0" width="${w}" height="${split}"/></clipPath>
+    <clipPath id="o"><rect x="0" y="${split}" width="${w}" height="${h - split}"/></clipPath>
   </defs>
-  <g clip-path="url(#kader)">
-    <rect x="90" y="150" width="620" height="210" fill="url(#o)"/>
-    <g clip-path="url(#boven)" fill="#0b0b0c">${balken}</g>
-    <g clip-path="url(#onder)" fill="url(#o)">${balken}</g>
-  </g>
-  <rect x="90" y="150" width="620" height="420" fill="none" stroke="${ORANJE}" stroke-width="12"/>
-  <rect x="40" y="100" width="620" height="420" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="3"/>
+  <g clip-path="url(#b)" fill="${ORANJE}">${balken}</g>
+  <g clip-path="url(#o)" fill="none" stroke="${ORANJE}" stroke-width="5">${balken}</g>
 </svg>`);
-}
-const LOGO_VORM = logoVormSvg();
-
-/** Het beeldmerk, rechtsonder in een vlak van w×h, deels over de rand. */
-function Vormen({ grootte = 1, w = CARD_W, h = CARD_H }: { grootte?: number; w?: number; h?: number }) {
-  const z = Math.round(640 * grootte);
-  // Satori negeert right/bottom bij absolute posities → via left/top.
-  return (
-    <img
-      src={LOGO_VORM}
-      width={z}
-      height={z}
-      alt=""
-      style={{ position: "absolute", left: w - z + Math.round(z * 0.12), top: h - z + Math.round(z * 0.1) }}
-    />
-  );
 }
 
 const FONT_SPEC = [
@@ -99,161 +77,129 @@ function fonts(a: { interReg: Buffer; interSemi: Buffer; interBold: Buffer }) {
   return FONT_SPEC.map((f) => ({ ...f, data: f.weight === 400 ? a.interReg : f.weight === 600 ? a.interSemi : a.interBold }));
 }
 
-/** CARROUSEL-COVER (1080x1350): oranje cirkel met aantal + "nieuwe opdrachten". */
+/** Het gedeelde canvas: wit boven, zwart onder, balken rechts, actiebalk onderaan. */
+function Canvas({ boven, onder, actie, actieRechts }: { boven: React.ReactNode; onder: React.ReactNode; actie: string; actieRechts: string }) {
+  const balkTop = 380;
+  return (
+    <div style={{ width: CARD_W, height: CARD_H, display: "flex", flexDirection: "column", backgroundColor: INK, fontFamily: "Inter", position: "relative" }}>
+      <div style={{ display: "flex", flexDirection: "column", height: SPLIT, backgroundColor: "#ffffff", padding: "70px 80px 56px", position: "relative" }}>
+        <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>{boven}</div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "56px 80px 0" }}>
+        <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>{onder}</div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: BALK_H, backgroundColor: ORANJE, padding: "0 80px", color: "#fff" }}>
+        <div style={{ display: "flex", fontSize: 38, fontWeight: 700, letterSpacing: -0.5 }}>{actie} &#8594;</div>
+        <div style={{ display: "flex", fontSize: 26, fontWeight: 600, opacity: 0.9 }}>{actieRechts}</div>
+      </div>
+      {/* Logo-balken over de deellijn (laatst = bovenop) */}
+      <img
+        src={balkenSvg(CARD_H - BALK_H - balkTop, SPLIT - balkTop)}
+        width={420}
+        height={CARD_H - BALK_H - balkTop}
+        alt=""
+        style={{ position: "absolute", left: CARD_W - 400, top: balkTop }}
+      />
+    </div>
+  );
+}
+
+/** CARROUSEL-COVER (1080x1350): "3 nieuwe opdrachten" over de deellijn. */
 export async function renderLinkedInCover(searchParams: URLSearchParams): Promise<ImageResponse> {
   const a = await loadAssets();
   const count = (searchParams.get("count") || "3").trim();
-  const kicker = (searchParams.get("kicker") || "Nieuwe opdrachten in staalbouw & QA/QC").trim();
+  const kicker = (searchParams.get("kicker") || "Voor vakmensen in staalbouw, QA/QC en industrie").trim();
   const line1 = (searchParams.get("line1") || "nieuwe").trim();
   const line2 = (searchParams.get("line2") || "opdrachten").trim();
   const pages = (searchParams.get("pages") || "").trim();
-  const numSize = count.length >= 3 ? 110 : count.length === 2 ? 140 : 170;
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: CARD_W,
-          height: CARD_H,
-          display: "flex",
-          flexDirection: "column",
-          backgroundImage: ZWART_VERLOOP,
-          color: "#fff",
-          fontFamily: "Inter",
-          padding: "96px 92px 90px",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <Vormen />
-        <div style={{ display: "flex", alignItems: "center", zIndex: 2 }}>
-          <div style={{ display: "flex", width: 48, height: 6, backgroundColor: ORANJE, marginRight: 20 }} />
-          <div style={{ display: "flex", fontSize: 26, fontWeight: 600, color: "rgba(255,255,255,0.75)", letterSpacing: 1 }}>
-            {kicker}
-            {pages ? <span style={{ color: "rgba(255,255,255,0.4)", marginLeft: 14 }}>{`· ${pages}`}</span> : null}
+      <Canvas
+        actie="Swipe voor alle opdrachten"
+        actieRechts="q4s.nl/vacatures"
+        boven={
+          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            <img src={a.logoBlack} height={84} alt="Q4S Project Partners" style={{ objectFit: "contain", alignSelf: "flex-start" }} />
+            <div style={{ display: "flex", fontSize: 140, fontWeight: 700, letterSpacing: -5, lineHeight: 0.95, color: INK, marginTop: "auto" }}>{line1}</div>
+            <div style={{ display: "flex", fontSize: 140, fontWeight: 700, letterSpacing: -5, lineHeight: 0.95, color: ORANJE }}>{line2}</div>
           </div>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", marginTop: 90, zIndex: 2 }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 230,
-                height: 230,
-                borderRadius: 9999,
-                backgroundColor: ORANJE,
-                color: "#fff",
-                fontSize: numSize,
-                fontWeight: 700,
-                letterSpacing: -4,
-                flexShrink: 0,
-              }}
-            >
-              {count}
+        }
+        onder={
+          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{ display: "flex", fontSize: 300, fontWeight: 700, letterSpacing: -12, lineHeight: 1, color: "#fff" }}>{count}</div>
+              <div style={{ display: "flex", flexDirection: "column", marginLeft: 36, maxWidth: 380 }}>
+                <div style={{ display: "flex", width: 60, height: 8, backgroundColor: ORANJE, marginBottom: 20 }} />
+                <div style={{ display: "flex", fontSize: 30, fontWeight: 600, lineHeight: 1.3, color: "#fff" }}>{kicker}</div>
+                {pages ? <div style={{ display: "flex", fontSize: 24, color: GRIJS, marginTop: 10 }}>{pages}</div> : null}
+              </div>
             </div>
-            <div style={{ display: "flex", fontSize: 150, fontWeight: 700, letterSpacing: -5, marginLeft: 46 }}>{line1}</div>
           </div>
-          <div style={{ display: "flex", fontSize: 150, fontWeight: 700, letterSpacing: -5, marginTop: 4 }}>{line2}</div>
-        </div>
-
-        <div style={{ display: "flex", marginTop: "auto", zIndex: 2 }}>
-          <img src={a.logoWhite} height={92} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
-        </div>
-      </div>
+        }
+      />
     ),
     { width: CARD_W, height: CARD_H, fonts: fonts(a) },
   );
 }
 
-/** VACATUREKAART (1080x1350): infokaart + chips, zwart citaatblok, logo. Gedeeld door CRM en website. */
+/** VACATUREKAART (1080x1350), AIDA: haak boven, feiten + punten onder, actiebalk. */
 export async function renderLinkedInCard(searchParams: URLSearchParams): Promise<ImageResponse> {
   const c = cardFromParams(searchParams);
   const a = await loadAssets();
 
-  const titleSize = c.title.length > 34 ? 54 : c.title.length > 24 ? 62 : 72;
-  const chips = [
-    { label: "Uren", value: c.hours },
+  const titleSize = c.title.length > 30 ? 76 : c.title.length > 20 ? 88 : 100;
+  const feiten = [
+    { label: "Locatie", value: c.location },
     { label: "Duur", value: c.duration },
-    { label: "Vakgebied", value: c.discipline },
+    { label: "Uren", value: c.hours },
   ].filter((x) => x.value);
-  // Citaat = de pitch; zonder pitch de eerste punten als lopende tekst.
-  const ruw = c.intro || c.points.slice(0, 3).join(". ");
-  const citaat = ruw.length > 300 ? ruw.slice(0, 299).trimEnd() + "\u2026" : ruw;
-  const citaatSize = citaat.length > 260 ? 34 : citaat.length > 180 ? 38 : 44;
+  // Punten (werk) — anders de pitch als losse zinnen.
+  const kort = (t: string) => (t.length > 62 ? t.slice(0, 61).trimEnd() + "\u2026" : t);
+  const punten = (c.points.length ? c.points : (c.intro.match(/[^.!?]+[.!?]+/g) ?? []).map((z) => z.trim())).slice(0, 3).map(kort);
 
   return new ImageResponse(
     (
-      <div style={{ width: CARD_W, height: CARD_H, display: "flex", flexDirection: "column", backgroundColor: "#fff", fontFamily: "Inter", position: "relative" }}>
-        {/* Donker blok (onderste ~60%) met oranje vormen */}
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            top: 470,
-            display: "flex",
-            backgroundImage: ZWART_VERLOOP,
-            overflow: "hidden",
-          }}
-        >
-          <Vormen grootte={0.48} h={CARD_H - 470} />
-        </div>
-
-        {/* Infokaart */}
-        <div style={{ display: "flex", flexDirection: "column", padding: "72px 84px 0", zIndex: 2 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: LICHT, borderRadius: 22, padding: "44px 48px" }}>
-            <div style={{ display: "flex", flexDirection: "column", flex: 1, paddingRight: 30 }}>
-              {c.badge ? (
-                <div style={{ display: "flex", fontSize: 20, fontWeight: 700, letterSpacing: 3, color: ORANJE, textTransform: "uppercase" }}>{c.badge}</div>
-              ) : null}
-              <div style={{ display: "flex", fontSize: titleSize, fontWeight: 700, lineHeight: 1.05, letterSpacing: -1.5, color: INK, marginTop: 12 }}>{c.title}</div>
-              {c.location ? (
-                <div style={{ display: "flex", alignItems: "center", marginTop: 22, fontSize: 28, color: INK_SOFT, fontWeight: 500 }}>
-                  <img src={PIN} width={32} height={32} alt="" style={{ marginRight: 14 }} />
-                  {c.location}
-                </div>
-              ) : null}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff", borderRadius: 18, width: 250, height: 170, flexShrink: 0 }}>
-              <img src={a.logoBlack} height={118} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
+      <Canvas
+        actie={c.cta || "Solliciteer in 2 minuten"}
+        actieRechts="q4s.nl/vacatures"
+        boven={
+          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            <img src={a.logoBlack} height={84} alt="Q4S Project Partners" style={{ objectFit: "contain", alignSelf: "flex-start" }} />
+            <div style={{ display: "flex", flexDirection: "column", marginTop: "auto", maxWidth: 700 }}>
+              <div style={{ display: "flex", fontSize: 24, fontWeight: 700, letterSpacing: 3, color: ORANJE, textTransform: "uppercase" }}>
+                {[c.badge, c.discipline].filter(Boolean).join("  ·  ")}
+              </div>
+              <div style={{ display: "flex", fontSize: titleSize, fontWeight: 700, lineHeight: 1.0, letterSpacing: -3, color: INK, marginTop: 16 }}>{c.title}</div>
             </div>
           </div>
-
-          {chips.length > 0 ? (
-            <div style={{ display: "flex", gap: 22, marginTop: 22 }}>
-              {chips.map((chip, i) => (
-                <div
-                  key={i}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, backgroundColor: LICHT, borderRadius: 18, padding: "26px 18px" }}
-                >
-                  <div style={{ display: "flex", fontSize: 24, fontWeight: 700, color: INK }}>{chip.label}</div>
-                  <div style={{ display: "flex", fontSize: 24, color: INK_SOFT, marginTop: 6, textAlign: "center" }}>{chip.value}</div>
+        }
+        onder={
+          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            {feiten.length > 0 ? (
+              <div style={{ display: "flex", gap: 44 }}>
+                {feiten.map((f) => (
+                  <div key={f.label} style={{ display: "flex", flexDirection: "column", borderLeft: `5px solid ${ORANJE}`, paddingLeft: 18 }}>
+                    <div style={{ display: "flex", fontSize: 20, fontWeight: 600, letterSpacing: 2, color: GRIJS, textTransform: "uppercase" }}>{f.label}</div>
+                    <div style={{ display: "flex", alignItems: "center", fontSize: 30, fontWeight: 600, color: "#fff", marginTop: 6 }}>
+                      {f.label === "Locatie" ? <img src={PIN} width={28} height={28} alt="" style={{ marginRight: 8 }} /> : null}
+                      {f.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div style={{ display: "flex", flexDirection: "column", gap: 22, marginTop: 52, maxWidth: 560 }}>
+              {punten.map((pt, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start" }}>
+                  <div style={{ display: "flex", width: 18, height: 18, backgroundColor: ORANJE, marginTop: 12, marginRight: 24, flexShrink: 0 }} />
+                  <div style={{ display: "flex", fontSize: 31, lineHeight: 1.3, color: "#fff" }}>{pt}</div>
                 </div>
               ))}
             </div>
-          ) : null}
-        </div>
-
-        {/* Citaat */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, padding: "56px 110px 0", zIndex: 2 }}>
-          <div style={{ display: "flex", fontSize: 150, lineHeight: 0.9, fontWeight: 700, color: ORANJE, height: 100 }}>&#8221;</div>
-          <div style={{ display: "flex", fontSize: citaatSize, lineHeight: 1.38, color: "#fff", textAlign: "center", fontWeight: 400, marginTop: 16 }}>{citaat}</div>
-          {c.cta ? (
-            <div style={{ display: "flex", fontSize: 24, fontWeight: 600, color: ORANJE, marginTop: 34, textAlign: "center" }}>
-              {c.cta} &#8594;
-            </div>
-          ) : null}
-        </div>
-
-        {/* Logo linksonder */}
-        <div style={{ display: "flex", padding: "0 84px 76px" }}>
-          <img src={a.logoWhite} height={86} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
-        </div>
-      </div>
+          </div>
+        }
+      />
     ),
     { width: CARD_W, height: CARD_H, fonts: fonts(a) },
   );

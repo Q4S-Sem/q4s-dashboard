@@ -16,7 +16,7 @@ export type LinkedInCardData = {
 };
 
 /** Standaard oproep-regel onderaan de kaart (door de gebruiker aanpasbaar). */
-export const DEFAULT_CTA = "Interesse of ken je iemand? Reageer of mail cv@q4s.nl";
+export const DEFAULT_CTA = "Solliciteer in 2 minuten";
 export const DEFAULT_BADGE = "NIEUWE OPDRACHT";
 
 /** Vaste afmeting: LinkedIn staand 4:5 (meeste ruimte in de feed). */
