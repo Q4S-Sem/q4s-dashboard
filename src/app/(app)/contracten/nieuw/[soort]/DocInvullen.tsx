@@ -303,7 +303,7 @@ export function DocInvullen({
               <Check className="h-4 w-4" /> Klaar
             </Button>
           )}
-          <span className="ml-2">{taalKeuze}</span>
+          <span className="ml-1 border-l border-ink-200 pl-3">{taalKeuze}</span>
         </>
       }
       formulier={
