@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Check, Eraser, Save } from "lucide-react";
 import { bewaarDoc } from "../../actions";
@@ -174,7 +174,9 @@ export function DocInvullen({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [docId] = useState(opgeslagen?.id ?? null);
+  const [docId, setDocId] = useState(opgeslagen?.id ?? null);
+  const [bewaardOm, setBewaardOm] = useState<string | null>(null);
+  const aangeraakt = useRef(false);
   const [melding, setMelding] = useState<string | null>(null);
   const [bezig, startOpslaan] = useTransition();
   // Offerte: standaardpercentages staan al ingevuld (gewoon aan te passen).
@@ -199,7 +201,36 @@ export function DocInvullen({
     });
   }
 
-  const zet = (k: string, v: string) => setW((o) => ({ ...o, [k]: v }));
+  const zet = (k: string, v: string) => {
+    aangeraakt.current = true;
+    setW((o) => ({ ...o, [k]: v }));
+  };
+
+  // Automatisch bewaren, een halve seconde na het typen (als concept).
+  useEffect(() => {
+    if (!aangeraakt.current || soort === "persoonsgegevens") return;
+    const t = setTimeout(async () => {
+      const fd = new FormData();
+      fd.set("_soort", soort);
+      fd.set("_waarden", JSON.stringify(w));
+      if (docId) fd.set("_id", docId);
+      try {
+        const res = await fetch("/api/contracten/concept", { method: "POST", body: fd });
+        const r = res.ok ? ((await res.json()) as { id: string } | null) : null;
+        if (!r) return;
+        if (!docId) {
+          setDocId(r.id);
+          // In de adresbalk: na een herlaad open je ditzelfde document weer.
+          window.history.replaceState(null, "", `${pathname}?taal=${taal}&doc=${r.id}`);
+        }
+        setBewaardOm(new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      } catch {
+        // offline — volgende wijziging probeert opnieuw
+      }
+    }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [w]);
 
   function leegmaken() {
     if (!window.confirm("Alles leegmaken? Het concept wordt gewist.")) return;
@@ -233,6 +264,7 @@ export function DocInvullen({
     <InvulTabs
       acties={
         <>
+          {bewaardOm && <span className="text-xs text-ink-400">Bewaard {bewaardOm}</span>}
           {soort !== "persoonsgegevens" && (
             <Button type="button" variant="outline" size="sm" onClick={() => opslaan(false)} disabled={bezig}>
               <Save className="h-4 w-4" /> {bezig ? "Opslaan…" : melding ?? "Opslaan als concept"}

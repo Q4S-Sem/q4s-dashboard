@@ -103,7 +103,54 @@ function withDefaults(data: z.infer<typeof ContractSchema>) {
   };
 }
 
+/** Alle contractvelden voor create/update (één plek). */
+function contractData(d: z.infer<typeof ContractSchema>, flags: ReturnType<typeof readFlags>) {
+  return {
+    number: d.number,
+    contractorName: d.contractorName,
+    contractorAddress: d.contractorAddress,
+    contractorKvk: d.contractorKvk,
+    contractorVat: d.contractorVat,
+    contractorIban: d.contractorIban,
+    fieldOfWork: d.fieldOfWork,
+    serviceNeed: d.serviceNeed,
+    thirdParty: d.thirdParty,
+    workDescription: d.workDescription,
+    startDate: d.startDate ?? null,
+    endDate: d.endDate ?? null,
+    projectDuration: d.projectDuration,
+    rateDay: d.rateDay,
+    rateShift: d.rateShift,
+    rateSaturday: d.rateSaturday,
+    rateSunday: d.rateSunday,
+    rateOffshore: d.rateOffshore,
+    rateOvertime: d.rateOvertime,
+    overtimeApplies: d.overtimeApplies,
+    rateDayFixed: d.rateDayFixed,
+    overtimeShift: d.overtimeShift,
+    overtimeSaturday: d.overtimeSaturday,
+    overtimeSunday: d.overtimeSunday,
+    overtimeOffshore: d.overtimeOffshore,
+    dayFixedShift: d.dayFixedShift,
+    dayFixedSaturday: d.dayFixedSaturday,
+    dayFixedSunday: d.dayFixedSunday,
+    dayFixedOffshore: d.dayFixedOffshore,
+    dayBasedOnHours: d.dayBasedOnHours,
+    kmRate: d.kmRate,
+    paymentTermDays: d.paymentTermDays,
+    signerContractor: d.signerContractor,
+    signPlaceContractor: d.signPlaceContractor,
+    signDate: d.signDate ?? null,
+    status: d.status,
+    notes: d.notes,
+    ...withDefaults(d),
+    ...flags,
+  };
+}
+
 export async function createContract(_prev: FormState, formData: FormData): Promise<FormState> {
+  // Al automatisch bewaard (heeft een id)? Dan is dit gewoon bijwerken.
+  if (formData.get("id")) return updateContract(_prev, formData);
   const parsed = parseForm(ContractSchema, formData);
   if (!parsed.success) return parsed.state;
   const d = parsed.data;
@@ -117,47 +164,7 @@ export async function createContract(_prev: FormState, formData: FormData): Prom
 
   try {
     await db.contract.create({
-      data: {
-        number: d.number,
-        contractorName: d.contractorName,
-        contractorAddress: d.contractorAddress,
-        contractorKvk: d.contractorKvk,
-        contractorVat: d.contractorVat,
-        contractorIban: d.contractorIban,
-        fieldOfWork: d.fieldOfWork,
-        serviceNeed: d.serviceNeed,
-        thirdParty: d.thirdParty,
-        workDescription: d.workDescription,
-        startDate: d.startDate ?? null,
-        endDate: d.endDate ?? null,
-        projectDuration: d.projectDuration,
-        rateDay: d.rateDay,
-        rateShift: d.rateShift,
-        rateSaturday: d.rateSaturday,
-        rateSunday: d.rateSunday,
-        rateOffshore: d.rateOffshore,
-        rateOvertime: d.rateOvertime,
-        overtimeApplies: d.overtimeApplies,
-        rateDayFixed: d.rateDayFixed,
-        overtimeShift: d.overtimeShift,
-        overtimeSaturday: d.overtimeSaturday,
-        overtimeSunday: d.overtimeSunday,
-        overtimeOffshore: d.overtimeOffshore,
-        dayFixedShift: d.dayFixedShift,
-        dayFixedSaturday: d.dayFixedSaturday,
-        dayFixedSunday: d.dayFixedSunday,
-        dayFixedOffshore: d.dayFixedOffshore,
-        dayBasedOnHours: d.dayBasedOnHours,
-        kmRate: d.kmRate,
-        paymentTermDays: d.paymentTermDays,
-        signerContractor: d.signerContractor,
-        signPlaceContractor: d.signPlaceContractor,
-        signDate: d.signDate ?? null,
-        status: d.status,
-        notes: d.notes,
-        ...withDefaults(d),
-        ...flags,
-      },
+      data: contractData(d, flags),
       select: { id: true },
     });
   } catch {
@@ -187,47 +194,7 @@ export async function updateContract(_prev: FormState, formData: FormData): Prom
   try {
     await db.contract.update({
       where: { id },
-      data: {
-        number: d.number,
-        contractorName: d.contractorName,
-        contractorAddress: d.contractorAddress,
-        contractorKvk: d.contractorKvk,
-        contractorVat: d.contractorVat,
-        contractorIban: d.contractorIban,
-        fieldOfWork: d.fieldOfWork,
-        serviceNeed: d.serviceNeed,
-        thirdParty: d.thirdParty,
-        workDescription: d.workDescription,
-        startDate: d.startDate ?? null,
-        endDate: d.endDate ?? null,
-        projectDuration: d.projectDuration,
-        rateDay: d.rateDay,
-        rateShift: d.rateShift,
-        rateSaturday: d.rateSaturday,
-        rateSunday: d.rateSunday,
-        rateOffshore: d.rateOffshore,
-        rateOvertime: d.rateOvertime,
-        overtimeApplies: d.overtimeApplies,
-        rateDayFixed: d.rateDayFixed,
-        overtimeShift: d.overtimeShift,
-        overtimeSaturday: d.overtimeSaturday,
-        overtimeSunday: d.overtimeSunday,
-        overtimeOffshore: d.overtimeOffshore,
-        dayFixedShift: d.dayFixedShift,
-        dayFixedSaturday: d.dayFixedSaturday,
-        dayFixedSunday: d.dayFixedSunday,
-        dayFixedOffshore: d.dayFixedOffshore,
-        dayBasedOnHours: d.dayBasedOnHours,
-        kmRate: d.kmRate,
-        paymentTermDays: d.paymentTermDays,
-        signerContractor: d.signerContractor,
-        signPlaceContractor: d.signPlaceContractor,
-        signDate: d.signDate ?? null,
-        status: d.status,
-        notes: d.notes,
-        ...withDefaults(d),
-        ...flags,
-      },
+      data: contractData(d, flags),
     });
   } catch {
     return { error: "Contract kon niet worden bijgewerkt." };
@@ -251,16 +218,17 @@ export async function deleteContract(formData: FormData): Promise<void> {
 }
 
 /** Offerte/arbeidsovereenkomst opslaan (nieuw of bijwerken). Geeft het id terug. */
-export async function bewaarDoc(soort: string, id: string | null, waarden: Record<string, string>, klaar = false): Promise<{ id: string } | { error: string }> {
+export async function bewaarDoc(soort: string, id: string | null, waarden: Record<string, string>, klaar?: boolean): Promise<{ id: string } | { error: string }> {
   if (soort !== "offerte" && soort !== "arbeidsovereenkomst") return { error: "Onbekend document." };
   const schoon = Object.fromEntries(Object.entries(waarden).filter(([k, v]) => typeof k === "string" && typeof v === "string").map(([k, v]) => [k.slice(0, 80), v.slice(0, 5000)]));
   const label = (soort === "offerte" ? [schoon.to, schoon.subject] : [schoon.naam, schoon.functie]).filter(Boolean).join(" — ").slice(0, 200);
   const data = JSON.stringify(schoon);
-  const status = klaar ? "READY" : "DRAFT";
+  // klaar undefined (automatisch bewaren): status van een bestaand document niet aanraken.
+  const status = klaar === undefined ? undefined : klaar ? "READY" : "DRAFT";
   try {
     const doc = id
       ? await db.docConcept.update({ where: { id }, data: { label, data, status }, select: { id: true } })
-      : await db.docConcept.create({ data: { soort, label, data, status }, select: { id: true } });
+      : await db.docConcept.create({ data: { soort, label, data, status: status ?? "DRAFT" }, select: { id: true } });
     revalidatePath("/contracten/nieuw");
     return doc;
   } catch {
@@ -272,4 +240,26 @@ export async function verwijderDoc(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (id) await db.docConcept.deleteMany({ where: { id } });
   revalidatePath("/contracten/nieuw");
+}
+
+/**
+ * Automatisch tussentijds bewaren (elke halve seconde na typen). Nieuw → als
+ * Concept aangemaakt; bestaand → bijgewerkt met de status uit het formulier.
+ * Geeft null als het (nog) niet kan, bv. definitief zonder verplichte velden.
+ */
+export async function bewaarContractConcept(formData: FormData): Promise<{ id: string } | null> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) formData.set("status", "DRAFT");
+  if (!String(formData.get("contractorName") ?? "").trim()) formData.set("contractorName", "Naamloos");
+  const parsed = parseForm(ContractSchema, formData);
+  if (!parsed.success || blokkeerOnvolledig(parsed.data)) return null;
+  const data = contractData(parsed.data, readFlags(formData));
+  try {
+    const c = id
+      ? await db.contract.update({ where: { id }, data, select: { id: true } })
+      : await db.contract.create({ data, select: { id: true } });
+    return c;
+  } catch {
+    return null;
+  }
 }

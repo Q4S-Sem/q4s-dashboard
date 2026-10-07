@@ -917,7 +917,7 @@ export function PlacementForm({
       } catch {
         // offline e.d. — volgende wijziging probeert opnieuw
       }
-    }, 2000);
+    }, 500);
   }
   const e = state.fieldErrors ?? {};
   const [tab, setTab] = useState<Tab>(placement ? "werknemer" : "bestanden");
