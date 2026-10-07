@@ -950,7 +950,9 @@ export function PlacementForm({
   // Mirror the rate inputs into state purely to render a live margin panel.
   // Werknemer in dienst bij Q4S: wel urenstaat + verkoopfactuur, geen inkoopfactuur/-tarief.
   const inDienstStart = billing?.["employmentType"] === "LOONDIENST";
-  const [inDienst, setInDienst] = useState(draft?.inDienst !== undefined ? draft.inDienst === "on" : inDienstStart);
+  const [inDienst, setInDienst] = useState(
+    draft?.inDienst !== undefined ? draft.inDienst === "on" : inDienstStart || dv("employmentType") === "LOONDIENST",
+  );
   const [costRate, setCostRate] = useState<number>(
     draft?.costRate ? Number(draft.costRate) || 0 : (placement?.costRate ?? 0),
   );
@@ -1107,7 +1109,8 @@ export function PlacementForm({
                 ],
                 [
                   "bedrijf",
-                  "Bedrijf ZZP",
+                  // In dienst: geen bedrijf — alleen adres + IBAN (voor de loonstrook).
+                  inDienst ? "Adres & bank" : "Bedrijf ZZP",
                   <Building2 key="i" className="h-4 w-4" />,
                 ],
                 [
@@ -1221,7 +1224,7 @@ export function PlacementForm({
                           defaultValue={billing["nationality"] ?? ""}
                         />
                       </Field>
-                      {billing["employmentType"] !== "ZZP" && (
+                      {inDienst && (
                         <Field label="BSN" htmlFor="bill_bsn">
                           <Input
                             id="bill_bsn"
@@ -1239,7 +1242,7 @@ export function PlacementForm({
                           defaultValue={billing["iban"] ?? ""}
                         />
                       </Field>
-                      {billing["employmentType"] === "ZZP" && (
+                      {!inDienst && (
                         <>
                           <Field
                             label="Bedrijfsnaam"
@@ -1419,9 +1422,12 @@ export function PlacementForm({
                       error={e.employmentType}
                     >
                       <Select
+                        // Gekoppeld aan het vinkje "in dienst" (Plaatsing & tarief).
+                        key={inDienst ? "in-dienst" : "extern"}
                         id="employmentType"
                         name="employmentType"
-                        defaultValue={dv("employmentType", "ZZP")}
+                        defaultValue={inDienst ? "LOONDIENST" : dv("employmentType", "ZZP") === "LOONDIENST" ? "ZZP" : dv("employmentType", "ZZP")}
+                        onValueChange={(v) => setInDienst(v === "LOONDIENST")}
                       >
                         {EMPLOYMENT_TYPES.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -1457,10 +1463,12 @@ export function PlacementForm({
               <Sectie
                 tab="bedrijf"
                 nr={3}
-                titel="Bedrijfsgegevens ZZP"
-                sub="Voor de inkoopfactuur en de betaling — leeg laten bij loondienst."
+                titel={inDienst ? "Adres & bankgegevens" : "Bedrijfsgegevens ZZP"}
+                sub={inDienst ? "In dienst bij Q4S — geen bedrijfsgegevens nodig." : "Voor de inkoopfactuur en de betaling."}
               >
                 <div className="grid gap-4 sm:grid-cols-2">
+                  {!inDienst && (
+                  <>
                   <Field
                     label="Bedrijfsnaam"
                     htmlFor="p-companyName"
@@ -1486,6 +1494,8 @@ export function PlacementForm({
                       placeholder="NL000000000B00"
                     />
                   </Field>
+                  </>
+                  )}
                   <Field label="IBAN" htmlFor="p-iban" error={e.iban}>
                     <Input
                       id="p-iban"
