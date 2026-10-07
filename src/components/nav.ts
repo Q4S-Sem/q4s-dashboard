@@ -1,4 +1,5 @@
 import {
+  ReceiptText,
   LayoutDashboard,
   HardHat,
   Building2,
@@ -118,6 +119,7 @@ const HUB_LIST: NavHub[] = [
       { href: "/facturatie", label: "Week verwerken", icon: Wand2, badge: "verwerken" },
       { href: "/facturatie/verkoop", label: "Verkoopfacturen", icon: Receipt, badge: "facturen" },
       { href: "/facturatie/inkoop", label: "Inkoop & betalingen", icon: Wallet, badge: "ontvangen" },
+      { href: "/facturatie/bonnetjes", label: "Bonnetjes", icon: ReceiptText },
       { href: "/facturatie/kosten", label: "Kosten & winst", icon: Scale },
       { href: "/facturatie/rapportage", label: "Rapportage", icon: TrendingUp },
       { href: "/facturatie/instellingen", label: "Instellingen & regels", icon: Settings, section: "Beheer" },

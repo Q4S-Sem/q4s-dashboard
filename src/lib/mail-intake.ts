@@ -1,7 +1,8 @@
 import { db } from "./db";
 import { fetchInboxMessages, markRead, isMailIntakeConnected } from "./graph-mail";
 import { expandRawFiles, type IncomingFile } from "./file-intake";
-import { saveInboxBytes, MAX_UPLOAD_BYTES } from "./uploads";
+import { saveInboxBytes, saveExpenseBytes, MAX_UPLOAD_BYTES } from "./uploads";
+import { matchPersoon, runExpenseExtraction } from "./expense-extract";
 import { runInboxExtraction } from "./inbox-extract";
 import { importCvFile } from "./cv-import";
 import { aiJSONFromFile, isVisionConfigured } from "./ai";
@@ -33,13 +34,15 @@ export type PullResult = {
   invoices: number;
   /** CV's die als kandidaat in de CV-inbox zijn gezet (wachten op review). */
   cvs: number;
+  /** Bonnetjes die als declaratie op Bonnetjes staan (op naam gezet waar het kon). */
+  receipts: number;
   /** Overige/niet-herkende bijlagen. */
   others: number;
   /** Berichten die al eerder verwerkt waren (overgeslagen). */
   skipped: number;
 };
 
-type DocKind = "timesheet" | "invoice" | "cv" | "other";
+type DocKind = "timesheet" | "invoice" | "receipt" | "cv" | "other";
 
 const CLASSIFY_SCHEMA = {
   type: "object",
@@ -48,15 +51,17 @@ const CLASSIFY_SCHEMA = {
   properties: {
     kind: {
       type: "string",
-      enum: ["timesheet", "invoice", "cv", "other"],
+      enum: ["timesheet", "invoice", "receipt", "cv", "other"],
       description:
-        "timesheet = een WEEKstaat/urenstaat met gewerkte uren per dag; invoice = een FACTUUR met factuurnummer, bedrag en/of BTW; cv = een CV/curriculum vitae of sollicitatie van een kandidaat (werkervaring, opleidingen, certificaten); other = iets anders.",
+        "timesheet = een WEEKstaat/urenstaat met gewerkte uren per dag; invoice = een FACTUUR die een freelancer AAN ons stuurt (factuurnummer, 'aan Q4S', uren/tarief); receipt = een BONNETJE/kassabon/tankbon/parkeer- of tolbon/hotelnota van een gemaakte onkost (winkel/tankstation, betaald bedrag, vaak pinbetaling); cv = een CV/curriculum vitae of sollicitatie van een kandidaat (werkervaring, opleidingen, certificaten); other = iets anders.",
     },
   },
 };
 
 /** Bestandsnamen die zonder vision-sleutel al een CV verraden. */
 const CV_NAME_HINT = /\bcv\b|curriculum|resume|resum[ée]|sollicitat/i;
+/** Bestandsnaam/onderwerp die een bonnetje verraadt. */
+const BON_HINT = /\bbon(netje|nen|netjes)?\b|kassabon|tankbon|receipt|bonnetje|declaratie|parkeer|tol\b/i;
 
 /** Bepaal of een bijlage een urenstaat, een factuur, een CV of iets anders is. */
 async function classifyDocument(f: IncomingFile): Promise<DocKind> {
@@ -76,6 +81,7 @@ async function classifyDocument(f: IncomingFile): Promise<DocKind> {
   // vóór CV: een bestand als "factuur_cv_jan.pdf" hoort bij de handmatige
   // factuurstroom en mag nooit stil een kandidaat worden.
   if (!isVisionConfigured()) {
+    if (BON_HINT.test(lower)) return "receipt";
     if (/factuur|invoice/.test(lower)) return "invoice";
     return CV_NAME_HINT.test(lower) ? "cv" : "timesheet";
   }
@@ -85,13 +91,14 @@ async function classifyDocument(f: IncomingFile): Promise<DocKind> {
       system:
         "Je classificeert één binnengekomen document van een gedetacheerde vakman bij een Nederlands detacheringsbureau.",
       prompt:
-        "Is dit document een WEEKSTAAT/urenstaat (uren per dag), een FACTUUR (factuurnummer/bedrag/BTW), een CV/sollicitatie van een kandidaat, of iets anders? Antwoord met kind = 'timesheet' | 'invoice' | 'cv' | 'other'.",
+        "Is dit document een WEEKSTAAT/urenstaat (uren per dag), een FACTUUR van de freelancer aan ons (factuurnummer/bedrag/BTW), een BONNETJE van een onkost (kassabon, tank-, parkeer- of tolbon, hotelnota), een CV/sollicitatie van een kandidaat, of iets anders? Antwoord met kind = 'timesheet' | 'invoice' | 'receipt' | 'cv' | 'other'.",
       schema: CLASSIFY_SCHEMA,
       file: { base64: Buffer.from(f.bytes).toString("base64"), mediaType },
       maxTokens: 60,
       effort: "low",
     });
     if (r.kind === "invoice") return "invoice";
+    if (r.kind === "receipt") return "receipt";
     if (r.kind === "cv") return "cv";
     return r.kind === "other" ? "other" : "timesheet";
   } catch {
@@ -108,6 +115,7 @@ export async function pullInboxMail(opts?: { max?: number }): Promise<PullResult
     mails: 0,
     timesheets: 0,
     invoices: 0,
+    receipts: 0,
     cvs: 0,
     others: 0,
     skipped: 0,
@@ -127,7 +135,10 @@ export async function pullInboxMail(opts?: { max?: number }): Promise<PullResult
   let mails = 0;
   let timesheets = 0;
   let invoices = 0;
+  let receipts = 0;
   let cvs = 0;
+  // Voor "van wie is deze bon?" (afzender of naam in onderwerp/bestandsnaam).
+  const personen = await db.consultant.findMany({ select: { id: true, firstName: true, lastName: true, email: true } });
   let others = 0;
   let skipped = 0;
 
@@ -145,6 +156,7 @@ export async function pullInboxMail(opts?: { max?: number }): Promise<PullResult
 
     let ts = 0;
     let inv = 0;
+    let bon = 0;
     let cv = 0;
     let oth = 0;
     for (const f of files) {
@@ -177,6 +189,33 @@ export async function pullInboxMail(opts?: { max?: number }): Promise<PullResult
         ts++;
       } else if (kind === "invoice") {
         inv++;
+      } else if (kind === "receipt") {
+        // Bonnetje → declaratie (status Nieuw: nooit automatisch uitbetaald).
+        const fileName = await saveExpenseBytes(f.bytes, f.name);
+        const consultantId = matchPersoon({ afzender: msg.fromAddress, tekst: `${msg.subject ?? ""} ${f.name}` }, personen);
+        const exp = await db.expense.create({
+          data: {
+            source: "EMAIL",
+            status: "NEW",
+            consultantId,
+            fileName,
+            originalName: f.name,
+            mimeType: f.mime,
+            size: f.bytes.length,
+          },
+        });
+        try {
+          await runExpenseExtraction(exp.id);
+        } catch {
+          // niet uitgelezen: blijft staan om handmatig aan te vullen
+        }
+        if (!consultantId) {
+          await db.expense.update({
+            where: { id: exp.id },
+            data: { aiNotes: `Gemaild door ${msg.fromAddress || "onbekend"}${msg.subject ? ` — "${msg.subject}"` : ""}. Persoon niet herkend: wijs hem toe.` },
+          });
+        }
+        bon++;
       } else if (kind === "cv") {
         // Dezelfde intake-weg als de handmatige CV-import: kandidaat (met
         // ontdubbeling) + CV-profiel + RecruiterAlert. Review-only — er wordt geen
@@ -218,9 +257,10 @@ export async function pullInboxMail(opts?: { max?: number }): Promise<PullResult
     mails++;
     timesheets += ts;
     invoices += inv;
+    receipts += bon;
     cvs += cv;
     others += oth;
   }
 
-  return { connected: true, ok: true, mails, timesheets, invoices, cvs, others, skipped };
+  return { connected: true, ok: true, mails, timesheets, invoices, receipts, cvs, others, skipped };
 }
