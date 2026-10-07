@@ -10,7 +10,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { TabelZoek } from "@/components/ui/tabel-zoek";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { verwijderDoc } from "../actions";
-import { Trash2 } from "lucide-react";
+import { Trash2, FilePen, CheckCircle2 } from "lucide-react";
+import { mapTabVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Nieuw contract" };
 export const dynamic = "force-dynamic";
@@ -43,7 +44,7 @@ const SOORTEN = [
 export default async function NieuwContractPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; consultantId?: string; placementId?: string; doc?: string; taal?: string }>;
+  searchParams: Promise<{ q?: string; map?: string; consultantId?: string; placementId?: string; doc?: string; taal?: string }>;
 }) {
   const sp = await searchParams;
   // Oude links vanuit een persoon/plaatsing: direct naar de (lege) overeenkomst.
@@ -64,14 +65,46 @@ export default async function NieuwContractPage({
   const docs = await db.docConcept.findMany({
     where: q ? { label: zoek } : undefined,
     orderBy: { updatedAt: "desc" },
-    select: { id: true, soort: true, label: true, updatedAt: true },
+    select: { id: true, soort: true, label: true, status: true, updatedAt: true },
   });
+
+  // Eén lijst: overeenkomsten (Contract) + opgeslagen offertes/arbeidsovereenkomsten.
+  const rijen = [
+    ...contracten.map((c) => ({
+      id: c.id,
+      doc: false,
+      href: `/contracten/${c.id}`,
+      Icon: FileSignature,
+      kleur: "text-ink-400",
+      titel: c.contractorName,
+      sub: ["Overeenkomst van opdracht", c.number, c.thirdParty, c.rateDay].filter(Boolean).join(" · "),
+      status: c.status as string | null,
+      klaar: c.status !== "DRAFT",
+      datum: c.updatedAt,
+    })),
+    ...docs.map((d) => ({
+      id: d.id,
+      doc: true,
+      href: `/contracten/nieuw/${d.soort}?doc=${d.id}`,
+      Icon: d.soort === "offerte" ? Receipt : BriefcaseBusiness,
+      kleur: d.soort === "offerte" ? "text-amber-600" : "text-emerald-600",
+      titel: d.label,
+      sub: d.soort === "offerte" ? "Offerte" : "Arbeidsovereenkomst",
+      status: null,
+      klaar: d.status === "READY",
+      datum: d.updatedAt,
+    })),
+  ].sort((x, y) => y.datum.getTime() - x.datum.getTime());
+  const concepten = rijen.filter((r) => !r.klaar);
+  const klaar = rijen.filter((r) => r.klaar);
+  const map = sp.map === "klaar" ? "klaar" : "concepten";
+  const zichtbaar = map === "klaar" ? klaar : concepten;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Nieuw contract"
-        description="Kies wat je wilt opstellen. Wat je invult blijft als concept bewaard, ook als je tussendoor naar een andere pagina gaat."
+        description="Kies wat je wilt opstellen — je begint altijd met een leeg formulier. Opslaan als concept of als klaar; je vindt het hieronder terug."
       />
       <div className="grid gap-4 md:grid-cols-3">
         {SOORTEN.map(({ href, titel, uitleg, icon: Icon, tone }) => (
@@ -93,71 +126,55 @@ export default async function NieuwContractPage({
       </div>
 
       <div className="space-y-3 pt-2">
-        <div>
-          <h2 className="text-base font-bold text-ink-900">
-            {q ? `Gevonden contracten (${contracten.length})` : `Opgestelde contracten (${contracten.length})`}
-          </h2>
-          <p className="text-sm text-ink-500">
-            Alle overeenkomsten van opdracht die hier zijn ingevuld en opgeslagen. Klik om te bekijken, aan te passen, te printen of als Word te downloaden.
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-ink-200">
+          <nav aria-label="Opgestelde documenten" className="flex items-end gap-1">
+            {(
+              [
+                ["concepten", "Concepten", concepten.length, <FilePen key="c" className="h-4 w-4" />],
+                ["klaar", "Klaar", klaar.length, <CheckCircle2 key="k" className="h-4 w-4" />],
+              ] as const
+            ).map(([key, label, n, icon]) => (
+              <Link
+                key={key}
+                href={`/contracten/nieuw?map=${key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                aria-current={map === key ? "true" : undefined}
+                className={mapTabVariants(map === key)}
+              >
+                <span className={map === key ? "text-brand-600" : "text-ink-400"}>{icon}</span>
+                {label}
+                <span className="rounded-sm bg-ink-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-ink-500">{n}</span>
+              </Link>
+            ))}
+          </nav>
+          <p className="mb-2 text-xs text-ink-500">
+            {map === "klaar" ? "Definitief of getekend — klaar om te versturen." : "Nog niet af — klik om verder te gaan."}
           </p>
         </div>
-        <TabelZoek basePath="/contracten/nieuw" q={q} placeholder="Zoek op naam, contractnummer of klant…" />
+        <TabelZoek basePath="/contracten/nieuw" behoud={{ map }} q={q} placeholder="Zoek op naam, contractnummer of klant…" />
         <Card className="overflow-hidden">
-          {contracten.length === 0 ? (
+          {zichtbaar.length === 0 ? (
             <p className="px-5 py-8 text-center text-sm text-ink-400">
-              {q ? `Geen contracten gevonden voor “${q}”.` : "Nog geen contracten opgesteld."}
+              {q ? `Niets gevonden voor “${q}”.` : map === "klaar" ? "Nog niets klaar." : "Geen concepten."}
             </p>
           ) : (
             <ul className="divide-y divide-ink-100">
-              {contracten.map((c) => (
-                <li key={c.id}>
-                  <Link href={`/contracten/${c.id}`} className="flex items-center gap-4 px-5 py-3 text-sm hover:bg-ink-50">
-                    <FileSignature className="h-4 w-4 shrink-0 text-ink-400" />
+              {zichtbaar.map((r) => (
+                <li key={r.id} className="flex items-center gap-2 pr-3 hover:bg-ink-50">
+                  <Link href={r.href} className="flex min-w-0 flex-1 items-center gap-4 px-5 py-3 text-sm">
+                    <r.Icon className={`h-4 w-4 shrink-0 ${r.kleur}`} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-ink-900">{c.contractorName || "Naamloos"}</span>
-                      <span className="block truncate text-xs text-ink-400">
-                        {[c.number, c.thirdParty, c.rateDay].filter(Boolean).join(" · ") || "Overeenkomst van opdracht"}
-                      </span>
+                      <span className="block truncate font-medium text-ink-900">{r.titel || "Naamloos"}</span>
+                      <span className="block truncate text-xs text-ink-400">{r.sub}</span>
                     </span>
-                    <StatusBadge options={CONTRACT_STATUSES} value={c.status} />
-                    <span className="hidden w-24 text-right text-xs text-ink-400 sm:block">{formatDate(c.updatedAt)}</span>
+                    {r.status && <StatusBadge options={CONTRACT_STATUSES} value={r.status} />}
+                    <span className="hidden w-24 text-right text-xs text-ink-400 sm:block">{formatDate(r.datum)}</span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-ink-400" />
                   </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
-
-      <div className="space-y-3 pt-2">
-        <div>
-          <h2 className="text-base font-bold text-ink-900">Opgeslagen offertes &amp; arbeidsovereenkomsten ({docs.length})</h2>
-          <p className="text-sm text-ink-500">Klik om verder te bewerken, te printen of als Word te downloaden.</p>
-        </div>
-        <Card className="overflow-hidden">
-          {docs.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-ink-400">Nog niets opgeslagen — klik in een offerte of arbeidsovereenkomst op Opslaan.</p>
-          ) : (
-            <ul className="divide-y divide-ink-100">
-              {docs.map((d) => (
-                <li key={d.id} className="flex items-center gap-2 pr-3 hover:bg-ink-50">
-                  <Link href={`/contracten/nieuw/${d.soort}?doc=${d.id}`} className="flex min-w-0 flex-1 items-center gap-4 px-5 py-3 text-sm">
-                    {d.soort === "offerte" ? (
-                      <Receipt className="h-4 w-4 shrink-0 text-amber-600" />
-                    ) : (
-                      <BriefcaseBusiness className="h-4 w-4 shrink-0 text-emerald-600" />
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-ink-900">{d.label || "Naamloos"}</span>
-                      <span className="block text-xs text-ink-400">{d.soort === "offerte" ? "Offerte" : "Arbeidsovereenkomst"}</span>
-                    </span>
-                    <span className="hidden w-24 text-right text-xs text-ink-400 sm:block">{formatDate(d.updatedAt)}</span>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-ink-400" />
-                  </Link>
-                  <ConfirmSubmit action={verwijderDoc} id={d.id} message="Dit document verwijderen?" variant="ghost" size="sm">
-                    <Trash2 className="h-4 w-4" />
-                  </ConfirmSubmit>
+                  {r.doc && (
+                    <ConfirmSubmit action={verwijderDoc} id={r.id} message="Dit document verwijderen?" variant="ghost" size="sm">
+                      <Trash2 className="h-4 w-4" />
+                    </ConfirmSubmit>
+                  )}
                 </li>
               ))}
             </ul>

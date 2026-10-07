@@ -94,7 +94,7 @@ export function ContractForm({
 
   const form = (
     // noValidate: de server controleert; anders blokkeert de browser stil als het formulier-mapje verborgen is.
-    <form id="contract-form" noValidate ref={formRef} action={formAction} onChange={lees} onInput={lees} className="space-y-6">
+    <form id="contract-form" noValidate data-no-persist ref={formRef} action={formAction} onChange={lees} onInput={lees} className="space-y-6">
       {c && <input type="hidden" name="id" value={c.id} />}
 
       {state.error && (

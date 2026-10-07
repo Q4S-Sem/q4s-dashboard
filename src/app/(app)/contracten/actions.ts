@@ -162,7 +162,7 @@ export async function createContract(_prev: FormState, formData: FormData): Prom
 
   revalidatePath("/contracten");
   revalidatePath("/contracten/nieuw");
-  redirect("/contracten/nieuw");
+  redirect(`/contracten/nieuw?map=${d.status === "DRAFT" ? "concepten" : "klaar"}`);
 }
 
 export async function updateContract(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -243,15 +243,16 @@ export async function deleteContract(formData: FormData): Promise<void> {
 }
 
 /** Offerte/arbeidsovereenkomst opslaan (nieuw of bijwerken). Geeft het id terug. */
-export async function bewaarDoc(soort: string, id: string | null, waarden: Record<string, string>): Promise<{ id: string } | { error: string }> {
+export async function bewaarDoc(soort: string, id: string | null, waarden: Record<string, string>, klaar = false): Promise<{ id: string } | { error: string }> {
   if (soort !== "offerte" && soort !== "arbeidsovereenkomst") return { error: "Onbekend document." };
   const schoon = Object.fromEntries(Object.entries(waarden).filter(([k, v]) => typeof k === "string" && typeof v === "string").map(([k, v]) => [k.slice(0, 80), v.slice(0, 5000)]));
   const label = (soort === "offerte" ? [schoon.to, schoon.subject] : [schoon.naam, schoon.functie]).filter(Boolean).join(" — ").slice(0, 200);
   const data = JSON.stringify(schoon);
+  const status = klaar ? "READY" : "DRAFT";
   try {
     const doc = id
-      ? await db.docConcept.update({ where: { id }, data: { label, data }, select: { id: true } })
-      : await db.docConcept.create({ data: { soort, label, data }, select: { id: true } });
+      ? await db.docConcept.update({ where: { id }, data: { label, data, status }, select: { id: true } })
+      : await db.docConcept.create({ data: { soort, label, data, status }, select: { id: true } });
     revalidatePath("/contracten/nieuw");
     return doc;
   } catch {

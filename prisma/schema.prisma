@@ -898,6 +898,8 @@ model DocConcept {
   soort     String
   label     String   @default("")
   data      String
+  /// "DRAFT" (concept) of "READY" (klaar).
+  status    String   @default("DRAFT")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

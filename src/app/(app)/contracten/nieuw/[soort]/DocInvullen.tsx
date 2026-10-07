@@ -174,31 +174,28 @@ export function DocInvullen({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [docId, setDocId] = useState(opgeslagen?.id ?? null);
+  const [docId] = useState(opgeslagen?.id ?? null);
   const [melding, setMelding] = useState<string | null>(null);
   const [bezig, startOpslaan] = useTransition();
   // Offerte: standaardpercentages staan al ingevuld (gewoon aan te passen).
   const start = soort === "offerte" ? OFFERTE_STANDAARD : {};
   const [w, setW] = useState<Record<string, string>>(opgeslagen?.waarden ?? start);
-  // Opgeslagen document geopend: het lokale concept mag het niet overschrijven.
+  // Oude lokale concepten (van vóór Opslaan) opruimen: altijd een schone pagina.
   useEffect(() => {
-    if (!opgeslagen) return;
     try {
       const prefix = `q4s-draft:${pathname}::`;
       Object.keys(localStorage).filter((k) => k.startsWith(prefix)).forEach((k) => localStorage.removeItem(k));
     } catch {
       // geen opslag
     }
-  }, [opgeslagen, pathname]);
+  }, [pathname]);
 
-  function opslaan() {
+  function opslaan(klaar: boolean) {
     startOpslaan(async () => {
-      const r = await bewaarDoc(soort, docId, w);
+      const r = await bewaarDoc(soort, docId, w, klaar);
       if ("error" in r) return setMelding(r.error);
-      setDocId(r.id);
-      setMelding("Opgeslagen");
-      router.replace(`${pathname}?taal=${taal}&doc=${r.id}`, { scroll: false });
-      setTimeout(() => setMelding(null), 2500);
+      // Opgeslagen → terug naar de lijst (Concepten of Klaar).
+      router.push(`/contracten/nieuw?map=${klaar ? "klaar" : "concepten"}`);
     });
   }
 
@@ -238,10 +235,14 @@ export function DocInvullen({
         <>
           {taalKeuze}
           {soort !== "persoonsgegevens" && (
-            <Button type="button" size="sm" onClick={opslaan} disabled={bezig}>
-              {melding === "Opgeslagen" ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-              {bezig ? "Opslaan…" : melding ?? "Opslaan"}
-            </Button>
+            <>
+              <Button type="button" variant="outline" size="sm" onClick={() => opslaan(false)} disabled={bezig}>
+                <Save className="h-4 w-4" /> {bezig ? "Opslaan…" : melding ?? "Opslaan als concept"}
+              </Button>
+              <Button type="button" size="sm" onClick={() => opslaan(true)} disabled={bezig}>
+                <Check className="h-4 w-4" /> Klaar
+              </Button>
+            </>
           )}
           <Button type="button" variant="outline" size="sm" onClick={leegmaken}>
             <Eraser className="h-4 w-4" /> Leegmaken
@@ -253,7 +254,8 @@ export function DocInvullen({
         </>
       }
       formulier={
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+        // data-no-persist: altijd een schone pagina; bewaren gaat via Opslaan.
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6" data-no-persist>
           {waarschuwingen.length > 0 && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900">
               <p className="flex items-center gap-2 font-semibold">
