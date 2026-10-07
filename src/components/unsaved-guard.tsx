@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, usePathname } from "next/navigation";
-import { TriangleAlert } from "lucide-react";
+import { Save, TriangleAlert } from "lucide-react";
 import { Button } from "./ui/button";
 
 /**
@@ -25,24 +25,87 @@ import { Button } from "./ui/button";
  *   tabblad of ververs je, dan neemt de browser het over met zijn eigen
  *   melding (die kunnen we niet vormgeven, maar hij is er wel).
  */
+/** Na een (automatische) opslag aanroepen: de pagina is niet meer "gewijzigd". */
+export function meldOpgeslagen() {
+  window.dispatchEvent(new Event("q4s:opgeslagen"));
+}
+
+/** Formulieren met eigen opslag luisteren hiernaar ("Opslaan en weggaan"). */
+export function useOpslaanVerzoek(opslaan: () => void) {
+  const ref = useRef(opslaan);
+  useEffect(() => {
+    ref.current = opslaan;
+  });
+  useEffect(() => {
+    const h = () => ref.current();
+    window.addEventListener("q4s:opslaan", h);
+    return () => window.removeEventListener("q4s:opslaan", h);
+  }, []);
+}
+
 export function UnsavedGuard() {
   const router = useRouter();
   const pathname = usePathname();
   const dirty = useRef<Set<HTMLFormElement>>(new Set());
   const [pending, setPending] = useState<string | null>(null);
+  const [bezig, setBezig] = useState(false);
+
+  // Opgeslagen (automatisch of via een knop zonder form-submit) = schoon.
+  useEffect(() => {
+    const schoon = () => (dirty.current = new Set());
+    window.addEventListener("q4s:opgeslagen", schoon);
+    return () => window.removeEventListener("q4s:opgeslagen", schoon);
+  }, []);
+
+  /** Opslaan en daarna naar `naar`. Eigen opslag (q4s:opslaan) of het formulier verzenden. */
+  function opslaanEnWeg(naar: string) {
+    setBezig(true);
+    const weg = () => {
+      window.removeEventListener("q4s:opgeslagen", weg);
+      clearTimeout(t);
+      dirty.current = new Set();
+      setBezig(false);
+      setPending(null);
+      router.push(naar);
+    };
+    window.addEventListener("q4s:opgeslagen", weg);
+    // ponytail: 4 s wachten op de bevestiging; daarna blijf je staan (niets kwijt).
+    const t = setTimeout(() => {
+      window.removeEventListener("q4s:opgeslagen", weg);
+      setBezig(false);
+    }, 4000);
+    const eigen = [...dirty.current].some((f) =>
+      f.hasAttribute("data-autosave"),
+    );
+    if (eigen) window.dispatchEvent(new Event("q4s:opslaan"));
+    else {
+      // Gewoon formulier: verzenden = opslaan (de pagina gaat daarna zelf verder).
+      window.removeEventListener("q4s:opgeslagen", weg);
+      clearTimeout(t);
+      const f = [...dirty.current][0];
+      dirty.current = new Set();
+      setPending(null);
+      setBezig(false);
+      f?.requestSubmit();
+    }
+  }
 
   /** Telt dit formulier mee voor de waarschuwing? */
-  const guarded = useCallback((form: HTMLFormElement | null): form is HTMLFormElement => {
-    if (!form) return false;
-    if (form.hasAttribute("data-no-guard")) return false;
-    if (form.closest("[data-no-guard]")) return false;
-    // Zoeken/filteren gaat via GET en verandert niets — daar valt niets kwijt.
-    // Let op: lees het ATTRIBUUT. `form.method` is "get" voor élk formulier
-    // zonder method-attribuut — ook React-formulieren met een server-action —
-    // waardoor de waarschuwing voorheen nergens afging.
-    if ((form.getAttribute("method") ?? "").toLowerCase() === "get") return false;
-    return true;
-  }, []);
+  const guarded = useCallback(
+    (form: HTMLFormElement | null): form is HTMLFormElement => {
+      if (!form) return false;
+      if (form.hasAttribute("data-no-guard")) return false;
+      if (form.closest("[data-no-guard]")) return false;
+      // Zoeken/filteren gaat via GET en verandert niets — daar valt niets kwijt.
+      // Let op: lees het ATTRIBUUT. `form.method` is "get" voor élk formulier
+      // zonder method-attribuut — ook React-formulieren met een server-action —
+      // waardoor de waarschuwing voorheen nergens afging.
+      if ((form.getAttribute("method") ?? "").toLowerCase() === "get")
+        return false;
+      return true;
+    },
+    [],
+  );
 
   // --- Bijhouden wat er gewijzigd is -----------------------------------------
   useEffect(() => {
@@ -91,7 +154,14 @@ export function UnsavedGuard() {
       if (dirty.current.size === 0) return;
       // Middelklik en ctrl/cmd-klik openen een nieuw tabblad: deze pagina blijft
       // gewoon staan, dus daar hoeft niets gevraagd te worden.
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+      if (
+        e.defaultPrevented ||
+        e.button !== 0 ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.shiftKey ||
+        e.altKey
+      ) {
         return;
       }
       const el = e.target;
@@ -132,23 +202,30 @@ export function UnsavedGuard() {
             <TriangleAlert className="h-6 w-6" />
           </span>
           <div className="min-w-0">
-            <h2 id="weggaan-titel" className="text-[17px] font-semibold text-ink-900">
+            <h2
+              id="weggaan-titel"
+              className="text-[17px] font-semibold text-ink-900"
+            >
               Weet je zeker dat je weggaat?
             </h2>
             <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
-              Je hebt wijzigingen gemaakt die nog niet zijn opgeslagen. Wat je
-              hebt ingevuld blijft als concept op dit apparaat bewaard tot je terugkomt.
+              Je laatste wijzigingen zijn nog niet opgeslagen. Sla ze op voordat
+              je weggaat, of ga weg zonder op te slaan.
             </p>
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => setPending(null)} autoFocus>
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setPending(null)}
+          >
             Annuleren
           </Button>
           <Button
             type="button"
-            variant="danger"
+            variant="outline"
             onClick={() => {
               const naar = pending;
               dirty.current = new Set();
@@ -156,7 +233,17 @@ export function UnsavedGuard() {
               router.push(naar);
             }}
           >
-            Bevestigen, ga weg
+            Niet opslaan
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={bezig}
+            onClick={() => opslaanEnWeg(pending)}
+            autoFocus
+          >
+            <Save className="h-4 w-4" />{" "}
+            {bezig ? "Opslaan…" : "Opslaan en weggaan"}
           </Button>
         </div>
       </div>

@@ -43,6 +43,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { quickCreateClient } from "../klanten/actions";
 import { savePlacementDraft } from "./actions";
+import { meldOpgeslagen, useOpslaanVerzoek } from "@/components/unsaved-guard";
 import { WerknemerCvIntake } from "./WerknemerCvIntake";
 
 /** A clean upload card: icon + label + a styled picker + the chosen file(s). */
@@ -896,7 +897,8 @@ export function PlacementForm({
   const [autoBewaard, setAutoBewaard] = useState<Date | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const conceptRef = useRef(conceptId);
-  function autoOpslaan() {
+  useOpslaanVerzoek(() => autoOpslaan(0));
+  function autoOpslaan(wacht = 500) {
     if (placement || !formRef.current) return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
@@ -914,10 +916,11 @@ export function PlacementForm({
         conceptRef.current = id;
         setConceptId(id);
         setAutoBewaard(new Date());
+        meldOpgeslagen();
       } catch {
         // offline e.d. — volgende wijziging probeert opnieuw
       }
-    }, 500);
+    }, wacht);
   }
   const e = state.fieldErrors ?? {};
   const [tab, setTab] = useState<Tab>(placement ? "werknemer" : "bestanden");
@@ -1022,9 +1025,11 @@ export function PlacementForm({
     <form
       ref={formRef}
       action={formAction}
-      onInput={autoOpslaan}
-      onChange={autoOpslaan}
+      onInput={() => autoOpslaan()}
+      onChange={() => autoOpslaan()}
       data-no-persist={draft ? "" : undefined}
+      // Nieuwe plaatsing bewaart zelf (concept); bewerken = gewoon verzenden.
+      data-autosave={placement ? undefined : ""}
     >
       {placement && <input type="hidden" name="id" value={placement.id} />}
       {conceptId && <input type="hidden" name="draftId" value={conceptId} />}

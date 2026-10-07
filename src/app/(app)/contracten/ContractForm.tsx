@@ -8,6 +8,7 @@ import { Field, Input, Textarea, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Button } from "@/components/ui/button";
 import { Check, Save } from "lucide-react";
+import { meldOpgeslagen, useOpslaanVerzoek } from "@/components/unsaved-guard";
 import { ConfirmCancel } from "@/components/confirm-cancel";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { CONTRACT_STATUSES } from "@/lib/domain";
@@ -113,7 +114,8 @@ export function ContractForm({
   const [autoId, setAutoId] = useState(contract?.id ?? "");
   const [bewaardOm, setBewaardOm] = useState<string | null>(null);
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  function autoBewaar() {
+  useOpslaanVerzoek(() => autoBewaar(0));
+  function autoBewaar(wacht = 500) {
     if (autoTimer.current) clearTimeout(autoTimer.current);
     autoTimer.current = setTimeout(async () => {
       if (!formRef.current) return;
@@ -134,10 +136,11 @@ export function ContractForm({
             second: "2-digit",
           }),
         );
+        meldOpgeslagen();
       } catch {
         // offline — volgende wijziging probeert opnieuw
       }
-    }, 500);
+    }, wacht);
   }
   const lees = () =>
     setTimeout(
@@ -171,6 +174,7 @@ export function ContractForm({
       id="contract-form"
       noValidate
       data-no-persist
+      data-autosave
       ref={formRef}
       action={formAction}
       onChange={() => {

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Check, Eraser, Save } from "lucide-react";
 import { bewaarDoc } from "../../actions";
+import { meldOpgeslagen, useOpslaanVerzoek } from "@/components/unsaved-guard";
 import { Button, ICOON_GROEP, ICOON_KNOP } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Select, fieldBase } from "@/components/ui/field";
@@ -196,6 +197,7 @@ export function DocInvullen({
     startOpslaan(async () => {
       const r = await bewaarDoc(soort, docId, w, klaar);
       if ("error" in r) return setMelding(r.error);
+      meldOpgeslagen();
       // Opgeslagen → terug naar de lijst (Concepten of Klaar).
       router.push(`/contracten/nieuw?map=${klaar ? "klaar" : "concepten"}`);
     });
@@ -207,27 +209,30 @@ export function DocInvullen({
   };
 
   // Automatisch bewaren, een halve seconde na het typen (als concept).
+  async function bewaarNu() {
+    const fd = new FormData();
+    fd.set("_soort", soort);
+    fd.set("_waarden", JSON.stringify(w));
+    if (docId) fd.set("_id", docId);
+    try {
+      const res = await fetch("/api/contracten/concept", { method: "POST", body: fd });
+      const r = res.ok ? ((await res.json()) as { id: string } | null) : null;
+      if (!r) return;
+      if (!docId) {
+        setDocId(r.id);
+        // In de adresbalk: na een herlaad open je ditzelfde document weer.
+        window.history.replaceState(null, "", `${pathname}?taal=${taal}&doc=${r.id}`);
+      }
+      setBewaardOm(new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+      meldOpgeslagen();
+    } catch {
+      // offline — volgende wijziging probeert opnieuw
+    }
+  }
+  useOpslaanVerzoek(() => void bewaarNu());
   useEffect(() => {
     if (!aangeraakt.current || soort === "persoonsgegevens") return;
-    const t = setTimeout(async () => {
-      const fd = new FormData();
-      fd.set("_soort", soort);
-      fd.set("_waarden", JSON.stringify(w));
-      if (docId) fd.set("_id", docId);
-      try {
-        const res = await fetch("/api/contracten/concept", { method: "POST", body: fd });
-        const r = res.ok ? ((await res.json()) as { id: string } | null) : null;
-        if (!r) return;
-        if (!docId) {
-          setDocId(r.id);
-          // In de adresbalk: na een herlaad open je ditzelfde document weer.
-          window.history.replaceState(null, "", `${pathname}?taal=${taal}&doc=${r.id}`);
-        }
-        setBewaardOm(new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
-      } catch {
-        // offline — volgende wijziging probeert opnieuw
-      }
-    }, 500);
+    const t = setTimeout(bewaarNu, 500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [w]);
@@ -292,7 +297,7 @@ export function DocInvullen({
       }
       formulier={
         // data-no-persist: altijd een schone pagina; bewaren gaat via Opslaan.
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-6" data-no-persist>
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6" data-no-persist data-autosave>
           {waarschuwingen.length > 0 && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900">
               <p className="flex items-center gap-2 font-semibold">
