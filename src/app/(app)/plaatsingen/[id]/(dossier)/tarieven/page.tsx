@@ -198,7 +198,8 @@ export default async function PlaatsingTarievenPage({
                 </tr>
               </thead>
               <tbody>
-                {surcharges.map((s) => (
+                {/* Ingestelde toeslagen bovenaan, de rest (0 / staat uit) eronder. */}
+                {[...surcharges].sort((a, b) => Number(b.set) - Number(a.set)).map((s) => (
                   <tr key={s.label} className="border-t border-ink-100">
                     <td className="px-4 py-2 text-ink-700">{s.label}</td>
                     <td className={`px-4 py-2 text-right tabular-nums ${s.set ? "" : "text-ink-300"}`}>

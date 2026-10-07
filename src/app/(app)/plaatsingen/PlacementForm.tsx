@@ -425,7 +425,8 @@ function ToeslagBlock({
     standaardAan || buyDefault > 0 || sellDefault > 0,
   );
   return (
-    <div className={cn(TOESLAG_GRID, !aan && "bg-ink-50/40")}>
+    // Uitgevinkt zakt naar onderen (CSS order): aangevinkte toeslagen staan bovenaan.
+    <div className={cn(TOESLAG_GRID, !aan && "order-last bg-ink-50/40")}>
       <ToeslagNaam
         title={title}
         hint={aan ? hint : "Uit — vink aan als het geldt"}
@@ -523,7 +524,7 @@ function ToeslagRow({
       : { suffix: "€/u", step: 0.01 };
 
   return (
-    <div className={cn(TOESLAG_GRID, uit && "bg-ink-50/40")}>
+    <div className={cn(TOESLAG_GRID, uit && "order-last bg-ink-50/40")}>
       <ToeslagNaam
         title={title}
         hint={uit ? "Uit — vink aan als het geldt" : hint}
@@ -1841,7 +1842,7 @@ export function PlacementForm({
                   />
                 </div>
                 <div
-                  className={cn("divide-y divide-ink-100", allIn && "hidden")}
+                  className={cn("flex flex-col [&>*]:border-b [&>*]:border-ink-100", allIn && "hidden")}
                 >
                   <input type="hidden" name="weekendSurchargeBuy" value={0} />
                   <input type="hidden" name="weekendSurchargeSell" value={0} />
