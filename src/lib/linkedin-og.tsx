@@ -47,40 +47,45 @@ const PIN = svgUri(
   `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${ORANJE}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
 );
 
-/** Oranje geometrie rechtsonder (zoals de kWh-vormen, maar hoekig als het Q4S-logo). */
+/**
+ * Beeldmerk rechtsonder, afgeleid van het Q4S-logo: het kader met de horizontale
+ * deellijn (boven gevuld, onder open) en de schuine "4"-balken die over de
+ * deellijn heen van kleur wisselen — boven uitgespaard, onder oranje. Als SVG
+ * (resvg kent clipPath; de Satori-layout niet).
+ */
+function logoVormSvg(): string {
+  const balk = (x: number) => `<polygon points="${x},640 ${x + 70},640 ${x + 370},40 ${x + 300},40"/>`;
+  const balken = [120, 245, 370].map(balk).join("");
+  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <defs>
+    <linearGradient id="o" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${ORANJE}"/><stop offset="1" stop-color="#9c2a05"/></linearGradient>
+    <clipPath id="kader"><rect x="90" y="150" width="620" height="420"/></clipPath>
+    <clipPath id="boven"><rect x="0" y="0" width="640" height="360"/></clipPath>
+    <clipPath id="onder"><rect x="0" y="360" width="640" height="280"/></clipPath>
+  </defs>
+  <g clip-path="url(#kader)">
+    <rect x="90" y="150" width="620" height="210" fill="url(#o)"/>
+    <g clip-path="url(#boven)" fill="#0b0b0c">${balken}</g>
+    <g clip-path="url(#onder)" fill="url(#o)">${balken}</g>
+  </g>
+  <rect x="90" y="150" width="620" height="420" fill="none" stroke="${ORANJE}" stroke-width="12"/>
+  <rect x="40" y="100" width="620" height="420" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="3"/>
+</svg>`);
+}
+const LOGO_VORM = logoVormSvg();
+
+/** Het beeldmerk, rechtsonder in een vlak van w×h, deels over de rand. */
 function Vormen({ grootte = 1, w = CARD_W, h = CARD_H }: { grootte?: number; w?: number; h?: number }) {
-  const g = (n: number) => Math.round(n * grootte);
-  // Satori negeert right/bottom bij absolute posities → alles via left/top.
+  const z = Math.round(640 * grootte);
+  // Satori negeert right/bottom bij absolute posities → via left/top.
   return (
-    <>
-      <div
-        style={{
-          position: "absolute",
-          left: w - g(560) + g(150),
-          top: h - g(560) + g(170),
-          width: g(560),
-          height: g(560),
-          borderRadius: g(70),
-          transform: "rotate(28deg)",
-          backgroundImage: `linear-gradient(135deg, rgba(232,67,10,0.95) 0%, rgba(232,67,10,0.35) 70%, rgba(232,67,10,0.05) 100%)`,
-          display: "flex",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: w - g(230) - g(170),
-          top: h - g(230) - g(230),
-          width: g(230),
-          height: g(230),
-          borderRadius: g(40),
-          transform: "rotate(28deg)",
-          backgroundImage: "linear-gradient(135deg, #3a3a40 0%, #1c1c1e 100%)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          display: "flex",
-        }}
-      />
-    </>
+    <img
+      src={LOGO_VORM}
+      width={z}
+      height={z}
+      alt=""
+      style={{ position: "absolute", left: w - z + Math.round(z * 0.12), top: h - z + Math.round(z * 0.1) }}
+    />
   );
 }
 
@@ -195,7 +200,7 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
             overflow: "hidden",
           }}
         >
-          <Vormen grootte={0.55} h={CARD_H - 470} />
+          <Vormen grootte={0.48} h={CARD_H - 470} />
         </div>
 
         {/* Infokaart */}
