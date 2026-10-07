@@ -115,7 +115,8 @@ const VELDEN: Record<Soort, Groep[]> = {
       ["rateSaturday", "Zaterdag"],
       ["rateSunday", "Zondag / feestdag"],
       ["rateOffshore", "Offshore"],
-      ["rateOvertime", "Overuren"],
+      ["rateHour910", "Ma–vr 9e & 10e uur"],
+      ["rateOvertime", "Overuren (meer uren)"],
       ["overtimeApplies", "Overuren gelden vanaf"],
       ["rateDayFixed", "Vast dagtarief"],
       ["dayBasedOnHours", "Dag gebaseerd op (uren)"],
@@ -135,6 +136,16 @@ const VELDEN: Record<Soort, Groep[]> = {
   ],
 };
 
+
+/** Standaard Q4S-tarieven op een offerte — per offerte aan te passen. */
+const OFFERTE_STANDAARD: Record<string, string> = {
+  rateHour910: "+ 15 %",
+  rateOvertime: "+ 25 %",
+  rateSaturday: "+ 50 %",
+  rateSunday: "+ 50 %",
+  rateShift: "+ 40 %",
+  travel: "€ 0,45 per km",
+};
 
 /**
  * Persoonsgegevens/offerte invullen, met het vel onder het mapje Voorbeeld. Niets in de database:
@@ -158,7 +169,9 @@ export function DocInvullen({
   footerLine: string;
 }) {
   const pathname = usePathname();
-  const [w, setW] = useState<Record<string, string>>({});
+  // Offerte: standaardpercentages staan al ingevuld (gewoon aan te passen).
+  const start = soort === "offerte" ? OFFERTE_STANDAARD : {};
+  const [w, setW] = useState<Record<string, string>>(start);
 
   const zet = (k: string, v: string) => setW((o) => ({ ...o, [k]: v }));
 
@@ -170,7 +183,7 @@ export function DocInvullen({
     } catch {
       // geen opslag → alleen het scherm legen
     }
-    setW({});
+    setW(start);
   }
 
   const waarschuwingen = soort === "arbeidsovereenkomst" ? arbeidsWaarschuwingen(w) : [];

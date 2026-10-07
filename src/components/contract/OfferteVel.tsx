@@ -38,6 +38,8 @@ export type Offerte = {
   rateSunday?: string;
   rateOffshore?: string;
   rateOvertime?: string;
+  /** Ma–vr 9e & 10e uur (bv. "+ 15 %"). */
+  rateHour910?: string;
   overtimeApplies?: string;
   rateDayFixed?: string;
   dayBasedOnHours?: string;
@@ -154,6 +156,10 @@ export function OfferteVel({
               <td><F v={q.rateSaturday} /></td>
               <td><F v={q.rateSunday} /></td>
               <td><F v={q.rateOffshore} /></td>
+            </tr>
+            <tr>
+              <td className="ov-rl">{t("Ma – vr 9e & 10e uur", "Mo – Fri 9th & 10th hour")}</td>
+              <td colSpan={5}><F v={q.rateHour910} /></td>
             </tr>
             <tr>
               <td className="ov-rl">{t("*Overuren", "*Overtime")}</td>
