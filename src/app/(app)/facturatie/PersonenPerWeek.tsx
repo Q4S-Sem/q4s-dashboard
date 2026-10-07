@@ -17,8 +17,8 @@ import { cn, formatCurrency, formatHours, round2 } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // PER PERSOON — dezelfde vaste lijst als Week verwerken (iedereen met een
-// actieve plaatsing), maar dan met de facturen: zijn inkoopfactuur, onze
-// verkoopfactuur, de marge en wat er nog mist. Zelfde opbouw als Week
+// actieve plaatsing), maar dan met de facturen van ÉÉN kant: op Inkoop zijn
+// inkoopfactuur, op Verkoop onze verkoopfactuur (marge: Kosten & winst). Zelfde opbouw als Week
 // verwerken: mapjes → filtertegels → kaart met zoekveld en tabel.
 // Gebruikt op Verkoopfacturen en Inkoop.
 // ---------------------------------------------------------------------------
@@ -69,13 +69,23 @@ export function WeergaveTabs({
   );
 }
 
+// Gescheiden kanten: Inkoop = wat de freelancer instuurt en wij betalen;
+// Verkoop = wat wij de klant factureren. Elke pagina toont alleen zijn eigen kant.
+const INKOOP_MIST = ["Urenstaat", "Factuur freelancer", "Freelancer betalen"];
+const VERKOOP_MIST = ["Akkoord", "Verkoopfactuur", "Versturen", "Betaling klant"];
+
 /** Filtertegels: tegelijk teller én filter, zoals op Week verwerken. */
-const FILTERS = [
+const FILTERS_INKOOP = [
   { key: "alles", label: "compleet", icon: <Users className="h-3.5 w-3.5" />, toon: "slate" as const, past: () => true },
   { key: "urenstaat", label: "Urenstaat mist", icon: <ClipboardList className="h-3.5 w-3.5" />, toon: "red" as const, past: (m: string[]) => m.includes("Urenstaat") },
   { key: "factuur", label: "Factuur freelancer mist", icon: <FileText className="h-3.5 w-3.5" />, toon: "amber" as const, past: (m: string[]) => m.includes("Factuur freelancer") },
+  { key: "betaling", label: "Freelancer betalen", icon: <Wallet className="h-3.5 w-3.5" />, toon: "blue" as const, past: (m: string[]) => m.includes("Freelancer betalen") },
+  { key: "compleet", label: "Compleet", icon: <CheckCircle2 className="h-3.5 w-3.5" />, toon: "green" as const, past: (m: string[]) => m.length === 0 },
+];
+const FILTERS_VERKOOP = [
+  { key: "alles", label: "compleet", icon: <Users className="h-3.5 w-3.5" />, toon: "slate" as const, past: () => true },
   { key: "factureren", label: "Nog factureren", icon: <Send className="h-3.5 w-3.5" />, toon: "violet" as const, past: (m: string[]) => m.some((x) => ["Akkoord", "Verkoopfactuur", "Versturen"].includes(x)) },
-  { key: "betaling", label: "Betaling open", icon: <Wallet className="h-3.5 w-3.5" />, toon: "blue" as const, past: (m: string[]) => m.some((x) => ["Betaling klant", "Freelancer betalen"].includes(x)) },
+  { key: "betaling", label: "Betaling klant open", icon: <Wallet className="h-3.5 w-3.5" />, toon: "blue" as const, past: (m: string[]) => m.includes("Betaling klant") },
   { key: "compleet", label: "Compleet", icon: <CheckCircle2 className="h-3.5 w-3.5" />, toon: "green" as const, past: (m: string[]) => m.length === 0 },
 ];
 
@@ -114,7 +124,10 @@ export async function PersonenPerWeek({
   const ink = new Map(inkoop.map((i) => [i.id, i]));
   const ver = new Map(verkoop.map((i) => [i.id, i]));
 
-  const alle = rows.map((r) => {
+  const FILTERS = isVerkoop ? FILTERS_VERKOOP : FILTERS_INKOOP;
+  const eigenKant = isVerkoop ? VERKOOP_MIST : INKOOP_MIST;
+  // Inkoop: alleen freelancers (in dienst stuurt geen factuur).
+  const alle = rows.filter((r) => isVerkoop || !r.factuurNvt).map((r) => {
     const i = r.receivedInvoiceId ? ink.get(r.receivedInvoiceId) : undefined;
     const v = r.verkoopFactuurId ? ver.get(r.verkoopFactuurId) : undefined;
     // Alleen de regels van DEZE persoon in deze week (één factuur kan meer mensen dekken).
@@ -123,7 +136,6 @@ export async function PersonenPerWeek({
       : null;
     const inkoopEx = i ? round2(i.amount - (i.vatAmount ?? 0)) : null;
     // ponytail: een verzamelfactuur over meerdere weken telt hier volledig mee; per-week-verdeling als dat stoort.
-    const marge = verkoopEx != null && (inkoopEx != null || r.factuurNvt) ? round2(verkoopEx - (inkoopEx ?? 0)) : null;
     const mist = watMist({
       timesheetOntvangen: r.timesheetOntvangen,
       factuurOntvangen: r.factuurOntvangen,
@@ -131,8 +143,8 @@ export async function PersonenPerWeek({
       vastgelegd: r.vastgelegd,
       inkoopStatus: i?.status ?? null,
       verkoopStatus: v?.status ?? null,
-    });
-    return { r, i, v, verkoopEx, inkoopEx, marge, mist };
+    }).filter((m) => eigenKant.includes(m));
+    return { r, i, v, verkoopEx, inkoopEx, mist };
   });
 
   const filter = FILTERS.find((f) => f.key === pf) ?? FILTERS[0];
@@ -188,15 +200,13 @@ export async function PersonenPerWeek({
                 <TR>
                   <TH>Persoon</TH>
                   <TH className="text-right">Uren</TH>
-                  <TH>Inkoopfactuur (freelancer)</TH>
-                  <TH>Verkoopfactuur (klant)</TH>
-                  <TH className="text-right">Marge ex btw</TH>
+                  <TH>{isVerkoop ? "Verkoopfactuur (klant)" : "Inkoopfactuur (freelancer)"}</TH>
                   <TH>Wat mist er</TH>
                   {isVerkoop && <TH className="text-right">Naar administratie</TH>}
                 </TR>
               </THead>
               <TBody>
-                {lijst.map(({ r, i, v, verkoopEx, inkoopEx, marge, mist }) => (
+                {lijst.map(({ r, i, v, verkoopEx, inkoopEx, mist }) => (
                   <TR key={r.key}>
                     <TD>
                       <Link
@@ -221,6 +231,7 @@ export async function PersonenPerWeek({
                     <TD className="text-right tabular-nums">
                       {r.uren != null ? formatHours(r.uren) : <span className="text-ink-300">—</span>}
                     </TD>
+                    {!isVerkoop && (
                     <TD>
                       {r.factuurNvt ? (
                         <span className="text-[13px] text-ink-400">— n.v.t. (in dienst)</span>
@@ -237,6 +248,8 @@ export async function PersonenPerWeek({
                         </span>
                       )}
                     </TD>
+                    )}
+                    {isVerkoop && (
                     <TD>
                       {v ? (
                         <Link href={`/facturatie/verkoop/${v.id}`} className="flex items-center gap-2 text-[13px] hover:underline">
@@ -251,9 +264,7 @@ export async function PersonenPerWeek({
                         </span>
                       )}
                     </TD>
-                    <TD className={cn("text-right font-semibold tabular-nums", marge != null && marge < 0 ? "text-red-600" : "text-ink-900")}>
-                      {marge != null ? formatCurrency(marge) : <span className="font-normal text-ink-300">—</span>}
-                    </TD>
+                    )}
                     <TD>
                       {mist.length === 0 ? (
                         <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-emerald-700">
