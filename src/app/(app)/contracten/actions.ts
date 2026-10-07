@@ -70,6 +70,9 @@ const ContractSchema = z.object({
 
   status: z.enum(CONTRACT_STATUS_VALUES).default("DRAFT"),
   notes: optionalNull,
+  // Koppeling met persoon/plaatsing (nieuw contract vanuit Contracten/plaatsing).
+  consultantId: optionalNull,
+  placementId: optionalNull,
 });
 
 /** Checkbox-velden leest Zod niet betrouwbaar; direct uit FormData ("on"). */
@@ -143,6 +146,9 @@ function contractData(d: z.infer<typeof ContractSchema>, flags: ReturnType<typeo
     signDate: d.signDate ?? null,
     status: d.status,
     notes: d.notes,
+    // Alleen zetten als meegestuurd: bijwerken laat een bestaande koppeling staan.
+    ...(d.consultantId ? { consultantId: d.consultantId } : {}),
+    ...(d.placementId ? { placementId: d.placementId } : {}),
     ...withDefaults(d),
     ...flags,
   };

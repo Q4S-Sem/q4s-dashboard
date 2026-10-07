@@ -124,3 +124,84 @@ export function plaatsingUitContract(
   }
   return { data, regels };
 }
+
+// ---------------------------------------------------------------------------
+// Omgekeerd: persoon + plaatsing → de velden van een nieuwe overeenkomst van
+// opdracht (inkoopkant: het contract met de ZZP'er). Zo staat bij "Nieuw
+// contract" vanuit een persoon/plaatsing het meeste al ingevuld.
+// ---------------------------------------------------------------------------
+
+type Kolom = "saturday" | "sunday" | "shift" | "offshore";
+type PlaatsingVoorContract = {
+  title: string;
+  startDate: Date;
+  endDate: Date | null;
+  costRate: number;
+  rateUnit: string;
+  overtimeCostRate: number | null;
+  kmRateBuy: number;
+  workLocation: string | null;
+  vatReverseCharge: boolean;
+  client: { companyName: string } | null;
+  shiftEnabled: boolean;
+  offshoreEnabled: boolean;
+} & Record<`${Kolom}SurchargeBuy`, number> &
+  Record<`${Kolom}SurchargeUnit`, string>;
+
+type PersoonVoorContract = {
+  firstName: string;
+  lastName: string;
+  companyName: string | null;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  kvkNumber: string | null;
+  vatNumber: string | null;
+  iban: string | null;
+};
+
+/** 78 → "€ 78,-" · 78.5 → "€ 78,50" (zelfde notatie als het contractformulier). */
+function euro(n: number): string {
+  const r = rond(n);
+  return Number.isInteger(r) ? `€ ${r},-` : `€ ${r.toFixed(2).replace(".", ",")}`;
+}
+
+/** Alleen gevulde velden; de rest laat het formulier op zijn standaard staan. */
+export function contractUitPlaatsing(
+  c: PersoonVoorContract,
+  p: PlaatsingVoorContract | null,
+): Record<string, string | Date | boolean> {
+  const naam = `${c.firstName} ${c.lastName}`.trim();
+  const plaats = [c.postalCode, c.city].filter(Boolean).join(" ");
+  const out: Record<string, string | Date | boolean> = {
+    contractorName: c.companyName?.trim() || naam,
+    contractorAddress: [c.address, plaats].filter(Boolean).join(", "),
+    contractorKvk: c.kvkNumber ?? "",
+    contractorVat: c.vatNumber ?? "",
+    contractorIban: c.iban ?? "",
+  };
+  if (!p) return out;
+  out.workDescription = p.title;
+  out.thirdParty = [p.client?.companyName, p.workLocation].filter(Boolean).join(" — ");
+  out.startDate = p.startDate;
+  if (p.endDate) out.endDate = p.endDate;
+  out.vatReverseCharge = p.vatReverseCharge;
+  const dag = p.rateUnit === "DAY";
+  if (p.costRate > 0) out[dag ? "rateDayFixed" : "rateDay"] = euro(p.costRate);
+  if (p.overtimeCostRate) out.rateOvertime = euro(p.overtimeCostRate);
+  if (p.kmRateBuy > 0) out.kmRate = euro(p.kmRateBuy);
+  const kolommen: [Kolom, string, boolean][] = [
+    ["saturday", "rateSaturday", true],
+    ["sunday", "rateSunday", true],
+    ["shift", "rateShift", p.shiftEnabled],
+    ["offshore", "rateOffshore", p.offshoreEnabled],
+  ];
+  for (const [k, veld, aan] of kolommen) {
+    const w = p[`${k}SurchargeBuy`];
+    if (!aan || !(w > 0)) continue;
+    // Het contract noemt een totaal uurtarief; een vaste toeslag telt op bij de basis.
+    if (p[`${k}SurchargeUnit`] === "PCT") out[veld] = `${w} %`;
+    else if (!dag && p.costRate > 0) out[veld] = euro(p.costRate + w);
+  }
+  return out;
+}

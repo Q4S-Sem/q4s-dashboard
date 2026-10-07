@@ -17,15 +17,11 @@ import type { CompanySettings } from "@/lib/settings";
 import { ContractVel, type Taal } from "@/components/contract/ContractVel";
 import { InvulTabs } from "@/components/contract/InvulTabs";
 
-/** Voor-invulwaarden bij een nieuw contract (bijv. aangemaakt vanuit een plaatsing). */
-type ContractDefaults = {
-  contractorName?: string;
-  contractorAddress?: string;
-  contractorKvk?: string;
-  contractorVat?: string;
-  contractorIban?: string;
-  kmRate?: string;
-};
+/**
+ * Voor-invulwaarden bij een nieuw contract, uit de persoon + plaatsing
+ * (contractUitPlaatsing). consultantId/placementId koppelen het contract eraan.
+ */
+type ContractDefaults = Partial<Contract>;
 
 /** Wat nu in het formulier staat, als Contract — voor het live voorbeeld. */
 function uitFormulier(f: HTMLFormElement): Contract {
@@ -175,7 +171,8 @@ export function ContractForm({
     }
   }, []);
   const e = state.fieldErrors ?? {};
-  const c = contract;
+  // Nieuw contract vanuit een persoon/plaatsing: dezelfde velden, alleen voor-ingevuld.
+  const c: Partial<Contract> | null | undefined = contract ?? defaults;
   const d = defaults;
 
   const form = (
@@ -198,6 +195,9 @@ export function ContractForm({
       className="space-y-6"
     >
       {autoId && <input type="hidden" name="id" value={autoId} />}
+      {/* Gekoppeld aan de persoon/plaatsing waar het vandaan komt (alleen bij nieuw). */}
+      {!contract && d?.consultantId && <input type="hidden" name="consultantId" value={d.consultantId} />}
+      {!contract && d?.placementId && <input type="hidden" name="placementId" value={d.placementId} />}
 
       {state.error && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -210,8 +210,9 @@ export function ContractForm({
         <CardHeader>
           <CardTitle>Contract</CardTitle>
           <span className="text-sm text-ink-400">
-            De opdrachtnemer is altijd een nieuw persoon; alles staat op het
-            contract zelf.
+            {d?.consultantId
+              ? "Voor-ingevuld uit de persoon en zijn plaatsing — controleer en vul aan."
+              : "Nieuw persoon: alles staat op het contract zelf."}
           </span>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -491,7 +492,7 @@ export function ContractForm({
               error={e.kmRate}
             >
               {/* Nieuw contract: standaard € 0,45 per km (aanpasbaar). */}
-              <RateInput name="kmRate" defaultValue={c ? (c.kmRate ?? "") : "€ 0,45"} />
+              <RateInput name="kmRate" defaultValue={c?.kmRate ?? "€ 0,45"} />
             </Field>
           </div>
           <div className="grid gap-5 sm:grid-cols-3">
@@ -523,7 +524,7 @@ export function ContractForm({
               <input
                 type="checkbox"
                 name="vatReverseCharge"
-                defaultChecked={c ? c.vatReverseCharge : true}
+                defaultChecked={c?.vatReverseCharge ?? true}
                 className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
               />
               BTW verlegd (reverse charge)
@@ -558,7 +559,7 @@ export function ContractForm({
               <input
                 type="checkbox"
                 name="includeConfidentiality"
-                defaultChecked={c ? c.includeConfidentiality : true}
+                defaultChecked={c?.includeConfidentiality ?? true}
                 className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
               />
               Artikel 12 — Geheimhouding
@@ -567,7 +568,7 @@ export function ContractForm({
               <input
                 type="checkbox"
                 name="includeGdpr"
-                defaultChecked={c ? c.includeGdpr : true}
+                defaultChecked={c?.includeGdpr ?? true}
                 className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
               />
               Artikel 13 — Verwerking persoonsgegevens (AVG)
@@ -576,7 +577,7 @@ export function ContractForm({
               <input
                 type="checkbox"
                 name="includeIp"
-                defaultChecked={c ? c.includeIp : true}
+                defaultChecked={c?.includeIp ?? true}
                 className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
               />
               Artikel 14 — Intellectueel eigendom
@@ -652,7 +653,7 @@ export function ContractForm({
   if (!voorbeeld) return form;
   const bron =
     waarden ??
-    c ??
+    contract ??
     ({ ...d, contractorName: d?.contractorName ?? "" } as unknown as Contract);
   const fouten = state.error || Object.keys(e).length > 0;
   return (

@@ -47,8 +47,13 @@ export default async function NieuwContractPage({
   searchParams: Promise<{ q?: string; map?: string; consultantId?: string; placementId?: string; doc?: string; taal?: string }>;
 }) {
   const sp = await searchParams;
-  // Oude links vanuit een persoon/plaatsing: direct naar de (lege) overeenkomst.
-  if (sp.consultantId || sp.placementId) redirect("/contracten/nieuw/overeenkomst");
+  // Vanuit een persoon/plaatsing: direct naar de overeenkomst, voor-ingevuld.
+  if (sp.consultantId || sp.placementId) {
+    const q = new URLSearchParams();
+    if (sp.consultantId) q.set("consultantId", sp.consultantId);
+    if (sp.placementId) q.set("placementId", sp.placementId);
+    redirect(`/contracten/nieuw/overeenkomst?${q.toString()}`);
+  }
   // Oude links (toen Blanco/Timesheet hier zaten).
   const tl = sp.taal === "en" ? "&taal=en" : "";
   if (sp.doc === "urenstaat") redirect(`/contracten/blanco?doc=timesheet${tl}`);

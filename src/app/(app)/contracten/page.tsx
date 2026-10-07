@@ -150,6 +150,8 @@ export default async function ContractenPage({
             const naam = `${m.firstName} ${m.lastName}`.trim();
             const p = m.placements[0];
             const heeft = (soort: string) => m.documents.some((d) => d.category === soort);
+            // Nieuw contract voor-ingevuld uit deze persoon + zijn plaatsing.
+            const nieuwHref = `/contracten/nieuw/overeenkomst?consultantId=${m.id}${p ? `&placementId=${p.id}` : ""}`;
             return (
               <details key={m.id} className="group border-b border-ink-100 last:border-0">
                 <summary
@@ -168,8 +170,12 @@ export default async function ContractenPage({
                   <span className="tabular-nums text-ink-600">{m.kvkNumber || "—"}</span>
                   <span className="truncate tabular-nums text-ink-900">{m.contracts.find((c) => c.rateDay)?.rateDay || "—"}</span>
                   {/* Getekend of geüpload = aanwezig; anders de status van het laatste contract (bv. Concept). */}
-                  {heeft("CONTRACT") || m.contracts.some((c) => c.status === "SIGNED") || m.contracts.length === 0 ? (
-                    <Vink ok={m.contracts.length > 0 || heeft("CONTRACT")} />
+                  {m.contracts.length === 0 && !heeft("CONTRACT") ? (
+                    <Link href={nieuwHref} className="text-xs font-semibold text-brand-700 hover:underline" title="Nieuw contract, al ingevuld met zijn gegevens">
+                      + Maak contract
+                    </Link>
+                  ) : heeft("CONTRACT") || m.contracts.some((c) => c.status === "SIGNED") ? (
+                    <Vink ok />
                   ) : (
                     <StatusBadge options={CONTRACT_STATUSES} value={m.contracts[0].status} />
                   )}
@@ -203,11 +209,8 @@ export default async function ContractenPage({
                         ))}
                       </ul>
                     )}
-                    <Link
-                      href={`/contracten/nieuw?consultantId=${m.id}${p ? `&placementId=${p.id}` : ""}`}
-                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:underline"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Nieuw contract
+                    <Link href={nieuwHref} className={`mt-2 ${buttonVariants({ variant: "success", size: "sm" })}`}>
+                      <Plus className="h-3.5 w-3.5" /> Nieuw contract (voor-ingevuld)
                     </Link>
                   </div>
 
