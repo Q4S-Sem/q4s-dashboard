@@ -1057,7 +1057,7 @@ export function PlacementForm({
             type="submit"
             formAction={savePlacementDraft}
             formNoValidate
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
             title="Bewaar wat je nu hebt als concept — verschijnt bovenaan bij Plaatsingen"
           >
             <Save className="h-4 w-4" /> Opslaan als concept
@@ -2044,7 +2044,7 @@ export function PlacementForm({
                 type="submit"
                 formAction={savePlacementDraft}
                 formNoValidate
-                className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
+                className={buttonVariants({ variant: "outline" })}
                 title="Bewaar wat je nu hebt als concept — verschijnt bovenaan bij Plaatsingen"
               >
                 <Save className="h-4 w-4" /> Opslaan als concept
