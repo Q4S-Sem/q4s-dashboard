@@ -491,7 +491,7 @@ export function ContractForm({
               error={e.kmRate}
             >
               {/* Nieuw contract: standaard € 0,45 per km (aanpasbaar). */}
-              <RateInput name="kmRate" defaultValue={c ? (c.kmRate ?? "") : (d?.kmRate ?? "€ 0,45")} />
+              <RateInput name="kmRate" defaultValue={c ? (c.kmRate ?? "") : "€ 0,45"} />
             </Field>
           </div>
           <div className="grid gap-5 sm:grid-cols-3">
