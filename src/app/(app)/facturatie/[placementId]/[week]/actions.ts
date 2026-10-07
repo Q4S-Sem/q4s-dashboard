@@ -13,7 +13,7 @@ import {
   resolveWeek,
   weekEntityId,
 } from "@/lib/facturatie-week";
-import { deleteInboxUpload } from "@/lib/uploads";
+import { deleteInboxUpload, deleteReceivedUpload } from "@/lib/uploads";
 import { resetWeekForReceivedInvoice, resetWeekForTimesheet } from "@/lib/week-reset";
 import { currentUser } from "@/lib/session";
 import { volgendePersoon, wekenInPeriode } from "@/lib/facturatie-volgende";
@@ -367,6 +367,69 @@ export async function verwijderEnOpnieuw(formData: FormData) {
     redirect(`/facturatie?week=${weekKey}&verwijderd=1`);
   }
   redirect(dossierPad(placementId, weekKey, { fout: "reset" }));
+}
+
+// ===========================================================================
+// Eén stuk verwijderen (urenstaat óf factuur) — de knop op Week verwerken
+// ===========================================================================
+
+/**
+ * Een foute urenstaat of factuur eruit halen, zodat de freelancer een nieuwe kan
+ * sturen. Wat er weg mag komt uit het dossier op de server (nooit een id van de
+ * client). Is de week al vastgelegd, dan gaat dat via de bestaande, GEGUARDE
+ * reset (verstuurde/betaalde facturen blokkeren); een betaalde inkoopfactuur
+ * blijft altijd staan.
+ */
+export async function verwijderStuk(formData: FormData) {
+  const { placementId, weekKey } = sleutels(formData);
+  const stuk = tekst(formData, "stuk") === "factuur" ? "factuur" : "urenstaat";
+  if (!placementId) redirect("/facturatie");
+  const dossier = await getWeekDossier(placementId, weekKey);
+  if (!dossier) redirect("/facturatie");
+
+  let geblokkeerd: string | null = null;
+  // Al vastgelegd → de urenstaat hangt aan de (concept-)verkoopfactuur: week terugzetten.
+  if (dossier.row.timesheetId) {
+    const res = await resetWeekForTimesheet(dossier.row.timesheetId);
+    if (res.result === "locked") geblokkeerd = res.lockedReason ?? "Deze week is al gefactureerd.";
+  }
+
+  if (!geblokkeerd) {
+    const na = (await getWeekDossier(placementId, weekKey))?.row;
+    if (stuk === "urenstaat" && na?.inboxId) {
+      const item = await db.timesheetInbox.findUnique({
+        where: { id: na.inboxId },
+        select: { fileName: true, timesheetId: true },
+      });
+      if (item && !item.timesheetId) {
+        await db.timesheetInbox.delete({ where: { id: na.inboxId } });
+        await deleteInboxUpload(item.fileName).catch(() => {});
+      }
+    }
+    if (stuk === "factuur" && na?.receivedInvoiceId) {
+      const inv = await db.receivedInvoice.findUnique({
+        where: { id: na.receivedInvoiceId },
+        select: { status: true, fileName: true },
+      });
+      if (inv?.status === "PAID") {
+        geblokkeerd = "Deze factuur is al betaald en blijft als administratie staan.";
+      } else if (inv) {
+        await db.receivedInvoice.delete({ where: { id: na.receivedInvoiceId } });
+        if (inv.fileName) await deleteReceivedUpload(inv.fileName).catch(() => {});
+      }
+    }
+  }
+
+  // Aantekeningen (akkoord/geaccepteerd) horen bij de weggegooide poging.
+  if (!geblokkeerd) {
+    await db.activity.deleteMany({
+      where: { entityType: FACTURATIE_ENTITY, entityId: weekEntityId(placementId, weekKey) },
+    });
+  }
+  herlaad(placementId, weekKey);
+  revalidatePath("/facturatie/inkoop");
+  revalidatePath("/facturatie/verkoop");
+  redirect(geblokkeerd ? dossierPad(placementId, weekKey, { geblokkeerd }) : `/facturatie?week=${weekKey}&weg=${stuk}`);
 }
 
 // ===========================================================================

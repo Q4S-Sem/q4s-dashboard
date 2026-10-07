@@ -24,6 +24,7 @@ import { ymd } from "@/lib/week-nav";
 import { UploadPaneel } from "./UploadPaneel";
 import { WeekStrip } from "./WeekStrip";
 import { koppelLosseUpload, verwerkGroeneWeken, verwijderLosseUpload } from "./actions";
+import { verwijderStuk } from "./[placementId]/[week]/actions";
 import { volgendePersoon, voortgang } from "@/lib/facturatie-volgende";
 import { getCompanySettings } from "@/lib/settings";
 import { buttonVariants, mapTabVariants } from "@/components/ui/button";
@@ -89,8 +90,15 @@ function hoortBijFilter(row: WeekRow, filter: Filter): boolean {
   return row.status === "KLAAR";
 }
 
-/** Het bolletje + woord in de kolommen Timesheet / Factuur. */
-function DocCel({ status }: { status: "ontvangen" | "ontbreekt" | "nvt" }) {
+/** Het bolletje + woord in de kolommen Timesheet / Factuur; ontvangen = met prullenbak. */
+function DocCel({
+  status,
+  verwijder,
+}: {
+  status: "ontvangen" | "ontbreekt" | "nvt";
+  /** Is het ontvangen stuk fout? Dan eruit halen (bevestiging + server-guards). */
+  verwijder?: { stuk: "urenstaat" | "factuur"; placementId: string; week: string; naam: string };
+}) {
   if (status === "nvt") {
     return <span className="text-[13px] text-ink-300">— n.v.t.</span>;
   }
@@ -99,6 +107,26 @@ function DocCel({ status }: { status: "ontvangen" | "ontbreekt" | "nvt" }) {
     <span className="inline-flex items-center gap-1.5 text-[13px] text-ink-600">
       <span className={cn("h-2 w-2 shrink-0 rounded-full", ok ? "bg-emerald-600" : "bg-red-600")} />
       {ok ? "ontvangen" : "ontbreekt"}
+      {ok && verwijder && (
+        // relative z-10: boven de rij-link (RowLink dekt de hele rij af).
+        <span className="relative z-10">
+          <ConfirmSubmit
+            action={verwijderStuk}
+            trigger="icon"
+            variant="ghost"
+            confirmVariant="danger"
+            hidden={{ stuk: verwijder.stuk, placementId: verwijder.placementId, week: verwijder.week }}
+            message={`${verwijder.stuk === "urenstaat" ? "Urenstaat" : "Factuur"} van ${verwijder.naam} verwijderen?`}
+            description={
+              verwijder.stuk === "urenstaat"
+                ? "De urenstaat van deze week verdwijnt; de freelancer kan een nieuwe sturen. Was de week al vastgelegd, dan gaan ook de concept-verkoopfactuur en de inkoopfactuur van deze week terug. Een verstuurde of betaalde factuur blokkeert dit."
+                : "De factuur van deze week verdwijnt; de freelancer kan een nieuwe sturen. Was de week al vastgelegd, dan gaat de week terug naar 'nog verwerken'. Een betaalde factuur blijft altijd staan."
+            }
+          >
+            Verwijderen
+          </ConfirmSubmit>
+        </span>
+      )}
     </span>
   );
 }
@@ -139,6 +167,7 @@ export default async function FacturatiePage({
     overgeslagen?: string;
     gekoppeld?: string;
     verwijderd?: string;
+    weg?: string;
     fout?: string;
     allesklaar?: string;
     tab?: string;
@@ -224,6 +253,11 @@ export default async function FacturatiePage({
       {sp.gekoppeld && (
         <p className="rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
           Het bestand is aan de persoon gekoppeld.
+        </p>
+      )}
+      {(sp.weg === "urenstaat" || sp.weg === "factuur") && (
+        <p className="rounded-sm border border-ink-200 bg-ink-50 px-3 py-2 text-[13px] text-ink-600">
+          De {sp.weg} is verwijderd — de freelancer kan een nieuwe sturen.
         </p>
       )}
       {sp.verwijderd && (
@@ -403,13 +437,17 @@ export default async function FacturatiePage({
                     </Badge>
                   </TD>
                   <TD>
-                    <DocCel status={row.timesheetOntvangen ? "ontvangen" : "ontbreekt"} />
+                    <DocCel
+                      status={row.timesheetOntvangen ? "ontvangen" : "ontbreekt"}
+                      verwijder={row.placementId ? { stuk: "urenstaat", placementId: row.placementId, week: week.key, naam: row.naam } : undefined}
+                    />
                   </TD>
                   <TD>
                     <DocCel
                       status={
                         row.factuurNvt ? "nvt" : row.factuurOntvangen ? "ontvangen" : "ontbreekt"
                       }
+                      verwijder={row.placementId ? { stuk: "factuur", placementId: row.placementId, week: week.key, naam: row.naam } : undefined}
                     />
                   </TD>
                   <TD className="text-right tabular-nums">
