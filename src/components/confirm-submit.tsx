@@ -27,6 +27,7 @@ export function ConfirmSubmit({
   confirmVariant,
   trigger,
   icon,
+  iconClassName,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   /** De vraag/titel in het venster. */
@@ -47,6 +48,8 @@ export function ConfirmSubmit({
   trigger?: "icon" | "button";
   /** Icoon voor de icoon-trigger (default een prullenbak). */
   icon?: React.ReactNode;
+  /** Eigen stijl voor de icoon-trigger (bv. ICOON_KNOP in een knoppengroep). */
+  iconClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -84,7 +87,10 @@ export function ConfirmSubmit({
           onClick={() => setOpen(true)}
           title={label}
           aria-label={label}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+          className={
+            iconClassName ??
+            "inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+          }
         >
           {icon ?? <Trash2 className="h-4 w-4" />}
         </button>

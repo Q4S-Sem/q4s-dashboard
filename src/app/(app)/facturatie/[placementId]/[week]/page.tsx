@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
-  ArrowRight,
   Check,
   ChevronRight,
   Mail,
@@ -13,7 +12,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, ICOON_GROEP, ICOON_KNOP } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
@@ -171,20 +170,19 @@ export default async function DossierPage({
             {row.wachtkamerSinds && <Badge color="amber">Wachtkamer</Badge>}
           </div>
 
-          <div className="ml-auto flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-xs tabular-nums text-ink-400" title="Personen deze week klaar">
+          {/* Zelfde opbouw als de contractbalk: losse iconen in één groep, één groene hoofdknop. */}
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <span className="rounded-sm bg-ink-100 px-2 py-1 text-xs font-semibold tabular-nums text-ink-600" title="Personen deze week klaar">
               {stand.klaar}/{stand.totaal} klaar
             </span>
-            {volgende?.href && (
-              <Link href={volgende.href} className={buttonVariants({ variant: "outline", size: "sm" })} title={`Volgende: ${volgende.naam}`}>
-                Volgende persoon <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            )}
+            <div className={ICOON_GROEP}>
             <Link
               href={`/facturatie/${placementId}/${dossier.week.key}/mail`}
-              className={buttonVariants({ variant: "outline", size: "sm" })}
+              className={ICOON_KNOP}
+              title="Mail aan de freelancer"
+              aria-label="Mail aan de freelancer"
             >
-              <Mail className="h-3.5 w-3.5" /> Mail
+              <Mail />
             </Link>
             {row.inboxId && !row.vastgelegd && (
               <form action={row.wachtkamerSinds ? uitWachtkamer : naarWachtkamer}>
@@ -196,44 +194,47 @@ export default async function DossierPage({
                   name="reden"
                   value={fouten[0]?.title ?? openWaarschuwingen[0]?.title ?? "wacht op een reactie van de freelancer"}
                 />
-                <SubmitButton variant="outline" size="sm" pendingLabel="…">
-                  {row.wachtkamerSinds ? (
-                    <>
-                      <PlayCircle className="h-3.5 w-3.5" /> Uit wachtkamer
-                    </>
-                  ) : (
-                    <>
-                      <PauseCircle className="h-3.5 w-3.5" /> Wachtkamer
-                    </>
-                  )}
-                </SubmitButton>
+                <button
+                  type="submit"
+                  className={cn(ICOON_KNOP, row.wachtkamerSinds && "text-amber-600")}
+                  title={row.wachtkamerSinds ? "Uit de wachtkamer halen" : "In de wachtkamer zetten"}
+                  aria-label={row.wachtkamerSinds ? "Uit wachtkamer" : "Wachtkamer"}
+                >
+                  {row.wachtkamerSinds ? <PlayCircle /> : <PauseCircle />}
+                </button>
               </form>
             )}
             <ConfirmSubmit
               action={verwijderEnOpnieuw}
-              trigger="button"
-              variant="outline"
-              size="sm"
+              trigger="icon"
+              icon={<Trash2 />}
+              iconClassName={cn(ICOON_KNOP, "hover:bg-red-50 hover:text-red-600")}
+              variant="danger"
               confirmVariant="danger"
               confirmLabel="Verwijderen"
               hidden={{ placementId, week: dossier.week.key }}
               message="Deze week verwijderen en opnieuw doen?"
               description="De urenstaat, de concept-verkoopfactuur en de geregistreerde inkoopfactuur van deze week verdwijnen; de uitgelezen scan komt terug op het overzicht. Een al vrijgegeven, verstuurde of betaalde factuur blokkeert dit — die moet gecrediteerd worden."
             >
-              <span className="inline-flex items-center gap-1.5" title="Verwijderen & opnieuw">
-                <Trash2 className="h-3.5 w-3.5" /> Opnieuw
-              </span>
+              Verwijderen &amp; opnieuw
             </ConfirmSubmit>
+            </div>
+            {volgende?.href && (
+              <Link href={volgende.href} className={buttonVariants({ variant: "outline", size: "sm" })} title={`Volgende: ${volgende.naam}`}>
+                Volgende <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
             <form action={akkoordNaarVerkoopfactuur}>
               <input type="hidden" name="placementId" value={placementId} />
               <input type="hidden" name="week" value={dossier.week.key} />
               <SubmitButton
                 size="sm"
+                variant="success"
                 disabled={!magAkkoord}
                 pendingLabel="Vastleggen…"
                 title={dossier.akkoordGeblokkeerd ?? "Urenstaat vastleggen, inkoop goedkeuren en concept-verkoopfactuur maken"}
               >
-                Akkoord → verkoopfactuur <ArrowRight className="h-3.5 w-3.5" />
+                <Check className="h-3.5 w-3.5" /> Akkoord → verkoopfactuur
               </SubmitButton>
             </form>
           </div>
