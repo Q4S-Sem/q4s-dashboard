@@ -221,6 +221,18 @@ function collectPersonDocs(formData: FormData) {
   return docs;
 }
 
+/**
+ * Het vinkje "Werknemer in dienst bij Q4S" op de plaatsing. Alleen een ECHTE
+ * wijziging t.o.v. hoe het formulier opende telt (inDienstStart), zodat een
+ * onbekende begintoestand nooit stil iemand van loondienst naar ZZP zet.
+ */
+async function zetDienstverband(consultantId: string, formData: FormData) {
+  if (!formData.has("inDienstStart")) return;
+  const nu = formData.get("inDienst") === "on";
+  if (nu === (formData.get("inDienstStart") === "1")) return;
+  await db.consultant.update({ where: { id: consultantId }, data: { employmentType: nu ? "LOONDIENST" : "ZZP" } });
+}
+
 export async function createPlacement(
   _prev: FormState,
   formData: FormData,
@@ -242,6 +254,7 @@ export async function createPlacement(
     const created = await db.placement.create({
       data: { consultantId, ...coreToData(core.data) },
     });
+    await zetDienstverband(consultantId, formData);
     await syncPlaatsingStatus({ id: created.id });
     if (draftId) await db.placementDraft.delete({ where: { id: draftId } }).catch(() => {});
     revalidatePath("/plaatsingen");
@@ -323,6 +336,7 @@ export async function createPlacement(
     }
   }
 
+  await zetDienstverband(result.consultantId, formData);
   await syncPlaatsingStatus({ id: result.placementId });
   if (draftId) await db.placementDraft.delete({ where: { id: draftId } }).catch(() => {});
   revalidatePath("/plaatsingen");
@@ -388,6 +402,7 @@ export async function updatePlacement(
     where: { id },
     data: { consultantId: parsed.data.consultantId, ...coreToData(parsed.data) },
   });
+  await zetDienstverband(parsed.data.consultantId, formData);
   await syncPlaatsingStatus({ id });
   if (billId && billId !== parsed.data.consultantId) await syncPlaatsingStatus({ consultantId: billId });
   revalidatePath("/plaatsingen");

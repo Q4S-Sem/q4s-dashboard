@@ -53,7 +53,8 @@ export function ontbrekendVoorActief(
 ): string[] {
   const plaatsing: string[] = [];
   if (!p.heeftKlant) plaatsing.push("Klant");
-  if (!(Number(p.costRate) > 0)) plaatsing.push("Inkooptarief");
+  // Werknemer in dienst: geen inkoopfactuur/inkooptarief (loon loopt via de salarisadministratie).
+  if (c.employmentType !== "LOONDIENST" && !(Number(p.costRate) > 0)) plaatsing.push("Inkooptarief");
   if (!(Number(p.chargeRate) > 0)) plaatsing.push("Verkooptarief");
   return [...plaatsing, ...ontbrekendeGegevens(c)];
 }

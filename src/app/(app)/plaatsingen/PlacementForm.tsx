@@ -948,6 +948,9 @@ export function PlacementForm({
   );
 
   // Mirror the rate inputs into state purely to render a live margin panel.
+  // Werknemer in dienst bij Q4S: wel urenstaat + verkoopfactuur, geen inkoopfactuur/-tarief.
+  const inDienstStart = billing?.["employmentType"] === "LOONDIENST";
+  const [inDienst, setInDienst] = useState(draft?.inDienst !== undefined ? draft.inDienst === "on" : inDienstStart);
   const [costRate, setCostRate] = useState<number>(
     draft?.costRate ? Number(draft.costRate) || 0 : (placement?.costRate ?? 0),
   );
@@ -1646,6 +1649,23 @@ export function PlacementForm({
                 </Field>
               </div>
 
+              <input type="hidden" name="inDienstStart" value={inDienstStart ? "1" : "0"} />
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-ink-200 bg-ink-50/60 px-4 py-3 text-sm">
+                <input
+                  type="checkbox"
+                  name="inDienst"
+                  checked={inDienst}
+                  onChange={(ev) => setInDienst(ev.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
+                />
+                <span>
+                  <span className="block font-semibold text-ink-900">Werknemer in dienst bij Q4S (loondienst)</span>
+                  <span className="block text-xs text-ink-500">
+                    Geen inkoopfactuur en geen inkooptarief nodig. Wel: urenstaat per week en een verkoopfactuur naar de klant.
+                  </span>
+                </span>
+              </label>
+
               {/* Basistarief + marge op één regel. */}
               <div className="rounded-lg border border-ink-200">
                 <div className="grid gap-4 p-3 sm:grid-cols-[9rem_1fr_1fr_11rem] sm:items-end">
@@ -1661,9 +1681,9 @@ export function PlacementForm({
                     </Select>
                   </Field>
                   <Field
-                    label={`Inkoop — wij betalen (per ${eenheid})`}
+                    label={inDienst ? `Kosten (loon + lasten, per ${eenheid}) — optioneel` : `Inkoop — wij betalen (per ${eenheid})`}
                     htmlFor="costRate"
-                    required
+                    required={!inDienst}
                     error={e.costRate}
                   >
                     <Input
@@ -1676,7 +1696,7 @@ export function PlacementForm({
                       onChange={(ev) =>
                         setCostRate(Number(ev.target.value) || 0)
                       }
-                      required
+                      required={!inDienst}
                       className="tabular-nums"
                     />
                   </Field>

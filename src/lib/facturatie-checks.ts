@@ -533,14 +533,18 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
       }.`,
     );
 
-    const tarievenOk = isNum(p.costRate) && p.costRate > 0 && isNum(p.chargeRate) && p.chargeRate > 0;
+    // In dienst (geen ZZP-factuur): alleen het verkooptarief is nodig om te factureren.
+    const inDienst = (input.consultant.employmentType ?? "").toUpperCase() === "LOONDIENST";
+    const tarievenOk = (inDienst || (isNum(p.costRate) && p.costRate > 0)) && isNum(p.chargeRate) && p.chargeRate > 0;
     add(
       "contract",
       "contract-tarieven",
       tarievenOk ? "ok" : "error",
       "Tarieven vastgelegd",
       tarievenOk
-        ? `Inkoop ${formatCurrency(p.costRate)} ${pe}, verkoop ${formatCurrency(p.chargeRate)} ${pe}.`
+        ? inDienst
+          ? `Verkoop ${formatCurrency(p.chargeRate)} ${pe} — in dienst bij Q4S, geen inkoopfactuur.`
+          : `Inkoop ${formatCurrency(p.costRate)} ${pe}, verkoop ${formatCurrency(p.chargeRate)} ${pe}.`
         : `Inkoop- of verkooptarief ontbreekt op de plaatsing (inkoop ${formatCurrency(
             p.costRate ?? 0,
           )}, verkoop ${formatCurrency(p.chargeRate ?? 0)}) — zonder tarieven valt er niets te controleren.`,

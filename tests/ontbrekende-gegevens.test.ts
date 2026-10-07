@@ -44,3 +44,17 @@ test("map Actief (= facturatie): compleet of handmatig geforceerd; contract telt
   assert.equal(inMapActief({ status: "ACTIVE" }, []), true);
   assert.equal(inMapActief({ status: "INCOMPLETE" }, []), false);
 });
+
+test("werknemer in dienst: geen inkooptarief nodig, wel verkooptarief", () => {
+  const inDienst = {
+    employmentType: "LOONDIENST", phone: "06", email: "a@b.nl", address: "Straat 1",
+    postalCode: "1234AB", city: "Rotterdam", dateOfBirth: new Date(1990, 0, 1),
+    nationality: "NL", iban: "NL96INGB0007873625", bsn: "123456789",
+  };
+  assert.deepEqual(ontbrekendVoorActief({ heeftKlant: true, costRate: 0, chargeRate: 95 }, inDienst), []);
+  assert.deepEqual(ontbrekendVoorActief({ heeftKlant: true, costRate: 0, chargeRate: 0 }, inDienst), ["Verkooptarief"]);
+  assert.deepEqual(
+    ontbrekendVoorActief({ heeftKlant: true, costRate: 0, chargeRate: 95 }, { ...inDienst, employmentType: "ZZP", companyName: "X", kvkNumber: "1", vatNumber: "NL1" }),
+    ["Inkooptarief"],
+  );
+});
