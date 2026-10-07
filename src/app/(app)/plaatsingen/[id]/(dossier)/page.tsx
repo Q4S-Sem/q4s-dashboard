@@ -11,6 +11,7 @@ import { BillingForm } from "../../BillingForm";
 import { updatePlacementBilling, zetHandmatigActief } from "../../actions";
 import { getPlacement } from "./data";
 import { ontbrekendVoorActief } from "@/lib/ontbrekende-gegevens";
+import { db } from "@/lib/db";
 
 /** Eén label-waarde-regel in de gegevenskaart. */
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
@@ -44,7 +45,14 @@ export default async function PlaatsingGegevensPage({
   // formulier open via ?edit=billing, opslaan/annuleren brengt je terug.
   const c = placement.consultant;
   const editingBilling = edit === "billing";
-  const ontbreekt = ontbrekendVoorActief({ heeftKlant: Boolean(placement.clientId), ...placement }, c);
+  // Zelfde regel als de lijst (plaatsingen/page.tsx): zonder getekend contract staat er "open".
+  const getekend = await db.contract.count({
+    where: { status: "SIGNED", OR: [{ placementId: placement.id }, { consultantId: placement.consultantId }] },
+  });
+  const ontbreekt = [
+    ...ontbrekendVoorActief({ heeftKlant: Boolean(placement.clientId), ...placement }, c),
+    ...(getekend ? [] : ["Getekend contract"]),
+  ];
   const billingEmpty = !(
     c.companyName || c.kvkNumber || c.vatNumber || c.iban || c.email || c.phone || c.address || c.city
   );
