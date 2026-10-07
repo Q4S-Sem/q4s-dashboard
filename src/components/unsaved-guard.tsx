@@ -115,7 +115,13 @@ export function UnsavedGuard() {
       // "change" van een tekstveld vuurt pas bij het verlaten (klik op Terug) —
       // het typen zelf is al via "input" gezien. Anders wordt een net
       // opgeslagen formulier op het laatste moment weer "gewijzigd".
-      if (e.type === "change" && (el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && !["checkbox", "radio", "file", "date"].includes(el.type)))) return;
+      if (
+        e.type === "change" &&
+        (el instanceof HTMLTextAreaElement ||
+          (el instanceof HTMLInputElement &&
+            !["checkbox", "radio", "file", "date"].includes(el.type)))
+      )
+        return;
       const form = el.closest("form");
       if (guarded(form)) dirty.current.add(form);
     };
@@ -213,8 +219,8 @@ export function UnsavedGuard() {
               Weet je zeker dat je weggaat?
             </h2>
             <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
-              Je laatste wijzigingen zijn nog niet opgeslagen. Sla ze op voordat
-              je weggaat, of ga weg zonder op te slaan.
+              Je laatste wijzigingen zijn nog niet opgeslagen. Klik op Opslaan
+              en weggaan: alles wordt eerst volledig opgeslagen.
             </p>
           </div>
         </div>
@@ -222,22 +228,10 @@ export function UnsavedGuard() {
         <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             onClick={() => setPending(null)}
           >
             Annuleren
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              const naar = pending;
-              dirty.current = new Set();
-              setPending(null);
-              router.push(naar);
-            }}
-          >
-            Niet opslaan
           </Button>
           <Button
             type="button"
