@@ -112,6 +112,10 @@ export function UnsavedGuard() {
     const onEdit = (e: Event) => {
       const el = e.target;
       if (!(el instanceof HTMLElement)) return;
+      // "change" van een tekstveld vuurt pas bij het verlaten (klik op Terug) —
+      // het typen zelf is al via "input" gezien. Anders wordt een net
+      // opgeslagen formulier op het laatste moment weer "gewijzigd".
+      if (e.type === "change" && (el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && !["checkbox", "radio", "file", "date"].includes(el.type)))) return;
       const form = el.closest("form");
       if (guarded(form)) dirty.current.add(form);
     };
