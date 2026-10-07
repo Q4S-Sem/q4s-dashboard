@@ -114,32 +114,41 @@ export function ContractForm({
   const [autoId, setAutoId] = useState(contract?.id ?? "");
   const [bewaardOm, setBewaardOm] = useState<string | null>(null);
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idRef = useRef(contract?.id ?? "");
+  const lopend = useRef<Promise<void>>(Promise.resolve());
   useOpslaanVerzoek(() => autoBewaar(0));
   function autoBewaar(wacht = 500) {
     if (autoTimer.current) clearTimeout(autoTimer.current);
-    autoTimer.current = setTimeout(async () => {
-      if (!formRef.current) return;
-      const fd = new FormData(formRef.current);
-      fd.set("_soort", "overeenkomst");
-      try {
-        const res = await fetch("/api/contracten/concept", {
-          method: "POST",
-          body: fd,
-        });
-        const r = res.ok ? ((await res.json()) as { id: string } | null) : null;
-        if (!r) return;
-        setAutoId(r.id);
-        setBewaardOm(
-          new Date().toLocaleTimeString("nl-NL", {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          }),
-        );
-        meldOpgeslagen();
-      } catch {
-        // offline — volgende wijziging probeert opnieuw
-      }
+    autoTimer.current = setTimeout(() => {
+      // Op volgorde: nooit twee gelijktijdige opslagen (anders twee contracten).
+      lopend.current = lopend.current.then(async () => {
+        if (!formRef.current) return;
+        const fd = new FormData(formRef.current);
+        fd.set("_soort", "overeenkomst");
+        if (idRef.current) fd.set("id", idRef.current);
+        try {
+          const res = await fetch("/api/contracten/concept", {
+            method: "POST",
+            body: fd,
+          });
+          const r = res.ok
+            ? ((await res.json()) as { id: string } | null)
+            : null;
+          if (!r) return;
+          idRef.current = r.id;
+          setAutoId(r.id);
+          setBewaardOm(
+            new Date().toLocaleTimeString("nl-NL", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            }),
+          );
+          meldOpgeslagen();
+        } catch {
+          // offline — volgende wijziging probeert opnieuw
+        }
+      });
     }, wacht);
   }
   const lees = () =>

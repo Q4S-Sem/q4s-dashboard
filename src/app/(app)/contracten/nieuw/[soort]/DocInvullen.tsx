@@ -209,27 +209,38 @@ export function DocInvullen({
   };
 
   // Automatisch bewaren, een halve seconde na het typen (als concept).
-  async function bewaarNu() {
-    const fd = new FormData();
-    fd.set("_soort", soort);
-    fd.set("_waarden", JSON.stringify(w));
-    if (docId) fd.set("_id", docId);
-    try {
-      const res = await fetch("/api/contracten/concept", { method: "POST", body: fd });
-      const r = res.ok ? ((await res.json()) as { id: string } | null) : null;
-      if (!r) return;
-      if (!docId) {
-        setDocId(r.id);
-        // In de adresbalk: na een herlaad open je ditzelfde document weer.
-        window.history.replaceState(null, "", `${pathname}?taal=${taal}&doc=${r.id}`);
+  // Eén opslag tegelijk, op volgorde: anders maken twee gelijktijdige
+  // opslagen (automatisch + "Opslaan en weggaan") twee documenten aan.
+  const docIdRef = useRef(docId);
+  const lopend = useRef<Promise<void>>(Promise.resolve());
+  function bewaarNu() {
+    lopend.current = lopend.current.then(async () => {
+      const fd = new FormData();
+      fd.set("_soort", soort);
+      fd.set("_waarden", JSON.stringify(wRef.current));
+      if (docIdRef.current) fd.set("_id", docIdRef.current);
+      try {
+        const res = await fetch("/api/contracten/concept", { method: "POST", body: fd });
+        const r = res.ok ? ((await res.json()) as { id: string } | null) : null;
+        if (!r) return;
+        if (!docIdRef.current) {
+          docIdRef.current = r.id;
+          setDocId(r.id);
+          // In de adresbalk (alleen als we nog op deze pagina zijn): na een herlaad open je ditzelfde document.
+          if (window.location.pathname === pathname) window.history.replaceState(null, "", `${pathname}?taal=${taal}&doc=${r.id}`);
+        }
+        setBewaardOm(new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+        meldOpgeslagen();
+      } catch {
+        // offline — volgende wijziging probeert opnieuw
       }
-      setBewaardOm(new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
-      meldOpgeslagen();
-    } catch {
-      // offline — volgende wijziging probeert opnieuw
-    }
+    });
   }
-  useOpslaanVerzoek(() => void bewaarNu());
+  const wRef = useRef(w);
+  useEffect(() => {
+    wRef.current = w;
+  });
+  useOpslaanVerzoek(bewaarNu);
   useEffect(() => {
     if (!aangeraakt.current || soort === "persoonsgegevens") return;
     const t = setTimeout(bewaarNu, 500);

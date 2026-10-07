@@ -897,29 +897,33 @@ export function PlacementForm({
   const [autoBewaard, setAutoBewaard] = useState<Date | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const conceptRef = useRef(conceptId);
+  const lopend = useRef<Promise<void>>(Promise.resolve());
   useOpslaanVerzoek(() => autoOpslaan(0));
   function autoOpslaan(wacht = 500) {
     if (placement || !formRef.current) return;
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(async () => {
-      const fd = new FormData(formRef.current!);
-      for (const [k, v] of [...fd.entries()])
-        if (typeof v !== "string") fd.delete(k);
-      if (conceptRef.current) fd.set("draftId", conceptRef.current);
-      try {
-        const res = await fetch("/api/plaatsingen/concept", {
-          method: "POST",
-          body: fd,
-        });
-        if (!res.ok) return;
-        const { id } = (await res.json()) as { id: string };
-        conceptRef.current = id;
-        setConceptId(id);
-        setAutoBewaard(new Date());
-        meldOpgeslagen();
-      } catch {
-        // offline e.d. — volgende wijziging probeert opnieuw
-      }
+    timer.current = setTimeout(() => {
+      // Op volgorde: nooit twee gelijktijdige opslagen (anders twee concepten).
+      lopend.current = lopend.current.then(async () => {
+        const fd = new FormData(formRef.current!);
+        for (const [k, v] of [...fd.entries()])
+          if (typeof v !== "string") fd.delete(k);
+        if (conceptRef.current) fd.set("draftId", conceptRef.current);
+        try {
+          const res = await fetch("/api/plaatsingen/concept", {
+            method: "POST",
+            body: fd,
+          });
+          if (!res.ok) return;
+          const { id } = (await res.json()) as { id: string };
+          conceptRef.current = id;
+          setConceptId(id);
+          setAutoBewaard(new Date());
+          meldOpgeslagen();
+        } catch {
+          // offline e.d. — volgende wijziging probeert opnieuw
+        }
+      });
     }, wacht);
   }
   const e = state.fieldErrors ?? {};
