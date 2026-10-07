@@ -31,65 +31,57 @@ async function loadAssets() {
   return assets;
 }
 
-// Lichte huisstijl: off-white canvas, witte kaarten, off-black accentblok.
-const PAGE = "#ffffff";
-const CARD = "#ffffff";
-const INK = "#17181a";
-const INK_SOFT = "#5c5c62";
-const FAINT = "#8a8a90";
-const BORDER = "#e4e4e0";
-const BLOCK = "#17181a"; // off-black accentblok (Q4S), i.p.v. groen
-const HAIR_W = "rgba(255,255,255,0.10)";
+// Q4S-huisstijl (q4s.nl): zwart/wit met het oranje accent #E8430A, Inter.
+// Opbouw zoals de kWh-carrousel: lichte infokaart + chips bovenaan, donker
+// blok met citaat eronder, oranje geometrie rechtsonder, logo linksonder.
+const ORANJE = "#E8430A";
+const INK = "#0b0b0c";
+const INK_SOFT = "#55555b";
+const LICHT = "#f2f2f0";
+const ZWART_VERLOOP = "linear-gradient(135deg, #1c1c1e 0%, #0b0b0c 55%, #000000 100%)";
 
-/** Subtiel blueprint-motief per vakgebied, als lichtgrijze line-art SVG.
- *  Wordt groot en flauw rechtsonder in het witte contentblok gezet — een
- *  vaste, betrouwbare grafische achtergrond die past bij de functie. */
-function disciplineMotif(discipline: string): string {
-  const d = discipline.toLowerCase();
-  const S = "#e9e9e4"; // lichtgrijze lijnkleur
-  let inner = "";
-  if (/(las|weld|fitter|ndo|ndt)/.test(d)) {
-    // Lasnaad / bevel — zigzag naad tussen twee platen
-    inner = `
-      <path d="M40 300 L200 300 L240 210 L280 300 L320 210 L360 300 L400 210 L440 300 L560 300" fill="none" stroke="${S}" stroke-width="6"/>
-      <line x1="40" y1="330" x2="560" y2="330" stroke="${S}" stroke-width="6"/>
-      <line x1="40" y1="180" x2="560" y2="180" stroke="${S}" stroke-width="6"/>`;
-  } else if (/(civil|engineer|werkvoorber|fabri)/.test(d)) {
-    // Constructie / vakwerkligger
-    inner = `
-      <line x1="40" y1="120" x2="560" y2="120" stroke="${S}" stroke-width="6"/>
-      <line x1="40" y1="380" x2="560" y2="380" stroke="${S}" stroke-width="6"/>
-      <path d="M40 380 L140 120 L240 380 L340 120 L440 380 L540 120" fill="none" stroke="${S}" stroke-width="6"/>`;
-  } else if (/(qa|qc|hseq|kwaliteit|safety|veilig)/.test(d)) {
-    // Schild met vinkje
-    inner = `
-      <path d="M300 90 L470 150 V300 C470 380 390 430 300 460 C210 430 130 380 130 300 V150 Z" fill="none" stroke="${S}" stroke-width="6"/>
-      <path d="M230 280 L290 340 L390 210" fill="none" stroke="${S}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>`;
-  } else if (/(e\/i|e_i|elektro|instrument)/.test(d)) {
-    // Circuit-lijnen met knooppunten
-    inner = `
-      <path d="M40 260 H180 M260 260 H420 M500 260 H560" fill="none" stroke="${S}" stroke-width="6"/>
-      <rect x="180" y="230" width="80" height="60" fill="none" stroke="${S}" stroke-width="6"/>
-      <rect x="420" y="230" width="80" height="60" fill="none" stroke="${S}" stroke-width="6"/>
-      <circle cx="120" cy="260" r="14" fill="none" stroke="${S}" stroke-width="6"/>
-      <circle cx="540" cy="260" r="14" fill="none" stroke="${S}" stroke-width="6"/>`;
-  } else if (/(project|commission|controls|management)/.test(d)) {
-    // Flow / knooppunten
-    inner = `
-      <circle cx="120" cy="250" r="34" fill="none" stroke="${S}" stroke-width="6"/>
-      <circle cx="320" cy="150" r="34" fill="none" stroke="${S}" stroke-width="6"/>
-      <circle cx="320" cy="350" r="34" fill="none" stroke="${S}" stroke-width="6"/>
-      <circle cx="520" cy="250" r="34" fill="none" stroke="${S}" stroke-width="6"/>
-      <path d="M150 235 L292 165 M150 265 L292 335 M348 165 L490 235 M348 335 L490 265" fill="none" stroke="${S}" stroke-width="6"/>`;
-  } else {
-    // Standaard: concentrische ringen
-    inner = `
-      <circle cx="300" cy="260" r="220" fill="none" stroke="${S}" stroke-width="6"/>
-      <circle cx="300" cy="260" r="150" fill="none" stroke="${S}" stroke-width="6"/>
-      <circle cx="300" cy="260" r="80" fill="none" stroke="${S}" stroke-width="6"/>`;
-  }
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="500" viewBox="0 0 600 500">${inner}</svg>`;
-  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+const svgUri = (svg: string) => `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+
+/** Locatie-pin in Q4S-oranje. */
+const PIN = svgUri(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="${ORANJE}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+);
+
+/** Oranje geometrie rechtsonder (zoals de kWh-vormen, maar hoekig als het Q4S-logo). */
+function Vormen({ grootte = 1, w = CARD_W, h = CARD_H }: { grootte?: number; w?: number; h?: number }) {
+  const g = (n: number) => Math.round(n * grootte);
+  // Satori negeert right/bottom bij absolute posities → alles via left/top.
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          left: w - g(560) + g(150),
+          top: h - g(560) + g(170),
+          width: g(560),
+          height: g(560),
+          borderRadius: g(70),
+          transform: "rotate(28deg)",
+          backgroundImage: `linear-gradient(135deg, rgba(232,67,10,0.95) 0%, rgba(232,67,10,0.35) 70%, rgba(232,67,10,0.05) 100%)`,
+          display: "flex",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: w - g(230) - g(170),
+          top: h - g(230) - g(230),
+          width: g(230),
+          height: g(230),
+          borderRadius: g(40),
+          transform: "rotate(28deg)",
+          backgroundImage: "linear-gradient(135deg, #3a3a40 0%, #1c1c1e 100%)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          display: "flex",
+        }}
+      />
+    </>
+  );
 }
 
 const FONT_SPEC = [
@@ -98,18 +90,19 @@ const FONT_SPEC = [
   { name: "Inter", weight: 700 as const, style: "normal" as const },
 ];
 
-/** Rendert de CARROUSEL-COVER (1080x1080): groot aantal in een cirkel +
- *  "nieuwe opdrachten", logo linksonder. Zelfde formaat als de referentie,
- *  maar in Q4S-huisstijl (off-black i.p.v. groen). */
+function fonts(a: { interReg: Buffer; interSemi: Buffer; interBold: Buffer }) {
+  return FONT_SPEC.map((f) => ({ ...f, data: f.weight === 400 ? a.interReg : f.weight === 600 ? a.interSemi : a.interBold }));
+}
+
+/** CARROUSEL-COVER (1080x1350): oranje cirkel met aantal + "nieuwe opdrachten". */
 export async function renderLinkedInCover(searchParams: URLSearchParams): Promise<ImageResponse> {
-  const { logoWhite, interReg, interSemi, interBold } = await loadAssets();
+  const a = await loadAssets();
   const count = (searchParams.get("count") || "3").trim();
-  const kicker = (searchParams.get("kicker") || "Nieuwe opdrachten in de wereld van staalbouw").trim();
+  const kicker = (searchParams.get("kicker") || "Nieuwe opdrachten in staalbouw & QA/QC").trim();
   const line1 = (searchParams.get("line1") || "nieuwe").trim();
   const line2 = (searchParams.get("line2") || "opdrachten").trim();
   const pages = (searchParams.get("pages") || "").trim();
-
-  const numSize = count.length >= 3 ? 150 : count.length === 2 ? 200 : 250;
+  const numSize = count.length >= 3 ? 110 : count.length === 2 ? 140 : 170;
 
   return new ImageResponse(
     (
@@ -119,278 +112,144 @@ export async function renderLinkedInCover(searchParams: URLSearchParams): Promis
           height: CARD_H,
           display: "flex",
           flexDirection: "column",
-          backgroundColor: BLOCK,
-          backgroundImage: "linear-gradient(135deg, #26272b 0%, #17181a 55%, #0c0c0e 100%)",
+          backgroundImage: ZWART_VERLOOP,
           color: "#fff",
           fontFamily: "Inter",
-          padding: "70px 76px",
+          padding: "96px 92px 90px",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Blueprint/staal-geometrie rechtsonder */}
-        <div style={{ position: "absolute", right: -220, bottom: -280, width: 760, height: 760, borderRadius: 9999, border: `1px solid ${HAIR_W}`, display: "flex" }} />
-        <div style={{ position: "absolute", right: -120, bottom: -180, width: 520, height: 520, borderRadius: 9999, border: "1px solid rgba(255,255,255,0.06)", display: "flex" }} />
-        <div style={{ position: "absolute", right: 90, bottom: 120, width: 210, height: 210, borderRadius: 40, background: "linear-gradient(135deg,#3a3a42,#17181a)", transform: "rotate(22deg)", display: "flex" }} />
-
-        {/* Kicker-balk bovenaan */}
+        <Vormen />
         <div style={{ display: "flex", alignItems: "center", zIndex: 2 }}>
-          <div style={{ display: "flex", width: 4, height: 30, backgroundColor: "#fff", borderRadius: 2, marginRight: 18 }} />
-          <div style={{ display: "flex", fontSize: 24, fontWeight: 600, color: "#d7d7dc" }}>
+          <div style={{ display: "flex", width: 48, height: 6, backgroundColor: ORANJE, marginRight: 20 }} />
+          <div style={{ display: "flex", fontSize: 26, fontWeight: 600, color: "rgba(255,255,255,0.75)", letterSpacing: 1 }}>
             {kicker}
-            {pages ? <span style={{ color: "rgba(255,255,255,0.4)", marginLeft: 14 }}>{`• ${pages}`}</span> : null}
+            {pages ? <span style={{ color: "rgba(255,255,255,0.4)", marginLeft: 14 }}>{`· ${pages}`}</span> : null}
           </div>
         </div>
 
-        {/* Midden: nummer-cirkel + kop */}
-        <div style={{ display: "flex", alignItems: "center", flex: 1, zIndex: 2 }}>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", alignItems: "flex-start" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 300,
-                  height: 300,
-                  borderRadius: 9999,
-                  backgroundColor: "#fff",
-                  color: BLOCK,
-                  fontSize: numSize,
-                  fontWeight: 700,
-                  letterSpacing: -6,
-                  flexShrink: 0,
-                }}
-              >
-                {count}
-              </div>
-              <div style={{ display: "flex", fontSize: 118, fontWeight: 700, letterSpacing: -3, color: "#fff", marginLeft: 34, marginTop: 78 }}>
-                {line1}
-              </div>
+        <div style={{ display: "flex", flexDirection: "column", marginTop: 90, zIndex: 2 }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 230,
+                height: 230,
+                borderRadius: 9999,
+                backgroundColor: ORANJE,
+                color: "#fff",
+                fontSize: numSize,
+                fontWeight: 700,
+                letterSpacing: -4,
+                flexShrink: 0,
+              }}
+            >
+              {count}
             </div>
-            <div style={{ display: "flex", fontSize: 118, fontWeight: 700, letterSpacing: -3, color: "#fff", marginTop: -6 }}>
-              {line2}
-            </div>
+            <div style={{ display: "flex", fontSize: 150, fontWeight: 700, letterSpacing: -5, marginLeft: 46 }}>{line1}</div>
           </div>
+          <div style={{ display: "flex", fontSize: 150, fontWeight: 700, letterSpacing: -5, marginTop: 4 }}>{line2}</div>
         </div>
 
-        {/* Logo linksonder */}
-        <div style={{ display: "flex", zIndex: 2 }}>
-          <img src={logoWhite} height={64} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
+        <div style={{ display: "flex", marginTop: "auto", zIndex: 2 }}>
+          <img src={a.logoWhite} height={92} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
         </div>
       </div>
     ),
-    {
-      width: CARD_W,
-      height: CARD_H,
-      fonts: FONT_SPEC.map((f) => ({
-        ...f,
-        data: f.weight === 400 ? interReg : f.weight === 600 ? interSemi : interBold,
-      })),
-    },
+    { width: CARD_W, height: CARD_H, fonts: fonts(a) },
   );
 }
 
-/** Rendert de LinkedIn-vacaturekaart (1080x1080) uit URL-query params.
- *  Lichte Q4S-stijl: witte infokaart + chips + off-black citaatblok.
- *  Gedeeld door de CRM- en website-routes zodat het beeld overal identiek is. */
+/** VACATUREKAART (1080x1350): infokaart + chips, zwart citaatblok, logo. Gedeeld door CRM en website. */
 export async function renderLinkedInCard(searchParams: URLSearchParams): Promise<ImageResponse> {
   const c = cardFromParams(searchParams);
-  const { logoBlack, logoWhite, interReg, interSemi, interBold } = await loadAssets();
+  const a = await loadAssets();
 
-  const titleSize = c.title.length > 40 ? 46 : c.title.length > 30 ? 54 : c.title.length > 20 ? 62 : 70;
+  const titleSize = c.title.length > 34 ? 54 : c.title.length > 24 ? 62 : 72;
   const chips = [
-    { label: "Locatie", value: c.location },
     { label: "Uren", value: c.hours },
     { label: "Duur", value: c.duration },
+    { label: "Vakgebied", value: c.discipline },
   ].filter((x) => x.value);
-
-  // Adaptieve maatvoering: bij veel inhoud (lange pitch + 4 punten) alles wat
-  // compacter, zodat de tekst nooit over elkaar valt binnen het vaste vierkant.
-  const nPts = c.points.length;
-  // Intro hard afkappen zodat een extreem lange pitch het blok niet laat overlopen.
-  const introCap = nPts >= 4 ? 175 : 240;
-  const intro =
-    c.intro.length > introCap ? c.intro.slice(0, introCap - 1).trimEnd() + "\u2026" : c.intro;
-  const introLen = intro.length;
-  // "Druk" = hoeveel verticale ruimte de inhoud vraagt.
-  const dense = nPts >= 4 || introLen > 150;
-  const veryDense = nPts >= 4 && introLen > 150;
-  const introSize = veryDense ? 25 : dense ? 28 : 32;
-  const introLh = veryDense ? 1.36 : 1.42;
-  const pointSize = veryDense ? 22 : dense ? 24 : 25;
-  const pointGap = veryDense ? 14 : dense ? 16 : 18;
-  const pointNum = veryDense ? 38 : 42;
-  const introToPoints = veryDense ? 30 : dense ? 38 : 44;
-  const quoteSize = dense ? 96 : 120;
+  // Citaat = de pitch; zonder pitch de eerste punten als lopende tekst.
+  const ruw = c.intro || c.points.slice(0, 3).join(". ");
+  const citaat = ruw.length > 300 ? ruw.slice(0, 299).trimEnd() + "\u2026" : ruw;
+  const citaatSize = citaat.length > 260 ? 34 : citaat.length > 180 ? 38 : 44;
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: CARD_W,
-          height: CARD_H,
-          display: "flex",
-          flexDirection: "column",
-          backgroundColor: PAGE,
-          fontFamily: "Inter",
-          padding: "48px 48px 0",
-        }}
-      >
-        {/* --- Witte infokaart --- */}
+      <div style={{ width: CARD_W, height: CARD_H, display: "flex", flexDirection: "column", backgroundColor: "#fff", fontFamily: "Inter", position: "relative" }}>
+        {/* Donker blok (onderste ~60%) met oranje vormen */}
         <div
           style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            top: 470,
             display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            backgroundColor: CARD,
-            border: `1px solid ${BORDER}`,
-            borderRadius: 26,
-            padding: "44px 48px",
-            boxShadow: "0 20px 50px -34px rgba(0,0,0,0.35)",
+            backgroundImage: ZWART_VERLOOP,
+            overflow: "hidden",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", flex: 1, paddingRight: 24 }}>
-            <div style={{ display: "flex", fontSize: 20, fontWeight: 700, letterSpacing: 4, color: FAINT, textTransform: "uppercase" }}>
-              {c.discipline}
-            </div>
-            <div style={{ display: "flex", fontSize: titleSize, fontWeight: 700, lineHeight: 1.04, letterSpacing: -1.5, color: INK, marginTop: 14 }}>
-              {c.title}
-            </div>
-            {c.badge ? (
-              <div style={{ display: "flex", marginTop: 18 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    backgroundColor: INK,
-                    color: "#fff",
-                    fontSize: 17,
-                    fontWeight: 700,
-                    letterSpacing: 3,
-                    padding: "9px 18px",
-                    borderRadius: 100,
-                  }}
-                >
-                  {c.badge}
-                </div>
-              </div>
-            ) : null}
-          </div>
-          <img src={logoBlack} height={58} alt="Q4S Project Partners" style={{ objectFit: "contain", flexShrink: 0 }} />
+          <Vormen grootte={0.55} h={CARD_H - 470} />
         </div>
 
-        {/* --- Chips (overlappen licht de bovenrand van het accentblok) --- */}
-        {chips.length > 0 ? (
-          <div style={{ display: "flex", gap: 20, marginTop: 24, marginBottom: -22, zIndex: 5 }}>
-            {chips.map((chip, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  flex: 1,
-                  backgroundColor: CARD,
-                  border: `1px solid ${BORDER}`,
-                  borderRadius: 18,
-                  padding: "20px 26px 26px",
-                  boxShadow: "0 16px 40px -30px rgba(0,0,0,0.35)",
-                }}
-              >
-                <div style={{ display: "flex", fontSize: 19, fontWeight: 700, color: INK, letterSpacing: 0.5 }}>{chip.label}</div>
-                <div style={{ display: "flex", fontSize: 22, color: INK_SOFT, marginTop: 6, fontWeight: 500 }}>{chip.value}</div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-
-        {/* --- Wit contentblok (pitch + punten) --- */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            flex: 1,
-            backgroundColor: CARD,
-            border: `1px solid ${BORDER}`,
-            borderRadius: 26,
-            marginTop: chips.length > 0 ? 0 : 24,
-            marginBottom: 48,
-            padding: chips.length > 0 ? "60px 64px 52px" : "60px 64px 52px",
-            position: "relative",
-            overflow: "hidden",
-            boxShadow: "0 20px 50px -34px rgba(0,0,0,0.30)",
-          }}
-        >
-          {/* Subtiel blueprint-motief per vakgebied, flauw rechtsonder */}
-          <img
-            src={disciplineMotif(c.discipline)}
-            width={600}
-            height={500}
-            alt=""
-            style={{ position: "absolute", right: -40, bottom: -50, opacity: 0.85, display: "flex" }}
-          />
-
-          {/* Groot aanhalingsteken */}
-          <div style={{ display: "flex", flexShrink: 0, fontSize: quoteSize, lineHeight: 0.8, fontWeight: 700, color: "#dcdcd6", fontFamily: "Inter", zIndex: 2 }}>
-            &#8220;
-          </div>
-
-          {/* Intro / pitch */}
-          {intro ? (
-            <div style={{ display: "flex", flexShrink: 0, fontSize: introSize, lineHeight: introLh, color: INK, fontWeight: 500, marginTop: 14, maxWidth: 880, zIndex: 2 }}>
-              {intro}
+        {/* Infokaart */}
+        <div style={{ display: "flex", flexDirection: "column", padding: "72px 84px 0", zIndex: 2 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: LICHT, borderRadius: 22, padding: "44px 48px" }}>
+            <div style={{ display: "flex", flexDirection: "column", flex: 1, paddingRight: 30 }}>
+              {c.badge ? (
+                <div style={{ display: "flex", fontSize: 20, fontWeight: 700, letterSpacing: 3, color: ORANJE, textTransform: "uppercase" }}>{c.badge}</div>
+              ) : null}
+              <div style={{ display: "flex", fontSize: titleSize, fontWeight: 700, lineHeight: 1.05, letterSpacing: -1.5, color: INK, marginTop: 12 }}>{c.title}</div>
+              {c.location ? (
+                <div style={{ display: "flex", alignItems: "center", marginTop: 22, fontSize: 28, color: INK_SOFT, fontWeight: 500 }}>
+                  <img src={PIN} width={32} height={32} alt="" style={{ marginRight: 14 }} />
+                  {c.location}
+                </div>
+              ) : null}
             </div>
-          ) : null}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff", borderRadius: 18, width: 250, height: 170, flexShrink: 0 }}>
+              <img src={a.logoBlack} height={118} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
+            </div>
+          </div>
 
-          {/* Punten */}
-          {c.points.length > 0 ? (
-            <div style={{ display: "flex", flexShrink: 0, flexDirection: "column", marginTop: intro ? introToPoints : 8, gap: pointGap, zIndex: 2 }}>
-              {c.points.map((p, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: pointNum,
-                      height: pointNum,
-                      borderRadius: 9999,
-                      backgroundColor: INK,
-                      color: "#fff",
-                      fontSize: pointNum === 42 ? 21 : 19,
-                      fontWeight: 700,
-                      marginRight: 22,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {i + 1}
-                  </div>
-                  <div style={{ display: "flex", fontSize: pointSize, fontWeight: 600, color: INK, maxWidth: 820 }}>{p}</div>
+          {chips.length > 0 ? (
+            <div style={{ display: "flex", gap: 22, marginTop: 22 }}>
+              {chips.map((chip, i) => (
+                <div
+                  key={i}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, backgroundColor: LICHT, borderRadius: 18, padding: "26px 18px" }}
+                >
+                  <div style={{ display: "flex", fontSize: 24, fontWeight: 700, color: INK }}>{chip.label}</div>
+                  <div style={{ display: "flex", fontSize: 24, color: INK_SOFT, marginTop: 6, textAlign: "center" }}>{chip.value}</div>
                 </div>
               ))}
             </div>
           ) : null}
+        </div>
 
-          {/* Footer: logo + CTA */}
-          <div style={{ display: "flex", flexShrink: 0, alignItems: "flex-end", justifyContent: "space-between", marginTop: "auto", paddingTop: 36, borderTop: `1px solid ${BORDER}`, zIndex: 2 }}>
-            <img src={logoBlack} height={54} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
-            {c.cta ? (
-              <div style={{ display: "flex", alignItems: "center", fontSize: 22, fontWeight: 600, color: INK_SOFT, maxWidth: 520, textAlign: "right" }}>
-                {c.cta}
-                <span style={{ marginLeft: 10 }}>&#8594;</span>
-              </div>
-            ) : null}
-          </div>
+        {/* Citaat */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, padding: "56px 110px 0", zIndex: 2 }}>
+          <div style={{ display: "flex", fontSize: 150, lineHeight: 0.9, fontWeight: 700, color: ORANJE, height: 100 }}>&#8221;</div>
+          <div style={{ display: "flex", fontSize: citaatSize, lineHeight: 1.38, color: "#fff", textAlign: "center", fontWeight: 400, marginTop: 16 }}>{citaat}</div>
+          {c.cta ? (
+            <div style={{ display: "flex", fontSize: 24, fontWeight: 600, color: ORANJE, marginTop: 34, textAlign: "center" }}>
+              {c.cta} &#8594;
+            </div>
+          ) : null}
+        </div>
+
+        {/* Logo linksonder */}
+        <div style={{ display: "flex", padding: "0 84px 76px" }}>
+          <img src={a.logoWhite} height={86} alt="Q4S Project Partners" style={{ objectFit: "contain" }} />
         </div>
       </div>
     ),
-    {
-      width: CARD_W,
-      height: CARD_H,
-      fonts: [
-        { name: "Inter", data: interReg, weight: 400, style: "normal" },
-        { name: "Inter", data: interSemi, weight: 600, style: "normal" },
-        { name: "Inter", data: interBold, weight: 700, style: "normal" },
-      ],
-    },
+    { width: CARD_W, height: CARD_H, fonts: fonts(a) },
   );
 }

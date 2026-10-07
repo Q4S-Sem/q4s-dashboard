@@ -34,7 +34,7 @@ export default async function LinkedInImagePage({ params }: { params: Promise<{ 
       <BackLink href={`/crm/vacatures/${deal.id}`}>Terug naar vacature</BackLink>
       <PageHeader
         title="LinkedIn-afbeelding"
-        description="Automatisch gevuld vanuit de vacature, in de vaste Q4S-huisstijl en het LinkedIn-formaat (1080×1080). Pas de tekst aan en download de afbeelding."
+        description="Automatisch gevuld vanuit de vacature, in de vaste Q4S-huisstijl en het LinkedIn-formaat (1080×1350). Pas de tekst aan en download de afbeelding."
       />
       <LinkedInEditor dealId={deal.id} initial={defaults} ogBase={`/crm/vacatures/${deal.id}/linkedin/og`} />
     </div>

@@ -16,12 +16,12 @@ export type LinkedInCardData = {
 };
 
 /** Standaard oproep-regel onderaan de kaart (door de gebruiker aanpasbaar). */
-export const DEFAULT_CTA = "Interesse of ken je iemand? Reageer via Q4S Project Partners";
+export const DEFAULT_CTA = "Interesse of ken je iemand? Reageer of mail cv@q4s.nl";
 export const DEFAULT_BADGE = "NIEUWE OPDRACHT";
 
-/** Vaste afmeting: LinkedIn feed-vierkant. */
+/** Vaste afmeting: LinkedIn staand 4:5 (meeste ruimte in de feed). */
 export const CARD_W = 1080;
-export const CARD_H = 1080;
+export const CARD_H = 1350;
 
 function fmtDateNL(d: Date | null | undefined): string {
   if (!d) return "";
@@ -73,18 +73,36 @@ export function cardDefaultsFromVacancy(v: {
 }): LinkedInCardData {
   const disc = v.discipline ? labelFor(DISCIPLINES, v.discipline) : "Opdracht";
   const points = splitPoints(v.responsibilities).slice(0, 4);
-  const intro = (v.summary || "").trim();
+  const summary = (v.summary || "").trim();
+  // Duur uit de tekst ("12+ maanden", "6 maanden"); anders de vergoeding.
+  const duur = /(\d+\s*\+?\s*(?:maanden|maand|weken|jaar))/i.exec(summary)?.[1];
   return {
     discipline: disc,
     title: v.title,
     location: v.location || "",
     hours: v.employmentType || "",
-    duration: v.salary || "",
-    intro: intro.length > 220 ? intro.slice(0, 217).trimEnd() + "…" : intro,
+    duration: duur || v.salary || "",
+    intro: pitch(summary),
     points,
     cta: DEFAULT_CTA,
     badge: DEFAULT_BADGE,
   };
+}
+
+/**
+ * Citaat voor de kaart: de "jij"-zinnen uit de samenvatting (die verkopen de rol),
+ * anders de eerste zinnen — max ~300 tekens, op een zinsgrens.
+ */
+export function pitch(summary: string): string {
+  const zinnen = summary.replace(/\s+/g, " ").match(/[^.!?]+[.!?]+/g)?.map((z) => z.trim()) ?? (summary ? [summary] : []);
+  const jij = zinnen.filter((z) => /\b(jij|je)\b/i.test(z) && !/\?$/.test(z));
+  const bron = jij.length ? jij : zinnen.filter((z) => !/\?$/.test(z));
+  let uit = "";
+  for (const z of bron) {
+    if ((uit + " " + z).trim().length > 300) break;
+    uit = (uit + " " + z).trim();
+  }
+  return uit || (bron[0] ?? "").slice(0, 297).trimEnd();
 }
 
 /** Zet de kaart-data om in URL-query params voor de OG-route. */
