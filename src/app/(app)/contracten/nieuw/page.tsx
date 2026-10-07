@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { TabelZoek } from "@/components/ui/tabel-zoek";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { verwijderDoc } from "../actions";
-import { Trash2, FilePen, CheckCircle2 } from "lucide-react";
+import { Trash2, Hourglass, CheckCircle2 } from "lucide-react";
 import { mapTabVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Nieuw contract" };
@@ -97,7 +97,8 @@ export default async function NieuwContractPage({
   ].sort((x, y) => y.datum.getTime() - x.datum.getTime());
   const concepten = rijen.filter((r) => !r.klaar);
   const klaar = rijen.filter((r) => r.klaar);
-  const map = sp.map === "klaar" ? "klaar" : "concepten";
+  // Zonder keuze: Klaar, tenzij daar niets in staat en er wel concepten zijn.
+  const map = sp.map === "klaar" || sp.map === "concepten" ? sp.map : klaar.length === 0 && concepten.length > 0 ? "concepten" : "klaar";
   const zichtbaar = map === "klaar" ? klaar : concepten;
 
   return (
@@ -130,8 +131,8 @@ export default async function NieuwContractPage({
           <nav aria-label="Opgestelde documenten" className="flex items-end gap-1">
             {(
               [
-                ["concepten", "Concepten", concepten.length, <FilePen key="c" className="h-4 w-4" />],
                 ["klaar", "Klaar", klaar.length, <CheckCircle2 key="k" className="h-4 w-4" />],
+                ["concepten", "Concepten", concepten.length, <Hourglass key="c" className="h-4 w-4" />],
               ] as const
             ).map(([key, label, n, icon]) => (
               <Link
@@ -140,9 +141,16 @@ export default async function NieuwContractPage({
                 aria-current={map === key ? "true" : undefined}
                 className={mapTabVariants(map === key)}
               >
-                <span className={map === key ? "text-brand-600" : "text-ink-400"}>{icon}</span>
+                {/* Zelfde kleuren als Plaatsingen: groen = klaar, oranje = nog bezig. */}
+                <span className={key === "klaar" ? "text-emerald-600" : "text-orange-500"}>{icon}</span>
                 {label}
-                <span className="rounded-sm bg-ink-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-ink-500">{n}</span>
+                <span
+                  className={`rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${
+                    key === "klaar" ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-800"
+                  }`}
+                >
+                  {n}
+                </span>
               </Link>
             ))}
           </nav>
