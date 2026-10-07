@@ -24,6 +24,8 @@ import {
   UserRound,
   Coins,
   Sparkles,
+  Save,
+  Check,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input, Select, Textarea, Label } from "@/components/ui/field";
@@ -1049,19 +1051,21 @@ export function PlacementForm({
             })}
           </span>
         )}
-        <ConfirmCancel href={cancelHref} size="sm" />
+        <ConfirmCancel href={cancelHref} size="sm" variant="ghost" />
         {!placement && (
           <button
             type="submit"
             formAction={savePlacementDraft}
             formNoValidate
-            className={buttonVariants({ variant: "outline", size: "sm" })}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
             title="Bewaar wat je nu hebt als concept — verschijnt bovenaan bij Plaatsingen"
           >
-            Bewaar als concept
+            <Save className="h-4 w-4" /> Opslaan als concept
           </button>
         )}
-        <SubmitButton>{submitLabel}</SubmitButton>
+        <SubmitButton variant="success">
+          <Check className="h-4 w-4" /> {submitLabel}
+        </SubmitButton>
       </div>
 
       {state.error && (
@@ -2034,19 +2038,21 @@ export function PlacementForm({
               </button>
             )}
 
-            <ConfirmCancel href={cancelHref} />
+            <ConfirmCancel href={cancelHref} variant="ghost" />
             {!placement && (
               <button
                 type="submit"
                 formAction={savePlacementDraft}
                 formNoValidate
-                className={buttonVariants({ variant: "outline" })}
+                className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
                 title="Bewaar wat je nu hebt als concept — verschijnt bovenaan bij Plaatsingen"
               >
-                Bewaar als concept
+                <Save className="h-4 w-4" /> Opslaan als concept
               </button>
             )}
-            <SubmitButton>{submitLabel}</SubmitButton>
+            <SubmitButton variant="success">
+          <Check className="h-4 w-4" /> {submitLabel}
+        </SubmitButton>
           </div>
         </div>
       </TabContext.Provider>

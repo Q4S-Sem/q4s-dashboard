@@ -20,6 +20,7 @@ export function ConfirmCancel({
   description = "Alles wat je hebt ingevuld gaat verloren en wordt niet opgeslagen.",
   confirmLabel = "Ja, annuleren",
   size = "md",
+  variant = "danger",
   className,
 }: {
   href: string;
@@ -28,6 +29,7 @@ export function ConfirmCancel({
   description?: string;
   confirmLabel?: string;
   size?: "sm" | "md";
+  variant?: "danger" | "ghost";
   className?: string;
 }) {
   const router = useRouter();
@@ -56,7 +58,7 @@ export function ConfirmCancel({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={cn(buttonVariants({ variant: "danger", size }), className)}
+        className={cn(buttonVariants({ variant, size }), className)}
       >
         {label}
       </button>

@@ -214,7 +214,9 @@ export async function deleteContract(formData: FormData): Promise<void> {
     redirect(`/contracten/${id}?error=verwijderen`);
   }
   revalidatePath("/contracten");
-  redirect("/contracten");
+  revalidatePath("/contracten/nieuw");
+  // Terug naar "+ Nieuw contract" (daar staan de concepten en klare contracten).
+  redirect("/contracten/nieuw");
 }
 
 /** Offerte/arbeidsovereenkomst opslaan (nieuw of bijwerken). Geeft het id terug. */
