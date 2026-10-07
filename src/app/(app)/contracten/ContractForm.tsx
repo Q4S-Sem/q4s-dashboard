@@ -226,7 +226,7 @@ export function ContractForm({
                 id="contractorName"
                 name="contractorName"
                 defaultValue={c?.contractorName ?? d?.contractorName ?? ""}
-                required
+                required placeholder="Jan de Vries"
               />
             </Field>
             <Field
@@ -235,7 +235,7 @@ export function ContractForm({
               error={e.number}
               hint="Bijv. Q4S-OVO-2025-001"
             >
-              <Input id="number" name="number" defaultValue={c?.number ?? ""} />
+              <Input id="number" name="number" defaultValue={c?.number ?? ""} placeholder="Q4S-2026-001" />
             </Field>
             <Field label="Status" htmlFor="status" error={e.status}>
               <Select
@@ -274,7 +274,7 @@ export function ContractForm({
                 name="contractorAddress"
                 defaultValue={
                   c?.contractorAddress ?? d?.contractorAddress ?? ""
-                }
+                } placeholder="Industrieweg 12, 3044 AS Rotterdam"
               />
             </Field>
             <Field
@@ -285,7 +285,7 @@ export function ContractForm({
               <Input
                 id="contractorKvk"
                 name="contractorKvk"
-                defaultValue={c?.contractorKvk ?? d?.contractorKvk ?? ""}
+                defaultValue={c?.contractorKvk ?? d?.contractorKvk ?? ""} placeholder="12345678"
               />
             </Field>
             <Field
@@ -296,7 +296,7 @@ export function ContractForm({
               <Input
                 id="contractorVat"
                 name="contractorVat"
-                defaultValue={c?.contractorVat ?? d?.contractorVat ?? ""}
+                defaultValue={c?.contractorVat ?? d?.contractorVat ?? ""} placeholder="NL001234567B01"
               />
             </Field>
             <Field
@@ -331,7 +331,7 @@ export function ContractForm({
               <Input
                 id="fieldOfWork"
                 name="fieldOfWork"
-                defaultValue={zonderOudeStandaard(c?.fieldOfWork)}
+                defaultValue={zonderOudeStandaard(c?.fieldOfWork)} placeholder="Staalconstructie / QA-QC"
               />
             </Field>
             <Field
@@ -343,7 +343,7 @@ export function ContractForm({
               <Input
                 id="serviceNeed"
                 name="serviceNeed"
-                defaultValue={zonderOudeStandaard(c?.serviceNeed)}
+                defaultValue={zonderOudeStandaard(c?.serviceNeed)} placeholder="Lasinspectie (CSWIP 3.1)"
               />
             </Field>
           </div>
@@ -356,7 +356,7 @@ export function ContractForm({
             <Input
               id="thirdParty"
               name="thirdParty"
-              defaultValue={c?.thirdParty ?? ""}
+              defaultValue={c?.thirdParty ?? ""} placeholder="Eindklant B.V. — project Maasvlakte"
             />
           </Field>
           <Field
@@ -368,7 +368,7 @@ export function ContractForm({
               id="workDescription"
               name="workDescription"
               rows={3}
-              defaultValue={c?.workDescription ?? ""}
+              defaultValue={c?.workDescription ?? ""} placeholder="Uitvoeren van lasinspecties en rapportage conform ISO 5817 …"
             />
           </Field>
         </CardContent>
@@ -406,7 +406,7 @@ export function ContractForm({
               <Input
                 id="projectDuration"
                 name="projectDuration"
-                defaultValue={c?.projectDuration ?? ""}
+                defaultValue={c?.projectDuration ?? ""} placeholder="6 maanden"
               />
             </Field>
             <Field
@@ -417,7 +417,7 @@ export function ContractForm({
               <Input
                 id="noticePeriod"
                 name="noticePeriod"
-                defaultValue={c?.noticePeriod ?? "twee (2) weken"}
+                defaultValue={c?.noticePeriod ?? "twee (2) weken"} placeholder="2 weken"
               />
             </Field>
           </div>
@@ -501,7 +501,7 @@ export function ContractForm({
               <Input
                 id="invoiceEmail"
                 name="invoiceEmail"
-                defaultValue={c?.invoiceEmail ?? "admin@q4s.nl"}
+                defaultValue={c?.invoiceEmail ?? "admin@q4s.nl"} placeholder="facturen@bedrijf.nl"
               />
             </Field>
             <Field
@@ -514,7 +514,7 @@ export function ContractForm({
                 name="paymentTermDays"
                 type="number"
                 min={0}
-                defaultValue={c?.paymentTermDays ?? 30}
+                defaultValue={c?.paymentTermDays ?? 30} placeholder="30"
               />
             </Field>
             <label className="flex items-center gap-2.5 pt-6 text-sm text-ink-800">
@@ -545,7 +545,7 @@ export function ContractForm({
             <Input
               id="insuranceCover"
               name="insuranceCover"
-              defaultValue={c?.insuranceCover ?? "€ 2.500.000,-"}
+              defaultValue={c?.insuranceCover ?? "€ 2.500.000,-"} placeholder="€ 1.250.000,- per gebeurtenis"
             />
           </Field>
           <div className="space-y-2.5">
@@ -598,7 +598,7 @@ export function ContractForm({
               <Input
                 id="signerClient"
                 name="signerClient"
-                defaultValue={c?.signerClient ?? "P. Boomsma"}
+                defaultValue={c?.signerClient ?? "P. Boomsma"} placeholder="Paul Boomsma"
               />
             </Field>
             <Field
@@ -609,7 +609,7 @@ export function ContractForm({
               <Input
                 id="signPlaceClient"
                 name="signPlaceClient"
-                defaultValue={c?.signPlaceClient ?? "Barendrecht"}
+                defaultValue={c?.signPlaceClient ?? "Barendrecht"} placeholder="Barendrecht"
               />
             </Field>
             {/* Opdrachtnemer tekent zelf: datum, plaats en naam blijven open op het contract. */}
@@ -635,7 +635,7 @@ export function ContractForm({
               id="notes"
               name="notes"
               rows={2}
-              defaultValue={c?.notes ?? ""}
+              defaultValue={c?.notes ?? ""} placeholder="Alleen intern zichtbaar"
             />
           </Field>
         </CardContent>
