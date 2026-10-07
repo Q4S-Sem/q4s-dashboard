@@ -107,6 +107,10 @@ export async function createContract(_prev: FormState, formData: FormData): Prom
   const parsed = parseForm(ContractSchema, formData);
   if (!parsed.success) return parsed.state;
   const d = parsed.data;
+  // Knoppen in de balk: "Opslaan als concept" / "Klaar" bepalen de status.
+  const als = formData.get("opslaanAls");
+  if (als === "concept") d.status = "DRAFT";
+  else if (als === "klaar" && d.status === "DRAFT") d.status = "FINAL";
   const flags = readFlags(formData);
   const blok = blokkeerOnvolledig(d);
   if (blok) return blok;
@@ -172,6 +176,10 @@ export async function updateContract(_prev: FormState, formData: FormData): Prom
   const parsed = parseForm(ContractSchema, formData);
   if (!parsed.success) return parsed.state;
   const d = parsed.data;
+  // Knoppen in de balk: "Opslaan als concept" / "Klaar" bepalen de status.
+  const als = formData.get("opslaanAls");
+  if (als === "concept") d.status = "DRAFT";
+  else if (als === "klaar" && d.status === "DRAFT") d.status = "FINAL";
   const flags = readFlags(formData);
   const blok = blokkeerOnvolledig(d);
   if (blok) return blok;

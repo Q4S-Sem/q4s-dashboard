@@ -20,9 +20,11 @@ export function PrintMetControle({ href, ontbreekt }: { href: string; ontbreekt:
       <button
         type="button"
         onClick={() => (ontbreekt.length ? setOpen(true) : router.push(href))}
-        className={buttonVariants({ variant: "outline", size: "sm" })}
+        className={buttonVariants({ variant: "outline", size: "icon", className: "h-8 w-8" })}
+        title="Printen / PDF"
+        aria-label="Printen / PDF"
       >
-        <Printer className="h-4 w-4" /> Printen / PDF
+        <Printer className="h-4 w-4" />
       </button>
 
       {open &&

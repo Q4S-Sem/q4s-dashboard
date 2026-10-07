@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { Check, Save } from "lucide-react";
 import { ConfirmCancel } from "@/components/confirm-cancel";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { CONTRACT_STATUSES } from "@/lib/domain";
@@ -64,12 +64,15 @@ export function ContractForm({
   defaults,
   cancelHref,
   voorbeeld,
+  taalKeuze,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   contract?: Contract | null;
   defaults?: ContractDefaults;
   cancelHref: string;
   voorbeeld?: Voorbeeld;
+  /** NL/EN-schakelaar, helemaal rechts in de balk. */
+  taalKeuze?: React.ReactNode;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [waarden, setWaarden] = useState<Contract | null>(null);
@@ -310,10 +313,14 @@ export function ContractForm({
     <InvulTabs
       acties={
         <>
-          {voorbeeld.acties}
-          <Button type="submit" form="contract-form" size="sm">
-            <Save className="h-4 w-4" /> Opslaan
+          <Button type="submit" form="contract-form" name="opslaanAls" value="concept" variant="outline" size="sm">
+            <Save className="h-4 w-4" /> Opslaan als concept
           </Button>
+          {voorbeeld.acties}
+          <Button type="submit" form="contract-form" name="opslaanAls" value="klaar" variant="success" size="sm">
+            <Check className="h-4 w-4" /> Klaar
+          </Button>
+          {taalKeuze && <span className="ml-2">{taalKeuze}</span>}
         </>
       }
       formulier={form}

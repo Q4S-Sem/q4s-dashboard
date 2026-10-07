@@ -9,7 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
  * bewerkbaar Word-bestand. Wordt in de browser gemaakt uit precies wat je ziet;
  * de Word-bibliotheek laadt pas bij de klik.
  */
-export function WordKnop({ bestandsnaam, size = "sm" }: { bestandsnaam: string; size?: "sm" | "md" }) {
+export function WordKnop({ bestandsnaam, size = "sm", icoon = false }: { bestandsnaam: string; size?: "sm" | "md"; icoon?: boolean }) {
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState(false);
 
@@ -37,8 +37,15 @@ export function WordKnop({ bestandsnaam, size = "sm" }: { bestandsnaam: string; 
   }
 
   return (
-    <button type="button" onClick={download} disabled={bezig} className={buttonVariants({ variant: "outline", size })}>
-      <FileText className="h-4 w-4" /> {bezig ? "Word maken…" : fout ? "Mislukt — opnieuw" : "Download Word"}
+    <button
+      type="button"
+      onClick={download}
+      disabled={bezig}
+      title="Download Word"
+      aria-label="Download Word"
+      className={buttonVariants({ variant: "outline", size: icoon ? "icon" : size, className: icoon ? "h-8 w-8" : undefined })}
+    >
+      <FileText className="h-4 w-4" /> {icoon ? (fout ? "!" : null) : bezig ? "Word maken…" : fout ? "Mislukt — opnieuw" : "Download Word"}
     </button>
   );
 }

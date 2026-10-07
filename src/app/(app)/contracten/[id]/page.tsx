@@ -72,6 +72,7 @@ export default async function ContractDetailPage({
         action={updateContract}
         contract={contract}
         cancelHref="/contracten"
+        taalKeuze={<TaalSchakelaar taal={taal} href={(x) => `/contracten/${id}${x === "en" ? "?taal=en" : ""}`} />}
         voorbeeld={{
           settings: await getCompanySettings(),
           logoSrc: sheet.logoSrc,
@@ -79,8 +80,7 @@ export default async function ContractDetailPage({
           taal,
           acties: (
             <>
-              <TaalSchakelaar taal={taal} href={(x) => `/contracten/${id}${x === "en" ? "?taal=en" : ""}`} />
-              <WordKnop bestandsnaam={`Overeenkomst van opdracht - ${contract.contractorName || contract.number || ""}`} />
+              <WordKnop icoon bestandsnaam={`Overeenkomst van opdracht - ${contract.contractorName || contract.number || ""}`} />
               <PrintMetControle href={`/contracten/${id}/print${taal === "en" ? "?taal=en" : ""}`} ontbreekt={ontbreekt} />
             </>
           ),

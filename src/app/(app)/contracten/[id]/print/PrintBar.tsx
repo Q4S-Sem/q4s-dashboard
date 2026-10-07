@@ -5,7 +5,13 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 /** Printvenster openen; daar kies je ook "Opslaan als PDF". */
-export function PrintKnop({ size = "sm" }: { size?: "sm" | "md" }) {
+export function PrintKnop({ size = "sm", icoon = false }: { size?: "sm" | "md"; icoon?: boolean }) {
+  if (icoon)
+    return (
+      <Button variant="outline" size="icon" className="h-8 w-8" title="PDF / printen" aria-label="PDF / printen" onClick={() => window.print()}>
+        <Printer className="h-4 w-4" />
+      </Button>
+    );
   return (
     <Button size={size} onClick={() => window.print()}>
       <Printer className="h-4 w-4" /> PDF / printen

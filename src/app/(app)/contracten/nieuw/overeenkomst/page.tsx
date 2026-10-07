@@ -19,11 +19,12 @@ export default async function NieuwContractPage({ searchParams }: { searchParams
       <BackLink href="/contracten/nieuw">Terug naar nieuw contract</BackLink>
       <PageHeader
         title="Overeenkomst van opdracht"
-        description="Vul het formulier in en bekijk het resultaat onder Voorbeeld. Opslaan doe je onderaan het formulier; ontbreekt er iets, dan krijg je een melding."
+        description="Vul het formulier in en bekijk het resultaat onder Voorbeeld. Opslaan als concept, of Klaar als alles is ingevuld — ontbreekt er iets, dan krijg je een melding."
       />
       <ContractForm
         action={createContract}
         cancelHref="/contracten/nieuw"
+        taalKeuze={<TaalSchakelaar taal={taal} href={(t) => `/contracten/nieuw/overeenkomst${t === "en" ? "?taal=en" : ""}`} />}
         voorbeeld={{
           settings: await getCompanySettings(),
           logoSrc: contractLogoDataUri(),
@@ -31,9 +32,8 @@ export default async function NieuwContractPage({ searchParams }: { searchParams
           taal,
           acties: (
             <>
-              <TaalSchakelaar taal={taal} href={(t) => `/contracten/nieuw/overeenkomst${t === "en" ? "?taal=en" : ""}`} />
-              <WordKnop bestandsnaam="Overeenkomst van opdracht" />
-              <PrintKnop />
+              <WordKnop icoon bestandsnaam="Overeenkomst van opdracht" />
+              <PrintKnop icoon />
             </>
           ),
         }}

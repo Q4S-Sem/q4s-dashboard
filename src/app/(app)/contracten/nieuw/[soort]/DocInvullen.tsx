@@ -233,24 +233,26 @@ export function DocInvullen({
     <InvulTabs
       acties={
         <>
-          {taalKeuze}
-          {soort !== "persoonsgegevens" && (
-            <>
-              <Button type="button" variant="outline" size="sm" onClick={() => opslaan(false)} disabled={bezig}>
-                <Save className="h-4 w-4" /> {bezig ? "Opslaan…" : melding ?? "Opslaan als concept"}
-              </Button>
-              <Button type="button" size="sm" onClick={() => opslaan(true)} disabled={bezig}>
-                <Check className="h-4 w-4" /> Klaar
-              </Button>
-            </>
+          {soort !== "persoonsgegevens" ? (
+            <Button type="button" variant="outline" size="sm" onClick={() => opslaan(false)} disabled={bezig}>
+              <Save className="h-4 w-4" /> {bezig ? "Opslaan…" : melding ?? "Opslaan als concept"}
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size="sm" onClick={leegmaken}>
+              <Eraser className="h-4 w-4" /> Leegmaken
+            </Button>
           )}
-          <Button type="button" variant="outline" size="sm" onClick={leegmaken}>
-            <Eraser className="h-4 w-4" /> Leegmaken
-          </Button>
           <WordKnop
+            icoon
             bestandsnaam={`Q4S ${soort === "offerte" ? "Offerte" : soort === "arbeidsovereenkomst" ? "Arbeidsovereenkomst" : "Persoonsgegevens"}${w.companyName || w.to || w.naam ? ` - ${w.companyName || w.to || w.naam}` : ""}`}
           />
-          <PrintKnop />
+          <PrintKnop icoon />
+          {soort !== "persoonsgegevens" && (
+            <Button type="button" variant="success" size="sm" onClick={() => opslaan(true)} disabled={bezig}>
+              <Check className="h-4 w-4" /> Klaar
+            </Button>
+          )}
+          <span className="ml-2">{taalKeuze}</span>
         </>
       }
       formulier={
