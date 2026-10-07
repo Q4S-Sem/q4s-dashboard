@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { tariefSuffix } from "@/lib/toeslag";
-import { AlertTriangle, CalendarClock, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, Archive, CalendarClock, Pencil, Trash2 } from "lucide-react";
 import { SmartList, type SmartColumn, type SmartFilter, type SmartGroup } from "@/components/smart-list";
 import { StatusBadge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatCurrency } from "@/lib/utils";
 import { PLACEMENT_STATUSES, labelFor } from "@/lib/domain";
-import { deletePlacement } from "./actions";
+import { archivePlacement, deletePlacement } from "./actions";
 
 export type PlaatsingRow = {
   id: string;
@@ -134,6 +134,20 @@ export function PlaatsingenList({ placements }: { placements: PlaatsingRow[] }) 
             >
               <Pencil className="h-4 w-4" />
             </Link>
+            <ConfirmSubmit
+              action={archivePlacement}
+              id={r.id}
+              trigger="button"
+              variant="ghost"
+              size="icon"
+              confirmVariant="primary"
+              confirmLabel="Archiveren"
+              message={`Plaatsing van ${r.person} bij ${r.clientName} archiveren?`}
+              description="De plaatsing verdwijnt uit de lijst en de facturatie en gaat naar het Archief. Er wordt niets verwijderd: met één klik zet je hem terug."
+            >
+              {/* Neutrale knop (geen rode hover): archiveren is terug te draaien. */}
+              <Archive className="h-4 w-4" aria-label="Archiveren" />
+            </ConfirmSubmit>
             <ConfirmSubmit
               action={deletePlacement}
               id={r.id}
