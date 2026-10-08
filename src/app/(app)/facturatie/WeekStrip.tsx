@@ -82,15 +82,6 @@ export function WeekStrip({
       <Link href={href(volgendeWeek(midden))} scroll={false} className={pijl} aria-label="Volgende week">
         <ChevronRight className="h-4 w-4" />
       </Link>
-      {gekozen && gekozen.key !== nu.key && (
-        <Link
-          href={href(nu)}
-          scroll={false}
-          className={buttonVariants({ variant: "outline", size: "sm", className: "ml-1" })}
-        >
-          Naar verwerkweek
-        </Link>
-      )}
       {alleWeken && (
         <Link
           href={href(null)}
