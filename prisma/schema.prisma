@@ -2359,6 +2359,10 @@ model PortalLogin {
   username    String   @default("")
   passwordEnc String   @default("")
   notes       String   @default("")
+  /// MSP | KLANT | OVERIG ("" = nog niet geanalyseerd) — zie lib/portaal-soort.ts
+  soort       String   @default("")
+  /// Korte uitleg van de portaal-agent (waarom deze soort, wat je er kunt halen).
+  analyse     String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

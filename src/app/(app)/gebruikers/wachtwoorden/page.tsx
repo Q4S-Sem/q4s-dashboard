@@ -1,19 +1,25 @@
 import Link from "next/link";
-import { CheckCircle2, ExternalLink, KeyRound, Lock, Save, ShieldAlert, Trash2 } from "lucide-react";
+import { Bot, Building2, CheckCircle2, ExternalLink, KeyRound, Lock, Plug, Save, ShieldAlert, Trash2, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { FilterTegels } from "@/components/ui/filter-tegels";
+import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
+import { PORTAAL_SOORTEN, connectorKey, portaalLink, portaalSoort, raadPortaalSoort, type PortaalSoort } from "@/lib/portaal-soort";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/lib/db";
 import { isAdminSession } from "@/lib/session";
-import { deletePortal, importPortals, savePortal } from "./actions";
+import { analyseerPortalen, deletePortal, importPortals, koppelAlsMsp, savePortal, zetPortaalSoort } from "./actions";
 import { NewPortalDialog, PasswordInput, PasswordReveal } from "./PasswordReveal";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, segmentVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Wachtwoorden" };
 export const dynamic = "force-dynamic";
 
 type Row = { id: string; name: string; url: string; username: string; notes: string; passwordEnc: string };
+
+const SOORT_KLEUR: Record<PortaalSoort, "violet" | "blue" | "slate"> = { MSP: "violet", KLANT: "blue", OVERIG: "slate" };
 
 function PortalFields({ p }: { p?: Row }) {
   const k = p?.id ?? "nieuw";
@@ -42,14 +48,34 @@ function PortalFields({ p }: { p?: Row }) {
 export default async function WachtwoordenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; verwijderd?: string; fout?: string; bewerk?: string; geimporteerd?: string; overgeslagen?: string }>;
+  searchParams: Promise<{ ok?: string; verwijderd?: string; fout?: string; bewerk?: string; geimporteerd?: string; overgeslagen?: string; geanalyseerd?: string; soort?: string; q?: string }>;
 }) {
   const sp = await searchParams;
   const editing = sp.bewerk;
   if (!(await isAdminSession())) {
     return <PageHeader title="Wachtwoorden" description="Alleen een beheerder kan de portaal-wachtwoorden zien." />;
   }
-  const portals = await db.portalLogin.findMany({ orderBy: { name: "asc" } });
+  const [alle, connectors] = await Promise.all([
+    db.portalLogin.findMany({ orderBy: { name: "asc" } }),
+    db.vmsConnector.findMany({ select: { key: true } }),
+  ]);
+  const gekoppeld = new Set(connectors.map((c) => c.key));
+  // Soort van de agent, anders de vaste regels — zo werken de tegels ook vóór de eerste analyse.
+  const metSoort = alle.map((p) => ({ ...p, s: portaalSoort(p.soort) ?? raadPortaalSoort(p), link: portaalLink(p) }));
+  const filter = portaalSoort(sp.soort);
+  const portals = metSoort.filter((p) => (!filter || p.s === filter) && matchtZoek(sp.q, p.name, p.url, p.notes, p.username));
+  const tegelHref = (soort?: string) => {
+    const q = new URLSearchParams();
+    if (soort) q.set("soort", soort);
+    if (sp.q) q.set("q", sp.q);
+    return q.size ? `/gebruikers/wachtwoorden?${q}` : "/gebruikers/wachtwoorden";
+  };
+  const terug = tegelHref(filter ?? undefined);
+  const ICOON: Record<PortaalSoort, React.ReactNode> = {
+    MSP: <Plug className="h-4 w-4" />,
+    KLANT: <Building2 className="h-4 w-4" />,
+    OVERIG: <Lock className="h-4 w-4" />,
+  };
 
   return (
     <div className="space-y-6">
@@ -58,6 +84,11 @@ export default async function WachtwoordenPage({
         description="Alle portalen waar we moeten inloggen, met de link erbij. Wachtwoorden staan versleuteld opgeslagen en worden pas getoond als je op het oog klikt."
         actions={
           <div className="flex flex-wrap gap-2">
+          <form action={analyseerPortalen}>
+            <SubmitButton variant="outline" pendingLabel="Agent analyseert…" title="Deelt elk portaal in (MSP/VMS, bedrijfsportaal, overig) op naam, link en notitie — nooit op wachtwoorden.">
+              <Bot className="h-4 w-4" /> Analyseer portalen
+            </SubmitButton>
+          </form>
           <NewPortalDialog label="Importeren" title="Portalen importeren" outline>
             <form action={importPortals} className="space-y-3" data-no-persist data-no-guard>
               <p className="text-sm text-ink-600">
@@ -88,6 +119,11 @@ export default async function WachtwoordenPage({
           {Number(sp.overgeslagen) > 0 ? `, ${sp.overgeslagen} overgeslagen (bestonden al)` : ""}.
         </p>
       )}
+      {sp.geanalyseerd !== undefined && (
+        <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <Bot className="h-4 w-4" /> {sp.geanalyseerd} portalen geanalyseerd. Klopt een soort niet? Zet hem goed via Bewerken.
+        </p>
+      )}
       {sp.ok && (
         <p className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           <CheckCircle2 className="h-4 w-4" /> Opgeslagen.
@@ -105,49 +141,102 @@ export default async function WachtwoordenPage({
         </p>
       )}
 
+      <FilterTegels
+        label="Soort portaal"
+        items={[
+          { key: "alle", label: "Alle portalen", waarde: metSoort.length, icon: <Users className="h-4 w-4" />, toon: "slate", href: tegelHref(), actief: !filter },
+          ...PORTAAL_SOORTEN.map((t) => ({
+            key: t.value,
+            label: t.value === "MSP" ? "MSP / VMS — vacatures" : t.value === "KLANT" ? "Bedrijfsportalen" : "Overig",
+            waarde: metSoort.filter((p) => p.s === t.value).length,
+            icon: ICOON[t.value],
+            toon: SOORT_KLEUR[t.value],
+            href: tegelHref(t.value),
+            actief: filter === t.value,
+          })),
+        ]}
+      />
+
+      <TabelZoek basePath="/gebruikers/wachtwoorden" q={sp.q} placeholder="Zoek portaal, link of gebruiker…" behoud={{ soort: filter ?? undefined }} />
+
       <Card>
         <CardContent className="p-0">
           {portals.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-ink-500">Nog geen portalen. Klik rechtsboven op &lsquo;Nieuw portaal&rsquo;.</p>
+            <p className="px-5 py-8 text-center text-sm text-ink-500">
+              {alle.length === 0 ? <>Nog geen portalen. Klik rechtsboven op &lsquo;Nieuw portaal&rsquo;.</> : "Geen portalen in deze selectie."}
+            </p>
           ) : (
             <ul className="divide-y divide-ink-100">
-              {portals.map((p) => (
+              {portals.map((p) => {
+                const isGekoppeld = gekoppeld.has(connectorKey(p.name));
+                return (
                 <li key={p.id} className="px-5 py-3">
-                  <div className="grid items-center gap-x-4 gap-y-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                        <Lock className="h-4 w-4" />
+                  <div className="grid items-center gap-x-4 gap-y-2 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_12rem_auto]">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${p.s === "MSP" ? "bg-violet-50 text-violet-600" : p.s === "KLANT" ? "bg-blue-50 text-blue-600" : "bg-ink-100 text-ink-500"}`}>
+                        {ICOON[p.s]}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-ink-900">{p.name}</p>
-                        {p.url ? (
-                          <a
-                            href={p.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 truncate text-xs text-brand-600 hover:underline"
-                          >
-                            <ExternalLink className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{p.url.replace(/^https?:\/\//, "")}</span>
-                          </a>
-                        ) : (
-                          <p className="text-xs text-ink-400">Geen link</p>
+                        <p className="flex min-w-0 items-center gap-2">
+                          {p.link ? (
+                            <a href={p.link} target="_blank" rel="noopener noreferrer" className="truncate font-semibold text-ink-900 hover:text-brand-700 hover:underline" title={`${p.name} openen`}>
+                              {p.name}
+                            </a>
+                          ) : (
+                            <span className="truncate font-semibold text-ink-900">{p.name}</span>
+                          )}
+                          <Badge color={SOORT_KLEUR[p.s]}>{PORTAAL_SOORTEN.find((t) => t.value === p.s)?.label}</Badge>
+                        </p>
+                        <p className="truncate text-xs text-ink-400">{p.link ? p.link.replace(/^https?:\/\//, "") : "Geen link — vul hem in via Bewerken"}</p>
+                        {(p.analyse || p.notes) && (
+                          <p className="mt-0.5 line-clamp-2 text-xs text-ink-500">
+                            {p.analyse && <span className="text-violet-700"><Bot className="mr-1 inline h-3 w-3" />{p.analyse} </span>}
+                            {p.notes}
+                          </p>
                         )}
                       </div>
                     </div>
                     <p className="truncate text-[13px] text-ink-700">{p.username || <span className="text-ink-400">—</span>}</p>
                     <PasswordReveal id={p.id} hasPassword={!!p.passwordEnc} />
-                    <Link
-                      href={editing === p.id ? "/gebruikers/wachtwoorden" : `/gebruikers/wachtwoorden?bewerk=${p.id}`}
-                      scroll={false}
-                      className={buttonVariants({ variant: "outline", size: "sm", className: "justify-self-start md:justify-self-end" })}
-                    >
-                      {editing === p.id ? "Sluiten" : "Bewerken"}
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                      {p.s === "MSP" &&
+                        (isGekoppeld ? (
+                          <Link href="/vacaturehub/koppelingen" className={buttonVariants({ variant: "ghost", size: "sm", className: "text-violet-700" })}>
+                            <CheckCircle2 className="h-4 w-4" /> Gekoppeld
+                          </Link>
+                        ) : (
+                          <form action={koppelAlsMsp}>
+                            <input type="hidden" name="id" value={p.id} />
+                            <SubmitButton size="sm" variant="outline" pendingLabel="Koppelen…" title="Zet dit portaal bij MSP-vacatures">
+                              <Plug className="h-4 w-4" /> Koppel als MSP
+                            </SubmitButton>
+                          </form>
+                        ))}
+                      {p.link && (
+                        <a href={p.link} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })} title="Portaal openen in een nieuw tabblad">
+                          <ExternalLink className="h-4 w-4" /> Openen
+                        </a>
+                      )}
+                      <Link
+                        href={editing === p.id ? terug : `${terug}${terug.includes("?") ? "&" : "?"}bewerk=${p.id}`}
+                        scroll={false}
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                      >
+                        {editing === p.id ? "Sluiten" : "Bewerken"}
+                      </Link>
+                    </div>
                   </div>
-                  {p.notes && <p className="mt-1.5 text-xs text-ink-500 md:pl-12">{p.notes}</p>}
                   {editing === p.id && (
                     <div className="mt-3 space-y-3 rounded-lg border border-ink-200 bg-ink-50/50 p-4">
+                      <form action={zetPortaalSoort} className="flex flex-wrap items-center gap-2 text-sm">
+                        <input type="hidden" name="id" value={p.id} />
+                        <span className="text-ink-500">Soort:</span>
+                        {PORTAAL_SOORTEN.map((t) => (
+                          <button key={t.value} type="submit" name="soort" value={t.value} aria-pressed={p.s === t.value} className={segmentVariants(p.s === t.value)}>
+                            {t.label}
+                          </button>
+                        ))}
+                      </form>
                       <form action={savePortal} className="space-y-3">
                         <PortalFields p={p} />
                         <SubmitButton pendingLabel="Opslaan…">
@@ -163,7 +252,8 @@ export default async function WachtwoordenPage({
                     </div>
                   )}
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </CardContent>
