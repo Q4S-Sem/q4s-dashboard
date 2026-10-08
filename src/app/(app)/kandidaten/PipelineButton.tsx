@@ -2,8 +2,8 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { GitBranchPlus, X, Loader2 } from "lucide-react";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Kanban, X, Loader2 } from "lucide-react";
+import { Field, Select } from "@/components/ui/field";
 import { TextCombobox } from "@/components/ui/text-combobox";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
@@ -71,10 +71,10 @@ export function PipelineButton({
         onClick={() => setOpen(true)}
         title={`${candidateName} in de pipeline zetten`}
         aria-label={`${candidateName} in de pipeline zetten`}
-        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-brand-200 bg-brand-50 px-2.5 text-xs font-semibold text-brand-700 transition-colors hover:border-brand-300 hover:bg-brand-100"
+        className={buttonVariants({ variant: "outline", size: "sm", className: "shrink-0" })}
       >
-        <GitBranchPlus className="h-4 w-4" />
-        In pipeline
+        <Kanban className="h-4 w-4" />
+        Pipeline
       </button>
 
       {mounted &&
@@ -95,8 +95,8 @@ export function PipelineButton({
                 <div>
                   <h2 className="text-base font-semibold text-ink-900">In de pipeline zetten</h2>
                   <p className="mt-1 text-sm text-ink-500">
-                    Koppel <span className="font-medium text-ink-700">{candidateName}</span> aan een
-                    eigen klant en (optioneel) een openstaande vacature.
+                    Kies het bedrijf en de vacature voor <span className="font-medium text-ink-700">{candidateName}</span>.
+                    Hij komt als Lead in de pipeline.
                   </p>
                 </div>
                 <button
@@ -138,7 +138,7 @@ export function PipelineButton({
                 </Field>
 
                 <Field
-                  label="Openstaande vacature (optioneel)"
+                  label="Vacature"
                   htmlFor="vacancyId"
                   hint={
                     relevantVacancies.length === 0
@@ -163,14 +163,6 @@ export function PipelineButton({
                   </Select>
                 </Field>
 
-                <Field
-                  label="Verwachte dealwaarde (€, optioneel)"
-                  htmlFor="value"
-                  hint="Bijv. je verwachte marge over de plaatsing."
-                >
-                  <Input id="value" name="value" type="number" min={0} step={100} placeholder="0" />
-                </Field>
-
                 <div className="flex justify-end gap-2.5 pt-1">
                   <button
                     type="button"
@@ -183,7 +175,7 @@ export function PipelineButton({
                     {pending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <GitBranchPlus className="h-4 w-4" />
+                      <Kanban className="h-4 w-4" />
                     )}
                     In pipeline zetten
                   </SubmitButton>

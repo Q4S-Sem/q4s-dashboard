@@ -19,6 +19,7 @@ export function KandidatenFilters({
   discipline,
   rating,
   availability,
+  map,
   disciplines,
   ratings,
   availabilities,
@@ -27,6 +28,8 @@ export function KandidatenFilters({
   discipline: string;
   rating: string;
   availability: string;
+  /** De gekozen map (tegel) blijft staan bij het filteren. */
+  map: string;
   disciplines: Option[];
   ratings: Option[];
   availabilities: Option[];
@@ -39,6 +42,7 @@ export function KandidatenFilters({
   // Bouw de URL uit de huidige waarden en navigeer ernaartoe.
   function apply(next: { q?: string; discipline?: string; rating?: string; availability?: string }) {
     const params = new URLSearchParams();
+    if (map) params.set("map", map);
     const values = { q: term, discipline, rating, availability, ...next };
     if (values.q?.trim()) params.set("q", values.q.trim());
     if (values.discipline) params.set("discipline", values.discipline);
@@ -120,7 +124,7 @@ export function KandidatenFilters({
                 type="button"
                 onClick={() => {
                   setTerm("");
-                  startTransition(() => router.replace("/kandidaten"));
+                  startTransition(() => router.replace(map ? `/kandidaten?map=${map}` : "/kandidaten"));
                 }}
                 className={buttonVariants({ variant: "outline" })}
               >

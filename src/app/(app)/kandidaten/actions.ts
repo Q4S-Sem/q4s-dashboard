@@ -18,6 +18,8 @@ import {
   MAX_UPLOAD_BYTES,
   MAX_PHOTO_BYTES,
   PHOTO_MIME_TYPES,
+  readUpload,
+  cvKey,
 } from "@/lib/uploads";
 import { extractCandidateFields, CvExtractError, type CandidateFields } from "@/lib/cv-extract";
 
@@ -335,6 +337,41 @@ export async function uploadCv(formData: FormData) {
 
   revalidatePath(`/kandidaten/${candidateId}`);
   redirect(`/kandidaten/${candidateId}/cv`);
+}
+
+/**
+ * Stap 2 "CV inladen": lees het CV dat al aan de kandidaat hangt (bv. van de
+ * website) uit en vul ALLEEN lege velden aan — wat je zelf invulde blijft staan.
+ */
+export async function laadCvIn(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const c = id ? await db.candidate.findUnique({ where: { id } }) : null;
+  if (!c) return;
+  if (!c.cvFileName) redirect(`/kandidaten/${id}?error=geen-cv`);
+  let f: CandidateFields;
+  try {
+    const bytes = await readUpload(cvKey(c.cvFileName!));
+    f = await extractCandidateFields(bytes, c.cvOriginalName ?? c.cvFileName!, c.cvMimeType ?? "");
+  } catch (err) {
+    console.error("laadCvIn mislukt:", err);
+    redirect(`/kandidaten/${id}?error=cv-lezen`);
+  }
+  const leeg = (v: string | null) => !v || !v.trim();
+  await db.candidate.update({
+    where: { id },
+    data: {
+      ...(leeg(c.headline) && f.headline ? { headline: f.headline } : {}),
+      ...(leeg(c.discipline) && f.discipline ? { discipline: f.discipline } : {}),
+      ...(leeg(c.location) && f.location ? { location: f.location } : {}),
+      ...(leeg(c.email) && f.email ? { email: f.email } : {}),
+      ...(leeg(c.phone) && f.phone ? { phone: f.phone } : {}),
+      ...(leeg(c.linkedinUrl) && f.linkedinUrl ? { linkedinUrl: f.linkedinUrl } : {}),
+      ...(leeg(c.experienceSummary) && f.experienceSummary ? { experienceSummary: f.experienceSummary } : {}),
+    },
+  });
+  revalidatePath(`/kandidaten/${id}`);
+  revalidatePath("/kandidaten");
+  redirect(`/kandidaten/${id}?cv=ingeladen`);
 }
 
 export async function deleteCv(formData: FormData) {

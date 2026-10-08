@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Archive, CalendarClock } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
-import { formatCurrency } from "@/lib/utils";
 import {
   currentRecruiterId,
   getCrmSettings,
@@ -11,7 +10,7 @@ import {
 } from "@/lib/crm";
 import { DealBoard, type DealColumn, type DealCard } from "./DealBoard";
 
-export const metadata = { title: "CRM" };
+export const metadata = { title: "Pipeline" };
 export const dynamic = "force-dynamic";
 
 export default async function CrmPage() {
@@ -23,14 +22,12 @@ export default async function CrmPage() {
     getBoardData({ recruiterId, scope: "all", visibleStages: settings.visibleStages, onlyWithCandidate: true }),
     db.deal.findMany({
       where: { status: "OPEN" },
-      select: { value: true, probability: true },
+      select: { id: true },
     }),
     countDueFollowUps(recruiterId, "all"),
   ]);
 
   const openCount = openDeals.length;
-  const pipelineValue = openDeals.reduce((s, d) => s + d.value, 0);
-  const weightedValue = openDeals.reduce((s, d) => s + (d.value * d.probability) / 100, 0);
 
   // Deal board columns/cards.
   const dealColumns: DealColumn[] = board.stages.map((s) => ({
@@ -38,6 +35,7 @@ export default async function CrmPage() {
     label: s.name,
     color: s.color,
     probability: s.probability,
+    isLost: s.isLost,
   }));
   const dealCards: DealCard[] = board.cards.map((c) => ({
     id: c.id,
@@ -63,14 +61,12 @@ export default async function CrmPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="CRM"
-        description="Sleep een kaart naar de volgende fase, klik om te openen. Geplaatst en verloren gaan na 3 dagen naar het Archief."
+        title="Pipeline"
+        description="Lead → Aan bedrijf voorgesteld → Gesprek / interview → Geplaatst / akkoord. Sleep een kaart naar de volgende fase. Verloren gaat (na bevestiging) direct naar het Archief."
       />
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-ink-500">
         <span><b className="tabular-nums text-ink-900">{openCount}</b> open</span>
-        <span>Pipeline <b className="tabular-nums text-ink-900">{formatCurrency(pipelineValue)}</b></span>
-        <span>Gewogen <b className="tabular-nums text-ink-900">{formatCurrency(weightedValue)}</b></span>
         <Link href="/crm/opvolging" className={dueFollowUps > 0 ? "font-medium text-amber-700 hover:underline" : "hover:underline"}>
           <CalendarClock className="mr-1 inline h-4 w-4" />
           <b className="tabular-nums">{dueFollowUps}</b> opvolgen

@@ -176,17 +176,17 @@ const HUB_LIST: NavHub[] = [
       { href: "/kandidaten", label: "Talentpool", icon: Users, section: "Kandidaten" },
       { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, section: "Kandidaten" },
       { href: "/sollicitaties", label: "Sollicitaties", icon: ClipboardList, section: "Kandidaten" },
-      { href: "/crm", label: "Pipeline", icon: Kanban, section: "CRM" },
+      { href: "/crm", label: "Pipeline", icon: Kanban, section: "Werving" },
       // Vacatures = alles in één: werving (open/pipeline) én website (concept/gereed/online).
-      { href: "/crm/vacatures", label: "Vacatures", icon: Briefcase, section: "CRM" },
+      { href: "/crm/vacatures", label: "Vacatures", icon: Briefcase, section: "Werving" },
       // Bereikbaar via de mappen op Vacatures, niet als los menu-item:
       { href: "/website", label: "Vacatures op de website", icon: Globe, hidden: true },
       { href: "/vacatures", label: "Uitwerken & publiceren", icon: PencilLine, hidden: true },
       { href: "/vacaturehub", label: "Vacaturehub", icon: Filter, hidden: true },
-      { href: "/crm/contacten", label: "Contacten", icon: Contact, section: "CRM" },
-      { href: "/crm/opvolging", label: "Opvolging", icon: CalendarClock, section: "CRM" },
-      { href: "/opdrachtgevers", label: "Klanten", icon: Factory, section: "CRM" },
-      { href: "/crm/inzichten", label: "Inzichten", icon: BarChart3, section: "CRM" },
+      { href: "/crm/contacten", label: "Contacten", icon: Contact, section: "Werving" },
+      { href: "/crm/opvolging", label: "Opvolging", icon: CalendarClock, section: "Werving" },
+      { href: "/opdrachtgevers", label: "Klanten", icon: Factory, section: "Werving" },
+      { href: "/crm/inzichten", label: "Inzichten", icon: BarChart3, section: "Werving" },
     ],
   },
   {

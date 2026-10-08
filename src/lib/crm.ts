@@ -128,7 +128,7 @@ export type Stage = {
 /** Seed the default pipeline the first time the CRM is used (idempotent). */
 export async function ensureStages(): Promise<void> {
   const count = await db.crmStage.count();
-  if (count > 0) return;
+  if (count > 0) return syncPipelineFlow();
   for (const s of DEFAULT_CRM_STAGES) {
     await db.crmStage.create({
       data: {
@@ -140,6 +140,27 @@ export async function ensureStages(): Promise<void> {
         isWon: s.isWon ?? false,
         isLost: s.isLost ?? false,
       },
+    });
+  }
+}
+
+/**
+ * De vaste flow Lead → Aan bedrijf voorgesteld → Gesprek → Geplaatst/akkoord →
+ * Verloren op een bestaande pipeline zetten (idempotent): namen/volgorde van de
+ * standaardfases bijwerken en "Gekwalificeerd" uitzetten — wie daar stond gaat
+ * terug naar Lead. Eigen extra fases blijven ongemoeid.
+ */
+async function syncPipelineFlow(): Promise<void> {
+  const oud = await db.crmStage.findUnique({ where: { key: "qualified" } });
+  const lead = await db.crmStage.findUnique({ where: { key: "lead" } });
+  if (oud?.active && lead) {
+    await db.deal.updateMany({ where: { stageId: oud.id }, data: { stageId: lead.id, probability: lead.probability } });
+    await db.crmStage.update({ where: { id: oud.id }, data: { active: false } });
+  }
+  for (const s of DEFAULT_CRM_STAGES) {
+    await db.crmStage.updateMany({
+      where: { key: s.key, NOT: { name: s.name, order: s.order } },
+      data: { name: s.name, order: s.order },
     });
   }
 }

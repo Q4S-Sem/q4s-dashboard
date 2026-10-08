@@ -658,11 +658,10 @@ export const DEFAULT_CRM_STAGES: {
   isLost?: boolean;
 }[] = [
   { key: "lead", name: "Lead", color: "slate", order: 0, probability: 10 },
-  { key: "qualified", name: "Gekwalificeerd", color: "blue", order: 1, probability: 25 },
-  { key: "proposed", name: "Kandidaat voorgesteld", color: "violet", order: 2, probability: 50 },
-  { key: "interview", name: "Gesprek / interview", color: "amber", order: 3, probability: 70 },
-  { key: "won", name: "Geplaatst", color: "green", order: 4, probability: 100, isWon: true },
-  { key: "lost", name: "Verloren", color: "red", order: 5, probability: 0, isLost: true },
+  { key: "proposed", name: "Aan bedrijf voorgesteld", color: "violet", order: 1, probability: 50 },
+  { key: "interview", name: "Gesprek / interview", color: "amber", order: 2, probability: 70 },
+  { key: "won", name: "Geplaatst / akkoord", color: "green", order: 3, probability: 100, isWon: true },
+  { key: "lost", name: "Verloren", color: "red", order: 4, probability: 0, isLost: true },
 ];
 
 /** The vakgebieden the Q4S niche covers — used by the AI relevance filter. */

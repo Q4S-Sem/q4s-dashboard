@@ -39,10 +39,10 @@ export default async function OverzichtTab({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; cv?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, cv } = await searchParams;
   const candidate = await getCandidate(id);
   if (!candidate) notFound();
 
@@ -53,6 +53,13 @@ export default async function OverzichtTab({
           Deze kandidaat kan niet verwijderd worden zolang er sollicitaties aan
           gekoppeld zijn.
         </Fout>
+      )}
+      {error === "geen-cv" && <Fout>Er hangt nog geen CV aan deze kandidaat. Voeg het toe bij het tabblad CV.</Fout>}
+      {error === "cv-lezen" && <Fout>Het CV kon niet uitgelezen worden. Probeer het opnieuw of vul de gegevens zelf in.</Fout>}
+      {cv === "ingeladen" && (
+        <p className="rounded-sm bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          CV ingeladen — lege velden zijn aangevuld. Controleer ze en geef een beoordeling.
+        </p>
       )}
       {error === "foto" && <Fout>Kies een afbeelding om te uploaden.</Fout>}
       {error === "foto-groot" && <Fout>De foto is te groot (max. 5 MB).</Fout>}

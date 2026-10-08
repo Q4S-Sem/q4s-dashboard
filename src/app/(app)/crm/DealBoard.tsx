@@ -14,6 +14,7 @@ export type DealColumn = {
   label: string;
   color: BadgeColor;
   probability: number;
+  isLost?: boolean;
 };
 
 export type DealCard = {
@@ -75,8 +76,13 @@ export function DealBoard({
   async function move(cardId: string, toColumnId: string) {
     const card = cards.find((c) => c.id === cardId);
     if (!card || card.columnId === toColumnId) return;
+    // Verloren = meteen naar het archief: eerst bevestigen.
+    const verloren = columns.find((c) => c.id === toColumnId)?.isLost;
+    if (verloren && !window.confirm(`Weet je het zeker? "${card.candidateName ?? card.title}" gaat als verloren direct naar het archief.`)) return;
     const prev = cards;
-    setCards((cs) => cs.map((c) => (c.id === cardId ? { ...c, columnId: toColumnId } : c)));
+    setCards((cs) =>
+      verloren ? cs.filter((c) => c.id !== cardId) : cs.map((c) => (c.id === cardId ? { ...c, columnId: toColumnId } : c)),
+    );
     try {
       await moveDeal(cardId, toColumnId);
     } catch {

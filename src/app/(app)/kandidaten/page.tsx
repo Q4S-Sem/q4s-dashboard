@@ -1,17 +1,9 @@
 import Link from "next/link";
-import {
-  Users,
-  Plus,
-  Star,
-  ThumbsUp,
-  UserX,
-  UserCheck,
-  ChevronRight,
-  Mail,
-} from "lucide-react";
+import { Users, Plus, Star, UserCheck, ChevronRight, Mail, Inbox, Globe, FileText, ClipboardList, ClipboardCheck } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
+import { FilterTegels, type FilterTegel } from "@/components/ui/filter-tegels";
+import { herkomst } from "@/lib/eu-herkomst";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
@@ -41,6 +33,7 @@ type SP = {
   discipline?: string;
   rating?: string;
   availability?: string;
+  map?: string;
   error?: string;
 };
 
@@ -67,6 +60,9 @@ export default async function KandidatenPage({
   const discipline = sp.discipline || "";
   const rating = sp.rating || "";
   const availability = sp.availability || "";
+  const map = ["beoordelen", "nieuw", "beschikbaar", "goed", "buiten"].includes(sp.map ?? "") ? sp.map! : "pool";
+  const vandaag = new Date();
+  vandaag.setHours(0, 0, 0, 0);
 
   const where = {
     ...(discipline ? { discipline } : {}),
@@ -86,17 +82,13 @@ export default async function KandidatenPage({
       : {}),
   };
 
-  const [candidates, ratingGroups, availableCount, clients, openVacancies] = await Promise.all([
+  const [alle, clients, openVacancies, sollicitatiesVandaag] = await Promise.all([
     db.candidate.findMany({
       where,
       include: {
         _count: { select: { applications: true } },
         candidatePlacements: { select: { company: true }, orderBy: { startDate: "desc" } },
       },
-    }),
-    db.candidate.groupBy({ by: ["rating"], _count: { _all: true } }),
-    db.candidate.count({
-      where: { availability: { in: [...CANDIDATE_AVAILABLE_VALUES] } },
     }),
     db.client.findMany({ orderBy: { companyName: "asc" }, select: { id: true, companyName: true } }),
     db.vacancy.findMany({
@@ -105,7 +97,47 @@ export default async function KandidatenPage({
       take: 200,
       select: { id: true, title: true, companyName: true },
     }),
+    // Wie heeft vandaag gesolliciteerd (op een vacature)?
+    db.application.findMany({
+      where: { createdAt: { gte: vandaag } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        createdAt: true,
+        candidate: { select: { id: true, firstName: true, lastName: true } },
+        vacancy: { select: { title: true } },
+      },
+    }),
   ]);
+
+  // EU / buiten de EU: buiten de EU valt automatisch af (eigen map, niets gewist).
+  const metHerkomst = alle.map((c) => ({ ...c, herkomst: herkomst(c) }));
+  const pool = metHerkomst.filter((c) => c.herkomst !== "BUITEN_EU");
+  const isNieuw = (c: { createdAt: Date }) => c.createdAt >= vandaag;
+  const mappen: Record<string, typeof metHerkomst> = {
+    pool,
+    beoordelen: pool.filter((c) => c.rating === "ONBEKEND"),
+    nieuw: pool.filter(isNieuw),
+    goed: pool.filter((c) => c.rating === "GOED"),
+    beschikbaar: pool.filter((c) => (CANDIDATE_AVAILABLE_VALUES as readonly string[]).includes(c.availability)),
+    buiten: metHerkomst.filter((c) => c.herkomst === "BUITEN_EU"),
+  };
+  const candidates = mappen[map];
+  const mapHref = (m: string) => {
+    const p = new URLSearchParams();
+    if (m !== "pool") p.set("map", m);
+    for (const [k, v] of Object.entries({ q, discipline, rating, availability })) if (v) p.set(k, v);
+    const qs = p.toString();
+    return qs ? `/kandidaten?${qs}` : "/kandidaten";
+  };
+  const tegels: FilterTegel[] = [
+    { key: "pool", label: "Talentpool (EU)", waarde: mappen.pool.length, icon: <Users className="h-4 w-4" />, toon: "slate", href: mapHref("pool"), actief: map === "pool" },
+    { key: "beoordelen", label: "Ter beoordeling", waarde: mappen.beoordelen.length, icon: <ClipboardCheck className="h-4 w-4" />, toon: "amber", href: mapHref("beoordelen"), actief: map === "beoordelen" },
+    { key: "nieuw", label: "Vandaag binnen", waarde: mappen.nieuw.length + sollicitatiesVandaag.length, icon: <Inbox className="h-4 w-4" />, toon: "blue", href: mapHref("nieuw"), actief: map === "nieuw" },
+    { key: "goed", label: "Goed beoordeeld", waarde: mappen.goed.length, icon: <Star className="h-4 w-4" />, toon: "green", href: mapHref("goed"), actief: map === "goed" },
+    { key: "beschikbaar", label: "Beschikbaar", waarde: mappen.beschikbaar.length, icon: <UserCheck className="h-4 w-4" />, toon: "violet", href: mapHref("beschikbaar"), actief: map === "beschikbaar" },
+    { key: "buiten", label: "Buiten de EU — vallen af", waarde: mappen.buiten.length, icon: <Globe className="h-4 w-4" />, toon: "red", href: mapHref("buiten"), actief: map === "buiten" },
+  ];
 
   const pipelineClients = clients.map((c) => ({ id: c.id, name: c.companyName }));
   const pipelineVacancies = openVacancies.map((v) => ({ id: v.id, title: v.title, company: v.companyName }));
@@ -118,9 +150,6 @@ export default async function KandidatenPage({
     return a.lastName.localeCompare(b.lastName);
   });
 
-  const countBy = (r: string) =>
-    ratingGroups.find((g) => g.rating === r)?._count._all ?? 0;
-  const total = ratingGroups.reduce((s, g) => s + g._count._all, 0);
   const hasFilter = Boolean(q || discipline || rating || availability);
 
   return (
@@ -142,36 +171,39 @@ export default async function KandidatenPage({
         </p>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Kandidaten" value={total} icon={<Users className="h-5 w-5" />} accent="brand" />
-        <StatCard label="Goed" value={countBy("GOED")} icon={<Star className="h-5 w-5" />} accent="green" />
-        <StatCard label="Redelijk" value={countBy("REDELIJK")} icon={<ThumbsUp className="h-5 w-5" />} accent="amber" />
-        <StatCard label="Niet meer inzetbaar" value={countBy("NIET_MEER")} icon={<UserX className="h-5 w-5" />} accent="red" />
-      </div>
+      <FilterTegels items={tegels} label="Mappen talentpool" />
 
-      {/* Snelkoppeling naar de map met beschikbare kandidaten */}
-      <Link
-        href="/kandidaten/beschikbaar"
-        className="group flex items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 transition-colors hover:bg-emerald-100"
-      >
-        <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-600 ring-1 ring-emerald-200">
-            <UserCheck className="h-4 w-4" />
-          </span>
-          <div>
-            <p className="font-semibold text-emerald-900">Beschikbare kandidaten</p>
-            <p className="text-sm text-emerald-700">
-              {availableCount === 0
-                ? "Nog niemand als beschikbaar gemarkeerd"
-                : `${availableCount} kandidaat${availableCount === 1 ? "" : "en"} nu of binnenkort inzetbaar`}
-            </p>
-          </div>
+      {/* Elke dag: wie stuurde vandaag een cv of solliciteerde? */}
+      {(mappen.nieuw.length > 0 || sollicitatiesVandaag.length > 0) && map !== "buiten" && (
+        <div className="rounded-md border border-blue-200 bg-blue-50/60 px-4 py-3">
+          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
+            <Inbox className="h-4 w-4" /> Vandaag binnengekomen
+          </p>
+          <ul className="flex flex-wrap gap-2">
+            {mappen.nieuw.map((c) => (
+              <li key={c.id}>
+                <Link href={`/kandidaten/${c.id}`} className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-ink-800 hover:border-blue-400">
+                  <FileText className="h-3.5 w-3.5 text-blue-600" /> {c.firstName} {c.lastName}
+                  <span className="text-ink-400">· cv</span>
+                </Link>
+              </li>
+            ))}
+            {sollicitatiesVandaag.map((a) => (
+              <li key={a.id}>
+                <Link href={`/kandidaten/${a.candidate.id}`} className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-ink-800 hover:border-blue-400">
+                  <ClipboardList className="h-3.5 w-3.5 text-violet-600" /> {a.candidate.firstName} {a.candidate.lastName}
+                  <span className="text-ink-400">· sollicitatie{a.vacancy ? ` ${a.vacancy.title}` : ""}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
-        <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700">
-          Bekijken
-          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-        </span>
-      </Link>
+      )}
+      {map === "buiten" && (
+        <p className="rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800">
+          Kandidaten van buiten de EU/EER (herkend aan land of telefoonnummer) vallen automatisch af. Ze staan hier apart, er is niets gewist.
+        </p>
+      )}
 
       {/* Filters — zoekt automatisch tijdens typen en bij elke keuze */}
       <KandidatenFilters
@@ -179,6 +211,7 @@ export default async function KandidatenPage({
         discipline={discipline}
         rating={rating}
         availability={availability}
+        map={map === "pool" ? "" : map}
         disciplines={DISCIPLINES}
         ratings={CANDIDATE_RATINGS}
         availabilities={CANDIDATE_AVAILABILITY}
@@ -209,6 +242,7 @@ export default async function KandidatenPage({
         <>
           <p className="text-xs text-ink-400">
             {candidates.length} kandida{candidates.length === 1 ? "at" : "ten"} · beste beoordeling eerst
+            {map === "pool" && mappen.buiten.length > 0 && ` · ${mappen.buiten.length} buiten de EU niet getoond`}
           </p>
           <div className="divide-y divide-ink-100 overflow-hidden rounded-md border border-ink-100 bg-white">
             {candidates.map((c) => {
@@ -227,6 +261,9 @@ export default async function KandidatenPage({
                   {/* Persoon: avatar + naam + discipline */}
                   <div className="pointer-events-none relative z-10 flex min-w-0 flex-1 items-center gap-3">
                     <Avatar {...person(c)} size="sm" className={cn("ring-2", ringByRating(c.rating))} />
+                    {isNieuw(c) && (
+                      <span className="absolute -left-1 -top-1 rounded-full bg-blue-600 px-1.5 text-[9px] font-bold uppercase text-white">nieuw</span>
+                    )}
                     <div className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-ink-900 group-hover:text-brand-600">
                         {c.firstName} {c.lastName}

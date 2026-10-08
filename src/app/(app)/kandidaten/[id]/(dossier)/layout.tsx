@@ -17,6 +17,7 @@ import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { person } from "@/lib/people";
 import { deleteCandidate, uploadPhoto, deletePhoto } from "../../actions";
 import { PhotoPicker } from "../../PhotoPicker";
+import { KandidaatStappen } from "../../KandidaatStappen";
 import { getCandidate, getDossierCounts } from "./data";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -81,6 +82,8 @@ export default async function KandidaatDossierLayout({
           </>
         }
       />
+
+      <KandidaatStappen c={candidate} />
 
       <DossierTabs
         base={`/kandidaten/${candidate.id}`}
