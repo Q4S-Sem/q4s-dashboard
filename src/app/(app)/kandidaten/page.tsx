@@ -1,335 +1,147 @@
 import Link from "next/link";
-import { Users, Plus, Star, UserCheck, ChevronRight, Mail, Inbox, Globe, FileText, ClipboardList, ClipboardCheck } from "lucide-react";
+import { CalendarDays, ChevronRight, ClipboardCheck, ClipboardList, FileText, Globe, Inbox, Plus, Users } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { FilterTegels, type FilterTegel } from "@/components/ui/filter-tegels";
-import { herkomst } from "@/lib/eu-herkomst";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { PhoneButton } from "@/components/ui/phone-button";
 import { person } from "@/lib/people";
-import { cn } from "@/lib/utils";
-import {
-  DISCIPLINES,
-  CANDIDATE_RATINGS,
-  CANDIDATE_RATING_ORDER,
-  CANDIDATE_AVAILABILITY,
-  CANDIDATE_AVAILABLE_VALUES,
-} from "@/lib/domain";
+import { herkomst } from "@/lib/eu-herkomst";
+import { startVandaagNL } from "@/lib/vandaag";
+import { CANDIDATE_SOURCES, DISCIPLINES } from "@/lib/domain";
 import { RatingSelect } from "./RatingSelect";
-import { AvailabilitySelect } from "./AvailabilitySelect";
-import { InterviewSelect } from "./InterviewSelect";
-import { KandidatenFilters } from "./KandidatenFilters";
-import { PipelineButton } from "./PipelineButton";
-import { createDealFromCandidate } from "../crm/deals/actions";
 
 export const metadata = { title: "Talentpool" };
 export const dynamic = "force-dynamic";
 
-type SP = {
-  q?: string;
-  discipline?: string;
-  rating?: string;
-  availability?: string;
-  map?: string;
-  error?: string;
-};
-
 /**
- * Ring om de profielfoto naar beoordeling — geeft de kaart in één oogopslag een
- * signaal, ook wanneer er een foto in plaats van initialen staat.
+ * Talentpool-hoofdpagina: elke dag een schone pagina met alleen wie VANDAAG
+ * binnenkwam (cv gestuurd / aangemeld) of solliciteerde. De hele pool staat op
+ * /kandidaten/alle.
  */
-const RATING_RING: Record<string, string> = {
-  GOED: "ring-emerald-400",
-  REDELIJK: "ring-amber-400",
-  NIET_MEER: "ring-red-400",
-};
-function ringByRating(rating: string): string {
-  return RATING_RING[rating] ?? "ring-ink-200";
-}
-
-export default async function KandidatenPage({
-  searchParams,
-}: {
-  searchParams: Promise<SP>;
-}) {
-  const sp = await searchParams;
-  const q = sp.q?.trim() || "";
-  const discipline = sp.discipline || "";
-  const rating = sp.rating || "";
-  const availability = sp.availability || "";
-  const map = ["beoordelen", "nieuw", "beschikbaar", "goed", "buiten"].includes(sp.map ?? "") ? sp.map! : "pool";
-  const vandaag = new Date();
-  vandaag.setHours(0, 0, 0, 0);
-
-  const where = {
-    ...(discipline ? { discipline } : {}),
-    ...(rating ? { rating } : {}),
-    ...(availability ? { availability } : {}),
-    ...(q
-      ? {
-          OR: [
-            { firstName: { contains: q } },
-            { lastName: { contains: q } },
-            { email: { contains: q } },
-            { phone: { contains: q } },
-            { headline: { contains: q } },
-            { location: { contains: q } },
-          ],
-        }
-      : {}),
-  };
-
-  const [alle, clients, openVacancies, sollicitatiesVandaag] = await Promise.all([
+export default async function TalentpoolVandaag() {
+  const vandaag = startVandaagNL();
+  const [nieuw, sollicitaties, totaal, teBeoordelen] = await Promise.all([
     db.candidate.findMany({
-      where,
-      include: {
-        _count: { select: { applications: true } },
-        candidatePlacements: { select: { company: true }, orderBy: { startDate: "desc" } },
+      where: { createdAt: { gte: vandaag } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true, firstName: true, lastName: true, photoFileName: true, headline: true, discipline: true,
+        location: true, phone: true, source: true, rating: true, createdAt: true,
       },
     }),
-    db.client.findMany({ orderBy: { companyName: "asc" }, select: { id: true, companyName: true } }),
-    db.vacancy.findMany({
-      where: { status: { not: "CONCEPT" } },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-      select: { id: true, title: true, companyName: true },
-    }),
-    // Wie heeft vandaag gesolliciteerd (op een vacature)?
     db.application.findMany({
       where: { createdAt: { gte: vandaag } },
       orderBy: { createdAt: "desc" },
       select: {
-        id: true,
-        createdAt: true,
-        candidate: { select: { id: true, firstName: true, lastName: true } },
+        id: true, createdAt: true,
+        candidate: { select: { id: true, firstName: true, lastName: true, createdAt: true } },
         vacancy: { select: { title: true } },
       },
     }),
+    db.candidate.count(),
+    db.candidate.count({ where: { rating: "ONBEKEND" } }),
   ]);
 
-  // EU / buiten de EU: buiten de EU valt automatisch af (eigen map, niets gewist).
-  const metHerkomst = alle.map((c) => ({ ...c, herkomst: herkomst(c) }));
-  const pool = metHerkomst.filter((c) => c.herkomst !== "BUITEN_EU");
-  const isNieuw = (c: { createdAt: Date }) => c.createdAt >= vandaag;
-  const mappen: Record<string, typeof metHerkomst> = {
-    pool,
-    beoordelen: pool.filter((c) => c.rating === "ONBEKEND"),
-    nieuw: pool.filter(isNieuw),
-    goed: pool.filter((c) => c.rating === "GOED"),
-    beschikbaar: pool.filter((c) => (CANDIDATE_AVAILABLE_VALUES as readonly string[]).includes(c.availability)),
-    buiten: metHerkomst.filter((c) => c.herkomst === "BUITEN_EU"),
-  };
-  const candidates = mappen[map];
-  const mapHref = (m: string) => {
-    const p = new URLSearchParams();
-    if (m !== "pool") p.set("map", m);
-    for (const [k, v] of Object.entries({ q, discipline, rating, availability })) if (v) p.set(k, v);
-    const qs = p.toString();
-    return qs ? `/kandidaten?${qs}` : "/kandidaten";
-  };
+  const tijd = (d: Date) => d.toLocaleTimeString("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" });
+  const datum = new Date().toLocaleDateString("nl-NL", { timeZone: "Europe/Amsterdam", weekday: "long", day: "numeric", month: "long" });
+  const nieuwIds = new Set(nieuw.map((c) => c.id));
+  // Sollicitaties van bestaande kandidaten (nieuwe staan al in de lijst hierboven).
+  const vanBestaande = sollicitaties.filter((a) => !nieuwIds.has(a.candidate.id));
+  const sollicitatieVan = new Map(sollicitaties.map((a) => [a.candidate.id, a.vacancy?.title ?? "open sollicitatie"]));
+  const buitenEU = nieuw.filter((c) => herkomst(c) === "BUITEN_EU").length;
+
   const tegels: FilterTegel[] = [
-    { key: "pool", label: "Talentpool (EU)", waarde: mappen.pool.length, icon: <Users className="h-4 w-4" />, toon: "slate", href: mapHref("pool"), actief: map === "pool" },
-    { key: "beoordelen", label: "Ter beoordeling", waarde: mappen.beoordelen.length, icon: <ClipboardCheck className="h-4 w-4" />, toon: "amber", href: mapHref("beoordelen"), actief: map === "beoordelen" },
-    { key: "nieuw", label: "Vandaag binnen", waarde: mappen.nieuw.length + sollicitatiesVandaag.length, icon: <Inbox className="h-4 w-4" />, toon: "blue", href: mapHref("nieuw"), actief: map === "nieuw" },
-    { key: "goed", label: "Goed beoordeeld", waarde: mappen.goed.length, icon: <Star className="h-4 w-4" />, toon: "green", href: mapHref("goed"), actief: map === "goed" },
-    { key: "beschikbaar", label: "Beschikbaar", waarde: mappen.beschikbaar.length, icon: <UserCheck className="h-4 w-4" />, toon: "violet", href: mapHref("beschikbaar"), actief: map === "beschikbaar" },
-    { key: "buiten", label: "Buiten de EU — vallen af", waarde: mappen.buiten.length, icon: <Globe className="h-4 w-4" />, toon: "red", href: mapHref("buiten"), actief: map === "buiten" },
+    { key: "nieuw", label: "Vandaag binnen", waarde: nieuw.length + vanBestaande.length, icon: <Inbox className="h-4 w-4" />, toon: "blue", href: "/kandidaten", actief: true },
+    { key: "beoordelen", label: "Ter beoordeling", waarde: teBeoordelen, icon: <ClipboardCheck className="h-4 w-4" />, toon: "amber", href: "/kandidaten/alle?map=beoordelen", actief: false },
+    { key: "buiten", label: "Vandaag buiten de EU", waarde: buitenEU, icon: <Globe className="h-4 w-4" />, toon: "red", href: "/kandidaten/alle?map=buiten", actief: false },
+    { key: "alle", label: "Alle kandidaten", waarde: totaal, icon: <Users className="h-4 w-4" />, toon: "slate", href: "/kandidaten/alle", actief: false },
   ];
-
-  const pipelineClients = clients.map((c) => ({ id: c.id, name: c.companyName }));
-  const pipelineVacancies = openVacancies.map((v) => ({ id: v.id, title: v.title, company: v.companyName }));
-
-  // Rank best first, then alphabetically.
-  candidates.sort((a, b) => {
-    const ra = CANDIDATE_RATING_ORDER[a.rating] ?? 9;
-    const rb = CANDIDATE_RATING_ORDER[b.rating] ?? 9;
-    if (ra !== rb) return ra - rb;
-    return a.lastName.localeCompare(b.lastName);
-  });
-
-  const hasFilter = Boolean(q || discipline || rating || availability);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Talentpool"
-        description="Alle kandidaten met beoordeling, contactgegevens en filters — zo weet je direct wie je bij een klant kunt neerzetten."
+        description={`Vandaag binnengekomen — ${datum}. Elke dag begint deze pagina leeg; de hele pool staat bij Alle kandidaten.`}
         actions={
-          <Link href="/kandidaten/nieuw" className={buttonVariants()}>
-            <Plus className="h-4 w-4" /> Nieuwe kandidaat
-          </Link>
+          <>
+            <Link href="/kandidaten/alle" className={buttonVariants({ variant: "outline" })}>
+              <Users className="h-4 w-4" /> Alle kandidaten
+            </Link>
+            <Link href="/kandidaten/nieuw" className={buttonVariants()}>
+              <Plus className="h-4 w-4" /> Nieuwe kandidaat
+            </Link>
+          </>
         }
       />
 
-      {sp.error === "in-use" && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          Deze kandidaat kan niet verwijderd worden zolang er sollicitaties aan
-          gekoppeld zijn.
-        </p>
-      )}
+      <FilterTegels items={tegels} label="Talentpool vandaag" />
 
-      <FilterTegels items={tegels} label="Mappen talentpool" />
-
-      {/* Elke dag: wie stuurde vandaag een cv of solliciteerde? */}
-      {(mappen.nieuw.length > 0 || sollicitatiesVandaag.length > 0) && map !== "buiten" && (
-        <div className="rounded-md border border-blue-200 bg-blue-50/60 px-4 py-3">
-          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
-            <Inbox className="h-4 w-4" /> Vandaag binnengekomen
-          </p>
-          <ul className="flex flex-wrap gap-2">
-            {mappen.nieuw.map((c) => (
-              <li key={c.id}>
-                <Link href={`/kandidaten/${c.id}`} className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-ink-800 hover:border-blue-400">
-                  <FileText className="h-3.5 w-3.5 text-blue-600" /> {c.firstName} {c.lastName}
-                  <span className="text-ink-400">· cv</span>
-                </Link>
-              </li>
-            ))}
-            {sollicitatiesVandaag.map((a) => (
-              <li key={a.id}>
-                <Link href={`/kandidaten/${a.candidate.id}`} className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-medium text-ink-800 hover:border-blue-400">
-                  <ClipboardList className="h-3.5 w-3.5 text-violet-600" /> {a.candidate.firstName} {a.candidate.lastName}
-                  <span className="text-ink-400">· sollicitatie{a.vacancy ? ` ${a.vacancy.title}` : ""}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {map === "buiten" && (
-        <p className="rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800">
-          Kandidaten van buiten de EU/EER (herkend aan land of telefoonnummer) vallen automatisch af. Ze staan hier apart, er is niets gewist.
-        </p>
-      )}
-
-      {/* Filters — zoekt automatisch tijdens typen en bij elke keuze */}
-      <KandidatenFilters
-        q={q}
-        discipline={discipline}
-        rating={rating}
-        availability={availability}
-        map={map === "pool" ? "" : map}
-        disciplines={DISCIPLINES}
-        ratings={CANDIDATE_RATINGS}
-        availabilities={CANDIDATE_AVAILABILITY}
-      />
-
-      {candidates.length === 0 ? (
+      {nieuw.length + vanBestaande.length === 0 ? (
         <EmptyState
-          icon={<Users className="h-6 w-6" />}
-          title={hasFilter ? "Geen kandidaten gevonden" : "Nog geen kandidaten"}
-          description={
-            hasFilter
-              ? "Pas je zoekopdracht of filters aan."
-              : "Voeg je eerste kandidaat toe om de talentpool op te bouwen."
-          }
+          icon={<CalendarDays className="h-6 w-6" />}
+          title="Vandaag nog niemand binnen"
+          description="Zodra iemand via de website een cv stuurt, solliciteert of per mail binnenkomt, staat hij hier."
           action={
-            hasFilter ? (
-              <Link href="/kandidaten" className={buttonVariants({ variant: "outline" })}>
-                Filters wissen
-              </Link>
-            ) : (
-              <Link href="/kandidaten/nieuw" className={buttonVariants()}>
-                <Plus className="h-4 w-4" /> Nieuwe kandidaat
-              </Link>
-            )
+            <Link href="/kandidaten/alle" className={buttonVariants({ variant: "outline" })}>
+              <Users className="h-4 w-4" /> Naar alle kandidaten
+            </Link>
           }
         />
       ) : (
-        <>
-          <p className="text-xs text-ink-400">
-            {candidates.length} kandida{candidates.length === 1 ? "at" : "ten"} · beste beoordeling eerst
-            {map === "pool" && mappen.buiten.length > 0 && ` · ${mappen.buiten.length} buiten de EU niet getoond`}
-          </p>
-          <div className="divide-y divide-ink-100 overflow-hidden rounded-md border border-ink-100 bg-white">
-            {candidates.map((c) => {
-              return (
-                <div
-                  key={c.id}
-                  className="group relative flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 transition-colors hover:bg-ink-50/60"
-                >
-                  {/* Hele rij klikbaar → dossier. Ligt achter de knoppen (z-0);
-                      de interactieve controls staan met z-10 erboven. */}
-                  <Link
-                    href={`/kandidaten/${c.id}`}
-                    aria-label={`${c.firstName} ${c.lastName} openen`}
-                    className="absolute inset-0 z-0"
-                  />
-                  {/* Persoon: avatar + naam + discipline */}
-                  <div className="pointer-events-none relative z-10 flex min-w-0 flex-1 items-center gap-3">
-                    <Avatar {...person(c)} size="sm" className={cn("ring-2", ringByRating(c.rating))} />
-                    {isNieuw(c) && (
-                      <span className="absolute -left-1 -top-1 rounded-full bg-blue-600 px-1.5 text-[9px] font-bold uppercase text-white">nieuw</span>
-                    )}
-                    <div className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-ink-900 group-hover:text-brand-600">
-                        {c.firstName} {c.lastName}
-                      </span>
-                      <div className="flex items-center gap-1.5 truncate text-xs text-ink-500">
-                        {c.headline && <span className="truncate">{c.headline}</span>}
-                        {c.discipline && (
-                          <span className="shrink-0">
-                            <StatusBadge options={DISCIPLINES} value={c.discipline} />
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Contact — verschijnt vanaf lg, vaste breedte zodat de
-                      statuskolommen rechts netjes uitgelijnd blijven */}
-                  <div className="relative z-10 hidden w-[110px] shrink-0 items-center justify-end gap-x-3 text-xs text-ink-500 lg:flex">
-                    <span className="flex items-center gap-1.5">
-                      <PhoneButton phone={c.phone} name={`${c.firstName} ${c.lastName}`} />
-                      {c.email ? (
-                        <a
-                          href={`mailto:${c.email}`}
-                          title={`Mail ${c.firstName} (${c.email})`}
-                          aria-label={`Stuur een e-mail naar ${c.firstName} ${c.lastName}`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200"
-                        >
-                          <Mail className="h-4 w-4" />
-                        </a>
-                      ) : (
-                        <span
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300"
-                          title="Geen e-mailadres bekend"
-                          aria-hidden
-                        >
-                          <Mail className="h-4 w-4" />
-                        </span>
-                      )}
-                    </span>
-                  </div>
-
-                  {/* Statussen — compact naast elkaar */}
-                  <div className="relative z-10 flex flex-wrap items-center gap-2">
-                    <RatingSelect id={c.id} value={c.rating} className="w-36" />
-                    <AvailabilitySelect id={c.id} value={c.availability} className="w-36" />
-                    <InterviewSelect id={c.id} value={c.interviewStatus} className="w-32" />
-                    <PipelineButton
-                      action={createDealFromCandidate}
-                      candidateId={c.id}
-                      candidateName={`${c.firstName} ${c.lastName}`}
-                      clients={pipelineClients}
-                      vacancies={pipelineVacancies}
-                    />
-                    <Link
-                      href={`/kandidaten/${c.id}`}
-                      aria-label={`${c.firstName} ${c.lastName} openen`}
-                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-300 transition-colors hover:bg-ink-100 hover:text-brand-600"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </Link>
-                  </div>
+        <div className="divide-y divide-ink-100 overflow-hidden rounded-md border border-ink-200 bg-white">
+          {nieuw.map((c) => {
+            const buiten = herkomst(c) === "BUITEN_EU";
+            const sol = sollicitatieVan.get(c.id);
+            return (
+              <div key={c.id} className="relative flex items-center gap-3 px-4 py-3 text-sm">
+                <span className="w-12 shrink-0 text-xs tabular-nums text-ink-400">{tijd(c.createdAt)}</span>
+                <Avatar {...person(c)} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <Link href={`/kandidaten/${c.id}`} className="font-semibold text-ink-900 after:absolute after:inset-0 hover:text-brand-700">
+                    {c.firstName} {c.lastName}
+                  </Link>
+                  <p className="flex items-center gap-1.5 truncate text-xs text-ink-500">
+                    {sol ? <ClipboardList className="h-3.5 w-3.5 text-violet-600" /> : <FileText className="h-3.5 w-3.5 text-blue-600" />}
+                    {sol ? `Sollicitatie: ${sol}` : "Cv ingestuurd"}
+                    {c.headline ? ` · ${c.headline}` : ""}
+                    {c.location ? ` · ${c.location}` : ""}
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        </>
+                {buiten && <span className="rounded-sm bg-red-50 px-1.5 py-0.5 text-[11px] font-semibold text-red-700">Buiten EU</span>}
+                <div className="hidden w-32 justify-end sm:flex">
+                  {c.discipline && <StatusBadge options={DISCIPLINES} value={c.discipline} />}
+                </div>
+                <div className="hidden w-28 justify-end md:flex">
+                  <StatusBadge options={CANDIDATE_SOURCES} value={c.source} />
+                </div>
+                <div className="relative z-10">
+                  <RatingSelect id={c.id} value={c.rating} className="w-36" />
+                </div>
+                <ChevronRight className="h-5 w-5 shrink-0 text-ink-300" />
+              </div>
+            );
+          })}
+          {vanBestaande.map((a) => (
+            <div key={a.id} className="relative flex items-center gap-3 px-4 py-3 text-sm">
+              <span className="w-12 shrink-0 text-xs tabular-nums text-ink-400">{tijd(a.createdAt)}</span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-50 text-violet-600">
+                <ClipboardList className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <Link href={`/kandidaten/${a.candidate.id}`} className="font-semibold text-ink-900 after:absolute after:inset-0 hover:text-brand-700">
+                  {a.candidate.firstName} {a.candidate.lastName}
+                </Link>
+                <p className="truncate text-xs text-ink-500">
+                  Bekende kandidaat solliciteerde opnieuw{a.vacancy ? `: ${a.vacancy.title}` : ""}
+                </p>
+              </div>
+              <ChevronRight className="h-5 w-5 shrink-0 text-ink-300" />
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

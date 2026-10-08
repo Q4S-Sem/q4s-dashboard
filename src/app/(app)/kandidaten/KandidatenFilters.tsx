@@ -49,7 +49,7 @@ export function KandidatenFilters({
     if (values.rating) params.set("rating", values.rating);
     if (values.availability) params.set("availability", values.availability);
     const qs = params.toString();
-    startTransition(() => router.replace(qs ? `/kandidaten?${qs}` : "/kandidaten"));
+    startTransition(() => router.replace(qs ? `/kandidaten/alle?${qs}` : "/kandidaten/alle"));
   }
 
   // Debounce het zoekveld: 300 ms na de laatste toetsaanslag automatisch zoeken.
@@ -124,7 +124,7 @@ export function KandidatenFilters({
                 type="button"
                 onClick={() => {
                   setTerm("");
-                  startTransition(() => router.replace(map ? `/kandidaten?map=${map}` : "/kandidaten"));
+                  startTransition(() => router.replace(map ? `/kandidaten/alle?map=${map}` : "/kandidaten/alle"));
                 }}
                 className={buttonVariants({ variant: "outline" })}
               >
