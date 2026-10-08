@@ -434,7 +434,7 @@ export const CANDIDATE_RATINGS: Option[] = [
   { value: "GOED", label: "Goed", color: "green" },
   { value: "REDELIJK", label: "Redelijk", color: "amber" },
   { value: "NIET_MEER", label: "Niet meer inzetbaar", color: "red" },
-  { value: "ONBEKEND", label: "Niet beoordeeld", color: "slate" },
+  { value: "ONBEKEND", label: "Open", color: "slate" },
 ];
 export const CANDIDATE_RATING_VALUES = CANDIDATE_RATINGS.map((d) => d.value) as [string, ...string[]];
 /** Sort priority for the talentpool: best first, "niet meer" last. */
@@ -450,7 +450,7 @@ export const CANDIDATE_AVAILABILITY: Option[] = [
   { value: "BESCHIKBAAR", label: "Beschikbaar", color: "green" },
   { value: "BINNENKORT", label: "Binnenkort beschikbaar", color: "amber" },
   { value: "NIET_BESCHIKBAAR", label: "Niet beschikbaar", color: "red" },
-  { value: "ONBEKEND", label: "Onbekend", color: "slate" },
+  { value: "ONBEKEND", label: "Open", color: "slate" },
 ];
 export const CANDIDATE_AVAILABILITY_VALUES = CANDIDATE_AVAILABILITY.map((d) => d.value) as [string, ...string[]];
 /** The statuses that count as "inzetbaar" for the beschikbaar-map (nu of binnenkort). */
@@ -458,7 +458,7 @@ export const CANDIDATE_AVAILABLE_VALUES = ["BESCHIKBAAR", "BINNENKORT"] as const
 
 // --- Kandidaat-interview (met Q4S) ---
 export const CANDIDATE_INTERVIEW_STATUSES: Option[] = [
-  { value: "NONE", label: "Nog niet", color: "slate" },
+  { value: "NONE", label: "Open", color: "slate" },
   { value: "PLANNED", label: "Ingepland", color: "amber" },
   { value: "DONE", label: "Op interview geweest", color: "green" },
 ];

@@ -18,7 +18,7 @@ const DOT: Record<string, string> = {
 };
 /** Korte labels voor de chip + dropdown — kort en duidelijk, niet uitlopend. */
 const SHORT: Record<string, string> = {
-  NONE: "Nog niet",
+  NONE: "Open",
   PLANNED: "Ingepland",
   DONE: "Interview",
 };
@@ -86,7 +86,7 @@ export function InterviewSelect({
   }, [open]);
 
   const label =
-    SHORT[current] ?? CANDIDATE_INTERVIEW_STATUSES.find((s) => s.value === current)?.label ?? "Nog niet";
+    SHORT[current] ?? CANDIDATE_INTERVIEW_STATUSES.find((s) => s.value === current)?.label ?? "Open";
   const tone = TONE[current] ?? TONE.NONE;
 
   function choose(v: string) {

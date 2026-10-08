@@ -81,7 +81,7 @@ export function RatingSelect({
   }, [open]);
 
   const label =
-    CANDIDATE_RATINGS.find((r) => r.value === current)?.label ?? "Niet beoordeeld";
+    CANDIDATE_RATINGS.find((r) => r.value === current)?.label ?? "Open";
   const tone = TONE[current] ?? TONE.ONBEKEND;
 
   function choose(v: string) {

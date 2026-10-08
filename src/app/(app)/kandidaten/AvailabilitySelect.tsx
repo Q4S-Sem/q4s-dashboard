@@ -23,7 +23,7 @@ const SHORT: Record<string, string> = {
   BESCHIKBAAR: "Beschikbaar",
   BINNENKORT: "Binnenkort",
   NIET_BESCHIKBAAR: "Niet beschikbaar",
-  ONBEKEND: "Onbekend",
+  ONBEKEND: "Open",
 };
 
 /**
@@ -89,7 +89,7 @@ export function AvailabilitySelect({
   }, [open]);
 
   const label =
-    SHORT[current] ?? CANDIDATE_AVAILABILITY.find((a) => a.value === current)?.label ?? "Onbekend";
+    SHORT[current] ?? CANDIDATE_AVAILABILITY.find((a) => a.value === current)?.label ?? "Open";
   const tone = TONE[current] ?? TONE.ONBEKEND;
 
   function choose(v: string) {
