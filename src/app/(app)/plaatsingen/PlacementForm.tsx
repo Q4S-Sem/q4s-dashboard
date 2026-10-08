@@ -1858,6 +1858,10 @@ export function PlacementForm({
                 >
                   <input type="hidden" name="weekendSurchargeBuy" value={0} />
                   <input type="hidden" name="weekendSurchargeSell" value={0} />
+                  <div className="bg-ink-50 px-3 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-700">A · Toeslag op dezelfde uren — geen extra uren</p>
+                    <p className="text-xs text-ink-500">Wanneer of waar hij werkt: weekend, ploegendienst (verschoven uren, avond/nacht), offshore, buitenland. Het aantal uren blijft gelijk.</p>
+                  </div>
                   <ToeslagRow
                     title="Zaterdag"
                     standaardAan
@@ -1904,7 +1908,7 @@ export function PlacementForm({
                   />
                   <ToeslagRow
                     title="Ploegendienst"
-                    hint="Over alle reguliere uren"
+                    hint="Verschoven uren (avond/nacht) — géén overuren"
                     prefix="shift"
                     buyDefault={placement?.shiftSurchargeBuy ?? 0}
                     sellDefault={placement?.shiftSurchargeSell ?? 0}
@@ -1916,6 +1920,44 @@ export function PlacementForm({
                     }
                     toggle={{ name: "shiftEnabled", defaultOn: placement ? placement.shiftEnabled : true }}
                   />
+                  <ToeslagRow
+                    title="Offshore"
+                    hint="Over alle reguliere uren"
+                    prefix="offshore"
+                    buyDefault={placement?.offshoreSurchargeBuy ?? 0}
+                    sellDefault={placement?.offshoreSurchargeSell ?? 0}
+                    unitDefault={placement?.offshoreSurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.offshoreSurchargeSellUnit ??
+                      placement?.offshoreSurchargeUnit ??
+                      "PCT"
+                    }
+                    toggle={{
+                      name: "offshoreEnabled",
+                      defaultOn: placement?.offshoreEnabled ?? false,
+                    }}
+                  />
+                  <ToeslagRow
+                    title="Buitenland"
+                    hint="Over alle reguliere uren"
+                    prefix="abroad"
+                    buyDefault={placement?.abroadSurchargeBuy ?? 0}
+                    sellDefault={placement?.abroadSurchargeSell ?? 0}
+                    unitDefault={placement?.abroadSurchargeUnit ?? "PCT"}
+                    sellUnitDefault={
+                      placement?.abroadSurchargeSellUnit ??
+                      placement?.abroadSurchargeUnit ??
+                      "PCT"
+                    }
+                    toggle={{
+                      name: "abroadEnabled",
+                      defaultOn: placement?.abroadEnabled ?? false,
+                    }}
+                  />
+                  <div className="bg-ink-50 px-3 py-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-700">B · Overuren — extra uren</p>
+                    <p className="text-xs text-ink-500">Uren bóvenop de normale werkdag/-week. Alleen hier komt een hoger tarief op de éxtra uren.</p>
+                  </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-ink-50/40 px-3 py-2.5 text-sm text-ink-700">
                     <span className="font-medium text-ink-900">
                       Meeruren ma–vr
@@ -1978,40 +2020,6 @@ export function PlacementForm({
                       "PCT"
                     }
                   />
-                  <ToeslagRow
-                    title="Offshore"
-                    hint="Over alle reguliere uren"
-                    prefix="offshore"
-                    buyDefault={placement?.offshoreSurchargeBuy ?? 0}
-                    sellDefault={placement?.offshoreSurchargeSell ?? 0}
-                    unitDefault={placement?.offshoreSurchargeUnit ?? "PCT"}
-                    sellUnitDefault={
-                      placement?.offshoreSurchargeSellUnit ??
-                      placement?.offshoreSurchargeUnit ??
-                      "PCT"
-                    }
-                    toggle={{
-                      name: "offshoreEnabled",
-                      defaultOn: placement?.offshoreEnabled ?? false,
-                    }}
-                  />
-                  <ToeslagRow
-                    title="Buitenland"
-                    hint="Over alle reguliere uren"
-                    prefix="abroad"
-                    buyDefault={placement?.abroadSurchargeBuy ?? 0}
-                    sellDefault={placement?.abroadSurchargeSell ?? 0}
-                    unitDefault={placement?.abroadSurchargeUnit ?? "PCT"}
-                    sellUnitDefault={
-                      placement?.abroadSurchargeSellUnit ??
-                      placement?.abroadSurchargeUnit ??
-                      "PCT"
-                    }
-                    toggle={{
-                      name: "abroadEnabled",
-                      defaultOn: placement?.abroadEnabled ?? false,
-                    }}
-                  />
                   {/* Overuren: een APART uurtarief (€/u) dat alléén over de losse
                   overuren-uren rekent (het aantal vul je per week in bij 'Week
                   verwerken'). Leeg = overuren tegen het normale tarief. De oude
@@ -2022,7 +2030,7 @@ export function PlacementForm({
                   <input type="hidden" name="overtimeSurchargeSell" value={0} />
                   <ToeslagBlock
                     title="Overuren-tarief"
-                    hint="Vast €/u voor losse overuren · leeg = normaal tarief"
+                    hint="Vast €/u voor de extra uren (bijv. 77 + 10% = 84,70) · leeg = normaal tarief"
                     buyName="overtimeCostRate"
                     sellName="overtimeChargeRate"
                     buyDefault={overurenTarief(placement, "buy")}

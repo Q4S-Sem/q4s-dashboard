@@ -806,11 +806,8 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
         `klant "${schoon(ts.clientName)}" op de staat tegenover "${schoon(p.clientName)}" op de plaatsing`,
       );
     }
-    if (p && !tekstMatcht(ts.location, p.workLocation)) {
-      projectFouten.push(
-        `locatie "${schoon(ts.location)}" op de staat tegenover "${schoon(p.workLocation)}" op de plaatsing`,
-      );
-    }
+    // Locatie wordt bewust NIET gecontroleerd (user: niet belangrijk; een
+    // projectnaam als "stormpolder" gaf alleen valse fouten).
     const staatPo = normCode(ts.poNumber);
     const contractPo = normCode(p?.poNumber);
     if (staatPo && contractPo && staatPo !== contractPo) {
@@ -825,7 +822,7 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
       projectFouten.length > 0 ? "Onjuiste projectgegevens" : "Projectgegevens kloppen",
       projectFouten.length > 0
         ? `${projectFouten.join("; ")} — controleer of deze uren bij de juiste plaatsing horen.`
-        : "Klant, locatie en PO op de staat komen overeen met de plaatsing.",
+        : "Klant en PO op de staat komen overeen met de plaatsing.",
     );
 
     // 9) Reiskosten ---------------------------------------------------------
