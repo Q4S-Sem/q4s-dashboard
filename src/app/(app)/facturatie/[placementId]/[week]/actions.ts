@@ -6,7 +6,6 @@ import { db } from "@/lib/db";
 import { akkoordWeek } from "@/lib/facturatie-akkoord";
 import {
   ACCEPT_KEY,
-  ACK_PREFIX,
   FACTURATIE_ENTITY,
   getWeekDossier,
   getWeekOverview,
@@ -16,7 +15,7 @@ import {
 import { deleteInboxUpload, deleteReceivedUpload } from "@/lib/uploads";
 import { resetWeekForReceivedInvoice, resetWeekForTimesheet } from "@/lib/week-reset";
 import { currentUser } from "@/lib/session";
-import { volgendePersoon, wekenInPeriode } from "@/lib/facturatie-volgende";
+import { wekenInPeriode } from "@/lib/facturatie-volgende";
 
 // ---------------------------------------------------------------------------
 // De acties van het dossier (/facturatie/[placementId]/[week]).
@@ -177,56 +176,11 @@ export async function bewaarCorrecties(
 }
 
 // ===========================================================================
-// Akkoord op één waarschuwing
+// "Toch akkoord" — fouten bewust aanvaarden, mét reden (in de Akkoord-balk)
 // ===========================================================================
 
-/** Leg vast dat een mens deze waarschuwing gezien en goedgekeurd heeft. */
-export async function akkoordControle(formData: FormData) {
-  const { placementId, weekKey } = sleutels(formData);
-  const checkId = tekst(formData, "checkId").slice(0, 80);
-  const titel = tekst(formData, "titel").slice(0, 200);
-  if (!placementId || !checkId) redirect(dossierPad(placementId, weekKey));
-
-  const user = await currentUser();
-  const entityId = weekEntityId(placementId, weekKey);
-  const sourceKey = `${ACK_PREFIX}${checkId}`;
-  const bestaand = await db.activity.findFirst({
-    where: { entityType: FACTURATIE_ENTITY, entityId, sourceKey },
-    select: { id: true },
-  });
-  if (!bestaand) {
-    await db.activity.create({
-      data: {
-        entityType: FACTURATIE_ENTITY,
-        entityId,
-        kind: "LOG",
-        type: "NOTE",
-        body: `Akkoord gegeven op de waarschuwing: ${titel || checkId}`,
-        sourceKey,
-        authorId: user?.id ?? null,
-      },
-    });
-  }
-
-  herlaad(placementId, weekKey);
-  redirect(dossierPad(placementId, weekKey));
-}
-
-// ===========================================================================
-// "Toch accepteren" — fouten bewust aanvaarden, mét reden
-// ===========================================================================
-
-/**
- * Aanvaard de fouten van deze week bewust. De reden is VERPLICHT en wordt als
- * aantekening bij de week vastgelegd; de fouten blijven zichtbaar, maar
- * blokkeren het akkoord niet meer (`acceptedErrors` in de controle-machine).
- */
-export async function accepteerFouten(formData: FormData) {
-  const { placementId, weekKey } = sleutels(formData);
-  const reden = tekst(formData, "reden").slice(0, MAX_REDEN);
-  if (!placementId) redirect("/facturatie");
-  if (!reden) redirect(dossierPad(placementId, weekKey, { fout: "reden" }));
-
+/** Leg de reden vast waarom de fouten van deze week toch geaccepteerd worden. */
+async function bewaarAcceptatie(placementId: string, weekKey: string, reden: string) {
   const user = await currentUser();
   const entityId = weekEntityId(placementId, weekKey);
   const bestaand = await db.activity.findFirst({
@@ -237,35 +191,9 @@ export async function accepteerFouten(formData: FormData) {
     await db.activity.update({ where: { id: bestaand.id }, data: { body: reden } });
   } else {
     await db.activity.create({
-      data: {
-        entityType: FACTURATIE_ENTITY,
-        entityId,
-        kind: "LOG",
-        type: "NOTE",
-        body: reden,
-        sourceKey: ACCEPT_KEY,
-        authorId: user?.id ?? null,
-      },
+      data: { entityType: FACTURATIE_ENTITY, entityId, kind: "LOG", type: "NOTE", body: reden, sourceKey: ACCEPT_KEY, authorId: user?.id ?? null },
     });
   }
-
-  herlaad(placementId, weekKey);
-  redirect(dossierPad(placementId, weekKey, { geaccepteerd: "1" }));
-}
-
-/** De acceptatie weer intrekken — dan blokkeren de fouten opnieuw. */
-export async function trekAcceptatieIn(formData: FormData) {
-  const { placementId, weekKey } = sleutels(formData);
-  if (!placementId) redirect("/facturatie");
-  await db.activity.deleteMany({
-    where: {
-      entityType: FACTURATIE_ENTITY,
-      entityId: weekEntityId(placementId, weekKey),
-      sourceKey: ACCEPT_KEY,
-    },
-  });
-  herlaad(placementId, weekKey);
-  redirect(dossierPad(placementId, weekKey));
 }
 
 // ===========================================================================
@@ -444,6 +372,9 @@ export async function verwijderStuk(formData: FormData) {
 export async function akkoordNaarVerkoopfactuur(formData: FormData) {
   const { placementId, weekKey } = sleutels(formData);
   if (!placementId) redirect("/facturatie");
+  // Fouten? Dan staat er een reden-veld in de Akkoord-balk: één klik = accepteren + vastleggen.
+  const reden = tekst(formData, "reden").slice(0, MAX_REDEN);
+  if (reden) await bewaarAcceptatie(placementId, weekKey, reden);
 
   const samenvatting = await akkoordWeek(placementId, weekKey);
 
@@ -452,18 +383,15 @@ export async function akkoordNaarVerkoopfactuur(formData: FormData) {
   revalidatePath("/facturatie/verkoop");
 
   if (samenvatting.verwerkt === 0) {
-    const reden = samenvatting.overgeslagen[0]?.reden ?? "de week kon niet vastgelegd worden";
-    redirect(dossierPad(placementId, weekKey, { geblokkeerd: reden }));
+    const waarom = samenvatting.overgeslagen[0]?.reden ?? "de week kon niet vastgelegd worden";
+    redirect(dossierPad(placementId, weekKey, { geblokkeerd: waarom }));
   }
-  const factuur = samenvatting.facturen[0];
-  if (!factuur) {
-    // Verzamelfactuur nog niet compleet: zeg welke periode en hoeveel weken binnen zijn.
-    redirect(dossierPad(placementId, weekKey, { vastgelegd: samenvatting.verzameld[0] ?? "1" }));
-  }
-  // Klaar met deze persoon → meteen door naar de volgende die nog werk heeft.
+  // Klaar → terug naar Week verwerken, met wat er gebeurd is (inkoop + verkoop).
   const { rows } = await getWeekOverview(weekKey);
-  const huidig = rows.find((r) => r.placementId === placementId);
-  const volgende = volgendePersoon(rows, huidig?.key);
-  const qs = new URLSearchParams({ klaar: huidig?.naam ?? "Deze persoon", factuur: factuur.id }).toString();
-  redirect(volgende?.href ? `${volgende.href}?${qs}` : `/facturatie?week=${weekKey}&allesklaar=${factuur.id}`);
+  const naam = rows.find((r) => r.placementId === placementId)?.naam ?? "Deze persoon";
+  const factuur = samenvatting.facturen[0];
+  const qs = new URLSearchParams({ week: weekKey, klaar: naam });
+  if (factuur) qs.set("factuur", factuur.id);
+  else if (samenvatting.verzameld[0]) qs.set("verzameld", samenvatting.verzameld[0]);
+  redirect(`/facturatie?${qs.toString()}`);
 }

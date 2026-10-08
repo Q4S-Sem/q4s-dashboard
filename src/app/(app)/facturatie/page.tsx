@@ -170,6 +170,9 @@ export default async function FacturatiePage({
     weg?: string;
     fout?: string;
     allesklaar?: string;
+    klaar?: string;
+    factuur?: string;
+    verzameld?: string;
     tab?: string;
   }>;
 }) {
@@ -273,6 +276,24 @@ export default async function FacturatiePage({
       {sp.fout === "koppelen" && (
         <p className="rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">
           Kies eerst een persoon om het bestand aan te koppelen.
+        </p>
+      )}
+
+      {sp.klaar && (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <span>
+            <strong>{sp.klaar}</strong> is verwerkt: inkoopfactuur goedgekeurd bij{" "}
+            <Link href="/facturatie/inkoop" className="font-semibold underline underline-offset-2">Inkoop</Link>
+            {sp.factuur ? (
+              <>
+                {" "}en verkoopfactuur aangemaakt bij{" "}
+                <Link href={`/facturatie/verkoop/${sp.factuur}`} className="font-semibold underline underline-offset-2">Verkoopfacturen</Link>.
+              </>
+            ) : (
+              <>. Uren verzameld voor de verkoopfactuur{sp.verzameld ? ` — ${sp.verzameld}` : ""}.</>
+            )}
+          </span>
         </p>
       )}
 
