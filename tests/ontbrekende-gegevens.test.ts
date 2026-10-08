@@ -43,6 +43,10 @@ test("map Actief (= facturatie): compleet of handmatig geforceerd; contract telt
   assert.equal(inMapActief({ status: "ACTIVE", forceActive: true }, ["IBAN"]), true);
   assert.equal(inMapActief({ status: "ACTIVE" }, []), true);
   assert.equal(inMapActief({ status: "INCOMPLETE" }, []), false);
+  // Alleen geboortedatum mist → toch in Actief en in de facturatie.
+  assert.equal(inMapActief({ status: "ACTIVE" }, ["Geboortedatum"]), true);
+  assert.equal(getoondeStatus({ status: "ACTIVE" }, ["Geboortedatum"]), "ACTIVE");
+  assert.equal(inMapActief({ status: "ACTIVE" }, ["Geboortedatum", "IBAN"]), false);
 });
 
 test("werknemer in dienst: geen inkooptarief nodig, wel verkooptarief", () => {
