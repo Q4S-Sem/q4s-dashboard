@@ -11,7 +11,7 @@ import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { getWeekDossier } from "@/lib/facturatie-week";
 import { StapUpload } from "./StapUpload";
 import type { Check as Controle, CheckGroup } from "@/lib/facturatie-checks";
-import { cn, formatCurrency, formatDate, formatHours } from "@/lib/utils";
+import { cn, formatCurrency, formatHours } from "@/lib/utils";
 import { CorrectieFormulier } from "./CorrectieFormulier";
 import { DossierDocument } from "./DossierDocument";
 import { DocumentViewer } from "@/components/document-viewer";
