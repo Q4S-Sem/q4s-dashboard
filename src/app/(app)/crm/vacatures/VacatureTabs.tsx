@@ -1,7 +1,6 @@
-import Link from "next/link";
+import { Briefcase, CheckCircle2, Globe, Kanban, PencilLine } from "lucide-react";
 import { db } from "@/lib/db";
-import { mapTabVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { FilterTegels, type TegelToon } from "@/components/ui/filter-tegels";
 
 // ---------------------------------------------------------------------------
 // Eén mappenbalk voor ALLE vacatures in Recruitment: eerst de werving
@@ -12,12 +11,12 @@ import { cn } from "@/lib/utils";
 
 export type VacatureTab = "open" | "pipeline" | "concept" | "gereed" | "online";
 
-const TABS: { key: VacatureTab; label: string; dot: string; href: string; groep: "Werving" | "Website" }[] = [
-  { key: "open", label: "Openstaand", dot: "bg-brand-500", href: "/crm/vacatures?view=open", groep: "Werving" },
-  { key: "pipeline", label: "In pipeline", dot: "bg-violet-500", href: "/crm/vacatures?view=pipeline", groep: "Werving" },
-  { key: "concept", label: "Website · concept", dot: "bg-ink-400", href: "/website?tab=concept", groep: "Website" },
-  { key: "gereed", label: "Gereed", dot: "bg-blue-500", href: "/website?tab=gereed", groep: "Website" },
-  { key: "online", label: "Online", dot: "bg-emerald-500", href: "/website?tab=online", groep: "Website" },
+const TABS: { key: VacatureTab; label: string; icon: React.ReactNode; toon: TegelToon; href: string }[] = [
+  { key: "open", label: "Openstaand", icon: <Briefcase className="h-4 w-4" />, toon: "slate", href: "/crm/vacatures?view=open" },
+  { key: "pipeline", label: "In pipeline", icon: <Kanban className="h-4 w-4" />, toon: "violet", href: "/crm/vacatures?view=pipeline" },
+  { key: "concept", label: "Website · concept", icon: <PencilLine className="h-4 w-4" />, toon: "amber", href: "/website?tab=concept" },
+  { key: "gereed", label: "Gereed", icon: <CheckCircle2 className="h-4 w-4" />, toon: "blue", href: "/website?tab=gereed" },
+  { key: "online", label: "Online", icon: <Globe className="h-4 w-4" />, toon: "green", href: "/website?tab=online" },
 ];
 
 /** Websitefase: geen tekst (of CONCEPT) → concept, PUBLISHED → online, anders gereed. */
@@ -43,29 +42,9 @@ export async function VacatureTabs({ actief }: { actief: VacatureTab }) {
   }
 
   return (
-    <nav aria-label="Vacatures" className="flex items-end gap-1 overflow-x-auto border-b border-ink-200">
-      {TABS.map((t, i) => {
-        const on = t.key === actief;
-        return (
-          <span key={t.key} className="flex items-end">
-            {i > 0 && TABS[i - 1].groep !== t.groep && (
-              <span aria-hidden className="mx-2 mb-2.5 h-5 w-px bg-ink-200" />
-            )}
-            <Link href={t.href} scroll={false} aria-current={on ? "page" : undefined} className={mapTabVariants(on)}>
-              <span className={cn("h-2.5 w-2.5 rounded-full", t.dot)} />
-              {t.label}
-              <span
-                className={cn(
-                  "rounded-sm px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
-                  on ? "bg-brand-50 text-brand-700" : "bg-ink-100 text-ink-500",
-                )}
-              >
-                {tel[t.key]}
-              </span>
-            </Link>
-          </span>
-        );
-      })}
-    </nav>
+    <FilterTegels
+      label="Vacatures"
+      items={TABS.map((t) => ({ key: t.key, label: t.label, waarde: tel[t.key], icon: t.icon, toon: t.toon, href: t.href, actief: t.key === actief }))}
+    />
   );
 }
