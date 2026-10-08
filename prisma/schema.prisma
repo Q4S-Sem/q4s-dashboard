@@ -1678,6 +1678,8 @@ model Expense {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  /// Bon van Q4S zelf (eigen bedrijfskosten, niet van een consultant).
+  forQ4S        Boolean  @default(false)
   /// Doorbelasten aan de klant: gaat mee op de volgende verkoopfactuur van deze persoon.
   rebill        Boolean  @default(false)
   /// De verkoopfactuurregel waarop hij is doorbelast. Regel weg (bewerkt,

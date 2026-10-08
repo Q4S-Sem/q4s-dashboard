@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, ReceiptText, Upload, UserRoundX } from "lucide-react";
+import { Building2, Mail, ReceiptText, Upload, UserRoundX } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { PaginaKop } from "@/components/ui/filter-tegels";
@@ -48,7 +48,8 @@ export default async function BonnetjesPage({
   ]);
   const gekoppeld = isMailIntakeConnected();
 
-  const zonderNaam = bonnen.filter((b) => !b.consultant);
+  const zonderNaam = bonnen.filter((b) => !b.consultant && !b.forQ4S);
+  const vanQ4S = bonnen.filter((b) => b.forQ4S);
   const perPersoon = new Map<string, { naam: string; bonnen: Bon[] }>();
   for (const b of bonnen) {
     if (!b.consultant) continue;
@@ -117,7 +118,8 @@ export default async function BonnetjesPage({
                 <form action={wijsBonToe} className="flex items-center gap-2">
                   <input type="hidden" name="id" value={b.id} />
                   <div className="w-52">
-                    <Select name="consultantId" aria-label="Persoon">
+                    <Select name="consultantId" aria-label="Persoon of Q4S">
+                      <option value="Q4S">Q4S zelf (bedrijfskosten)</option>
                       {personen.map((p) => (
                         <option key={p.id} value={p.id}>{`${p.firstName} ${p.lastName}`}</option>
                       ))}
@@ -131,6 +133,28 @@ export default async function BonnetjesPage({
             ))}
           </Card>
         </section>
+      )}
+
+      {vanQ4S.length > 0 && (
+        <details open className="group">
+          <summary className="mb-2 flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
+            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-ink-900 text-white">
+              <Building2 className="h-4 w-4" />
+            </span>
+            <span className="text-sm font-bold text-ink-900">Q4S zelf</span>
+            <span className="text-xs text-ink-500">
+              {vanQ4S.length} bon{vanQ4S.length === 1 ? "" : "nen"} · {formatCurrency(som(vanQ4S))} · bedrijfskosten
+            </span>
+          </summary>
+          <Card className="divide-y divide-ink-100 overflow-hidden">
+            {vanQ4S.map((b) => (
+              <div key={b.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+                <BonInfo b={b} />
+                <ExpenseStatusSelect id={b.id} value={b.status} />
+              </div>
+            ))}
+          </Card>
+        </details>
       )}
 
       {groepen.map((g) => (
