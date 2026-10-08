@@ -11,6 +11,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import type { Placement } from "@prisma/client";
+import { isDagtarief, overtimeUnit, UREN_PER_DAG } from "@/lib/toeslag";
 import {
   FileText,
   FileSignature,
@@ -479,6 +480,17 @@ function ToeslagBlock({
  * ploegendienst en buitenland krijgen een AAN/UIT-vinkje: aan = geldt over ALLE
  * gewerkte reguliere uren. Uit = bedragen blijven bewaard (verborgen velden).
  */
+/** Het overuren-uurtarief zoals de factuur het rekent: expliciet €/u, of het oude
+ *  percentage omgerekend naar €/u. 0 = geen apart tarief (normaal tarief). */
+function overurenTarief(p: Placement | null | undefined, kant: "buy" | "sell"): number {
+  if (!p) return 0;
+  const rate = kant === "buy" ? p.costRate : p.chargeRate;
+  const pct = kant === "buy" ? p.overtimeSurchargeBuy : p.overtimeSurchargeSell;
+  const expliciet = kant === "buy" ? p.overtimeCostRate : p.overtimeChargeRate;
+  if (!(expliciet && expliciet > 0) && !(pct > 0)) return 0;
+  return overtimeUnit(isDagtarief(p) ? rate / UREN_PER_DAG : rate, pct, expliciet);
+}
+
 function ToeslagRow({
   title,
   hint,
@@ -1894,20 +1906,15 @@ export function PlacementForm({
                     title="Ploegendienst"
                     hint="Over alle reguliere uren"
                     prefix="shift"
-                    buyDefault={
-                      placement?.shiftEnabled ? placement.shiftSurchargeBuy : 0
-                    }
-                    sellDefault={
-                      placement?.shiftEnabled ? placement.shiftSurchargeSell : 0
-                    }
+                    buyDefault={placement?.shiftSurchargeBuy ?? 0}
+                    sellDefault={placement?.shiftSurchargeSell ?? 0}
                     unitDefault={placement?.shiftSurchargeUnit ?? "PCT"}
                     sellUnitDefault={
                       placement?.shiftSurchargeSellUnit ??
                       placement?.shiftSurchargeUnit ??
                       "PCT"
                     }
-                    toggle={{ name: "shiftEnabled", defaultOn: true }}
-                    standaardAan
+                    toggle={{ name: "shiftEnabled", defaultOn: placement ? placement.shiftEnabled : true }}
                   />
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-ink-50/40 px-3 py-2.5 text-sm text-ink-700">
                     <span className="font-medium text-ink-900">
@@ -2009,23 +2016,17 @@ export function PlacementForm({
                   overuren-uren rekent (het aantal vul je per week in bij 'Week
                   verwerken'). Leeg = overuren tegen het normale tarief. De oude
                   percentage-velden bewaren we verborgen voor terugval. */}
-                  <input
-                    type="hidden"
-                    name="overtimeSurchargeBuy"
-                    value={placement?.overtimeSurchargeBuy ?? 0}
-                  />
-                  <input
-                    type="hidden"
-                    name="overtimeSurchargeSell"
-                    value={placement?.overtimeSurchargeSell ?? 0}
-                  />
+                  {/* Het oude %-veld gaat op 0: het overuren-tarief hieronder toont al
+                  het bedrag dat de factuur rekent (ook als het uit een oud % kwam). */}
+                  <input type="hidden" name="overtimeSurchargeBuy" value={0} />
+                  <input type="hidden" name="overtimeSurchargeSell" value={0} />
                   <ToeslagBlock
                     title="Overuren-tarief"
                     hint="Vast €/u voor losse overuren · leeg = normaal tarief"
                     buyName="overtimeCostRate"
                     sellName="overtimeChargeRate"
-                    buyDefault={placement?.overtimeCostRate ?? 0}
-                    sellDefault={placement?.overtimeChargeRate ?? 0}
+                    buyDefault={overurenTarief(placement, "buy")}
+                    sellDefault={overurenTarief(placement, "sell")}
                     suffix="€/u"
                     step={0.01}
                     nietDoorTekst="Klant betaalt overuren tegen het normale tarief — het verschil betalen wij uit de marge."

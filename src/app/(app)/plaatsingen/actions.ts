@@ -128,6 +128,14 @@ const NewPersonSchema = z.object({
   city: z.string().optional(),
 });
 
+/** Meeruren-toeslag ingevuld maar geen "vanaf"-uur → zou stil op 0 gaan. Melden i.p.v. weggooien. */
+function meerurenFout(d: z.infer<typeof PlacementCoreSchema>): FormState | null {
+  const gevuld = d.weekdaySurchargeBuy > 0 || d.weekdaySurchargeSell > 0 || d.weekday2SurchargeBuy > 0 || d.weekday2SurchargeSell > 0;
+  return gevuld && d.otFromHours == null
+    ? { fieldErrors: { otFromHours: "Vul in vanaf hoeveel uur per dag de meeruren-toeslag geldt (bijv. 8)." }, error: "Meeruren-toeslag: vul het 'vanaf'-uur in, anders telt de toeslag niet mee." }
+    : null;
+}
+
 // Core placement DB payload (without consultantId), undefined optionals → null.
 function coreToData(d: z.infer<typeof PlacementCoreSchema>) {
   return {
@@ -247,6 +255,8 @@ export async function createPlacement(
   // bad form.
   const core = parseForm(PlacementCoreSchema, formData);
   if (!core.success) return core.state;
+  const meeruren = meerurenFout(core.data);
+  if (meeruren) return meeruren;
 
   // ---- Existing person: just create the placement. ----
   if (personMode !== "new") {
@@ -373,6 +383,8 @@ export async function updatePlacement(
 
   const parsed = parseForm(PlacementSchema, formData);
   if (!parsed.success) return parsed.state;
+  const meeruren = meerurenFout(parsed.data);
+  if (meeruren) return meeruren;
 
   // Factuur- & betaalgegevens van de (oorspronkelijke) werknemer, als ze meekwamen.
   const billId = String(formData.get("bill_consultantId") ?? "");

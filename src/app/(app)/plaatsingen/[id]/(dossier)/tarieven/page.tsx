@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { tariefSuffix } from "@/lib/toeslag";
+import { tariefSuffix, isDagtarief, overtimeUnit, UREN_PER_DAG } from "@/lib/toeslag";
 import { notFound } from "next/navigation";
 import { Pencil, Percent, TrendingUp, Wallet, Coins } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +55,11 @@ export default async function PlaatsingTarievenPage({
     set: enabled && (buy > 0 || sell > 0),
   });
 
+  const overurenTekst = (rate: number, pct: number, expliciet: number | null) =>
+    (expliciet ?? 0) > 0 || pct > 0
+      ? `${formatCurrency(overtimeUnit(isDagtarief(placement) ? rate / UREN_PER_DAG : rate, pct, expliciet))}/u`
+      : "normaal tarief";
+
   // De oude, gecombineerde weekendtoeslag telt alleen nog mee zolang zaterdag en
   // zondag niet apart zijn ingesteld — dan geldt hij voor allebei die dagen.
   const legacyWeekend =
@@ -66,11 +71,20 @@ export default async function PlaatsingTarievenPage({
 
   const surcharges = [
     toeslagRij(
-      "Toeslag doordeweeks (ma–vr)",
+      placement.otFromHours != null
+        ? `Meeruren trede 1 (ma–vr, vanaf ${formatHours(placement.otFromHours)} u/dag, ${formatHours(placement.ot1Hours)} uur)`
+        : "Meeruren ma–vr",
       placement.weekdaySurchargeBuy,
       placement.weekdaySurchargeSell,
       placement.weekdaySurchargeUnit,
       placement.weekdaySurchargeSellUnit,
+    ),
+    toeslagRij(
+      "Meeruren trede 2 (daarboven)",
+      placement.weekday2SurchargeBuy,
+      placement.weekday2SurchargeSell,
+      placement.weekday2SurchargeUnit,
+      placement.weekday2SurchargeSellUnit,
     ),
     toeslagRij(
       "Zaterdagtoeslag",
@@ -120,11 +134,17 @@ export default async function PlaatsingTarievenPage({
           },
         ]
       : []),
+    // Overuren precies zoals de factuur rekent: expliciet €/u wint, anders het
+    // (oude) percentage omgerekend; niets ingesteld = normaal tarief.
     {
-      label: "Overurentoeslag",
-      buy: `${formatHours(placement.overtimeSurchargeBuy)}%`,
-      sell: `${formatHours(placement.overtimeSurchargeSell)}%`,
-      set: placement.overtimeSurchargeBuy > 0 || placement.overtimeSurchargeSell > 0,
+      label: "Overuren-tarief (losse overuren)",
+      buy: overurenTekst(placement.costRate, placement.overtimeSurchargeBuy, placement.overtimeCostRate),
+      sell: overurenTekst(placement.chargeRate, placement.overtimeSurchargeSell, placement.overtimeChargeRate),
+      set:
+        (placement.overtimeCostRate ?? 0) > 0 ||
+        (placement.overtimeChargeRate ?? 0) > 0 ||
+        placement.overtimeSurchargeBuy > 0 ||
+        placement.overtimeSurchargeSell > 0,
     },
     {
       label: "Kilometervergoeding",
