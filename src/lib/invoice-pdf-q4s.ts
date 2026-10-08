@@ -289,7 +289,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     by -= 12;
   }
   if (doc.company.gAccount) {
-    text("G-rekening", contactX, bankTop, 9, font, FAINT);
+    text(doc.language === "en" ? "G-account" : "G-rekening", contactX, bankTop, 9, font, FAINT);
     text(doc.company.gAccount, contactX + 62, bankTop, 9, font, MUTED);
   }
 

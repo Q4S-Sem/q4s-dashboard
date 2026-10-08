@@ -125,7 +125,8 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
     lines: toInvoiceRows(inv.lines),
     vatRate: inv.vatRate,
     vatReverseCharge: inv.vatReverseCharge ?? false,
-    vatNote: inv.vatReverseCharge ? "BTW verlegd — VAT reverse-charged (art. 12 Wet OB)" : null,
+    // Eén vermelding: de totaalregel "VAT reverse-charged" (Engelse factuur, geen NL/wetsartikel).
+    vatNote: null,
     subtotal: inv.subtotal,
     vatAmount: inv.vatAmount,
     total: inv.total,
