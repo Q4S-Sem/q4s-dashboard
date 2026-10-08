@@ -149,7 +149,7 @@ export default async function PlaatsingDocumentenPage({
         <CardContent>
           {contracts.length === 0 ? (
             <p className="rounded-lg border border-dashed border-ink-200 px-4 py-6 text-center text-sm text-ink-400">
-              Nog geen contract in het dashboard gemaakt. Een getekend contract kun je hierboven gewoon uploaden.
+              Nog geen contract in het dashboard gemaakt. Een getekend contract kun je hierboven gewoon uploaden — de AI controleert de handtekeningen en leest de tarieven.
             </p>
           ) : (
             <div className="overflow-hidden rounded-lg border border-ink-100">
@@ -173,7 +173,19 @@ export default async function PlaatsingDocumentenPage({
                       </TD>
                       <TD>{c.number ?? "—"}</TD>
                       <TD>
-                        <StatusBadge options={CONTRACT_STATUSES} value={c.status} />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <StatusBadge options={CONTRACT_STATUSES} value={c.status} />
+                          {c.signedDocumentId && (
+                            <a
+                              href={`/api/documents/${c.signedDocumentId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-medium text-brand-700 hover:underline"
+                            >
+                              Getekend exemplaar{c.signDate ? ` · ${formatDate(c.signDate)}` : ""}
+                            </a>
+                          )}
+                        </div>
                       </TD>
                       <TD className="text-ink-500">{formatDate(c.updatedAt)}</TD>
                       <TD>

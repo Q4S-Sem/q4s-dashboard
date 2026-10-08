@@ -575,7 +575,7 @@ export async function uploadPlacementDocument(formData: FormData) {
     revalidatePath("/certificeringen");
     revalidatePath(`/certificeringen/${consultantId}`);
   } else {
-    await db.document.create({
+    const doc = await db.document.create({
       data: {
         consultantId,
         category,
@@ -586,11 +586,37 @@ export async function uploadPlacementDocument(formData: FormData) {
         size: f.size,
       },
     });
+    // Getekend contract (de AI zag beide handtekeningen): koppel het aan het
+    // dashboard-contract van deze plaatsing en zet dat op Getekend.
+    if (category === "CONTRACT" && formData.get("getekend") === "1") {
+      await koppelGetekendContract(placementId, doc.id, {
+        nummer: String(formData.get("contractNummer") ?? "").trim(),
+        datum: String(formData.get("tekenDatum") ?? "").trim(),
+      });
+    }
   }
 
   revalidatePath(`/plaatsingen/${placementId}/documenten`);
   revalidatePath(`/werknemers/${consultantId}`);
   redirect(`/plaatsingen/${placementId}/documenten?saved=doc`);
+}
+
+/** Zoek het contract (eerst op nummer, anders het nieuwste nog niet getekende van
+ *  deze plaatsing) en zet het op SIGNED met een link naar het getekende exemplaar. */
+async function koppelGetekendContract(placementId: string, documentId: string, g: { nummer: string; datum: string }) {
+  const contract =
+    (g.nummer ? await db.contract.findFirst({ where: { number: g.nummer } }) : null) ??
+    (await db.contract.findFirst({
+      where: { placementId, status: { not: "SIGNED" } },
+      orderBy: { updatedAt: "desc" },
+    }));
+  if (!contract) return;
+  const datum = /^\d{4}-\d{2}-\d{2}$/.test(g.datum) ? new Date(`${g.datum}T12:00:00Z`) : null;
+  await db.contract.update({
+    where: { id: contract.id },
+    data: { status: "SIGNED", signedDocumentId: documentId, ...(datum ? { signDate: datum } : {}) },
+  });
+  revalidatePath("/contracten");
 }
 
 export async function deletePlacementDocument(formData: FormData) {
@@ -658,8 +684,9 @@ export async function readDocumentMeta(formData: FormData): Promise<DocMetaResul
 // tarieven op de plaatsing. De omrekening is plaatsingUitContract (getest).
 // ---------------------------------------------------------------------------
 
+export type Ondertekening = { opdrachtnemer: boolean; q4s: boolean; datum: string; nummer: string };
 export type ContractTariefVoorstel =
-  | { ok: true; tarieven: ContractTarieven; regels: string[]; naam: string }
+  | { ok: true; tarieven: ContractTarieven; regels: string[]; naam: string; getekend: Ondertekening }
   | { ok: false; error: string };
 
 /** Lees een geüpload contract (PDF/Word/foto) en laat zien wat er zou veranderen. */
@@ -672,8 +699,16 @@ export async function leesContractTarieven(formData: FormData): Promise<Contract
   try {
     const r = await extractContractRates(Buffer.from(await file.arrayBuffer()), file.name, file.type || "");
     const { regels } = plaatsingUitContract(r, kant);
-    if (regels.length === 0) return { ok: false, error: "Er zijn geen tarieven in dit contract gevonden." };
-    return { ok: true, tarieven: r, regels, naam: r.contractorName };
+    const getekend: Ondertekening = {
+      opdrachtnemer: r.signedContractor.toLowerCase() === "ja",
+      q4s: r.signedQ4S.toLowerCase() === "ja",
+      datum: r.signDate,
+      nummer: r.contractNumber,
+    };
+    if (regels.length === 0 && !getekend.opdrachtnemer && !getekend.q4s) {
+      return { ok: false, error: "Er zijn geen tarieven in dit contract gevonden." };
+    }
+    return { ok: true, tarieven: r, regels, naam: r.contractorName, getekend };
   } catch (err) {
     if (err instanceof CvExtractError) return { ok: false, error: err.message };
     console.error("leesContractTarieven mislukt:", err);

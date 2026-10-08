@@ -1,16 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Sparkles, Loader2, AlertTriangle, CheckCircle2, PenLine } from "lucide-react";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { leesContractTarieven, neemContractTarievenOver, type ContractTariefVoorstel } from "../../../actions";
+import { leesContractTarieven, neemContractTarievenOver, type ContractTariefVoorstel, type Ondertekening } from "../../../actions";
 
 /**
  * Is het geüploade document een contract, dan leest de AI (sterk model) meteen
  * de tarieven + looptijd. Je ziet wat er verandert en zet ze met "Overnemen" op
  * de plaatsing — er wordt niets opgeslagen zonder die klik.
  */
-export function ContractTarieven({ placementId, file }: { placementId: string; file: File }) {
+export function ContractTarieven({
+  placementId,
+  file,
+  onGetekend,
+}: {
+  placementId: string;
+  file: File;
+  onGetekend?: (g: Ondertekening) => void;
+}) {
   const [kant, setKant] = useState<"inkoop" | "verkoop">("inkoop");
   // Resultaat hoort bij één kant; wissel je van kant, dan is het oude resultaat niet meer geldig.
   const [res, setRes] = useState<{ kant: string; v: ContractTariefVoorstel } | null>(null);
@@ -23,7 +31,11 @@ export function ContractTarieven({ placementId, file }: { placementId: string; f
     fd.set("kant", kant);
     leesContractTarieven(fd)
       .catch(() => ({ ok: false as const, error: "Het contract kon niet uitgelezen worden. Probeer het opnieuw." }))
-      .then((v) => !weg && setRes({ kant, v }));
+      .then((v) => {
+        if (weg) return;
+        setRes({ kant, v });
+        if (v.ok) onGetekend?.(v.getekend);
+      });
     return () => {
       weg = true;
     };
@@ -60,6 +72,20 @@ export function ContractTarieven({ placementId, file }: { placementId: string; f
         </p>
       )}
       {voorstel?.ok && (
+        <p
+          className={
+            voorstel.getekend.opdrachtnemer && voorstel.getekend.q4s
+              ? "flex items-start gap-2 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+              : "flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800"
+          }
+        >
+          <PenLine className="mt-0.5 h-4 w-4 shrink-0" />
+          {voorstel.getekend.opdrachtnemer && voorstel.getekend.q4s
+            ? `Getekend door beide partijen${voorstel.getekend.datum ? ` (${voorstel.getekend.datum})` : ""} — bij uploaden wordt het contract van deze plaatsing op Getekend gezet.`
+            : `Nog niet volledig getekend: opdrachtnemer ${voorstel.getekend.opdrachtnemer ? "✓" : "✗"} · Q4S ${voorstel.getekend.q4s ? "✓" : "✗"}. Je kunt het wel opslaan als contract.`}
+        </p>
+      )}
+      {voorstel?.ok && voorstel.regels.length > 0 && (
         <form action={neemContractTarievenOver} className="space-y-3 rounded-md bg-emerald-50/60 p-3">
           <input type="hidden" name="placementId" value={placementId} />
           <input type="hidden" name="kant" value={kant} />

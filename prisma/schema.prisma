@@ -1306,6 +1306,8 @@ model Contract {
 
   /// DRAFT | FINAL | SIGNED — waar het contract in zijn leven staat.
   status       String   @default("DRAFT")
+  /// Het geüploade, getekende exemplaar (Document.id) — gezet bij het uploaden.
+  signedDocumentId String?
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

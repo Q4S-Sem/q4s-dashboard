@@ -6,7 +6,7 @@ import { Dropzone } from "@/components/ui/dropzone";
 import { Field, Input, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { DOCUMENT_CATEGORIES } from "@/lib/domain";
-import { uploadPlacementDocument, readDocumentMeta } from "../../../actions";
+import { uploadPlacementDocument, readDocumentMeta, type Ondertekening } from "../../../actions";
 import { ContractTarieven } from "./ContractTarieven";
 
 /**
@@ -27,11 +27,15 @@ export function DocumentUpload({
   const [file, setFile] = useState<File | null>(null);
   const [reading, startReading] = useTransition();
   const [status, setStatus] = useState<{ kind: "done" | "error"; msg: string } | null>(null);
+  // Wat de AI over de handtekeningen zag (alleen bij een contract).
+  const [getekend, setGetekend] = useState<Ondertekening | null>(null);
+  const beideGetekend = Boolean(getekend?.opdrachtnemer && getekend?.q4s);
 
   function onFiles(files: File[]) {
     const file = files[0] ?? null;
     setFile(file);
     setStatus(null);
+    setGetekend(null);
     if (!file) return;
     // Automatisch uitlezen zodra het bestand er is.
     startReading(async () => {
@@ -53,6 +57,13 @@ export function DocumentUpload({
     <form action={uploadPlacementDocument} className="space-y-4 rounded-xl border border-dashed border-ink-200 p-4">
       <input type="hidden" name="placementId" value={placementId} />
       <input type="hidden" name="consultantId" value={consultantId} />
+      {category === "CONTRACT" && beideGetekend && (
+        <>
+          <input type="hidden" name="getekend" value="1" />
+          <input type="hidden" name="contractNummer" value={getekend?.nummer ?? ""} />
+          <input type="hidden" name="tekenDatum" value={getekend?.datum ?? ""} />
+        </>
+      )}
 
       <Dropzone
         name="file"
@@ -109,7 +120,15 @@ export function DocumentUpload({
         </SubmitButton>
       </div>
     </form>
-    {file && !reading && category === "CONTRACT" && <ContractTarieven key={`${file.name}-${file.size}-${file.lastModified}`} placementId={placementId} file={file} />}
+    {file && !reading && category === "CONTRACT" && <ContractTarieven
+        key={`${file.name}-${file.size}-${file.lastModified}`}
+        placementId={placementId}
+        file={file}
+        onGetekend={(g) => {
+          setGetekend(g);
+          if (g.opdrachtnemer && g.q4s) setTitle((t) => (t && !/getekend/i.test(t) ? `${t} (getekend)` : t || "Getekend contract"));
+        }}
+      />}
     </div>
   );
 }

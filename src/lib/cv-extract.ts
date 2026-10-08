@@ -695,6 +695,7 @@ export async function extractDocumentMeta(
 const CONTRACT_RATE_KEYS = [
   "rateDay", "rateDayFixed", "rateOvertime", "rateSaturday", "rateSunday",
   "rateShift", "rateOffshore", "kmRate", "startDate", "endDate", "contractorName",
+  "signedContractor", "signedQ4S", "signDate", "contractNumber",
 ] as const;
 
 export type ContractRates = Record<(typeof CONTRACT_RATE_KEYS)[number], string>;
@@ -716,6 +717,10 @@ const CONTRACT_RATES_AI_SCHEMA = {
     startDate: { type: "string", description: "Ingangsdatum als YYYY-MM-DD, leeg als onbekend" },
     endDate: { type: "string", description: "Einddatum als YYYY-MM-DD, leeg als onbekend" },
     contractorName: { type: "string", description: "Naam van de opdrachtnemer (persoon of bedrijf)" },
+    signedContractor: { type: "string", description: "'ja' als er bij de OPDRACHTNEMER een echte handtekening staat (krabbel, getekende naam, digitale handtekening/DocuSign-stempel), 'nee' als dat vak leeg is, '' als er geen ondertekeningsblok is" },
+    signedQ4S: { type: "string", description: "'ja' als er bij Q4S / de OPDRACHTGEVER een echte handtekening staat, 'nee' als dat vak leeg is, '' als er geen ondertekeningsblok is" },
+    signDate: { type: "string", description: "Datum van ondertekening als YYYY-MM-DD (bij de handtekeningen), leeg als die er niet staat" },
+    contractNumber: { type: "string", description: "Het contract-/referentienummer, letterlijk (bv. 'Q4S-OVO-2026-014'), leeg als het er niet staat" },
   },
   required: [...CONTRACT_RATE_KEYS],
 } as const;
@@ -724,7 +729,8 @@ const CONTRACT_RATES_SYSTEM =
   "Je leest een overeenkomst van opdracht (Nederlands of Engels) van Q4S, een technisch detacheringsbureau. " +
   "Je haalt de afgesproken vergoedingen (meestal artikel 6 'Vergoeding') en de looptijd eruit. " +
   "Neem bedragen LETTERLIJK over zoals ze er staan. Verzin niets: laat een veld leeg als het er niet staat " +
-  "of als er 'n.v.t.' / 'zie uurtarief' staat.";
+  "of als er 'n.v.t.' / 'zie uurtarief' staat. Kijk bij de ondertekening (meestal de laatste pagina) goed of " +
+  "er ECHT een handtekening staat — een getypte naam onder een lege lijn is GEEN handtekening.";
 
 /** Contractbestand (PDF/Word/foto) → de tariefcellen + looptijd, letterlijk. */
 export async function extractContractRates(bytes: Buffer, fileName: string, mimeType: string): Promise<ContractRates> {
