@@ -499,7 +499,7 @@ model CompanySettings {
   emailSigPhone        String @default("")
   emailSigEmail        String @default("")
   emailSigWebsite      String @default("www.q4s.nl")
-  /// Adresregels, één per regel (bijv. "Arnhemseweg 12\n2994 LA Barendrecht\nThe Netherlands").
+  /// Adresregels, één per regel (bijv. "Driemanssteeweg 412\n3084 CB Rotterdam\nThe Netherlands").
   emailSigAddress      String @default("")
   /// Directe https-URL's naar keurmerk-logo's (DNV/VCU/SNA…), als JSON-lijst.
   emailSigBadgesJson   String @default("[]")
@@ -1298,7 +1298,7 @@ model Contract {
   // ---- Ondertekening ----
   /// Naam ondertekenaar Opdrachtgever (Q4S).
   signerClient      String @default("P. Boomsma")
-  signPlaceClient   String @default("Barendrecht")
+  signPlaceClient   String @default("Rotterdam")
   /// Naam ondertekenaar Opdrachtnemer.
   signerContractor  String @default("")
   signPlaceContractor String @default("")

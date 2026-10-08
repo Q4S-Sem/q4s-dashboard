@@ -92,7 +92,7 @@ export function zonderOudeStandaard(v: string | null | undefined): string {
 export function contractFooterLine(settings: CompanySettings): string {
   const companyName = settings.companyName || "Q4S B.V.";
   return [
-    `${companyName}, ${settings.address || "Arnhemseweg 12"}, ${settings.postalCode || "2994LA"} ${settings.city || "Barendrecht"}, the Netherlands`,
+    `${companyName}, ${settings.address || "Driemanssteeweg 412"}, ${settings.postalCode || "3084 CB"} ${settings.city || "Rotterdam"}, the Netherlands`,
     settings.website || "www.q4s.nl",
     settings.email || "info@q4s.nl",
     settings.phone ? `Tel: ${settings.phone}` : "Tel: +31 (0) 85 782 6818",
@@ -106,7 +106,7 @@ export function buildContractDoc(contract: Contract, settings: CompanySettings):
   const companyName = settings.companyName || "Q4S B.V.";
   const clientAddress = [settings.address, [settings.postalCode, settings.city].filter(Boolean).join(" ")]
     .filter(Boolean)
-    .join(", ") || "Barendrecht, 2994LA Arnhemseweg 12";
+    .join(", ") || "Driemanssteeweg 412, 3084 CB Rotterdam";
 
   const footerLine = contractFooterLine(settings);
 
@@ -159,7 +159,7 @@ export function buildContractDoc(contract: Contract, settings: CompanySettings):
     },
     sign: {
       clientName: contract.signerClient || "P. Boomsma",
-      clientPlace: contract.signPlaceClient || "Barendrecht",
+      clientPlace: contract.signPlaceClient || "Rotterdam",
       contractorName: contract.signerContractor,
       contractorPlace: contract.signPlaceContractor,
       date: fmtDate(contract.signDate),

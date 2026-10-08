@@ -26,7 +26,7 @@ INK, MUTED, LINE, FAINT, SOFT, BLUE = "1C1C1E", "6B6B70", "C8C8CC", "E4E4E7", "F
 OT, OT_SOFT = "C2410C", "FFF1E6"
 # Exact de bedrijfsregels van de originele Q4S-timesheet.
 FOOTER_LINES = (
-    "Q4S B.V., Arnhemseweg 12, 2994LA, Barendrecht, the Netherlands, www.q4s.nl, email: info@q4s.nl",
+    "Q4S B.V., Driemanssteeweg 412, 3084 CB, Rotterdam, the Netherlands, www.q4s.nl, email: info@q4s.nl",
     "Tel: +31 (0) 85 782 6818, KvK:69073287, Btw: NL857718137B01, IBAN: NL96INGB0007873625",
 )
 FONT = "Arial"  # meest gebruikte zakelijke lettertype, op elke pc aanwezig
@@ -64,7 +64,7 @@ T = {
     ),
 }
 
-COMPANY = ["Q4S B.V.", "Arnhemseweg 12", "2994LA Barendrecht", "www.q4s.nl", "FO-Q4S-18"]
+COMPANY = ["Q4S B.V.", "Driemanssteeweg 412", "3084 CB Rotterdam", "www.q4s.nl", "FO-Q4S-18"]
 COMPANY2 = [("KvK", "69073287"), ("BTW", "NL857718137B01"), ("Tel", "+31 (0) 85 782 6818"), ("E-mail", "admin@q4s.nl")]
 DAY_COLS = "DEFGHIJ"  # Mo..Su in the hours grid
 

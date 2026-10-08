@@ -68,7 +68,7 @@ export function ArbeidsovereenkomstVel({
             <table>
               <tbody>
                 {rij(t("Naam", "Name"), "Q4S B.V.")}
-                {rij(t("Adres", "Address"), "Arnhemseweg 12, 2994 LA Barendrecht")}
+                {rij(t("Adres", "Address"), "Driemanssteeweg 412, 3084 CB Rotterdam")}
                 {rij(t("KvK-nr.", "Chamber of Commerce no."), "69073287")}
                 {rij(t("Vertegenwoordigd door", "Represented by"), w("ondertekenaar") || "Paul Boomsma")}
                 {rij(t("Hierna te noemen", "Hereinafter"), t("Werkgever", "Employer"))}
@@ -323,7 +323,7 @@ export function ArbeidsovereenkomstVel({
           <div className="ov-sb">
             <div className="ov-who">{t("Werkgever", "Employer")}</div>
             <div className="ov-sr"><span>{t("Datum", "Date")}</span><V>{w("datum")}</V></div>
-            <div className="ov-sr"><span>{t("Plaats", "Place")}</span>{w("plaats") || "Barendrecht"}</div>
+            <div className="ov-sr"><span>{t("Plaats", "Place")}</span>{w("plaats") || "Rotterdam"}</div>
             <div className="ov-sr"><span>{t("Naam", "Name")}</span>{w("ondertekenaar") || "P. Boomsma"}</div>
             <div className="ov-sr"><span>{t("Handtekening", "Signature")}</span></div>
             {handtekening ? (

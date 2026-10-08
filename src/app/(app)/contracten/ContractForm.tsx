@@ -612,7 +612,7 @@ export function ContractForm({
               <Input
                 id="signPlaceClient"
                 name="signPlaceClient"
-                defaultValue={c?.signPlaceClient ?? "Barendrecht"} placeholder="Barendrecht"
+                defaultValue={c?.signPlaceClient ?? "Rotterdam"} placeholder="Rotterdam"
               />
             </Field>
             {/* Opdrachtnemer tekent zelf: datum, plaats en naam blijven open op het contract. */}

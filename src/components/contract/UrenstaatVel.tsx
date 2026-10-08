@@ -107,8 +107,8 @@ export function UrenstaatVel({
           )}
           <div className="ts-co">
             <b>Q4S B.V.</b>
-            <span>Arnhemseweg 12</span>
-            <span>2994LA Barendrecht</span>
+            <span>Driemanssteeweg 412</span>
+            <span>3084 CB Rotterdam</span>
             <span>www.q4s.nl</span>
             <span>FO-Q4S-18</span>
           </div>
@@ -253,7 +253,7 @@ export function UrenstaatVel({
         </div>
         <p className="ts-note">{t.note}</p>
         <div className="ts-footer">
-          <p>Q4S B.V., Arnhemseweg 12, 2994LA, Barendrecht, the Netherlands, www.q4s.nl, email: info@q4s.nl</p>
+          <p>Q4S B.V., Driemanssteeweg 412, 3084 CB, Rotterdam, the Netherlands, www.q4s.nl, email: info@q4s.nl</p>
           <p>Tel: +31 (0) 85 782 6818, KvK:69073287, Btw: NL857718137B01, IBAN: NL96INGB0007873625</p>
         </div>
       </article>

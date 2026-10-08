@@ -65,7 +65,7 @@ const VELDEN: Record<Soort, Groep[]> = {
     ]],
     ["Ondertekening (Q4S)", "De werknemer tekent zelf — zijn blok blijft open.", [
       ["ondertekenaar", "Namens Q4S", undefined, false, "Paul Boomsma"],
-      ["plaats", "Plaats", undefined, false, "Barendrecht"],
+      ["plaats", "Plaats", undefined, false, "Rotterdam"],
       ["datum", "Datum", undefined, false, "25-10-2026"],
     ]],
   ],

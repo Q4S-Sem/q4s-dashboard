@@ -80,6 +80,11 @@ export async function updateSettings(
   if (!parsed.success) return parsed.state;
 
   const data = toData(parsed.data);
+  // Vangnet tegen dataverlies: een vergrendeld (disabled) formulier stuurt alle
+  // velden leeg mee. Nooit adres, IBAN, KvK én btw tegelijk leegmaken.
+  if (!data.address.trim() && !data.iban.trim() && !data.kvkNumber.trim() && !data.vatNumber.trim()) {
+    return { error: "Niet opgeslagen: adres, IBAN, KvK en btw-nummer zijn allemaal leeg. Klik eerst op Bewerken." };
+  }
   await db.companySettings.upsert({
     where: { id: "default" },
     update: data,

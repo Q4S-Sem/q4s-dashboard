@@ -102,7 +102,7 @@ function withDefaults(data: z.infer<typeof ContractSchema>) {
     invoiceEmail: data.invoiceEmail || "admin@q4s.nl",
     insuranceCover: data.insuranceCover || "€ 2.500.000,-",
     signerClient: data.signerClient || "P. Boomsma",
-    signPlaceClient: data.signPlaceClient || "Barendrecht",
+    signPlaceClient: data.signPlaceClient || "Rotterdam",
   };
 }
 
