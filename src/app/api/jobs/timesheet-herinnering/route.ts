@@ -14,8 +14,10 @@ async function handle(req: Request) {
   if (!isJobRequestAuthorized(req, { cronSecret, jobSecret })) {
     return Response.json({ ok: false, error: "Ongeldige token" }, { status: 401 });
   }
-  const result = await stuurTimesheetHerinneringen();
-  return Response.json({ ok: true, result });
+  // Herinneringen staan voorlopig helemaal uit (verzoek gebruiker) — ook als de
+  // schakelaar aan zou staan. Weer aanzetten: deze twee regels terugdraaien.
+  void stuurTimesheetHerinneringen;
+  return Response.json({ ok: true, result: "uitgeschakeld" });
 }
 
 export const GET = handle;
