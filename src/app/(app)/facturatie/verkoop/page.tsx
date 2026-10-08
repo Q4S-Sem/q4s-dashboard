@@ -294,25 +294,6 @@ export default async function VerkoopfacturenPage({
         aantalFacturen={tellingen.alles}
       />
 
-      {weergave === "personen" ? (
-        <PersonenPerWeek week={weekParam || null} basePath="/facturatie/verkoop" q={sp.q} pf={sp.pf} />
-      ) : (
-        <>
-
-      {klantFilter && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-ink-200 bg-ink-50 px-4 py-2.5 text-[13px]">
-          <span className="text-ink-700">
-            Alleen de facturen van <strong className="font-semibold">{klantFilter.companyName}</strong>
-          </span>
-          <Link
-            href={tab === "alles" ? "/facturatie/verkoop" : `/facturatie/verkoop?tab=${tab}`}
-            className="font-medium text-ink-500 underline-offset-2 hover:text-ink-900 hover:underline"
-          >
-            Alle klanten ✕
-          </Link>
-        </div>
-      )}
-
       {/* Verzamelfacturen: goedgekeurde weken die wachten tot de maand / 4 weken compleet is. */}
       {verzamelend.length > 0 && (
         <div className="rounded-sm border border-ink-200 bg-ink-50/60 px-4 py-3 text-[13px] text-ink-700">
@@ -339,6 +320,26 @@ export default async function VerkoopfacturenPage({
           </ul>
         </div>
       )}
+
+      {weergave === "personen" ? (
+        <PersonenPerWeek week={weekParam || null} basePath="/facturatie/verkoop" q={sp.q} pf={sp.pf} />
+      ) : (
+        <>
+
+      {klantFilter && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-ink-200 bg-ink-50 px-4 py-2.5 text-[13px]">
+          <span className="text-ink-700">
+            Alleen de facturen van <strong className="font-semibold">{klantFilter.companyName}</strong>
+          </span>
+          <Link
+            href={tab === "alles" ? "/facturatie/verkoop" : `/facturatie/verkoop?tab=${tab}`}
+            className="font-medium text-ink-500 underline-offset-2 hover:text-ink-900 hover:underline"
+          >
+            Alle klanten ✕
+          </Link>
+        </div>
+      )}
+
 
       {tab === "telaat" && aanDeBeurt.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-amber-200 bg-amber-50 px-4 py-2.5 text-[13px] text-amber-900">

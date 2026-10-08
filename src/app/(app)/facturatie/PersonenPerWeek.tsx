@@ -258,6 +258,11 @@ export async function PersonenPerWeek({
                           <span className="tabular-nums text-ink-500">{formatCurrency(verkoopEx ?? 0)}</span>
                           <StatusBadge options={INVOICE_STATUSES} value={v.status} />
                         </Link>
+                      ) : r.vastgelegd ? (
+                        // Akkoord gegeven, klant factureert per maand/4 weken: de uren wachten op de verzamelfactuur.
+                        <span className="flex items-center gap-2 text-[13px] text-amber-800" title="Deze klant krijgt één factuur per periode; die komt zodra alle weken binnen zijn (of via 'Nu factureren').">
+                          <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" /> verzameld — volgt bij periodefactuur
+                        </span>
                       ) : (
                         <span className="flex items-center gap-2 text-[13px] text-ink-700">
                           <span className={stip(false)} /> nog niet gemaakt
