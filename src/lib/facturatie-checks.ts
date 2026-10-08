@@ -20,6 +20,7 @@ import {
   GATE_RELATIVE_FACTOR,
 } from "./timesheet-auto-gate";
 import { evaluateMargin } from "./facturatie-detecties";
+import { kernPeriode } from "./facturatie-volgende";
 
 // ---------------------------------------------------------------------------
 // DE CONTROLE-MACHINE van "Week verwerken": één persoon, één ISO-week, álle
@@ -377,8 +378,9 @@ function factuurExBtw(inv: InvoiceExtraction): number | null {
 
 /** Hoeveel ISO-weken beslaat deze periode (op maandagen geteld, minimaal 1)? */
 function wekenInPeriode(start: Date, end: Date): number {
-  const van = startOfISOWeek(start);
-  const tot = startOfISOWeek(end);
+  const k = kernPeriode(start, end);
+  const van = startOfISOWeek(k.start as Date);
+  const tot = startOfISOWeek(k.eind as Date);
   if (tot.getTime() < van.getTime()) return 1;
   return Math.round((tot.getTime() - van.getTime()) / (7 * 86_400_000)) + 1;
 }
@@ -386,8 +388,9 @@ function wekenInPeriode(start: Date, end: Date): number {
 /** Valt de maandag van de week binnen deze factuurperiode? */
 function periodeDektWeek(start: Date | null, end: Date | null, monday: Date): boolean {
   if (!isDatum(start) || !isDatum(end)) return false;
-  const a = startOfISOWeek(start).getTime();
-  const b = startOfISOWeek(end).getTime();
+  const k = kernPeriode(start, end);
+  const a = startOfISOWeek(k.start as Date).getTime();
+  const b = startOfISOWeek(k.eind as Date).getTime();
   const m = startOfISOWeek(monday).getTime();
   return m >= a && m <= b;
 }

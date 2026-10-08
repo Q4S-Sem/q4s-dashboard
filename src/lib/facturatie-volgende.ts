@@ -68,9 +68,28 @@ export function dubbelBesluit(bestaandeStatus: string): "vervang" | "blokkeer" {
  * Alle ISO-weeksleutels die een factuurperiode raakt (verzamelfactuur over 2-4
  * weken). Zonder (geldige) periode → []. Maximaal 8 weken als vangnet.
  */
+/**
+ * De factuurperiode zonder "uitloop": een week aan de rand telt alleen mee als de
+ * periode er minstens 2 dagen van beslaat. "21.09 t/m 28.09" (ma t/m ma) is dus
+ * week 39, niet week 39 + 40 — anders wordt de factuur half over twee weken verdeeld.
+ */
+export function kernPeriode<T extends string | Date | null | undefined>(start: T, eind: T): { start: T | Date; eind: T | Date } {
+  const dag = (v: string | Date) => new Date(`${(v instanceof Date ? v.toISOString() : v).slice(0, 10)}T12:00:00Z`);
+  if (!start || !eind) return { start, eind };
+  let a = dag(start);
+  let b = dag(eind);
+  const DAG = 86_400_000;
+  if ((b.getTime() - a.getTime()) / DAG < 2) return { start, eind };
+  const wd = (d: Date) => (d.getUTCDay() + 6) % 7; // ma = 0 … zo = 6
+  if (wd(b) === 0) b = new Date(b.getTime() - DAG); // eindigt op een maandag → t/m zondag
+  if (wd(a) === 6) a = new Date(a.getTime() + DAG); // begint op een zondag → vanaf maandag
+  return { start: a, eind: b };
+}
+
 export function wekenInPeriode(start: string | Date | null | undefined, eind: string | Date | null | undefined): string[] {
-  const a = weekSlotVanDatum(start);
-  const b = weekSlotVanDatum(eind) ?? a;
+  const kern = kernPeriode(start, eind);
+  const a = weekSlotVanDatum(kern.start instanceof Date ? kern.start.toISOString().slice(0, 10) : kern.start);
+  const b = weekSlotVanDatum(kern.eind instanceof Date ? kern.eind.toISOString().slice(0, 10) : kern.eind) ?? a;
   if (!a || !b) return [];
   const keys: string[] = [];
   const d = new Date(`${a.monday}T12:00:00Z`);

@@ -52,6 +52,10 @@ test("dubbelBesluit: open versie wordt vervangen, goedgekeurde blokkeert", () =>
 test("wekenInPeriode: verzamelfactuur over 3 weken → 3 weeksleutels", () => {
   assert.deepEqual(wekenInPeriode("2026-09-14", "2026-10-04"), ["2026-W38", "2026-W39", "2026-W40"]);
   assert.deepEqual(wekenInPeriode("2026-09-21", "2026-09-27"), ["2026-W39"]);
+  // Factuur 30-2026: "21.09 t/m 28.09 (week 39)" — de maandag erna is uitloop, geen tweede week.
+  assert.deepEqual(wekenInPeriode("2026-09-21", "2026-09-28"), ["2026-W39"]);
+  assert.deepEqual(wekenInPeriode("2026-09-20", "2026-09-27"), ["2026-W39"]);
+  assert.deepEqual(wekenInPeriode("2026-09-21", "2026-09-29"), ["2026-W39", "2026-W40"]);
   assert.deepEqual(wekenInPeriode("2026-09-21", null), ["2026-W39"]);
   assert.deepEqual(wekenInPeriode(null, null), []);
   assert.deepEqual(wekenInPeriode("2025-12-22", "2026-01-11"), ["2025-W52", "2026-W01", "2026-W02"]);
