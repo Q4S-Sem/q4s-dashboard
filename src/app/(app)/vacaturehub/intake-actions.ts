@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { isAdminSession } from "@/lib/session";
+import { nieuweMspSleutel } from "@/lib/msp-sleutel";
 import {
   simulateMspDelivery,
   pullConnector,
@@ -33,6 +35,20 @@ function revalidate() {
   revalidatePath("/vacaturehub", "layout");
   revalidatePath("/vacatures");
   revalidatePath("/", "layout");
+}
+
+/** Eigen API-sleutel voor een MSP (vervangt de vorige). Alleen beheerders. */
+export async function maakMspSleutel(
+  _prev: { sleutel?: string; error?: string } | null,
+  formData: FormData,
+): Promise<{ sleutel?: string; error?: string }> {
+  if (!(await isAdminSession())) return { error: "Alleen een beheerder kan een API-sleutel maken." };
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Onbekende koppeling." };
+  const { sleutel, hash } = nieuweMspSleutel();
+  await db.vmsConnector.update({ where: { id }, data: { inboundKeyHash: hash } });
+  revalidatePath("/vacaturehub/koppelingen");
+  return { sleutel };
 }
 
 /** Draai een gesimuleerde levering door de volledige pijplijn (om te testen). */

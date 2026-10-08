@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { isWebhookRequestAuthorized } from "@/lib/webhook-auth";
+import { hashMspSleutel } from "@/lib/msp-sleutel";
 import {
   intakeVacancies,
   runIntakePipeline,
@@ -19,6 +20,9 @@ import {
  *            "company": "...", "location": "...", "url": "..." }, ...]
  *   (of { "vacancies": [ ... ] })
  *
+ * Voorkeur: elk MSP heeft een EIGEN sleutel (Vacaturehub › Koppelingen) en
+ * stuurt die mee als header `x-api-key` — dan is ?connector= niet nodig.
+ *
  * Elke vacature doorloopt direct de intake-pijplijn: AI-filter → website-format
  * → LinkedIn-concept → kandidaat-matches → melding voor de recruiter.
  * Token = JOB_SECRET (valt terug op INBOX_WEBHOOK_SECRET) in header
@@ -28,16 +32,24 @@ const MAX_ITEMS = 25;
 const MAX_BODY_BYTES = 1_000_000; // 1 MB — ruim genoeg voor 25 vacatures
 
 export async function POST(req: Request) {
-  const secret = process.env.JOB_SECRET ?? process.env.INBOX_WEBHOOK_SECRET;
-  if (!secret) {
-    return Response.json(
-      { ok: false, error: "JOB_SECRET (of INBOX_WEBHOOK_SECRET) niet ingesteld" },
-      { status: 503 },
-    );
-  }
   const url = new URL(req.url);
-  if (!isWebhookRequestAuthorized(req, secret, "x-job-token")) {
-    return Response.json({ ok: false, error: "Ongeldige token" }, { status: 401 });
+  // 1) Eigen MSP-sleutel (x-api-key) → bepaalt meteen de connector.
+  const apiKey = req.headers.get("x-api-key")?.trim();
+  const viaSleutel = apiKey
+    ? await db.vmsConnector.findUnique({ where: { inboundKeyHash: hashMspSleutel(apiKey) } })
+    : null;
+  if (apiKey && !viaSleutel) {
+    return Response.json({ ok: false, error: "Ongeldige API-sleutel" }, { status: 401 });
+  }
+  // 2) Anders: het gedeelde JOB_SECRET (x-job-token) + ?connector=.
+  if (!viaSleutel) {
+    const secret = process.env.JOB_SECRET ?? process.env.INBOX_WEBHOOK_SECRET;
+    if (!secret) {
+      return Response.json({ ok: false, error: "Geen geldige API-sleutel" }, { status: 401 });
+    }
+    if (!isWebhookRequestAuthorized(req, secret, "x-job-token")) {
+      return Response.json({ ok: false, error: "Ongeldige token" }, { status: 401 });
+    }
   }
 
   // Begrens de body vóór het lezen (geheugen-/CPU-bescherming).
@@ -50,8 +62,8 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "Body te groot" }, { status: 413 });
   }
 
-  const connectorKey = url.searchParams.get("connector") ?? "magnit";
-  const connector = await db.vmsConnector.findUnique({ where: { key: connectorKey } });
+  const connectorKey = viaSleutel?.key ?? url.searchParams.get("connector") ?? "magnit";
+  const connector = viaSleutel ?? (await db.vmsConnector.findUnique({ where: { key: connectorKey } }));
   if (!connector) {
     return Response.json(
       { ok: false, error: `Onbekende connector "${connectorKey}"` },

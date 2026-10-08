@@ -155,6 +155,9 @@ export async function POST(req: Request) {
   const keys = candidateDedupeKeys({ email, phone });
   const duplicate = hasDedupeKey(keys) ? await findDuplicateCandidate(keys) : null;
 
+  // Sollicitatie op een MSP-vacature → hoort bij WNS+Deta vast (zie lib/spoor.ts).
+  const vac = vacancySlug ? await db.vacancy.findUnique({ where: { slug: vacancySlug } }) : null;
+
   let candidateId: string;
   if (duplicate) {
     candidateId = duplicate.id;
@@ -183,6 +186,7 @@ export async function POST(req: Request) {
         location: location || null,
         availability: coerceAvailability(availability),
         source: "WEBSITE",
+        spoor: vac?.vmsConnectorId ? "VAST" : "PROJECT",
         cvFileName,
         cvOriginalName,
         cvMimeType,
@@ -194,17 +198,20 @@ export async function POST(req: Request) {
   }
 
   // Optioneel: aan een specifieke gepubliceerde vacature koppelen.
-  if (vacancySlug) {
-    const vac = await db.vacancy.findUnique({ where: { slug: vacancySlug } });
+  if (vac) {
     if (vac && vac.status === "PUBLISHED") {
-      await db.application.create({
-        data: {
-          candidateId,
-          vacancyId: vac.id,
-          status: "NEW",
-          motivation: motivation || null,
-        },
-      });
+      // Twee keer op dezelfde vacature = één sollicitatie (dossier krijgt al een melding).
+      const bestaand = await db.application.findFirst({ where: { candidateId, vacancyId: vac.id } });
+      if (!bestaand) {
+        await db.application.create({
+          data: {
+            candidateId,
+            vacancyId: vac.id,
+            status: "NEW",
+            motivation: motivation || null,
+          },
+        });
+      }
     }
   }
 

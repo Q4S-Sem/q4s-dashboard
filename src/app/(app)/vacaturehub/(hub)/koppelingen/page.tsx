@@ -23,6 +23,7 @@ import { CopyButton } from "../../../vacatures/CopyButton";
 import { addKnownConnector } from "../../../connectors/actions";
 import { connectApi, pullNow } from "../../intake-actions";
 import { getSources } from "../data";
+import { SleutelMaken } from "./SleutelMaken";
 
 export const metadata = { title: "Koppelingen · Vacaturehub" };
 
@@ -35,9 +36,9 @@ type SP = {
 };
 
 /** De webhook waarmee een platform zelf vacatures kan aanleveren. */
-function webhookUrl(key: string): string {
+function webhookUrl(): string {
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://q4s-dashboard.vercel.app";
-  return `${base}/api/msp/webhook?connector=${key}`;
+  return `${base}/api/msp/webhook`;
 }
 
 export default async function KoppelingenPage({ searchParams }: { searchParams: Promise<SP> }) {
@@ -244,17 +245,18 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
                 <details className="group rounded-xl border border-ink-200 px-4 py-3">
                   <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-ink-700">
                     <Webhook className="h-4 w-4 text-ink-400" />
-                    Geen API? Laat {c.name} aanleveren via de webhook
+                    Laat {c.name} zelf aanleveren met een eigen API-sleutel
                   </summary>
                   <div className="mt-3 space-y-2">
+                    <SleutelMaken id={c.id} heeftSleutel={Boolean(c.inboundKeyHash)} />
                     <div className="flex flex-wrap items-center gap-2">
                       <code className="min-w-0 flex-1 truncate rounded-lg bg-ink-900 px-3 py-2 text-xs text-ink-100">
-                        POST {webhookUrl(c.key)}
+                        POST {webhookUrl()}
                       </code>
-                      <CopyButton text={webhookUrl(c.key)} label="Kopieer" />
+                      <CopyButton text={webhookUrl()} label="Kopieer" />
                     </div>
                     <p className="text-xs text-ink-500">
-                      Met header <code>x-job-token</code> = je <code>JOB_SECRET</code>. Body: een
+                      Met header <code>x-api-key</code> = de eigen sleutel van {c.name} (hierboven). Body: een
                       lijst met <code>externalId</code>, <code>title</code>,{" "}
                       <code>description</code>, <code>company</code>, <code>location</code> en{" "}
                       <code>url</code>. Elke levering loopt meteen door de AI-filter.

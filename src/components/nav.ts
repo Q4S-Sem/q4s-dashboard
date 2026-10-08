@@ -183,7 +183,7 @@ const HUB_LIST: NavHub[] = [
       // Bereikbaar via de mappen op Vacatures, niet als los menu-item:
       { href: "/website", label: "Vacatures op de website", icon: Globe, hidden: true },
       { href: "/vacatures", label: "Uitwerken & publiceren", icon: PencilLine, hidden: true },
-      { href: "/vacaturehub", label: "Vacaturehub", icon: Filter, hidden: true },
+      { href: "/vacaturehub", label: "MSP-vacatures", icon: Filter, section: "Werving" },
       { href: "/opdrachtgevers", label: "Klanten & contacten", icon: Factory, section: "Werving" },
       // Niet meer in het menu (route blijft bereikbaar):
       { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, hidden: true },

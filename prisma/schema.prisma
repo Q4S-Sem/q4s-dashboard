@@ -991,6 +991,9 @@ model VmsConnector {
   apiBaseUrl String?
   apiKey     String?
   lastSyncAt DateTime?
+  /// sha256 van de eigen sleutel waarmee dit MSP aanlevert op /api/msp/webhook
+  /// (header x-api-key). De sleutel zelf wordt nooit bewaard — zie lib/msp-sleutel.ts.
+  inboundKeyHash String? @unique
 
   // Automatische intake-pijplijn per connector — wat er gebeurt met een
   // binnenkomende vacature (see runIntakePipeline in src/lib/msp.ts).
