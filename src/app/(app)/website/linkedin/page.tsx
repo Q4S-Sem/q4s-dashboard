@@ -10,21 +10,26 @@ export const dynamic = "force-dynamic";
 export default async function LinkedInStudioPage({ searchParams }: { searchParams: Promise<{ vac?: string }> }) {
   const { vac } = await searchParams;
   const [vacancies, settings] = await Promise.all([
+    // Alleen vacatures die echt online staan op q4s.nl.
     db.vacancy.findMany({
+      where: { status: "PUBLISHED" },
       orderBy: { createdAt: "desc" },
       take: 150,
       select: {
         id: true, title: true, discipline: true, location: true, employmentType: true, salary: true,
         responsibilities: true, requirements: true, summary: true, slug: true, status: true,
+        socialPosts: {
+          where: { platform: "LINKEDIN", status: "PUBLISHED" },
+          orderBy: { publishedAt: "desc" },
+          take: 1,
+          select: { publishedAt: true },
+        },
       },
     }),
     getCompanySettings(),
   ]);
 
-  // Live (gepubliceerde) vacatures bovenaan, verder nieuwste eerst.
-  const vacatures: StudioVacature[] = [...vacancies]
-    .sort((a, b) => Number(b.status === "PUBLISHED") - Number(a.status === "PUBLISHED"))
-    .map((v) => ({
+  const vacatures: StudioVacature[] = vacancies.map((v) => ({
       id: v.id,
       title: v.title,
       discipline: v.discipline ?? "",
@@ -37,6 +42,7 @@ export default async function LinkedInStudioPage({ searchParams }: { searchParam
       slug: v.slug,
       status: v.status,
       card: cardDefaultsFromVacancy(v),
+      gepostOp: v.socialPosts[0]?.publishedAt?.toISOString() ?? null,
     }));
 
   return (
