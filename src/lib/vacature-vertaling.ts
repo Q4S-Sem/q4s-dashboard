@@ -124,5 +124,17 @@ export async function publiekeTekstIn(
   engels: boolean,
 ): Promise<VacatureTekst> {
   const nl = publiekeTekst(v);
-  return engels ? vacatureInHetEngels(`${v.slug}:${v.updatedAt.getTime()}`, nl) : nl;
+  if (!engels) return nl;
+  const en = await vacatureInHetEngels(`${v.slug}:${v.updatedAt.getTime()}`, nl);
+  // Vaste lijst → vaste vertaling, geen AI ("NDO / NDT" werd anders "NDT / NDT").
+  const vast = v.discipline ? DISCIPLINE_EN[v.discipline] : undefined;
+  return vast ? { ...en, disciplineLabel: vast } : en;
 }
+
+const DISCIPLINE_EN: Record<string, string> = {
+  NDO: "NDT",
+  LASSEN: "Welding",
+  WERKVOORBEREIDING: "Work Preparation",
+  PROJECTMANAGEMENT: "Project Management",
+  OVERIG: "Other",
+};
