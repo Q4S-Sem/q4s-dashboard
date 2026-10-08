@@ -32,12 +32,28 @@ async function loadAssets() {
   return assets;
 }
 
+/** Woorden in de functietitel die zwaarder wegen dan het vakgebied (foto moet bij de titel passen). */
+const FOTO_OP_TITEL: [RegExp, string][] = [
+  [/mechani|hydraul|monteur|millwright|machin/i, "MECHANISCH"],
+  [/elektr|electr|instrument/i, "E_I"],
+  [/weld|lass/i, "LASSEN"],
+  [/pip|fitter|leiding/i, "FITTER"],
+  [/\bndt\b|\bndo\b|ultrason|radiogra/i, "NDO"],
+  [/commission/i, "COMMISSIONING"],
+  [/hse|safety|veiligheid/i, "HSEQ"],
+  [/planner|project control|cost/i, "PROJECT_CONTROLS"],
+];
+
 /**
- * Foto rechtsboven, per vakgebied: public/linkedin/foto/<DISCIPLINE>.jpg
- * (Pexels, vrij te gebruiken). Onbekend vakgebied → OVERIG.
+ * Foto rechtsboven: eerst op de functietitel (FOTO_OP_TITEL), anders per
+ * vakgebied: public/linkedin/foto/<DISCIPLINE>.jpg (Pexels, vrij te gebruiken).
+ * Onbekend vakgebied → OVERIG.
  */
-async function fotoVoor(disciplineLabel: string): Promise<string> {
-  const d = DISCIPLINES.find((x) => x.label === disciplineLabel || x.value === disciplineLabel)?.value ?? "OVERIG";
+async function fotoVoor(disciplineLabel: string, titel = ""): Promise<string> {
+  const d =
+    FOTO_OP_TITEL.find(([re]) => re.test(titel))?.[1] ??
+    DISCIPLINES.find((x) => x.label === disciplineLabel || x.value === disciplineLabel)?.value ??
+    "OVERIG";
   const dir = path.join(process.cwd(), "public", "linkedin", "foto");
   const buf = await readFile(path.join(dir, `${d}.jpg`)).catch(() => readFile(path.join(dir, "OVERIG.jpg")));
   return `data:image/jpeg;base64,${buf.toString("base64")}`;
@@ -151,11 +167,13 @@ const VAK_EN: Record<string, string> = {
 /** VACATUREKAART (1080x1350), AIDA: haak boven, feiten + punten onder, actiebalk. */
 export async function renderLinkedInCard(searchParams: URLSearchParams): Promise<ImageResponse> {
   const c = cardFromParams(searchParams);
-  const [a, foto] = await Promise.all([loadAssets(), fotoVoor(c.discipline)]);
+  const [a, foto] = await Promise.all([loadAssets(), fotoVoor(c.discipline, c.title)]);
 
   // Ook het langste woord moet passen naast de foto (geen afgekapte woorden).
-  const langsteWoord = Math.max(...c.title.split(/\s+/).map((w) => w.length), 1);
-  const titleSize = Math.min(c.title.length > 30 ? 52 : c.title.length > 16 ? 58 : 66, Math.floor(560 / langsteWoord));
+  // "/" mag afbreken ("Mechanical/Hydraulic" → twee regels) zodat de titel groot kan.
+  const titel = c.title.replace(/\s*\/\s*/g, " / ");
+  const langsteWoord = Math.max(...titel.split(/\s+/).map((w) => w.length), 1);
+  const titleSize = Math.min(titel.length > 40 ? 64 : titel.length > 20 ? 76 : 88, Math.floor(780 / langsteWoord));
   const feiten = [
     { label: "Location", value: c.location },
     { label: "Duration", value: c.duration },
@@ -179,7 +197,7 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
               <div style={{ display: "flex", fontSize: 24, fontWeight: 700, letterSpacing: 3, color: ORANJE, textTransform: "uppercase" }}>
                 {[c.badge, VAK_EN[c.discipline] ?? c.discipline].filter(Boolean).join("  ·  ")}
               </div>
-              <div style={{ display: "flex", fontSize: titleSize, fontWeight: 700, lineHeight: 1.0, letterSpacing: -3, color: INK, marginTop: 16 }}>{c.title}</div>
+              <div style={{ display: "flex", fontSize: titleSize, fontWeight: 700, lineHeight: 1.0, letterSpacing: -3, color: INK, marginTop: 16 }}>{titel}</div>
             </div>
           </div>
         }
