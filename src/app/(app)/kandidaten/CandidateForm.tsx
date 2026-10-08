@@ -34,12 +34,15 @@ export function CandidateForm({
   cancelHref,
   /** Toon de "CV inlezen"-blok bovenaan (alleen bij een nieuwe kandidaat). */
   showCvIntake = false,
+  spoor,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   candidate?: Candidate;
   submitLabel: string;
   cancelHref: string;
   showCvIntake?: boolean;
+  /** Wervingsspoor voor een nieuwe kandidaat (PROJECT | VAST). */
+  spoor?: string;
 }) {
   const [state, formAction, isPending] = useActionState(action, emptyFormState);
   const e = state.fieldErrors ?? {};
@@ -216,6 +219,7 @@ export function CandidateForm({
   return (
     <form action={onSubmit} data-no-persist={isNew ? "" : undefined}>
       {candidate && <input type="hidden" name="id" value={candidate.id} />}
+      {spoor && <input type="hidden" name="spoor" value={spoor} />}
 
       {/* Concept teruggezet — laat weten dat oude invoer is hersteld + wis-knop */}
       {isNew && restoredHint && (

@@ -172,20 +172,24 @@ const HUB_LIST: NavHub[] = [
     icon: Sparkles,
     items: [
       { href: "/recruitment", label: "Cockpit", icon: LayoutDashboard, exact: true },
-      { href: "/kandidaten", label: "Vandaag binnen", icon: Inbox, section: "Kandidaten", exact: true },
-      { href: "/kandidaten/alle", label: "Alle kandidaten", icon: Users, section: "Kandidaten" },
-      { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, section: "Kandidaten" },
-      { href: "/sollicitaties", label: "Sollicitaties", icon: ClipboardList, section: "Kandidaten" },
-      { href: "/crm", label: "Pipeline", icon: Kanban, section: "Werving" },
+      { href: "/kandidaten", label: "Vandaag binnen", icon: Inbox, section: "Projecten", exact: true },
+      { href: "/kandidaten/alle", label: "Alle kandidaten", icon: Users, section: "Projecten" },
+      { href: "/crm", label: "Pipeline", icon: Kanban, section: "Projecten", exact: true },
+      { href: "/vast", label: "Vandaag binnen", icon: Inbox, section: "WNS+Deta vast", exact: true },
+      { href: "/vast/alle", label: "Alle kandidaten", icon: Users, section: "WNS+Deta vast" },
+      { href: "/vast/pipeline", label: "Pipeline", icon: Kanban, section: "WNS+Deta vast" },
       // Vacatures = alles in één: werving (open/pipeline) én website (concept/gereed/online).
       { href: "/crm/vacatures", label: "Vacatures", icon: Briefcase, section: "Werving" },
       // Bereikbaar via de mappen op Vacatures, niet als los menu-item:
       { href: "/website", label: "Vacatures op de website", icon: Globe, hidden: true },
       { href: "/vacatures", label: "Uitwerken & publiceren", icon: PencilLine, hidden: true },
       { href: "/vacaturehub", label: "Vacaturehub", icon: Filter, hidden: true },
-      { href: "/crm/opvolging", label: "Opvolging", icon: CalendarClock, section: "Werving" },
       { href: "/opdrachtgevers", label: "Klanten & contacten", icon: Factory, section: "Werving" },
-      { href: "/crm/inzichten", label: "Inzichten", icon: BarChart3, section: "Werving" },
+      // Niet meer in het menu (route blijft bereikbaar):
+      { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, hidden: true },
+      { href: "/sollicitaties", label: "Sollicitaties", icon: ClipboardList, hidden: true },
+      { href: "/crm/opvolging", label: "Opvolging", icon: CalendarClock, hidden: true },
+      { href: "/crm/inzichten", label: "Inzichten", icon: BarChart3, hidden: true },
     ],
   },
   {

@@ -20,6 +20,7 @@ export function KandidatenFilters({
   rating,
   availability,
   map,
+  basePath = "/kandidaten/alle",
   disciplines,
   ratings,
   availabilities,
@@ -30,6 +31,8 @@ export function KandidatenFilters({
   availability: string;
   /** De gekozen map (tegel) blijft staan bij het filteren. */
   map: string;
+  /** Pagina waar de filters op staan (Projecten of WNS+Deta vast). */
+  basePath?: string;
   disciplines: Option[];
   ratings: Option[];
   availabilities: Option[];
@@ -49,7 +52,7 @@ export function KandidatenFilters({
     if (values.rating) params.set("rating", values.rating);
     if (values.availability) params.set("availability", values.availability);
     const qs = params.toString();
-    startTransition(() => router.replace(qs ? `/kandidaten/alle?${qs}` : "/kandidaten/alle"));
+    startTransition(() => router.replace(qs ? `${basePath}?${qs}` : basePath));
   }
 
   // Debounce het zoekveld: 300 ms na de laatste toetsaanslag automatisch zoeken.
@@ -124,7 +127,7 @@ export function KandidatenFilters({
                 type="button"
                 onClick={() => {
                   setTerm("");
-                  startTransition(() => router.replace(map ? `/kandidaten/alle?map=${map}` : "/kandidaten/alle"));
+                  startTransition(() => router.replace(map ? `${basePath}?map=${map}` : basePath));
                 }}
                 className={buttonVariants({ variant: "outline" })}
               >

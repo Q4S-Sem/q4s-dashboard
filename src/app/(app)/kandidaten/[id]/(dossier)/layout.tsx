@@ -18,6 +18,7 @@ import { person } from "@/lib/people";
 import { deleteCandidate, uploadPhoto, deletePhoto } from "../../actions";
 import { PhotoPicker } from "../../PhotoPicker";
 import { KandidaatStappen } from "../../KandidaatStappen";
+import { SPOOR, spoorVan } from "@/lib/spoor";
 import { getCandidate, getDossierCounts } from "./data";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -50,7 +51,7 @@ export default async function KandidaatDossierLayout({
 
   return (
     <div className="space-y-6">
-      <BackLink href="/kandidaten">Terug naar talentpool</BackLink>
+      <BackLink href={SPOOR[spoorVan(candidate.spoor)].alle}>Terug naar kandidaten</BackLink>
 
       <PageHeader
         title={name}

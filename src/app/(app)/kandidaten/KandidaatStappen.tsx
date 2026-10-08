@@ -2,13 +2,14 @@ import Link from "next/link";
 import { Check, FileDown, MessageSquare, Pencil, Kanban } from "lucide-react";
 import { db } from "@/lib/db";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, segmentVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { KANDIDAAT_STAPPEN, kandidaatStap } from "@/lib/kandidaat-flow";
 import { RatingSelect } from "./RatingSelect";
 import { AvailabilitySelect } from "./AvailabilitySelect";
 import { PipelineButton } from "./PipelineButton";
-import { laadCvIn } from "./actions";
+import { laadCvIn, setCandidateSpoor } from "./actions";
+import { SPOOR, spoorVan } from "@/lib/spoor";
 import { createDealFromCandidate } from "../crm/deals/actions";
 
 /**
@@ -29,6 +30,7 @@ export async function KandidaatStappen({
     cvFileName: string | null;
     source: string;
     createdAt: Date;
+    spoor: string;
   };
 }) {
   const [openDeals, clients, vacancies] = await Promise.all([
@@ -72,6 +74,24 @@ export async function KandidaatStappen({
           );
         })}
       </ol>
+
+      {/* Wervingsspoor: Projecten of WNS+Deta vast (bepaalt in welke lijst en pipeline hij staat). */}
+      <form action={setCandidateSpoor} className="flex flex-wrap items-center gap-2 border-b border-ink-100 px-4 py-2 text-xs">
+        <input type="hidden" name="id" value={c.id} />
+        <span className="text-ink-500">Spoor:</span>
+        {(["PROJECT", "VAST"] as const).map((s) => (
+          <button
+            key={s}
+            type="submit"
+            name="spoor"
+            value={s}
+            aria-pressed={spoorVan(c.spoor) === s}
+            className={segmentVariants(spoorVan(c.spoor) === s, "h-7 text-xs")}
+          >
+            {SPOOR[s].label}
+          </button>
+        ))}
+      </form>
 
       <div className="flex flex-wrap items-center gap-2.5 px-4 py-3 text-sm">
         {stap <= 2 && (
@@ -118,7 +138,7 @@ export async function KandidaatStappen({
                 vacancies={vacancies.map((v) => ({ id: v.id, title: v.title, company: v.companyName }))}
               />
             ) : (
-              <Link href="/crm" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <Link href={SPOOR[spoorVan(c.spoor)].pipeline} className={buttonVariants({ variant: "outline", size: "sm" })}>
                 <Kanban className="h-4 w-4" /> Naar de pipeline
               </Link>
             )}

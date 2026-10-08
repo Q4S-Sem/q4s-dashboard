@@ -22,6 +22,7 @@ import {
   cvKey,
 } from "@/lib/uploads";
 import { extractCandidateFields, CvExtractError, type CandidateFields } from "@/lib/cv-extract";
+import { SPOOR, spoorVan } from "@/lib/spoor";
 
 const CandidateSchema = z.object({
   firstName: z.string().min(1, "Voornaam is verplicht"),
@@ -86,6 +87,15 @@ export async function setCandidateRating(formData: FormData) {
  * `availableFrom` (yyyy-mm-dd) is only kept for the "binnenkort" status; every
  * other status clears the date so stale dates don't linger.
  */
+/** Kandidaat naar het andere wervingsspoor (Projecten ↔ WNS+Deta vast). */
+export async function setCandidateSpoor(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const spoor = spoorVan(formData.get("spoor"));
+  await db.candidate.update({ where: { id }, data: { spoor } });
+  for (const p of ["/kandidaten", "/kandidaten/alle", "/vast", "/vast/alle", "/crm", "/vast/pipeline", `/kandidaten/${id}`]) revalidatePath(p);
+}
+
 export async function setCandidateAvailability(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const availability = String(formData.get("availability") ?? "");
@@ -252,13 +262,14 @@ export async function createCandidate(
   // Manually-added candidates are MANUAL. WEBSITE/TALENTPOOL candidates are
   // created via their own public actions and must keep that source on edit —
   // so `source` is intentionally NOT part of the shared edit payload.
+  const spoor = spoorVan(formData.get("spoor"));
   await db.candidate.create({
-    data: { ...toData(parsed.data), source: "MANUAL", ...(cvMeta ?? {}) },
+    data: { ...toData(parsed.data), source: "MANUAL", spoor, ...(cvMeta ?? {}) },
   });
-  revalidatePath("/kandidaten");
-  // Na het aanmaken terug naar de talentpool-lijst (niet naar het dossier van de
-  // nieuwe kandidaat) — de recruiter wil daar verder werken/de volgende toevoegen.
-  redirect("/kandidaten");
+  revalidatePath(SPOOR[spoor].basis);
+  revalidatePath(SPOOR[spoor].alle);
+  // Na het aanmaken terug naar de lijst van het spoor (niet naar het dossier).
+  redirect(SPOOR[spoor].alle);
 }
 
 export async function updateCandidate(

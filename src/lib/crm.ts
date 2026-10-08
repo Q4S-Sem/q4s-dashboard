@@ -262,6 +262,8 @@ export async function getBoardData(opts: {
   visibleStages?: string[] | null;
   /** Alleen deals mét een gekoppelde kandidaat (pipeline-bord = kandidaten). */
   onlyWithCandidate?: boolean;
+  /** Alleen deals van kandidaten in dit wervingsspoor (PROJECT | VAST). */
+  spoor?: string;
 }): Promise<BoardData> {
   const all = await getStages();
   const stages =
@@ -274,6 +276,9 @@ export async function getBoardData(opts: {
     where: {
       ...scopeWhere(opts.recruiterId, opts.scope),
       ...(opts.onlyWithCandidate ? { candidateId: { not: null } } : {}),
+      ...(opts.spoor
+        ? { candidateId: { in: (await db.candidate.findMany({ where: { spoor: opts.spoor }, select: { id: true } })).map((c) => c.id) } }
+        : {}),
       NOT: crmArchiefWhere(),
     },
     include: {
