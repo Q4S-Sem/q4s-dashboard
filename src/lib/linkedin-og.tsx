@@ -125,20 +125,36 @@ function Canvas({ boven, onder, actie, actieRechts, foto }: { boven: React.React
   );
 }
 
+/**
+ * Een punt voor op de kaart: nooit afgekapt met "…". Haakjes-toelichting eraf;
+ * nog te lang (>95) → terug naar het laatste hele zinsdeel (komma / " en ").
+ */
+export function puntKort(t: string): string {
+  let s = t.replace(/\s*\([^)]*\)/g, "").replace(/\s+/g, " ").trim().replace(/[.;:,]$/, "");
+  if (s.length <= 95) return s;
+  const kop = s.slice(0, 95);
+  const knip = Math.max(kop.lastIndexOf(", "), kop.lastIndexOf(" en "), kop.lastIndexOf(" of "));
+  s = knip > 30 ? kop.slice(0, knip) : kop.slice(0, kop.lastIndexOf(" "));
+  return s.replace(/[\s,;:-]+$/, "");
+}
+
 /** VACATUREKAART (1080x1350), AIDA: haak boven, feiten + punten onder, actiebalk. */
 export async function renderLinkedInCard(searchParams: URLSearchParams): Promise<ImageResponse> {
   const c = cardFromParams(searchParams);
   const [a, foto] = await Promise.all([loadAssets(), fotoVoor(c.discipline)]);
 
-  const titleSize = c.title.length > 30 ? 60 : c.title.length > 16 ? 70 : 84;
+  // Ook het langste woord moet passen naast de foto (geen afgekapte woorden).
+  const langsteWoord = Math.max(...c.title.split(/\s+/).map((w) => w.length), 1);
+  const titleSize = Math.min(c.title.length > 30 ? 60 : c.title.length > 16 ? 70 : 84, Math.floor(640 / langsteWoord));
   const feiten = [
     { label: "Locatie", value: c.location },
     { label: "Duur", value: c.duration },
     { label: "Uren", value: c.hours },
   ].filter((x) => x.value);
   // Punten (werk) — anders de pitch als losse zinnen.
-  const kort = (t: string) => (t.length > 62 ? t.slice(0, 61).trimEnd() + "\u2026" : t);
-  const punten = (c.points.length ? c.points : (c.intro.match(/[^.!?]+[.!?]+/g) ?? []).map((z) => z.trim())).slice(0, 3).map(kort);
+  const punten = (c.points.length ? c.points : (c.intro.match(/[^.!?]+[.!?]+/g) ?? []).map((z) => z.trim())).slice(0, 3).map(puntKort);
+  // Lange punten krijgen een kleinere letter i.p.v. afgekapt te worden.
+  const puntSize = Math.max(...punten.map((p) => p.length), 0) > 60 ? 26 : 31;
 
   return new ImageResponse(
     (
@@ -176,7 +192,7 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
               {punten.map((pt, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "flex-start" }}>
                   <div style={{ display: "flex", width: 18, height: 18, backgroundColor: ORANJE, marginTop: 12, marginRight: 24, flexShrink: 0 }} />
-                  <div style={{ display: "flex", fontSize: 31, lineHeight: 1.3, color: "#fff" }}>{pt}</div>
+                  <div style={{ display: "flex", fontSize: puntSize, lineHeight: 1.3, color: "#fff" }}>{pt}</div>
                 </div>
               ))}
             </div>
