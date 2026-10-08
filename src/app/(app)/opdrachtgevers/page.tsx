@@ -1,27 +1,29 @@
 import Link from "next/link";
-import { Building2, Plus, Briefcase, Kanban } from "lucide-react";
+import { Building2, Plus, Briefcase, Kanban, Users2, UserPlus, HardHat } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
+import { FilterTegels, type FilterTegel } from "@/components/ui/filter-tegels";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD, RowLink } from "@/components/ui/table";
 import { DISCIPLINES } from "@/lib/domain";
 import { BedrijvenFilters } from "./BedrijvenFilters";
+import { ContactpersonenTab } from "./ContactpersonenTab";
 
-export const metadata = { title: "Klanten" };
+export const metadata = { title: "Klanten & contacten" };
 export const dynamic = "force-dynamic";
 
 export default async function BedrijvenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; filter?: string }>;
+  searchParams: Promise<{ q?: string; filter?: string; tab?: string }>;
 }) {
   const sp = await searchParams;
   const q = sp.q?.trim() || "";
   const filter = sp.filter || "";
+  const tab = sp.tab === "contacten" ? "contacten" : "bedrijven";
 
   // Onze eigen klanten met hun openstaande vacatures en lopende deals.
   const clients = await db.client.findMany({
@@ -40,7 +42,7 @@ export default async function BedrijvenPage({
         select: { id: true, title: true, discipline: true },
         orderBy: { createdAt: "desc" },
       },
-      _count: { select: { deals: { where: { status: "OPEN" } }, placements: true } },
+      _count: { select: { deals: { where: { status: "OPEN" } }, placements: true, crmContacts: true } },
     },
   });
 
@@ -52,30 +54,52 @@ export default async function BedrijvenPage({
     return true;
   });
 
-  const totalOpenVacancies = clients.reduce((s, c) => s + c.vacancies.length, 0);
-  const totalOpenDeals = clients.reduce((s, c) => s + c._count.deals, 0);
+  const aantal = (f: string) =>
+    clients.filter((c) => (f === "open-vacancy" ? c.vacancies.length > 0 : f === "open-deal" ? c._count.deals > 0 : c._count.placements > 0)).length;
+  const href = (f: string, t = "bedrijven") => {
+    const p = new URLSearchParams();
+    if (t === "contacten") p.set("tab", "contacten");
+    if (f) p.set("filter", f);
+    if (q) p.set("q", q);
+    const qs = p.toString();
+    return qs ? `/opdrachtgevers?${qs}` : "/opdrachtgevers";
+  };
+  const contactTotaal = clients.reduce((s, c) => s + c._count.crmContacts, 0);
+  const isB = tab === "bedrijven";
+  const tegels: FilterTegel[] = [
+    { key: "alle", label: "Alle bedrijven", waarde: clients.length, icon: <Building2 className="h-4 w-4" />, toon: "slate", href: href(""), actief: isB && !filter },
+    { key: "vac", label: "Met open vacature", waarde: aantal("open-vacancy"), icon: <Briefcase className="h-4 w-4" />, toon: "green", href: href("open-vacancy"), actief: isB && filter === "open-vacancy" },
+    { key: "deal", label: "In de pipeline", waarde: aantal("open-deal"), icon: <Kanban className="h-4 w-4" />, toon: "violet", href: href("open-deal"), actief: isB && filter === "open-deal" },
+    { key: "plaats", label: "Met plaatsingen", waarde: aantal("placements"), icon: <HardHat className="h-4 w-4" />, toon: "amber", href: href("placements"), actief: isB && filter === "placements" },
+    { key: "contacten", label: "Contactpersonen", waarde: contactTotaal, icon: <Users2 className="h-4 w-4" />, toon: "blue", href: href("", "contacten"), actief: !isB },
+  ];
   const withOpenVacancy = clients.filter((c) => c.vacancies.length > 0).length;
   const hasFilter = Boolean(q || filter);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Klanten"
-        description="De klanten waar Q4S mensen plaatst — met hun openstaande vacatures en lopende deals. Zet vanuit de talentpool een kandidaat in de pipeline bij een van deze bedrijven."
+        title="Klanten & contacten"
+        description="Onze bedrijven met hun vacatures, pipeline en plaatsingen — en per bedrijf de contactpersonen."
         actions={
-          <Link href="/klanten/nieuw" className={buttonVariants()}>
-            <Plus className="h-4 w-4" /> Nieuw bedrijf
-          </Link>
+          <>
+            <Link href="/crm/contacten/nieuw" className={buttonVariants({ variant: "outline" })}>
+              <UserPlus className="h-4 w-4" /> Nieuw contact
+            </Link>
+            <Link href="/klanten/nieuw" className={buttonVariants()}>
+              <Plus className="h-4 w-4" /> Nieuw bedrijf
+            </Link>
+          </>
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="Bedrijven" value={clients.length} icon={<Building2 className="h-5 w-5" />} accent="brand" />
-        <StatCard label="Openstaande vacatures" value={totalOpenVacancies} icon={<Briefcase className="h-5 w-5" />} accent="green" />
-        <StatCard label="Lopende deals" value={totalOpenDeals} icon={<Kanban className="h-5 w-5" />} accent="violet" />
-      </div>
+      <FilterTegels items={tegels} label="Klanten en contacten" />
 
-      {clients.length === 0 && !hasFilter ? (
+      {!isB ? (
+        <>
+          <ContactpersonenTab />
+        </>
+      ) : clients.length === 0 && !hasFilter ? (
         <EmptyState
           icon={<Building2 className="h-6 w-6" />}
           title="Nog geen bedrijven"
@@ -114,7 +138,8 @@ export default async function BedrijvenPage({
                 <TR className="hover:bg-transparent">
                   <TH>Bedrijf</TH>
                   <TH>Openstaande vacatures</TH>
-                  <TH className="text-right">Lopende deals</TH>
+                  <TH className="text-right">Contacten</TH>
+                  <TH className="text-right">In pipeline</TH>
                   <TH className="text-right">Plaatsingen</TH>
                 </TR>
               </THead>
@@ -150,6 +175,7 @@ export default async function BedrijvenPage({
                         </div>
                       )}
                     </TD>
+                    <TD className="text-right tabular-nums text-ink-600">{c._count.crmContacts}</TD>
                     <TD className="text-right">
                       {c._count.deals > 0 ? (
                         <Badge color="violet">{c._count.deals}</Badge>

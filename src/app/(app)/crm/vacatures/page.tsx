@@ -1,31 +1,35 @@
 import Link from "next/link";
-import { Plus, Briefcase, Building2, Coins, Users2, MapPin, CalendarClock, ArrowRight, Sparkles, GitBranchPlus, Kanban } from "lucide-react";
+import { Plus, Briefcase, Building2, Users2, MapPin, CalendarClock, ArrowRight, Sparkles, Kanban } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, segmentVariants } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { DISCIPLINES, type BadgeColor } from "@/lib/domain";
+import { formatDate, cn } from "@/lib/utils";
+import { DISCIPLINES, labelFor, type BadgeColor } from "@/lib/domain";
 import { VacatureTabs } from "./VacatureTabs";
 
 export const metadata = { title: "Vacatures" };
 export const dynamic = "force-dynamic";
 
+const ICOON_KNOP =
+  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900";
+
 /**
  * Vacatures = deals bij bedrijven, in een tab-switch:
  *  - OPEN: nog geen kandidaat gekoppeld → hier zoek je met AI de juiste persoon.
  *  - PIPELINE: een kandidaat gekoppeld → de vacature staat in de pipeline.
+ * Compacte rijen met icoonknoppen en een filter per discipline.
  */
 export default async function VacaturesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; d?: string }>;
 }) {
   const sp = await searchParams;
   const view = sp.view === "pipeline" ? "pipeline" : "open";
+  const vak = sp.d ?? "";
 
   const deals = await db.deal.findMany({
     where: { status: "OPEN" },
@@ -44,13 +48,13 @@ export default async function VacaturesPage({
     : [];
   const candName = new Map(cands.map((c) => [c.id, `${c.firstName} ${c.lastName}`.trim()]));
 
-  const open = deals.filter((d) => !d.candidateId);
-  const filled = deals.filter((d) => d.candidateId);
-
-  const totalValue = open.reduce((s, k) => s + k.value, 0);
-  const totalPositions = open.reduce((s, k) => s + k.positions, 0);
-
-  const rows = view === "pipeline" ? filled : open;
+  const inView = deals.filter((d) => (view === "pipeline" ? d.candidateId : !d.candidateId));
+  const vakken = [...new Set(inView.map((d) => d.discipline).filter((x): x is string => !!x))].sort((a, b) =>
+    labelFor(DISCIPLINES, a).localeCompare(labelFor(DISCIPLINES, b), "nl"),
+  );
+  const rows = vak ? inView.filter((d) => d.discipline === vak) : inView;
+  const nu = new Date().getTime();
+  const vakHref = (d: string) => `/crm/vacatures?view=${view}${d ? `&d=${d}` : ""}`;
 
   return (
     <div className="space-y-6">
@@ -64,19 +68,25 @@ export default async function VacaturesPage({
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Open vacatures" value={open.length} icon={<Briefcase className="h-5 w-5" />} accent="brand" />
-        <StatCard label="Te vullen posities" value={totalPositions} icon={<Users2 className="h-5 w-5" />} accent="violet" />
-        <StatCard label="In pipeline" value={filled.length} icon={<Kanban className="h-5 w-5" />} accent="green" />
-        <StatCard label="Verwachte waarde" value={formatCurrency(totalValue)} icon={<Coins className="h-5 w-5" />} accent="amber" />
-      </div>
-
       <VacatureTabs actief={view} />
+
+      {vakken.length > 1 && (
+        <div className="flex flex-wrap items-center gap-1 rounded-lg bg-ink-50 p-1" role="group" aria-label="Filter op discipline">
+          <Link href={vakHref("")} scroll={false} aria-pressed={!vak} className={segmentVariants(!vak, "h-7 text-xs")}>
+            Alle disciplines
+          </Link>
+          {vakken.map((d) => (
+            <Link key={d} href={vakHref(d)} scroll={false} aria-pressed={vak === d} className={segmentVariants(vak === d, "h-7 text-xs")}>
+              {labelFor(DISCIPLINES, d)}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <EmptyState
           icon={<Briefcase className="h-6 w-6" />}
-          title={view === "pipeline" ? "Nog geen geplaatste vacatures" : "Geen openstaande vacatures"}
+          title={vak ? "Geen vacatures in deze discipline" : view === "pipeline" ? "Nog geen geplaatste vacatures" : "Geen openstaande vacatures"}
           description={
             view === "pipeline"
               ? "Zodra je een kandidaat aan een vacature koppelt, verschijnt die hier én op het pipeline-bord."
@@ -90,122 +100,65 @@ export default async function VacaturesPage({
             ) : undefined
           }
         />
-      ) : view === "open" ? (
-        /* OPEN vacatures — kaartenraster met 'Zoek match' */
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {open.map((k) => {
-            const overdue = k.expectedCloseDate && k.expectedCloseDate.getTime() < Date.now();
-            return (
-              <Card key={k.id} className="flex flex-col p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <Link href={`/crm/vacatures/${k.id}`} className="block truncate font-semibold text-ink-900 hover:text-brand-700">
-                      {k.title}
-                    </Link>
-                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-ink-500">
-                      <Building2 className="h-3.5 w-3.5 shrink-0 text-ink-400" />
-                      {k.client ? (
-                        <Link href={`/opdrachtgevers/${k.client.id}`} className="truncate hover:text-brand-700">
-                          {k.client.companyName}
-                        </Link>
-                      ) : (
-                        <span className="truncate">{k.company}</span>
-                      )}
-                    </p>
-                  </div>
-                  <Badge color={(k.stage.color as BadgeColor) ?? "slate"}>{k.stage.name}</Badge>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                  {k.discipline && <StatusBadge options={DISCIPLINES} value={k.discipline} />}
-                  {k.positions > 1 && (
-                    <span className="inline-flex items-center gap-0.5 text-xs text-ink-500">
-                      <Users2 className="h-3.5 w-3.5" /> {k.positions} posities
-                    </span>
-                  )}
-                  {k.value > 0 && (
-                    <span className="text-xs font-semibold tabular-nums text-ink-700">{formatCurrency(k.value)}</span>
-                  )}
-                </div>
-
-                <div className="mt-3 flex items-center justify-between gap-2 border-t border-ink-100 pt-2.5 text-[11px] text-ink-400">
-                  <span className="inline-flex items-center gap-1 truncate">
-                    {k.client?.city && (
-                      <>
-                        <MapPin className="h-3 w-3 shrink-0" /> <span className="truncate">{k.client.city}</span>
-                      </>
-                    )}
-                  </span>
-                  {k.expectedCloseDate && (
-                    <span className={cn("inline-flex items-center gap-0.5", overdue ? "font-semibold text-red-600" : "")} title="Verwachte startdatum">
-                      <CalendarClock className="h-3 w-3" /> {formatDate(k.expectedCloseDate)}
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-2.5 flex items-center gap-2">
-                  <Link
-                    href={`/crm/vacatures/${k.id}`}
-                    className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1 justify-center")}
-                  >
-                    Openen <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                  <Link
-                    href={`/crm/vacatures/${k.id}/match`}
-                    title="Laat AI de best passende kandidaten uit de talentpool zoeken"
-                    className={cn(buttonVariants({ variant: "primary", size: "sm" }), "justify-center")}
-                  >
-                    <Sparkles className="h-4 w-4" /> Zoek match
-                  </Link>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
       ) : (
-        /* PIPELINE vacatures — lijst met kandidaat + fase */
-        <Card>
-          <ul className="divide-y divide-ink-100">
-            {filled.map((k) => (
-              <li key={k.id} className="flex items-center gap-3 px-5 py-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
-                  <GitBranchPlus className="h-4 w-4" />
-                </span>
+        <Card className="divide-y divide-ink-100 overflow-hidden">
+          {rows.map((k) => {
+            const overdue = k.expectedCloseDate && k.expectedCloseDate.getTime() < nu;
+            const kandidaat = k.candidateId ? candName.get(k.candidateId) : null;
+            return (
+              <div key={k.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
                 <div className="min-w-0 flex-1">
-                  <Link href={`/crm/vacatures/${k.id}`} className="block truncate font-medium text-ink-900 hover:text-brand-700">
+                  <Link href={`/crm/vacatures/${k.id}`} className="block truncate font-semibold text-ink-900 hover:text-brand-700">
                     {k.title}
                   </Link>
-                  <p className="flex items-center gap-2 truncate text-xs text-ink-500">
-                    <span className="inline-flex items-center gap-1">
-                      <Building2 className="h-3.5 w-3.5 text-ink-400" />
+                  <p className="flex items-center gap-3 truncate text-xs text-ink-500">
+                    <span className="inline-flex items-center gap-1 truncate">
+                      <Building2 className="h-3.5 w-3.5 shrink-0 text-ink-400" />
                       {k.client?.companyName ?? k.company}
                     </span>
-                    {k.candidateId && candName.get(k.candidateId) && (
-                      <span className="inline-flex items-center gap-1 font-medium text-ink-600">
-                        <Users2 className="h-3 w-3 text-ink-400" /> {candName.get(k.candidateId)}
+                    {k.client?.city && (
+                      <span className="hidden items-center gap-1 sm:inline-flex">
+                        <MapPin className="h-3 w-3 text-ink-400" /> {k.client.city}
+                      </span>
+                    )}
+                    {kandidaat && (
+                      <span className="inline-flex items-center gap-1 font-medium text-ink-700">
+                        <Users2 className="h-3 w-3 text-ink-400" /> {kandidaat}
                       </span>
                     )}
                   </p>
                 </div>
-                <div className="hidden w-28 shrink-0 justify-end sm:flex">
+                {k.positions > 1 && (
+                  <span className="hidden items-center gap-0.5 text-xs text-ink-500 md:inline-flex">
+                    <Users2 className="h-3.5 w-3.5" /> {k.positions}
+                  </span>
+                )}
+                {k.expectedCloseDate && (
+                  <span className={cn("hidden items-center gap-1 text-xs tabular-nums md:inline-flex", overdue ? "font-semibold text-red-600" : "text-ink-400")} title="Verwachte startdatum">
+                    <CalendarClock className="h-3.5 w-3.5" /> {formatDate(k.expectedCloseDate)}
+                  </span>
+                )}
+                <div className="hidden w-32 shrink-0 justify-end sm:flex">
                   {k.discipline && <StatusBadge options={DISCIPLINES} value={k.discipline} />}
                 </div>
-                <Badge color={(k.stage.color as BadgeColor) ?? "slate"}>{k.stage.name}</Badge>
-                <Link href={`/crm/vacatures/${k.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}>
-                  Openen <ArrowRight className="h-3.5 w-3.5" />
+                {view === "pipeline" && <Badge color={(k.stage.color as BadgeColor) ?? "slate"}>{k.stage.name}</Badge>}
+                {view === "open" && (
+                  <Link href={`/crm/vacatures/${k.id}/match`} title="Zoek match met AI" aria-label={`Zoek match voor ${k.title}`} className={ICOON_KNOP}>
+                    <Sparkles className="h-4 w-4" />
+                  </Link>
+                )}
+                {view === "pipeline" && (
+                  <Link href="/crm" title="Naar de pipeline" aria-label="Naar de pipeline" className={ICOON_KNOP}>
+                    <Kanban className="h-4 w-4" />
+                  </Link>
+                )}
+                <Link href={`/crm/vacatures/${k.id}`} title="Openen" aria-label={`${k.title} openen`} className={ICOON_KNOP}>
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
-              </li>
-            ))}
-          </ul>
+              </div>
+            );
+          })}
         </Card>
-      )}
-
-      {view === "pipeline" && filled.length > 0 && (
-        <p className="text-right">
-          <Link href="/crm" className="text-sm text-brand-700 hover:underline">
-            Naar de pipeline →
-          </Link>
-        </p>
       )}
     </div>
   );
