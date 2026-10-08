@@ -222,10 +222,13 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
         const bytes = new Uint8Array(await file.arrayBuffer());
         const mimeType = file.type || "application/octet-stream";
         const fileName = await saveReceivedBytes(bytes, file.name);
+        // De urenstaat van deze week (als die er al is) als controle op het aantal uren.
+        const verwachteUren = placementId ? (await getWeekDossier(placementId, weekKey))?.geld?.uren ?? null : null;
         const gelezen = await extractReceivedInvoiceFromFile({
           base64: Buffer.from(bytes).toString("base64"),
           originalName: file.name,
           mimeType,
+          verwachteUren,
         });
         if (!gelezen.ok) throw new Error(gelezen.message);
         const fv = toReceivedInvoiceFormValues(gelezen.data, new Date());

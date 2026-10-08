@@ -29,6 +29,8 @@ export type InvoiceExtracted = {
   year: string;
   hours: number;
   hourlyRate: number;
+  /** Het BEDRAG op de urenregel (aantal × tarief) — controle op het aantal uren. */
+  hoursLineAmount?: number;
   overtimeHours: number;
   amountExclVat: number;
   vatAmount: number;
@@ -56,12 +58,25 @@ export type InvoiceExtracted = {
  * Zelfcontrole op een uitgelezen ZZP-factuur: reden om het sterke model te laten
  * herlezen, of null als het klopt.
  */
+/** Wijkt het gelezen aantal af van de urenstaat (uren, of dagen bij een dagtarief)? */
+export function afwijkingUrenstaat(d: Partial<InvoiceExtracted>, verwacht?: number | null): string | null {
+  const uren = Number(d.hours) || 0;
+  if (!verwacht || verwacht <= 0 || uren <= 0) return null;
+  const klopt = Math.abs(uren - verwacht) < 0.01 || Math.abs(uren * 8 - verwacht) < 0.01;
+  return klopt ? null : `de factuur noemt ${uren} uur, de urenstaat ${verwacht} uur — lees het aantal op de urenregel opnieuw`;
+}
+
 export function twijfelFactuur(d: Partial<InvoiceExtracted> | null | undefined): string | null {
   if (!d) return "geen resultaat";
   const n = (v: unknown) => Number(v) || 0;
   if (n(d.confidence) > 0 && n(d.confidence) < 0.6) return "het model was zelf onzeker";
   if (n(d.totalAmount) <= 0 && n(d.amountExclVat) <= 0) return "geen bedrag gevonden";
   if (!String(d.name ?? "").trim()) return "geen afzender gevonden";
+  // Aantal × tarief moet het bedrag op de urenregel zijn — anders is het aantal verkeerd gelezen.
+  if (n(d.hours) > 0 && n(d.hourlyRate) > 0 && n(d.hoursLineAmount) > 0) {
+    const verschil = Math.abs(n(d.hours) * n(d.hourlyRate) - n(d.hoursLineAmount));
+    if (verschil > 1) return `uren × tarief ≠ bedrag op de urenregel (${verschil.toFixed(2)} verschil)`;
+  }
   // excl + btw moet het totaal zijn (op een euro na).
   if (n(d.amountExclVat) > 0 && n(d.totalAmount) > 0 && !d.vatShifted) {
     const verschil = Math.abs(n(d.amountExclVat) + n(d.vatAmount) - n(d.totalAmount));
@@ -82,6 +97,7 @@ const EXTRACT_SCHEMA = {
     year: { type: "string", description: "Het JAAR (4 cijfers) waar de gefactureerde periode/week bij hoort. Meestal af te leiden uit de factuurdatum of de koptekst ('week 34 2026'). Anders lege string — nooit gokken." },
     hours: { type: "number", description: "Het aantal GEWERKTE UREN dat gefactureerd wordt (de urenregel, bv. '40 uur x € 65,00'), exclusief de aparte overuren-regel. 0 als de factuur geen uren noemt." },
     hourlyRate: { type: "number", description: "Het UURTARIEF in euro's per uur op de urenregel (bv. 65 bij '€ 65,00 per uur'). Factureert hij per DAG ('5 dagen × € 600', 'dagtarief'), zet dan hier het DAGtarief (600) en bij hours het aantal dagen. 0 als er geen tarief staat." },
+    hoursLineAmount: { type: "number", description: "Het BEDRAG in euro's op diezelfde urenregel (bv. 2600 bij '40 uur x € 65,00 = € 2.600,00'). 0 als de regel geen bedrag heeft." },
     overtimeHours: { type: "number", description: "Uren op een APARTE overuren-/toeslagregel ('overuren', 'meeruren', 'overtime'). 0 als die regel er niet is." },
     amountExclVat: { type: "number", description: "Het SUBTOTAAL EXCLUSIEF BTW in euro's (som van alle regels vóór btw; 'subtotaal', 'totaal excl. btw'). 0 als het er niet staat. Let op de Nederlandse notatie: '3.146,00' is 3146.00 — de punt is een duizendtal-scheiding, de komma het decimaalteken." },
     vatAmount: { type: "number", description: "Het BTW-BEDRAG in euro's zoals apart vermeld ('BTW 21%', 'Omzetbelasting'). 0 als er geen btw in rekening is gebracht (bv. bij 'BTW verlegd') of als het bedrag er niet staat." },
@@ -115,7 +131,7 @@ const EXTRACT_SCHEMA = {
     },
     mentionsAttachment: { type: "boolean", description: "Verwijst de factuur naar een BIJLAGE of onderbouwing ('zie bijgevoegde urenstaat', 'conform timesheet week 40', 'bijlage')? true = ja, false = er staat geen verwijzing op." },
   },
-  required: ["invoiceNumber", "issueDate", "periodStart", "periodEnd", "weekNumber", "year", "hours", "hourlyRate", "overtimeHours", "amountExclVat", "vatAmount", "vatShifted", "kilometers", "totalAmount", "name", "confidence", "notes", "currency", "addressee", "poNumber", "iban", "kvkNumber", "vatId", "vatPercent", "surchargeLines", "mentionsAttachment"],
+  required: ["invoiceNumber", "issueDate", "periodStart", "periodEnd", "weekNumber", "year", "hours", "hourlyRate", "hoursLineAmount", "overtimeHours", "amountExclVat", "vatAmount", "vatShifted", "kilometers", "totalAmount", "name", "confidence", "notes", "currency", "addressee", "poNumber", "iban", "kvkNumber", "vatId", "vatPercent", "surchargeLines", "mentionsAttachment"],
 };
 
 const SYSTEM_EXTRACT = `Je bent een uiterst nauwkeurige administratieve assistent bij Q4S, een Nederlands detacheringsbureau. Je leest FACTUREN uit die door zelfstandige (ZZP) vakmensen aan Q4S gestuurd worden voor gewerkte weken. Elke ZZP'er gebruikt zijn eigen factuuropmaak.
@@ -141,7 +157,10 @@ PERIODE / WEEK:
 - Beslaat de factuur meerdere weken, neem dan de EERSTE week/de hele periode en meld het in notes.
 
 UREN, TARIEF, OVERUREN:
-- hours = de gefactureerde gewerkte uren van de urenregel; hourlyRate = het uurtarief per uur; overtimeHours = uren op een aparte overuren-/toeslagregel.
+- hours = het AANTAL op de urenregel (kolom 'Aantal'/'Qty'/'Uren'), hourlyRate = de prijs per uur op diezelfde regel, hoursLineAmount = het bedrag van die regel. Controleer zelf: hours × hourlyRate = hoursLineAmount. Klopt dat niet, lees de regel dan opnieuw — verwar het aantal niet met het bedrag, het weeknummer, een datum of een totaal.
+- Staan er meerdere urenregels (bv. per dag of per week), tel dan de aantallen op en zet de som van hun bedragen in hoursLineAmount.
+- overtimeHours = uren op een aparte overuren-regel (niet in hours).
+- Lees decimalen goed: '37,5' is 37.5 uur; '8:30' is 8.5 uur.
 - Regels voor kilometers, verblijfkosten, parkeren of materiaal zijn GEEN uren.
 
 KILOMETERS: kilometers = het AANTAL km op de reiskosten-/kilometerregel (bij '220 km x € 0,23 = € 50,60' is dat 220, niet 50.60). Geen kilometerregel → 0.
@@ -157,6 +176,22 @@ CONTROLEVELDEN (hier wordt de factuur straks op afgekeurd — neem ze LETTERLIJK
 - mentionsAttachment: verwijst de factuur naar een bijlage/urenstaat?
 
 ZEKERHEID: zet confidence laag (0.4 of minder) en leg in notes kort uit wat onduidelijk was zodra bedragen slecht leesbaar zijn, de optelling niet klopt of je moest interpreteren.`;
+
+/**
+ * Herstel het aantal uren als de rekensom dat eenduidig zegt: bedrag op de
+ * urenregel ÷ tarief = een net aantal (kwartieren) dat afwijkt van het gelezen
+ * aantal → het gelezen aantal was verkeerd. Puur; past niets aan bij twijfel.
+ */
+export function herstelUren(d: InvoiceExtracted): InvoiceExtracted {
+  const rate = num(d.hourlyRate);
+  const regel = num(d.hoursLineAmount);
+  if (rate <= 0 || regel <= 0) return d;
+  const uitBedrag = Math.round((regel / rate) * 100) / 100;
+  const netKwartier = Math.abs(uitBedrag * 4 - Math.round(uitBedrag * 4)) < 0.01;
+  if (!netKwartier || Math.abs(uitBedrag - num(d.hours)) < 0.01) return d;
+  const opm = `Uren aangepast van ${num(d.hours)} naar ${uitBedrag} (bedrag urenregel ÷ tarief).`;
+  return { ...d, hours: uitBedrag, notes: [d.notes, opm].filter(Boolean).join(" ") };
+}
 
 /** Datum-context, zodat een factuur met alleen 'week 34' of een 2-cijferig jaar
  *  niet in het verkeerde jaar belandt. */
@@ -392,6 +427,9 @@ async function matchConsultant(
  */
 export async function extractReceivedInvoiceFromFile(input: {
   base64: string;
+  /** Uren (excl. overuren) op de urenstaat van deze week, als die er is: wijkt de
+   *  factuur af, dan leest het model hem nog een keer extra nauwkeurig. */
+  verwachteUren?: number | null;
   /** Optionele hint; anders afgeleid uit mimeType/originalName. */
   mediaType?: string | null;
   originalName: string;
@@ -434,9 +472,10 @@ export async function extractReceivedInvoiceFromFile(input: {
         strong: true,
         maxTokens: 8000,
         effort: "high",
-        retryIf: twijfelFactuur,
+        retryIf: (r: InvoiceExtracted) => twijfelFactuur(r) ?? afwijkingUrenstaat(herstelUren(r), input.verwachteUren),
       });
     }
+    data = herstelUren(data);
 
     const { matchedConsultantId, candidates } = await matchConsultant(data);
     return {
