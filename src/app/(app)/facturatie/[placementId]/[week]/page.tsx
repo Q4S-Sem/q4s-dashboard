@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, FileText, Mail, PauseCircle, PencilLine, PlayCircle, Receipt, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FileText, PauseCircle, PencilLine, PlayCircle, Receipt, RefreshCw, Trash2 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants, ICOON_GROEP, ICOON_KNOP } from "@/components/ui/button";
@@ -139,9 +139,6 @@ export default async function DossierPage({
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <div className={ICOON_GROEP}>
-              <Link href={`/facturatie/${placementId}/${wk}/mail`} className={ICOON_KNOP} title="Mail aan de freelancer" aria-label="Mail aan de freelancer">
-                <Mail />
-              </Link>
               {row.inboxId && !row.vastgelegd && (
                 <form action={row.wachtkamerSinds ? uitWachtkamer : naarWachtkamer}>
                   <input type="hidden" name="placementId" value={placementId} />
@@ -257,16 +254,6 @@ export default async function DossierPage({
               factuurNummer={dossier.invoer.factuurNummer || null}
               timesheet={dossier.timesheetDoc}
               factuur={dossier.factuurDoc}
-              mail={
-                dossier.mail
-                  ? {
-                      sender: dossier.mail.sender,
-                      subject: dossier.mail.subject,
-                      receivedAtLabel: dossier.mail.receivedAt ? formatDate(dossier.mail.receivedAt) : null,
-                      notes: dossier.mail.notes,
-                    }
-                  : null
-              }
             />
           </Card>
 
