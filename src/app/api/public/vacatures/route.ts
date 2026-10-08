@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
-import { DISCIPLINES } from "@/lib/domain";
 import { corsHeaders, dashboardBaseUrl } from "@/lib/public-api";
-import { zonderKlantnaam } from "@/lib/klantnaam-publiek";
+import { publiekeTekstIn, wiltEngels } from "@/lib/vacature-vertaling";
 
 /**
  * Publieke vacature-feed voor de website (q4s.nl).
@@ -19,11 +18,6 @@ import { zonderKlantnaam } from "@/lib/klantnaam-publiek";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function disciplineLabel(value: string | null): string | null {
-  if (!value) return null;
-  return DISCIPLINES.find((d) => d.value === value)?.label ?? value;
-}
-
 export async function OPTIONS(req: Request) {
   return new Response(null, { status: 204, headers: corsHeaders(req) });
 }
@@ -38,25 +32,25 @@ export async function GET(req: Request) {
     include: { client: { select: { companyName: true } } },
   });
 
-  const vacatures = rows.map((v) => {
-    // De klantnaam is alleen intern: nooit in de feed, ook niet in de tekst.
-    const klant = [v.client?.companyName, v.companyName];
-    const schoon = (t: string | null) => zonderKlantnaam(t, klant);
-    return {
-    slug: v.slug,
-    title: schoon(v.title),
-    company: null,
-    discipline: v.discipline ?? null,
-    disciplineLabel: disciplineLabel(v.discipline),
-    location: schoon(v.location ?? null),
-    employmentType: v.employmentType ?? null,
-    salary: v.salary ?? null,
-    summary: schoon(v.summary ?? null),
-    publishedAt: v.publishedAt?.toISOString() ?? null,
-    // Link naar de door het dashboard gehoste vacature-pagina (incl. sollicitatie).
-    url: `${base}/vacature/${v.slug}`,
-    };
-  });
+  const engels = wiltEngels(req);
+  const vacatures = await Promise.all(
+    rows.map(async (v) => {
+      const tekst = await publiekeTekstIn(v, engels);
+      return {
+        slug: v.slug,
+        title: tekst.title,
+        company: null,
+        discipline: v.discipline ?? null,
+        disciplineLabel: tekst.disciplineLabel,
+        location: tekst.location,
+        employmentType: tekst.employmentType,
+        salary: tekst.salary,
+        summary: tekst.summary,
+        publishedAt: v.publishedAt?.toISOString() ?? null,
+        url: `${base}/vacature/${v.slug}`,
+      };
+    }),
+  );
 
   return Response.json({ ok: true, count: vacatures.length, vacatures }, { headers });
 }

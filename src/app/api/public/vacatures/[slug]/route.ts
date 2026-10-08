@@ -1,14 +1,12 @@
 import { db } from "@/lib/db";
-import { DISCIPLINES } from "@/lib/domain";
 import { getCompanySettings } from "@/lib/settings";
 import {
   corsHeaders,
   dashboardBaseUrl,
-  splitLines,
   composeDescriptionHtml,
   buildJobPosting,
 } from "@/lib/public-api";
-import { zonderKlantnaam } from "@/lib/klantnaam-publiek";
+import { publiekeTekstIn, wiltEngels } from "@/lib/vacature-vertaling";
 
 /**
  * Publieke vacature-DETAIL voor de website (q4s.nl).
@@ -23,11 +21,6 @@ import { zonderKlantnaam } from "@/lib/klantnaam-publiek";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function disciplineLabel(value: string | null): string | null {
-  if (!value) return null;
-  return DISCIPLINES.find((d) => d.value === value)?.label ?? value;
-}
 
 export async function OPTIONS(req: Request) {
   return new Response(null, { status: 204, headers: corsHeaders(req) });
@@ -45,16 +38,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     return Response.json({ ok: false, error: "Vacature niet gevonden." }, { status: 404, headers });
   }
 
-  // De klantnaam is alleen intern: nooit publiek, ook niet in de tekst.
-  const klant = [v.client?.companyName, v.companyName];
-  const schoon = (t: string | null) => zonderKlantnaam(t, klant);
-  const title = schoon(v.title) ?? v.title;
-  const summary = schoon(v.summary ?? null);
-  const location = schoon(v.location ?? null);
-  const responsibilities = splitLines(v.responsibilities).map((t) => zonderKlantnaam(t, klant));
-  const requirements = splitLines(v.requirements).map((t) => zonderKlantnaam(t, klant));
-  const niceToHave = splitLines(v.niceToHave).map((t) => zonderKlantnaam(t, klant));
-  const hasStructured = Boolean(summary) || responsibilities.length > 0 || requirements.length > 0;
+  // Klantnaam-vrije publieke tekst; met ?lang=en de Engelse vertaling (gecachet).
+  const engels = wiltEngels(req);
+  const tekst = await publiekeTekstIn(v, engels);
+  const { title, summary, location, responsibilities, requirements, niceToHave } = tekst;
 
   // SEO: semantische HTML + schema.org JobPosting (Google for Jobs), correct
   // opgebouwd zodat q4s.nl 'm alleen hoeft te injecteren/renderen.
@@ -65,7 +52,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     responsibilities,
     requirements,
     niceToHave,
-  });
+  }, engels ? "en" : "nl");
   const jobPosting = buildJobPosting(
     {
       slug: v.slug,
@@ -89,16 +76,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
     title,
     company: null,
     discipline: v.discipline ?? null,
-    disciplineLabel: disciplineLabel(v.discipline),
+    disciplineLabel: tekst.disciplineLabel,
     location,
-    employmentType: v.employmentType ?? null,
-    salary: v.salary ?? null,
+    employmentType: tekst.employmentType,
+    salary: tekst.salary,
     summary,
     responsibilities,
     requirements,
     niceToHave,
     // Volledige verbeterde tekst als er geen gestructureerde secties zijn.
-    fullText: !hasStructured ? schoon(v.improvedText ?? null) : null,
+    fullText: tekst.fullText,
     // SEO-klaar: nette HTML-omschrijving + injecteerbare JobPosting-structured-data.
     descriptionHtml,
     jobPosting,

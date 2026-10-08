@@ -77,16 +77,16 @@ export function composeDescriptionHtml(v: {
   responsibilities: string[];
   requirements: string[];
   niceToHave: string[];
-}): string {
+}, lang: "nl" | "en" = "nl"): string {
   const parts: string[] = [];
   if (v.summary) parts.push(`<p>${esc(v.summary)}</p>`);
   const section = (title: string, items: string[]) => {
     if (!items.length) return;
     parts.push(`<h2>${title}</h2><ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`);
   };
-  section("Werkzaamheden", v.responsibilities);
-  section("Functie-eisen", v.requirements);
-  section("Pré", v.niceToHave);
+  section(lang === "en" ? "Responsibilities" : "Werkzaamheden", v.responsibilities);
+  section(lang === "en" ? "Requirements" : "Functie-eisen", v.requirements);
+  section(lang === "en" ? "Nice to have" : "Pré", v.niceToHave);
   return parts.join("\n");
 }
 
@@ -131,4 +131,45 @@ export function buildJobPosting(
     // Canonieke vacature-URL op de website; overschrijf desnoods op q4s.nl.
     url: `${siteUrl}/vacatures/${v.slug}`,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Vertaling (q4s.nl/en) — puur, zonder imports, zodat het testbaar is.
+// De AI-call + cache zit in src/lib/vacature-vertaling.ts.
+// ---------------------------------------------------------------------------
+
+export type VacatureTekst = {
+  title: string;
+  location: string | null;
+  employmentType: string | null;
+  salary: string | null;
+  disciplineLabel: string | null;
+  summary: string | null;
+  responsibilities: string[];
+  requirements: string[];
+  niceToHave: string[];
+  fullText: string | null;
+};
+
+export const VACATURE_TEKST_VELDEN = ["title", "location", "employmentType", "salary", "disciplineLabel", "summary", "fullText"] as const;
+export const VACATURE_LIJST_VELDEN = ["responsibilities", "requirements", "niceToHave"] as const;
+
+/** Controleert de AI-output en zet hem terug in de vorm van de bron. Gooit bij twijfel. */
+export function checkVertaling(nl: VacatureTekst, en: Record<string, unknown>): VacatureTekst {
+  const out = { ...nl };
+  for (const k of VACATURE_LIJST_VELDEN) {
+    const list = en[k];
+    if (!Array.isArray(list) || list.length !== nl[k].length || list.some((x) => typeof x !== "string")) {
+      throw new Error(`vertaling: lijst '${k}' klopt niet`);
+    }
+    out[k] = list as string[];
+  }
+  for (const k of VACATURE_TEKST_VELDEN) {
+    const v = typeof en[k] === "string" ? (en[k] as string).trim() : "";
+    // Leeg bronveld blijft leeg/null; een gevuld bronveld mag niet leeg terugkomen.
+    if (!nl[k]) continue;
+    if (!v) throw new Error(`vertaling: veld '${k}' is leeg`);
+    out[k] = v as never;
+  }
+  return out;
 }
