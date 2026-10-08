@@ -145,7 +145,7 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
 
   // Ook het langste woord moet passen naast de foto (geen afgekapte woorden).
   const langsteWoord = Math.max(...c.title.split(/\s+/).map((w) => w.length), 1);
-  const titleSize = Math.min(c.title.length > 30 ? 60 : c.title.length > 16 ? 70 : 84, Math.floor(640 / langsteWoord));
+  const titleSize = Math.min(c.title.length > 30 ? 52 : c.title.length > 16 ? 58 : 66, Math.floor(560 / langsteWoord));
   const feiten = [
     { label: "Locatie", value: c.location },
     { label: "Duur", value: c.duration },
