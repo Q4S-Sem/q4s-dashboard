@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
+import { SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { vorigeWeek, volgendeWeek, weekSlotVanKey } from "@/lib/wizard-weeknav";
