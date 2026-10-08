@@ -456,7 +456,10 @@ export async function akkoordNaarVerkoopfactuur(formData: FormData) {
     redirect(dossierPad(placementId, weekKey, { geblokkeerd: reden }));
   }
   const factuur = samenvatting.facturen[0];
-  if (!factuur) redirect(dossierPad(placementId, weekKey, { vastgelegd: "1" }));
+  if (!factuur) {
+    // Verzamelfactuur nog niet compleet: zeg welke periode en hoeveel weken binnen zijn.
+    redirect(dossierPad(placementId, weekKey, { vastgelegd: samenvatting.verzameld[0] ?? "1" }));
+  }
   // Klaar met deze persoon → meteen door naar de volgende die nog werk heeft.
   const { rows } = await getWeekOverview(weekKey);
   const huidig = rows.find((r) => r.placementId === placementId);

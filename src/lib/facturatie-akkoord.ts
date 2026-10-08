@@ -6,6 +6,7 @@ import { beoordeelBestaandeUrenstaat, BESTAANDE_URENSTAAT_NOTITIE } from "./uren
 import { formatHours, round2 } from "./utils";
 import { wekenInPeriode } from "./facturatie-volgende";
 import { getWeekDossier, getWeekOverview, type WeekDossier } from "./facturatie-week";
+import { isoMaandag, periodeStand, periodeVan, type FactuurPeriode } from "./factuur-periode";
 
 // ---------------------------------------------------------------------------
 // "Akkoord → verkoopfactuur": de ENIGE plek waar een week van "nagekeken" naar
@@ -38,6 +39,8 @@ export type AkkoordSamenvatting = {
   overgeslagen: OvergeslagenWeek[];
   /** De concept-verkoopfacturen die eruit kwamen. */
   facturen: { id: string; nummer: string | null; klant: string }[];
+  /** Weken die klaarliggen voor een verzamelfactuur die nog niet compleet is. */
+  verzameld: string[];
   waarschuwingen: string[];
 };
 
@@ -277,33 +280,102 @@ export async function akkoordWeken(opts: {
       `${skipped} ${skipped === 1 ? "week kon" : "weken konden"} niet op een verkoopfactuur (geen klant gekoppeld, niet goedgekeurd of al gefactureerd).`,
     );
   }
+  // Verzamelfactuur: per klant pas een factuur als de maand / 4 weken compleet is.
+  const verzameld: string[] = [];
   for (const groep of groups) {
+    const r = await factureerCompletePeriodes(groep.clientId, now);
+    facturen.push(...r.facturen);
+    verzameld.push(...r.verzameld);
+    waarschuwingen.push(...r.waarschuwingen);
+  }
+
+  return { verwerkt, overgeslagen, facturen, verzameld, waarschuwingen };
+}
+
+/** Goedgekeurde, nog niet gefactureerde weken van één klant, per factuurperiode. */
+export async function openPeriodes(clientId: string) {
+  const client = await db.client.findUnique({
+    where: { id: clientId },
+    select: {
+      companyName: true,
+      billingCycle: true,
+      placements: {
+        where: { status: { not: "ARCHIVED" } },
+        select: {
+          startDate: true,
+          endDate: true,
+          status: true,
+          timesheets: { select: { id: true, weekStart: true, status: true, invoiceLine: { select: { id: true } } } },
+        },
+      },
+    },
+  });
+  if (!client) return null;
+  const periodes = new Map<string, { periode: FactuurPeriode; timesheetIds: string[] }>();
+  for (const pl of client.placements) {
+    for (const t of pl.timesheets) {
+      if (t.status !== "APPROVED" || t.invoiceLine) continue;
+      const periode = periodeVan(t.weekStart, client.billingCycle);
+      const p = periodes.get(periode.key) ?? { periode, timesheetIds: [] };
+      p.timesheetIds.push(t.id);
+      periodes.set(periode.key, p);
+    }
+  }
+  const plaatsingen = client.placements.map((pl) => ({
+    startDate: pl.startDate,
+    // Beëindigd zonder einddatum: loopt tot zijn laatste urenstaat (anders nooit compleet).
+    endDate:
+      pl.endDate ??
+      (pl.status === "ENDED" && pl.timesheets.length
+        ? new Date(Math.max(...pl.timesheets.map((t) => t.weekStart.getTime())))
+        : null),
+    goedgekeurd: new Set(
+      pl.timesheets.filter((t) => t.status === "APPROVED" || t.status === "INVOICED").map((t) => isoMaandag(periodeVan(t.weekStart, "WEEK").weken[0])),
+    ),
+  }));
+  return {
+    klant: client.companyName,
+    cycle: client.billingCycle,
+    periodes: [...periodes.values()].map((p) => ({ ...p, ...periodeStand(p.periode, plaatsingen) })),
+  };
+}
+
+/**
+ * Maak de verkoopfactuur voor elke COMPLETE periode van deze klant (of, met
+ * `forceer`, voor die ene periode ook als hij nog niet compleet is — bv. iemand
+ * is halverwege gestopt). Incomplete periodes blijven verzamelen.
+ */
+export async function factureerCompletePeriodes(
+  clientId: string,
+  now: Date = new Date(),
+  forceer?: string,
+): Promise<{ facturen: AkkoordSamenvatting["facturen"]; verzameld: string[]; waarschuwingen: string[] }> {
+  const facturen: AkkoordSamenvatting["facturen"] = [];
+  const verzameld: string[] = [];
+  const waarschuwingen: string[] = [];
+  const open = await openPeriodes(clientId);
+  if (!open) return { facturen, verzameld, waarschuwingen };
+  for (const p of open.periodes) {
+    const nu = open.cycle === "WEEK" || p.compleet || p.periode.key === forceer;
+    if (!nu) {
+      verzameld.push(`${open.klant}: ${p.periode.label} — ${p.binnen} van ${p.nodig} weken binnen, de factuur volgt als alles compleet is.`);
+      continue;
+    }
     try {
-      const res = await createSalesInvoice({
-        clientId: groep.clientId,
-        timesheetIds: groep.timesheetIds,
-        issueDate: now,
-        notes: null,
-      });
+      const res = await createSalesInvoice({ clientId, timesheetIds: p.timesheetIds, issueDate: now, notes: null });
       if (!res.ok) {
-        waarschuwingen.push(`De verkoopfactuur voor ${groep.clientName} is niet gemaakt: ${res.error}`);
+        waarschuwingen.push(`De verkoopfactuur voor ${open.klant} (${p.periode.label}) is niet gemaakt: ${res.error}`);
         continue;
       }
-      const inv = await db.invoice.findUnique({
-        where: { id: res.invoiceId },
-        select: { number: true },
-      });
-      facturen.push({ id: res.invoiceId, nummer: inv?.number ?? null, klant: groep.clientName });
+      const inv = await db.invoice.findUnique({ where: { id: res.invoiceId }, select: { number: true } });
+      facturen.push({ id: res.invoiceId, nummer: inv?.number ?? null, klant: `${open.klant} · ${p.periode.label}` });
     } catch (e) {
       waarschuwingen.push(
-        `De verkoopfactuur voor ${groep.clientName} is niet gemaakt (${
-          e instanceof Error ? e.message : "onbekende fout"
-        }). De uren staan wel vast.`,
+        `De verkoopfactuur voor ${open.klant} is niet gemaakt (${e instanceof Error ? e.message : "onbekende fout"}). De uren staan wel vast.`,
       );
     }
   }
-
-  return { verwerkt, overgeslagen, facturen, waarschuwingen };
+  return { facturen, verzameld, waarschuwingen };
 }
 
 /** Eén week vastleggen — de knop op het dossier. */

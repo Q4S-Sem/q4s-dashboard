@@ -23,7 +23,8 @@ import {
 import { VerkoopLijst, type VerkoopFactuurRij } from "./VerkoopLijst";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { herinneringAanDeBeurt } from "@/lib/cashflow";
-import { sendDueReminders } from "./actions";
+import { sendDueReminders, factureerPeriodeNu } from "./actions";
+import { openPeriodes } from "@/lib/facturatie-akkoord";
 
 // ---------------------------------------------------------------------------
 // VERKOOPFACTUREN — één lijst met tabbladen, in de volgorde van de trechter:
@@ -242,6 +243,27 @@ export default async function VerkoopfacturenPage({
     return qs ? `/facturatie/verkoop?${qs}` : "/facturatie/verkoop";
   };
 
+  // Open verzamelperiodes: klanten met goedgekeurde, nog niet gefactureerde weken.
+  const klantenMetOpen = await db.client.findMany({
+    where: { placements: { some: { timesheets: { some: { status: "APPROVED", invoiceLine: null } } } } },
+    select: { id: true },
+  });
+  const verzamelend = (
+    await Promise.all(
+      klantenMetOpen.map(async (k) => {
+        const o = await openPeriodes(k.id);
+        return (o?.periodes ?? []).map((p) => ({
+          clientId: k.id,
+          klant: o!.klant,
+          key: p.periode.key,
+          label: p.periode.label,
+          binnen: p.binnen,
+          nodig: p.nodig,
+        }));
+      }),
+    )
+  ).flat();
+
   return (
     <div className="space-y-6">
       <PaginaKop
@@ -288,6 +310,33 @@ export default async function VerkoopfacturenPage({
           >
             Alle klanten ✕
           </Link>
+        </div>
+      )}
+
+      {/* Verzamelfacturen: goedgekeurde weken die wachten tot de maand / 4 weken compleet is. */}
+      {verzamelend.length > 0 && (
+        <div className="rounded-sm border border-ink-200 bg-ink-50/60 px-4 py-3 text-[13px] text-ink-700">
+          <div className="mb-2 font-semibold text-ink-900">Wordt verzameld voor de verkoopfactuur</div>
+          <ul className="space-y-1.5">
+            {verzamelend.map((v) => (
+              <li key={v.clientId + v.key} className="flex flex-wrap items-center justify-between gap-2">
+                <span>
+                  <strong className="font-medium text-ink-900">{v.klant}</strong> · {v.label} ·{" "}
+                  {v.binnen} van {v.nodig} weken binnen
+                </span>
+                <ConfirmSubmit
+                  action={factureerPeriodeNu}
+                  hidden={{ clientId: v.clientId, periode: v.key }}
+                  message={`Nu al de verkoopfactuur maken voor ${v.klant} (${v.label})?`}
+                  description={`Er zijn ${v.binnen} van de ${v.nodig} weken binnen. Gebruik dit alleen als er niets meer komt (bijv. iemand is gestopt). De factuur komt als concept klaar.`}
+                  confirmLabel="Factuur maken"
+                  variant="outline"
+                >
+                  <Receipt className="h-4 w-4" /> Nu factureren
+                </ConfirmSubmit>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

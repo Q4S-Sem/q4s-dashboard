@@ -5,7 +5,8 @@ import Link from "next/link";
 import { AlertTriangle, Globe, Loader2, Sparkles } from "lucide-react";
 import type { Client } from "@prisma/client";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Field, Input, Textarea } from "@/components/ui/field";
+import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { BILLING_CYCLES } from "@/lib/factuur-periode";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { emptyFormState, type FormState } from "@/lib/form";
@@ -320,6 +321,21 @@ export function ClientForm({
               />
             </Field>
           </div>
+
+          <Field
+            label="Verkoopfactuur"
+            htmlFor="billingCycle"
+            error={e.billingCycle}
+            hint="Goedgekeurde weken worden verzameld; de factuur gaat pas naar de klant als de maand / 4 weken compleet is."
+          >
+            <Select id="billingCycle" name="billingCycle" defaultValue={client?.billingCycle ?? "MONTH"}>
+              {BILLING_CYCLES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
 
           <Field label="Notities" htmlFor="notes" error={e.notes}>
             <Textarea id="notes" name="notes" defaultValue={client?.notes ?? ""} />

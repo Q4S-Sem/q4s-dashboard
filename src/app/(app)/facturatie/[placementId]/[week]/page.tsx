@@ -324,7 +324,9 @@ export default async function DossierPage({
       {sp.fout === "reset" && <Melding toon="oranje">Er was niets te verwijderen voor deze week.</Melding>}
       {sp.vastgelegd && (
         <Melding toon="groen">
-          De week is vastgelegd. Er is geen verkoopfactuur gemaakt — controleer of de plaatsing een klant heeft.
+          {sp.vastgelegd === "1"
+            ? "De week is vastgelegd. Er is geen verkoopfactuur gemaakt — controleer of de plaatsing een klant heeft."
+            : `De week is vastgelegd en verzameld voor de verkoopfactuur. ${sp.vastgelegd}`}
         </Melding>
       )}
       {sp.wachtkamer && (

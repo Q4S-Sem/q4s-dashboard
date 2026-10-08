@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { BILLING_CYCLE_VALUES } from "@/lib/factuur-periode";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -20,6 +21,7 @@ const ClientSchema = z.object({
   invoiceEmail: z.string().optional(),
   website: z.string().optional(),
   paymentTermDays: z.coerce.number().int().min(0).max(365).default(30),
+  billingCycle: z.enum(BILLING_CYCLE_VALUES).default("MONTH"),
   notes: z.string().optional(),
 });
 
@@ -40,6 +42,7 @@ function toData(data: z.infer<typeof ClientSchema>) {
     invoiceEmail: data.invoiceEmail ?? null,
     website: data.website ?? null,
     paymentTermDays: data.paymentTermDays,
+    billingCycle: data.billingCycle,
     notes: data.notes ?? null,
   };
 }

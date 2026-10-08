@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { factureerCompletePeriodes } from "@/lib/facturatie-akkoord";
 import {
   DUPLICAAT_FACTUURNUMMER,
   parseManualInvoiceNumber,
@@ -539,4 +540,15 @@ export async function declaratiesToevoegen(formData: FormData) {
   herlaad();
   revalidatePath(detail(id));
   redirect(`${detail(id)}?declaraties=1`);
+}
+
+/** Verzamelfactuur handmatig afsluiten: maak de factuur voor deze periode nu al
+ *  (bijv. iemand is halverwege de maand gestopt). Complete periodes gaan mee. */
+export async function factureerPeriodeNu(formData: FormData) {
+  const clientId = String(formData.get("clientId") ?? "");
+  const periode = String(formData.get("periode") ?? "");
+  if (!clientId || !periode) return;
+  await factureerCompletePeriodes(clientId, new Date(), periode);
+  revalidatePath("/facturatie/verkoop");
+  revalidatePath("/facturatie");
 }
