@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   Archive,
   Briefcase,
@@ -37,6 +37,7 @@ import {
   type PostInput,
 } from "@/lib/linkedin-template";
 import { markeerGepost, zetTerug } from "./actions";
+import { kaartInHetEngels } from "@/lib/linkedin-card-en";
 
 // ---------------------------------------------------------------------------
 // LinkedIn-studio: één pijplijn op één scherm.
@@ -176,6 +177,17 @@ export function LinkedInStudio({
   // ---- 3. Afbeelding ----
   const [kaartEdits, setKaartEdits] = useState<{ id: string; card: LinkedInCardData } | null>(null);
   const kaart = v ? (kaartEdits?.id === v.id ? kaartEdits.card : v.card) : null;
+  // Afbeelding altijd in het Engels: bij het kiezen van een vacature één keer vertalen.
+  // Zolang de vertaalde kaart er nog niet is, staat de afbeelding op "bezig".
+  const vertalen = Boolean(v && kaartEdits?.id !== v.id);
+  useEffect(() => {
+    if (!v || kaartEdits?.id === v.id) return;
+    let weg = false;
+    kaartInHetEngels(v.card).then((card) => !weg && setKaartEdits({ id: v.id, card }));
+    return () => {
+      weg = true;
+    };
+  }, [v, kaartEdits?.id]);
   const setKaart = (patch: Partial<LinkedInCardData>) => v && kaart && setKaartEdits({ id: v.id, card: { ...kaart, ...patch } });
   const beeldUrl = kaart ? `${ogBase}?${cardToParams({ ...kaart, points: kaart.points.filter((p) => p.trim()).slice(0, 3) })}` : "";
   const [bezig, setBezig] = useState(false);
@@ -356,13 +368,19 @@ export function LinkedInStudio({
           <div className="space-y-4 xl:overflow-y-auto">
             <Card className="overflow-hidden">
               <StapKop nr={3} titel="Afbeelding" icon={<ImageIcon className="h-4 w-4" />} klaar={is("beeld")}>
-                <button type="button" onClick={download} disabled={bezig} className={buttonVariants({ size: "sm" })}>
+                <button type="button" onClick={download} disabled={bezig || vertalen} className={buttonVariants({ size: "sm" })}>
                   {bezig ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} PNG
                 </button>
               </StapKop>
               <div className="bg-ink-100 p-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {vertalen ? (
+                  <div className="flex aspect-[4/5] w-full items-center justify-center gap-2 rounded-sm bg-white text-sm text-ink-500">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Afbeelding in het Engels maken…
+                  </div>
+                ) : (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={beeldUrl} alt={`LinkedIn-afbeelding ${kaart.title}`} className="block aspect-[4/5] w-full rounded-sm shadow-sm" />
+                )}
               </div>
               <details className="group border-t border-ink-100">
                 <summary className="flex cursor-pointer items-center gap-2 px-4 py-2.5 text-sm font-medium text-ink-700 hover:bg-ink-50">

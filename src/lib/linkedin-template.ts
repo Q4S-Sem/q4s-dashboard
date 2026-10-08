@@ -174,7 +174,7 @@ function buildHashtags(inp: PostInput, discipline: string, loc: string): string 
   };
   // De functie als één tag (#QualityManager), dan het vakgebied.
   push(inp.title.replace(/\(.*?\)/g, "").split(/[/,|]/)[0]);
-  if (discipline) push(discipline.split(/[/—|]/)[0]);
+  if (discipline && !/^overig/i.test(discipline)) push(discipline.split(/[/—|]/)[0]);
   // Normen / acroniemen uit eisen + werkzaamheden (EN 1090 → #EN1090).
   const acr = new Set<string>();
   for (const line of [...inp.requirements, ...inp.responsibilities]) {
@@ -193,6 +193,25 @@ function buildHashtags(inp: PostInput, discipline: string, loc: string): string 
   }
   // LinkedIn: 3-5 relevante hashtags werken beter dan een lange rij.
   return out.slice(0, 5).join(" ");
+}
+
+/** Functietitel netjes: "Mechanical/ Hydraulic" → "Mechanical/Hydraulic", "Voorman / NDO" → "Voorman NDO". */
+export function functieTitel(title: string): string {
+  return title.trim().replace(/\s*\/\s*(?=\p{Lu}{2,}\b)/gu, " ").replace(/\s*\/\s*/g, "/").replace(/\s+/g, " ");
+}
+
+/** Na "een …": enkelvoud ("Inspectors" → "Inspector", "Lassers" → "Lasser"). */
+export function eenFunctie(title: string): string {
+  return functieTitel(title).replace(/(\p{L}{3,}(?:er|or|eur|ist))s\b(?!.*\p{L}{3,}(?:er|or|eur|ist)s\b)/u, "$1");
+}
+
+/** "Marktconform p/u" → "marktconform per uur" (geen hoofdletter midden in een zin). */
+export function vergoedingTekst(salary: string): string {
+  return salary
+    .trim()
+    .replace(/\bp\/u\b|\bp\.u\.?/gi, "per uur")
+    .replace(/\bp\/m\b/gi, "per maand")
+    .replace(/^(Marktconform|Competitief|Volgens cao|In overleg|Nader te bepalen)\b/, (w) => w.toLowerCase());
 }
 
 /** Het leesbare label van een discipline (valt terug op de vrije tekst). */
@@ -235,17 +254,18 @@ export type PostOpties = { hook?: string; linksInReactie?: boolean };
  * Geen AI-trucjes ("Het is geen X, het is Y"), wel feiten uit de vacature.
  */
 export function hookOpties(inp: PostInput): string[] {
-  const title = inp.title.trim() || "vakman";
+  const title = functieTitel(inp.title) || "vakman";
+  const een = eenFunctie(inp.title) || "vakman";
   const summary = stripFormatting(inp.summary.trim()).replace(/\s+/g, " ");
   const zinnen = summary.match(/[^.!?]+[.!?]+/g)?.map((z) => z.trim()) ?? [];
   const duur = /(\d+\s*\+?\s*(?:maanden|maand|weken|jaar))/i.exec(summary)?.[1];
   const loc = inp.location.trim() || "Nederland";
-  const vraag = zinnen.find((z) => z.endsWith("?")) ?? `Ervaren ${title} en klaar voor je volgende project?`;
+  const vraag = zinnen.find((z) => z.endsWith("?")) ?? `Ben jij een ervaren ${een} en klaar voor je volgende project?`;
   const feit = `Gezocht: ${title} in ${loc}${duur ? ` voor ${duur}` : ""}.`;
   const eerste = inp.responsibilities.map((r) => r.trim()).find((r) => r && !isSublabel(r));
   const situatie = eerste
-    ? `Op een project in ${loc} is een ${title} nodig. Eerste klus: ${respLine(eerste).replace(/^\p{Lu}/u, (c) => c.toLowerCase()).replace(/[.;:]$/, "")}.`
-    : `Een opdrachtgever in ${loc} zoekt een ${title} die meteen kan starten.`;
+    ? `Op een project in ${loc} is een ${een} nodig. Eerste klus: ${respLine(eerste).replace(/^\p{Lu}/u, (c) => c.toLowerCase()).replace(/[.;:]$/, "")}.`
+    : `Een opdrachtgever in ${loc} zoekt een ${een} die meteen kan starten.`;
   return [...new Set([vraag, feit, situatie])];
 }
 
@@ -262,7 +282,6 @@ export function eersteReactie(inp: PostInput): string {
 }
 
 export function buildLinkedinPost(inp: PostInput, opties: PostOpties = {}): string {
-  const title = inp.title.trim() || "Nieuwe vacature";
   const discipline = disciplineLabelOf(inp.discipline);
   const loc = inp.location.trim();
   const company = inp.companyName.trim() || "Q4S";
@@ -280,7 +299,7 @@ export function buildLinkedinPost(inp: PostInput, opties: PostOpties = {}): stri
 
   // A — Attention: de vraag uit de tekst, anders een eigen vraag + het feit.
   const vraag = zinnen.find((z) => z.endsWith("?"));
-  L.push(boldize(opties.hook?.trim() || vraag || `Ervaren ${title} en klaar voor je volgende project?`));
+  L.push(boldize(opties.hook?.trim() || vraag || `Ben jij een ervaren ${eenFunctie(inp.title) || "vakman"} en klaar voor je volgende project?`));
   const feit = [`📍 ${loc || "Nederland"}`, duur ? `${duur}` : "", inp.employmentType.trim()].filter(Boolean).join(" · ");
   L.push(feit);
   L.push("");
@@ -301,7 +320,7 @@ export function buildLinkedinPost(inp: PostInput, opties: PostOpties = {}): stri
   const offerLines = offer.length
     ? offer
     : [
-        ...(salary ? [`${/uur|€|\d/.test(salary) ? "Tarief" : "Vergoeding"}: ${salary}`] : []),
+        ...(salary ? [`${/€|\d/.test(salary) ? "Tarief" : "Vergoeding"}: ${vergoedingTekst(salary)}`] : []),
         ...(duur ? [`Een opdracht van ${duur} met een vaste opdrachtgever`] : []),
         `Persoonlijke begeleiding en korte lijnen met ${company}`,
       ];

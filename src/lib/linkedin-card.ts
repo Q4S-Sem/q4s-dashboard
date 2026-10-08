@@ -16,8 +16,8 @@ export type LinkedInCardData = {
 };
 
 /** Standaard oproep-regel onderaan de kaart (door de gebruiker aanpasbaar). */
-export const DEFAULT_CTA = "Solliciteer in 2 minuten";
-export const DEFAULT_BADGE = "NIEUWE OPDRACHT";
+export const DEFAULT_CTA = "Apply in 2 minutes";
+export const DEFAULT_BADGE = "NOW HIRING";
 
 /** Vaste afmeting: LinkedIn staand 4:5 (meeste ruimte in de feed). */
 export const CARD_W = 1080;
@@ -45,7 +45,7 @@ export function cardDefaultsFromDeal(deal: Pick<
 >): LinkedInCardData {
   const disc = deal.discipline ? labelFor(DISCIPLINES, deal.discipline) : "Opdracht";
   const hoursParts: string[] = [];
-  if (deal.hoursPerWeek) hoursParts.push(`${deal.hoursPerWeek} uur/week`);
+  if (deal.hoursPerWeek) hoursParts.push(`${deal.hoursPerWeek} hrs/week`);
   if (deal.employmentType) hoursParts.push(deal.employmentType);
   const points = splitPoints(deal.responsibilities).slice(0, 4);
   return {

@@ -138,6 +138,16 @@ export function puntKort(t: string): string {
   return s.replace(/[\s,;:-]+$/, "");
 }
 
+/** Vakgebied op de (Engelse) kaart; de NL-naam blijft de sleutel voor de foto. */
+const VAK_EN: Record<string, string> = {
+  "NDO / NDT": "NDT",
+  Werkvoorbereiding: "Work Preparation",
+  Projectmanagement: "Project Management",
+  "Lassen / Welding": "Welding",
+  Opdracht: "",
+  Overig: "",
+};
+
 /** VACATUREKAART (1080x1350), AIDA: haak boven, feiten + punten onder, actiebalk. */
 export async function renderLinkedInCard(searchParams: URLSearchParams): Promise<ImageResponse> {
   const c = cardFromParams(searchParams);
@@ -147,9 +157,9 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
   const langsteWoord = Math.max(...c.title.split(/\s+/).map((w) => w.length), 1);
   const titleSize = Math.min(c.title.length > 30 ? 52 : c.title.length > 16 ? 58 : 66, Math.floor(560 / langsteWoord));
   const feiten = [
-    { label: "Locatie", value: c.location },
-    { label: "Duur", value: c.duration },
-    { label: "Uren", value: c.hours },
+    { label: "Location", value: c.location },
+    { label: "Duration", value: c.duration },
+    { label: "Hours", value: c.hours },
   ].filter((x) => x.value);
   // Punten (werk) — anders de pitch als losse zinnen.
   const punten = (c.points.length ? c.points : (c.intro.match(/[^.!?]+[.!?]+/g) ?? []).map((z) => z.trim())).slice(0, 3).map(puntKort);
@@ -160,14 +170,14 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
     (
       <Canvas
         foto={foto}
-        actie={c.cta || "Solliciteer in 2 minuten"}
+        actie={c.cta || "Apply in 2 minutes"}
         actieRechts="q4s.nl/vacatures"
         boven={
           <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
             <img src={a.logoBlack} height={84} alt="Q4S Project Partners" style={{ objectFit: "contain", alignSelf: "flex-start" }} />
             <div style={{ display: "flex", flexDirection: "column", marginTop: "auto", maxWidth: CARD_W - FOTO_W - 80 }}>
               <div style={{ display: "flex", fontSize: 24, fontWeight: 700, letterSpacing: 3, color: ORANJE, textTransform: "uppercase" }}>
-                {[c.badge, c.discipline].filter(Boolean).join("  ·  ")}
+                {[c.badge, VAK_EN[c.discipline] ?? c.discipline].filter(Boolean).join("  ·  ")}
               </div>
               <div style={{ display: "flex", fontSize: titleSize, fontWeight: 700, lineHeight: 1.0, letterSpacing: -3, color: INK, marginTop: 16 }}>{c.title}</div>
             </div>
@@ -181,7 +191,7 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
                   <div key={f.label} style={{ display: "flex", flexDirection: "column", borderLeft: `5px solid ${ORANJE}`, paddingLeft: 18 }}>
                     <div style={{ display: "flex", fontSize: 20, fontWeight: 600, letterSpacing: 2, color: GRIJS, textTransform: "uppercase" }}>{f.label}</div>
                     <div style={{ display: "flex", alignItems: "center", fontSize: 30, fontWeight: 600, color: "#fff", marginTop: 6 }}>
-                      {f.label === "Locatie" ? <img src={PIN} width={28} height={28} alt="" style={{ marginRight: 8 }} /> : null}
+                      {f.label === "Location" ? <img src={PIN} width={28} height={28} alt="" style={{ marginRight: 8 }} /> : null}
                       {f.value}
                     </div>
                   </div>
