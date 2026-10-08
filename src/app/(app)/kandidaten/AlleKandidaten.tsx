@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Plus, Star, UserCheck, ChevronRight, Mail, Inbox, Globe, ClipboardCheck } from "lucide-react";
+import { Users, Plus, Star, UserCheck, Clock, ChevronRight, Mail, Inbox, Globe, ClipboardCheck } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { FilterTegels, type FilterTegel } from "@/components/ui/filter-tegels";
@@ -16,7 +16,6 @@ import {
   CANDIDATE_RATINGS,
   CANDIDATE_RATING_ORDER,
   CANDIDATE_AVAILABILITY,
-  CANDIDATE_AVAILABLE_VALUES,
 } from "@/lib/domain";
 import { startVandaagNL } from "@/lib/vandaag";
 import { SPOOR, type Spoor } from "@/lib/spoor";
@@ -56,7 +55,7 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
   const discipline = sp.discipline || "";
   const rating = sp.rating || "";
   const availability = sp.availability || "";
-  const map = ["beoordelen", "beschikbaar", "goed", "buiten"].includes(sp.map ?? "") ? sp.map! : "pool";
+  const map = ["beoordelen", "beschikbaar", "binnenkort", "goed", "buiten"].includes(sp.map ?? "") ? sp.map! : "pool";
   const vandaag = startVandaagNL();
 
   const where = {
@@ -103,7 +102,8 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
     pool,
     beoordelen: pool.filter((c) => c.rating === "ONBEKEND"),
     goed: pool.filter((c) => c.rating === "GOED"),
-    beschikbaar: pool.filter((c) => (CANDIDATE_AVAILABLE_VALUES as readonly string[]).includes(c.availability)),
+    beschikbaar: pool.filter((c) => c.availability === "BESCHIKBAAR"),
+    binnenkort: pool.filter((c) => c.availability === "BINNENKORT"),
     buiten: metHerkomst.filter((c) => c.herkomst === "BUITEN_EU"),
   };
   const candidates = mappen[map];
@@ -119,7 +119,8 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
     { key: "beoordelen", label: "Ter beoordeling", waarde: mappen.beoordelen.length, icon: <ClipboardCheck className="h-4 w-4" />, toon: "amber", href: mapHref("beoordelen"), actief: map === "beoordelen" },
     { key: "nieuw", label: "Vandaag binnen", waarde: pool.filter(isNieuw).length, icon: <Inbox className="h-4 w-4" />, toon: "blue", href: pad.basis, actief: false },
     { key: "goed", label: "Goed beoordeeld", waarde: mappen.goed.length, icon: <Star className="h-4 w-4" />, toon: "green", href: mapHref("goed"), actief: map === "goed" },
-    { key: "beschikbaar", label: "Beschikbaar", waarde: mappen.beschikbaar.length, icon: <UserCheck className="h-4 w-4" />, toon: "violet", href: mapHref("beschikbaar"), actief: map === "beschikbaar" },
+    { key: "beschikbaar", label: "Nu beschikbaar", waarde: mappen.beschikbaar.length, icon: <UserCheck className="h-4 w-4" />, toon: "green", href: mapHref("beschikbaar"), actief: map === "beschikbaar" },
+    { key: "binnenkort", label: "Binnenkort beschikbaar", waarde: mappen.binnenkort.length, icon: <Clock className="h-4 w-4" />, toon: "amber", href: mapHref("binnenkort"), actief: map === "binnenkort" },
     { key: "buiten", label: "Buiten de EU — vallen af", waarde: mappen.buiten.length, icon: <Globe className="h-4 w-4" />, toon: "red", href: mapHref("buiten"), actief: map === "buiten" },
   ];
 

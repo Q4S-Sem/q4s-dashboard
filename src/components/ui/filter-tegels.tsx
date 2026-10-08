@@ -33,7 +33,7 @@ export function FilterTegels({ items, label }: { items: FilterTegel[]; label: st
   return (
     <nav
       aria-label={label}
-      className={cn("grid grid-cols-2 gap-2 sm:grid-cols-3", items.length > 4 ? "xl:grid-cols-6" : "xl:grid-cols-4")}
+      className={cn("grid grid-cols-2 gap-2 sm:grid-cols-3", items.length > 6 ? "xl:grid-cols-7" : items.length > 4 ? "xl:grid-cols-6" : "xl:grid-cols-4")}
     >
       {items.map((t) => (
         <Link
