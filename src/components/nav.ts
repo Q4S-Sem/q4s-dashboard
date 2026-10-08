@@ -197,7 +197,7 @@ const HUB_LIST: NavHub[] = [
     items: [
       { href: "/socials", label: "Overzicht", icon: LayoutDashboard, exact: true },
       { href: "/posts", label: "Posts & planning", icon: CalendarClock, section: "Content" },
-      { href: "/website/linkedin", label: "Teksten & beelden", icon: Sparkles, section: "Content" },
+      { href: "/website/linkedin", label: "LinkedIn-studio", icon: Sparkles, section: "Content" },
       { href: "/website/linkedin-afbeelding", label: "LinkedIn-afbeelding", icon: Sparkles, hidden: true },
       { href: "/socials/talentpool", label: "Campagnelinks", icon: Share2, section: "Meten" },
     ],

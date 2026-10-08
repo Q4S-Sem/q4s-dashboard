@@ -225,7 +225,43 @@ export function vacatureUrl(slug?: string | null): string {
  * Schrijfregels (marketing-skill): geen emoji als opsommingsteken, geen
  * gedachtestreepjes, geen "Thoughts?"-afsluiter, max 5 hashtags.
  */
-export function buildLinkedinPost(inp: PostInput): string {
+/** Keuzes in de studio: welke openingszin, en de links in de eerste reactie
+ *  (LinkedIn toont posts met een link in de tekst minder vaak). */
+export type PostOpties = { hook?: string; linksInReactie?: boolean };
+
+/**
+ * Drie openingszinnen (de 2 regels vóór "…meer weergeven") in verschillende stijl:
+ * vraag aan de vakman, het concrete feit, en de situatie op het project.
+ * Geen AI-trucjes ("Het is geen X, het is Y"), wel feiten uit de vacature.
+ */
+export function hookOpties(inp: PostInput): string[] {
+  const title = inp.title.trim() || "vakman";
+  const summary = stripFormatting(inp.summary.trim()).replace(/\s+/g, " ");
+  const zinnen = summary.match(/[^.!?]+[.!?]+/g)?.map((z) => z.trim()) ?? [];
+  const duur = /(\d+\s*\+?\s*(?:maanden|maand|weken|jaar))/i.exec(summary)?.[1];
+  const loc = inp.location.trim() || "Nederland";
+  const vraag = zinnen.find((z) => z.endsWith("?")) ?? `Ervaren ${title} en klaar voor je volgende project?`;
+  const feit = `Gezocht: ${title} in ${loc}${duur ? ` voor ${duur}` : ""}.`;
+  const eerste = inp.responsibilities.map((r) => r.trim()).find((r) => r && !isSublabel(r));
+  const situatie = eerste
+    ? `Op een project in ${loc} is een ${title} nodig. Eerste klus: ${respLine(eerste).replace(/^\p{Lu}/u, (c) => c.toLowerCase()).replace(/[.;:]$/, "")}.`
+    : `Een opdrachtgever in ${loc} zoekt een ${title} die meteen kan starten.`;
+  return [...new Set([vraag, feit, situatie])];
+}
+
+/** De eerste reactie onder de post: solliciteer-link + vacature. */
+export function eersteReactie(inp: PostInput): string {
+  const url = inp.applyUrl.trim();
+  const slug = /\/vacatures\/([^/?#]+)/.exec(url)?.[1];
+  return [
+    slug ? `Solliciteren in 2 minuten: ${Q4S_SITE}/nl/cv-uploaden?vacancy=${slug}` : "",
+    url ? `Alle details: ${url}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function buildLinkedinPost(inp: PostInput, opties: PostOpties = {}): string {
   const title = inp.title.trim() || "Nieuwe vacature";
   const discipline = disciplineLabelOf(inp.discipline);
   const loc = inp.location.trim();
@@ -244,7 +280,7 @@ export function buildLinkedinPost(inp: PostInput): string {
 
   // A — Attention: de vraag uit de tekst, anders een eigen vraag + het feit.
   const vraag = zinnen.find((z) => z.endsWith("?"));
-  L.push(boldize(vraag ?? `Ervaren ${title} en klaar voor je volgende project?`));
+  L.push(boldize(opties.hook?.trim() || vraag || `Ervaren ${title} en klaar voor je volgende project?`));
   const feit = [`📍 ${loc || "Nederland"}`, duur ? `${duur}` : "", inp.employmentType.trim()].filter(Boolean).join(" · ");
   L.push(feit);
   L.push("");
@@ -283,8 +319,12 @@ export function buildLinkedinPost(inp: PostInput): string {
   L.push(boldize("Solliciteer in 2 minuten"));
   const url = inp.applyUrl.trim();
   const slug = /\/vacatures\/([^/?#]+)/.exec(url)?.[1];
-  if (slug) L.push(`👉 ${Q4S_SITE}/nl/cv-uploaden?vacancy=${slug}`);
-  if (url) L.push(`Alle details: ${url}`);
+  if (opties.linksInReactie && url) {
+    L.push("👉 De link om te solliciteren staat in de eerste reactie.");
+  } else {
+    if (slug) L.push(`👉 ${Q4S_SITE}/nl/cv-uploaden?vacancy=${slug}`);
+    if (url) L.push(`Alle details: ${url}`);
+  }
   L.push(`Liever eerst bellen? ${inp.contactPhone.trim() || Q4S_CONTACT_PHONE} of mail ${inp.contactEmail.trim() || Q4S_CONTACT_EMAIL}`);
   const contactName = inp.contactName.trim();
   if (contactName) L.push(`${contactName}, ${company}`);

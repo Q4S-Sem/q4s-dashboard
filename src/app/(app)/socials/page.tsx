@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarClock, ExternalLink, Megaphone, MousePointerClick, Plus, Sparkles, Trash2, UserPlus, Users } from "lucide-react";
+import { CalendarClock, ExternalLink, Megaphone, MousePointerClick, Plus, Sparkles, Trash2, TrendingUp, UserPlus, Users } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,15 @@ export const metadata = { title: "Socials" };
 export const dynamic = "force-dynamic";
 
 const getal = new Intl.NumberFormat("nl-NL");
+
+/** Contentpijlers voor Q4S: wat vakmensen in staalbouw en QA/QC willen zien. */
+const PIJLERS = [
+  { titel: "Vacatures", aandeel: "40%", dag: "dinsdag", ideeen: ["Elke live vacature via de LinkedIn-studio", "Link in de eerste reactie"] },
+  { titel: "Vakmanschap", aandeel: "25%", dag: "woensdag", ideeen: ["Project in beeld: foto + wat er gebouwd wordt", "Een las of inspectie uitgelicht"] },
+  { titel: "Kennis", aandeel: "20%", dag: "donderdag", ideeen: ["EN 1090, ISO 9001, VCA in 3 zinnen uitgelegd", "Fout die je op elke bouwplaats ziet"] },
+  { titel: "Mensen", aandeel: "10%", dag: "om de week", ideeen: ["Vakman van de maand (met toestemming)", "Eerste werkdag van een nieuwe kracht"] },
+  { titel: "Q4S", aandeel: "5%", dag: "maandelijks", ideeen: ["Nieuwe opdrachtgever of certificering", "Cijfers: geplaatste vakmensen"] },
+];
 
 export default async function SocialsPage({ searchParams }: { searchParams: Promise<{ fout?: string; vac?: string }> }) {
   const sp = await searchParams;
@@ -62,16 +71,19 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
     <div className="space-y-6">
       <PageHeader
         title="Socials"
-        description="Kanalen bijhouden, posts plannen, teksten genereren en zien wat het oplevert."
+        description="Groeien op LinkedIn: elke vacature een post, elke week een vast ritme, en zien wat het oplevert."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <form action={generateTalentpoolPost}>
-              <Button type="submit" variant="outline">
-                <Sparkles /> Talentpool-post genereren
+              <Button type="submit" variant="outline" size="sm">
+                <UserPlus /> Talentpool-post
               </Button>
             </form>
-            <Link href="/posts/nieuw" className={buttonVariants()}>
+            <Link href="/posts/nieuw" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <Plus /> Nieuwe post
+            </Link>
+            <Link href="/website/linkedin" className={buttonVariants({ size: "sm" })}>
+              <Sparkles /> LinkedIn-studio
             </Link>
           </div>
         }
@@ -83,6 +95,95 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
         <StatCard label="Klikken op campagnelinks" value={getal.format(links._sum.clicks ?? 0)} icon={<MousePointerClick className="h-5 w-5" />} accent="amber" />
         <StatCard label="Aanmeldingen talentpool (maand)" value={aanmeldingen} icon={<UserPlus className="h-5 w-5" />} accent="green" />
       </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-ink-400" /> Planning & concepten
+            </CardTitle>
+            <Link href="/posts" className="text-xs font-medium text-ink-500 hover:text-ink-900 hover:underline">
+              Alle posts →
+            </Link>
+          </CardHeader>
+          <CardContent className="p-0">
+            {planning.length === 0 ? (
+              <p className="px-5 py-8 text-center text-[13px] text-ink-400">Niets gepland. Maak een nieuwe post of genereer er een.</p>
+            ) : (
+              <ul className="divide-y divide-ink-100">
+                {planning.map((p) => (
+                  <li key={p.id}>
+                    <Link href={`/posts/${p.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-ink-50">
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-ink-900">{p.title}</span>
+                        <span className="text-xs text-ink-500">
+                          {labelFor(SOCIAL_PLATFORMS, p.platform)}
+                          {p.scheduledFor ? ` · ${formatDate(p.scheduledFor)}` : ""}
+                        </span>
+                      </span>
+                      <StatusBadge options={SOCIAL_POST_STATUSES} value={p.status} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-ink-400" /> Klaar om te posten
+            </CardTitle>
+            <span className="text-xs text-ink-400">live vacatures zonder post</span>
+          </CardHeader>
+          <CardContent className="p-0">
+            {zonderPost.length === 0 ? (
+              <p className="px-5 py-8 text-center text-[13px] text-ink-400">Elke online vacature heeft al een post.</p>
+            ) : (
+              <ul className="divide-y divide-ink-100">
+                {zonderPost.map((v) => (
+                  <li key={v.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-ink-900">{v.title}</span>
+                      {v.location && <span className="text-xs text-ink-500">{v.location}</span>}
+                    </span>
+                    <Link href={`/website/linkedin?vac=${v.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                      <Sparkles /> Post maken
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Groeiplan: vaste contentpijlers voor Q4S (marketing-skill: 3-5 pijlers, 3-5x per week op LinkedIn). */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-ink-400" /> Groeiplan LinkedIn
+          </CardTitle>
+          <span className="text-xs text-ink-400">3 posts per week · altijd een feit, foto of verhaal van de bouwplaats</span>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {PIJLERS.map((p) => (
+            <div key={p.titel} className="rounded-sm border border-ink-200 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-ink-900">{p.titel}</span>
+                <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-semibold text-ink-600">{p.aandeel}</span>
+              </div>
+              <p className="mt-1 text-xs text-ink-500">{p.dag}</p>
+              <ul className="mt-2 space-y-1 text-[13px] text-ink-700">
+                {p.ideeen.map((i) => (
+                  <li key={i}>• {i}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -177,68 +278,6 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarClock className="h-5 w-5 text-ink-400" /> Planning & concepten
-            </CardTitle>
-            <Link href="/posts" className="text-xs font-medium text-ink-500 hover:text-ink-900 hover:underline">
-              Alle posts →
-            </Link>
-          </CardHeader>
-          <CardContent className="p-0">
-            {planning.length === 0 ? (
-              <p className="px-5 py-8 text-center text-[13px] text-ink-400">Niets gepland. Maak een nieuwe post of genereer er een.</p>
-            ) : (
-              <ul className="divide-y divide-ink-100">
-                {planning.map((p) => (
-                  <li key={p.id}>
-                    <Link href={`/posts/${p.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-ink-50">
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium text-ink-900">{p.title}</span>
-                        <span className="text-xs text-ink-500">
-                          {labelFor(SOCIAL_PLATFORMS, p.platform)}
-                          {p.scheduledFor ? ` · ${formatDate(p.scheduledFor)}` : ""}
-                        </span>
-                      </span>
-                      <StatusBadge options={SOCIAL_POST_STATUSES} value={p.status} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-ink-400" /> Online vacatures zonder post
-            </CardTitle>
-            <span className="text-xs text-ink-400">maak er een tekst + beeld van</span>
-          </CardHeader>
-          <CardContent className="p-0">
-            {zonderPost.length === 0 ? (
-              <p className="px-5 py-8 text-center text-[13px] text-ink-400">Elke online vacature heeft al een post.</p>
-            ) : (
-              <ul className="divide-y divide-ink-100">
-                {zonderPost.map((v) => (
-                  <li key={v.id} className="flex items-center justify-between gap-3 px-5 py-3">
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium text-ink-900">{v.title}</span>
-                      {v.location && <span className="text-xs text-ink-500">{v.location}</span>}
-                    </span>
-                    <Link href={`/website/linkedin?vac=${v.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-                      <Sparkles /> Tekst maken
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
