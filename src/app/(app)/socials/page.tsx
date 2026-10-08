@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarClock, ExternalLink, Megaphone, MousePointerClick, Plus, Sparkles, Trash2, TrendingUp, UserPlus, Users } from "lucide-react";
+import { ExternalLink, Megaphone, MousePointerClick, Plus, Sparkles, Trash2, TrendingUp, UserPlus, Users } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,13 +10,13 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Field, Input, Select } from "@/components/ui/field";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn, formatDate } from "@/lib/utils";
-import { RECRUITMENT_CHANNELS, SOCIAL_PLATFORMS, SOCIAL_POST_STATUSES, labelFor } from "@/lib/domain";
-import { generateTalentpoolPost, verwijderKanaal, voegKanaalToe, werkVolgersBij } from "./actions";
+import { RECRUITMENT_CHANNELS } from "@/lib/domain";
+import { verwijderKanaal, voegKanaalToe, werkVolgersBij } from "./actions";
 
 // ---------------------------------------------------------------------------
 // SOCIALS — de marketingafdeling op één scherm: kanalen + volgers, wat er
 // gepland staat, welke online vacatures nog geen post hebben, en wat de
-// campagnelinks opleveren. Posts maken/plannen: /posts; teksten en beelden:
+// campagnelinks opleveren. Teksten en beelden:
 // /website/linkedin; campagnelinks: /socials/talentpool.
 // ---------------------------------------------------------------------------
 
@@ -39,20 +39,8 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
   // Oude links "/socials?vac=…" openden de tekstgenerator voor die vacature.
   if (sp.vac) redirect(`/website/linkedin?vac=${sp.vac}`);
   const maandStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const [kanalen, gepland, concepten, gepubliceerd, links, aanmeldingen, zonderPost] = await Promise.all([
+  const [kanalen, gepubliceerd, links, aanmeldingen, zonderPost] = await Promise.all([
     db.socialChannel.findMany({ orderBy: [{ followers: "desc" }] }),
-    db.socialPost.findMany({
-      where: { status: "SCHEDULED" },
-      orderBy: { scheduledFor: "asc" },
-      take: 8,
-      select: { id: true, title: true, platform: true, status: true, scheduledFor: true },
-    }),
-    db.socialPost.findMany({
-      where: { status: "DRAFT" },
-      orderBy: { updatedAt: "desc" },
-      take: 5,
-      select: { id: true, title: true, platform: true, status: true, scheduledFor: true },
-    }),
     db.socialPost.count({ where: { status: "PUBLISHED", publishedAt: { gte: maandStart } } }),
     db.postLink.aggregate({ _sum: { clicks: true } }),
     db.candidate.count({ where: { source: "TALENTPOOL", createdAt: { gte: maandStart } } }),
@@ -65,7 +53,6 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
     }),
   ]);
   const volgersTotaal = kanalen.reduce((s, k) => s + k.followers, 0);
-  const planning = [...gepland, ...concepten];
 
   return (
     <div className="space-y-6">
@@ -74,14 +61,6 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
         description="Groeien op LinkedIn: elke vacature een post, elke week een vast ritme, en zien wat het oplevert."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <form action={generateTalentpoolPost}>
-              <Button type="submit" variant="outline" size="sm">
-                <UserPlus /> Talentpool-post
-              </Button>
-            </form>
-            <Link href="/posts/nieuw" className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <Plus /> Nieuwe post
-            </Link>
             <Link href="/website/linkedin" className={buttonVariants({ size: "sm" })}>
               <Sparkles /> LinkedIn-studio
             </Link>
@@ -97,39 +76,6 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarClock className="h-5 w-5 text-ink-400" /> Planning & concepten
-            </CardTitle>
-            <Link href="/posts" className="text-xs font-medium text-ink-500 hover:text-ink-900 hover:underline">
-              Alle posts →
-            </Link>
-          </CardHeader>
-          <CardContent className="p-0">
-            {planning.length === 0 ? (
-              <p className="px-5 py-8 text-center text-[13px] text-ink-400">Niets gepland. Maak een nieuwe post of genereer er een.</p>
-            ) : (
-              <ul className="divide-y divide-ink-100">
-                {planning.map((p) => (
-                  <li key={p.id}>
-                    <Link href={`/posts/${p.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-ink-50">
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium text-ink-900">{p.title}</span>
-                        <span className="text-xs text-ink-500">
-                          {labelFor(SOCIAL_PLATFORMS, p.platform)}
-                          {p.scheduledFor ? ` · ${formatDate(p.scheduledFor)}` : ""}
-                        </span>
-                      </span>
-                      <StatusBadge options={SOCIAL_POST_STATUSES} value={p.status} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

@@ -1,9 +1,6 @@
-import Link from "next/link";
-import { CalendarClock } from "lucide-react";
 import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { PaginaKop } from "@/components/ui/filter-tegels";
-import { buttonVariants } from "@/components/ui/button";
 import { cardDefaultsFromVacancy } from "@/lib/linkedin-card";
 import { LinkedInStudio, type StudioVacature } from "./LinkedInStudio";
 
@@ -44,11 +41,7 @@ export default async function LinkedInStudioPage({ searchParams }: { searchParam
 
   return (
     <div className="space-y-5">
-      <PaginaKop titel="LinkedIn-studio" sub="Kies een vacature → tekst en afbeelding staan klaar → kopiëren, downloaden en plaatsen.">
-        <Link href="/posts" className={buttonVariants({ variant: "outline", size: "sm" })}>
-          <CalendarClock className="h-4 w-4" /> Planning
-        </Link>
-      </PaginaKop>
+      <PaginaKop titel="LinkedIn-studio" sub="Kies een vacature → tekst en afbeelding staan klaar → kopiëren, downloaden en plaatsen." />
       <LinkedInStudio
         vacatures={vacatures}
         preselectId={vac}
