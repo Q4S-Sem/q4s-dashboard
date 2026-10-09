@@ -18,6 +18,8 @@ export default async function LinkedInStudioPage({ searchParams }: { searchParam
       select: {
         id: true, title: true, discipline: true, location: true, employmentType: true, salary: true,
         responsibilities: true, requirements: true, summary: true, slug: true, status: true,
+        // Duur staat op de vacature in de pipeline (Deal.durationText), niet op de website-vacature.
+        deals: { where: { durationText: { not: null } }, orderBy: { updatedAt: "desc" }, take: 1, select: { durationText: true } },
         socialPosts: {
           where: { platform: "LINKEDIN", status: "PUBLISHED" },
           orderBy: { publishedAt: "desc" },
@@ -41,7 +43,7 @@ export default async function LinkedInStudioPage({ searchParams }: { searchParam
       summary: v.summary ?? "",
       slug: v.slug,
       status: v.status,
-      card: cardDefaultsFromVacancy(v),
+      card: cardDefaultsFromVacancy({ ...v, durationText: v.deals[0]?.durationText }),
       gepostOp: v.socialPosts[0]?.publishedAt?.toISOString() ?? null,
     }));
 

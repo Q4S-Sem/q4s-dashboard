@@ -70,18 +70,21 @@ export function cardDefaultsFromVacancy(v: {
   salary?: string | null;
   responsibilities?: string | null;
   summary?: string | null;
+  /** Projectduur uit de pipeline-vacature ("3 maanden"). */
+  durationText?: string | null;
 }): LinkedInCardData {
   const disc = v.discipline ? labelFor(DISCIPLINES, v.discipline) : "Opdracht";
   const points = splitPoints(v.responsibilities).slice(0, 4);
   const summary = (v.summary || "").trim();
-  // Duur uit de tekst ("12+ maanden", "6 maanden"); anders de vergoeding.
-  const duur = /(\d+\s*\+?\s*(?:maanden|maand|weken|jaar))/i.exec(summary)?.[1];
+  // Duur = projectduur: uit de pipeline-vacature, anders uit de tekst ("12+ maanden").
+  // Nooit de vergoeding — dat is geen duur.
+  const duur = v.durationText?.trim() || /(\d+\s*\+?\s*(?:maanden|maand|weken|jaar))/i.exec(summary)?.[1];
   return {
     discipline: disc,
     title: v.title,
     location: v.location || "",
     hours: v.employmentType || "",
-    duration: duur || v.salary || "",
+    duration: duur || "",
     intro: pitch(summary),
     points,
     cta: DEFAULT_CTA,

@@ -16,3 +16,9 @@ test("LinkedIn-post: kloppend Nederlands rond de functietitel en vergoeding", ()
   });
   assert.equal(hooks[0], "Ben jij een ervaren Construction Manager en klaar voor je volgende project?");
 });
+
+test("LinkedIn-kaart: Duration is de projectduur, nooit de vergoeding", async () => {
+  const { cardDefaultsFromVacancy } = await import("../src/lib/linkedin-card");
+  assert.equal(cardDefaultsFromVacancy({ title: "X", salary: "Marktconform per uur", durationText: "3 maanden" }).duration, "3 maanden");
+  assert.equal(cardDefaultsFromVacancy({ title: "X", salary: "Marktconform per uur" }).duration, "");
+});
