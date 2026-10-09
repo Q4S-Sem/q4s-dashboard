@@ -1,7 +1,7 @@
 "use server";
 
 import { aiJSON } from "@/lib/ai";
-import type { LinkedInCardData } from "@/lib/linkedin-card";
+import { schoneDuur, type LinkedInCardData } from "@/lib/linkedin-card";
 
 // De LinkedIn-afbeelding is altijd in het Engels (internationale vakmensen).
 // De post-tekst blijft Nederlands. Bij een AI-fout: de kaart ongewijzigd terug.
@@ -32,7 +32,7 @@ export async function kaartInHetEngels(card: LinkedInCardData): Promise<LinkedIn
         "You translate Dutch job-ad snippets for a LinkedIn recruitment image into natural, concise British English for technical professionals (steel construction, QA/QC, welding, NDT). " +
         "Keep job titles that are already English unchanged; translate Dutch titles to the usual English job title (Voorman → Foreman, Lasser → Welder, Werkvoorbereider → Work Planner). " +
         "Keep abbreviations (NDO→NDT, VCA, EN 1090, ISO) correct. Country/city names in English (Nederland → the Netherlands, Duitsland → Germany). " +
-        "\"12+ maanden\" → \"12+ months\", \"Fulltime\" → \"Full-time\". Keep each point about as short as the original. Return the same number of points.",
+        "\"12+ maanden\" → \"12+ months\", \"Fulltime\" → \"Full-time\". duration is ONLY how long the project runs; never put pay/rate in it — empty stays empty. Keep each point about as short as the original. Return the same number of points.",
       prompt: JSON.stringify({
         title: card.title,
         location: card.location,
@@ -42,7 +42,7 @@ export async function kaartInHetEngels(card: LinkedInCardData): Promise<LinkedIn
         points: card.points,
       }),
     });
-    return { ...card, ...en, points: en.points.length ? en.points : card.points };
+    return { ...card, ...en, duration: card.duration ? schoneDuur(en.duration) : "", points: en.points.length ? en.points : card.points };
   } catch (err) {
     console.error("kaartInHetEngels mislukt:", err);
     return card;

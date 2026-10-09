@@ -53,7 +53,7 @@ export function cardDefaultsFromDeal(deal: Pick<
     title: deal.title,
     location: deal.location || deal.company || "",
     hours: hoursParts.join(" · "),
-    duration: deal.durationText || (deal.expectedCloseDate ? `Start ${fmtDateNL(deal.expectedCloseDate)}` : ""),
+    duration: schoneDuur(deal.durationText) || (deal.expectedCloseDate ? `Start ${fmtDateNL(deal.expectedCloseDate)}` : ""),
     intro: "",
     points,
     cta: DEFAULT_CTA,
@@ -62,6 +62,16 @@ export function cardDefaultsFromDeal(deal: Pick<
 }
 
 /** Leidt kaart-inhoud af uit een website-vacature (Vacancy-model). */
+/**
+ * Duur = hoe lang het project loopt. Een vergoeding ("marktconform", "€ 75 p/u",
+ * "market rate") is geen duur en mag nooit in het Duration-vak belanden.
+ */
+export function schoneDuur(v: string | null | undefined): string {
+  const t = (v ?? "").trim();
+  if (!t || /marktconform|market|€|eur\b|\btarief|\brate\b|salar|vergoed|per uur|p\/u|\/\s*(?:h|uur|hour)\b|competitive/i.test(t)) return "";
+  return t;
+}
+
 export function cardDefaultsFromVacancy(v: {
   title: string;
   discipline?: string | null;
@@ -78,7 +88,7 @@ export function cardDefaultsFromVacancy(v: {
   const summary = (v.summary || "").trim();
   // Duur = projectduur: uit de pipeline-vacature, anders uit de tekst ("12+ maanden").
   // Nooit de vergoeding — dat is geen duur.
-  const duur = v.durationText?.trim() || /(\d+\s*\+?\s*(?:maanden|maand|weken|jaar))/i.exec(summary)?.[1];
+  const duur = schoneDuur(v.durationText) || /(\d+\s*\+?\s*(?:maanden|maand|weken|jaar))/i.exec(summary)?.[1];
   return {
     discipline: disc,
     title: v.title,
@@ -130,7 +140,7 @@ export function cardFromParams(sp: URLSearchParams): LinkedInCardData {
     title: sp.get("title") || "Nieuwe opdracht",
     location: sp.get("location") || "",
     hours: sp.get("hours") || "",
-    duration: sp.get("duration") || "",
+    duration: schoneDuur(sp.get("duration")),
     intro: sp.get("intro") || "",
     points: sp.getAll("point").filter(Boolean).slice(0, 4),
     cta: sp.get("cta") || DEFAULT_CTA,
