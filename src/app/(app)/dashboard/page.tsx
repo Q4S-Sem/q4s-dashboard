@@ -435,7 +435,6 @@ export default async function DashboardPage({
         <Card className="self-start">
           <CardHeader>
             <CardTitle>Nu te doen</CardTitle>
-            <Link href="/dashboard/te-doen" className="text-sm font-medium text-ink-500 hover:text-ink-900">Alles bekijken</Link>
           </CardHeader>
           {topTodos.length === 0 ? (
             <CardContent className="pb-5 text-sm text-ink-500">

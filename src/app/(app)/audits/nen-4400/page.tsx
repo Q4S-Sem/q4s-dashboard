@@ -139,12 +139,7 @@ export default async function DossiercheckPage() {
           </ul>
           <p className="text-xs text-ink-400">
             Rood = de audit valt hierop om, oranje = vraagt aandacht. Een evaluatie mag maximaal{" "}
-            {EVALUATION_MAX_AGE_MONTHS} maanden oud zijn. De regel{" "}
-            <strong>Dossier onvolledig (NEN 4400 / Kiwa)</strong> bij{" "}
-            <Link href="/dashboard/automatisering" className="text-brand-700 hover:underline">
-              Automatisering
-            </Link>{" "}
-            zet dezelfde bevindingen als interne taak op het juiste dossier.
+            {EVALUATION_MAX_AGE_MONTHS} maanden oud zijn.
           </p>
         </CardContent>
       </Card>

@@ -35,7 +35,6 @@ import {
   IdCard,
   UserCheck,
   Kanban,
-  Zap,
   KeyRound,
   Lock,
   Wallet,
@@ -93,15 +92,11 @@ const HUB_LIST: NavHub[] = [
     icon: ChartNoAxesCombined,
     items: [
       { href: "/dashboard", label: "Overzicht", icon: LayoutDashboard, exact: true },
-      { href: "/dashboard/te-doen", label: "Te doen", icon: ListTodo, badge: "teDoen" },
       // Geen "Facturatie"-tegel meer: die cijfers staan nu compleet onder
       // Facturatie → Rapportage, zodat er maar één plek is om naar te kijken.
       { href: "/dashboard/recruitment", label: "Recruitment", icon: Sparkles },
-      { href: "/dashboard/kpi", label: "Recruitment-KPI's", icon: Target },
       { href: "/dashboard/plaatsingen", label: "Plaatsingen & marges", icon: Briefcase },
-      { href: "/dashboard/evaluaties", label: "Evaluaties", icon: ClipboardCheck },
       { href: "/dashboard/rapportage", label: "Rapportage", icon: BarChart3 },
-      { href: "/dashboard/automatisering", label: "Automatisering", icon: Zap },
     ],
   },
   {

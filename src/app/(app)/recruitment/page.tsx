@@ -348,8 +348,8 @@ export default async function RecruitmentCockpitPage() {
           title="Blijven liggen"
           icon={<CalendarClock className="h-4 w-4 text-ink-400" />}
           count={stalledTotal}
-          href="/dashboard/kpi"
-          linkLabel="Naar de KPI's"
+          href="/sollicitaties"
+          linkLabel="Naar de sollicitaties"
           emptyTitle="Niets blijven liggen"
           emptyDescription={`Geen kandidaat langer dan ${CANDIDATE_IDLE_DAYS} dagen en geen open sollicitatie langer dan ${APPLICATION_IDLE_DAYS} dagen zonder opvolging.`}
         >
@@ -383,8 +383,8 @@ export default async function RecruitmentCockpitPage() {
         title="Open recruitment-taken"
         icon={<ListTodo className="h-4 w-4 text-ink-400" />}
         count={recruitmentTasks.length}
-        href="/dashboard/te-doen"
-        linkLabel="Alle taken"
+        href="/kandidaten"
+        linkLabel="Naar de kandidaten"
         emptyTitle="Geen open taken"
         emptyDescription="Taken bij een kandidaat of sollicitatie — zelf vastgelegd of door een automatische regel aangemaakt — staan hier tot ze zijn afgevinkt."
       >
