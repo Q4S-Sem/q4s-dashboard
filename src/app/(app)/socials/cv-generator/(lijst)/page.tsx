@@ -36,7 +36,7 @@ const FOUTEN: Record<string, string> = {
 export default async function CvGeneratorPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; fout?: string }>;
+  searchParams: Promise<{ q?: string; fout?: string; alle?: string }>;
 }) {
   const sp = await searchParams;
   const q = sp.q?.trim() || "";
@@ -45,7 +45,9 @@ export default async function CvGeneratorPage({
   const woorden = q.split(/\s+/).filter(Boolean);
   const bevat = (w: string) => ({ contains: w, mode: "insensitive" as const });
 
-  const [kandidaten, profiles] = await Promise.all([
+  // Standaard alleen de 5 laatst bewerkte; "Alle tonen" klapt de rest uit.
+  const alle = sp.alle === "1";
+  const [kandidaten, profiles, profielTotaal] = await Promise.all([
     db.candidate.findMany({
       where: woorden.length
         ? {
@@ -68,7 +70,9 @@ export default async function CvGeneratorPage({
     db.cvProfile.findMany({
       include: { candidate: { select: { id: true, firstName: true, lastName: true } } },
       orderBy: { updatedAt: "desc" },
+      ...(alle ? {} : { take: 5 }),
     }),
+    db.cvProfile.count(),
   ]);
 
   // Met CV eerst (daar kun je hier iets mee), dan op achternaam.
@@ -185,8 +189,17 @@ export default async function CvGeneratorPage({
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
           <CardTitle>Gemaakte Q4S-CV&apos;s</CardTitle>
+          {profielTotaal > 5 && (
+            <Link
+              href={alle ? `${BASE}${q ? `?q=${encodeURIComponent(q)}` : ""}` : `${BASE}?alle=1${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              scroll={false}
+              className="text-sm font-medium text-brand-700 hover:underline underline-offset-2"
+            >
+              {alle ? "Alleen laatste 5" : `Alle ${profielTotaal} tonen`}
+            </Link>
+          )}
         </CardHeader>
         {profiles.length === 0 ? (
           <CardContent>
@@ -205,7 +218,7 @@ export default async function CvGeneratorPage({
                 <TH>Kandidaat</TH>
                 <TH>Anoniem</TH>
                 <TH>Bijgewerkt</TH>
-                <TH>Download</TH>
+                <TH className="text-right">Download</TH>
               </TR>
             </THead>
             <TBody>
@@ -246,15 +259,16 @@ export default async function CvGeneratorPage({
                   </TD>
                   <TD>{formatDate(p.updatedAt)}</TD>
                   <TD>
-                    <div className="relative z-10 flex gap-1.5">
+                    <div className="relative z-10 flex justify-end gap-1.5">
                       <Link
                         href={`${BASE}/${p.id}/print`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={buttonVariants({ variant: "ghost", size: "sm" })}
+                        className={buttonVariants({ variant: "ghost", size: "icon" })}
                         title="Voorbeeld bekijken"
+                        aria-label={`Voorbeeld van ${p.fullName} bekijken`}
                       >
-                        <Eye className="h-3.5 w-3.5" /> Voorbeeld
+                        <Eye className="h-4 w-4" />
                       </Link>
                       <a
                         href={`${BASE}/${p.id}/pdf`}
