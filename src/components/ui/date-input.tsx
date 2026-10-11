@@ -153,7 +153,12 @@ function HeaderSelect({
       if (ref.current?.contains(t) || listRef.current?.contains(t)) return;
       setOpen(false);
     };
-    const reflow = () => place();
+    // Scrollen IN de lijst zelf is geen pagina-scroll: niet herpositioneren,
+    // anders springt de lijst steeds terug naar de gekozen waarde.
+    const reflow = (e: Event) => {
+      if (listRef.current?.contains(e.target as Node)) return;
+      place();
+    };
     document.addEventListener("mousedown", onDoc);
     window.addEventListener("resize", reflow);
     window.addEventListener("scroll", reflow, true);
@@ -164,16 +169,18 @@ function HeaderSelect({
     };
   }, [open, place]);
 
-  // De gekozen waarde centreren in de lijst — alléén de lijst zelf verschuiven.
+  // De gekozen waarde centreren in de lijst — één keer bij openen, alléén de
+  // lijst zelf verschuiven (niet bij elke herpositionering, dan kun je niet scrollen).
+  const shown = open && rect !== null;
   React.useEffect(() => {
-    if (!open) return;
+    if (!shown) return;
     const box = listRef.current;
     const sel = box?.querySelector<HTMLElement>('[data-sel="true"]');
     if (!box || !sel) return;
     const b = box.getBoundingClientRect();
     const s = sel.getBoundingClientRect();
     box.scrollTop += s.top - b.top - (b.height - s.height) / 2;
-  }, [open, rect]);
+  }, [shown]);
 
   const current = options.find((o) => o.value === value);
 
@@ -207,7 +214,7 @@ function HeaderSelect({
                 ? { bottom: window.innerHeight - rect.top + 4 }
                 : { top: rect.top + 4 }),
             }}
-            className="z-[120] max-h-52 overflow-auto rounded-xl border border-ink-200 bg-white p-1 shadow-lg"
+            className="z-[120] max-h-52 overflow-auto overscroll-contain rounded-xl border border-ink-200 bg-white p-1 shadow-lg"
           >
             {options.map((o) => {
               const sel = o.value === value;
