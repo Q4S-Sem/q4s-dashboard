@@ -36,7 +36,7 @@ const FOUTEN: Record<string, string> = {
 export default async function CvGeneratorPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; fout?: string; alle?: string }>;
+  searchParams: Promise<{ q?: string; fout?: string }>;
 }) {
   const sp = await searchParams;
   const q = sp.q?.trim() || "";
@@ -45,9 +45,7 @@ export default async function CvGeneratorPage({
   const woorden = q.split(/\s+/).filter(Boolean);
   const bevat = (w: string) => ({ contains: w, mode: "insensitive" as const });
 
-  // Standaard alleen de 5 laatst bewerkte; "Alle tonen" klapt de rest uit.
-  const alle = sp.alle === "1";
-  const [kandidaten, profiles, profielTotaal] = await Promise.all([
+  const [kandidaten, profiles] = await Promise.all([
     db.candidate.findMany({
       where: woorden.length
         ? {
@@ -70,9 +68,7 @@ export default async function CvGeneratorPage({
     db.cvProfile.findMany({
       include: { candidate: { select: { id: true, firstName: true, lastName: true } } },
       orderBy: { updatedAt: "desc" },
-      ...(alle ? {} : { take: 5 }),
     }),
-    db.cvProfile.count(),
   ]);
 
   // Met CV eerst (daar kun je hier iets mee), dan op achternaam.
@@ -192,17 +188,8 @@ export default async function CvGeneratorPage({
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4">
+        <CardHeader>
           <CardTitle>Gemaakte Q4S-CV&apos;s</CardTitle>
-          {profielTotaal > 5 && (
-            <Link
-              href={alle ? `${BASE}${q ? `?q=${encodeURIComponent(q)}` : ""}` : `${BASE}?alle=1${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-              scroll={false}
-              className="text-sm font-medium text-brand-700 hover:underline underline-offset-2"
-            >
-              {alle ? "Alleen laatste 5" : `Alle ${profielTotaal} tonen`}
-            </Link>
-          )}
         </CardHeader>
         {profiles.length === 0 ? (
           <CardContent>
@@ -213,6 +200,8 @@ export default async function CvGeneratorPage({
             />
           </CardContent>
         ) : (
+          // ~5 rijen zichtbaar, de rest scrollt; kop blijft staan.
+          <div className="max-h-[21rem] overflow-y-auto overscroll-contain [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-20 [&_thead]:bg-white">
           <Table>
             <THead>
               <TR className="hover:bg-transparent">
@@ -287,6 +276,7 @@ export default async function CvGeneratorPage({
               ))}
             </TBody>
           </Table>
+          </div>
         )}
       </Card>
     </div>
