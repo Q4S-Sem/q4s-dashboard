@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Inbox, FileText, Kanban, ArrowLeft, Upload, Globe, Mail, Archive } from "lucide-react";
+import { Inbox, FileText, Kanban, Upload, Globe, Mail, Archive } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -124,16 +124,6 @@ export default async function WebsiteCvsPage({
       <PageHeader
         title="Inkomende CV's"
         description="CV's vanuit de website én de cv@q4s.nl-mailbox — op één plek. Elk CV krijgt een herkomst (EU of buiten de EU, uit plaats en telefoonnummer); buiten de EU gaat automatisch naar het archief."
-        actions={
-          <>
-            <Link href="/cv" className={buttonVariants({ variant: "outline" })}>
-              <ArrowLeft className="h-4 w-4" /> CV-overzicht
-            </Link>
-            <Link href="/website/cv-inbox/importeren" className={buttonVariants()}>
-              <Upload className="h-4 w-4" /> CV importeren
-            </Link>
-          </>
-        }
       />
 
       {sp.import && (
