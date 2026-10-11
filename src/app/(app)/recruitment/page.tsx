@@ -317,10 +317,10 @@ export default async function RecruitmentCockpitPage() {
           title="Nieuwe sterke matches"
           icon={<Target className="h-4 w-4 text-ink-400" />}
           count={strongMatchCount}
-          href="/website/cv-inbox/matches"
-          linkLabel="Naar de CV-matches"
+          href="/website/vacatures"
+          linkLabel="Naar de vacatures"
           emptyTitle="Nog geen verse sterke matches"
-          emptyDescription={`Matches vanaf ${Math.round(STRONG_MATCH_SCORE * 100)}% uit de laatste ${MATCH_DAYS} dagen verschijnen hier. Zet op een vacature “Ik zoek kandidaten” en zoek matches.`}
+          emptyDescription={`Matches vanaf ${Math.round(STRONG_MATCH_SCORE * 100)}% uit de laatste ${MATCH_DAYS} dagen verschijnen hier. Ververs matches op een vacature.`}
         >
           {strongMatches.map((m) => (
             <Row

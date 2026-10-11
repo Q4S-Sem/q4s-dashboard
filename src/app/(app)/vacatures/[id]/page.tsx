@@ -5,7 +5,6 @@ import {
   ExternalLink,
   Pencil,
   Users,
-  Target,
   MessageSquarePlus,
 } from "lucide-react";
 import { db } from "@/lib/db";
@@ -32,7 +31,6 @@ import {
   unpublishVacancy,
   rematchVacancyMatches,
 } from "../actions";
-import { startSourcing } from "../../website/actions";
 import { createCandidateLinkedOutreach } from "../../berichten/actions";
 import { publicVacancyUrl } from "@/lib/public-site";
 
@@ -105,29 +103,6 @@ export default async function VacatureDetailPage({
               >
                 <ExternalLink className="h-4 w-4" />
               </Link>
-            )}
-            {vacancy.sourcing ? (
-              <Link
-                href="/website/cv-inbox/matches"
-                className={buttonVariants({ variant: "outline", size: "icon" })}
-                title="Op matchpagina"
-                aria-label="Op matchpagina"
-              >
-                <Target className="h-4 w-4" />
-              </Link>
-            ) : (
-              <form action={startSourcing}>
-                <input type="hidden" name="vacancyId" value={vacancy.id} />
-                <SubmitButton
-                  variant="outline"
-                  size="icon"
-                  pendingLabel="…"
-                  title="Ik zoek kandidaten — zet op de matchpagina"
-                  aria-label="Ik zoek kandidaten"
-                >
-                  <Users className="h-4 w-4" />
-                </SubmitButton>
-              </form>
             )}
             <Link
               href={`/vacatures/${vacancy.id}/bewerken`}

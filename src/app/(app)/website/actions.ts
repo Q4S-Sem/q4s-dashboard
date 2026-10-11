@@ -6,11 +6,9 @@ import { db } from "@/lib/db";
 import { currentRecruiterId, logNote } from "@/lib/crm";
 import { DISCIPLINES, labelFor, CANDIDATE_AVAILABILITY_VALUES } from "@/lib/domain";
 import { saveCvUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
-import { rematchVacancy } from "@/lib/matching";
 import { runCvIntakeShortlist } from "@/lib/cv-intake";
 import { aiExtractCvFields, isReadableCvName, nameFromCvFilename } from "@/lib/cv-import";
-import { aiRefineMatches } from "@/lib/msp";
-import { isAIConfigured, isVisionConfigured } from "@/lib/ai";
+import { isVisionConfigured } from "@/lib/ai";
 import { mirrorDealToVacancy } from "@/lib/vacancy-mirror";
 import { aiImproveVacancy } from "@/lib/recruitment";
 
@@ -192,20 +190,6 @@ export async function importCvsBulk(formData: FormData) {
   redirect(`/website/cv-inbox?import=bulk&n=${created}&skip=${skipped}`);
 }
 
-// --- Vacature-gedreven matchflow (zoekopdrachten) ----------------------------
-
-/** "Ik zoek kandidaten": zet de vacature als actieve zoekopdracht op de
- *  CV-matches-pagina en ga er meteen naartoe. */
-export async function startSourcing(formData: FormData) {
-  const id = String(formData.get("vacancyId") ?? "");
-  if (!id) redirect("/website/cv-inbox/matches");
-  await db.vacancy.update({ where: { id }, data: { sourcing: true } });
-  revalidatePath("/website/cv-inbox/matches");
-  revalidatePath(`/vacatures/${id}`);
-  revalidatePath("/website/vacatures");
-  redirect("/website/cv-inbox/matches");
-}
-
 /**
  * Stuur een openstaande recruitment-vacature (Deal) alsnog naar de website: maakt
  * een Vacancy-concept aan via de mirror. Voor bestaande deals van vóór de auto-
@@ -230,58 +214,4 @@ export async function sendDealToWebsite(formData: FormData) {
   // Ga direct naar de vacature om de tekst te controleren/publiceren; anders terug.
   if (vacancyId) redirect(`/vacatures/${vacancyId}`);
   redirect("/website");
-}
-
-/** Stop de zoekopdracht: haal de vacature van de CV-matches-pagina. */
-export async function stopSourcing(formData: FormData) {
-  const id = String(formData.get("vacancyId") ?? "");
-  if (!id) return;
-  await db.vacancy.update({ where: { id }, data: { sourcing: false } });
-  revalidatePath("/website/cv-inbox/matches");
-  revalidatePath(`/vacatures/${id}`);
-  revalidatePath("/website/vacatures");
-}
-
-/** "Zoek match": doorzoek de hele kandidaten-/CV-database voor deze ene vacature
- *  (regelmatch + AI-verfijning als AI ingesteld is). Blijft op de matchpagina.
- *  Een mislukte zoekactie wordt NIET stil ingeslikt: de pagina krijgt ?error=match
- *  terug, zodat je niet naar een onveranderde lijst zit te kijken zonder te weten
- *  dat er niets is gebeurd. */
-export async function searchMatchesForVacancy(formData: FormData) {
-  const id = String(formData.get("vacancyId") ?? "");
-  if (!id) return;
-  let failed = false;
-  try {
-    const n = await rematchVacancy(id);
-    if (isAIConfigured() && n > 0) await aiRefineMatches(id);
-    await db.vacancy.update({ where: { id }, data: { lastMatchedAt: new Date(), sourcing: true } });
-  } catch {
-    failed = true;
-  }
-  revalidatePath("/website/cv-inbox/matches");
-  if (failed) redirect("/website/cv-inbox/matches?error=match");
-}
-
-/**
- * Zoek matches voor ALLE actieve zoekopdrachten in één keer. Per vacature eerst
- * de regelmatch, daarna AI-verfijning (als AI ingesteld is). Voedt de CV-matches.
- */
-export async function runCvMatching() {
-  const vacancies = await db.vacancy.findMany({
-    where: { sourcing: true },
-    select: { id: true },
-  });
-  const aiOn = isAIConfigured();
-  for (const v of vacancies) {
-    try {
-      const n = await rematchVacancy(v.id);
-      if (aiOn && n > 0) await aiRefineMatches(v.id);
-      await db.vacancy.update({ where: { id: v.id }, data: { lastMatchedAt: new Date() } });
-    } catch {
-      // per-vacature best-effort; ga door met de rest.
-    }
-  }
-  revalidatePath("/website/cv-inbox/matches");
-  revalidatePath("/website/cv-inbox");
-  redirect("/website/cv-inbox/matches?matched=1");
 }
