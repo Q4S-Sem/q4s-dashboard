@@ -12,7 +12,7 @@ import { db } from "@/lib/db";
 import { isAdminSession } from "@/lib/session";
 import { analyseerPortalen, deletePortal, importPortals, koppelAlsMsp, savePortal, zetPortaalSoort } from "./actions";
 import { NewPortalDialog, PasswordInput, PasswordReveal } from "./PasswordReveal";
-import { buttonVariants, segmentVariants } from "@/components/ui/button";
+import { segmentVariants } from "@/components/ui/button";
 
 export const metadata = { title: "Wachtwoorden" };
 export const dynamic = "force-dynamic";
