@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { Plus, Briefcase, Building2, Users2, MapPin, CalendarClock, ArrowRight, Sparkles, Kanban } from "lucide-react";
+import { Plus, Search, X, Briefcase, Building2, Users2, MapPin, CalendarClock, ArrowRight, Sparkles, Kanban } from "lucide-react";
 import { db } from "@/lib/db";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input, Select } from "@/components/ui/field";
+import { AutoFilterForm } from "@/components/ui/auto-filter-form";
+import { ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants, segmentVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { formatDate, cn } from "@/lib/utils";
 import { DISCIPLINES, labelFor, type BadgeColor } from "@/lib/domain";
@@ -20,16 +23,19 @@ const ICOON_KNOP =
  * Vacatures = deals bij bedrijven, in een tab-switch:
  *  - OPEN: nog geen kandidaat gekoppeld → hier zoek je met AI de juiste persoon.
  *  - PIPELINE: een kandidaat gekoppeld → de vacature staat in de pipeline.
- * Compacte rijen met icoonknoppen en een filter per discipline.
+ * Compacte rijen met icoonknoppen; filterbalk (zoeken + discipline + opdrachtgever)
+ * in dezelfde stijl als Alle kandidaten.
  */
 export default async function VacaturesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; d?: string }>;
+  searchParams: Promise<{ view?: string; d?: string; q?: string; klant?: string }>;
 }) {
   const sp = await searchParams;
   const view = sp.view === "pipeline" ? "pipeline" : "open";
   const vak = sp.d ?? "";
+  const klant = sp.klant ?? "";
+  const q = sp.q?.trim().toLowerCase() ?? "";
 
   const deals = await db.deal.findMany({
     where: { status: "OPEN" },
@@ -52,9 +58,22 @@ export default async function VacaturesPage({
   const vakken = [...new Set(inView.map((d) => d.discipline).filter((x): x is string => !!x))].sort((a, b) =>
     labelFor(DISCIPLINES, a).localeCompare(labelFor(DISCIPLINES, b), "nl"),
   );
-  const rows = vak ? inView.filter((d) => d.discipline === vak) : inView;
+  const klanten = [
+    ...new Map(inView.filter((d) => d.client).map((d) => [d.client!.id, d.client!.companyName])),
+  ].sort((a, b) => a[1].localeCompare(b[1], "nl"));
+  // Elk woord moet ergens in titel, bedrijf, plaats of kandidaat staan.
+  const woorden = q.split(/\s+/).filter(Boolean);
+  const rows = inView.filter((d) => {
+    if (vak && d.discipline !== vak) return false;
+    if (klant && d.client?.id !== klant) return false;
+    if (!woorden.length) return true;
+    const hooi = [d.title, d.client?.companyName ?? d.company, d.client?.city, d.candidateId ? candName.get(d.candidateId) : ""]
+      .join(" ")
+      .toLowerCase();
+    return woorden.every((w) => hooi.includes(w));
+  });
+  const gefilterd = Boolean(vak || klant || q);
   const nu = new Date().getTime();
-  const vakHref = (d: string) => `/crm/vacatures?view=${view}${d ? `&d=${d}` : ""}`;
 
   return (
     <div className="space-y-6">
@@ -70,23 +89,56 @@ export default async function VacaturesPage({
 
       <VacatureTabs actief={view} />
 
-      {vakken.length > 1 && (
-        <div className="flex flex-wrap items-center gap-1 rounded-lg bg-ink-50 p-1" role="group" aria-label="Filter op discipline">
-          <Link href={vakHref("")} scroll={false} aria-pressed={!vak} className={segmentVariants(!vak, "h-7 text-xs")}>
-            Alle disciplines
-          </Link>
-          {vakken.map((d) => (
-            <Link key={d} href={vakHref(d)} scroll={false} aria-pressed={vak === d} className={segmentVariants(vak === d, "h-7 text-xs")}>
-              {labelFor(DISCIPLINES, d)}
-            </Link>
-          ))}
-        </div>
-      )}
+      <Card>
+        <CardContent className="py-4">
+          <AutoFilterForm
+            basePath="/crm/vacatures"
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_200px_200px_auto]"
+          >
+            <input type="hidden" name="view" value={view} />
+            <div className="relative">
+              <Search className={ZOEK_ICOON} />
+              <Input
+                name="q"
+                defaultValue={sp.q ?? ""}
+                placeholder="Zoek op functie, bedrijf, plaats, kandidaat…"
+                className="pl-9"
+                aria-label="Zoeken"
+                autoComplete="off"
+              />
+            </div>
+            <Select name="d" defaultValue={vak} aria-label="Discipline">
+              <option value="">Alle disciplines</option>
+              {vakken.map((d) => (
+                <option key={d} value={d}>
+                  {labelFor(DISCIPLINES, d)}
+                </option>
+              ))}
+            </Select>
+            <Select name="klant" defaultValue={klant} aria-label="Opdrachtgever">
+              <option value="">Alle opdrachtgevers</option>
+              {klanten.map(([id, naam]) => (
+                <option key={id} value={id}>
+                  {naam}
+                </option>
+              ))}
+            </Select>
+            <div className="flex items-center">
+              {gefilterd && (
+                // Gewone <a>: volledige reload zet ook de (ongecontroleerde) velden leeg.
+                <a href={`/crm/vacatures?view=${view}`} className={buttonVariants({ variant: "outline" })}>
+                  <X className="h-4 w-4" /> Wissen
+                </a>
+              )}
+            </div>
+          </AutoFilterForm>
+        </CardContent>
+      </Card>
 
       {rows.length === 0 ? (
         <EmptyState
           icon={<Briefcase className="h-6 w-6" />}
-          title={vak ? "Geen vacatures in deze discipline" : view === "pipeline" ? "Nog geen geplaatste vacatures" : "Geen openstaande vacatures"}
+          title={gefilterd ? "Geen vacatures gevonden met deze filters" : view === "pipeline" ? "Nog geen geplaatste vacatures" : "Geen openstaande vacatures"}
           description={
             view === "pipeline"
               ? "Zodra je een kandidaat aan een vacature koppelt, verschijnt die hier én op het pipeline-bord."
