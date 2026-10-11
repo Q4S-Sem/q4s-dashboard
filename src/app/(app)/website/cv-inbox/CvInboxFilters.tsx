@@ -17,7 +17,6 @@ export function CvInboxFilters({
   disciplines,
   sources,
   availabilities,
-  bron,
   archief,
 }: {
   q: string;
@@ -27,22 +26,20 @@ export function CvInboxFilters({
   disciplines: Option[];
   sources: Option[];
   availabilities: Option[];
-  bron: "website" | "email";
   archief: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [term, setTerm] = useState(q);
   const first = useRef(true);
-  function apply(next: Partial<{ q: string; discipline: string; source: string; availability: string }>) {
-    const values = { q: term, discipline, source, availability, ...next };
+  function apply(next: Partial<{ q: string; discipline: string; source: string; availability: string; archief: boolean }>) {
+    const values = { q: term, discipline, source, availability, archief, ...next };
     const p = new URLSearchParams();
     if (values.q.trim()) p.set("q", values.q.trim());
     if (values.discipline) p.set("discipline", values.discipline);
     if (values.source) p.set("source", values.source);
     if (values.availability) p.set("availability", values.availability);
-    p.set("bron", bron);
-    if (archief) p.set("map", "archief");
+    if (values.archief) p.set("map", "archief");
     startTransition(() => router.replace(`/website/cv-inbox?${p.toString()}`));
   }
   useEffect(() => {
@@ -54,7 +51,7 @@ export function CvInboxFilters({
   return (
     <Card>
       <CardContent className="py-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_180px_180px_180px_auto]">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_170px_170px_170px_190px_auto]">
           <div className="relative">
             <Search className={ZOEK_ICOON} />
             <Input value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Zoek op naam, e-mail, plaats…" className="pl-9 pr-9" aria-label="Zoeken" />
@@ -63,7 +60,9 @@ export function CvInboxFilters({
           <Select defaultValue={discipline} onValueChange={(v) => apply({ discipline: v })} aria-label="Discipline"><option value="">Alle disciplines</option>{disciplines.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
           <Select defaultValue={source} onValueChange={(v) => apply({ source: v })} aria-label="Bron"><option value="">Alle bronnen</option>{sources.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
           <Select defaultValue={availability} onValueChange={(v) => apply({ availability: v })} aria-label="Beschikbaarheid"><option value="">Alle beschikbaarheid</option>{availabilities.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
-          <div className="flex items-center">{hasFilter && <button type="button" onClick={() => { setTerm(""); startTransition(() => router.replace(`/website/cv-inbox?bron=${bron}${archief ? "&map=archief" : ""}`)); }} className={buttonVariants({ variant: "outline" })}><X className="h-4 w-4" /> Wissen</button>}</div>
+          {/* Buiten de EU staat in het archief; hier wissel je ertussen. */}
+          <Select defaultValue={archief ? "archief" : ""} onValueChange={(v) => apply({ archief: v === "archief" })} aria-label="Herkomst"><option value="">EU (inbox)</option><option value="archief">Buiten EU (archief)</option></Select>
+          <div className="flex items-center">{hasFilter && <button type="button" onClick={() => { setTerm(""); startTransition(() => router.replace(`/website/cv-inbox${archief ? "?map=archief" : ""}`)); }} className={buttonVariants({ variant: "outline" })}><X className="h-4 w-4" /> Wissen</button>}</div>
         </div>
       </CardContent>
     </Card>

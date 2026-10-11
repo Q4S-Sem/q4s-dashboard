@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { Inbox, FileText, Kanban, Upload, Globe, Mail, Archive } from "lucide-react";
+import { Inbox, FileText, Kanban, Upload, Mail, Archive } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 import { DISCIPLINES, CANDIDATE_SOURCES, CANDIDATE_AVAILABILITY, labelFor } from "@/lib/domain";
 import { CvInboxFilters } from "./CvInboxFilters";
 import { isVisionConfigured } from "@/lib/ai";
@@ -27,7 +26,6 @@ export default async function WebsiteCvsPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    bron?: string;
     map?: string;
     q?: string;
     discipline?: string;
@@ -41,7 +39,6 @@ export default async function WebsiteCvsPage({
   }>;
 }) {
   const sp = await searchParams;
-  const bron: "website" | "email" = sp.bron === "email" ? "email" : "website";
   const archief = sp.map === "archief";
   const q = sp.q?.trim() || "";
   const discipline = sp.discipline || "";
@@ -49,7 +46,7 @@ export default async function WebsiteCvsPage({
   const availability = sp.availability || "";
   const where = {
     cvFileName: { not: null },
-    source: source || (bron === "email" ? "EMAIL" : { not: "EMAIL" }),
+    ...(source ? { source } : {}),
     ...(discipline ? { discipline } : {}),
     ...(availability ? { availability } : {}),
     ...(q ? { OR: [
@@ -59,14 +56,10 @@ export default async function WebsiteCvsPage({
     ] } : {}),
   };
 
-  const [candidates, websiteCount, emailCount] = await Promise.all([
-    db.candidate.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-    }),
-    db.candidate.count({ where: { cvFileName: { not: null }, source: { not: "EMAIL" } } }),
-    db.candidate.count({ where: { cvFileName: { not: null }, source: "EMAIL" } }),
-  ]);
+  const candidates = await db.candidate.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+  });
 
   const deals = await db.deal.findMany({
     where: { candidateId: { in: candidates.map((c) => c.id) } },
@@ -102,23 +95,6 @@ export default async function WebsiteCvsPage({
   weekAgo.setDate(weekAgo.getDate() - 7);
   const recent = candidates.filter((c) => c.createdAt >= weekAgo).length;
 
-  const tabLink = (t: "website" | "email", label: string, count: number, icon: React.ReactNode) => (
-    <Link
-      href={`/website/cv-inbox?bron=${t}`}
-      className={segmentVariants(bron === t)}
-    >
-      {icon} {label}
-      <span
-        className={cn(
-          "rounded-sm px-1.5 text-xs font-semibold tabular-nums",
-          bron === t ? "bg-white/20 text-white" : "bg-ink-100 text-ink-600",
-        )}
-      >
-        {count}
-      </span>
-    </Link>
-  );
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -149,29 +125,13 @@ export default async function WebsiteCvsPage({
         </p>
       )}
 
-      {/* Bron-switch */}
-      <div className={SEGMENT_GROEP}>
-        {tabLink("website", "Website", websiteCount, <Globe className="h-4 w-4" />)}
-        {tabLink("email", "E-mail", emailCount, <Mail className="h-4 w-4" />)}
-      </div>
-
-      {/* Inbox (EU + onbekend) vs archief (buiten de EU) */}
-      <div className={SEGMENT_GROEP}>
-        <Link href={`/website/cv-inbox?bron=${bron}`} className={segmentVariants(!archief)}>
-          <Inbox className="h-4 w-4" /> Inbox · EU {inboxRows.length}
-        </Link>
-        <Link href={`/website/cv-inbox?bron=${bron}&map=archief`} className={segmentVariants(archief)}>
-          <Archive className="h-4 w-4" /> Archief · buiten EU {archiefRows.length}
-        </Link>
-      </div>
-
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="CV's in deze bron" value={rows.length} icon={<FileText className="h-5 w-5" />} accent="brand" />
+        <StatCard label={archief ? "In het archief" : "CV's in de inbox"} value={rows.length} icon={<FileText className="h-5 w-5" />} accent="brand" />
         <StatCard label="Nieuw (7 dagen)" value={recent} icon={<Inbox className="h-5 w-5" />} accent="green" />
         <StatCard label="Doorgezet als lead" value={inCrm} sub="staat in het CRM" icon={<Kanban className="h-5 w-5" />} accent="violet" />
       </div>
 
-      {bron === "email" && (
+      {source === "EMAIL" && (
         <EmailInboxPanel
           connected={isMailboxConnected()}
           visionReady={isVisionConfigured()}
@@ -186,7 +146,6 @@ export default async function WebsiteCvsPage({
         discipline={discipline}
         source={source}
         availability={availability}
-        bron={bron}
         archief={archief}
         disciplines={DISCIPLINES}
         sources={CANDIDATE_SOURCES}
@@ -196,17 +155,17 @@ export default async function WebsiteCvsPage({
       {archief && rows.length === 0 ? (
         <Card>
           <CardContent>
-            <EmptyState icon={<Archive className="h-6 w-6" />} title="Archief is leeg" description="Er zijn geen CV's van buiten de EU in deze bron." />
+            <EmptyState icon={<Archive className="h-6 w-6" />} title="Archief is leeg" description="Er zijn geen CV's van buiten de EU." />
           </CardContent>
         </Card>
       ) : rows.length === 0 ? (
         <Card>
           <CardContent>
             <EmptyState
-              icon={bron === "email" ? <Mail className="h-6 w-6" /> : <Inbox className="h-6 w-6" />}
-              title={bron === "email" ? "Nog geen CV's uit de mailbox" : "Nog geen CV's binnen"}
+              icon={source === "EMAIL" ? <Mail className="h-6 w-6" /> : <Inbox className="h-6 w-6" />}
+              title={source === "EMAIL" ? "Nog geen CV's uit de mailbox" : "Nog geen CV's binnen"}
               description={
-                bron === "email"
+                source === "EMAIL"
                   ? "Zodra de mailbox gekoppeld is en je scant, verschijnen de gevonden kandidaten hier — of importeer zelf een stapel CV's."
                   : "Zodra iemand via de website solliciteert en een CV meestuurt verschijnt die kandidaat hier — of importeer zelf een stapel CV's."
               }
