@@ -43,7 +43,7 @@ function Inhoud({
   const { pending } = useFormStatus();
   if (pending) return <CvBuildingAnimation className="border-0 p-0" />;
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="flex items-center justify-between gap-3">
       {children}
       <div className="flex items-center gap-2">
         {acties}
@@ -72,7 +72,7 @@ export function KandidaatCvKaart({
   children: React.ReactNode;
 }) {
   return (
-    <form action={action} className="px-5 py-4">
+    <form action={action} className="px-5 py-2.5">
       <input type="hidden" name="candidateId" value={candidateId} />
       <input type="hidden" name="terug" value={terug} />
       <Inhoud opnieuw={opnieuw} acties={acties}>

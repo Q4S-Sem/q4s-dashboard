@@ -433,7 +433,8 @@ export function CvProfileForm({
         ))}
       </SectionCard>
 
-      <div className="flex justify-end gap-3">
+      {/* Altijd in beeld: het formulier is lang, opslaan zat onderaan verstopt. */}
+      <div className="sticky bottom-0 z-20 flex justify-end gap-3 rounded-xl border border-ink-200 bg-white/95 p-3 shadow-sm backdrop-blur">
         <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>
           Annuleren
         </Link>
