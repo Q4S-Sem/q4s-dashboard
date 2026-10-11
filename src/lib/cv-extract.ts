@@ -50,7 +50,7 @@ async function docxToText(bytes: Buffer): Promise<string> {
  */
 async function extractFromDocx<T>(
   bytes: Buffer,
-  ai: { system: string; prompt: string; schema: Record<string, unknown>; schemaName: string; maxTokens: number },
+  ai: { system: string; prompt: string; schema: Record<string, unknown>; schemaName: string; maxTokens: number; fast?: boolean },
 ): Promise<T> {
   const route = readyCvTextRoute();
   if (!route) {
@@ -83,6 +83,7 @@ async function extractFromDocx<T>(
       prompt,
       schema: ai.schema,
       maxTokens: ai.maxTokens,
+      fast: ai.fast,
     });
   }
   if (route === "openrouter") {
@@ -91,6 +92,7 @@ async function extractFromDocx<T>(
       prompt,
       schema: ai.schema,
       maxTokens: ai.maxTokens,
+      fast: ai.fast,
     });
   }
   // Anthropic of lokale Ollama — via de bestaande tekst-route met PII-blokkade.
@@ -190,6 +192,7 @@ export async function extractCvProfile(
       schema: CV_PROFILE_AI_SCHEMA,
       schemaName: "cv_profile",
       maxTokens: 8000,
+      fast: true,
     });
   } else {
     if (!isVisionConfigured()) {

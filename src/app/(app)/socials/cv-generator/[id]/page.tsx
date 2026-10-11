@@ -30,9 +30,8 @@ export default async function CvProfileReviewPage({
   if (!profile) notFound();
 
   const data = profileToData(profile);
-  const backHref = profile.candidateId
-    ? `/kandidaten/${profile.candidateId}`
-    : "/socials/cv-generator";
+  // Terug = altijd de generator, ook bij een kandidaat (niet het dossier in Recruitment).
+  const backHref = "/socials/cv-generator";
 
   return (
     <div className="space-y-6">
@@ -41,9 +40,7 @@ export default async function CvProfileReviewPage({
         className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
       >
         <ArrowLeft className="h-4 w-4" />
-        {profile.candidate
-          ? `Terug naar ${profile.candidate.firstName} ${profile.candidate.lastName}`
-          : "Terug naar de CV-generator"}
+        Terug naar de CV-generator
       </Link>
 
       <PageHeader

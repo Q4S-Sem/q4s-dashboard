@@ -119,6 +119,14 @@ export const OPENROUTER_VISION_MODEL_STRONG =
   process.env.OPENROUTER_VISION_MODEL_STRONG ?? "google/gemini-2.5-pro";
 export const GEMINI_MODEL_STRONG = process.env.GEMINI_MODEL_STRONG ?? "gemini-pro-latest";
 
+/** Snel uitlezen (effort "low"): het denkwerk van Gemini Flash flink terugschroeven
+ *  — dat is het grootste deel van de wachttijd. 2.5 kent alleen een budget, 3.x een
+ *  niveau ("low" werkt op elke 3.x Flash). Het sterke model blijft vangnet. */
+export function geminiThinking(model: string, low: boolean) {
+  if (!low) return undefined;
+  return /2\.5/.test(model) ? { thinkingBudget: 0 } : { thinkingLevel: "low" };
+}
+
 type Tier = "main" | "fast";
 
 /** A provider is usable if it's Ollama (local/free) or a cloud provider with a key. */
@@ -931,6 +939,7 @@ async function geminiExtractFile<T>(opts: FileExtractOpts): Promise<T> {
           temperature: 0.1,
           maxOutputTokens: opts.maxTokens ?? 4000,
           responseMimeType: "application/json",
+          thinkingConfig: geminiThinking(visionModel("gemini", opts.strong), opts.effort === "low" && !opts.strong),
         },
       }),
     });
@@ -972,6 +981,8 @@ export async function geminiJSONText<T>(opts: {
   prompt: string;
   schema: Record<string, unknown>;
   maxTokens?: number;
+  /** Weinig denkwerk = veel sneller (zie geminiThinking). */
+  fast?: boolean;
 }): Promise<T> {
   await ensureAiKeysLoaded();
   const key = process.env.GEMINI_API_KEY;
@@ -991,6 +1002,7 @@ export async function geminiJSONText<T>(opts: {
           temperature: 0.1,
           maxOutputTokens: opts.maxTokens ?? 4000,
           responseMimeType: "application/json",
+          thinkingConfig: geminiThinking(GEMINI_MODEL, Boolean(opts.fast)),
         },
       }),
     });
@@ -1033,6 +1045,7 @@ export async function openrouterJSONText<T>(opts: {
   prompt: string;
   schema: Record<string, unknown>;
   maxTokens?: number;
+  fast?: boolean;
 }): Promise<T> {
   await ensureAiKeysLoaded();
   const key = process.env.HERMES_API_KEY;
@@ -1057,6 +1070,7 @@ export async function openrouterJSONText<T>(opts: {
         stream: false,
         temperature: 0.1,
         max_tokens: opts.maxTokens ?? 4000,
+        ...(opts.fast ? { reasoning: { effort: "low" } } : {}),
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: system },
@@ -1140,6 +1154,7 @@ async function openrouterExtractFile<T>(opts: FileExtractOpts): Promise<T> {
         stream: false,
         temperature: 0.1,
         max_tokens: opts.maxTokens ?? 4000,
+        ...(opts.effort === "low" && !opts.strong ? { reasoning: { effort: "low" } } : {}),
         // Wordt door modellen die het niet kennen genegeerd; parseJson tolereert
         // hoe dan ook fences/omringende tekst.
         response_format: { type: "json_object" },
