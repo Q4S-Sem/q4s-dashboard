@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileDown, FileText, User, Printer, Palette } from "lucide-react";
+import { ArrowLeft, FileText, User, Printer } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,8 +8,6 @@ import { buttonVariants } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { profileToData } from "@/lib/cv-doc";
 import { formatDate } from "@/lib/utils";
-import { CvSheet } from "@/components/cv/CvSheet";
-import { loadCvSheet } from "@/lib/cv-render";
 import { CvProfileForm } from "../CvProfileForm";
 import { deleteCvProfile, saveCvProfile } from "../actions";
 
@@ -32,9 +30,6 @@ export default async function CvProfileReviewPage({
   if (!profile) notFound();
 
   const data = profileToData(profile);
-  // Zelfde bron als de printpagina, dus het voorbeeld hiernaast is precies wat
-  // er uit de printer komt.
-  const vel = await loadCvSheet(id);
   const backHref = profile.candidateId
     ? `/kandidaten/${profile.candidateId}`
     : "/socials/cv-generator";
@@ -59,7 +54,8 @@ export default async function CvProfileReviewPage({
             action={deleteCvProfile}
             id={profile.id}
             message="Dit Q4S-CV-profiel verwijderen? Het originele CV-bestand blijft staan."
-            variant="outline"
+            trigger="icon"
+            iconClassName="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
           >
             Verwijderen
           </ConfirmSubmit>
@@ -105,19 +101,13 @@ export default async function CvProfileReviewPage({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/socials/cv-generator/${profile.id}/print`}
-              className={buttonVariants()}
-            >
-              <Printer className="h-4 w-4" /> Printen / PDF
-            </Link>
             <a
               href={`/socials/cv-generator/${profile.id}/pdf`}
               target="_blank"
               rel="noopener noreferrer"
-              className={buttonVariants({ variant: "outline" })}
+              className={buttonVariants()}
             >
-              <FileDown className="h-4 w-4" /> PDF-download
+              <Printer className="h-4 w-4" /> PDF openen / printen
             </a>
           </div>
         </CardContent>
@@ -134,33 +124,20 @@ export default async function CvProfileReviewPage({
           cancelHref={backHref}
         />
 
-        {vel && (
-          <div className="hidden xl:block xl:sticky xl:top-24">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <span className="text-[13px] font-semibold text-ink-900">Voorbeeld</span>
-              <Link
-                href="/gebruikers/cv-template"
-                className="inline-flex items-center gap-1.5 text-[13px] text-ink-400 transition-colors hover:text-brand-600"
-              >
-                <Palette className="h-3.5 w-3.5" /> Vormgeving aanpassen
-              </Link>
-            </div>
-            {/* 45% schaal: een A4 past zo naast het formulier zonder scrollen. */}
-            <div className="h-[535px] w-[357px] overflow-hidden rounded-sm border border-ink-200 bg-white">
-              <div className="origin-top-left scale-[0.45]">
-                <CvSheet
-                  doc={vel.doc}
-                  template={vel.template}
-                  logoSrc={vel.logoSrc}
-                  photoSrc={vel.photoSrc}
-                />
-              </div>
-            </div>
-            <p className="mt-2 max-w-[357px] text-xs text-ink-400">
-              Ververst na opslaan. Klik op &ldquo;Printen / PDF&rdquo; voor het vel op ware grootte.
-            </p>
-          </div>
-        )}
+        {/* Het voorbeeld IS de PDF: per A4 opgemaakt, met kop en paginanummer op
+            elke pagina. De key ververst hem na opslaan. */}
+        <div className="hidden xl:block xl:sticky xl:top-24">
+          <p className="mb-2 text-[13px] font-semibold text-ink-900">Voorbeeld</p>
+          <iframe
+            key={profile.updatedAt.getTime()}
+            src={`/socials/cv-generator/${profile.id}/pdf#toolbar=0&navpanes=0&view=FitH`}
+            title="Voorbeeld van het Q4S-CV"
+            className="h-[640px] w-[460px] rounded-sm border border-ink-200 bg-white"
+          />
+          <p className="mt-2 max-w-[460px] text-xs text-ink-400">
+            Ververst na opslaan. Scroll in het voorbeeld voor de volgende pagina.
+          </p>
+        </div>
       </div>
     </div>
   );

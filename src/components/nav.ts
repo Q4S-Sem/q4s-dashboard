@@ -206,11 +206,11 @@ const HUB_LIST: NavHub[] = [
   },
   {
     label: "CV's",
-    href: "/website/cv-inbox",
+    href: "/socials/cv-generator",
     icon: FileUser,
     items: [
-      { href: "/website/cv-inbox", label: "Inkomende CV's", icon: Inbox, exact: true },
       { href: "/socials/cv-generator", label: "CV-generator", icon: FileUser },
+      { href: "/website/cv-inbox", label: "Inkomende CV's", icon: Inbox, exact: true },
     ],
   },
   {
@@ -264,7 +264,7 @@ const HUB_ORDER = [
   "/contracten",
   "/recruitment",
   "/socials", // Marketing
-  "/website/cv-inbox", // CV's
+  "/socials/cv-generator", // CV's
   "/agenda",
   "/evaluaties",
   "/dashboard", // Analytics

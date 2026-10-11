@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
+import { createPortal, useFormStatus } from "react-dom";
 import { FileUp, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CvBuildingAnimation } from "@/components/cv/CvBuildingAnimation";
@@ -10,8 +10,8 @@ import { CvBuildingAnimation } from "@/components/cv/CvBuildingAnimation";
  *
  * Het uitlezen duurt tien tot twintig seconden en gebeurt zonder dat de pagina
  * wisselt. Zonder terugkoppeling lijkt de app dan te hangen en klikt iemand nóg
- * een keer — dus zodra hij loopt, verdwijnt de kaartinhoud en komt de animatie
- * ervoor in de plaats.
+ * een keer — dus zodra hij loopt, komt de animatie rechts in beeld (waar je
+ * anders zelf een CV erin zet).
  */
 
 function Knop({ opnieuw }: { opnieuw: boolean }) {
@@ -30,7 +30,7 @@ function Knop({ opnieuw }: { opnieuw: boolean }) {
   );
 }
 
-/** Wisselt de hele rij om voor de animatie zodra het uitlezen loopt. */
+/** De rij + (tijdens het uitlezen) de animatie rechts via een portal. */
 function Inhoud({
   children,
   acties,
@@ -41,9 +41,11 @@ function Inhoud({
   opnieuw: boolean;
 }) {
   const { pending } = useFormStatus();
-  if (pending) return <CvBuildingAnimation className="border-0 p-0" />;
+  // Animatie rechts, op de plek van de dropzone (#cv-bezig); de rij blijft staan.
+  const doel = pending && typeof document !== "undefined" ? document.getElementById("cv-bezig") : null;
   return (
     <div className="flex items-center justify-between gap-3">
+      {doel && createPortal(<CvBuildingAnimation />, doel)}
       {children}
       <div className="flex items-center gap-2">
         {acties}

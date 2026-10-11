@@ -182,8 +182,11 @@ export default async function CvGeneratorPage({
               <Upload className="h-4 w-4 text-ink-400" /> Of zet zelf een CV erin
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1">
+          {/* Klik je links op "Maak Q4S-CV", dan zet die rij de animatie in #cv-bezig
+              (portal) en verdwijnt de dropzone zolang het uitlezen loopt. */}
+          <CardContent className="flex-1 [&:has(#cv-bezig>*)>form]:hidden">
             <UploadCvForm action={startCvProfile} />
+            <div id="cv-bezig" />
           </CardContent>
         </Card>
       </div>
@@ -260,8 +263,8 @@ export default async function CvGeneratorPage({
                   <TD>{formatDate(p.updatedAt)}</TD>
                   <TD>
                     <div className="relative z-10 flex justify-end gap-1.5">
-                      <Link
-                        href={`${BASE}/${p.id}/print`}
+                      <a
+                        href={`${BASE}/${p.id}/pdf`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={buttonVariants({ variant: "ghost", size: "icon" })}
@@ -269,7 +272,7 @@ export default async function CvGeneratorPage({
                         aria-label={`Voorbeeld van ${p.fullName} bekijken`}
                       >
                         <Eye className="h-4 w-4" />
-                      </Link>
+                      </a>
                       <a
                         href={`${BASE}/${p.id}/pdf`}
                         target="_blank"
