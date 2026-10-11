@@ -61,7 +61,7 @@ const SOORT: [RegExp, typeof FileIcon, string][] = [
   [/\.(mp4|mov|avi)$/i, FileVideo, "text-pink-500"],
 ];
 function icoon(it: Item) {
-  if (it.icon) return { Icon: it.icon, kleur: it.isFolder ? "text-blue-500" : "text-ink-500" };
+  if (it.icon) return { Icon: it.icon, kleur: it.isFolder ? "text-blue-500" : "text-ink-400" };
   if (it.isFolder) return { Icon: Folder, kleur: "text-blue-500" };
   const hit = SOORT.find(([re]) => re.test(it.name));
   return hit ? { Icon: hit[1], kleur: hit[2] } : { Icon: FileIcon, kleur: "text-ink-400" };
@@ -83,7 +83,7 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
   const ouder = delen.slice(0, -1).join("/");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="q4s-display text-[26px]">Data</h1>
@@ -99,7 +99,7 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
       </div>
 
       {/* Werkbalk: terug, kruimelpad, zoeken, nieuwe map, uploaden */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-ink-200 pb-4">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-ink-200 bg-white p-2">
         <Link
           href={href(ouder)}
           aria-label="Map omhoog"
@@ -178,47 +178,79 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
       ) : items.length === 0 ? (
         <p className="py-16 text-center text-sm text-ink-400">{sp.q ? "Niets gevonden in deze map." : "Deze map is leeg."}</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6">
-          {items.map((it: Item) => {
-            const { Icon, kleur } = icoon(it);
-            const inhoud = (
-              <>
-                <Icon className={cn("h-11 w-11", kleur)} strokeWidth={1.5} />
-                <span className="mt-3 line-clamp-2 w-full break-words text-[13px] font-medium text-ink-900" title={it.name}>
-                  {it.name}
-                </span>
-                <span className="mt-0.5 text-xs text-ink-400">
-                  {it.isFolder
-                    ? it.childCount == null
-                      ? "openen"
-                      : `${it.childCount} ${it.childCount === 1 ? "item" : "items"}`
-                    : it.href
-                      ? ""
-                      : grootte(it.size)}
-                </span>
-                {it.sub && <span className="mt-0.5 line-clamp-1 text-xs text-ink-400">{it.sub}</span>}
-              </>
-            );
-            const kaart = "flex flex-col items-center rounded-lg border border-ink-200 bg-white px-3 py-5 text-center transition hover:border-ink-300 hover:shadow-sm";
-            // Map/record die naar een dashboardpagina gaat (klant, plaatsing, Analyses…).
-            if (it.href)
+        !pad ? (
+          // Overzicht: gekleurde tegels, elke map een eigen kleur.
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {items.map((it: Item) => {
+              const { Icon } = icoon(it);
+              const t = it.tint ?? TINT.slate;
               return (
-                <Link key={it.id} href={it.href} className={kaart}>
-                  {inhoud}
+                <Link
+                  key={it.id}
+                  href={it.href ?? href(it.name)}
+                  className="group flex items-center gap-4 rounded-xl border border-ink-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-ink-300 hover:shadow-md"
+                >
+                  <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl", t)}>
+                    <Icon className="h-6 w-6" strokeWidth={1.75} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-semibold text-ink-900">{it.name}</span>
+                    <span className="block text-xs text-ink-400">
+                      {it.childCount == null ? "openen" : `${it.childCount} ${it.childCount === 1 ? "item" : "items"}`}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-ink-300 transition group-hover:translate-x-0.5 group-hover:text-ink-500" />
                 </Link>
               );
-            return it.isFolder ? (
-              <Link key={it.id} href={href([pad, it.name].filter(Boolean).join("/"))} className={kaart}>
-                {inhoud}
-              </Link>
-            ) : (
-              <a key={it.id} href={it.webUrl ?? "#"} target="_blank" rel="noopener noreferrer" className={cn(kaart, "relative")}>
-                <ExternalLink className="absolute right-2 top-2 h-3.5 w-3.5 text-ink-300" />
-                {inhoud}
-              </a>
-            );
-          })}
-        </div>
+            })}
+          </div>
+        ) : (
+          // In een map: mappenstructuur als lijst (zoals Verkenner), geen tegels.
+          <div className="overflow-hidden rounded-xl border border-ink-200 bg-white">
+            <div className="grid grid-cols-[minmax(0,1fr)_8rem_2rem] gap-4 border-b border-ink-100 bg-ink-50/60 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-400">
+              <span>Naam</span>
+              <span className="text-right">Inhoud</span>
+              <span />
+            </div>
+            <ul className="divide-y divide-ink-100">
+              {items.map((it: Item) => {
+                const { Icon, kleur } = icoon(it);
+                const extern = !it.href && !it.isFolder;
+                const rij = (
+                  <>
+                    <span className="flex min-w-0 items-center gap-3">
+                      <Icon className={cn("h-5 w-5 shrink-0", kleur)} strokeWidth={1.75} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-[13px] font-medium text-ink-900" title={it.name}>{it.name}</span>
+                        {it.sub && <span className="block truncate text-xs text-ink-400">{it.sub}</span>}
+                      </span>
+                    </span>
+                    <span className="text-right text-xs tabular-nums text-ink-400">
+                      {it.isFolder
+                        ? it.childCount == null ? "" : `${it.childCount} ${it.childCount === 1 ? "item" : "items"}`
+                        : it.href ? "" : grootte(it.size)}
+                    </span>
+                    {extern ? (
+                      <ExternalLink className="h-3.5 w-3.5 justify-self-end text-ink-300" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 justify-self-end text-ink-300 group-hover:text-ink-500" />
+                    )}
+                  </>
+                );
+                const cls = "group grid grid-cols-[minmax(0,1fr)_8rem_2rem] items-center gap-4 px-4 py-2.5 transition-colors hover:bg-ink-50";
+                return (
+                  <li key={it.id}>
+                    {extern ? (
+                      <a href={it.webUrl ?? "#"} target="_blank" rel="noopener noreferrer" className={cls}>{rij}</a>
+                    ) : (
+                      <Link href={it.href ?? href([pad, it.name].filter(Boolean).join("/"))} className={cls}>{rij}</Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )
       )}
     </div>
   );
@@ -229,6 +261,19 @@ type Item = DriveItem & {
   /** Opent deze dashboardpagina i.p.v. de map/het bestand. */
   href?: string;
   icon?: typeof FileIcon;
+  /** Kleur van de tegel in het Overzicht. */
+  tint?: string;
+};
+
+const TINT = {
+  amber: "bg-amber-50 text-amber-600",
+  blue: "bg-blue-50 text-blue-600",
+  violet: "bg-violet-50 text-violet-600",
+  emerald: "bg-emerald-50 text-emerald-600",
+  pink: "bg-pink-50 text-pink-600",
+  red: "bg-red-50 text-red-600",
+  slate: "bg-ink-100 text-ink-600",
+  sky: "bg-sky-50 text-sky-600",
 };
 
 const ONEDRIVE = "OneDrive";
@@ -260,14 +305,14 @@ async function dashboardMap(pad: string, metOneDrive: boolean): Promise<Lijst> {
     return {
       ok: true,
       items: [
-        map("Werknemers", werknemers, { icon: HardHat }),
-        map("Klanten", klanten, { icon: Building2 }),
-        map("Plaatsingen", plaatsingen, { icon: Briefcase }),
-        map("Documenten", documenten, { icon: FolderOpen }),
-        map("Analyses", null, { href: "/analyses", icon: BarChart3 }),
-        map("Marktkansen", kansen, { href: "/marktkansen", icon: Target }),
-        map("Archief", null, { href: "/archief", icon: Archive }),
-        ...(metOneDrive ? [map(ONEDRIVE, null, { icon: Cloud })] : []),
+        map("Werknemers", werknemers, { icon: HardHat, tint: TINT.amber }),
+        map("Klanten", klanten, { icon: Building2, tint: TINT.blue }),
+        map("Plaatsingen", plaatsingen, { icon: Briefcase, tint: TINT.violet }),
+        map("Documenten", documenten, { icon: FolderOpen, tint: TINT.emerald }),
+        map("Analyses", null, { href: "/analyses", icon: BarChart3, tint: TINT.pink }),
+        map("Marktkansen", kansen, { href: "/marktkansen", icon: Target, tint: TINT.red }),
+        map("Archief", null, { href: "/archief", icon: Archive, tint: TINT.slate }),
+        ...(metOneDrive ? [map(ONEDRIVE, null, { icon: Cloud, tint: TINT.sky })] : []),
       ],
     };
   }
