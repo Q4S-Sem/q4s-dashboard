@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bot, Building2, CheckCircle2, ExternalLink, KeyRound, Lock, Plug, Save, ShieldAlert, Trash2, Users } from "lucide-react";
+import { Bot, Building2, CheckCircle2, ExternalLink, KeyRound, Lock, Pencil, Plug, Save, ShieldAlert, Trash2, Users, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { FilterTegels } from "@/components/ui/filter-tegels";
 import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
@@ -166,14 +166,22 @@ export default async function WachtwoordenPage({
               {alle.length === 0 ? <>Nog geen portalen. Klik rechtsboven op &lsquo;Nieuw portaal&rsquo;.</> : "Geen portalen in deze selectie."}
             </p>
           ) : (
+            <>
+            {/* Kolomkoppen; alle rijen delen exact dezelfde kolommen, dus alles lijnt uit. */}
+            <div className="hidden gap-x-4 border-b border-ink-100 px-5 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-400 md:grid md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_12rem_7.5rem]">
+              <span>Portaal</span>
+              <span>Gebruiker</span>
+              <span>Wachtwoord</span>
+              <span className="text-right">Acties</span>
+            </div>
             <ul className="divide-y divide-ink-100">
               {portals.map((p) => {
                 const isGekoppeld = gekoppeld.has(connectorKey(p.name));
                 return (
                 <li key={p.id} className="px-5 py-3">
-                  <div className="grid items-center gap-x-4 gap-y-2 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_12rem_auto]">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${p.s === "MSP" ? "bg-violet-50 text-violet-600" : p.s === "KLANT" ? "bg-blue-50 text-blue-600" : "bg-ink-100 text-ink-500"}`}>
+                  <div className="grid items-center gap-x-4 gap-y-2 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_12rem_7.5rem]">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${p.s === "MSP" ? "bg-violet-50 text-violet-600" : p.s === "KLANT" ? "bg-blue-50 text-blue-600" : "bg-ink-100 text-ink-500"}`}>
                         {ICOON[p.s]}
                       </span>
                       <div className="min-w-0">
@@ -198,31 +206,33 @@ export default async function WachtwoordenPage({
                     </div>
                     <p className="truncate text-[13px] text-ink-700">{p.username || <span className="text-ink-400">—</span>}</p>
                     <PasswordReveal id={p.id} hasPassword={!!p.passwordEnc} />
-                    <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                    <div className="flex items-center gap-1.5 md:justify-end">
+                      {p.link && (
+                        <a href={p.link} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900" title="Portaal openen" aria-label={`${p.name} openen`}>
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
                       {p.s === "MSP" &&
                         (isGekoppeld ? (
-                          <Link href="/vacaturehub/koppelingen" className={buttonVariants({ variant: "ghost", size: "sm", className: "text-violet-700" })}>
-                            <CheckCircle2 className="h-4 w-4" /> Gekoppeld
+                          <Link href="/vacaturehub/koppelingen" className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900 text-violet-700" title="Gekoppeld als MSP" aria-label="Gekoppeld als MSP">
+                            <CheckCircle2 className="h-4 w-4" />
                           </Link>
                         ) : (
                           <form action={koppelAlsMsp}>
                             <input type="hidden" name="id" value={p.id} />
-                            <SubmitButton size="sm" variant="outline" pendingLabel="Koppelen…" title="Zet dit portaal bij MSP-vacatures">
-                              <Plug className="h-4 w-4" /> Koppel als MSP
-                            </SubmitButton>
+                            <button type="submit" className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900" title="Koppel als MSP (zet bij MSP-vacatures)" aria-label={`${p.name} koppelen als MSP`}>
+                              <Plug className="h-4 w-4" />
+                            </button>
                           </form>
                         ))}
-                      {p.link && (
-                        <a href={p.link} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: "outline", size: "sm" })} title="Portaal openen in een nieuw tabblad">
-                          <ExternalLink className="h-4 w-4" /> Openen
-                        </a>
-                      )}
                       <Link
                         href={editing === p.id ? terug : `${terug}${terug.includes("?") ? "&" : "?"}bewerk=${p.id}`}
                         scroll={false}
-                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                        className={editing === p.id ? "inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900 border-ink-900 text-ink-900" : "inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900"}
+                        title={editing === p.id ? "Sluiten" : "Bewerken"}
+                        aria-label={editing === p.id ? "Sluiten" : `${p.name} bewerken`}
                       >
-                        {editing === p.id ? "Sluiten" : "Bewerken"}
+                        {editing === p.id ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
                       </Link>
                     </div>
                   </div>
@@ -255,6 +265,7 @@ export default async function WachtwoordenPage({
                 );
               })}
             </ul>
+            </>
           )}
         </CardContent>
       </Card>
