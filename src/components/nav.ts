@@ -242,8 +242,8 @@ const HUB_LIST: NavHub[] = [
     icon: Settings,
     items: [
       { href: "/gebruikers", label: "Gebruikers", icon: UserCog, exact: true, section: "Toegang" },
-      { href: "/gebruikers/handtekening", label: "E-mailhandtekening", icon: Mail, section: "Toegang" },
       { href: "/gebruikers/wachtwoorden", label: "Wachtwoorden", icon: Lock, section: "Toegang" },
+      { href: "/gebruikers/handtekening", label: "E-mailhandtekening", icon: Mail, section: "E-mail" },
       { href: "/gebruikers/api-sleutels", label: "API-sleutels", icon: KeyRound, section: "AI" },
       { href: "/gebruikers/tokenverbruik", label: "Tokenverbruik", icon: BarChart3, section: "AI" },
     ],
