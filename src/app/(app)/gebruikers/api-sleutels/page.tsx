@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { KeyRound, CheckCircle2, ShieldAlert, Info, BarChart3, Save, Trash2, Cpu } from "lucide-react";
+import { KeyRound, CheckCircle2, ShieldAlert, BarChart3, Save, Trash2, Cpu } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/field";
@@ -25,10 +25,10 @@ export default async function ApiSleutelsPage({
   const providerLocked = isSettingFromEnv("AI_PROVIDER");
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="API-sleutels"
-        description="Beheer de sleutels van de AI's die het dashboard gebruikt. Sleutels worden veilig opgeslagen en alleen gemaskeerd getoond — features 'lichten op' zodra de bijbehorende sleutel is ingevuld."
+        description="Sleutels van de AI's die het dashboard gebruikt. Veilig opgeslagen en alleen gemaskeerd getoond; zonder sleutel blijft een AI-functie gewoon uit."
         actions={
           <Link href="/gebruikers/tokenverbruik" className={buttonVariants({ variant: "outline" })}>
             <BarChart3 className="h-4 w-4" /> Tokenverbruik
@@ -47,51 +47,66 @@ export default async function ApiSleutelsPage({
         </p>
       )}
 
-      <p className="flex items-start gap-2 rounded-lg border border-ink-200 bg-white px-4 py-3 text-sm text-ink-600">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
-        <span>
-          {configured} van {statuses.length} sleutels ingesteld. Zonder sleutel blijven de AI-features
-          netjes uit (handmatig werken kan altijd). Een sleutel in <code className="rounded bg-ink-100 px-1">.env</code>{" "}
-          heeft voorrang op wat je hier invult.
-        </span>
-      </p>
-
-      {/* AI-motor: welke tekst-AI draait + Hermes-endpoint/model — klik-en-klaar. */}
+      {/* Statusbalk: in één oogopslag welke sleutels er zijn. */}
       <Card>
-        <CardContent className="space-y-4">
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ink-100 text-ink-500">
-              <Cpu className="h-5 w-5" />
-            </span>
-            <div>
-              <div className="font-semibold text-ink-900">AI-motor</div>
-              <p className="text-xs text-ink-500">
-                Welke AI draait de tekst- en agent-taken (sourcing, matching, teksten, mail-triage). Beeld/OCR
-                (CV&apos;s, timesheets, bonnetjes) loopt altijd via Gemini.
-              </p>
-              <p className="mt-1 text-xs text-ink-400">
-                Nu actief: <span className="font-medium text-ink-600">{summary}</span>
-              </p>
-            </div>
+        <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-3 py-4">
+          <span className="text-sm font-semibold text-ink-900">
+            {configured} van {statuses.length} sleutels ingesteld
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {statuses.map((s) => (
+              <span
+                key={s.provider}
+                className={
+                  s.configured
+                    ? "inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+                    : "inline-flex items-center gap-1.5 rounded-md bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-500"
+                }
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${s.configured ? "bg-emerald-500" : "bg-ink-300"}`} />
+                {s.label}
+              </span>
+            ))}
           </div>
+          <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-ink-500">
+            <Cpu className="h-3.5 w-3.5 text-ink-400" /> Actief: <span className="font-medium text-ink-700">{summary}</span>
+          </span>
+        </CardContent>
+      </Card>
 
-          {providerLocked ? (
-            <p className="rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">
-              De actieve provider is vastgezet via <code className="rounded bg-ink-100 px-1">.env</code>{" "}
-              (<code className="rounded bg-ink-100 px-1">AI_PROVIDER</code>) en kan hier niet gewijzigd worden.
-            </p>
-          ) : (
-            <form action={saveAiConfig} className="space-y-3">
-              <Field label="Actieve tekst-AI" htmlFor="textProvider">
-                <Select id="textProvider" name="textProvider" defaultValue={cfg.AI_PROVIDER || "deepseek"}>
-                  <option value="deepseek">DeepSeek — goedkoop &amp; snel (standaard)</option>
-                  <option value="anthropic">Anthropic Claude — krachtig, duurder</option>
-                  <option value="hermes">OpenRouter.ai — open modellen (of eigen server)</option>
-                  <option value="ollama">Ollama — lokaal draaiend</option>
-                </Select>
-              </Field>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="OpenRouter-endpoint (optioneel)" htmlFor="hermesBaseUrl">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:items-start">
+        {/* Links: welke AI draait */}
+        <Card className="xl:sticky xl:top-20">
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-100 text-ink-500">
+                <Cpu className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <div className="font-semibold text-ink-900">AI-motor</div>
+                <p className="text-xs text-ink-500">
+                  Tekst- en agent-taken (sourcing, matching, teksten, mail-triage). Beeld/OCR (CV&apos;s,
+                  timesheets, bonnetjes) loopt via Gemini.
+                </p>
+              </div>
+            </div>
+
+            {providerLocked ? (
+              <p className="rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">
+                Vastgezet via <code className="rounded bg-ink-100 px-1">AI_PROVIDER</code> in{" "}
+                <code className="rounded bg-ink-100 px-1">.env</code>; hier niet te wijzigen.
+              </p>
+            ) : (
+              <form action={saveAiConfig} className="space-y-3">
+                <Field label="Actieve tekst-AI" htmlFor="textProvider">
+                  <Select id="textProvider" name="textProvider" defaultValue={cfg.AI_PROVIDER || "deepseek"}>
+                    <option value="deepseek">DeepSeek — goedkoop &amp; snel (standaard)</option>
+                    <option value="anthropic">Anthropic Claude — krachtig, duurder</option>
+                    <option value="hermes">OpenRouter.ai — open modellen (of eigen server)</option>
+                    <option value="ollama">Ollama — lokaal draaiend</option>
+                  </Select>
+                </Field>
+                <Field label="OpenRouter-endpoint" htmlFor="hermesBaseUrl" hint="Optioneel">
                   <Input
                     id="hermesBaseUrl"
                     name="hermesBaseUrl"
@@ -99,7 +114,7 @@ export default async function ApiSleutelsPage({
                     placeholder="https://openrouter.ai/api/v1"
                   />
                 </Field>
-                <Field label="OpenRouter-model (optioneel)" htmlFor="hermesModel">
+                <Field label="OpenRouter-model" htmlFor="hermesModel" hint="Optioneel">
                   <Input
                     id="hermesModel"
                     name="hermesModel"
@@ -107,69 +122,58 @@ export default async function ApiSleutelsPage({
                     placeholder="google/gemini-2.5-flash"
                   />
                 </Field>
-              </div>
-              <p className="text-xs text-ink-400">
-                De OpenRouter-velden gelden alleen als je OpenRouter.ai kiest. Leeg = standaard
-                (openrouter.ai met google/gemini-2.5-flash). Voor je eigen EU-server: zet hier je
-                endpoint-URL (dan mag deze route ook persoonsgegevens verwerken met{" "}
-                <code className="rounded bg-ink-100 px-1">HERMES_PERSONAL_DATA=1</code>).
-              </p>
-              <SubmitButton pendingLabel="Opslaan…">
-                <Save className="h-4 w-4" /> AI-motor opslaan
-              </SubmitButton>
-            </form>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        {statuses.map((s) => (
-          <Card key={s.provider}>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ink-100 text-ink-500">
-                    <KeyRound className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-ink-900">{s.label}</span>
-                      {s.configured ? (
-                        <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                          <CheckCircle2 className="h-3 w-3" />
-                          {s.source === "env" ? "Via .env" : "Ingesteld"}
-                        </span>
-                      ) : (
-                        <span className="rounded-sm bg-ink-100 px-2 py-0.5 text-xs font-semibold text-ink-500">
-                          Niet ingesteld
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-ink-500">{s.hint}</p>
-                    <p className="mt-1 text-xs text-ink-400">{s.help}</p>
-                  </div>
-                </div>
-                {s.configured && (
-                  <span className="rounded-md bg-ink-50 px-2.5 py-1 font-mono text-xs text-ink-500">
-                    {s.masked}
-                  </span>
-                )}
-              </div>
-
-              {s.source === "env" && (
-                <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  Er staat nu een sleutel in <code className="rounded bg-amber-100 px-1">.env</code> / Vercel
-                  (<code className="rounded bg-amber-100 px-1">{`HERMES_API_KEY`.replace("HERMES", s.provider.toUpperCase())}</code>).
-                  Die heeft <strong>voorrang</strong>. Je kunt hieronder alsnog een sleutel in het dashboard
-                  zetten — verwijder de sleutel in Vercel (Project → Settings → Environment Variables) om de
-                  dashboard-sleutel te laten gelden.
+                <p className="text-xs text-ink-400">
+                  Alleen bij OpenRouter.ai. Eigen EU-server? Zet hier de endpoint-URL (persoonsgegevens
+                  pas met <code className="rounded bg-ink-100 px-1">HERMES_PERSONAL_DATA=1</code>).
                 </p>
-              )}
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <form action={saveAiKey} className="flex flex-1 items-end gap-2">
+                <SubmitButton pendingLabel="Opslaan…" className="w-full">
+                  <Save className="h-4 w-4" /> AI-motor opslaan
+                </SubmitButton>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Rechts: de sleutels, twee naast elkaar */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {statuses.map((s) => (
+            <Card key={s.provider} className="flex flex-col">
+              <CardContent className="flex flex-1 flex-col gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-100 text-ink-500">
+                      <KeyRound className="h-[18px] w-[18px]" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold text-ink-900">{s.label}</div>
+                      <p className="truncate text-xs text-ink-500">{s.hint}</p>
+                    </div>
+                  </div>
+                  {s.configured ? (
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                      <CheckCircle2 className="h-3 w-3" />
+                      {s.source === "env" ? "Via .env" : "Ingesteld"}
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded-sm bg-ink-100 px-2 py-0.5 text-xs font-semibold text-ink-500">
+                      Niet ingesteld
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-xs text-ink-400">{s.help}</p>
+
+                {s.source === "env" && (
+                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    Sleutel uit Vercel/<code className="rounded bg-amber-100 px-1">.env</code> heeft{" "}
+                    <strong>voorrang</strong> op wat je hier invult.
+                  </p>
+                )}
+
+                <form action={saveAiKey} className="mt-auto flex items-end gap-2">
                   <input type="hidden" name="provider" value={s.provider} />
                   <Field
-                    label={s.configured ? "Nieuwe sleutel (leeg = behouden)" : "Sleutel"}
+                    label={s.configured ? `Nieuwe sleutel${s.masked ? ` · nu ${s.masked}` : ""}` : "Sleutel"}
                     htmlFor={`key-${s.provider}`}
                     className="flex-1"
                   >
@@ -182,39 +186,34 @@ export default async function ApiSleutelsPage({
                         s.provider === "hermes"
                           ? "sk-or-v1-…  (openrouter.ai/keys)"
                           : s.configured
-                            ? "••••••••••••"
+                            ? "Leeg = behouden"
                             : "Plak hier je API-sleutel"
                       }
                     />
                   </Field>
-                  <SubmitButton pendingLabel="Opslaan…">
-                    <Save className="h-4 w-4" /> Opslaan
+                  <SubmitButton pendingLabel="…" title="Opslaan" aria-label={`${s.label}-sleutel opslaan`}>
+                    <Save className="h-4 w-4" />
                   </SubmitButton>
-                </form>
-                {s.source === "dashboard" && (
-                  <form action={clearAiKey}>
-                    <input type="hidden" name="provider" value={s.provider} />
-                    <SubmitButton variant="outline" pendingLabel="Verwijderen…">
-                      <Trash2 className="h-4 w-4" /> Verwijderen
+                  {s.source === "dashboard" && (
+                    <SubmitButton
+                      formAction={clearAiKey}
+                      variant="outline"
+                      pendingLabel="…"
+                      title="Sleutel verwijderen"
+                      aria-label={`${s.label}-sleutel verwijderen`}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </SubmitButton>
-                  </form>
-                )}
-              </div>
+                  )}
+                </form>
 
-              <TestConnectionButton provider={s.provider} configured={s.configured} />
-            </CardContent>
-          </Card>
-        ))}
+                <TestConnectionButton provider={s.provider} configured={s.configured} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-
-      <p className="text-xs text-ink-400">
-        Tip: DeepSeek dekt alle tekst-AI (goedkoop), Gemini leest PDF's/afbeeldingen (CV's, timesheets,
-        bonnetjes). Anthropic is optioneel. Verbruik en kosten zie je live op{" "}
-        <Link href="/gebruikers/tokenverbruik" className="font-medium text-brand-700 hover:underline">
-          Tokenverbruik
-        </Link>
-        .
-      </p>
     </div>
   );
 }
