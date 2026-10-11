@@ -18,6 +18,7 @@ export function CvInboxFilters({
   sources,
   availabilities,
   bron,
+  archief,
 }: {
   q: string;
   discipline: string;
@@ -27,6 +28,7 @@ export function CvInboxFilters({
   sources: Option[];
   availabilities: Option[];
   bron: "website" | "email";
+  archief: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -40,6 +42,7 @@ export function CvInboxFilters({
     if (values.source) p.set("source", values.source);
     if (values.availability) p.set("availability", values.availability);
     p.set("bron", bron);
+    if (archief) p.set("map", "archief");
     startTransition(() => router.replace(`/website/cv-inbox?${p.toString()}`));
   }
   useEffect(() => {
@@ -60,7 +63,7 @@ export function CvInboxFilters({
           <Select defaultValue={discipline} onValueChange={(v) => apply({ discipline: v })} aria-label="Discipline"><option value="">Alle disciplines</option>{disciplines.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
           <Select defaultValue={source} onValueChange={(v) => apply({ source: v })} aria-label="Bron"><option value="">Alle bronnen</option>{sources.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
           <Select defaultValue={availability} onValueChange={(v) => apply({ availability: v })} aria-label="Beschikbaarheid"><option value="">Alle beschikbaarheid</option>{availabilities.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
-          <div className="flex items-center">{hasFilter && <button type="button" onClick={() => { setTerm(""); startTransition(() => router.replace(`/website/cv-inbox?bron=${bron}`)); }} className={buttonVariants({ variant: "outline" })}><X className="h-4 w-4" /> Wissen</button>}</div>
+          <div className="flex items-center">{hasFilter && <button type="button" onClick={() => { setTerm(""); startTransition(() => router.replace(`/website/cv-inbox?bron=${bron}${archief ? "&map=archief" : ""}`)); }} className={buttonVariants({ variant: "outline" })}><X className="h-4 w-4" /> Wissen</button>}</div>
         </div>
       </CardContent>
     </Card>

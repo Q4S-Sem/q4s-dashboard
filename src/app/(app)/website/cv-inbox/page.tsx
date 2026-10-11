@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Inbox, FileText, Kanban, ArrowLeft, Upload, Globe, Mail } from "lucide-react";
+import { Inbox, FileText, Kanban, ArrowLeft, Upload, Globe, Mail, Archive } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -17,6 +17,7 @@ import {
   SCAN_TOKENS_PER_CV,
 } from "@/lib/mailbox";
 import { CvsList, type CvRow } from "./CvsList";
+import { herkomst } from "@/lib/eu-herkomst";
 import { EmailInboxPanel } from "./EmailInboxPanel";
 
 export const metadata = { title: "Inkomende CV's" };
@@ -27,6 +28,7 @@ export default async function WebsiteCvsPage({
 }: {
   searchParams: Promise<{
     bron?: string;
+    map?: string;
     q?: string;
     discipline?: string;
     source?: string;
@@ -40,6 +42,7 @@ export default async function WebsiteCvsPage({
 }) {
   const sp = await searchParams;
   const bron: "website" | "email" = sp.bron === "email" ? "email" : "website";
+  const archief = sp.map === "archief";
   const q = sp.q?.trim() || "";
   const discipline = sp.discipline || "";
   const source = sp.source || "";
@@ -73,7 +76,7 @@ export default async function WebsiteCvsPage({
   const dealByCand = new Map<string, string>();
   for (const d of deals) if (d.candidateId && !dealByCand.has(d.candidateId)) dealByCand.set(d.candidateId, d.id);
 
-  const rows: CvRow[] = candidates.map((c) => ({
+  const alleRows: CvRow[] = candidates.map((c) => ({
     id: c.id,
     name: `${c.firstName} ${c.lastName}`.trim(),
     email: c.email ?? "",
@@ -86,7 +89,13 @@ export default async function WebsiteCvsPage({
     createdAt: c.createdAt.toISOString(),
     cvHref: c.cvFileName ? `/api/cv/${c.id}` : null,
     dealId: dealByCand.get(c.id) ?? null,
+    // Uit locatie + telefoonnummer (zie eu-herkomst). Buiten de EU → archief,
+    // niets wordt gewist; onbekend blijft in de inbox.
+    herkomst: herkomst(c),
   }));
+  const archiefRows = alleRows.filter((r) => r.herkomst === "BUITEN_EU");
+  const inboxRows = alleRows.filter((r) => r.herkomst !== "BUITEN_EU");
+  const rows = archief ? archiefRows : inboxRows;
 
   const inCrm = rows.filter((r) => r.dealId).length;
   const weekAgo = new Date();
@@ -114,7 +123,7 @@ export default async function WebsiteCvsPage({
     <div className="space-y-6">
       <PageHeader
         title="Inkomende CV's"
-        description="CV's vanuit de website én de cv@q4s.nl-mailbox — op één plek. Filter op discipline, bron of beschikbaarheid en zet een interessante kandidaat met één klik als lead in de CRM-pijplijn."
+        description="CV's vanuit de website én de cv@q4s.nl-mailbox — op één plek. Elk CV krijgt een herkomst (EU of buiten de EU, uit plaats en telefoonnummer); buiten de EU gaat automatisch naar het archief."
         actions={
           <>
             <Link href="/cv" className={buttonVariants({ variant: "outline" })}>
@@ -156,6 +165,16 @@ export default async function WebsiteCvsPage({
         {tabLink("email", "E-mail", emailCount, <Mail className="h-4 w-4" />)}
       </div>
 
+      {/* Inbox (EU + onbekend) vs archief (buiten de EU) */}
+      <div className={SEGMENT_GROEP}>
+        <Link href={`/website/cv-inbox?bron=${bron}`} className={segmentVariants(!archief)}>
+          <Inbox className="h-4 w-4" /> Inbox · EU {inboxRows.length}
+        </Link>
+        <Link href={`/website/cv-inbox?bron=${bron}&map=archief`} className={segmentVariants(archief)}>
+          <Archive className="h-4 w-4" /> Archief · buiten EU {archiefRows.length}
+        </Link>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="CV's in deze bron" value={rows.length} icon={<FileText className="h-5 w-5" />} accent="brand" />
         <StatCard label="Nieuw (7 dagen)" value={recent} icon={<Inbox className="h-5 w-5" />} accent="green" />
@@ -178,12 +197,19 @@ export default async function WebsiteCvsPage({
         source={source}
         availability={availability}
         bron={bron}
+        archief={archief}
         disciplines={DISCIPLINES}
         sources={CANDIDATE_SOURCES}
         availabilities={CANDIDATE_AVAILABILITY}
       />
 
-      {rows.length === 0 ? (
+      {archief && rows.length === 0 ? (
+        <Card>
+          <CardContent>
+            <EmptyState icon={<Archive className="h-6 w-6" />} title="Archief is leeg" description="Er zijn geen CV's van buiten de EU in deze bron." />
+          </CardContent>
+        </Card>
+      ) : rows.length === 0 ? (
         <Card>
           <CardContent>
             <EmptyState

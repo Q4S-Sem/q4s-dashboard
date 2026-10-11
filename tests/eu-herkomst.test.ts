@@ -12,6 +12,7 @@ test("EU of buiten de EU uit locatie, anders telefoon", () => {
   assert.equal(herkomst({ phone: "+44 7700 900123" }), "BUITEN_EU"); // VK na Brexit
   assert.equal(herkomst({ phone: "+380 50 123 4567" }), "BUITEN_EU"); // Oekraïne ≠ Griekenland (30)
   assert.equal(herkomst({ phone: "+41 79 123 45 67" }), "EU"); // Zwitserland: geen vergunning nodig
+  assert.equal(herkomst({ location: "Holandia" }), "EU"); // Pools voor Nederland
   assert.equal(herkomst({ location: "Zwijndrecht" }), "ONBEKEND");
   assert.equal(herkomst({}), "ONBEKEND");
 });

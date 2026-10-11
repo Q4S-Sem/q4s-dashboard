@@ -3,76 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { currentRecruiterId, logNote } from "@/lib/crm";
-import { DISCIPLINES, labelFor, CANDIDATE_AVAILABILITY_VALUES } from "@/lib/domain";
+import { CANDIDATE_AVAILABILITY_VALUES } from "@/lib/domain";
 import { saveCvUpload, MAX_UPLOAD_BYTES } from "@/lib/uploads";
 import { runCvIntakeShortlist } from "@/lib/cv-intake";
 import { aiExtractCvFields, isReadableCvName, nameFromCvFilename } from "@/lib/cv-import";
 import { isVisionConfigured } from "@/lib/ai";
 import { mirrorDealToVacancy } from "@/lib/vacancy-mirror";
 import { aiImproveVacancy } from "@/lib/recruitment";
-
-/**
- * Zet een binnengekomen CV/kandidaat als **Lead** in de CRM-pijplijn. Idempotent:
- * is er al een deal voor deze kandidaat, dan open je die. Nieuwe deal komt in de
- * "lead"-fase, op naam van de ingelogde recruiter, bron = WEBSITE.
- */
-export async function convertCvToLead(formData: FormData) {
-  const candidateId = String(formData.get("candidateId") ?? "");
-  if (!candidateId) redirect("/website/cv-inbox");
-  const cand = await db.candidate.findUnique({ where: { id: candidateId } });
-  if (!cand) redirect("/website/cv-inbox");
-
-  const existing = await db.deal.findFirst({ where: { candidateId }, select: { id: true } });
-  if (existing) redirect(`/crm/deals/${existing.id}`);
-
-  const lead =
-    (await db.crmStage.findFirst({ where: { key: "lead" } })) ??
-    (await db.crmStage.findFirst({ where: { isWon: false, isLost: false }, orderBy: { order: "asc" } })) ??
-    (await db.crmStage.findFirst({ orderBy: { order: "asc" } }));
-  if (!lead) redirect("/website/cv-inbox?error=nostage");
-
-  const recruiterId = await currentRecruiterId();
-  const name = `${cand.firstName} ${cand.lastName}`.trim();
-  const disc = cand.discipline ? labelFor(DISCIPLINES, cand.discipline) : "";
-
-  const deal = await db.deal.create({
-    data: {
-      title: disc ? `${name} — ${disc}` : name,
-      company: cand.headline?.trim() || cand.location?.trim() || "Website-sollicitant",
-      discipline: cand.discipline ?? null,
-      stageId: lead.id,
-      status: "OPEN",
-      probability: lead.probability,
-      source: "WEBSITE",
-      ownerId: recruiterId,
-      candidateId: cand.id,
-    },
-  });
-
-  await logNote({
-    dealId: deal.id,
-    candidateId: cand.id,
-    authorId: recruiterId,
-    type: "SYSTEM",
-    body: `Lead aangemaakt vanuit binnengekomen CV — ${name}${disc ? ` (${disc})` : ""}.`,
-  });
-
-  revalidatePath("/website/cv-inbox");
-  revalidatePath("/crm");
-  redirect(`/crm/deals/${deal.id}`);
-}
-
-/** Run (or safely retry) CV intake for one inbox candidate. The result remains a
- * recruiter-review suggestion; this action never creates a deal, application,
- * placement, outreach or status transition. */
-export async function shortlistCv(formData: FormData) {
-  const candidateId = String(formData.get("candidateId") ?? "").trim();
-  if (!candidateId) return;
-  await runCvIntakeShortlist(candidateId);
-  revalidatePath("/website/cv-inbox");
-  revalidatePath(`/kandidaten/${candidateId}`);
-}
 
 // --- Handmatig CV's importeren -----------------------------------------------
 // De bestandstype-check, de naam-uit-bestandsnaam en de AI-velduitlezing staan in

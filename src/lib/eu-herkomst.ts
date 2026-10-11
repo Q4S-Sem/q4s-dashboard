@@ -17,7 +17,7 @@ const EU_LANDNUMMERS = [
 
 /** Landnamen (NL + EN + eigen taal) en afkortingen die in een locatie staan. */
 const EU_LANDEN = [
-  "nederland", "netherlands", "holland", "belgie", "belgië", "belgium", "duitsland", "germany", "deutschland", "frankrijk",
+  "nederland", "netherlands", "holland", "holandia", "niederlande", "pays-bas", "países bajos", "paesi bassi", "belgie", "belgië", "belgium", "duitsland", "germany", "deutschland", "frankrijk",
   "france", "spanje", "spain", "espana", "españa", "portugal", "italie", "italië", "italy", "italia", "luxemburg", "luxembourg",
   "ierland", "ireland", "denemarken", "denmark", "zweden", "sweden", "finland", "oostenrijk", "austria", "polen", "poland",
   "polska", "tsjechie", "tsjechië", "czech", "czechia", "slowakije", "slovakia", "hongarije", "hungary", "roemenie", "roemenië",

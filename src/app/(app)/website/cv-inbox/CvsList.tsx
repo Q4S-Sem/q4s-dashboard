@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, ExternalLink, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Eye } from "lucide-react";
 import { SmartList, type SmartColumn } from "@/components/smart-list";
-import { StatusBadge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import { formatDate, cn } from "@/lib/utils";
+import { Badge, StatusBadge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/utils";
 import { CANDIDATE_SOURCES, CANDIDATE_AVAILABILITY } from "@/lib/domain";
-import { convertCvToLead, shortlistCv } from "../actions";
+import type { Herkomst } from "@/lib/eu-herkomst";
 
 export type CvRow = {
   id: string;
@@ -22,6 +21,13 @@ export type CvRow = {
   createdAt: string;
   cvHref: string | null;
   dealId: string | null;
+  herkomst: Herkomst;
+};
+
+const HERKOMST: Record<Herkomst, { label: string; color: "green" | "red" | "slate" }> = {
+  EU: { label: "EU", color: "green" },
+  BUITEN_EU: { label: "Buiten EU", color: "red" },
+  ONBEKEND: { label: "Onbekend", color: "slate" },
 };
 
 export function CvsList({ rows }: { rows: CvRow[] }) {
@@ -68,51 +74,30 @@ export function CvsList({ rows }: { rows: CvRow[] }) {
       render: (r) => <span className="tabular-nums text-ink-600">{formatDate(new Date(r.createdAt))}</span>,
     },
     {
+      key: "herkomst",
+      header: "Herkomst",
+      sortValue: (r) => r.herkomst,
+      render: (r) => <Badge color={HERKOMST[r.herkomst].color}>{HERKOMST[r.herkomst].label}</Badge>,
+    },
+    {
       key: "cv",
       header: "CV",
+      align: "right",
       render: (r) =>
         r.cvHref ? (
           <a
             href={r.cvHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline underline-offset-2"
+            title={`CV van ${r.name} bekijken`}
+            aria-label={`CV van ${r.name} bekijken`}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900"
           >
-            <FileText className="h-4 w-4" /> Bekijk <ExternalLink className="h-3 w-3 text-ink-400" />
+            <Eye className="h-4 w-4" />
           </a>
         ) : (
           <span className="text-ink-400">—</span>
         ),
-    },
-    {
-      key: "actie",
-      header: "Acties",
-      align: "right",
-      render: (r) => (
-        <div className="flex justify-end gap-2">
-          <form action={shortlistCv}>
-            <input type="hidden" name="candidateId" value={r.id} />
-            <button type="submit" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-              <FileText className="h-4 w-4" /> Shortlist
-            </button>
-          </form>
-          {r.dealId ? (
-            <Link
-              href={`/crm/deals/${r.dealId}`}
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" /> In CRM
-            </Link>
-          ) : (
-            <form action={convertCvToLead}>
-              <input type="hidden" name="candidateId" value={r.id} />
-              <button type="submit" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-                Als lead <ArrowRight className="h-4 w-4" />
-              </button>
-            </form>
-          )}
-        </div>
-      ),
     },
   ];
 
