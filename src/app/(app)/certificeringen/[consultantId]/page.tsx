@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, BEWERK_ICOON } from "@/components/ui/button";
 import { isVisionConfigured } from "@/lib/ai";
 import { CertFileButton } from "../CertFileButton";
 import { CertAddForm } from "../CertAddForm";
@@ -294,9 +294,11 @@ export default async function MedewerkerCertificatenPage({
                     ))}
                   <Link
                     href={`/certificeringen/cert/${ct.id}`}
-                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                    className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken"
                   >
-                    <Pencil className="h-4 w-4" /> Bewerken
+                    <Pencil className="h-4 w-4" />
                   </Link>
                   <ConfirmSubmit
                     action={deleteCertificate}

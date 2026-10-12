@@ -96,3 +96,7 @@ export function Button({
     <button className={buttonVariants({ variant, size, className })} {...props} />
   );
 }
+
+/** Bewerken = alleen een pen-icoon (grijs vlak), overal in het dashboard gelijk. */
+export const BEWERK_ICOON =
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-100 text-ink-700 transition-colors hover:bg-ink-200 hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500";

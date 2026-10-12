@@ -14,7 +14,7 @@ import {
   Receipt,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { buttonVariants } from "@/components/ui/button";
+import { BEWERK_ICOON } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { DossierTabs } from "@/components/dossier-tabs";
 import { deleteClient } from "../../actions";
@@ -78,9 +78,11 @@ export default async function KlantDossierLayout({
           <>
             <Link
               href={`/klanten/${client.id}/bewerken`}
-              className={buttonVariants({ variant: "outline" })}
+              className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken"
             >
-              <Pencil className="h-4 w-4" /> Bewerken
+              <Pencil className="h-4 w-4" />
             </Link>
             <ConfirmSubmit
               action={deleteClient}

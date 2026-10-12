@@ -90,11 +90,14 @@ export function SettingsForm({
           ) : (
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
+              size="icon"
+              className="bg-ink-100 text-ink-700 hover:bg-ink-200"
+              aria-label="Bewerken"
               onClick={() => setEditing(true)}
               title="Bewerken"
             >
-              <Pencil className="h-4 w-4" /> Bewerken
+              <Pencil className="h-4 w-4" />
             </Button>
           )}
         </CardHeader>

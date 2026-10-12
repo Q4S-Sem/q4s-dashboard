@@ -23,7 +23,7 @@ import {
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, BEWERK_ICOON } from "@/components/ui/button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Field, Input, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -165,9 +165,11 @@ export default async function WerknemerDetailPage({
             </Link>
             <Link
               href={`/werknemers/${c.id}/bewerken`}
-              className={buttonVariants({ variant: "outline" })}
+              className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken"
             >
-              <Pencil className="h-4 w-4" /> Bewerken
+              <Pencil className="h-4 w-4" />
             </Link>
             <ConfirmSubmit
               action={deleteConsultant}

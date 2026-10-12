@@ -5,7 +5,7 @@ import { ArrowLeft, Pencil, MessageSquare, ExternalLink } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { buttonVariants } from "@/components/ui/button";
+import { BEWERK_ICOON } from "@/components/ui/button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
@@ -73,8 +73,10 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         description={[contact.jobTitle, contact.company].filter(Boolean).join(" · ")}
         actions={
           <>
-            <Link href={`/crm/contacten/${contact.id}/bewerken`} className={buttonVariants({ variant: "outline" })}>
-              <Pencil className="h-4 w-4" /> Bewerken
+            <Link href={`/crm/contacten/${contact.id}/bewerken`} className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken">
+              <Pencil className="h-4 w-4" />
             </Link>
             <ConfirmSubmit action={deleteContact} id={contact.id} message={`Contact "${fullName}" verwijderen?`}>
               Verwijderen

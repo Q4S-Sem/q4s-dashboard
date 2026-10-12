@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/ui/page-header";
-import { buttonVariants } from "@/components/ui/button";
+import { BEWERK_ICOON } from "@/components/ui/button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { DossierTabs } from "@/components/dossier-tabs";
 import { DISCIPLINES, labelFor } from "@/lib/domain";
@@ -69,9 +69,11 @@ export default async function KandidaatDossierLayout({
           <>
             <Link
               href={`/kandidaten/${candidate.id}/bewerken`}
-              className={buttonVariants({ variant: "outline" })}
+              className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken"
             >
-              <Pencil className="h-4 w-4" /> Bewerken
+              <Pencil className="h-4 w-4" />
             </Link>
             <ConfirmSubmit
               action={deleteCandidate}

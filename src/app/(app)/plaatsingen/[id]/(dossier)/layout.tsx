@@ -15,7 +15,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { buttonVariants } from "@/components/ui/button";
+import { BEWERK_ICOON } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { DossierTabs } from "@/components/dossier-tabs";
@@ -73,9 +73,11 @@ export default async function PlaatsingDossierLayout({
             {/* Uren registreren staat in het mapje Uren — niet meer in de kop. */}
             <Link
               href={`/plaatsingen/${placement.id}/bewerken`}
-              className={buttonVariants({ variant: "outline" })}
+              className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken"
             >
-              <Pencil className="h-4 w-4" /> Bewerken
+              <Pencil className="h-4 w-4" />
             </Link>
             {placement.status === "ARCHIVED" ? (
               <ConfirmSubmit

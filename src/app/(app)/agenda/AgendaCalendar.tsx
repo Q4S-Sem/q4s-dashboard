@@ -20,7 +20,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, BEWERK_ICOON } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Input, Select } from "@/components/ui/field";
@@ -710,8 +710,10 @@ function EventPopover({ ev, onClose }: { ev: CalEvent; onClose: () => void }) {
         <Link href={`/agenda/${ev.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
           Openen
         </Link>
-        <Link href={`/agenda/${ev.id}/bewerken`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-          <Pencil className="h-4 w-4" /> Bewerken
+        <Link href={`/agenda/${ev.id}/bewerken`} className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken">
+          <Pencil className="h-4 w-4" />
         </Link>
         <form action={async (fd) => { await setEventStatus(fd); onClose(); }}>
           <input type="hidden" name="id" value={ev.id} />

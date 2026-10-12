@@ -52,7 +52,6 @@ export default async function CvProfileReviewPage({
             id={profile.id}
             message="Dit Q4S-CV-profiel verwijderen? Het originele CV-bestand blijft staan."
             trigger="icon"
-            iconClassName="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
           >
             Verwijderen
           </ConfirmSubmit>

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { IdCard, ReceiptText, StickyNote, Pencil, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, BEWERK_ICOON } from "@/components/ui/button";
 import { PLACEMENT_STATUSES, EMPLOYMENT_TYPES, DISCIPLINES, labelFor } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
 import { BillingForm } from "../../BillingForm";
@@ -90,9 +90,11 @@ export default async function PlaatsingGegevensPage({
           </span>
           <Link
             href={`/plaatsingen/${placement.id}/bewerken`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
+            className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken"
           >
-            <Pencil className="h-4 w-4" /> Bewerken
+            <Pencil className="h-4 w-4" />
           </Link>
           <span className="ml-auto flex items-center gap-3">
             {placement.status !== "ENDED" && (
@@ -191,9 +193,9 @@ export default async function PlaatsingGegevensPage({
               href={`/plaatsingen/${placement.id}/bewerken`}
               scroll={false}
               aria-label="Factuurgegevens bewerken"
-              className={buttonVariants({ variant: "outline", size: "sm" })}
+              className={BEWERK_ICOON}
             >
-              <Pencil className="h-4 w-4" /> Bewerken
+              <Pencil className="h-4 w-4" />
             </Link>
           )}
         </CardHeader>

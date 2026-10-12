@@ -5,7 +5,7 @@ import { ArrowLeft, Pencil } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, BEWERK_ICOON } from "@/components/ui/button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { labelFor, OPPORTUNITY_POTENTIAL, OPPORTUNITY_STATUSES } from "@/lib/domain";
@@ -66,9 +66,11 @@ export default async function MarktkansDetailPage({
           <>
             <Link
               href={`/marktkansen/${opportunity.id}/bewerken`}
-              className={buttonVariants({ variant: "outline" })}
+              className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken"
             >
-              <Pencil className="h-4 w-4" /> Bewerken
+              <Pencil className="h-4 w-4" />
             </Link>
             <ConfirmSubmit
               action={deleteOpportunity}

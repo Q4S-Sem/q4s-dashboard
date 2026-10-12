@@ -63,8 +63,11 @@ export function SignatureCompanyForm({
               Annuleren
             </Button>
           ) : (
-            <Button type="button" variant="outline" onClick={() => setEditing(true)} title="Bewerken">
-              <Pencil className="h-4 w-4" /> Bewerken
+            <Button type="button" variant="ghost"
+              size="icon"
+              className="bg-ink-100 text-ink-700 hover:bg-ink-200"
+              aria-label="Bewerken" onClick={() => setEditing(true)} title="Bewerken">
+              <Pencil className="h-4 w-4" />
             </Button>
           )}
         </CardHeader>

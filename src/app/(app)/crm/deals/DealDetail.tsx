@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Avatar } from "@/components/ui/avatar";
 import { PhoneButton } from "@/components/ui/phone-button";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, BEWERK_ICOON } from "@/components/ui/button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { CrmNotesTimeline, type TimelineNote } from "@/components/crm-notes-timeline";
@@ -146,8 +146,10 @@ export async function DealDetail({
           <>
             <StatusBadge options={DEAL_STATUSES} value={deal.status} />
             <Badge color={(deal.stage.color as BadgeColor) ?? "slate"}>{deal.stage.name}</Badge>
-            <Link href={`${basePath}/${deal.id}/bewerken`} className={buttonVariants({ variant: "outline" })}>
-              <Pencil className="h-4 w-4" /> Bewerken
+            <Link href={`${basePath}/${deal.id}/bewerken`} className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken">
+              <Pencil className="h-4 w-4" />
             </Link>
             {isVacatureContext && (
               <Link href={`${basePath}/${deal.id}/linkedin`} className={buttonVariants({ variant: "outline" })}>

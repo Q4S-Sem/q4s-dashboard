@@ -12,7 +12,7 @@ import {
   StickyNote,
   Trophy,
 } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { BEWERK_ICOON } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { DossierTabs } from "@/components/dossier-tabs";
@@ -79,8 +79,10 @@ export default async function MedewerkerDossierLayout({
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href={`/medewerkers/${m.id}/bewerken`} className={buttonVariants({ variant: "outline" })}>
-            <Pencil className="h-4 w-4" /> Bewerken
+          <Link href={`/medewerkers/${m.id}/bewerken`} className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken">
+            <Pencil className="h-4 w-4" />
           </Link>
           <ConfirmSubmit
             action={deleteEmployee}

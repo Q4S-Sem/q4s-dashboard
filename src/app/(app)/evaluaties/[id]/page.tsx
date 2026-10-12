@@ -14,7 +14,7 @@ import {
 import { EVALUATION_TYPES, EVALUATION_STATUSES, EVAL_SCORES } from "@/lib/domain";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge, Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, BEWERK_ICOON } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { deleteEvaluation, archiveEvaluationToDossier } from "../actions";
@@ -100,9 +100,11 @@ export default async function EvaluatieDetailPage({
             </form>
             <Link
               href={`/evaluaties/${e.id}/bewerken`}
-              className={buttonVariants({ variant: "outline" })}
+              className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken"
             >
-              <Pencil className="h-4 w-4" /> Bewerken
+              <Pencil className="h-4 w-4" />
             </Link>
             <ConfirmSubmit action={deleteEvaluation} id={e.id} message="Deze evaluatie verwijderen?">
               Verwijderen

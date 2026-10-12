@@ -15,7 +15,7 @@ import {
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants, BEWERK_ICOON } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmSubmit } from "@/components/confirm-submit";
@@ -73,9 +73,11 @@ export default async function VakproefDetailPage({
             <StatusBadge options={CHALLENGE_STATUSES} value={challenge.status} />
             <Link
               href={`/socials/vakproef/${challenge.id}/bewerken`}
-              className={buttonVariants({ variant: "outline" })}
+              className={BEWERK_ICOON}
+              title="Bewerken"
+              aria-label="Bewerken"
             >
-              <Pencil className="h-4 w-4" /> Bewerken
+              <Pencil className="h-4 w-4" />
             </Link>
             <ConfirmSubmit
               action={deleteChallenge}
