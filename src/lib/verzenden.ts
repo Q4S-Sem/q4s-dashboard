@@ -30,12 +30,16 @@ export type SalesInvoiceFull = {
   services: string | null;
   ourReference: string | null;
   purchaseOrder: string | null;
+  attention?: string | null;
+  projectManager?: string | null;
+  emailTo?: string | null;
   lines: Line[];
   client: {
     companyName: string;
     contactName: string | null;
     email: string | null;
     invoiceEmail: string | null;
+    invoiceEmail2?: string | null;
     address: string | null;
     postalCode: string | null;
     city: string | null;
@@ -134,12 +138,13 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
     recipientLabel: "To:",
     recipientName: c.companyName,
     recipientLines: compact([
-      c.contactName ? `Attention: ${c.contactName}` : "",
+      (inv.attention ?? c.contactName) ? `Attention: ${inv.attention ?? c.contactName}` : "",
       c.address,
       [c.postalCode, c.city].filter(Boolean).join(" "),
       c.country && !/^(nl|nederland|netherlands|the netherlands)$/i.test(c.country) ? c.country : "",
       inv.purchaseOrder ? `Reference no.: ${inv.purchaseOrder}` : "",
-      c.invoiceEmail?.trim() || c.email?.trim() || "",
+      inv.projectManager ? `Project Manager: ${inv.projectManager}` : "",
+      ...factuurMails(inv),
     ]),
     // Rechts tegenover de klant: KvK/BTW van de KLANT (zoals op het Q4S-format).
     recipientKvk: c.kvkNumber ?? null,
@@ -202,6 +207,8 @@ export function sampleInvoiceDoc(s: CompanySettings): InvoiceDoc {
       "Attention: Ms. J. van den Borne",
       "P.O Box 522",
       "6040 AM Roermond",
+      "Reference no.: 4500123456",
+      "Project Manager: Mr. P. de Vries",
       "invoiceonly@sif-group.com",
     ],
     recipientKvk: "13041437",
@@ -258,10 +265,24 @@ export type SendData = {
   pdfName: string;
 };
 
+/** De factuur-e-mail(s): van de factuur zelf, anders van het bedrijf (max. 2). */
+export function factuurMails(inv: {
+  emailTo?: string | null;
+  client: { invoiceEmail: string | null; invoiceEmail2?: string | null; email: string | null };
+}): string[] {
+  const c = inv.client;
+  const lijst = inv.emailTo?.trim()
+    ? inv.emailTo.split(/[,;]/)
+    : [c.invoiceEmail, c.invoiceEmail2].some((m) => m?.trim())
+      ? [c.invoiceEmail ?? "", c.invoiceEmail2 ?? ""]
+      : [c.email ?? ""];
+  return [...new Set(lijst.map((m) => m.trim()).filter(Boolean))].slice(0, 2);
+}
+
 export function salesSendData(inv: SalesInvoiceFull, s: CompanySettings): SendData {
   const content = salesEmailContent(inv, s);
   return {
-    to: inv.client.invoiceEmail?.trim() || inv.client.email?.trim() || null,
+    to: factuurMails(inv).join(", ") || null,
     recipientName: inv.client.companyName,
     subject: `Invoice ${inv.number} — ${s.companyName || "Q4S"}`,
     content,
@@ -354,7 +375,7 @@ export async function getOutbox(): Promise<{ sales: OutboxRow[] }> {
     orderBy: { issueDate: "asc" },
     include: {
       client: {
-        select: { id: true, companyName: true, email: true, invoiceEmail: true },
+        select: { id: true, companyName: true, email: true, invoiceEmail: true, invoiceEmail2: true },
       },
       lines: { select: { timesheet: { select: { weekStart: true } } } },
     },
@@ -367,7 +388,7 @@ export async function getOutbox(): Promise<{ sales: OutboxRow[] }> {
       total: inv.total,
       issueDate: inv.issueDate,
       recipientName: inv.client.companyName,
-      email: inv.client.invoiceEmail?.trim() || inv.client.email?.trim() || null,
+      email: factuurMails(inv).join(", ") || null,
       fixHref: `/klanten/${inv.client.id}`,
       weekKeys: weeksOf(inv.lines),
     })),

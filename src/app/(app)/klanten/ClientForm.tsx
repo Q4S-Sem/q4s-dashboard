@@ -262,7 +262,7 @@ export function ClientForm({
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Contactpersoon" htmlFor="contactName" error={e.contactName}>
+            <Field label="Contactpersoon" htmlFor="contactName" hint="Staat als “Attention” op de factuur" error={e.contactName}>
               <Input id="contactName" name="contactName" defaultValue={client?.contactName ?? ""} />
             </Field>
             <Field label="Telefoon" htmlFor="phone" error={e.phone}>
@@ -273,6 +273,9 @@ export function ClientForm({
             </Field>
             <Field label="Factuur-e-mail" htmlFor="invoiceEmail" hint="Waar facturen heen gaan" error={e.invoiceEmail}>
               <Input id="invoiceEmail" name="invoiceEmail" type="email" defaultValue={client?.invoiceEmail ?? ""} />
+            </Field>
+            <Field label="2e factuur-e-mail" htmlFor="invoiceEmail2" hint="Optioneel — de factuur gaat dan naar beide" error={e.invoiceEmail2}>
+              <Input id="invoiceEmail2" name="invoiceEmail2" type="email" defaultValue={client?.invoiceEmail2 ?? ""} />
             </Field>
           </div>
 

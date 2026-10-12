@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { verversFactuurKlantInfo } from "@/lib/invoicing";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { bewaarPlacementDraft } from "@/lib/plaatsing-concept";
@@ -29,6 +30,10 @@ const PlacementCoreSchema = z.object({
     .transform((v) => (v && v.trim() ? v.trim() : null)),
   title: z.string().min(1, "Functie is verplicht"),
   poNumber: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : null)),
+  invoiceAttention: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : null)),
+  projectManager: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : null)),
+  invoiceEmail: z.string().trim().email("Ongeldig e-mailadres").optional().or(z.literal("")).transform((v) => v || null),
+  invoiceEmail2: z.string().trim().email("Ongeldig e-mailadres").optional().or(z.literal("")).transform((v) => v || null),
   workLocation: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : null)),
   vatReverseCharge: z.coerce.boolean().default(false),
   startDate: z.coerce.date({ message: "Startdatum is verplicht" }),
@@ -142,6 +147,10 @@ function coreToData(d: z.infer<typeof PlacementCoreSchema>) {
     clientId: d.clientId,
     title: d.title,
     poNumber: d.poNumber,
+    invoiceAttention: d.invoiceAttention,
+    projectManager: d.projectManager,
+    invoiceEmail: d.invoiceEmail,
+    invoiceEmail2: d.invoiceEmail2,
     workLocation: d.workLocation,
     vatReverseCharge: d.vatReverseCharge,
     startDate: d.startDate,
@@ -415,6 +424,7 @@ export async function updatePlacement(
     where: { id },
     data: { consultantId: parsed.data.consultantId, ...coreToData(parsed.data) },
   });
+  await verversFactuurKlantInfo(parsed.data.clientId);
   await zetDienstverband(parsed.data.consultantId, formData);
   await syncPlaatsingStatus({ id });
   if (billId && billId !== parsed.data.consultantId) await syncPlaatsingStatus({ consultantId: billId });

@@ -1,3 +1,4 @@
+import { factuurKlantInfo } from "./factuur-klant";
 import { voegBonnenToe } from "./declaraties-doorbelasten";
 import { db } from "./db";
 import { round2, getISOWeek } from "./utils";
@@ -96,10 +97,10 @@ export async function createSalesInvoice(opts: {
   // ordernummer van de klant, per plaatsing; alleen tonen als alle regels dezelfde
   // (niet-lege) PO delen — anders laten we 'm leeg om verwarring te voorkomen.
   const ourReference = settings.quotationNumber?.trim() || null;
-  const poNumbers = new Set(
-    timesheets.map((t) => t.placement.poNumber?.trim()).filter((v): v is string => Boolean(v)),
+  const { purchaseOrder, attention, projectManager, emailTo } = factuurKlantInfo(
+    client,
+    timesheets.map((t) => t.placement),
   );
-  const purchaseOrder = poNumbers.size === 1 ? [...poNumbers][0] : null;
 
   const subtotal = round2(lines.reduce((s, l) => s + l.amount, 0));
   const vatAmount = round2((subtotal * vatRate) / 100);
@@ -118,7 +119,7 @@ export async function createSalesInvoice(opts: {
       data: {
         number, clientId, issueDate, dueDate, status: "DRAFT", vatRate, subtotal, vatAmount, total, notes,
         vatReverseCharge,
-        subject, services, ourReference, purchaseOrder,
+        subject, services, ourReference, purchaseOrder, attention, projectManager, emailTo,
         lines: {
           create: lines.map((l) => ({
             description: l.description, quantity: l.quantity, unitPrice: l.unitPrice,
@@ -153,4 +154,26 @@ export async function createSalesInvoice(opts: {
   });
 
   return { ok: true, invoiceId: invoice.id };
+}
+
+/**
+ * Plaatsing of bedrijf aangepast → nog niet verstuurde facturen (concept /
+ * verzendmap) van dat bedrijf krijgen de nieuwe t.a.v./projectmanager/e-mail/
+ * referentie. Verstuurde facturen blijven zoals ze de deur uit gingen.
+ */
+export async function verversFactuurKlantInfo(clientId: string | null | undefined) {
+  if (!clientId) return;
+  const [client, invoices] = await Promise.all([
+    db.client.findUnique({ where: { id: clientId } }),
+    db.invoice.findMany({
+      where: { clientId, status: { in: ["DRAFT", "READY"] } },
+      select: { id: true, lines: { select: { placement: true } } },
+    }),
+  ]);
+  if (!client) return;
+  for (const inv of invoices) {
+    const ps = inv.lines.map((l) => l.placement).filter((p): p is NonNullable<typeof p> => p != null);
+    if (!ps.length) continue; // handmatige factuur zonder plaatsing: niet aanraken
+    await db.invoice.update({ where: { id: inv.id }, data: factuurKlantInfo(client, ps) });
+  }
 }

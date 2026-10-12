@@ -1628,10 +1628,10 @@ export function PlacementForm({
                   />
                 </Field>
                 <Field
-                  label="PO-nummer klant"
+                  label="Referentie- / PO-nummer klant"
                   htmlFor="poNumber"
                   error={e.poNumber}
-                  hint="Optioneel — komt als “PO” op de verkoopfactuur."
+                  hint="Komt als “Reference no.” op de verkoopfactuur."
                 >
                   <Input
                     id="poNumber"
@@ -1653,6 +1653,28 @@ export function PlacementForm({
                     placeholder="Bijv. LyondellBasell Moerdijk via KWR"
                   />
                 </Field>
+              </div>
+
+              {/* Per plaatsing kan de factuur naar iemand anders / een ander project. */}
+              <div className="rounded-lg border border-ink-200 bg-ink-50/50 p-4">
+                <p className="text-sm font-semibold text-ink-900">Factuur aan de klant</p>
+                <p className="mb-3 text-xs text-ink-500">
+                  Alleen invullen als het voor deze plaatsing anders is dan bij het bedrijf. Leeg = de gegevens van het bedrijf.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="T.a.v. (Attention)" htmlFor="invoiceAttention" error={e.invoiceAttention}>
+                    <Input id="invoiceAttention" name="invoiceAttention" defaultValue={placement?.invoiceAttention ?? ""} placeholder="Bijv. Finad / crediteurenadministratie" />
+                  </Field>
+                  <Field label="Projectmanager" htmlFor="projectManager" error={e.projectManager}>
+                    <Input id="projectManager" name="projectManager" defaultValue={placement?.projectManager ?? ""} placeholder="Bijv. Dhr. J. N. Lemmerzaal" />
+                  </Field>
+                  <Field label="Factuur-e-mail" htmlFor="invoiceEmail" error={e.invoiceEmail}>
+                    <Input id="invoiceEmail" name="invoiceEmail" type="email" defaultValue={placement?.invoiceEmail ?? ""} />
+                  </Field>
+                  <Field label="2e factuur-e-mail" htmlFor="invoiceEmail2" error={e.invoiceEmail2} hint="De factuur gaat naar beide adressen.">
+                    <Input id="invoiceEmail2" name="invoiceEmail2" type="email" defaultValue={placement?.invoiceEmail2 ?? ""} />
+                  </Field>
+                </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">

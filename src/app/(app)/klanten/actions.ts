@@ -5,6 +5,7 @@ import { BILLING_CYCLE_VALUES } from "@/lib/factuur-periode";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { verversFactuurKlantInfo } from "@/lib/invoicing";
 import { parseForm, type FormState } from "@/lib/form";
 
 const ClientSchema = z.object({
@@ -19,6 +20,7 @@ const ClientSchema = z.object({
   vatNumber: z.string().optional(),
   kvkNumber: z.string().optional(),
   invoiceEmail: z.string().optional(),
+  invoiceEmail2: z.string().trim().email("Ongeldig e-mailadres").optional().or(z.literal("")),
   website: z.string().optional(),
   paymentTermDays: z.coerce.number().int().min(0).max(365).default(30),
   billingCycle: z.enum(BILLING_CYCLE_VALUES).default("MONTH"),
@@ -40,6 +42,7 @@ function toData(data: z.infer<typeof ClientSchema>) {
     vatNumber: data.vatNumber ?? null,
     kvkNumber: data.kvkNumber ?? null,
     invoiceEmail: data.invoiceEmail ?? null,
+    invoiceEmail2: data.invoiceEmail2 || null,
     website: data.website ?? null,
     paymentTermDays: data.paymentTermDays,
     billingCycle: data.billingCycle,
@@ -130,6 +133,7 @@ export async function updateClient(
   if (!parsed.success) return parsed.state;
 
   await db.client.update({ where: { id }, data: toData(parsed.data) });
+  await verversFactuurKlantInfo(id);
   revalidatePath("/klanten");
   revalidatePath(`/klanten/${id}`);
   redirect(`/klanten/${id}`);

@@ -171,6 +171,8 @@ model Client {
   /// KvK-nummer
   kvkNumber        String?
   invoiceEmail     String?
+  /// Tweede factuur-e-mailadres (factuur gaat naar beide).
+  invoiceEmail2    String?
   /// Bedrijfswebsite — bron voor automatische aanvulling (KvK/BTW/adres/e-mail).
   website          String?
   paymentTermDays  Int     @default(30)
@@ -301,6 +303,12 @@ model Placement {
   /// Inkoop-ordernummer (PO) van de KLANT voor deze plaatsing — verschijnt als
   /// "PO" op de verkoopfactuur. Leeg = geen PO-regel op de factuur.
   poNumber     String?
+  /// Factuurgegevens die per plaatsing kunnen afwijken van het bedrijf. Leeg =
+  /// wat bij het bedrijf staat (contactpersoon / factuur-e-mail).
+  invoiceAttention String?
+  projectManager   String?
+  invoiceEmail     String?
+  invoiceEmail2    String?
   /// BTW verlegd op de verkoopfactuur voor deze plaatsing? Aan = 0% BTW +
   /// verplichte "BTW verlegd"-vermelding (reverse charge). Standaard uit.
   vatReverseCharge Boolean @default(false)
@@ -404,6 +412,11 @@ model Invoice {
   services      String?  // "Services" — functie/rol (QC Inspector)
   ourReference  String?  // "Our ref"
   purchaseOrder String?  // "Inkooporder" / PO-nummer van de klant
+  /// Momentopname bij het maken (bijgewerkt zolang de factuur niet verstuurd is):
+  /// t.a.v., projectmanager en de factuur-e-mail(s), komma-gescheiden.
+  attention      String?
+  projectManager String?
+  emailTo        String?
   paidDate   DateTime?
   /// When this invoice was sent (or queued in the verzendmap) and to whom.
   sentAt     DateTime?
