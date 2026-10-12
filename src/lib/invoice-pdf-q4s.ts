@@ -280,7 +280,9 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     ["KvK", doc.company.kvkNumber],
   ].filter(([, v]) => v) as [string, string][];
   // Rechts: tel / web / mail en daaronder de G-rekening, regel voor regel op
-  // dezelfde hoogte als IBAN / BIC / VAT / KvK links.
+  // dezelfde hoogte als IBAN / BIC / VAT / KvK links. Links uitgelijnd op
+  // dezelfde lijn als de labels van het meta-blok eronder.
+  const rechtsX = 390;
   const rechts = [
     ...doc.company.contactLines.filter(Boolean),
     ...(doc.company.gAccount ? [`G-rekening: ${doc.company.gAccount}`] : []),
@@ -292,7 +294,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
       text(row[0], supplierX, by, 9, font, MUTED);
       text(`: ${row[1]}`, supplierX + 42, by, 9, font, MUTED);
     }
-    if (rechts[i]) textR(rechts[i], right, by, 9, font, MUTED);
+    if (rechts[i]) text(rechts[i], rechtsX, by, 9, font, MUTED);
     by -= 12;
   }
 
@@ -300,8 +302,10 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
 
   // ---- Ontvanger (links) en precies daartegenover het meta-blok (rechts):
   //      Subject (freelancer) / Services / Our ref, dan Invoice no / KvK / VAT / Date.
-  const metaLabelR = 455;
-  const metaValX = 463;
+  // Labels én waarden links uitgelijnd: labels op rechtsX, waarden in één kolom
+  // direct na het langste label.
+  const metaLabels = [L.subject, L.services, L.ourRef, L.number, L.kvk, L.vat, L.date];
+  const metaValX = rechtsX + Math.max(...metaLabels.map((l) => font.widthOfTextAtSize(sanitize(l + ":"), 9))) + 8;
   // "To:" erboven; de klantnaam staat op exact dezelfde hoogte als de eerste
   // regel rechts (Subject), zodat beide blokken gelijk beginnen.
   const blockTop = y - 14;
@@ -309,7 +313,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
   let my = blockTop;
   const metaLine = (label: string, value: string | null | undefined, valueColor = INK, valueFont: PDFFont = font) => {
     if (value == null || value === "") return; // lege regel volledig overslaan
-    textR(label + ":", metaLabelR, my, 9, font, MUTED);
+    text(label + ":", rechtsX, my, 9, font, MUTED);
     text(truncate(value, 9, right - metaValX), metaValX, my, 9, valueFont, valueColor);
     my -= 13;
   };
@@ -322,7 +326,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
   metaLine(L.vat, doc.recipientVat);
   metaLine(L.date, formatDate(doc.issueDate), ACCENT, bold);
 
-  const recipientMaxW = metaLabelR - 120 - supplierX;
+  const recipientMaxW = rechtsX - 20 - supplierX;
   text(doc.recipientLabel, supplierX, metaFactuurY + 14, 9.5, bold, INK);
   page.drawLine({
     start: { x: supplierX, y: metaFactuurY + 12 },
@@ -336,7 +340,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
   for (const l of doc.recipientLines) {
     if (l) { text(truncate(l, 9, recipientMaxW), supplierX, ry, 9, font, MUTED); ry -= 13; }
   }
-  y = Math.min(ry, my) - 16;
+  y = Math.min(ry, my) - 32; // ruimte tussen klant-/factuurgegevens en de tabel
 
   // ---- Tabel ----
   // Kolomankers.
