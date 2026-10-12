@@ -62,7 +62,8 @@ export type InvoiceDoc = {
   /** "INVOICE" | "INKOOPFACTUUR" | "CREDIT NOTE" … (kop rechtsboven). */
   docTitle: string;
   /** Taal van de vaste labels. */
-  language: "en" | "nl";
+  /** Facturen zijn altijd volledig Engels. */
+  language: "en";
   number: string;
   issueDate: Date;
   dueDate: Date;
@@ -139,29 +140,6 @@ const LABELS = {
     vatReverse: "VAT reverse-charged",
     grandTotal: "Total",
   },
-  nl: {
-    number: "Factuurnr",
-    kvk: "KvK-nr",
-    coc: "KvK",
-    gAccount: "G-rekening",
-    vat: "BTW-nr",
-    date: "Factuurdatum",
-    po: "Inkooporder",
-    subject: "Betreft",
-    services: "Functie",
-    ourRef: "Ons kenmerk",
-    ref: "REF",
-    amount: "AANTAL",
-    description: "OMSCHRIJVING",
-    week: "WEEK",
-    location: "LOCATIE",
-    price: "TARIEF",
-    total: "TOTAAL",
-    subtotal: "Subtotaal",
-    vatRate: (r: string) => `BTW ${r}`,
-    vatReverse: "BTW verlegd",
-    grandTotal: "Totaal",
-  },
 } as const;
 
 // WinAnsi dekt Latin-1 + de cp1252-interpunctie hieronder. Rest droppen we zodat
@@ -186,7 +164,7 @@ const money = (n: number) => sanitize(formatCurrency(n));
 
 /** Render een Q4S-factuur-PDF (één of meer pagina's). */
 export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
-  const L = LABELS[doc.language];
+  const L = LABELS.en;
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -488,7 +466,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
       borderWidth: 1,
     });
     let byy = boxTop - padY - 9;
-    text(doc.language === "en" ? "PAYMENT" : "BETALING", M + padX, byy, 8, bold, MUTED);
+    text("PAYMENT", M + padX, byy, 8, bold, MUTED);
     byy -= headingH;
     for (const l of boxLines) {
       text(l, M + padX, byy, 9.5, font, INK);
