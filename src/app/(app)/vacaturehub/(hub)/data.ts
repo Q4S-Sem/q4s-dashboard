@@ -7,6 +7,9 @@ import { db } from "@/lib/db";
 /** De pseudo-bron voor vacatures die niet via een VMS/MSP binnenkwamen. */
 export const OVERIG_KEY = "overig";
 
+/** Een agent-ronde die langer dan dit "loopt" is afgebroken (time-out van de functie). */
+export const RUN_STALE_MS = 6 * 60_000;
+
 export const getHubCounts = cache(async () => {
   const [total, unknown, relevant, irrelevant, published, toPublish] = await Promise.all([
     db.vacancy.count(),

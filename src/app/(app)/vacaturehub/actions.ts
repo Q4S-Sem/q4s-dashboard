@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { after } from "next/server";
 import { aiFilterVacancy } from "@/lib/recruitment";
+import { runDailySync } from "@/lib/sync";
+import { RUN_STALE_MS } from "./(hub)/data";
 
 // AI runs synchronously inside the request, so process bounded batches and let
 // the user click again for the rest (a real queue/cron is the production path).
@@ -33,6 +36,21 @@ function withQuery(path: string, params: Record<string, string | number>): strin
 function sourceFilter(source: string) {
   if (!source) return {};
   return source === "overig" ? { vmsConnectorId: null } : { vmsConnectorId: source };
+}
+
+/**
+ * Agents nu laten draaien (Web-speurder → AI-filter → Matcher) op de achtergrond:
+ * de pagina komt meteen terug en ververst zichzelf, zodat je de stappen live ziet.
+ * Nooit twee rondes tegelijk.
+ */
+export async function startAgents() {
+  // Ingelogd is al afgedwongen door de proxy (elke server action).
+  const bezig = await db.syncRun.findFirst({
+    where: { status: "RUNNING", startedAt: { gt: new Date(Date.now() - RUN_STALE_MS) } },
+    select: { id: true },
+  });
+  if (!bezig) after(() => runDailySync("MANUAL").then(revalidate));
+  redirect("/vacaturehub");
 }
 
 /** AI-filter de nog niet beoordeelde vacatures (per batch, evt. per bron). */

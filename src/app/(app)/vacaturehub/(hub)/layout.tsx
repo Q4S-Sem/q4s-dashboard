@@ -1,12 +1,9 @@
-import { LayoutGrid, Plug, Filter, Sparkles, XCircle, Plug2, Radar } from "lucide-react";
+import { LayoutGrid, Plug, Filter, Sparkles, XCircle, Settings2, Upload } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { DossierTabs } from "@/components/dossier-tabs";
 import { isAIConfigured } from "@/lib/ai";
-import { Upload } from "lucide-react";
-import { SubmitButton } from "@/components/ui/submit-button";
-import { runSyncNow } from "../../sourcing/actions";
 import { getHubCounts } from "./data";
 
 export const metadata = { title: "MSP" };
@@ -26,18 +23,20 @@ export default async function VacaturehubLayout({ children }: { children: React.
     <div className="space-y-6">
       <PageHeader
         title="MSP"
-        description="Vacatures uit de MSP-portalen én van de Web-speurder (dagelijks, openbare vacatures op het web). De AI screent alles op de Q4S-niche; jij beslist wat we uitschrijven en posten."
+        description="Agents halen vacatures binnen uit de MSP-portalen en van het web en screenen ze op de Q4S-niche. Jij beslist wat we uitschrijven en posten."
         actions={
           <div className="flex gap-2">
-          <form action={runSyncNow}>
-            <input type="hidden" name="back" value="/vacaturehub" />
-            <SubmitButton variant="outline" pendingLabel="Agent zoekt… (±1 min)" title="Web-speurder nu laten zoeken, daarna AI-filter en matching">
-              <Radar className="h-4 w-4" /> Nu zoeken
-            </SubmitButton>
-          </form>
-          <Link href="/vacatures/importeren" className={buttonVariants({ variant: "outline" })}>
-            <Upload className="h-4 w-4" /> Bulk-import
-          </Link>
+            <Link href="/vacatures/importeren" className={buttonVariants({ variant: "outline" })}>
+              <Upload className="h-4 w-4" /> Bulk-import
+            </Link>
+            <Link
+              href="/vacaturehub/koppelingen"
+              className={buttonVariants({ variant: "outline", size: "icon", className: "h-10 w-10" })}
+              title="Koppelingen met MSP-portalen"
+              aria-label="Koppelingen met MSP-portalen"
+            >
+              <Settings2 className="h-4 w-4" />
+            </Link>
           </div>
         }
       />
@@ -59,7 +58,7 @@ export default async function VacaturehubLayout({ children }: { children: React.
           { seg: "", label: "Overzicht", icon: <LayoutGrid className="h-4 w-4" /> },
           {
             seg: "instroom",
-            label: "Opdrachtgevers",
+            label: "Bronnen",
             icon: <Plug className="h-4 w-4" />,
             count: c.total,
           },
@@ -71,7 +70,7 @@ export default async function VacaturehubLayout({ children }: { children: React.
           },
           {
             seg: "relevant",
-            label: "Relevant",
+            label: "Past bij Q4S",
             icon: <Sparkles className="h-4 w-4" />,
             count: c.relevant,
           },
@@ -81,7 +80,6 @@ export default async function VacaturehubLayout({ children }: { children: React.
             icon: <XCircle className="h-4 w-4" />,
             count: c.irrelevant,
           },
-          { seg: "koppelingen", label: "Koppelingen", icon: <Plug2 className="h-4 w-4" /> },
         ]}
       />
 

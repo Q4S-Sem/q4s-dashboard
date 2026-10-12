@@ -43,7 +43,11 @@ export type SyncResult = {
 export async function runDailySync(
   trigger: "MANUAL" | "CRON",
 ): Promise<SyncResult> {
-  const run = await db.syncRun.create({ data: { trigger, status: "RUNNING" } });
+  const run = await db.syncRun.create({ data: { trigger, status: "RUNNING", note: "Opstarten…" } });
+  // Live voortgang: zolang de run loopt staat de huidige stap in `note`, zodat de
+  // MSP-pagina de agents letterlijk ziet werken. Best-effort, mag nooit breken.
+  const stap = (tekst: string, extra: Record<string, number> = {}) =>
+    db.syncRun.update({ where: { id: run.id }, data: { note: tekst, ...extra } }).catch(() => {});
   let sourced = 0;
   let filtered = 0;
   let relevant = 0;
@@ -72,6 +76,8 @@ export async function runDailySync(
     //    live: de AI-filter beoordeelt, de recruiter beslist.
     let webId: string | null = null;
     if (isAIConfigured()) {
+      const vandaag = webFieldsFor(Math.floor(Date.now() / 86_400_000));
+      await stap(`Web-speurder zoekt op het web: ${vandaag.join(", ")}`);
       const web = await db.vmsConnector.upsert({
         where: { key: WEB_KEY },
         update: {},
@@ -89,7 +95,7 @@ export async function runDailySync(
       webId = web.id;
       const found = (
         await Promise.all(
-          webFieldsFor(Math.floor(Date.now() / 86_400_000)).map((f) => aiSourceVacancies({ fields: [f], max: 6 })),
+          vandaag.map((f) => aiSourceVacancies({ fields: [f], max: 6 })),
         )
       ).flat();
       const { createdIds } = await intakeVacancies(
@@ -118,7 +124,8 @@ export async function runDailySync(
       orderBy: { createdAt: "asc" },
       select: { id: true },
     });
-    for (const v of unjudged) {
+    for (const [i, v] of unjudged.entries()) {
+      await stap(`AI-filter beoordeelt vacature ${i + 1} van ${unjudged.length}`, { sourced, filtered, relevant });
       try {
         const r = await aiFilterVacancy(v.id);
         filtered++;
@@ -159,6 +166,7 @@ export async function runDailySync(
       orderBy: { createdAt: "desc" },
       select: { id: true },
     });
+    await stap(`Matcher zoekt kandidaten bij ${rel.length} passende vacatures`, { sourced, filtered, relevant });
     for (const v of rel) {
       const n = await rematchVacancy(v.id);
       matched += n;

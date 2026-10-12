@@ -55,7 +55,7 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
         <CardContent className="space-y-4">
           <p className="text-sm text-ink-500">
             Deze vacatures passen binnen de niche. Stuur ze door naar Maken: daar schrijf je de
-            tekst af (of laat je de AI dat doen), lees je 'm na en zet je 'm zelf op q4s.nl.
+            tekst af (of laat je de AI dat doen), lees je hem na en zet je hem zelf op q4s.nl.
           </p>
           <div className={SEGMENT_GROEP}>
             <Link
