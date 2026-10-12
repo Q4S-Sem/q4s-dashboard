@@ -185,10 +185,14 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
   const langsteWoord = Math.max(...titel.split(/\s+/).map((w) => w.length), 1);
   const titleSize = Math.min(titel.length > 40 ? 64 : titel.length > 20 ? 76 : 88, Math.floor(780 / langsteWoord));
   const feiten = [
-    { label: "Location", value: c.location },
+    // "the Netherlands" → "Netherlands": korter, en past zo naast Duration/Hours.
+    { label: "Location", value: c.location?.replace(/^the\s+/i, "") },
     { label: "Duration", value: c.duration },
     { label: "Hours", value: c.hours },
   ].filter((x) => x.value);
+  // Drie feiten moeten naast elkaar passen vóór de foto: lange waarden → kleiner.
+  const feitTekens = feiten.reduce((n, f) => n + (f.value?.length ?? 0), 0);
+  const feitSize = feitTekens > 38 ? 24 : feitTekens > 30 ? 27 : 30;
   // Punten (werk) — anders de pitch als losse zinnen.
   const punten = (c.points.length ? c.points : (c.intro.match(/[^.!?]+[.!?]+/g) ?? []).map((z) => z.trim())).slice(0, 3).map(puntKort);
   // Lange punten krijgen een kleinere letter i.p.v. afgekapt te worden.
@@ -214,11 +218,11 @@ export async function renderLinkedInCard(searchParams: URLSearchParams): Promise
         onder={
           <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
             {feiten.length > 0 ? (
-              <div style={{ display: "flex", gap: 44 }}>
+              <div style={{ display: "flex", gap: feitTekens > 30 ? 28 : 44 }}>
                 {feiten.map((f) => (
                   <div key={f.label} style={{ display: "flex", flexDirection: "column", borderLeft: `5px solid ${ORANJE}`, paddingLeft: 18 }}>
                     <div style={{ display: "flex", fontSize: 20, fontWeight: 600, letterSpacing: 2, color: GRIJS, textTransform: "uppercase" }}>{f.label}</div>
-                    <div style={{ display: "flex", alignItems: "center", fontSize: 30, fontWeight: 600, color: "#fff", marginTop: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", fontSize: feitSize, fontWeight: 600, color: "#fff", marginTop: 6, whiteSpace: "nowrap" }}>
                       {f.label === "Location" ? <img src={PIN} width={28} height={28} alt="" style={{ marginRight: 8 }} /> : null}
                       {f.value}
                     </div>
