@@ -302,7 +302,10 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
   //      Subject (freelancer) / Services / Our ref, dan Invoice no / KvK / VAT / Date.
   const metaLabelR = 470;
   const metaValX = 478;
-  const blockTop = y;
+  // "To:" erboven; de klantnaam staat op exact dezelfde hoogte als de eerste
+  // regel rechts (Subject), zodat beide blokken gelijk beginnen.
+  const blockTop = y - 14;
+  const metaFactuurY = blockTop;
   let my = blockTop;
   const metaLine = (label: string, value: string | null | undefined, valueColor = INK, valueFont: PDFFont = font) => {
     if (value == null || value === "") return; // lege regel volledig overslaan
@@ -314,8 +317,6 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
   metaLine(L.services, doc.services);
   metaLine(L.ourRef, doc.ourReference);
   my -= 6;
-  // Klantnaam staat op dezelfde hoogte als het factuurnummer.
-  const metaFactuurY = my;
   metaLine(L.number, doc.number, ACCENT, bold);
   metaLine(L.kvk, doc.recipientKvk);
   metaLine(L.vat, doc.recipientVat);
