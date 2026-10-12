@@ -41,6 +41,7 @@ export type SalesInvoiceFull = {
     city: string | null;
     country: string;
     vatNumber: string | null;
+    kvkNumber?: string | null;
     paymentTermDays: number;
   };
 };
@@ -50,20 +51,38 @@ function compact(items: (string | null | undefined)[]): string[] {
   return items.filter((x): x is string => Boolean(x && x.trim()));
 }
 
+/** Vaste Q4S-gegevens op elke factuur; een ingevuld veld bij Instellingen wint. */
+export const Q4S_FACTUUR = {
+  name: "Q4S B.V.",
+  address: "Arnhemseweg 12",
+  postalCode: "2994 LA",
+  city: "Barendrecht",
+  country: "The Netherlands",
+  iban: "NL96INGB0007873625",
+  bic: "INGBNL2A",
+  vatNumber: "NL857718137B01",
+  kvkNumber: "69073287",
+  gAccount: "NL94INGB0990303241",
+  phone: "+31(0) 85 782 6818",
+  website: "www.q4s.nl",
+  email: "info@q4s.nl",
+};
+
 function companyBlock(s: CompanySettings) {
+  const v = (x: string | null | undefined, d: string) => (x && x.trim() ? x.trim() : d);
+  const Q = Q4S_FACTUUR;
+  // "Q4S" en "Nederland" zijn de lege standaardwaarden van de instellingen.
+  const name = !s.companyName || s.companyName === "Q4S" ? Q.name : s.companyName;
+  const country = !s.country || /^(nederland|nl)$/i.test(s.country) ? Q.country : s.country;
   return {
-    name: s.companyName || "Q4S",
-    addressLines: compact([
-      s.address,
-      [s.postalCode, s.city].filter(Boolean).join(" "),
-      s.country,
-    ]),
-    contactLines: compact([s.phone ? `Tel: ${s.phone}` : "", s.website, s.email]),
-    iban: s.iban || "",
-    bic: s.bic || "",
-    vatNumber: s.vatNumber || "",
-    kvkNumber: s.kvkNumber || "",
-    gAccount: s.gAccount || "",
+    name,
+    addressLines: [v(s.address, Q.address), `${v(s.postalCode, Q.postalCode)} ${v(s.city, Q.city)}`, country],
+    contactLines: [`Tel: ${v(s.phone, Q.phone)}`, v(s.website, Q.website), v(s.email, Q.email)],
+    iban: v(s.iban, Q.iban),
+    bic: v(s.bic, Q.bic),
+    vatNumber: v(s.vatNumber, Q.vatNumber),
+    kvkNumber: v(s.kvkNumber, Q.kvkNumber),
+    gAccount: v(s.gAccount, Q.gAccount),
   };
 }
 
@@ -115,13 +134,16 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
     recipientLabel: "To:",
     recipientName: c.companyName,
     recipientLines: compact([
+      c.contactName ? `Attention: ${c.contactName}` : "",
       c.address,
       [c.postalCode, c.city].filter(Boolean).join(" "),
-      c.country,
-      c.contactName ? `Attn. ${c.contactName}` : "",
+      c.country && !/^(nl|nederland|netherlands|the netherlands)$/i.test(c.country) ? c.country : "",
+      inv.purchaseOrder ? `Reference no.: ${inv.purchaseOrder}` : "",
       c.invoiceEmail?.trim() || c.email?.trim() || "",
-      c.vatNumber ? `VAT: ${c.vatNumber}` : "",
     ]),
+    // Rechts tegenover de klant: KvK/BTW van de KLANT (zoals op het Q4S-format).
+    recipientKvk: c.kvkNumber ?? null,
+    recipientVat: c.vatNumber ?? null,
     lines: toInvoiceRows(inv.lines),
     vatRate: inv.vatRate,
     vatReverseCharge: inv.vatReverseCharge ?? false,
@@ -177,12 +199,13 @@ export function sampleInvoiceDoc(s: CompanySettings): InvoiceDoc {
     recipientLabel: "To:",
     recipientName: "Sif Netherlands B.V.",
     recipientLines: [
+      "Attention: Ms. J. van den Borne",
       "P.O Box 522",
       "6040 AM Roermond",
-      "The Netherlands",
-      "Attn. Ms. J. van den Borne",
       "invoiceonly@sif-group.com",
     ],
+    recipientKvk: "13041437",
+    recipientVat: "NL8011.36.282.B01",
     lines: toInvoiceRows(lines),
     vatRate,
     subtotal,

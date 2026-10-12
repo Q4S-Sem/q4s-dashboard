@@ -40,7 +40,6 @@ function loadLetterheadBytes(): Uint8Array | null {
 const BRAND = rgb(23 / 255, 23 / 255, 23 / 255); // #171717
 const INK = rgb(0.06, 0.09, 0.16); // slate-900
 const MUTED = rgb(0.42, 0.45, 0.5); // slate-500
-const FAINT = rgb(0.62, 0.64, 0.68); // slate-400
 const LINE = rgb(0.83, 0.85, 0.88); // slate-200
 const GHOST = rgb(0.9, 0.91, 0.93); // licht grijs voor het "INVOICE"-watermerk-achtige woord
 const ACCENT = rgb(0.1, 0.13, 0.5); // diepblauw voor de nummers (zoals in het voorbeeld)
@@ -90,6 +89,9 @@ export type InvoiceDoc = {
   recipientLabel: string; // "To:" | "Aan:"
   recipientName: string;
   recipientLines: string[];
+  /** KvK/BTW van de ontvanger — rechts in het meta-blok, tegenover de klant. */
+  recipientKvk?: string | null;
+  recipientVat?: string | null;
 
   lines: InvoiceLineRow[];
 
@@ -284,46 +286,56 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
   ].filter(([, v]) => v) as [string, string][];
   let by = bankTop;
   for (const [k, v] of bankRows) {
-    text(k, supplierX, by, 9, font, FAINT);
-    text(v, supplierX + 42, by, 9, font, MUTED);
+    text(k, supplierX, by, 9, font, MUTED);
+    text(`: ${v}`, supplierX + 42, by, 9, font, MUTED);
     by -= 12;
   }
   if (doc.company.gAccount) {
-    text(doc.language === "en" ? "G-account" : "G-rekening", contactX, bankTop, 9, font, FAINT);
-    text(doc.company.gAccount, contactX + 62, bankTop, 9, font, MUTED);
+    // Rechts uitgelijnd op de IBAN-regel, zoals in het Q4S-format.
+    const g = `G-rekening: ${doc.company.gAccount}`;
+    textR(g, right, bankTop, 9, font, MUTED);
   }
 
-  // Rechter meta-blok: Subject/Services/Our ref, dan Invoice no/KvK/VAT/Date/PO.
+  y = by - 14;
+
+  // ---- Ontvanger (links) en precies daartegenover het meta-blok (rechts):
+  //      Subject (freelancer) / Services / Our ref, dan Invoice no / KvK / VAT / Date.
   const metaLabelR = 470;
   const metaValX = 478;
-  let my = bankTop + 6;
-  const metaLine = (label: string, value: string | null, valueColor = INK, valueFont: PDFFont = font) => {
+  const blockTop = y;
+  let my = blockTop;
+  const metaLine = (label: string, value: string | null | undefined, valueColor = INK, valueFont: PDFFont = font) => {
     if (value == null || value === "") return; // lege regel volledig overslaan
     textR(label + ":", metaLabelR, my, 9, font, MUTED);
-    text(value, metaValX, my, 9, valueFont, valueColor);
-    my -= 14;
+    text(truncate(value, 9, right - metaValX), metaValX, my, 9, valueFont, valueColor);
+    my -= 13;
   };
   metaLine(L.subject, doc.subject);
   metaLine(L.services, doc.services);
   metaLine(L.ourRef, doc.ourReference);
-  my -= 4;
+  my -= 6;
+  // Klantnaam staat op dezelfde hoogte als het factuurnummer.
+  const metaFactuurY = my;
   metaLine(L.number, doc.number, ACCENT, bold);
-  metaLine(L.kvk, doc.company.kvkNumber, INK, font);
-  metaLine(L.vat, doc.company.vatNumber, INK, font);
+  metaLine(L.kvk, doc.recipientKvk);
+  metaLine(L.vat, doc.recipientVat);
   metaLine(L.date, formatDate(doc.issueDate), ACCENT, bold);
-  metaLine(L.po, doc.purchaseOrder);
 
-  y = Math.min(by, my) - 8;
-
-  // ---- Ontvanger ("To:") ----
-  text(doc.recipientLabel, supplierX, y, 9, bold, INK);
-  let ry = y - 14;
-  text(doc.recipientName, supplierX, ry, 9.5, bold, INK);
-  ry -= 12;
+  const recipientMaxW = metaLabelR - 120 - supplierX;
+  text(doc.recipientLabel, supplierX, metaFactuurY + 14, 9.5, bold, INK);
+  page.drawLine({
+    start: { x: supplierX, y: metaFactuurY + 12 },
+    end: { x: supplierX + bold.widthOfTextAtSize(sanitize(doc.recipientLabel), 9.5), y: metaFactuurY + 12 },
+    thickness: 0.7,
+    color: INK,
+  });
+  let ry = metaFactuurY;
+  text(truncate(doc.recipientName, 9.5, recipientMaxW, bold), supplierX, ry, 9.5, bold, INK);
+  ry -= 13;
   for (const l of doc.recipientLines) {
-    if (l) { text(l, supplierX, ry, 9, font, MUTED); ry -= 12; }
+    if (l) { text(truncate(l, 9, recipientMaxW), supplierX, ry, 9, font, MUTED); ry -= 13; }
   }
-  y = ry - 16;
+  y = Math.min(ry, my) - 16;
 
   // ---- Tabel ----
   // Kolomankers.
