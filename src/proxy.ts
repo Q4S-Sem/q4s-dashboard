@@ -17,9 +17,7 @@ export async function proxy(request: NextRequest) {
   if (isAuthRequired() && !isOpenbaar(pad)) {
     const lezen = request.method === "GET" || request.method === "HEAD";
     const userId = userIdUitCookie(request.cookies.get("q4s_session")?.value, sessionSigningSecret());
-    const actief =
-      userId &&
-      (lezen || Boolean((await db.appUser.findUnique({ where: { id: userId }, select: { active: true } }))?.active));
+    const actief = userId && (lezen || (await nogActief(userId)));
     if (!actief) {
       if (!lezen) return new NextResponse("Niet ingelogd", { status: 401, headers: { "Cache-Control": "no-store" } });
       return NextResponse.redirect(new URL("/login", request.url));
@@ -29,6 +27,16 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-pathname", pad);
   return NextResponse.next({ request: { headers: requestHeaders } });
+}
+
+/** Gedeactiveerde gebruiker mag niets meer wijzigen. Kan de database even niet,
+ *  dan niet het hele dashboard blokkeren: de cookie is al geldig ondertekend. */
+async function nogActief(userId: string): Promise<boolean> {
+  try {
+    return Boolean((await db.appUser.findUnique({ where: { id: userId }, select: { active: true } }))?.active);
+  } catch {
+    return true;
+  }
 }
 
 export const config = {
