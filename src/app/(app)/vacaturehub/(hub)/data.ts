@@ -7,19 +7,24 @@ import { db } from "@/lib/db";
 /** De pseudo-bron voor vacatures die niet via een VMS/MSP binnenkwamen. */
 export const OVERIG_KEY = "overig";
 
+/** De inbox: door de AI goedgekeurd, nog niet door ons opgepakt. */
+export const INBOX_WHERE = { relevance: "RELEVANT", status: "CONCEPT" } as const;
+
 /** Een agent-ronde die langer dan dit "loopt" is afgebroken (time-out van de functie). */
 export const RUN_STALE_MS = 6 * 60_000;
 
 export const getHubCounts = cache(async () => {
-  const [total, unknown, relevant, irrelevant, published, toPublish] = await Promise.all([
+  const [total, unknown, relevant, irrelevant, published, toPublish, inbox] = await Promise.all([
     db.vacancy.count(),
     db.vacancy.count({ where: { relevance: "UNKNOWN" } }),
     db.vacancy.count({ where: { relevance: "RELEVANT" } }),
     db.vacancy.count({ where: { relevance: "IRRELEVANT" } }),
     db.vacancy.count({ where: { status: "PUBLISHED" } }),
     db.vacancy.count({ where: { relevance: "RELEVANT", status: { not: "PUBLISHED" } } }),
+    db.vacancy.count({ where: INBOX_WHERE }),
   ]);
-  return { total, unknown, relevant, irrelevant, published, toPublish };
+  // Opgepakt = passend en al uit de inbox gehaald (uitgeschreven of live).
+  return { total, unknown, relevant, irrelevant, published, toPublish, inbox, opgepakt: relevant - inbox };
 });
 
 export type SourceStats = {

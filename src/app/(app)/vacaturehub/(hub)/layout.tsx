@@ -1,4 +1,4 @@
-import { LayoutGrid, Plug, Filter, Sparkles, XCircle, Settings2, Upload } from "lucide-react";
+import { Inbox, Plug, Sparkles, XCircle, Settings2, Upload } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export default async function VacaturehubLayout({ children }: { children: React.
     <div className="space-y-6">
       <PageHeader
         title="MSP"
-        description="Agents halen vacatures binnen uit de MSP-portalen en van het web en screenen ze op de Q4S-niche. Jij beslist wat we uitschrijven en posten."
+        description="Elke ochtend zoeken de agents nieuwe vacatures op het web en in de MSP-portalen, en zet de AI wat bij Q4S past klaar. Jij beoordeelt: oppakken, lead of wegleggen."
         actions={
           <div className="flex gap-2">
             <Link href="/vacatures/importeren" className={buttonVariants({ variant: "outline" })}>
@@ -55,31 +55,10 @@ export default async function VacaturehubLayout({ children }: { children: React.
         base="/vacaturehub"
         label="MSP"
         tabs={[
-          { seg: "", label: "Overzicht", icon: <LayoutGrid className="h-4 w-4" /> },
-          {
-            seg: "instroom",
-            label: "Bronnen",
-            icon: <Plug className="h-4 w-4" />,
-            count: c.total,
-          },
-          {
-            seg: "beoordelen",
-            label: "Te beoordelen",
-            icon: <Filter className="h-4 w-4" />,
-            count: c.unknown,
-          },
-          {
-            seg: "relevant",
-            label: "Past bij Q4S",
-            icon: <Sparkles className="h-4 w-4" />,
-            count: c.relevant,
-          },
-          {
-            seg: "afgewezen",
-            label: "Afgewezen",
-            icon: <XCircle className="h-4 w-4" />,
-            count: c.irrelevant,
-          },
+          { seg: "", label: "Te beoordelen", icon: <Inbox className="h-4 w-4" />, count: c.inbox },
+          { seg: "relevant", label: "Opgepakt", icon: <Sparkles className="h-4 w-4" />, count: c.opgepakt },
+          { seg: "afgewezen", label: "Weggelegd", icon: <XCircle className="h-4 w-4" />, count: c.irrelevant },
+          { seg: "instroom", label: "Bronnen", icon: <Plug className="h-4 w-4" /> },
         ]}
       />
 

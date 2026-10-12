@@ -6,7 +6,7 @@ import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/
 import { getHubCounts } from "../data";
 import { HubVacancyList, HUB_VACANCY_SELECT, toHubVacancies } from "../HubVacancyList";
 
-export const metadata = { title: "Relevant · MSP" };
+export const metadata = { title: "Opgepakt · MSP" };
 
 type SP = { published?: string; remaining?: string; error?: string; tab?: string };
 
@@ -19,7 +19,8 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
     db.vacancy.findMany({
       where: {
         relevance: "RELEVANT",
-        status: showLive ? "PUBLISHED" : { not: "PUBLISHED" },
+        // Opgepakt = uit de inbox gehaald: uitgeschreven (Gereed) of live.
+        status: showLive ? "PUBLISHED" : { notIn: ["PUBLISHED", "CONCEPT"] },
       },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -45,8 +46,8 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-violet-500" /> Past bij Q4S
-            <span className="text-sm font-normal text-ink-400">({c.relevant})</span>
+            <Sparkles className="h-5 w-5 text-violet-500" /> Opgepakt
+            <span className="text-sm font-normal text-ink-400">({c.opgepakt})</span>
           </CardTitle>
           <Link href="/vacatures" className={buttonVariants({ variant: "outline", size: "sm" })}>
             <PencilLine className="h-4 w-4" /> Naar maken
@@ -54,15 +55,15 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-ink-500">
-            Deze vacatures passen binnen de niche. Stuur ze door naar Maken: daar schrijf je de
-            tekst af (of laat je de AI dat doen), lees je hem na en zet je hem zelf op q4s.nl.
+            Leads die jullie hebben opgepakt. De AI heeft ze uitgeschreven; controleer de tekst en
+            zet ze op q4s.nl en LinkedIn.
           </p>
           <div className={SEGMENT_GROEP}>
             <Link
               href="/vacaturehub/relevant"
               className={segmentVariants(!showLive)}
             >
-              Klaar voor maken ({c.toPublish})
+              Te controleren
             </Link>
             <Link
               href="/vacaturehub/relevant?tab=live"
@@ -78,11 +79,11 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
         vacancies={toHubVacancies(rows)}
         mode="publish"
         back={back}
-        emptyTitle={showLive ? "Nog niets live" : "Niets meer te publiceren"}
+        emptyTitle={showLive ? "Nog niets live" : "Niets te controleren"}
         emptyDescription={
           showLive
             ? "Zodra je een relevante vacature publiceert, staat hij hier."
-            : "Alle relevante vacatures staan al op de website."
+            : "Pak een lead op vanuit Te beoordelen; hij komt dan hier te staan."
         }
       />
     </div>

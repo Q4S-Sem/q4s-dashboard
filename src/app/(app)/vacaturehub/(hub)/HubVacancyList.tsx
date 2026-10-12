@@ -7,6 +7,8 @@ import {
   RotateCcw,
   ExternalLink,
   PencilLine,
+  Phone,
+  Users,
 } from "lucide-react";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -14,7 +16,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DISCIPLINES, VACANCY_STATUSES, VACANCY_RELEVANCE } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
-import { aiFilterOne, setRelevance } from "../actions";
+import { aiFilterOne, setRelevance, oppakken, leadMaken } from "../actions";
+import { cn } from "@/lib/utils";
 import { publicVacancyUrl } from "@/lib/public-site";
 
 export type HubVacancy = {
@@ -29,10 +32,14 @@ export type HubVacancy = {
   createdAt: Date;
   slug: string;
   sourceName: string | null;
+  sourceUrl: string | null;
+  matchCount: number;
+  /** Beste kandidaat-match 0..1, of null. */
+  bestScore: number | null;
 };
 
 /** Welke knoppen er bij deze lijst horen. */
-export type HubListMode = "judge" | "publish" | "rejected";
+export type HubListMode = "inbox" | "judge" | "publish" | "rejected";
 
 /** De bron alleen tonen als het bedrijfsveld 'm niet al noemt (geen dubbeling). */
 function showSource(v: { sourceName: string | null; companyName: string | null }): boolean {
@@ -58,6 +65,11 @@ function Snippet({ v }: { v: HubVacancy }) {
           </span>
         )}
         <span>binnengekomen {formatDate(v.createdAt)}</span>
+        {v.sourceUrl && (
+          <a href={v.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-ink-800">
+            <ExternalLink className="h-3 w-3" /> bron
+          </a>
+        )}
       </div>
     </div>
   );
@@ -81,8 +93,21 @@ function Row({ v, mode, back }: { v: HubVacancy; mode: HubListMode; back: string
         <Snippet v={v} />
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {v.discipline && <StatusBadge options={DISCIPLINES} value={v.discipline} />}
-          <StatusBadge options={VACANCY_STATUSES} value={v.status} />
-          {mode !== "judge" && <StatusBadge options={VACANCY_RELEVANCE} value={v.relevance} />}
+          {mode !== "inbox" && <StatusBadge options={VACANCY_STATUSES} value={v.status} />}
+          {mode !== "judge" && mode !== "inbox" && <StatusBadge options={VACANCY_RELEVANCE} value={v.relevance} />}
+          {mode === "inbox" && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-medium",
+                v.matchCount > 0 ? "bg-violet-50 text-violet-700" : "bg-ink-100 text-ink-500",
+              )}
+            >
+              <Users className="h-3 w-3" />
+              {v.matchCount > 0
+                ? `${v.matchCount} kandida${v.matchCount === 1 ? "at" : "ten"} · beste ${Math.round((v.bestScore ?? 0) * 100)}%`
+                : "nog geen kandidaten"}
+            </span>
+          )}
         </div>
         {v.relevanceReason && (
           <p className="mt-2 flex items-start gap-1.5 text-xs text-ink-500">
@@ -93,6 +118,30 @@ function Row({ v, mode, back }: { v: HubVacancy; mode: HubListMode; back: string
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {mode === "inbox" && (
+          <>
+            <form action={oppakken}>
+              {hidden}
+              <SubmitButton size="sm" pendingLabel="AI schrijft uit…" title="AI schrijft de vacature uit in Q4S-stijl + LinkedIn-tekst; daarna controleer je hem">
+                <Check className="h-3.5 w-3.5" /> Oppakken
+              </SubmitButton>
+            </form>
+            <form action={leadMaken}>
+              {hidden}
+              <SubmitButton variant="outline" size="sm" pendingLabel="…" title="Taak: bel dit bedrijf met onze kandidaten">
+                <Phone className="h-3.5 w-3.5" /> Lead
+              </SubmitButton>
+            </form>
+            <form action={setRelevance}>
+              {hidden}
+              <input type="hidden" name="relevance" value="IRRELEVANT" />
+              <SubmitButton variant="outline" size="sm" pendingLabel="…" title="Wegleggen (terug te halen onder Weggelegd)" aria-label="Wegleggen">
+                <X className="h-3.5 w-3.5" />
+              </SubmitButton>
+            </form>
+          </>
+        )}
+
         {mode === "judge" && (
           <>
             <form action={aiFilterOne}>
@@ -144,9 +193,9 @@ function Row({ v, mode, back }: { v: HubVacancy; mode: HubListMode; back: string
         {mode === "rejected" && (
           <form action={setRelevance}>
             {hidden}
-            <input type="hidden" name="relevance" value="UNKNOWN" />
+            <input type="hidden" name="relevance" value="RELEVANT" />
             <SubmitButton variant="outline" size="sm" pendingLabel="Bezig…">
-              <RotateCcw className="h-3.5 w-3.5" /> Terug naar beoordelen
+              <RotateCcw className="h-3.5 w-3.5" /> Terughalen
             </SubmitButton>
           </form>
         )}
@@ -200,12 +249,22 @@ export const HUB_VACANCY_SELECT = {
   relevanceReason: true,
   createdAt: true,
   slug: true,
+  sourceUrl: true,
   vmsConnector: { select: { name: true } },
+  matches: { select: { score: true }, orderBy: { score: "desc" } },
 } as const;
 
 /** Rijen uit de database omzetten naar wat de lijst verwacht. */
 export function toHubVacancies(
-  rows: (Omit<HubVacancy, "sourceName"> & { vmsConnector: { name: string } | null })[],
+  rows: (Omit<HubVacancy, "sourceName" | "matchCount" | "bestScore"> & {
+    vmsConnector: { name: string } | null;
+    matches: { score: number }[];
+  })[],
 ): HubVacancy[] {
-  return rows.map(({ vmsConnector, ...v }) => ({ ...v, sourceName: vmsConnector?.name ?? null }));
+  return rows.map(({ vmsConnector, matches, ...v }) => ({
+    ...v,
+    sourceName: vmsConnector?.name ?? null,
+    matchCount: matches.length,
+    bestScore: matches[0]?.score ?? null,
+  }));
 }

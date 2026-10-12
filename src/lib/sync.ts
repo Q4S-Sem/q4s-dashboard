@@ -9,7 +9,7 @@ import { RECRUITMENT_FIELDS } from "./domain";
 // AI runs synchronously inside the request, so bound the per-run work. For real
 // scale this should be a background queue; the daily cron + these caps keep it
 // well within a single request.
-const FILTER_CAP = 12;
+const FILTER_CAP = 25; // alles van de ochtendrun (3 vakgebieden × 6) in één keer beoordelen
 const MATCH_CAP = 30;
 
 // Web-speurder: elke run 3 vakgebieden (roteert per dag), zo is de hele niche

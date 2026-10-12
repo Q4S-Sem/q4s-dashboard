@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { after } from "next/server";
-import { aiFilterVacancy } from "@/lib/recruitment";
+import { aiFilterVacancy, aiImproveVacancy } from "@/lib/recruitment";
 import { runDailySync } from "@/lib/sync";
 import { RUN_STALE_MS } from "./(hub)/data";
 
@@ -96,6 +96,56 @@ export async function aiFilterOne(formData: FormData) {
   redirect(back);
 }
 
+/**
+ * ✓ Oppakken: de AI schrijft de vacature uit in Q4S-stijl (incl. LinkedIn-tekst)
+ * en je landt op de controlepagina, waar je hem zelf op de site en LinkedIn zet.
+ */
+export async function oppakken(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) redirect("/vacaturehub");
+  let fout = false;
+  try {
+    await aiImproveVacancy(id);
+  } catch {
+    // AI faalt → toch door naar de controlepagina; daar kun je zelf schrijven.
+    fout = true;
+    await db.vacancy.update({ where: { id }, data: { status: "IMPROVED" } }).catch(() => {});
+  }
+  revalidate();
+  redirect(`/vacatures/${id}${fout ? "?error=ai" : ""}`);
+}
+
+/** ☎ Lead: zet een taak "bel dit bedrijf" klaar — dit bedrijf zoekt nú iemand. */
+export async function leadMaken(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const back = backTo(formData);
+  const v = id
+    ? await db.vacancy.findUnique({
+        where: { id },
+        select: { title: true, companyName: true, location: true, sourceUrl: true, relevanceReason: true, _count: { select: { matches: true } } },
+      })
+    : null;
+  if (!v) redirect(back);
+  await db.task.create({
+    data: {
+      title: `Bel ${v.companyName ?? "opdrachtgever"}: zoekt ${v.title}`.slice(0, 200),
+      notes: [
+        v.location && `Locatie: ${v.location}`,
+        `${v._count.matches} passende kandidaat/kandidaten in ons bestand.`,
+        v.relevanceReason,
+        v.sourceUrl && `Vacature: ${v.sourceUrl}`,
+        `Dashboard: /vacatures/${id}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      dueDate: new Date(),
+      priority: "HIGH",
+    },
+  });
+  revalidatePath("/agenda/taken");
+  redirect(withQuery(back, { lead: 1 }));
+}
+
 /** Zelf het oordeel geven (of dat van de AI terugdraaien). */
 export async function setRelevance(formData: FormData) {
   const id = String(formData.get("id") ?? "");
@@ -108,7 +158,11 @@ export async function setRelevance(formData: FormData) {
     data: {
       relevance: value,
       relevanceReason:
-        value === "UNKNOWN" ? null : "Handmatig beoordeeld door een recruiter.",
+        value === "UNKNOWN"
+          ? null
+          : value === "IRRELEVANT"
+            ? "Weggelegd door een recruiter."
+            : "Teruggezet door een recruiter.",
     },
   });
   revalidate();
