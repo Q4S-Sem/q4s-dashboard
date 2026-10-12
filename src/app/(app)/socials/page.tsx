@@ -88,7 +88,7 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
             {zonderPost.length === 0 ? (
               <p className="px-5 py-8 text-center text-[13px] text-ink-400">Elke online vacature heeft al een post.</p>
             ) : (
-              <ul className="divide-y divide-ink-100">
+              <ul className="max-h-[365px] divide-y divide-ink-100 overflow-y-auto">
                 {zonderPost.map((v) => (
                   <li key={v.id} className="flex items-center justify-between gap-3 px-5 py-3">
                     <span className="min-w-0">
