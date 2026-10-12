@@ -298,7 +298,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     by -= 12;
   }
 
-  y = by - 14;
+  y = by - 34; // witruimte tussen bank-/contactblok en klant-/factuurgegevens
 
   // ---- Ontvanger (links) en precies daartegenover het meta-blok (rechts):
   //      Subject (freelancer) / Services / Our ref, dan Invoice no / KvK / VAT / Date.
