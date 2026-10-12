@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   // gaat daar makkelijk overheen en dan mislukt opslaan. Vercel kapt op ~4,5 MB.
   experimental: { serverActions: { bodySizeLimit: "4mb" } },
   poweredByHeader: false,
+  // tsc draait al vóór elke commit (verify-stap); niet nog eens in de Vercel-build.
+  typescript: { ignoreBuildErrors: true },
   // Basis-beveiligingsheaders. Het dashboard mag niet in een iframe van een andere
   // site (clickjacking); de openbare pagina's (vacature, talentpool, vakproef, /v/)
   // blijven insluitbaar voor de website.
