@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { PaginaKop } from "@/components/ui/filter-tegels";
 import { cardDefaultsFromVacancy } from "@/lib/linkedin-card";
+import { fotoSleutel } from "@/lib/linkedin-og";
 import { LinkedInStudio, type StudioVacature } from "./LinkedInStudio";
 
 export const metadata = { title: "LinkedIn-studio" };
@@ -31,6 +32,18 @@ export default async function LinkedInStudioPage({ searchParams }: { searchParam
     getCompanySettings(),
   ]);
 
+  // Elke vacature een andere foto uit de set van zijn vak: nummer op volgorde van
+  // plaatsing binnen dezelfde foto-sleutel (oudste = 0), dus opeenvolgende posts in
+  // hetzelfde vak krijgen nooit dezelfde foto (tot de set rond is).
+  const fotoNr = new Map<string, number>();
+  const perSleutel = new Map<string, number>();
+  for (const v of [...vacancies].reverse()) {
+    const k = fotoSleutel(v.discipline ?? "", v.title);
+    const n = perSleutel.get(k) ?? 0;
+    fotoNr.set(v.id, n);
+    perSleutel.set(k, n + 1);
+  }
+
   const vacatures: StudioVacature[] = vacancies.map((v) => ({
       id: v.id,
       title: v.title,
@@ -43,7 +56,7 @@ export default async function LinkedInStudioPage({ searchParams }: { searchParam
       summary: v.summary ?? "",
       slug: v.slug,
       status: v.status,
-      card: cardDefaultsFromVacancy({ ...v, durationText: v.deals[0]?.durationText }),
+      card: { ...cardDefaultsFromVacancy({ ...v, durationText: v.deals[0]?.durationText }), foto: fotoNr.get(v.id) ?? 0 },
       gepostOp: v.socialPosts[0]?.publishedAt?.toISOString() ?? null,
     }));
 

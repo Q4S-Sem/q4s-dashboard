@@ -14,7 +14,7 @@ test("drie verschillende openingszinnen uit de vacature", () => {
   assert.equal(h.length, 3);
   assert.equal(h[0], "Ben jij een ervaren Quality Manager?");
   assert.match(h[1], /Gezocht: Quality Manager \(CSA\) in Nederland voor 12\+ maanden/);
-  assert.match(h[2], /Eerste klus: opstellen van het kwaliteitsplan\./);
+  assert.match(h[2], /^Nieuw project in .+: .+\. Je eerste taak: opstellen van het kwaliteitsplan\.$/);
 });
 
 test("gekozen hook bovenaan, links naar de eerste reactie", () => {

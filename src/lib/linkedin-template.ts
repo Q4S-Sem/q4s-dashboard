@@ -264,7 +264,7 @@ export function hookOpties(inp: PostInput): string[] {
   const feit = `Gezocht: ${title} in ${loc}${duur ? ` voor ${duur}` : ""}.`;
   const eerste = inp.responsibilities.map((r) => r.trim()).find((r) => r && !isSublabel(r));
   const situatie = eerste
-    ? `Op een project in ${loc} is een ${een} nodig. Eerste klus: ${respLine(eerste).replace(/^\p{Lu}/u, (c) => c.toLowerCase()).replace(/[.;:]$/, "")}.`
+    ? `Nieuw project in ${loc}: ${title}. Je eerste taak: ${respLine(eerste).replace(/^\p{Lu}/u, (c) => c.toLowerCase()).replace(/[.;:]$/, "")}.`
     : `Een opdrachtgever in ${loc} zoekt een ${een} die meteen kan starten.`;
   return [...new Set([vraag, feit, situatie])];
 }

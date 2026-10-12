@@ -13,6 +13,8 @@ export type LinkedInCardData = {
   points: string[];
   cta: string;
   badge: string;
+  /** Welke foto uit de set van het vakgebied (wisselt per vacature). */
+  foto?: number;
 };
 
 /** Standaard oproep-regel onderaan de kaart (door de gebruiker aanpasbaar). */
@@ -130,6 +132,7 @@ export function cardToParams(d: LinkedInCardData): URLSearchParams {
   p.set("cta", d.cta);
   p.set("badge", d.badge);
   d.points.forEach((pt) => p.append("point", pt));
+  if (d.foto) p.set("foto", String(d.foto));
   return p;
 }
 
@@ -145,5 +148,6 @@ export function cardFromParams(sp: URLSearchParams): LinkedInCardData {
     points: sp.getAll("point").filter(Boolean).slice(0, 4),
     cta: sp.get("cta") || DEFAULT_CTA,
     badge: sp.get("badge") || DEFAULT_BADGE,
+    foto: Number(sp.get("foto")) || 0,
   };
 }

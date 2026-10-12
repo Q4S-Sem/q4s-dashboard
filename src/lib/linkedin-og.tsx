@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { cardFromParams, CARD_W, CARD_H } from "@/lib/linkedin-card";
 import { DISCIPLINES } from "@/lib/domain";
@@ -49,13 +49,22 @@ const FOTO_OP_TITEL: [RegExp, string][] = [
  * vakgebied: public/linkedin/foto/<DISCIPLINE>.jpg (Pexels, vrij te gebruiken).
  * Onbekend vakgebied → OVERIG.
  */
-async function fotoVoor(disciplineLabel: string, titel = ""): Promise<string> {
-  const d =
+export function fotoSleutel(disciplineLabel: string, titel = ""): string {
+  return (
     FOTO_OP_TITEL.find(([re]) => re.test(titel))?.[1] ??
     DISCIPLINES.find((x) => x.label === disciplineLabel || x.value === disciplineLabel)?.value ??
-    "OVERIG";
+    "OVERIG"
+  );
+}
+
+/** Per vakgebied meerdere foto's (<SLEUTEL>.jpg, <SLEUTEL>-2.jpg …); `nr` kiest er
+ *  één (modulo het aantal), zodat vacatures in hetzelfde vak niet dezelfde krijgen. */
+async function fotoVoor(disciplineLabel: string, titel = "", nr = 0): Promise<string> {
+  const d = fotoSleutel(disciplineLabel, titel);
   const dir = path.join(process.cwd(), "public", "linkedin", "foto");
-  const buf = await readFile(path.join(dir, `${d}.jpg`)).catch(() => readFile(path.join(dir, "OVERIG.jpg")));
+  const set = (await readdir(dir)).filter((f) => f === `${d}.jpg` || new RegExp(`^${d}-\\d+\\.jpg$`).test(f)).sort();
+  const naam = set.length ? set[((nr % set.length) + set.length) % set.length] : "OVERIG.jpg";
+  const buf = await readFile(path.join(dir, naam)).catch(() => readFile(path.join(dir, "OVERIG.jpg")));
   return `data:image/jpeg;base64,${buf.toString("base64")}`;
 }
 
@@ -167,7 +176,7 @@ const VAK_EN: Record<string, string> = {
 /** VACATUREKAART (1080x1350), AIDA: haak boven, feiten + punten onder, actiebalk. */
 export async function renderLinkedInCard(searchParams: URLSearchParams): Promise<ImageResponse> {
   const c = cardFromParams(searchParams);
-  const [a, foto] = await Promise.all([loadAssets(), fotoVoor(c.discipline, c.title)]);
+  const [a, foto] = await Promise.all([loadAssets(), fotoVoor(c.discipline, c.title, c.foto)]);
 
   // Ook het langste woord moet passen naast de foto (geen afgekapte woorden).
   // "/" mag afbreken ("Mechanical/Hydraulic" → twee regels) zodat de titel groot kan.

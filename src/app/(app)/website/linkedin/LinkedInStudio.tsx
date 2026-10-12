@@ -19,6 +19,7 @@ import {
   Search,
   Send,
   Sparkles,
+  Shuffle,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/field";
@@ -368,6 +369,16 @@ export function LinkedInStudio({
           <div className="space-y-4 xl:overflow-y-auto">
             <Card className="overflow-hidden">
               <StapKop nr={3} titel="Afbeelding" icon={<ImageIcon className="h-4 w-4" />} klaar={is("beeld")}>
+                <button
+                  type="button"
+                  onClick={() => kaart && setKaart({ foto: (kaart.foto ?? 0) + 1 })}
+                  disabled={vertalen}
+                  title="Andere foto"
+                  aria-label="Andere foto"
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  <Shuffle className="h-4 w-4" />
+                </button>
                 <button type="button" onClick={download} disabled={bezig || vertalen} className={buttonVariants({ size: "sm" })}>
                   {bezig ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} PNG
                 </button>
