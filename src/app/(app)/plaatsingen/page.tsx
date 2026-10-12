@@ -172,7 +172,7 @@ export default async function PlaatsingenPage({
         );
       })()}
 
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-ink-200">
+      <div className="flex flex-wrap items-end justify-between gap-3 shadow-[inset_0_-1px_0_var(--color-ink-200)]">
         <nav aria-label="Plaatsingen" className="flex flex-wrap items-end gap-1">
           {MAPPEN.map((m) => {
             const on = m.key === actiefMap.key;

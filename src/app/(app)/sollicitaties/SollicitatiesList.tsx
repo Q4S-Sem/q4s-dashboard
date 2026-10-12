@@ -60,7 +60,7 @@ export async function SollicitatiesList({
       {/* Tabs — schakel tussen de sollicitatie-statussen */}
       <nav
         aria-label="Sollicitatiestatus"
-        className="flex items-end gap-1 overflow-x-auto border-b border-ink-200"
+        className="flex items-end gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-ink-200)]"
       >
         {APPLICATION_STATUSES.map((s) => {
           const active = s.value === activeStatus;

@@ -172,7 +172,7 @@ export default async function NieuwContractPage({
       </div>
 
       <div className="space-y-3 pt-2">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-ink-200">
+        <div className="flex flex-wrap items-end justify-between gap-3 shadow-[inset_0_-1px_0_var(--color-ink-200)]">
           <nav aria-label="Opgestelde documenten" className="flex flex-wrap items-end gap-1">
             {MAPPEN.map(({ key, label, Icon }) => (
               <Link

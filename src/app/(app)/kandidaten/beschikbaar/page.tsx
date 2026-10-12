@@ -257,7 +257,7 @@ export default async function BeschikbaarPage({
       {/* Tabs — schakel tussen de vier beschikbaarheids-statussen */}
       <nav
         aria-label="Beschikbaarheid"
-        className="flex items-end gap-1 overflow-x-auto border-b border-ink-200"
+        className="flex items-end gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-ink-200)]"
       >
         {STATUS_TABS.map((t) => {
           const active = t.key === activeStatus;

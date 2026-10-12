@@ -55,7 +55,7 @@ export function WeergaveTabs({
     { key: "facturen" as const, label: facturenLabel, icon: <Receipt className="h-4 w-4" />, aantal: aantalFacturen },
   ];
   return (
-    <nav aria-label="Weergave" className="flex flex-wrap items-end gap-1 border-b border-ink-200">
+    <nav aria-label="Weergave" className="flex flex-wrap items-end gap-1 shadow-[inset_0_-1px_0_var(--color-ink-200)]">
       {tabs.map((t) => (
         <Link key={t.key} href={href(t.key)} scroll={false} aria-current={actief === t.key ? "page" : undefined} className={mapTabVariants(actief === t.key)}>
           <span className={actief === t.key ? "text-brand-600" : "text-ink-400"}>{t.icon}</span>

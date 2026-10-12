@@ -36,7 +36,7 @@ export function FolderTabBar({
   return (
     <nav
       aria-label={label}
-      className="flex items-end gap-1 overflow-x-auto border-b border-ink-200"
+      className="flex items-end gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-ink-200)]"
     >
       {children}
     </nav>

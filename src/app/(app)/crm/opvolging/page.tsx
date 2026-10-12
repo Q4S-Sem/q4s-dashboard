@@ -181,7 +181,7 @@ export default async function OpvolgingPage({
       ) : (
         <>
           {/* Tabs — schakel tussen de opvolging-onderdelen */}
-          <nav aria-label="Opvolging" className="flex items-end gap-1 overflow-x-auto border-b border-ink-200">
+          <nav aria-label="Opvolging" className="flex items-end gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--color-ink-200)]">
             {VIEW_TABS.map((t) => {
               const active = t.key === view;
               const count = countFor(t.key);

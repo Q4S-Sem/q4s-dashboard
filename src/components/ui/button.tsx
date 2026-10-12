@@ -71,12 +71,13 @@ export function segmentVariants(active: boolean, className?: string) {
 
 /**
  * Mapje-tab (dossier- en lijst-tabbladen boven een kaart). -mb-px laat het tabje
- * over de lijn vallen; de onderrand krijgt de paginakleur zodat het mapje "open" staat.
+ * over de lijn vallen (de lijn is een inset-schaduw op de balk, dus geen -mb-px
+ * overflow die de rand afknipt of een scrollbalk geeft); de onderrand krijgt de paginakleur zodat het mapje "open" staat.
  */
 export function mapTabVariants(active: boolean) {
   return cn(
-    "-mb-px inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors",
-    active ? "border-ink-200 border-b-[#fafafa] bg-white text-ink-900" : "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900",
+    "inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors",
+    active ? "border-ink-300 border-b-[#fafafa] bg-white text-ink-900" : "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900",
   );
 }
 
