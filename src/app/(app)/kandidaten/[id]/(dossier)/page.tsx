@@ -11,6 +11,9 @@ import { ExperienceView } from "../../ExperienceView";
 import { saveCandidateInterviewDetails } from "../../actions";
 import { getCandidate } from "./data";
 
+// CV inladen (AI-uitlezing, evt. tweede lezing met het sterke model) mag even duren.
+export const maxDuration = 60;
+
 /** Eén label + waarde in het gegevens-raster. */
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -39,10 +42,10 @@ export default async function OverzichtTab({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; cv?: string }>;
+  searchParams: Promise<{ error?: string; cv?: string; reden?: string }>;
 }) {
   const { id } = await params;
-  const { error, cv } = await searchParams;
+  const { error, cv, reden } = await searchParams;
   const candidate = await getCandidate(id);
   if (!candidate) notFound();
 
@@ -55,7 +58,7 @@ export default async function OverzichtTab({
         </Fout>
       )}
       {error === "geen-cv" && <Fout>Er hangt nog geen CV aan deze kandidaat. Voeg het toe bij het tabblad CV.</Fout>}
-      {error === "cv-lezen" && <Fout>Het CV kon niet uitgelezen worden. Probeer het opnieuw of vul de gegevens zelf in.</Fout>}
+      {error === "cv-lezen" && <Fout>Het CV kon niet uitgelezen worden{reden ? ` (${reden})` : ""}. Probeer het opnieuw of vul de gegevens zelf in.</Fout>}
       {cv === "ingeladen" && (
         <p className="rounded-sm bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           CV ingeladen — lege velden zijn aangevuld. Controleer ze en geef een beoordeling.

@@ -122,6 +122,11 @@ export const GEMINI_MODEL_STRONG = process.env.GEMINI_MODEL_STRONG ?? "gemini-pr
 /** Snel uitlezen (effort "low"): het denkwerk van Gemini Flash flink terugschroeven
  *  — dat is het grootste deel van de wachttijd. 2.5 kent alleen een budget, 3.x een
  *  niveau ("low" werkt op elke 3.x Flash). Het sterke model blijft vangnet. */
+/** Denk-tokens tellen bij Gemini (ook via OpenRouter) mee in de output-limiet. Zonder
+ *  deze ruimte "denkt" het model de limiet vol en komt de JSON afgekapt terug →
+ *  "CV kon niet uitgelezen worden". */
+export const THINK_HEADROOM = 8192;
+
 export function geminiThinking(model: string, low: boolean) {
   if (!low) return undefined;
   return /2\.5/.test(model) ? { thinkingBudget: 0 } : { thinkingLevel: "low" };
@@ -937,7 +942,7 @@ async function geminiExtractFile<T>(opts: FileExtractOpts): Promise<T> {
         ],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: opts.maxTokens ?? 4000,
+          maxOutputTokens: (opts.maxTokens ?? 4000) + THINK_HEADROOM,
           responseMimeType: "application/json",
           thinkingConfig: geminiThinking(visionModel("gemini", opts.strong), opts.effort === "low" && !opts.strong),
         },
@@ -1000,7 +1005,7 @@ export async function geminiJSONText<T>(opts: {
         contents: [{ role: "user", parts: [{ text: opts.prompt }] }],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: opts.maxTokens ?? 4000,
+          maxOutputTokens: (opts.maxTokens ?? 4000) + THINK_HEADROOM,
           responseMimeType: "application/json",
           thinkingConfig: geminiThinking(GEMINI_MODEL, Boolean(opts.fast)),
         },
@@ -1069,7 +1074,7 @@ export async function openrouterJSONText<T>(opts: {
         model: OPENROUTER_VISION_MODEL,
         stream: false,
         temperature: 0.1,
-        max_tokens: opts.maxTokens ?? 4000,
+        max_tokens: (opts.maxTokens ?? 4000) + THINK_HEADROOM,
         ...(opts.fast ? { reasoning: { effort: "low" } } : {}),
         response_format: { type: "json_object" },
         messages: [
@@ -1153,7 +1158,7 @@ async function openrouterExtractFile<T>(opts: FileExtractOpts): Promise<T> {
         model: visionModel("openrouter", opts.strong),
         stream: false,
         temperature: 0.1,
-        max_tokens: opts.maxTokens ?? 4000,
+        max_tokens: (opts.maxTokens ?? 4000) + THINK_HEADROOM,
         ...(opts.effort === "low" && !opts.strong ? { reasoning: { effort: "low" } } : {}),
         // Wordt door modellen die het niet kennen genegeerd; parseJson tolereert
         // hoe dan ook fences/omringende tekst.

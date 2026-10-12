@@ -11,6 +11,7 @@ import { PipelineButton } from "./PipelineButton";
 import { laadCvIn, setCandidateSpoor } from "./actions";
 import { SPOOR, spoorVan } from "@/lib/spoor";
 import { createDealFromCandidate } from "../crm/deals/actions";
+import { CvPreviewButton } from "@/components/cv-preview-button";
 
 /**
  * De 4 stappen van een kandidaat bovenaan het dossier, met per stap precies de
@@ -28,6 +29,8 @@ export async function KandidaatStappen({
     availability: string;
     discipline: string | null;
     cvFileName: string | null;
+    cvOriginalName?: string | null;
+    cvMimeType?: string | null;
     source: string;
     createdAt: Date;
     spoor: string;
@@ -98,12 +101,21 @@ export async function KandidaatStappen({
           <>
             <span className="mr-1 text-ink-500">Lees het CV in en geef een beoordeling:</span>
             {c.cvFileName ? (
+              <>
+              <CvPreviewButton
+                src={`/api/cv/${c.id}`}
+                name={c.cvOriginalName ?? `CV ${naam}`}
+                mime={c.cvMimeType ?? ""}
+                label="CV bekijken"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              />
               <form action={laadCvIn}>
                 <input type="hidden" name="id" value={c.id} />
                 <SubmitButton size="sm" variant="outline" pendingLabel="CV lezen…">
                   <FileDown className="h-4 w-4" /> CV inladen
                 </SubmitButton>
               </form>
+              </>
             ) : (
               <Link href={`/kandidaten/${c.id}/cv`} className={buttonVariants({ variant: "outline", size: "sm" })}>
                 <FileDown className="h-4 w-4" /> CV toevoegen
@@ -122,6 +134,14 @@ export async function KandidaatStappen({
             <Link href={`/kandidaten/${c.id}/notities`} className={buttonVariants({ variant: "outline", size: "sm" })}>
               <MessageSquare className="h-4 w-4" /> Notities
             </Link>
+            {/* Profiel hoeft niet perfect te zijn om al te koppelen. */}
+            <PipelineButton
+              action={createDealFromCandidate}
+              candidateId={c.id}
+              candidateName={naam}
+              clients={clients.map((k) => ({ id: k.id, name: k.companyName }))}
+              vacancies={vacancies.map((v) => ({ id: v.id, title: v.title, company: v.companyName }))}
+            />
           </>
         )}
         {stap >= 4 && (

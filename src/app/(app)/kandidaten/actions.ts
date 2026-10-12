@@ -365,7 +365,9 @@ export async function laadCvIn(formData: FormData) {
     f = await extractCandidateFields(bytes, c.cvOriginalName ?? c.cvFileName!, c.cvMimeType ?? "");
   } catch (err) {
     console.error("laadCvIn mislukt:", err);
-    redirect(`/kandidaten/${id}?error=cv-lezen`);
+    // De echte reden mee naar het scherm, anders weet niemand wat er misging.
+    const reden = err instanceof Error ? err.message.slice(0, 200) : "";
+    redirect(`/kandidaten/${id}?error=cv-lezen${reden ? `&reden=${encodeURIComponent(reden)}` : ""}`);
   }
   const leeg = (v: string | null) => !v || !v.trim();
   await db.candidate.update({
