@@ -263,18 +263,13 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
 
   // ---- Leverancier (links) + contact (midden) ----
   const supplierX = M;
-  const contactX = 250;
   let ly = y;
   text(doc.company.name, supplierX, ly, 9.5, bold, INK);
   ly -= 13;
   for (const l of doc.company.addressLines) {
     if (l) { text(l, supplierX, ly, 9, font, MUTED); ly -= 12; }
   }
-  let cy = y;
-  for (const l of doc.company.contactLines) {
-    if (l) { text(l, contactX, cy, 9, font, MUTED); cy -= 12; }
-  }
-  y = Math.min(ly, cy) - 10;
+  y = ly - 10;
 
   // ---- Bankblok (IBAN/BIC/VAT/KvK links + G-rekening) & meta-blok (rechts) ----
   const bankTop = y;
@@ -284,24 +279,29 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     ["VAT", doc.company.vatNumber],
     ["KvK", doc.company.kvkNumber],
   ].filter(([, v]) => v) as [string, string][];
+  // Rechts: tel / web / mail en daaronder de G-rekening, regel voor regel op
+  // dezelfde hoogte als IBAN / BIC / VAT / KvK links.
+  const rechts = [
+    ...doc.company.contactLines.filter(Boolean),
+    ...(doc.company.gAccount ? [`G-rekening: ${doc.company.gAccount}`] : []),
+  ];
   let by = bankTop;
-  for (const [k, v] of bankRows) {
-    text(k, supplierX, by, 9, font, MUTED);
-    text(`: ${v}`, supplierX + 42, by, 9, font, MUTED);
+  for (let i = 0; i < Math.max(bankRows.length, rechts.length); i++) {
+    const row = bankRows[i];
+    if (row) {
+      text(row[0], supplierX, by, 9, font, MUTED);
+      text(`: ${row[1]}`, supplierX + 42, by, 9, font, MUTED);
+    }
+    if (rechts[i]) textR(rechts[i], right, by, 9, font, MUTED);
     by -= 12;
-  }
-  if (doc.company.gAccount) {
-    // Rechts uitgelijnd op de IBAN-regel, zoals in het Q4S-format.
-    const g = `G-rekening: ${doc.company.gAccount}`;
-    textR(g, right, bankTop, 9, font, MUTED);
   }
 
   y = by - 14;
 
   // ---- Ontvanger (links) en precies daartegenover het meta-blok (rechts):
   //      Subject (freelancer) / Services / Our ref, dan Invoice no / KvK / VAT / Date.
-  const metaLabelR = 470;
-  const metaValX = 478;
+  const metaLabelR = 455;
+  const metaValX = 463;
   // "To:" erboven; de klantnaam staat op exact dezelfde hoogte als de eerste
   // regel rechts (Subject), zodat beide blokken gelijk beginnen.
   const blockTop = y - 14;
