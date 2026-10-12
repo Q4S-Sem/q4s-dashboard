@@ -1277,24 +1277,38 @@ export type SourcedVacancy = {
   summary?: string;
 };
 
+/** JSON-array uit een modelantwoord halen; alleen items met titel. */
+function parseSourced(text: string, max: number): SourcedVacancy[] {
+  const match = text.match(/\[[\s\S]*\]/);
+  if (!match) return [];
+  const arr = JSON.parse(match[0]);
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .filter((x) => x && typeof x.title === "string" && x.title.trim())
+    .slice(0, max) as SourcedVacancy[];
+}
+
 /**
- * AGENTIC web-search sourcing: let Claude search the open web for recently
- * posted, niche-relevant vacancies. Requires Anthropic + web search on the
- * account. Best-effort — returns [] on any failure. Auth-gated VMS portals need
- * a real per-platform API connection.
+ * AGENTIC web-search sourcing: laat een model het open web afzoeken naar recent
+ * geplaatste, niche-relevante vacatures (Web-speurder). Anthropic (web_search)
+ * als die sleutel er is, anders OpenRouter met de web-plugin op de Hermes-sleutel.
+ * Best-effort — [] bij elke fout. Afgeschermde VMS-portalen vragen een echte
+ * API-koppeling per platform.
  */
 export async function aiSourceVacancies(opts: {
   fields: string[];
   max?: number;
 }): Promise<SourcedVacancy[]> {
   await ensureAiKeysLoaded();
-  if (!process.env.ANTHROPIC_API_KEY) return [];
-  const c = getClient();
   const max = opts.max ?? 8;
-  const system = `Je bent een sourcing-agent voor Q4S, een Nederlands technisch detacheringsbureau. Zoek met de web-search tool naar RECENTE, openbaar geplaatste vacatures in Nederland binnen deze vakgebieden:
+  const system = `Je bent een sourcing-agent voor Q4S, een Nederlands technisch detacheringsbureau (staalbouw, industrie, offshore, energie). Zoek op het web naar RECENTE (max. 30 dagen oud), openbaar geplaatste vacatures en opdrachten in Nederland of België binnen deze vakgebieden:
 ${opts.fields.map((f) => `- ${f}`).join("\n")}
 
-Geef daarna UITSLUITEND een geldige JSON-array terug (geen tekst eromheen) met maximaal ${max} vacatures, elk een object met de velden: title, company, location, discipline, url, summary. Laat een veld leeg ("") als onbekend. Verzin geen vacatures; neem alleen echte, gevonden vacatures op.`;
+Zoek breed: vacaturesites (Indeed, Nationale Vacaturebank, werk.nl, LinkedIn Jobs), carrièrepagina's van eindklanten (industrie, petrochemie, offshore, infra, energie) en freelance-opdrachtplatforms. Sla vacatures van andere uitzend-/detacheringsbureaus over als de eindklant niet genoemd wordt.
+
+Geef daarna UITSLUITEND een geldige JSON-array terug (geen tekst eromheen) met maximaal ${max} vacatures, elk een object met de velden: title, company, location, discipline, url, summary. company = de werkgever/eindklant. url = de directe link naar de vacature. summary = 2-4 zinnen met taken, eisen (certificaten, ervaring) en duur/contractvorm als bekend. Laat een veld leeg ("") als onbekend. Verzin geen vacatures; neem alleen echte, gevonden vacatures op.`;
+  if (!process.env.ANTHROPIC_API_KEY) return openRouterSource(system, max);
+  const c = getClient();
   const params = {
     model: AI_MODEL,
     max_tokens: 4000,
@@ -1319,14 +1333,47 @@ Geef daarna UITSLUITEND een geldige JSON-array terug (geen tekst eromheen) met m
       promptTokens: usage?.input_tokens,
       completionTokens: usage?.output_tokens,
     });
-    const text = extractText(res.content);
-    const match = text.match(/\[[\s\S]*\]/);
-    if (!match) return [];
-    const arr = JSON.parse(match[0]);
-    if (!Array.isArray(arr)) return [];
-    return arr
-      .filter((x) => x && typeof x.title === "string" && x.title.trim())
-      .slice(0, max) as SourcedVacancy[];
+    return parseSourced(extractText(res.content), max);
+  } catch {
+    return [];
+  }
+}
+
+/** Zelfde zoekopdracht via OpenRouter (web-plugin, ±$0,02 per zoekactie). Alleen
+ *  als de Hermes-sleutel naar OpenRouter wijst; een eigen server kent geen plugins. */
+async function openRouterSource(system: string, max: number): Promise<SourcedVacancy[]> {
+  const key = process.env.HERMES_API_KEY;
+  const base = hermesBaseUrl();
+  if (!key || !base.includes("openrouter.ai")) return [];
+  const model = hermesModel("main");
+  try {
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${key}`, "x-title": "Q4S Dashboard" },
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        max_tokens: 4000,
+        plugins: [{ id: "web", max_results: 10 }],
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: "Zoek nu naar recente, relevante vacatures en geef de JSON-array terug." },
+        ],
+      }),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+    await recordAiUsage({
+      provider: "hermes",
+      model,
+      kind: "web",
+      promptTokens: data.usage?.prompt_tokens,
+      completionTokens: data.usage?.completion_tokens,
+    });
+    return parseSourced(data.choices?.[0]?.message?.content ?? "", max);
   } catch {
     return [];
   }

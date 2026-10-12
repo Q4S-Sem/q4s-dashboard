@@ -20,7 +20,7 @@ import { bulkFilterVacancies } from "../actions";
 import { markAllAlertsRead } from "../intake-actions";
 import { getHubCounts, getSources } from "./data";
 
-type SP = { filtered?: string; remaining?: string; error?: string };
+type SP = { filtered?: string; remaining?: string; error?: string; gezocht?: string };
 
 /** Eén stap in de trechter van binnenkomst tot live op de site. */
 function Step({
@@ -99,6 +99,11 @@ export default async function VacaturehubOverzichtPage({
       {sp.filtered !== undefined && (
         <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           {sp.filtered} vacature(s) beoordeeld · {sp.remaining} nog te gaan.
+        </p>
+      )}
+      {sp.gezocht !== undefined && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Web-speurder klaar: {sp.gezocht} nieuwe vacature(s) gevonden en door de AI-filter gehaald. Passende vacatures staan bij Relevant; leads staan bij de meldingen.
         </p>
       )}
 

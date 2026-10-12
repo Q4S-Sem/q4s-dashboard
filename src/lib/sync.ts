@@ -2,7 +2,7 @@ import { db } from "./db";
 import { isAIConfigured, aiSourceVacancies } from "./ai";
 import { aiFilterVacancy } from "./recruitment";
 import { rematchVacancy } from "./matching";
-import { pullConnector, aiRefineMatches } from "./msp";
+import { pullConnector, aiRefineMatches, intakeVacancies, createAlert } from "./msp";
 import { runAutomations } from "./automation";
 import { RECRUITMENT_FIELDS } from "./domain";
 
@@ -12,13 +12,15 @@ import { RECRUITMENT_FIELDS } from "./domain";
 const FILTER_CAP = 12;
 const MATCH_CAP = 30;
 
-function slugify(s: string): string {
-  return (
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "vacature"
-  );
+// Web-speurder: elke run 3 vakgebieden (roteert per dag), zo is de hele niche
+// in ±5 dagen rond en blijft elke zoekopdracht gericht.
+const WEB_FIELDS_PER_RUN = 3;
+const WEB_KEY = "web-speurder";
+
+/** Welke vakgebieden de Web-speurder vandaag afzoekt (roteert per dag). */
+export function webFieldsFor(day: number, fields: readonly string[] = RECRUITMENT_FIELDS): string[] {
+  const start = (day * WEB_FIELDS_PER_RUN) % fields.length;
+  return Array.from({ length: Math.min(WEB_FIELDS_PER_RUN, fields.length) }, (_, i) => fields[(start + i) % fields.length]);
 }
 
 export type SyncResult = {
@@ -65,29 +67,45 @@ export async function runDailySync(
       }
     }
 
-    // 1. AI web-search sourcing (best-effort; finds publicly posted vacancies).
+    // 1. Web-speurder: zoekt openbare vacatures op het web en zet ze als eigen
+    //    bron in de MSP-hub (Opdrachtgevers › Web-speurder). Niets gaat vanzelf
+    //    live: de AI-filter beoordeelt, de recruiter beslist.
+    let webId: string | null = null;
     if (isAIConfigured()) {
-      const found = await aiSourceVacancies({ fields: RECRUITMENT_FIELDS, max: 8 });
-      for (const f of found) {
-        const title = f.title.trim().slice(0, 200);
-        if (!title) continue;
-        const exists = await db.vacancy.findFirst({ where: { title } });
-        if (exists) continue;
-        const rawText = [f.summary, f.url].filter(Boolean).join("\n\n") || title;
-        await db.vacancy.create({
-          data: {
-            title,
-            rawText,
-            location: f.location?.slice(0, 120) || null,
-            companyName: f.company?.slice(0, 120) || null,
-            source: "VMS",
-            relevance: "UNKNOWN",
-            status: "CONCEPT",
-            slug: `${slugify(title)}-${Math.random().toString(36).slice(2, 8)}`,
-          },
-        });
-        sourced++;
-      }
+      const web = await db.vmsConnector.upsert({
+        where: { key: WEB_KEY },
+        update: {},
+        create: {
+          key: WEB_KEY,
+          name: "Web-speurder",
+          status: "MANUAL",
+          priority: 4,
+          notes: "Agent die dagelijks openbare vacatures in de Q4S-niche op het web zoekt.",
+          // Alleen beoordelen — nooit automatisch publiceren of posten.
+          autoPublishSite: false,
+          autoDraftPost: false,
+        },
+      });
+      webId = web.id;
+      const found = (
+        await Promise.all(
+          webFieldsFor(Math.floor(Date.now() / 86_400_000)).map((f) => aiSourceVacancies({ fields: [f], max: 6 })),
+        )
+      ).flat();
+      const { createdIds } = await intakeVacancies(
+        web.id,
+        found.map((f) => ({
+          title: f.title,
+          description: [f.summary, f.url && `Bron: ${f.url}`].filter(Boolean).join("\n\n") || f.title,
+          company: f.company,
+          location: f.location,
+          discipline: f.discipline,
+          url: f.url,
+          externalId: f.url,
+        })),
+      );
+      sourced += createdIds.length;
+      await db.vmsConnector.update({ where: { id: web.id }, data: { lastSyncAt: new Date() } });
     } else {
       note =
         "AI niet geconfigureerd: web-search-sourcing en relevantiefilter overgeslagen; alleen CV-matching uitgevoerd.";
@@ -104,7 +122,31 @@ export async function runDailySync(
       try {
         const r = await aiFilterVacancy(v.id);
         filtered++;
-        if (r === "RELEVANT") relevant++;
+        if (r === "RELEVANT") {
+          relevant++;
+          // Lead-agent: een bedrijf dat zelf iemand zoekt in onze niche = een
+          // acquisitiekans. Melding met wie het is, zodat sales kan bellen.
+          const vac = await db.vacancy.findUnique({
+            where: { id: v.id },
+            select: { title: true, companyName: true, location: true, vmsConnectorId: true, sourceUrl: true },
+          });
+          if (vac && webId && vac.vmsConnectorId === webId && vac.companyName) {
+            await createAlert({
+              type: "LEAD",
+              title: `Lead: ${vac.companyName} zoekt een ${vac.title}`,
+              body: [
+                vac.location && `Locatie: ${vac.location}.`,
+                "Gevonden door de Web-speurder en past bij de Q4S-niche. Bel ze om onze kandidaten aan te bieden, of schrijf de vacature uit voor de site/LinkedIn.",
+                vac.sourceUrl && `Bron: ${vac.sourceUrl}`,
+              ]
+                .filter(Boolean)
+                .join(" "),
+              href: `/vacatures/${v.id}`,
+              vacancyId: v.id,
+              vmsConnectorId: webId,
+            });
+          }
+        }
       } catch {
         // AI off/error — leave as UNKNOWN, continue.
       }

@@ -33,5 +33,6 @@ async function handle(req: Request) {
   return Response.json({ ok: true, run });
 }
 
+export const maxDuration = 300;
 export const GET = handle;
 export const POST = handle;

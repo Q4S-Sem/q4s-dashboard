@@ -6,7 +6,7 @@ import { bulkFilterVacancies } from "../../actions";
 import { getHubCounts } from "../data";
 import { HubVacancyList, HUB_VACANCY_SELECT, toHubVacancies } from "../HubVacancyList";
 
-export const metadata = { title: "Te beoordelen · Vacaturehub" };
+export const metadata = { title: "Te beoordelen · MSP" };
 
 type SP = { filtered?: string; remaining?: string; error?: string };
 

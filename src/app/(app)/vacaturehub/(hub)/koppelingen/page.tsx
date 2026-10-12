@@ -25,7 +25,7 @@ import { connectApi, pullNow } from "../../intake-actions";
 import { getSources } from "../data";
 import { SleutelMaken } from "./SleutelMaken";
 
-export const metadata = { title: "Koppelingen · Vacaturehub" };
+export const metadata = { title: "Koppelingen · MSP" };
 
 type SP = {
   conn?: string;

@@ -36,7 +36,7 @@ const TABS = [
 export async function generateMetadata({ params }: { params: Promise<{ key: string }> }) {
   const { key } = await params;
   const s = await getSource(key);
-  return { title: `${s?.name ?? "Bron"} · Vacaturehub` };
+  return { title: `${s?.name ?? "Bron"} · MSP` };
 }
 
 export default async function BronPage({

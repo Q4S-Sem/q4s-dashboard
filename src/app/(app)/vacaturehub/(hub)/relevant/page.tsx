@@ -6,7 +6,7 @@ import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/
 import { getHubCounts } from "../data";
 import { HubVacancyList, HUB_VACANCY_SELECT, toHubVacancies } from "../HubVacancyList";
 
-export const metadata = { title: "Relevant · Vacaturehub" };
+export const metadata = { title: "Relevant · MSP" };
 
 type SP = { published?: string; remaining?: string; error?: string; tab?: string };
 

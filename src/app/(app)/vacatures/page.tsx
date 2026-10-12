@@ -54,7 +54,7 @@ export default async function VacaturesMakenPage({
         actions={
           <>
             <Link href="/vacaturehub" className={buttonVariants({ variant: "outline" })}>
-              <Filter className="h-4 w-4" /> Vacaturehub
+              <Filter className="h-4 w-4" /> MSP
             </Link>
             <Link href="/vacatures/importeren" className={buttonVariants({ variant: "outline" })}>
               <Upload className="h-4 w-4" /> Importeren

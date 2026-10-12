@@ -12,7 +12,7 @@ import { simulateDelivery } from "../../intake-actions";
 import { formatDate, cn } from "@/lib/utils";
 import { getSources, OVERIG_KEY } from "../data";
 
-export const metadata = { title: "Opdrachtgevers · Vacaturehub" };
+export const metadata = { title: "Opdrachtgevers · MSP" };
 
 type SP = {
   sim?: string;

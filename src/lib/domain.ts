@@ -571,6 +571,7 @@ export const ALERT_TYPES: Option[] = [
   { value: "CV_SHORTLIST", label: "CV-shortlist", color: "violet" },
   { value: "CANDIDATE_REAPPLIED", label: "Bestaande kandidaat opnieuw", color: "amber" },
   { value: "VACANCY_RELEVANT", label: "Relevante vacature", color: "green" },
+  { value: "LEAD", label: "Lead", color: "cyan" },
   { value: "MATCHES_FOUND", label: "Kandidaat-matches", color: "violet" },
   { value: "PUBLISHED", label: "Live op website", color: "blue" },
   { value: "POST_READY", label: "LinkedIn-post klaar", color: "cyan" },

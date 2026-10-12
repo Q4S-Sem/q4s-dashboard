@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getHubCounts } from "../data";
 import { HubVacancyList, HUB_VACANCY_SELECT, toHubVacancies } from "../HubVacancyList";
 
-export const metadata = { title: "Afgewezen · Vacaturehub" };
+export const metadata = { title: "Afgewezen · MSP" };
 
 export default async function AfgewezenPage() {
   const [c, rows] = await Promise.all([
