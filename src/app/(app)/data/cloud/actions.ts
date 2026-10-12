@@ -1,4 +1,5 @@
 "use server";
+import { vereisBeheerder } from "@/lib/session";
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -25,6 +26,7 @@ export async function saveCloudSettings(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  await vereisBeheerder();
   const parsed = parseForm(CloudSettingsSchema, formData);
   if (!parsed.success) return parsed.state;
   const d = parsed.data;
@@ -56,6 +58,7 @@ export async function saveCloudSettings(
  * klaarzet-modus worden ze als SIMULATED gelogd zodat je de mapstructuur ziet.
  */
 export async function syncExistingData() {
+  await vereisBeheerder();
   const CAP = 500;
   let count = 0;
 

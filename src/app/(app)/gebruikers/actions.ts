@@ -1,4 +1,5 @@
 "use server";
+import { vereisBeheerder } from "@/lib/session";
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -46,6 +47,7 @@ export async function createUser(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  await vereisBeheerder();
   const parsed = parseForm(UserSchema, formData);
   if (!parsed.success) return parsed.state;
 
@@ -79,6 +81,7 @@ export async function updateUser(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  await vereisBeheerder();
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Onbekende gebruiker." };
 
@@ -123,6 +126,7 @@ export async function updateUser(
 }
 
 export async function deleteUser(formData: FormData) {
+  await vereisBeheerder();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await db.appUser.delete({ where: { id } });

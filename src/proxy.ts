@@ -1,15 +1,33 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isAuthRequired, sessionSigningSecret } from "@/lib/auth-policy";
+import { isOpenbaar, userIdUitCookie } from "@/lib/proxy-auth";
+import { db } from "@/lib/db";
 
 /**
- * Proxy (voorheen middleware). We doen hier GEEN autorisatie — dat gebeurt in
- * de server-layout waar we de database en de sessie kunnen lezen. Dit zet alleen
- * het huidige pad in een request-header (`x-pathname`), zodat de layout weet
- * welke route wordt opgevraagd en de toegangsrechten kan afdwingen.
+ * Proxy (voorheen middleware):
+ *  1. Zet het pad in `x-pathname`, zodat (app)/layout.tsx de paginarechten kan afdwingen.
+ *  2. Poort: buiten de openbare pagina's is een geldige sessie verplicht. Dat
+ *     dekt ook server actions (die draaien vóór de layout-check) en de
+ *     PDF-/download-routes onder (app). Schrijfacties (POST) checken daarbij of
+ *     de gebruiker nog actief is; lezen leunt op de cookie + de layout.
  */
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  const pad = request.nextUrl.pathname;
+  if (isAuthRequired() && !isOpenbaar(pad)) {
+    const lezen = request.method === "GET" || request.method === "HEAD";
+    const userId = userIdUitCookie(request.cookies.get("q4s_session")?.value, sessionSigningSecret());
+    const actief =
+      userId &&
+      (lezen || Boolean((await db.appUser.findUnique({ where: { id: userId }, select: { active: true } }))?.active));
+    if (!actief) {
+      if (!lezen) return new NextResponse("Niet ingelogd", { status: 401, headers: { "Cache-Control": "no-store" } });
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
+
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+  requestHeaders.set("x-pathname", pad);
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 

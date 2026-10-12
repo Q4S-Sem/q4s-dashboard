@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac } from "node:crypto";
+import { userIdUitCookie } from "@/lib/proxy-auth";
 import { db } from "@/lib/db";
 import { migrateAccessHrefs } from "@/components/nav";
 import { isAdminRole, isAuthRequired, sessionSigningSecret } from "@/lib/auth-policy";
@@ -26,18 +27,7 @@ function sign(value: string, secret: string): string {
 }
 
 function readToken(token: string | undefined): string | null {
-  const secret = sessionSigningSecret();
-  if (!secret) return null;
-  if (!token) return null;
-  const i = token.lastIndexOf(".");
-  if (i < 0) return null;
-  const userId = token.slice(0, i);
-  const sig = token.slice(i + 1);
-  const expected = sign(userId, secret);
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
-  return userId;
+  return userIdUitCookie(token, sessionSigningSecret());
 }
 
 export async function setSession(userId: string): Promise<void> {
@@ -119,4 +109,10 @@ export async function currentUser(): Promise<SessionUser | null> {
     allowedHubs: migrateAccessHrefs(parseHrefList(user.allowedHubs)),
     allowedPages: migrateAccessHrefs(parseHrefList(user.allowedPages)),
   };
+}
+
+/** Server action alleen voor beheerders. Gooit (geen stille no-op), zodat een
+ *  niet-beheerder die de action toch aanroept niets kan wijzigen. */
+export async function vereisBeheerder(): Promise<void> {
+  if (!(await isAdminSession())) throw new Error("Alleen een beheerder mag dit doen.");
 }

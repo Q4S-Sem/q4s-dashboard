@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { renderInvoicePdf } from "@/lib/invoice-pdf";
@@ -44,6 +45,8 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const gate = await requireApiSession();
+  if (gate) return gate;
   const { id } = await params;
   const inv = await db.invoice.findUnique({
     where: { id },

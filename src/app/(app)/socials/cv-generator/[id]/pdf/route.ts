@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { buildCvDoc, cvFileName } from "@/lib/cv-doc";
@@ -11,6 +12,8 @@ import { loadCvPhoto } from "@/lib/cv-render";
  * (inclusief de anonimiseer-stand).
  */
 export async function GET(_req: Request, ctx: RouteContext<"/socials/cv-generator/[id]/pdf">) {
+  const gate = await requireApiSession();
+  if (gate) return gate;
   const { id } = await ctx.params;
 
   const profile = await db.cvProfile.findUnique({

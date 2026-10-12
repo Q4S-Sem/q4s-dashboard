@@ -1,4 +1,5 @@
 "use server";
+import { vereisBeheerder } from "@/lib/session";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -13,6 +14,7 @@ function revalidate() {
 
 /** Sla een API-sleutel op. Leeg laten = huidige sleutel behouden (net als bij wachtwoorden). */
 export async function saveAiKey(formData: FormData) {
+  await vereisBeheerder();
   const provider = String(formData.get("provider") ?? "");
   const key = String(formData.get("apiKey") ?? "").trim();
   if (!provider) redirect("/gebruikers/api-sleutels");
@@ -24,6 +26,7 @@ export async function saveAiKey(formData: FormData) {
 
 /** Verwijder een via het dashboard opgeslagen sleutel. */
 export async function clearAiKey(formData: FormData) {
+  await vereisBeheerder();
   const provider = String(formData.get("provider") ?? "");
   if (!provider) redirect("/gebruikers/api-sleutels");
   await setAiKey(provider, null);
@@ -33,6 +36,7 @@ export async function clearAiKey(formData: FormData) {
 
 /** AI-motor: kies de actieve tekst-AI + stel het Hermes-endpoint/model in. */
 export async function saveAiConfig(formData: FormData) {
+  await vereisBeheerder();
   const textProvider = String(formData.get("textProvider") ?? "").trim();
   const hermesBaseUrl = String(formData.get("hermesBaseUrl") ?? "").trim();
   const hermesModel = String(formData.get("hermesModel") ?? "").trim();
@@ -50,6 +54,7 @@ const PROVIDERS: AiProviderKey[] = ["deepseek", "gemini", "anthropic", "hermes"]
 /** Live verbindingstest voor de "Test verbinding"-knop (client-component). Doet één
  *  minimale echte API-aanroep met de ingestelde sleutel en meldt succes/fout. */
 export async function testAiConnection(provider: string): Promise<ConnTest> {
+  await vereisBeheerder();
   if (!(PROVIDERS as string[]).includes(provider)) {
     return { ok: false, provider: "gemini", message: "Onbekende provider." };
   }

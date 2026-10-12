@@ -1,3 +1,4 @@
+import { requireApiSession } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { getCompanySettings } from "@/lib/settings";
 import { buildCvDoc, cvFileName } from "@/lib/cv-doc";
@@ -9,6 +10,8 @@ import { cvTemplateFromSettings } from "@/lib/cv-template";
  * de browser kan .docx toch niet tonen, dus meteen downloaden.
  */
 export async function GET(_req: Request, ctx: RouteContext<"/socials/cv-generator/[id]/docx">) {
+  const gate = await requireApiSession();
+  if (gate) return gate;
   const { id } = await ctx.params;
 
   const profile = await db.cvProfile.findUnique({
