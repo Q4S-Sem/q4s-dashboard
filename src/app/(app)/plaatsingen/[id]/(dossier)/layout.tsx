@@ -84,20 +84,26 @@ export default async function PlaatsingDossierLayout({
                 action={restorePlacement}
                 id={placement.id}
                 variant="secondary"
+                trigger="icon"
+                icon={<RotateCcw className="h-4 w-4" />}
+                iconClassName={BEWERK_ICOON}
                 message={`${person} weer in dienst nemen?`}
                 description="De plaatsing gaat terug naar actief met alle tarieven en gegevens. Je past daarna de start- en einddatum aan."
               >
-                <RotateCcw className="h-4 w-4" /> Terugzetten
+                Terugzetten
               </ConfirmSubmit>
             ) : (
               <ConfirmSubmit
                 action={archivePlacement}
                 id={placement.id}
                 variant="outline"
+                trigger="icon"
+                icon={<Archive className="h-4 w-4" />}
+                iconClassName={BEWERK_ICOON}
                 message={`${person} uit dienst — plaatsing archiveren?`}
                 description="De plaatsing verdwijnt uit de lijst en gaat naar het archief. Er wordt niets verwijderd: met één klik zet je hem terug."
               >
-                <Archive className="h-4 w-4" /> Archiveren
+                Archiveren
               </ConfirmSubmit>
             )}
             <ConfirmSubmit
