@@ -14,7 +14,7 @@ import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { buttonVariants } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { getClient } from "./data";
 import { ContactsCard } from "./ContactsCard";
 
@@ -41,7 +41,7 @@ export default async function KlantOverzichtPage({
   const client = await getClient(id);
   if (!client) notFound();
 
-  const [activePlacements, invoiced, outstanding] = await Promise.all([
+  const [activePlacements, invoiced, outstanding, documenten] = await Promise.all([
     db.placement.count({ where: { clientId: id, status: "ACTIVE" } }),
     db.invoice.aggregate({
       _sum: { total: true },
@@ -52,6 +52,7 @@ export default async function KlantOverzichtPage({
       _count: true,
       where: { clientId: id, status: { in: ["SENT", "OVERDUE"] } },
     }),
+    db.clientDocument.findMany({ where: { clientId: id }, orderBy: { createdAt: "desc" } }),
   ]);
 
   const website = client.website
@@ -201,6 +202,29 @@ export default async function KlantOverzichtPage({
           notes: c.notes,
         }))}
       />
+
+      {documenten.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Getekende documenten</CardTitle>
+          </CardHeader>
+          <ul className="divide-y divide-ink-100">
+            {documenten.map((d) => (
+              <li key={d.id}>
+                <a
+                  href={`/api/klanten/document/${d.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-5 py-2.5 text-sm hover:bg-ink-50"
+                >
+                  <span className="min-w-0 flex-1 truncate font-medium text-ink-900">{d.title}</span>
+                  <span className="text-xs text-ink-400">{formatDate(d.createdAt)}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {client.notes && (
         <Card>

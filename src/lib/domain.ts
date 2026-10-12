@@ -189,6 +189,7 @@ export const SOCIAL_POST_STATUS_VALUES = SOCIAL_POST_STATUSES.map((d) => d.value
 export const CONTRACT_STATUSES: Option[] = [
   { value: "DRAFT", label: "Concept", color: "amber" },
   { value: "FINAL", label: "Definitief", color: "blue" },
+  { value: "SENT", label: "Verstuurd", color: "violet" },
   { value: "SIGNED", label: "Getekend", color: "green" },
 ];
 export const CONTRACT_STATUS_VALUES = CONTRACT_STATUSES.map((d) => d.value) as [string, ...string[]];

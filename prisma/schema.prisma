@@ -184,6 +184,7 @@ model Client {
 
   placements       Placement[]
   invoices         Invoice[]
+  documents        ClientDocument[]
   vacancies        Vacancy[]
   events           CalendarEvent[]
   tasks            Task[]
@@ -913,8 +914,13 @@ model DocConcept {
   soort     String
   label     String   @default("")
   data      String
-  /// "DRAFT" (concept) of "READY" (klaar).
+  /// DRAFT (concept) | READY (klaar) | SENT (verstuurd) | SIGNED (getekend terug).
   status    String   @default("DRAFT")
+  sentAt    DateTime?
+  signedAt  DateTime?
+  /// Waar het getekende pakket staat (download-URL) en bij wie het bewaard is.
+  signedHref String?
+  signedFor  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1322,8 +1328,10 @@ model Contract {
   signPlaceContractor String @default("")
   signDate          DateTime?
 
-  /// DRAFT | FINAL | SIGNED — waar het contract in zijn leven staat.
+  /// DRAFT | FINAL | SENT | SIGNED — concept → klaar → verstuurd (wacht op
+  /// handtekening) → getekend terug (pakket in het dossier).
   status       String   @default("DRAFT")
+  sentAt       DateTime?
   /// Het geüploade, getekende exemplaar (Document.id) — gezet bij het uploaden.
   signedDocumentId String?
   notes        String?
@@ -2421,4 +2429,21 @@ model SocialChannel {
   prevFollowers Int   @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+/// Dossierstuk bij een klant (bv. getekende offerte). Bestand in de opslag onder
+/// uploadKey(clientId, fileName).
+model ClientDocument {
+  id           String   @id @default(cuid())
+  clientId     String
+  title        String
+  fileName     String
+  originalName String
+  mimeType     String
+  size         Int
+  createdAt    DateTime @default(now())
+
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
 }
