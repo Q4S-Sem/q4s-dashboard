@@ -1,3 +1,4 @@
+import { afgelopen24Uur } from "@/lib/vandaag";
 import Link from "next/link";
 import { Users, Plus, Star, UserCheck, Clock, ChevronRight, Mail, Inbox, Globe, ClipboardCheck } from "lucide-react";
 import { db } from "@/lib/db";
@@ -17,7 +18,6 @@ import {
   CANDIDATE_RATING_ORDER,
   CANDIDATE_AVAILABILITY,
 } from "@/lib/domain";
-import { startVandaagNL } from "@/lib/vandaag";
 import { SPOOR, type Spoor } from "@/lib/spoor";
 import { RatingSelect } from "./RatingSelect";
 import { AvailabilitySelect } from "./AvailabilitySelect";
@@ -56,7 +56,7 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
   const rating = sp.rating || "";
   const availability = sp.availability || "";
   const map = ["beoordelen", "beschikbaar", "binnenkort", "goed", "buiten"].includes(sp.map ?? "") ? sp.map! : "pool";
-  const vandaag = startVandaagNL();
+  const vandaag = afgelopen24Uur();
 
   const where = {
     spoor,
@@ -117,7 +117,7 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
   const tegels: FilterTegel[] = [
     { key: "pool", label: "Talentpool (EU)", waarde: mappen.pool.length, icon: <Users className="h-4 w-4" />, toon: "slate", href: mapHref("pool"), actief: map === "pool" },
     { key: "beoordelen", label: "Ter beoordeling", waarde: mappen.beoordelen.length, icon: <ClipboardCheck className="h-4 w-4" />, toon: "amber", href: mapHref("beoordelen"), actief: map === "beoordelen" },
-    { key: "nieuw", label: "Vandaag binnen", waarde: pool.filter(isNieuw).length, icon: <Inbox className="h-4 w-4" />, toon: "blue", href: pad.basis, actief: false },
+    { key: "nieuw", label: "Afgelopen 24 uur", waarde: pool.filter(isNieuw).length, icon: <Inbox className="h-4 w-4" />, toon: "blue", href: pad.basis, actief: false },
     { key: "goed", label: "Goed beoordeeld", waarde: mappen.goed.length, icon: <Star className="h-4 w-4" />, toon: "green", href: mapHref("goed"), actief: map === "goed" },
     { key: "beschikbaar", label: "Nu beschikbaar", waarde: mappen.beschikbaar.length, icon: <UserCheck className="h-4 w-4" />, toon: "green", href: mapHref("beschikbaar"), actief: map === "beschikbaar" },
     { key: "binnenkort", label: "Binnenkort beschikbaar", waarde: mappen.binnenkort.length, icon: <Clock className="h-4 w-4" />, toon: "amber", href: mapHref("binnenkort"), actief: map === "binnenkort" },

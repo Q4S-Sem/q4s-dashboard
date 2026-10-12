@@ -1,3 +1,4 @@
+import { afgelopen24Uur } from "@/lib/vandaag";
 import Link from "next/link";
 import { CalendarDays, ChevronRight, ClipboardCheck, ClipboardList, FileText, Globe, Inbox, Plus, Users } from "lucide-react";
 import { db } from "@/lib/db";
@@ -9,20 +10,19 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { person } from "@/lib/people";
 import { herkomst } from "@/lib/eu-herkomst";
-import { startVandaagNL } from "@/lib/vandaag";
 import { CANDIDATE_SOURCES, DISCIPLINES } from "@/lib/domain";
 import { RatingSelect } from "./RatingSelect";
 import { SPOOR, type Spoor } from "@/lib/spoor";
 
 
 /**
- * Talentpool-hoofdpagina: elke dag een schone pagina met alleen wie VANDAAG
- * binnenkwam (cv gestuurd / aangemeld) of solliciteerde. De hele pool staat op
+ * Talentpool-hoofdpagina: alleen wie de AFGELOPEN 24 UUR binnenkwam (cv
+ * gestuurd / aangemeld) of solliciteerde — ook wat gisteravond laat kwam. De hele pool staat op
  * /kandidaten/alle.
  */
 export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
   const sp = SPOOR[spoor];
-  const vandaag = startVandaagNL();
+  const vandaag = afgelopen24Uur();
   const [nieuw, sollicitaties, totaal, teBeoordelen] = await Promise.all([
     db.candidate.findMany({
       where: { createdAt: { gte: vandaag }, spoor },
@@ -45,8 +45,11 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
     db.candidate.count({ where: { rating: "ONBEKEND", spoor } }),
   ]);
 
-  const tijd = (d: Date) => d.toLocaleTimeString("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" });
-  const datum = new Date().toLocaleDateString("nl-NL", { timeZone: "Europe/Amsterdam", weekday: "long", day: "numeric", month: "long" });
+  // Binnen 24 uur: alleen de tijd, of "gist. 21:40" als het van gisteren is.
+  const vandaagNL = new Date().toLocaleDateString("nl-NL", { timeZone: "Europe/Amsterdam" });
+  const tijd = (d: Date) =>
+    (d.toLocaleDateString("nl-NL", { timeZone: "Europe/Amsterdam" }) === vandaagNL ? "" : "gist. ") +
+    d.toLocaleTimeString("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" });
   const nieuwIds = new Set(nieuw.map((c) => c.id));
   // Sollicitaties van bestaande kandidaten (nieuwe staan al in de lijst hierboven).
   const vanBestaande = sollicitaties.filter((a) => !nieuwIds.has(a.candidate.id));
@@ -54,17 +57,17 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
   const buitenEU = nieuw.filter((c) => herkomst(c) === "BUITEN_EU").length;
 
   const tegels: FilterTegel[] = [
-    { key: "nieuw", label: "Vandaag binnen", waarde: nieuw.length + vanBestaande.length, icon: <Inbox className="h-4 w-4" />, toon: "blue", href: sp.basis, actief: true },
+    { key: "nieuw", label: "Afgelopen 24 uur", waarde: nieuw.length + vanBestaande.length, icon: <Inbox className="h-4 w-4" />, toon: "blue", href: sp.basis, actief: true },
     { key: "beoordelen", label: "Ter beoordeling", waarde: teBeoordelen, icon: <ClipboardCheck className="h-4 w-4" />, toon: "amber", href: `${sp.alle}?map=beoordelen`, actief: false },
-    { key: "buiten", label: "Vandaag buiten de EU", waarde: buitenEU, icon: <Globe className="h-4 w-4" />, toon: "red", href: `${sp.alle}?map=buiten`, actief: false },
+    { key: "buiten", label: "Buiten de EU (24 uur)", waarde: buitenEU, icon: <Globe className="h-4 w-4" />, toon: "red", href: `${sp.alle}?map=buiten`, actief: false },
     { key: "alle", label: "Alle kandidaten", waarde: totaal, icon: <Users className="h-4 w-4" />, toon: "slate", href: sp.alle, actief: false },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`${sp.label} — vandaag binnen`}
-        description={`Vandaag binnengekomen — ${datum}. Elke dag begint deze pagina leeg; de hele pool staat bij Alle kandidaten.`}
+        title={`${sp.label} — afgelopen 24 uur`}
+        description="Alles wat de afgelopen 24 uur binnenkwam. De hele pool staat bij Alle kandidaten."
         actions={
           <>
             <Link href={sp.alle} className={buttonVariants({ variant: "outline" })}>
@@ -97,7 +100,7 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
             const sol = sollicitatieVan.get(c.id);
             return (
               <div key={c.id} className="relative flex items-center gap-3 px-4 py-3 text-sm">
-                <span className="w-12 shrink-0 text-xs tabular-nums text-ink-400">{tijd(c.createdAt)}</span>
+                <span className="w-16 shrink-0 text-xs tabular-nums text-ink-400">{tijd(c.createdAt)}</span>
                 <Avatar {...person(c)} size="sm" />
                 <div className="min-w-0 flex-1">
                   <Link href={`/kandidaten/${c.id}`} className="font-semibold text-ink-900 after:absolute after:inset-0 hover:text-brand-700">
@@ -126,7 +129,7 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
           })}
           {vanBestaande.map((a) => (
             <div key={a.id} className="relative flex items-center gap-3 px-4 py-3 text-sm">
-              <span className="w-12 shrink-0 text-xs tabular-nums text-ink-400">{tijd(a.createdAt)}</span>
+              <span className="w-16 shrink-0 text-xs tabular-nums text-ink-400">{tijd(a.createdAt)}</span>
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-50 text-violet-600">
                 <ClipboardList className="h-4 w-4" />
               </span>

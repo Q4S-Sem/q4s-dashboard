@@ -1,3 +1,4 @@
+import { afgelopen24Uur } from "./vandaag";
 import { db } from "./db";
 import { round2 } from "./utils";
 import { computeTimesheetMoney, type SideBreakdown } from "./toeslag";
@@ -226,8 +227,12 @@ export async function getNavBadges(): Promise<{
   ontvangen: number;
   verzenden: number;
   teDoen: number;
+  binnenProject: number;
+  binnenVast: number;
+  msp: number;
 }> {
-  const [pending, facturen, ontvangen, verzendSales, teDoen] =
+  const dagGeleden = afgelopen24Uur();
+  const [pending, facturen, ontvangen, verzendSales, teDoen, binnenProject, binnenVast, msp] =
     await Promise.all([
       db.timesheet.findMany({
         where: pendingWhere(),
@@ -241,9 +246,14 @@ export async function getNavBadges(): Promise<{
       db.invoice.count({ where: { status: "READY" } }),
       // Te-late open taken (chatter/automatisering) — de "Te doen"-badge.
       db.activity.count({ where: { kind: "TODO", done: false, dueAt: { lt: new Date() } } }),
+      // Recruitment: kandidaten die de afgelopen 24 uur binnenkwamen, per spoor.
+      db.candidate.count({ where: { createdAt: { gte: dagGeleden }, spoor: "PROJECT" } }),
+      db.candidate.count({ where: { createdAt: { gte: dagGeleden }, spoor: "VAST" } }),
+      // MSP: leads die op beoordeling wachten (zie INBOX_WHERE in de MSP-hub).
+      db.vacancy.count({ where: { relevance: "RELEVANT", status: "CONCEPT" } }),
     ]);
   const verwerken = new Set(pending.map((t) => t.placement.consultantId)).size;
-  return { verwerken, facturen, inkoop: 0, ontvangen, verzenden: verzendSales, teDoen };
+  return { verwerken, facturen, inkoop: 0, ontvangen, verzenden: verzendSales, teDoen, binnenProject, binnenVast, msp };
 }
 
 // ---------------------------------------------------------------------------

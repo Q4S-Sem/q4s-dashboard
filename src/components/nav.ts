@@ -167,10 +167,10 @@ const HUB_LIST: NavHub[] = [
     icon: Sparkles,
     items: [
       { href: "/recruitment", label: "Cockpit", icon: LayoutDashboard, exact: true },
-      { href: "/kandidaten", label: "Vandaag binnen", icon: Inbox, section: "Projecten", exact: true },
+      { href: "/kandidaten", label: "Afgelopen 24 uur", icon: Inbox, section: "Projecten", exact: true, badge: "binnenProject" },
       { href: "/kandidaten/alle", label: "Alle kandidaten", icon: Users, section: "Projecten" },
       { href: "/crm", label: "Pipeline", icon: Kanban, section: "Projecten", exact: true },
-      { href: "/vast", label: "Vandaag binnen", icon: Inbox, section: "WNS+Deta vast", exact: true },
+      { href: "/vast", label: "Afgelopen 24 uur", icon: Inbox, section: "WNS+Deta vast", exact: true, badge: "binnenVast" },
       { href: "/vast/alle", label: "Alle kandidaten", icon: Users, section: "WNS+Deta vast" },
       { href: "/vast/pipeline", label: "Pipeline", icon: Kanban, section: "WNS+Deta vast" },
       // Vacatures = alles in één: werving (open/pipeline) én website (concept/gereed/online).
@@ -178,7 +178,7 @@ const HUB_LIST: NavHub[] = [
       // Bereikbaar via de mappen op Vacatures, niet als los menu-item:
       { href: "/website", label: "Vacatures op de website", icon: Globe, hidden: true },
       { href: "/vacatures", label: "Uitwerken & publiceren", icon: PencilLine, hidden: true },
-      { href: "/vacaturehub", label: "MSP", icon: Filter, section: "Werving" },
+      { href: "/vacaturehub", label: "MSP", icon: Filter, section: "Werving", badge: "msp" },
       { href: "/opdrachtgevers", label: "Klanten & contacten", icon: Factory, section: "Werving" },
       // Niet meer in het menu (route blijft bereikbaar):
       { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, hidden: true },
