@@ -49,7 +49,6 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
     db.vacancy.findMany({
       where: { status: "PUBLISHED", socialPosts: { none: {} } },
       orderBy: { createdAt: "desc" },
-      take: 6,
       select: { id: true, title: true, location: true },
     }),
   ]);
