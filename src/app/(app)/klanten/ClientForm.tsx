@@ -191,7 +191,6 @@ export function ClientForm({
               <Field
                 label="Website"
                 htmlFor="website"
-                hint="Vul de bedrijfssite in → KvK, BTW, e-mail en telefoon worden automatisch opgehaald (gratis, ter controle)."
                 className="min-w-[200px] flex-1"
               >
                 <Input
@@ -207,16 +206,15 @@ export function ClientForm({
                 type="button"
                 onClick={fetchCompanyData}
                 disabled={enrich === "busy" || !website.trim()}
-                className={buttonVariants({ variant: "outline" })}
+                className={buttonVariants({ variant: "ghost" })}
               >
-                {enrich === "busy" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Gegevens ophalen
+                {enrich === "busy" ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                Ophalen
               </button>
             </div>
+            <p className="mt-1.5 text-xs text-ink-500">
+              KvK, BTW, e-mail en telefoon worden van de site opgehaald (ter controle).
+            </p>
             {enrich === "done" && enrichInfo && (
               <p className="mt-1.5 text-xs text-emerald-600">{enrichInfo}</p>
             )}
