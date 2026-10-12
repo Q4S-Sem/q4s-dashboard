@@ -5,6 +5,11 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { renderQ4sEmail, renderQ4sEmailText, sendMail } from "@/lib/email";
 import { facturatieMailVoorbeeld } from "@/lib/facturatie-mail";
+import { currentUser } from "@/lib/session";
+
+/** Altijd vanaf admin@q4s.nl; antwoorden van de freelancer landen in die inbox. */
+const ADMIN = "admin@q4s.nl";
+const VAN = `Q4S Administratie <${ADMIN}>`;
 
 // ---------------------------------------------------------------------------
 // "Mail de freelancer over deze week" — de ENIGE actie van dit scherm.
@@ -53,6 +58,8 @@ export async function verstuurConceptMail(formData: FormData) {
 
   const res = await sendMail({
     handmatig: true, // na klik van een gebruiker
+    from: VAN,
+    replyTo: ADMIN,
     to: data.to,
     subject: data.subject,
     html: renderQ4sEmail(data.content),
@@ -85,4 +92,31 @@ export async function verstuurConceptMail(formData: FormData) {
   redirect(
     mailPad(placementId, weekKey, notitie, { klaar: res.simulated ? "klaarzet" : "live" }),
   );
+}
+
+/** Alleen het voorbeeld verversen met de (aangepaste) toelichting — verstuurt niets. */
+export async function voorbeeldBijwerken(formData: FormData) {
+  const placementId = tekst(formData, "placementId");
+  const weekKey = tekst(formData, "week");
+  redirect(mailPad(placementId, weekKey, tekst(formData, "notitie").slice(0, MAX_NOTITIE), {}));
+}
+
+/** Concept naar jezelf (eigen @q4s.nl-adres) om de mail te bekijken; de week blijft staan. */
+export async function testmailNaarMij(formData: FormData) {
+  const placementId = tekst(formData, "placementId");
+  const weekKey = tekst(formData, "week");
+  const notitie = tekst(formData, "notitie").slice(0, MAX_NOTITIE);
+  const data = await facturatieMailVoorbeeld(placementId, weekKey, notitie || null);
+  if (!data) redirect("/facturatie");
+  const ik = (await currentUser())?.email?.trim().toLowerCase() ?? "";
+  if (!/@q4s\.nl$/.test(ik)) redirect(mailPad(placementId, weekKey, notitie, { fout: "test-adres" }));
+  const res = await sendMail({
+    from: VAN,
+    replyTo: ADMIN,
+    to: ik,
+    subject: `[Concept → ${data.to ?? data.naam}] ${data.subject}`,
+    html: renderQ4sEmail(data.content),
+    text: renderQ4sEmailText(data.content),
+  });
+  redirect(mailPad(placementId, weekKey, notitie, res.ok ? { test: res.simulated ? "klaarzet" : ik } : { fout: "mislukt" }));
 }

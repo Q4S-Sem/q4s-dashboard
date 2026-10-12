@@ -44,7 +44,16 @@ export type FreelancerDiscrepancyInput = {
   autoFlags: string[];
   /** Wat HR er zelf bij schrijft; komt als citaat in de mail. */
   eigenNotitie?: string | null;
+  /** Waar de bevindingen over gaan; bepaalt "je timesheet" / "je factuur". */
+  stukken?: "timesheet" | "factuur" | "beide";
 };
+
+/** "je timesheet", "je factuur" of "je timesheet en factuur". */
+function stukTekst(stukken: FreelancerDiscrepancyInput["stukken"], heeftFactuur: boolean): string {
+  if (stukken === "timesheet") return "je timesheet";
+  if (stukken === "factuur") return "je factuur";
+  return heeftFactuur ? "je timesheet en factuur" : "je timesheet";
+}
 
 /** Eén blok onder de lopende tekst; `quoted` = als citaat tonen. */
 export type MailSectie = {
@@ -60,6 +69,8 @@ export type FreelancerDiscrepancyEmail = {
   bodyLines: string[];
   /** Blokken onder de tekst (controlemeldingen, geciteerde eigen bevinding). */
   sections: MailSectie[];
+  /** De vraag + "reageer op deze mail" — komt ná de blokken. */
+  slotLines: string[];
   /** De samenvattingstabel; velden zonder waarde staan er niet in. */
   summary: { label: string; value: string }[];
   signature: string;
@@ -124,26 +135,28 @@ export function buildFreelancerDiscrepancyEmail(
     afgesprokenTarief !== null && factuurTarief !== null && wijktAf(factuurTarief, afgesprokenTarief);
 
   // ---- Onderwerp + aanhef -------------------------------------------------
-  const onderwerpKop = nummer ? `Vraag over je factuur ${nummer}` : "Vraag over je weekstaat";
+  const onderwerpKop = nummer ? `Vraag over je factuur ${nummer}` : "Vraag over je timesheet";
   const subject = week ? `${onderwerpKop} — ${week}` : onderwerpKop;
 
   const voornaam = schoon(input.freelancerName)?.split(/\s+/)[0] ?? null;
-  const greeting = voornaam ? `Beste ${voornaam},` : "Beste,";
+  const greeting = voornaam ? `Hoi ${voornaam},` : "Hoi,";
 
   // ---- De lopende tekst ---------------------------------------------------
-  const weekTekst = week ?? "deze week";
+  // Midden in een zin met kleine letter: "voor week 41 · 2026".
+  const weekTekst = week ? week.charAt(0).toLowerCase() + week.slice(1) : "deze week";
+  const stuk = stukTekst(input.stukken, nummer !== null);
+  const heeftIets =
+    bedragVerschil !== null ||
+    urenVerschil !== null ||
+    tariefVerschil ||
+    km !== null ||
+    notitie !== null ||
+    (input.autoFlags ?? []).some((f) => schoon(f) !== null);
   const bodyLines: string[] = [
-    nummer
-      ? `Bedankt voor je factuur ${nummer} voor ${weekTekst}.`
-      : `Bedankt voor het insturen van je uren voor ${weekTekst}.`,
+    heeftIets
+      ? `Bedankt voor het insturen. Tijdens het verwerken van ${stuk} voor ${weekTekst} hebben we het volgende opgemerkt.`
+      : `Bedankt voor het insturen. Bij het verwerken van ${stuk} voor ${weekTekst} viel ons iets op dat we graag even met je afstemmen.`,
   ];
-
-  const heeftVerschil = bedragVerschil !== null || urenVerschil !== null || tariefVerschil;
-  bodyLines.push(
-    heeftVerschil
-      ? "Bij het verwerken viel ons een verschil op tussen wat wij in onze administratie hebben staan en wat jij hebt ingestuurd."
-      : "Bij het verwerken van deze week viel ons iets op dat we graag even met je afstemmen.",
-  );
 
   if (bedragVerschil !== null) {
     bodyLines.push(
@@ -157,7 +170,7 @@ export function buildFreelancerDiscrepancyEmail(
 
   if (urenVerschil !== null) {
     bodyLines.push(
-      `Op je weekstaat staan ${uren(urenStaat as number)}, op je factuur ${uren(
+      `Op je timesheet staan ${uren(urenStaat as number)}, op je factuur ${uren(
         urenFactuur as number,
       )} — een verschil van ${uren(Math.abs(urenVerschil))}.`,
     );
@@ -173,10 +186,10 @@ export function buildFreelancerDiscrepancyEmail(
 
   if (km) bodyLines.push(`Over de kilometers: ${km}. Wil je die ook even nakijken?`);
 
-  bodyLines.push(
-    "Zou je dit willen nakijken en ons zo nodig een aangepaste weekstaat of factuur sturen? Klopt onze administratie niet, laat het dan gerust weten — dan zoeken we het samen uit.",
-    "Zodra we je reactie hebben, verwerken we deze week meteen verder.",
-  );
+  const slotLines = [
+    `Kun je ${stuk} aanpassen naar wat het moet zijn en de gecorrigeerde versie terugsturen? Klopt het wel zoals je het hebt ingestuurd, leg dan even uit waarom — dan nemen we dat mee.`,
+    "Je kunt gewoon op deze mail reageren. Zodra we je reactie hebben, verwerken we deze week meteen verder.",
+  ];
 
   // ---- De blokken eronder -------------------------------------------------
   const sections: MailSectie[] = [];
@@ -185,12 +198,12 @@ export function buildFreelancerDiscrepancyEmail(
     .map((f) => schoon(f))
     .filter((f): f is string => f !== null);
   if (meldingen.length > 0) {
-    sections.push({ title: "Wat onze controle opmerkte", lines: meldingen });
+    sections.push({ title: "Wat we hebben opgemerkt", lines: meldingen });
   }
 
   if (notitie) {
     sections.push({
-      title: "Onze eigen bevinding",
+      title: "Toelichting van Q4S",
       // Regel voor regel, zonder lege regels — zo blijft het citaat compact.
       lines: notitie
         .split(/\r?\n/)
@@ -208,7 +221,7 @@ export function buildFreelancerDiscrepancyEmail(
 
   rij("Week", week);
   rij("Factuurnummer", nummer);
-  rij("Uren op de weekstaat", urenStaat !== null ? uren(urenStaat) : null);
+  rij("Uren op je timesheet", urenStaat !== null ? uren(urenStaat) : null);
   rij("Uren op je factuur", urenFactuur !== null ? uren(urenFactuur) : null);
   rij("Verwacht bedrag", verwachtBedrag !== null ? formatCurrency(verwachtBedrag) : null);
   rij("Bedrag op je factuur", factuurBedrag !== null ? formatCurrency(factuurBedrag) : null);
@@ -228,6 +241,7 @@ export function buildFreelancerDiscrepancyEmail(
     greeting,
     bodyLines,
     sections,
+    slotLines,
     summary,
     signature: "Met vriendelijke groet,\nTeam Q4S",
   };

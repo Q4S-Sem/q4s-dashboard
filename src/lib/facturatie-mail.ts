@@ -86,9 +86,19 @@ export async function facturatieMailVoorbeeld(
         ? round2(factuurBedrag - factuurBtw)
         : factuurBedrag;
 
-  const bevindingen = checks
-    .filter((c) => c.level === "error" || c.level === "warn")
-    .map((c) => `${c.title} — ${c.detail}`);
+  // Alleen wat de freelancer zelf kan oplossen: timesheet, factuur en de match
+  // daartussen. Contract- (onze administratie) en fraudemeldingen blijven intern.
+  const voorFreelancer = checks.filter(
+    (c) => (c.level === "error" || c.level === "warn") && (c.group === "timesheet" || c.group === "factuur" || c.group === "match"),
+  );
+  const bevindingen = voorFreelancer.map((c) => `${c.title} — ${c.detail}`);
+  const groepen = new Set(voorFreelancer.map((c) => c.group));
+  const stukken =
+    groepen.has("match") || (groepen.has("timesheet") && groepen.has("factuur"))
+      ? "beide"
+      : groepen.has("factuur")
+        ? "factuur"
+        : "timesheet";
 
   const mail = buildFreelancerDiscrepancyEmail({
     freelancerName: row.naam,
@@ -106,21 +116,17 @@ export async function facturatieMailVoorbeeld(
         : null,
     autoFlags: bevindingen,
     eigenNotitie,
+    stukken,
   });
 
-  // De blokken onder de tekst als alinea's — de bestaande Q4S-template kent
-  // alleen alinea's + een samenvattingstabel, en die hergebruiken we bewust.
-  const blokken = mail.sections.flatMap((sectie) => [
-    `${sectie.title}:`,
-    ...sectie.lines.map((regel) => (sectie.quoted ? `“${regel}”` : `• ${regel}`)),
-  ]);
-
   const content: EmailContent = {
-    kicker: "Week verwerken",
+    kicker: "Administratie",
     heading: mail.subject,
     greeting: mail.greeting,
     // De ondertekening staat al in de template (Met vriendelijke groet — Team Q4S).
-    paragraphs: [...mail.bodyLines, ...blokken],
+    paragraphs: mail.bodyLines,
+    blocks: mail.sections,
+    paragraphsAfter: mail.slotLines,
     summary: mail.summary,
     footerLines: [
       settings.companyName || "Q4S",

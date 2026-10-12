@@ -40,6 +40,7 @@ function tekst(mail: ReturnType<typeof buildFreelancerDiscrepancyEmail>): string
     mail.subject,
     mail.greeting,
     ...mail.bodyLines,
+    ...mail.slotLines,
     ...mail.sections.flatMap((s) => [s.title, ...s.lines]),
     ...mail.summary.map((r) => `${r.label}: ${r.value}`),
     mail.signature,
@@ -54,14 +55,14 @@ test("onderwerp en aanhef gebruiken het factuurnummer, de week en de voornaam", 
   const mail = buildFreelancerDiscrepancyEmail(invoer());
 
   assert.equal(mail.subject, "Vraag over je factuur 2026-014 — Week 12 · 2026");
-  assert.equal(mail.greeting, "Beste Jan,");
+  assert.equal(mail.greeting, "Hoi Jan,");
   assert.equal(mail.signature, "Met vriendelijke groet,\nTeam Q4S");
 });
 
 test("zonder factuurnummer gaat de mail over de weekstaat en niet over een factuur", () => {
   const mail = buildFreelancerDiscrepancyEmail(invoer({ invoiceNumber: null }));
 
-  assert.equal(mail.subject, "Vraag over je weekstaat — Week 12 · 2026");
+  assert.equal(mail.subject, "Vraag over je timesheet — Week 12 · 2026");
   assert.ok(!tekst(mail).includes("factuur 2026-014"));
   assert.ok(!mail.summary.some((r) => r.label === "Factuurnummer"));
 });
@@ -69,7 +70,7 @@ test("zonder factuurnummer gaat de mail over de weekstaat en niet over een factu
 test("een lege naam levert een nette aanhef op in plaats van 'Beste ,'", () => {
   const mail = buildFreelancerDiscrepancyEmail(invoer({ freelancerName: "   " }));
 
-  assert.equal(mail.greeting, "Beste,");
+  assert.equal(mail.greeting, "Hoi,");
 });
 
 // ---------------------------------------------------------------------------
@@ -149,7 +150,7 @@ test("de eigen bevinding van HR komt als apart geciteerd blok in de mail", () =>
   const blok = mail.sections.find((s) => s.quoted);
 
   assert.ok(blok, "er hoort een geciteerd blok te staan");
-  assert.equal(blok!.title, "Onze eigen bevinding");
+  assert.equal(blok!.title, "Toelichting van Q4S");
   assert.deepEqual(blok!.lines, [
     "Je hebt zaterdag 8 uur geschreven,",
     "maar er was geen weekenddienst.",
@@ -167,7 +168,7 @@ test("zonder eigen bevinding staat er geen leeg notitieblok in de mail", () => {
 test("de automatische controlemeldingen komen ongewijzigd in een eigen blok", () => {
   const flags = ["uren 42 u wijken af van het gemiddelde 38 u", "factuurnummer 2026-014 kwam eerder langs"];
   const mail = buildFreelancerDiscrepancyEmail(invoer({ autoFlags: flags }));
-  const blok = mail.sections.find((s) => s.title === "Wat onze controle opmerkte");
+  const blok = mail.sections.find((s) => s.title === "Wat we hebben opgemerkt");
 
   assert.ok(blok, "de controlemeldingen horen in een eigen blok");
   assert.deepEqual(blok!.lines, flags);
@@ -225,7 +226,7 @@ test("de samenvatting laat onbekende velden weg in plaats van een streepje te to
 
   assert.deepEqual(
     mail.summary.map((r) => r.label),
-    ["Week", "Uren op de weekstaat"],
+    ["Week", "Uren op je timesheet"],
   );
 });
 
@@ -251,4 +252,15 @@ test("de functie is puur: gelijke invoer geeft gelijke uitvoer en raakt de invoe
   eerste.bodyLines.push("gesleutel");
   eerste.sections[0].lines.push("gesleutel");
   assert.deepEqual(buildFreelancerDiscrepancyEmail(input), tweede);
+});
+
+test("de mail noemt het stuk waar het om gaat: timesheet, factuur of beide", () => {
+  const ts = buildFreelancerDiscrepancyEmail(invoer({ stukken: "timesheet" }));
+  assert.ok(ts.bodyLines[0].includes("verwerken van je timesheet voor week 12"));
+  const fa = buildFreelancerDiscrepancyEmail(invoer({ stukken: "factuur" }));
+  assert.ok(fa.slotLines[0].startsWith("Kun je je factuur aanpassen"));
+  const beide = buildFreelancerDiscrepancyEmail(invoer({ stukken: "beide" }));
+  assert.ok(beide.bodyLines[0].includes("je timesheet en factuur"));
+  const geenFactuur = buildFreelancerDiscrepancyEmail(invoer({ stukken: "beide", invoiceNumber: null }));
+  assert.ok(!geenFactuur.bodyLines[0].includes("factuur"));
 });

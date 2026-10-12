@@ -24,7 +24,7 @@ import { verwerkGroeneWeken } from "./actions";
 import { verwijderStuk } from "./[placementId]/[week]/actions";
 import { volgendePersoon, voortgang } from "@/lib/facturatie-volgende";
 import { buttonVariants } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // "WEEK VERWERKEN" — het enige werkscherm van de facturatie.
@@ -434,10 +434,22 @@ export default async function FacturatiePage({
                   </TD>
                   <TD className="max-w-[22rem]">
                     {row.problemen.length > 0 ? (
-                      <span className="text-[13px] text-ink-600">
-                        {row.problemen.join(" · ")}
-                        {row.aantalFouten > row.problemen.length &&
-                          ` · +${row.aantalFouten - row.problemen.length} meer`}
+                      <span className="flex items-center gap-2">
+                        <span className="text-[13px] text-ink-600">
+                          {row.problemen.join(" · ")}
+                          {row.aantalFouten > row.problemen.length &&
+                            ` · +${row.aantalFouten - row.problemen.length} meer`}
+                        </span>
+                        {row.status === "FOUT" && row.placementId && (
+                          <Link
+                            href={`/facturatie/${row.placementId}/${week.key}/mail`}
+                            title={`Mail ${row.naam} wat er niet klopt`}
+                            aria-label={`Mail ${row.naam}`}
+                            className="relative z-10 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-500 hover:bg-ink-50 hover:text-ink-900"
+                          >
+                            <Mail className="h-3.5 w-3.5" />
+                          </Link>
+                        )}
                       </span>
                     ) : row.status === "NIET_INGELEVERD" ? (
                       <span className={cn("text-[13px]", deadlineVerstreken ? "font-medium text-red-700" : "text-ink-500")}>

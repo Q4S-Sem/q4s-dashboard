@@ -49,6 +49,8 @@ export type MailInput = {
   attachments?: MailAttachment[];
   /** Afzender, bijv. "Q4S Administratie <admin@q4s.nl>"; leeg = emailFrom(). */
   from?: string;
+  /** Waar een antwoord naartoe gaat (bijv. admin@q4s.nl, zodat het in die inbox landt). */
+  replyTo?: string;
   /** Verplicht voor mail buiten @q4s.nl: alleen zetten waar een mens net op een
    *  knop heeft geklikt (na controle). Jobs/automaten zetten dit nooit. */
   handmatig?: true;
@@ -137,6 +139,7 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
     const logoBytes = emailLogoBytes();
     const info = await transport.sendMail({
       from: input.from || emailFrom(),
+      replyTo: input.replyTo,
       to,
       subject,
       text,
@@ -183,6 +186,10 @@ export type EmailContent = {
   paragraphs: string[];
   /** Optionele actieknop (bijv. "Wachtwoord instellen"). */
   cta?: { label: string; url: string };
+  /** Uitgelichte blokken onder de tekst (bijv. bevindingen); quoted = citaat. */
+  blocks?: { title: string; lines: string[]; quoted?: boolean }[];
+  /** Alinea's ná de blokken (bijv. de vraag en "reageer op deze mail"). */
+  paragraphsAfter?: string[];
   /** A small key/value summary box (factuurnummer, datum, totaal…). */
   summary: { label: string; value: string }[];
   /** Footer lines (company contact details). */
@@ -214,11 +221,9 @@ const INK = "#0f172a";
 export function renderQ4sEmail(c: EmailContent, opts?: { logoSrc?: string }): string {
   const logoSrc = opts?.logoSrc ?? `cid:${LOGO_CID}`;
 
-  const paras = c.paragraphs
-    .map(
-      (p) => `<p style="margin:0 0 14px;color:#374151;font-size:14px;line-height:1.65;">${esc(p)}</p>`,
-    )
-    .join("");
+  const alinea = (p: string) => `<p style="margin:0 0 14px;color:#374151;font-size:14px;line-height:1.65;">${esc(p)}</p>`;
+  const paras = c.paragraphs.map(alinea).join("");
+  const parasAfter = (c.paragraphsAfter ?? []).map(alinea).join("");
 
   const summaryTable = c.summary.length
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:10px 0 6px;border:1px solid #e8e8e8;border-collapse:collapse;">${c.summary
@@ -232,6 +237,25 @@ export function renderQ4sEmail(c: EmailContent, opts?: { logoSrc?: string }): st
         )
         .join("")}</table>`
     : "";
+
+  const blocks = (c.blocks ?? [])
+    .filter((b) => b.lines.length)
+    .map(
+      (b) =>
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 16px;background:${
+          b.quoted ? "#fafafa" : "#fff7ed"
+        };border-left:3px solid ${b.quoted ? "#a3a3a3" : "#E8430A"};"><tr><td style="padding:14px 18px;"><p style="margin:0 0 8px;color:${INK};font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;">${esc(
+          b.title,
+        )}</p>${b.lines
+          .map(
+            (l) =>
+              `<p style="margin:0 0 6px;color:#374151;font-size:14px;line-height:1.55;${b.quoted ? "font-style:italic;" : ""}">${
+                b.quoted ? "" : "&#8226;&nbsp; "
+              }${esc(l)}</p>`,
+          )
+          .join("")}</td></tr></table>`,
+    )
+    .join("");
 
   const cta = c.cta
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 20px;"><tr><td style="background:${BRAND};"><a href="${esc(
@@ -267,6 +291,8 @@ export function renderQ4sEmail(c: EmailContent, opts?: { logoSrc?: string }): st
           )}</h1>
           <p style="margin:0 0 14px;color:#374151;font-size:14px;line-height:1.65;">${esc(c.greeting)}</p>
           ${paras}
+          ${blocks}
+          ${parasAfter}
           ${cta}
           ${summaryTable}
           <p style="margin:22px 0 2px;color:#374151;font-size:14px;line-height:1.6;">${c.lang === "en" ? "Kind regards," : "Met vriendelijke groet,"}</p>
@@ -299,6 +325,8 @@ export function renderQ4sEmailText(c: EmailContent): string {
     "",
     ...c.paragraphs,
     "",
+    ...(c.blocks ?? []).flatMap((b) => [b.title.toUpperCase(), ...b.lines.map((l) => (b.quoted ? `“${l}”` : `• ${l}`)), ""]),
+    ...(c.paragraphsAfter ?? []).flatMap((p) => [p, ""]),
     ...(c.cta ? [c.cta.label + ": " + c.cta.url, ""] : []),
     ...c.summary.map((s) => `${s.label}: ${s.value}`),
     ...(c.summary.length ? [""] : []),

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, FileText, PauseCircle, PencilLine, PlayCircle, Receipt, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FileText, Mail, PauseCircle, PencilLine, PlayCircle, Receipt, RefreshCw, Trash2 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants, ICOON_GROEP, ICOON_KNOP } from "@/components/ui/button";
@@ -113,6 +113,8 @@ export default async function DossierPage({
     <Badge color="green">Klaar voor akkoord</Badge>
   );
   const verborgen = { placementId, week: wk };
+  // Iets wat de freelancer zelf moet rechtzetten (timesheet/factuur/match)? Dan een mail-knop.
+  const voorFreelancer = nietOk.filter((c) => c.group === "timesheet" || c.group === "factuur" || c.group === "match");
 
   return (
     <div className="space-y-5">
@@ -138,6 +140,15 @@ export default async function DossierPage({
           <FaseBalk fase={fase} basis={`/facturatie/${placementId}/${wk}`} controleKan={documentenBinnen || row.vastgelegd} />
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            {fase === "controle" && !row.vastgelegd && voorFreelancer.length > 0 && (
+              <Link
+                href={`/facturatie/${placementId}/${wk}/mail`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+                title="Mail de freelancer wat er niet klopt en vraag om een correctie of uitleg"
+              >
+                <Mail className="h-3.5 w-3.5" /> Mail {row.naam.split(" ")[0]}
+              </Link>
+            )}
             <div className={ICOON_GROEP}>
               {row.inboxId && !row.vastgelegd && (
                 <form action={row.wachtkamerSinds ? uitWachtkamer : naarWachtkamer}>
