@@ -188,16 +188,6 @@ export default async function PlaatsingGegevensPage({
           <CardTitle className="flex items-center gap-2">
             <ReceiptText className="h-5 w-5 text-ink-500" /> Factuur- &amp; betaalgegevens werknemer
           </CardTitle>
-          {!ownStaff && !editingBilling && (
-            <Link
-              href={`/plaatsingen/${placement.id}/bewerken`}
-              scroll={false}
-              aria-label="Factuurgegevens bewerken"
-              className={BEWERK_ICOON}
-            >
-              <Pencil className="h-4 w-4" />
-            </Link>
-          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {ownStaff ? (
