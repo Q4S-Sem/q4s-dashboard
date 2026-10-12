@@ -21,10 +21,17 @@ import { buttonVariants } from "@/components/ui/button";
  */
 export function CvPreviewButton({
   file,
+  src,
+  name: srcName,
+  mime,
   label,
   className,
 }: {
-  file: File | null;
+  file?: File | null;
+  /** Of: een al opgeslagen CV op de server (bv. /api/cv/<id>). */
+  src?: string;
+  name?: string;
+  mime?: string;
   /** Optioneel label naast het oogje; standaard alleen het icoon. */
   label?: string;
   className?: string;
@@ -32,12 +39,13 @@ export function CvPreviewButton({
   const [open, setOpen] = useState(false);
 
   // Object-URL alleen aanmaken zolang nodig; netjes weer vrijgeven.
-  const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  const blob = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
   useEffect(() => {
     return () => {
-      if (url) URL.revokeObjectURL(url);
+      if (blob) URL.revokeObjectURL(blob);
     };
-  }, [url]);
+  }, [blob]);
+  const url = blob ?? src ?? null;
 
   useEffect(() => {
     if (!open) return;
@@ -50,10 +58,11 @@ export function CvPreviewButton({
     };
   }, [open]);
 
-  if (!file || !url) return null;
+  if (!url) return null;
 
-  const name = file.name.toLowerCase();
-  const type = (file.type || "").toLowerCase();
+  const fileName = file?.name ?? srcName ?? "CV";
+  const name = fileName.toLowerCase();
+  const type = (file?.type ?? mime ?? "").toLowerCase();
   const isPdf = type.includes("pdf") || name.endsWith(".pdf");
   const isImage = /^image\//.test(type) || /\.(png|jpe?g|gif|webp)$/.test(name);
   const canInline = isPdf || isImage;
@@ -85,14 +94,14 @@ export function CvPreviewButton({
             <div
               role="dialog"
               aria-modal="true"
-              aria-label={`CV: ${file.name}`}
+              aria-label={`CV: ${fileName}`}
               className="relative z-10 flex h-full max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-ink-200 bg-white shadow-2xl"
             >
               <div className="flex items-center justify-between gap-3 border-b border-ink-100 bg-ink-50/60 px-4 py-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <FileText className="h-4 w-4 shrink-0 text-brand-600" />
-                  <span className="truncate text-sm font-semibold text-ink-800" title={file.name}>
-                    {file.name}
+                  <span className="truncate text-sm font-semibold text-ink-800" title={fileName}>
+                    {fileName}
                   </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -120,10 +129,10 @@ export function CvPreviewButton({
                   isImage ? (
                     <div className="flex h-full items-center justify-center overflow-auto p-4">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt={file.name} className="max-h-full max-w-full object-contain" />
+                      <img src={url} alt={fileName} className="max-h-full max-w-full object-contain" />
                     </div>
                   ) : (
-                    <iframe src={url} title={file.name} className="h-full w-full border-0" />
+                    <iframe src={url} title={fileName} className="h-full w-full border-0" />
                   )
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
@@ -134,7 +143,7 @@ export function CvPreviewButton({
                     </p>
                     <a
                       href={url}
-                      download={file.name}
+                      download={fileName}
                       className={buttonVariants()}
                     >
                       <ExternalLink className="h-4 w-4" /> CV openen / downloaden

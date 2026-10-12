@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { CvPreviewButton } from "@/components/cv-preview-button";
 import { SmartList, type SmartColumn } from "@/components/smart-list";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
@@ -20,6 +20,8 @@ export type CvRow = {
   availability: string;
   createdAt: string;
   cvHref: string | null;
+  cvName: string;
+  cvMime: string;
   dealId: string | null;
   herkomst: Herkomst;
 };
@@ -85,16 +87,12 @@ export function CvsList({ rows }: { rows: CvRow[] }) {
       align: "right",
       render: (r) =>
         r.cvHref ? (
-          <a
-            href={r.cvHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={`CV van ${r.name} bekijken`}
-            aria-label={`CV van ${r.name} bekijken`}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900"
-          >
-            <Eye className="h-4 w-4" />
-          </a>
+          <CvPreviewButton
+            src={r.cvHref}
+            name={r.cvName}
+            mime={r.cvMime}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-600 transition-colors hover:border-ink-400 hover:text-ink-900 hover:no-underline"
+          />
         ) : (
           <span className="text-ink-400">—</span>
         ),

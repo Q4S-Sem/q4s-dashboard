@@ -81,6 +81,8 @@ export default async function WebsiteCvsPage({
     availability: c.availability,
     createdAt: c.createdAt.toISOString(),
     cvHref: c.cvFileName ? `/api/cv/${c.id}` : null,
+    cvName: c.cvOriginalName ?? `CV ${c.firstName} ${c.lastName}`.trim(),
+    cvMime: c.cvMimeType ?? "",
     dealId: dealByCand.get(c.id) ?? null,
     // Uit locatie + telefoonnummer (zie eu-herkomst). Buiten de EU → archief,
     // niets wordt gewist; onbekend blijft in de inbox.
