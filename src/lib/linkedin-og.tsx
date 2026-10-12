@@ -40,6 +40,7 @@ const FOTO_OP_TITEL: [RegExp, string][] = [
   [/pip|fitter|leiding/i, "FITTER"],
   [/\bndt\b|\bndo\b|ultrason|radiogra/i, "NDO"],
   [/commission/i, "COMMISSIONING"],
+  [/\bqa\b|\bqc\b|quality|kwaliteit|inspect/i, "QA_QC"],
   [/hse|safety|veiligheid/i, "HSEQ"],
   [/planner|project control|cost/i, "PROJECT_CONTROLS"],
 ];
