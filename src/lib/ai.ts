@@ -34,10 +34,16 @@ function pickProvider(value: string | undefined, fallback: AiProvider): AiProvid
 // Dynamisch (functie i.p.v. const): pakt een via de Instellingen-hub gekozen
 // provider op zodra die in process.env gehydrateerd is (zie ai-keys.ts), zonder
 // herstart. Standaard DeepSeek.
+// Voor nu draait ALLES via OpenRouter zodra die sleutel er is (overzicht: één
+// sleutel, één rekening). Andere sleutels in .env worden dan genegeerd.
+const viaOpenRouter = () => Boolean(process.env.HERMES_API_KEY);
+
 export function activeTextProvider(): AiProvider {
+  if (viaOpenRouter()) return "hermes";
   return pickProvider(process.env.AI_PROVIDER, "deepseek");
 }
 export function activeTextProviderFast(): AiProvider {
+  if (viaOpenRouter()) return "hermes";
   return pickProvider(process.env.AI_PROVIDER_FAST, activeTextProvider());
 }
 
@@ -89,6 +95,7 @@ function pickVision(value: string | undefined, fallback: VisionProvider): Vision
  * een sleutel heeft maar HERMES_API_KEY wél, OpenRouter.
  */
 export function visionProvider(): VisionProvider {
+  if (viaOpenRouter()) return "openrouter";
   const fallback: VisionProvider = process.env.GEMINI_API_KEY
     ? "gemini"
     : process.env.ANTHROPIC_API_KEY
@@ -203,6 +210,7 @@ export function readyPersonalDataTextProvider(): AiProvider | null {
  */
 export type CvTextRoute = "anthropic" | "ollama" | "gemini" | "openrouter";
 export function readyCvTextRoute(): CvTextRoute | null {
+  if (viaOpenRouter()) return "openrouter";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   if (activeTextProvider() === "ollama" || activeTextProviderFast() === "ollama") return "ollama";
   if (process.env.GEMINI_API_KEY) return "gemini";
@@ -1307,7 +1315,7 @@ ${opts.fields.map((f) => `- ${f}`).join("\n")}
 Zoek breed: vacaturesites (Indeed, Nationale Vacaturebank, werk.nl, LinkedIn Jobs), carrièrepagina's van eindklanten (industrie, petrochemie, offshore, infra, energie) en freelance-opdrachtplatforms. Sla vacatures van andere uitzend-/detacheringsbureaus over als de eindklant niet genoemd wordt.
 
 Geef daarna UITSLUITEND een geldige JSON-array terug (geen tekst eromheen) met maximaal ${max} vacatures, elk een object met de velden: title, company, location, discipline, url, summary. company = de werkgever/eindklant. url = de directe link naar de vacature. summary = 2-4 zinnen met taken, eisen (certificaten, ervaring) en duur/contractvorm als bekend. Laat een veld leeg ("") als onbekend. Verzin geen vacatures; neem alleen echte, gevonden vacatures op.`;
-  if (!process.env.ANTHROPIC_API_KEY) return openRouterSource(system, max);
+  if (viaOpenRouter() || !process.env.ANTHROPIC_API_KEY) return openRouterSource(system, max);
   const c = getClient();
   const params = {
     model: AI_MODEL,

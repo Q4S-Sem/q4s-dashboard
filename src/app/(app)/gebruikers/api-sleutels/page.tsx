@@ -3,10 +3,10 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { KeyRound, CheckCircle2, ShieldAlert, BarChart3, Save, Cpu } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Field, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { buttonVariants } from "@/components/ui/button";
-import { getKeyStatuses, getAiConfig, isSettingFromEnv } from "@/lib/ai-keys";
+import { getKeyStatuses, getAiConfig } from "@/lib/ai-keys";
 import { aiProviderSummary } from "@/lib/ai";
 import { saveAiKey, clearAiKey, saveAiConfig } from "./actions";
 import { TestConnectionButton } from "./TestConnectionButton";
@@ -21,15 +21,15 @@ export default async function ApiSleutelsPage({
 }) {
   const sp = await searchParams;
   const [statuses, cfg] = await Promise.all([getKeyStatuses(), getAiConfig()]);
-  const configured = statuses.filter((s) => s.configured).length;
+  // Voor nu alleen OpenRouter: één sleutel voor tekst, agents én documenten.
+  const openrouter = statuses.filter((s) => s.provider === "hermes");
   const summary = aiProviderSummary();
-  const providerLocked = isSettingFromEnv("AI_PROVIDER");
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="API-sleutels"
-        description="Sleutels van de AI's die het dashboard gebruikt. Veilig opgeslagen en alleen gemaskeerd getoond; zonder sleutel blijft een AI-functie gewoon uit."
+        description="Alle AI in het dashboard loopt via OpenRouter: teksten, agents, matching én het uitlezen van CV's, timesheets en facturen. Eén sleutel, één rekening. Veilig opgeslagen en alleen gemaskeerd getoond."
         actions={
           <Link href="/gebruikers/tokenverbruik" className={buttonVariants({ variant: "outline" })}>
             <BarChart3 className="h-4 w-4" /> Tokenverbruik
@@ -48,33 +48,6 @@ export default async function ApiSleutelsPage({
         </p>
       )}
 
-      {/* Statusbalk: in één oogopslag welke sleutels er zijn. */}
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-3 py-4">
-          <span className="text-sm font-semibold text-ink-900">
-            {configured} van {statuses.length} sleutels ingesteld
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {statuses.map((s) => (
-              <span
-                key={s.provider}
-                className={
-                  s.configured
-                    ? "inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
-                    : "inline-flex items-center gap-1.5 rounded-md bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-500"
-                }
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${s.configured ? "bg-emerald-500" : "bg-ink-300"}`} />
-                {s.label}
-              </span>
-            ))}
-          </div>
-          <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-ink-500">
-            <Cpu className="h-3.5 w-3.5 text-ink-400" /> Actief: <span className="font-medium text-ink-700">{summary}</span>
-          </span>
-        </CardContent>
-      </Card>
-
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:items-start">
         {/* Links: welke AI draait */}
         <Card className="xl:sticky xl:top-20">
@@ -86,27 +59,17 @@ export default async function ApiSleutelsPage({
               <div>
                 <div className="font-semibold text-ink-900">AI-motor</div>
                 <p className="text-xs text-ink-500">
-                  Tekst- en agent-taken (sourcing, matching, teksten, mail-triage). Beeld/OCR (CV&apos;s,
-                  timesheets, bonnetjes) loopt via Gemini.
+                  Welk OpenRouter-model het werk doet. Leeg = google/gemini-2.5-flash (snel en
+                  goedkoop, leest ook PDF&apos;s en foto&apos;s).
                 </p>
               </div>
             </div>
 
-            {providerLocked ? (
-              <p className="rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">
-                Vastgezet via <code className="rounded bg-ink-100 px-1">AI_PROVIDER</code> in{" "}
-                <code className="rounded bg-ink-100 px-1">.env</code>; hier niet te wijzigen.
-              </p>
-            ) : (
-              <form action={saveAiConfig} className="space-y-3">
-                <Field label="Actieve tekst-AI" htmlFor="textProvider">
-                  <Select id="textProvider" name="textProvider" defaultValue={cfg.AI_PROVIDER || "deepseek"}>
-                    <option value="deepseek">DeepSeek — goedkoop &amp; snel (standaard)</option>
-                    <option value="anthropic">Anthropic Claude — krachtig, duurder</option>
-                    <option value="hermes">OpenRouter.ai — open modellen (of eigen server)</option>
-                    <option value="ollama">Ollama — lokaal draaiend</option>
-                  </Select>
-                </Field>
+            <form action={saveAiConfig} className="space-y-3">
+                <input type="hidden" name="textProvider" value="hermes" />
+                <p className="rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-600">
+                  Actief: <span className="font-medium text-ink-800">{summary}</span>
+                </p>
                 <Field label="OpenRouter-endpoint" htmlFor="hermesBaseUrl" hint="Optioneel">
                   <Input
                     id="hermesBaseUrl"
@@ -131,13 +94,12 @@ export default async function ApiSleutelsPage({
                   <Save className="h-4 w-4" /> AI-motor opslaan
                 </SubmitButton>
               </form>
-            )}
           </CardContent>
         </Card>
 
         {/* Rechts: de sleutels, twee naast elkaar */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          {statuses.map((s) => (
+        <div className="grid gap-4">
+          {openrouter.map((s) => (
             <Card key={s.provider} className="flex flex-col">
               <CardContent className="flex flex-1 flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
