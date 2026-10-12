@@ -20,9 +20,9 @@ export const metadata = { title: "Plaatsingen" };
 
 /** Groen = actief, oranje = in voorbereiding, rood = concept. */
 const KLEUR: Record<string, { icoon: string; teller: string }> = {
-  actief: { icoon: "text-emerald-600", teller: "bg-emerald-100 text-emerald-800" },
-  voorbereiding: { icoon: "text-orange-500", teller: "bg-orange-100 text-orange-800" },
-  concepten: { icoon: "text-red-600", teller: "bg-red-100 text-red-700" },
+  actief: { icoon: "text-ink-500", teller: "bg-emerald-100 text-emerald-800" },
+  voorbereiding: { icoon: "text-ink-500", teller: "bg-orange-100 text-orange-800" },
+  concepten: { icoon: "text-ink-500", teller: "bg-red-100 text-red-700" },
   beeindigd: { icoon: "text-ink-400", teller: "bg-ink-100 text-ink-500" },
 };
 
