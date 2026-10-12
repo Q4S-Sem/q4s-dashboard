@@ -60,6 +60,11 @@ export const DEEPSEEK_MODEL_FAST = process.env.DEEPSEEK_MODEL_FAST ?? DEEPSEEK_M
 // Standaard via OpenRouter; wijs HERMES_BASE_URL naar je eigen (EU-)server om
 // zelf te hosten. Alleen de API-sleutel staat in Instellingen; endpoint + model
 // via env, zodat "OpenRouter nu / self-host later" één env-wijziging is.
+/** OpenRouter: alleen aanbieders die NIETS bewaren (Zero Data Retention) en niet
+ *  op onze data trainen — CV's, timesheets en facturen bevatten persoonsgegevens.
+ *  Een eigen server negeert dit veld. */
+const OR_PRIVACY = { provider: { zdr: true, data_collection: "deny" } } as const;
+
 function hermesBaseUrl(): string {
   return (process.env.HERMES_BASE_URL ?? "https://openrouter.ai/api/v1").replace(/\/+$/, "");
 }
@@ -118,12 +123,12 @@ export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
 // (HERMES_BASE_URL/HERMES_API_KEY) worden hergebruikt — alleen het model verschilt.
 // Standaard Gemini 2.0 Flash: goedkoop en leest PDF's én afbeeldingen.
 export const OPENROUTER_VISION_MODEL =
-  process.env.OPENROUTER_VISION_MODEL ?? "google/gemini-2.5-flash";
+  process.env.OPENROUTER_VISION_MODEL ?? "google/gemini-3.8-flash";
 
 // "Zwaar geschut": alleen ingezet als de snelle uitlezing twijfelt of niet klopt
 // (zie FileExtractOpts.retryIf). Kost ~10× zoveel, maar draait zelden.
 export const OPENROUTER_VISION_MODEL_STRONG =
-  process.env.OPENROUTER_VISION_MODEL_STRONG ?? "google/gemini-2.5-pro";
+  process.env.OPENROUTER_VISION_MODEL_STRONG ?? "google/gemini-3.1-pro-preview";
 export const GEMINI_MODEL_STRONG = process.env.GEMINI_MODEL_STRONG ?? "gemini-pro-latest";
 
 /** Snel uitlezen (effort "low"): het denkwerk van Gemini Flash flink terugschroeven
@@ -458,6 +463,7 @@ async function hermesChat(o: ChatOpts): Promise<string> {
         "x-title": "Q4S Dashboard",
       },
       body: JSON.stringify({
+        ...OR_PRIVACY,
         model,
         stream: false,
         temperature: o.json ? 0.3 : 0.6,
@@ -717,6 +723,7 @@ async function openrouterOrientation(image: PngImage): Promise<string> {
       "x-title": "Q4S Dashboard",
     },
     body: JSON.stringify({
+        ...OR_PRIVACY,
       model: OPENROUTER_VISION_MODEL,
       stream: false,
       temperature: 0,
@@ -1048,7 +1055,7 @@ export async function geminiJSONText<T>(opts: {
 /**
  * OpenRouter — TEKST → JSON via de OpenAI-compatibele chat-completions API, op je
  * bestaande OpenRouter-tegoed (HERMES_API_KEY). Gebruikt het vision-model
- * (OPENROUTER_VISION_MODEL, standaard google/gemini-2.5-flash) omdat dat een goed,
+ * (OPENROUTER_VISION_MODEL, standaard google/gemini-3.8-flash) omdat dat een goed,
  * goedkoop model is dat instructies volgt. Bestaat zodat CV-TEKST (uit een Word-
  * document) via OpenRouter kan — de gebruiker heeft alleen een OpenRouter-sleutel.
  * Alleen aanroepen als er een HERMES_API_KEY is.
@@ -1079,6 +1086,7 @@ export async function openrouterJSONText<T>(opts: {
         "x-title": "Q4S Dashboard",
       },
       body: JSON.stringify({
+        ...OR_PRIVACY,
         model: OPENROUTER_VISION_MODEL,
         stream: false,
         temperature: 0.1,
@@ -1163,6 +1171,7 @@ async function openrouterExtractFile<T>(opts: FileExtractOpts): Promise<T> {
         "x-title": "Q4S Dashboard",
       },
       body: JSON.stringify({
+        ...OR_PRIVACY,
         model: visionModel("openrouter", opts.strong),
         stream: false,
         temperature: 0.1,
@@ -1359,6 +1368,7 @@ async function openRouterSource(system: string, max: number): Promise<SourcedVac
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${key}`, "x-title": "Q4S Dashboard" },
       body: JSON.stringify({
+        ...OR_PRIVACY,
         model,
         temperature: 0.2,
         max_tokens: 4000,

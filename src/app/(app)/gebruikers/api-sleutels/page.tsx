@@ -59,8 +59,9 @@ export default async function ApiSleutelsPage({
               <div>
                 <div className="font-semibold text-ink-900">AI-motor</div>
                 <p className="text-xs text-ink-500">
-                  Welk OpenRouter-model het werk doet. Leeg = google/gemini-2.5-flash (snel en
-                  goedkoop, leest ook PDF&apos;s en foto&apos;s).
+                  Tekst en agents: het model hieronder (leeg = google/gemini-2.5-flash). PDF&apos;s en foto&apos;s
+                  leest Gemini 3.8 Flash, met Gemini 3.1 Pro als controle bij twijfel. Alleen aanbieders
+                  die niets bewaren (Zero Data Retention).
                 </p>
               </div>
             </div>
