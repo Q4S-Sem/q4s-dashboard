@@ -12,6 +12,24 @@ const nextConfig: NextConfig = {
   // Standaard 1 MB per server action — een CV/contract bij "Nieuwe plaatsing"
   // gaat daar makkelijk overheen en dan mislukt opslaan. Vercel kapt op ~4,5 MB.
   experimental: { serverActions: { bodySizeLimit: "4mb" } },
+  poweredByHeader: false,
+  // Basis-beveiligingsheaders. Het dashboard mag niet in een iframe van een andere
+  // site (clickjacking); de openbare pagina's (vacature, talentpool, vakproef, /v/)
+  // blijven insluitbaar voor de website.
+  async headers() {
+    const basis = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+    ];
+    return [
+      { source: "/:path*", headers: basis },
+      {
+        source: "/((?!vacature|talentpool|vakproef|v/|api/public).*)",
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+      },
+    ];
+  },
   // Build verification can target a separate output dir (set NEXT_DIST_DIR) so a
   // `next build` never clobbers the running dev server's `.next` — keeps
   // localhost up while iterating. Dev/prod use `.next` by default.
