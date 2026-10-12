@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Bot, Building2, CheckCircle2, ExternalLink, KeyRound, Lock, Pencil, Plug, Save, ShieldAlert, Trash2, Users, X } from "lucide-react";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { Bot, Building2, CheckCircle2, ExternalLink, KeyRound, Lock, Pencil, Plug, Save, ShieldAlert, Users, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { FilterTegels } from "@/components/ui/filter-tegels";
 import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
@@ -253,12 +254,9 @@ export default async function WachtwoordenPage({
                           <Save className="h-4 w-4" /> Opslaan
                         </SubmitButton>
                       </form>
-                      <form action={deletePortal}>
-                        <input type="hidden" name="id" value={p.id} />
-                        <SubmitButton variant="outline" pendingLabel="Verwijderen…" className="text-red-600">
-                          <Trash2 className="h-4 w-4" /> Verwijderen
-                        </SubmitButton>
-                      </form>
+                      <ConfirmSubmit action={deletePortal} id={p.id} message={`Portaal "${p.name}" en het wachtwoord verwijderen?`}>
+                        Verwijderen
+                      </ConfirmSubmit>
                     </div>
                   )}
                 </li>

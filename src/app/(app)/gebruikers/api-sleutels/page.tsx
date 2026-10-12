@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { KeyRound, CheckCircle2, ShieldAlert, BarChart3, Save, Trash2, Cpu } from "lucide-react";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { KeyRound, CheckCircle2, ShieldAlert, BarChart3, Save, Cpu } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/field";
@@ -194,19 +195,19 @@ export default async function ApiSleutelsPage({
                   <SubmitButton pendingLabel="…" title="Opslaan" aria-label={`${s.label}-sleutel opslaan`}>
                     <Save className="h-4 w-4" />
                   </SubmitButton>
-                  {s.source === "dashboard" && (
-                    <SubmitButton
-                      formAction={clearAiKey}
-                      variant="outline"
-                      pendingLabel="…"
-                      title="Sleutel verwijderen"
-                      aria-label={`${s.label}-sleutel verwijderen`}
-                      className="text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </SubmitButton>
-                  )}
                 </form>
+                {s.source === "dashboard" && (
+                  <div className="-mt-1 flex justify-end">
+                    <ConfirmSubmit
+                      action={clearAiKey}
+                      hidden={{ provider: s.provider }}
+                      message={`${s.label}-sleutel verwijderen?`}
+                      description="AI-functies die deze sleutel gebruiken stoppen tot je een nieuwe invult."
+                    >
+                      Sleutel verwijderen
+                    </ConfirmSubmit>
+                  </div>
+                )}
 
                 <TestConnectionButton provider={s.provider} configured={s.configured} />
               </CardContent>

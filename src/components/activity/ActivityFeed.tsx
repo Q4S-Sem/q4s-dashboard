@@ -1,6 +1,7 @@
 "use client";
 
-import { Circle, Trash2, CalendarClock, MessageSquarePlus } from "lucide-react";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { Circle, CalendarClock, MessageSquarePlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, Textarea, Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -99,13 +100,9 @@ export function ActivityFeed({
                     </div>
                     <p className="mt-1 whitespace-pre-wrap text-sm text-ink-700">{a.body}</p>
                   </div>
-                  <form action={deleteActivity}>
-                    <input type="hidden" name="id" value={a.id} />
-                    {hidden}
-                    <button type="submit" title="Verwijderen" aria-label="Verwijderen" className="text-ink-300 transition-colors hover:text-rose-600">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </form>
+                  <ConfirmSubmit action={deleteActivity} id={a.id} hidden={{ path }} message="Deze activiteit verwijderen?">
+                    Verwijderen
+                  </ConfirmSubmit>
                 </div>
               );
             })}
@@ -141,13 +138,9 @@ export function ActivityFeed({
                         </button>
                       </form>
                     )}
-                    <form action={deleteActivity}>
-                      <input type="hidden" name="id" value={a.id} />
-                      {hidden}
-                      <button type="submit" title="Verwijderen" aria-label="Verwijderen" className="text-ink-300 transition-colors hover:text-rose-600">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </form>
+                    <ConfirmSubmit action={deleteActivity} id={a.id} hidden={{ path }} message="Deze activiteit verwijderen?">
+                      Verwijderen
+                    </ConfirmSubmit>
                   </div>
                 </li>
               ))}

@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { redirect } from "next/navigation";
-import { ExternalLink, Megaphone, MousePointerClick, Plus, Sparkles, Trash2, TrendingUp, UserPlus, Users } from "lucide-react";
+import { ExternalLink, Megaphone, MousePointerClick, Plus, Sparkles, TrendingUp, UserPlus, Users } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -183,12 +184,9 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
                           </form>
                         </TD>
                         <TD>
-                          <form action={verwijderKanaal}>
-                            <input type="hidden" name="id" value={k.id} />
-                            <button type="submit" aria-label={`${k.name} verwijderen`} className={buttonVariants({ variant: "ghost", size: "icon" })}>
-                              <Trash2 />
-                            </button>
-                          </form>
+                          <ConfirmSubmit action={verwijderKanaal} id={k.id} message={`Kanaal "${k.name}" verwijderen?`}>
+                            Verwijderen
+                          </ConfirmSubmit>
                         </TD>
                       </TR>
                     );

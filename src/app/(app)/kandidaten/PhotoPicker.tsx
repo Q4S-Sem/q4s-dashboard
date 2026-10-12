@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { useRef, useState } from "react";
 import { Camera, X } from "lucide-react";
 import { Avatar, type AvatarSize } from "@/components/ui/avatar";
@@ -29,7 +30,6 @@ export function PhotoPicker({
   deleteAction: (formData: FormData) => void | Promise<void>;
 }) {
   const uploadRef = useRef<HTMLFormElement>(null);
-  const deleteRef = useRef<HTMLFormElement>(null);
   const [busy, setBusy] = useState(false);
 
   return (
@@ -70,18 +70,16 @@ export function PhotoPicker({
       </form>
 
       {src && (
-        <form ref={deleteRef} action={deleteAction}>
-          <input type="hidden" name="id" value={candidateId} />
-          <button
-            type="submit"
-            title="Profielfoto verwijderen"
-            onClick={() => setBusy(true)}
-            className="absolute -right-1 -top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-ink-900 text-white ring-2 ring-white transition-colors hover:bg-red-600 group-hover:flex"
-          >
-            <X className="h-3.5 w-3.5" />
-            <span className="sr-only">Profielfoto verwijderen</span>
-          </button>
-        </form>
+        <ConfirmSubmit
+          action={deleteAction}
+          id={candidateId}
+          message="Profielfoto verwijderen?"
+          trigger="icon"
+          icon={<X className="h-3.5 w-3.5" />}
+          iconClassName="absolute -right-1 -top-1 hidden h-6 w-6 items-center justify-center rounded-full bg-ink-900 text-white ring-2 ring-white transition-colors hover:bg-red-600 group-hover:flex"
+        >
+          Profielfoto verwijderen
+        </ConfirmSubmit>
       )}
     </div>
   );

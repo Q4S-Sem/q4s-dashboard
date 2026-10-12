@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { Download, Plus, Trash2 } from "lucide-react";
+import { ConfirmSubmit } from "@/components/confirm-submit";
+import { Download, Plus } from "lucide-react";
 import { db } from "@/lib/db";
 import { PaginaKop } from "@/components/ui/filter-tegels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Field, Input, Select } from "@/components/ui/field";
-import { Button, buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
+import { Button, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { balansJaar, kostenLabel, KOSTEN_CATEGORIEEN, weekOverzicht } from "@/lib/kosten";
 import { voegKostToe, verwijderKost } from "./actions";
@@ -193,16 +194,9 @@ export default async function KostenPage({
                       <TD className="text-right tabular-nums">{formatCurrency(k.amount)}</TD>
                       <TD className="text-right tabular-nums text-ink-500">{geld(k.vatAmount)}</TD>
                       <TD>
-                        <form action={verwijderKost}>
-                          <input type="hidden" name="id" value={k.id} />
-                          <button
-                            type="submit"
-                            aria-label="Verwijderen"
-                            className={buttonVariants({ variant: "ghost", size: "icon" })}
-                          >
-                            <Trash2 />
-                          </button>
-                        </form>
+                        <ConfirmSubmit action={verwijderKost} id={k.id} message="Deze kostenpost verwijderen?">
+                          Verwijderen
+                        </ConfirmSubmit>
                       </TD>
                     </TR>
                   ))}
