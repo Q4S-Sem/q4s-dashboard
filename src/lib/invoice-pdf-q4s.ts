@@ -117,7 +117,10 @@ export type InvoiceDoc = {
 const LABELS = {
   en: {
     number: "Invoice no",
-    kvk: "KvK no",
+    // Engels: KvK = Chamber of Commerce (CoC); G-rekening = G-account.
+    kvk: "CoC no",
+    coc: "CoC",
+    gAccount: "G-account",
     vat: "VAT no",
     date: "Invoice Date",
     po: "Purchase order",
@@ -139,6 +142,8 @@ const LABELS = {
   nl: {
     number: "Factuurnr",
     kvk: "KvK-nr",
+    coc: "KvK",
+    gAccount: "G-rekening",
     vat: "BTW-nr",
     date: "Factuurdatum",
     po: "Inkooporder",
@@ -277,7 +282,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     ["IBAN", doc.company.iban],
     ["BIC", doc.company.bic],
     ["VAT", doc.company.vatNumber],
-    ["KvK", doc.company.kvkNumber],
+    [L.coc, doc.company.kvkNumber],
   ].filter(([, v]) => v) as [string, string][];
   // Rechts: tel / web / mail en daaronder de G-rekening, regel voor regel op
   // dezelfde hoogte als IBAN / BIC / VAT / KvK links. Links uitgelijnd op
@@ -285,7 +290,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
   const rechtsX = 390;
   const rechts = [
     ...doc.company.contactLines.filter(Boolean),
-    ...(doc.company.gAccount ? [`G-rekening: ${doc.company.gAccount}`] : []),
+    ...(doc.company.gAccount ? [`${L.gAccount}: ${doc.company.gAccount}`] : []),
   ];
   let by = bankTop;
   for (let i = 0; i < Math.max(bankRows.length, rechts.length); i++) {
