@@ -17,7 +17,12 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
-import { Button, buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
+import {
+  Button,
+  buttonVariants,
+  SEGMENT_GROEP,
+  segmentVariants,
+} from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { cn } from "@/lib/utils";
 import { saveVacancyContent } from "../actions";
@@ -37,10 +42,19 @@ export type ReviewVacancy = {
   salary: string;
   /** Projectduur — staat op de recruitment-vacature (Deal.durationText). */
   duration: string;
+  /** Zonder recruitment-vacature (bv. VMS-import) is er geen plek voor de duur. */
+  hasDeal: boolean;
   isPublished: boolean;
 };
 
-const CONTRACTVORMEN = ["ZZP / Freelance", "Detachering", "Fulltime", "Parttime", "Tijdelijk", "Uitzend"];
+const CONTRACTVORMEN = [
+  "ZZP / Freelance",
+  "Detachering",
+  "Fulltime",
+  "Parttime",
+  "Tijdelijk",
+  "Uitzend",
+];
 const DUREN = ["1 maand", "3 maanden", "6 maanden", "12 maanden", "Langdurig"];
 
 /** Klikbare keuzes (zelfde segment-stijl als overal); nogmaals klikken = leeg. */
@@ -89,7 +103,10 @@ function parseSalary(raw: string): { amount: string; period: SalaryPeriod } {
   const period: SalaryPeriod = isYear ? "jaar" : "uur";
   // Haal de periode-aanduiding weg, hou het bedrag over.
   const amount = s
-    .replace(/\b(per\s*uur|p\/?\s*u|\/\s*uur|\/\s*u|per\s*jaar|p\/?\s*j|jaarsalaris|\/\s*jaar|\/\s*jr?)\b/gi, "")
+    .replace(
+      /\b(per\s*uur|p\/?\s*u|\/\s*uur|\/\s*u|per\s*jaar|p\/?\s*j|jaarsalaris|\/\s*jaar|\/\s*jr?)\b/gi,
+      "",
+    )
     .replace(/\s{2,}/g, " ")
     .trim();
   return { amount, period };
@@ -102,10 +119,18 @@ function buildSalary(amount: string, period: SalaryPeriod): string {
   return period === "jaar" ? `${a} per jaar` : `${a} p/u`;
 }
 
-function PreviewSection({ title, children }: { title: string; children: React.ReactNode }) {
+function PreviewSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <section>
-      <h3 className="text-[11px] font-bold uppercase tracking-wider text-ink-900">{title}</h3>
+      <h3 className="text-[11px] font-bold uppercase tracking-wider text-ink-900">
+        {title}
+      </h3>
       <div className="mt-2">{children}</div>
     </section>
   );
@@ -133,7 +158,9 @@ function WebsitePreview({
   salary: string;
   duration: string;
 }) {
-  const meta = [v.disciplineLabel, location, employmentType].filter((x) => x && x !== "—");
+  const meta = [v.disciplineLabel, location, employmentType].filter(
+    (x) => x && x !== "—",
+  );
   return (
     <div className="space-y-5">
       <div className="space-y-1 border-b border-ink-100 pb-4">
@@ -143,7 +170,9 @@ function WebsitePreview({
           </p>
         )}
         <h2 className="text-xl font-semibold text-ink-900">{v.title}</h2>
-        {meta.length > 0 && <p className="text-xs text-ink-500">{meta.join(" · ")}</p>}
+        {meta.length > 0 && (
+          <p className="text-xs text-ink-500">{meta.join(" · ")}</p>
+        )}
       </div>
 
       {summary.trim() ? (
@@ -160,7 +189,10 @@ function WebsitePreview({
         <PreviewSection title="Werkzaamheden">
           <ul className="space-y-1.5">
             {werk.map((t, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-ink-700">
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm text-ink-700"
+              >
                 <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
                 <span>{t}</span>
               </li>
@@ -173,7 +205,10 @@ function WebsitePreview({
         <PreviewSection title="Functie-eisen">
           <ul className="space-y-1.5">
             {eisen.map((t, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-ink-700">
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm text-ink-700"
+              >
                 <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-300" />
                 <span>{t}</span>
               </li>
@@ -186,7 +221,10 @@ function WebsitePreview({
         <PreviewSection title="Pré">
           <ul className="space-y-1.5">
             {pre.map((t, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-ink-600">
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm text-ink-600"
+              >
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
                 <span>{t}</span>
               </li>
@@ -204,7 +242,8 @@ function WebsitePreview({
           )}
           {employmentType && (
             <span className="inline-flex items-center gap-1.5">
-              <Briefcase className="h-3.5 w-3.5 text-ink-400" /> {employmentType}
+              <Briefcase className="h-3.5 w-3.5 text-ink-400" />{" "}
+              {employmentType}
             </span>
           )}
           {salary && (
@@ -229,7 +268,13 @@ function WebsitePreview({
  * een voorvertoning van hoe hij op q4s.nl komt te staan. Bovenaan opslaan —
  * al dan niet direct live; rechts de praktische gegevens als klikbare keuzes.
  */
-export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boolean }) {
+export function VacancyReview({
+  v,
+  aiReady,
+}: {
+  v: ReviewVacancy;
+  aiReady: boolean;
+}) {
   const [summary, setSummary] = useState(v.summary);
   const [responsibilities, setResponsibilities] = useState(v.responsibilities);
   const [requirements, setRequirements] = useState(v.requirements);
@@ -238,7 +283,9 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
   const [employmentType, setEmploymentType] = useState(v.employmentType);
   const initialSalary = parseSalary(v.salary);
   const [salaryAmount, setSalaryAmount] = useState(initialSalary.amount);
-  const [salaryPeriod, setSalaryPeriod] = useState<SalaryPeriod>(initialSalary.period);
+  const [salaryPeriod, setSalaryPeriod] = useState<SalaryPeriod>(
+    initialSalary.period,
+  );
   const salary = buildSalary(salaryAmount, salaryPeriod);
   const [duration, setDuration] = useState(v.duration);
 
@@ -293,7 +340,8 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
       setRequirements((data.requirements ?? []).join("\n"));
       setNiceToHave((data.niceToHave ?? []).join("\n"));
       if (!location && data.location) setLocation(data.location);
-      if (!employmentType && data.employmentType) setEmploymentType(data.employmentType);
+      if (!employmentType && data.employmentType)
+        setEmploymentType(data.employmentType);
       if (!salaryAmount && data.salary) {
         const parsed = parseSalary(String(data.salary));
         setSalaryAmount(parsed.amount || String(data.salary));
@@ -302,7 +350,9 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
       setAiDone(true);
       setPreview(true); // toon meteen het resultaat als voorvertoning
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : "AI-verbetering mislukt.");
+      setAiError(
+        err instanceof Error ? err.message : "AI-verbetering mislukt.",
+      );
       setBefore(null);
     } finally {
       setAiBusy(false);
@@ -334,7 +384,11 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                 c.ok ? "text-emerald-700" : "text-amber-700",
               )}
             >
-              {c.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+              {c.ok ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <AlertTriangle className="h-3.5 w-3.5" />
+              )}
               {c.label}
             </span>
           ))}
@@ -349,7 +403,11 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
           >
             <Eye className="h-4 w-4" />
           </button>
-          <SubmitButton variant="outline" pendingLabel="Opslaan…" title="Opslaan zonder te publiceren">
+          <SubmitButton
+            variant="outline"
+            pendingLabel="Opslaan…"
+            title="Opslaan zonder te publiceren"
+          >
             <Save className="h-4 w-4" /> Opslaan
           </SubmitButton>
           <Button
@@ -357,7 +415,11 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
             variant="success"
             onClick={() => setConfirmPublish(true)}
             disabled={!complete && !v.isPublished}
-            title={complete ? undefined : "Vul eerst Over de functie, Werkzaamheden en Functie-eisen in"}
+            title={
+              complete
+                ? undefined
+                : "Vul eerst Over de functie, Werkzaamheden en Functie-eisen in"
+            }
           >
             <Rocket className="h-4 w-4" />
             {v.isPublished ? "Site bijwerken" : "Op de website zetten"}
@@ -370,7 +432,8 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-violet-500" /> Tekst voor de website
+              <Sparkles className="h-5 w-5 text-violet-500" /> Tekst voor de
+              website
             </CardTitle>
             <div className="flex items-center gap-2">
               {before && !aiBusy && (
@@ -379,7 +442,10 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                   onClick={undoAI}
                   title="Terug naar vorige tekst"
                   aria-label="Terug naar vorige tekst"
-                  className={buttonVariants({ variant: "outline", size: "icon" })}
+                  className={buttonVariants({
+                    variant: "outline",
+                    size: "icon",
+                  })}
                 >
                   <RotateCcw className="h-4 w-4" />
                 </button>
@@ -388,10 +454,19 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                 type="button"
                 onClick={improveWithAI}
                 disabled={aiBusy || !aiReady}
-                title={aiReady ? "De AI schrijft de originele tekst uit. Niets wordt opgeslagen tot je op Opslaan klikt." : "AI staat uit (Instellingen › API-sleutels)"}
+                title={
+                  aiReady
+                    ? "De AI schrijft de originele tekst uit. Niets wordt opgeslagen tot je op Opslaan klikt."
+                    : "AI staat uit (Instellingen › API-sleutels)"
+                }
                 className={buttonVariants({ variant: "outline", size: "sm" })}
               >
-                <Sparkles className={cn("h-4 w-4 text-violet-500", aiBusy && "animate-pulse")} />
+                <Sparkles
+                  className={cn(
+                    "h-4 w-4 text-violet-500",
+                    aiBusy && "animate-pulse",
+                  )}
+                />
                 {aiBusy ? "AI is bezig…" : "Laat AI uitschrijven"}
               </button>
             </div>
@@ -400,10 +475,15 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
             {aiError && <p className="text-sm text-red-700">{aiError}</p>}
             {aiDone && (
               <p className="text-sm text-emerald-700">
-                AI heeft de onderdelen ingevuld — lees ze na en pas aan waar nodig.
+                AI heeft de onderdelen ingevuld — lees ze na en pas aan waar
+                nodig.
               </p>
             )}
-            <Field label="Over de functie" htmlFor="summary" hint="Korte, wervende intro.">
+            <Field
+              label="Over de functie"
+              htmlFor="summary"
+              hint="Korte, wervende intro."
+            >
               <Textarea
                 id="summary"
                 name="summary"
@@ -414,17 +494,27 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
               />
             </Field>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Werkzaamheden" htmlFor="responsibilities" hint="Eén taak per regel.">
+              <Field
+                label="Werkzaamheden"
+                htmlFor="responsibilities"
+                hint="Eén taak per regel."
+              >
                 <Textarea
                   id="responsibilities"
                   name="responsibilities"
                   className="min-h-40"
                   value={responsibilities}
                   onChange={(e) => setResponsibilities(e.target.value)}
-                  placeholder={"Inspecteren van…\nRapporteren over…\nAfstemmen met…"}
+                  placeholder={
+                    "Inspecteren van…\nRapporteren over…\nAfstemmen met…"
+                  }
                 />
               </Field>
-              <Field label="Functie-eisen" htmlFor="requirements" hint="Eén eis per regel.">
+              <Field
+                label="Functie-eisen"
+                htmlFor="requirements"
+                hint="Eén eis per regel."
+              >
                 <Textarea
                   id="requirements"
                   name="requirements"
@@ -435,7 +525,11 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                 />
               </Field>
             </div>
-            <Field label="Pré" htmlFor="niceToHave" hint="Eén pluspunt per regel (optioneel).">
+            <Field
+              label="Pré"
+              htmlFor="niceToHave"
+              hint="Eén pluspunt per regel (optioneel)."
+            >
               <Textarea
                 id="niceToHave"
                 name="niceToHave"
@@ -452,7 +546,9 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
         <Card>
           <CardHeader>
             <CardTitle>Praktisch</CardTitle>
-            <span className="text-xs text-ink-500">staat mee op de website</span>
+            <span className="text-xs text-ink-500">
+              staat mee op de website
+            </span>
           </CardHeader>
           <CardContent className="space-y-5">
             <Field label="Plaats" htmlFor="location">
@@ -467,7 +563,11 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
 
             <div className="space-y-1.5">
               <p className="text-sm font-medium text-ink-700">Contractvorm</p>
-              <input type="hidden" name="employmentType" value={employmentType} />
+              <input
+                type="hidden"
+                name="employmentType"
+                value={employmentType}
+              />
               <Keuzes
                 label="Contractvorm"
                 opties={
@@ -480,20 +580,32 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
               />
             </div>
 
-            <div className="space-y-1.5">
-              <p className="text-sm font-medium text-ink-700">Duur van het project</p>
-              <Keuzes label="Duur" opties={DUREN} waarde={duration} onKies={setDuration} />
-              <Input
-                name="duration"
-                aria-label="Duur van het project"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                placeholder="Of typ zelf, bijv. 4 maanden + optie verlenging"
-              />
-            </div>
+            {v.hasDeal && (
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium text-ink-700">
+                  Duur van het project
+                </p>
+                <Keuzes
+                  label="Duur"
+                  opties={DUREN}
+                  waarde={duration}
+                  onKies={setDuration}
+                />
+                <Input
+                  name="duration"
+                  aria-label="Duur van het project"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  placeholder="Of typ zelf, bijv. 4 maanden + optie verlenging"
+                />
+              </div>
+            )}
 
             <div className="space-y-1.5">
-              <label htmlFor="salaryAmount" className="text-sm font-medium text-ink-700">
+              <label
+                htmlFor="salaryAmount"
+                className="text-sm font-medium text-ink-700"
+              >
                 Vergoeding
               </label>
               {/* De samengestelde waarde ("€ 65–75 p/u") gaat mee bij opslaan. */}
@@ -504,7 +616,11 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                 onChange={(e) => setSalaryAmount(e.target.value)}
                 placeholder="Bijv. € 65–75"
               />
-              <div role="group" aria-label="Per uur of per jaar" className={SEGMENT_GROEP}>
+              <div
+                role="group"
+                aria-label="Per uur of per jaar"
+                className={SEGMENT_GROEP}
+              >
                 {(["uur", "jaar"] as const).map((p) => (
                   <button
                     key={p}
@@ -541,7 +657,11 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                 : "Weet je het zeker? De vacature wordt opgeslagen en komt direct live op q4s.nl te staan."}
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setConfirmPublish(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirmPublish(false)}
+              >
                 Annuleren
               </Button>
               <SubmitButton
@@ -570,7 +690,8 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
           >
             <div className="flex items-center justify-between border-b border-ink-100 px-5 py-3.5">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-900">
-                <Eye className="h-4 w-4 text-ink-500" /> Zo komt hij op de website
+                <Eye className="h-4 w-4 text-ink-500" /> Zo komt hij op de
+                website
               </h2>
               <button
                 type="button"

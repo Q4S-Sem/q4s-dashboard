@@ -169,6 +169,7 @@ export default async function VacatureDetailPage({
           employmentType: vacancy.employmentType ?? "",
           salary: vacancy.salary ?? "",
           duration: vacancy.deals[0]?.durationText ?? "",
+          hasDeal: vacancy.deals.length > 0,
           isPublished,
         }}
       />
