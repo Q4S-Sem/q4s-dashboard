@@ -132,23 +132,47 @@ export async function importCvsBulk(formData: FormData) {
  * een Vacancy-concept aan via de mirror. Voor bestaande deals van vóór de auto-
  * mirror, of als de eerdere spiegeling niet doorliep. Idempotent (mirror her-checkt).
  */
-export async function sendDealToWebsite(formData: FormData) {
-  const dealId = String(formData.get("dealId") ?? "");
-  if (!dealId) redirect("/website");
-  const vacancyId = await mirrorDealToVacancy(dealId);
-  // Meteen de AI-website-tekst laten schrijven, zodat de recruiter op de
-  // review-pagina direct de gegenereerde tekst ziet (accepteren of aanpassen).
-  // Faalt zacht: zonder AI-sleutel blijven de overgenomen velden staan.
-  if (vacancyId) {
-    try {
+/** Gekozen ids: de knop zelf (`knop`: één rij of "alles", komma-gescheiden),
+ *  anders de aangevinkte rijen (`id`). */
+function gekozen(formData: FormData): string[] {
+  const knop = String(formData.get("knop") ?? "");
+  return (knop ? knop.split(",") : formData.getAll("id").map(String)).filter(Boolean);
+}
+
+/**
+ * Concept → gereed: website-vacature aanmaken (indien nodig) en de AI de tekst
+ * laten schrijven; die zet de status op IMPROVED (= gereed). Eén of alle tegelijk.
+ * Lukt de AI niet, dan blijft de vacature in concept en melden we hoeveel.
+ */
+export async function naarGereed(formData: FormData) {
+  const dealIds = gekozen(formData);
+  const deals = await db.deal.findMany({
+    where: { id: { in: dealIds }, status: "OPEN", candidateId: null },
+    select: { id: true, vacancyId: true },
+  });
+  // ponytail: parallel binnen één request (maxDuration op de pagina); bij heel
+  // veel concepten tegelijk een achtergrondjob.
+  const uitkomst = await Promise.allSettled(
+    deals.map(async (d) => {
+      const vacancyId = d.vacancyId ?? (await mirrorDealToVacancy(d.id));
+      if (!vacancyId) throw new Error("geen vacature");
       await aiImproveVacancy(vacancyId);
-    } catch {
-      /* geen AI of mislukt — de recruiter kan het op de pagina zelf proberen */
-    }
+    }),
+  );
+  const mislukt = uitkomst.filter((u) => u.status === "rejected").length;
+  revalidatePath("/website");
+  redirect(mislukt ? `/website?tab=concept&mislukt=${mislukt}` : "/website?tab=gereed");
+}
+
+/** Gereed → online: één, de selectie of alles tegelijk live op q4s.nl. */
+export async function zetOnline(formData: FormData) {
+  const ids = gekozen(formData);
+  const waar = { id: { in: ids }, status: { in: ["IMPROVED", "PAUSED"] as ("IMPROVED" | "PAUSED")[] } };
+  if (ids.length) {
+    await db.vacancy.updateMany({ where: { ...waar, publishedAt: null }, data: { publishedAt: new Date() } });
+    await db.vacancy.updateMany({ where: waar, data: { status: "PUBLISHED" } });
   }
   revalidatePath("/website");
-  revalidatePath("/website/vacatures");
-  // Ga direct naar de vacature om de tekst te controleren/publiceren; anders terug.
-  if (vacancyId) redirect(`/vacatures/${vacancyId}`);
-  redirect("/website");
+  revalidatePath("/vacatures");
+  redirect("/website?tab=online");
 }

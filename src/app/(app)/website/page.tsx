@@ -16,16 +16,21 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { cn } from "@/lib/utils";
-import { sendDealToWebsite } from "./actions";
-import { pauseVacancy, resumeVacancy } from "../vacatures/actions";
-import { CloudOff, CloudUpload } from "lucide-react";
+import { naarGereed, zetOnline } from "./actions";
+import { pauseVacancy } from "../vacatures/actions";
+import { CloudOff, CloudUpload, Sparkles } from "lucide-react";
 import { publicVacancyUrl } from "@/lib/public-site";
 import { VacatureTabs, websiteFase } from "../crm/vacatures/VacatureTabs";
 
 /** LinkedIn-logo (lucide heeft geen merk-icoon). */
 function LinkedinIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z" />
     </svg>
   );
@@ -37,6 +42,8 @@ const iconBtn =
 
 export const metadata = { title: "Vacatures — Website" };
 export const dynamic = "force-dynamic";
+// AI schrijft bij "naar gereed" de website-teksten (meerdere tegelijk).
+export const maxDuration = 60;
 
 /** Turn a stored website value ("www.q4s.nl") into a clickable absolute URL. */
 function siteUrl(raw: string | undefined | null): string | null {
@@ -71,7 +78,7 @@ const STATUS_LABEL: Record<Bucket, { text: string; cls: string }> = {
 export default async function WebsitePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; mislukt?: string }>;
 }) {
   const sp = await searchParams;
   const [settings, openDeals] = await Promise.all([
@@ -102,8 +109,19 @@ export default async function WebsitePage({
   const rows = openDeals.map((d) => ({ d, bucket: bucketOf(d.vacancy) }));
 
   const validTab = new Set<string>(TABS.map((t) => t.key));
-  const active: Bucket = validTab.has(sp.tab ?? "") ? (sp.tab as Bucket) : "concept";
+  const active: Bucket = validTab.has(sp.tab ?? "")
+    ? (sp.tab as Bucket)
+    : "concept";
   const visible = rows.filter((r) => r.bucket === active);
+  // Bulk: concept → gereed (AI-tekst) en gereed → online. Op die twee tabs zit de
+  // hele lijst in één formulier (rij-knop, aangevinkt of alles); Online heeft
+  // per rij een eigen offline-formulier, dus daar geen omhullend formulier.
+  const bulk =
+    active === "online" ? null : active === "concept" ? naarGereed : zetOnline;
+  const alleIds = visible
+    .map(({ d }) => (active === "concept" ? d.id : d.vacancy?.id))
+    .filter(Boolean)
+    .join(",");
 
   return (
     <div className="space-y-6">
@@ -133,163 +151,248 @@ export default async function WebsitePage({
 
       <VacatureTabs actief={active} />
 
-      <Card>
-        {visible.length === 0 ? (
-          <div className="px-5 py-12 text-center text-sm text-ink-500">
-            {active === "concept" && "Geen concepten — alles is al uitgewerkt of nog niet aangemaakt."}
-            {active === "gereed" && "Niets staat klaar voor publicatie. Werk een concept uit met de AI-tekst."}
-            {active === "online" && "Nog niets live op de website. Publiceer een gereed staande vacature."}
-          </div>
-        ) : (
-          <ul className="divide-y divide-ink-100">
-            {visible.map(({ d, bucket }) => {
-              const company = d.client?.companyName ?? d.company;
-              const vac = d.vacancy;
-              const status = STATUS_LABEL[bucket];
-              const disc = d.discipline ? labelFor(DISCIPLINES, d.discipline) : "";
-              return (
-                <li key={d.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
-                  {/* Vacature-info */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Link
-                        href={`/crm/deals/${d.id}`}
-                        className="truncate font-semibold text-ink-900 hover:text-brand-700"
-                      >
-                        {d.title}
-                      </Link>
-                      <span className={cn("inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold", status.cls)}>
-                        {status.text}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
-                      <span className="inline-flex items-center gap-1">
-                        <Briefcase className="h-3.5 w-3.5 text-ink-400" /> {company}
-                      </span>
-                      {d.location && (
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5 text-ink-400" /> {d.location}
-                        </span>
-                      )}
-                      {disc && <span className="text-ink-400">{disc}</span>}
-                      {bucket === "online" && (
-                        <span className="inline-flex items-center gap-1 text-ink-400">
-                          <Eye className="h-3.5 w-3.5" /> {vac?.views ?? 0}
-                        </span>
-                      )}
-                    </p>
-                  </div>
+      {sp.mislukt && active === "concept" && (
+        <p className="rounded-lg bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+          Bij {sp.mislukt} vacature(s) lukte het schrijven van de website-tekst
+          niet. Probeer het opnieuw of werk de tekst uit via de vacature zelf.
+        </p>
+      )}
 
-                  {/* Acties — de doorlopende flow: uitwerken · LinkedIn · sollicitaties */}
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    {vac ? (
-                      <Link
-                        href={`/vacatures/${vac.id}`}
-                        className={iconBtn}
-                        title={
-                          bucket === "online"
-                            ? "Website-tekst bekijken en bijwerken"
-                            : "Uitwerken & publiceren op de website"
-                        }
-                        aria-label="Uitwerken & publiceren"
-                      >
-                        <Globe className="h-4 w-4" />
-                      </Link>
-                    ) : (
-                      <form action={sendDealToWebsite}>
-                        <input type="hidden" name="dealId" value={d.id} />
-                        <SubmitButton
-                          variant="outline"
-                          size="icon"
-                          pendingLabel="…"
-                          title="Website-tekst maken (AI schrijft)"
-                          aria-label="Website-tekst maken"
-                        >
-                          <Globe className="h-4 w-4" />
-                        </SubmitButton>
-                      </form>
-                    )}
+      {(() => {
+        const lijst = (
+          <>
+            {bulk && visible.length > 0 && (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {active === "gereed" && (
+                  <SubmitButton
+                    variant="outline"
+                    size="sm"
+                    pendingLabel="Online zetten…"
+                  >
+                    <CloudUpload className="h-4 w-4" /> Selectie online zetten
+                  </SubmitButton>
+                )}
+                <SubmitButton
+                  name="knop"
+                  value={alleIds}
+                  variant={active === "gereed" ? "success" : "primary"}
+                  size="sm"
+                  pendingLabel={
+                    active === "concept"
+                      ? "AI schrijft de teksten…"
+                      : "Online zetten…"
+                  }
+                >
+                  {active === "concept" ? (
+                    <>
+                      <Sparkles className="h-4 w-4" /> Alles naar gereed (
+                      {visible.length})
+                    </>
+                  ) : (
+                    <>
+                      <CloudUpload className="h-4 w-4" /> Alles online zetten (
+                      {visible.length})
+                    </>
+                  )}
+                </SubmitButton>
+              </div>
+            )}
 
-                    <Link
-                      href={vac ? `/website/linkedin?vac=${vac.id}` : `/website/linkedin`}
-                      className={cn(iconBtn, !vac && "pointer-events-none opacity-40")}
-                      title={
-                        vac
-                          ? "LinkedIn-post maken — tekst staat meteen klaar in de generator"
-                          : "Zet eerst de website-tekst klaar"
-                      }
-                      aria-label="LinkedIn-post maken"
-                      aria-disabled={!vac}
-                    >
-                      <LinkedinIcon className="h-4 w-4" />
-                    </Link>
-
-                    {vac && (
-                      <Link
-                        href={`/website/vacatures/${vac.id}/sollicitaties`}
-                        className={cn(iconBtn, "relative")}
-                        title="Sollicitaties op deze vacature bekijken"
-                        aria-label="Sollicitaties"
+            <Card>
+              {visible.length === 0 ? (
+                <div className="px-5 py-12 text-center text-sm text-ink-500">
+                  {active === "concept" &&
+                    "Geen concepten — alles is al uitgewerkt of nog niet aangemaakt."}
+                  {active === "gereed" &&
+                    "Niets staat klaar voor publicatie. Werk een concept uit met de AI-tekst."}
+                  {active === "online" &&
+                    "Nog niets live op de website. Publiceer een gereed staande vacature."}
+                </div>
+              ) : (
+                <ul className="divide-y divide-ink-100">
+                  {visible.map(({ d, bucket }) => {
+                    const company = d.client?.companyName ?? d.company;
+                    const vac = d.vacancy;
+                    const status = STATUS_LABEL[bucket];
+                    const disc = d.discipline
+                      ? labelFor(DISCIPLINES, d.discipline)
+                      : "";
+                    return (
+                      <li
+                        key={d.id}
+                        className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center"
                       >
-                        <Users className="h-4 w-4" />
-                        {vac._count.applications > 0 && (
-                          <span className="absolute -right-1.5 -top-1.5 min-w-[16px] rounded-full bg-brand-600 px-1 py-0.5 text-center text-[10px] font-bold leading-none text-white">
-                            {vac._count.applications}
-                          </span>
+                        {active === "gereed" && vac && (
+                          <input
+                            type="checkbox"
+
+                            name="id"
+                            value={vac.id}
+                            aria-label={`${d.title} selecteren`}
+                            className="h-4 w-4 shrink-0 accent-brand-600"
+                          />
                         )}
-                      </Link>
-                    )}
+                        {/* Vacature-info */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Link
+                              href={`/crm/deals/${d.id}`}
+                              className="truncate font-semibold text-ink-900 hover:text-brand-700"
+                            >
+                              {d.title}
+                            </Link>
+                            <span
+                              className={cn(
+                                "inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                                status.cls,
+                              )}
+                            >
+                              {status.text}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
+                            <span className="inline-flex items-center gap-1">
+                              <Briefcase className="h-3.5 w-3.5 text-ink-400" />{" "}
+                              {company}
+                            </span>
+                            {d.location && (
+                              <span className="inline-flex items-center gap-1">
+                                <MapPin className="h-3.5 w-3.5 text-ink-400" />{" "}
+                                {d.location}
+                              </span>
+                            )}
+                            {disc && (
+                              <span className="text-ink-400">{disc}</span>
+                            )}
+                            {bucket === "online" && (
+                              <span className="inline-flex items-center gap-1 text-ink-400">
+                                <Eye className="h-3.5 w-3.5" />{" "}
+                                {vac?.views ?? 0}
+                              </span>
+                            )}
+                          </p>
+                        </div>
 
-                    {bucket === "online" && vac?.slug && (
-                      <a
-                        href={publicVacancyUrl(vac.slug)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={buttonVariants({ variant: "ghost", size: "sm" })}
-                        title="Bekijk op de website"
-                      >
-                        Bekijk <ArrowRight className="h-3.5 w-3.5" />
-                      </a>
-                    )}
+                        {/* Acties — de doorlopende flow: uitwerken · LinkedIn · sollicitaties */}
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                          {bucket === "concept" ? (
+                            <SubmitButton
+                              name="knop"
+                              value={d.id}
+                              variant="outline"
+                              size="icon"
+                              pendingLabel="…"
+                              title="Website-tekst laten schrijven en naar Gereed"
+                              aria-label="Naar gereed"
+                            >
+                              <Globe className="h-4 w-4" />
+                            </SubmitButton>
+                          ) : (
+                            vac && (
+                              <Link
+                                href={`/vacatures/${vac.id}`}
+                                className={iconBtn}
+                                title="Website-tekst bekijken en bijwerken"
+                                aria-label="Website-tekst bekijken"
+                              >
+                                <Globe className="h-4 w-4" />
+                              </Link>
+                            )
+                          )}
 
-                    {/* Online/offline schakelen: een live vacature is met één klik
+                          {/* LinkedIn pas als hij online staat → LinkedIn-studio in de Socials-hub. */}
+                          {bucket === "online" && vac && (
+                            <Link
+                              href={`/website/linkedin?vac=${vac.id}`}
+                              className={iconBtn}
+                              title="LinkedIn-post maken — tekst staat meteen klaar in de LinkedIn-studio"
+                              aria-label="LinkedIn-post maken"
+                            >
+                              <LinkedinIcon className="h-4 w-4" />
+                            </Link>
+                          )}
+
+                          {vac && (
+                            <Link
+                              href={`/website/vacatures/${vac.id}/sollicitaties`}
+                              className={cn(iconBtn, "relative")}
+                              title="Sollicitaties op deze vacature bekijken"
+                              aria-label="Sollicitaties"
+                            >
+                              <Users className="h-4 w-4" />
+                              {vac._count.applications > 0 && (
+                                <span className="absolute -right-1.5 -top-1.5 min-w-[16px] rounded-full bg-brand-600 px-1 py-0.5 text-center text-[10px] font-bold leading-none text-white">
+                                  {vac._count.applications}
+                                </span>
+                              )}
+                            </Link>
+                          )}
+
+                          {bucket === "online" && vac?.slug && (
+                            <a
+                              href={publicVacancyUrl(vac.slug)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={buttonVariants({
+                                variant: "ghost",
+                                size: "sm",
+                              })}
+                              title="Bekijk op de website"
+                            >
+                              Bekijk <ArrowRight className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+
+                          {/* Online/offline schakelen: een live vacature is met één klik
                         van de site te halen en net zo makkelijk weer terug te
                         zetten (status PAUSED <-> PUBLISHED, tekst blijft staan). */}
-                    {vac && bucket === "online" && (
-                      <form action={pauseVacancy}>
-                        <input type="hidden" name="id" value={vac.id} />
-                        <input type="hidden" name="from" value="website" />
-                        <SubmitButton
-                          variant="outline"
-                          size="sm"
-                          pendingLabel="…"
-                          title="Direct van de website halen — de tekst blijft bewaard en je kunt hem altijd terugzetten"
-                        >
-                          <CloudOff className="h-4 w-4" /> Offline halen
-                        </SubmitButton>
-                      </form>
-                    )}
-                    {vac && bucket === "gereed" && (
-                      <form action={resumeVacancy}>
-                        <input type="hidden" name="id" value={vac.id} />
-                        <input type="hidden" name="from" value="website" />
-                        <SubmitButton
-                          variant="success"
-                          size="sm"
-                          pendingLabel="…"
-                          title="Zet deze vacature (weer) live op q4s.nl"
-                        >
-                          <CloudUpload className="h-4 w-4" /> Online zetten
-                        </SubmitButton>
-                      </form>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
+                          {vac && bucket === "online" && (
+                            <form action={pauseVacancy}>
+                              <input type="hidden" name="id" value={vac.id} />
+                              <input
+                                type="hidden"
+                                name="from"
+                                value="website"
+                              />
+                              <SubmitButton
+                                variant="outline"
+                                size="sm"
+                                pendingLabel="…"
+                                title="Direct van de website halen — de tekst blijft bewaard en je kunt hem altijd terugzetten"
+                              >
+                                <CloudOff className="h-4 w-4" /> Offline halen
+                              </SubmitButton>
+                            </form>
+                          )}
+                          {vac && bucket === "gereed" && (
+                            <SubmitButton
+                              name="knop"
+                              value={vac.id}
+                              variant="success"
+                              size="sm"
+                              pendingLabel="…"
+                              title="Zet deze vacature live op q4s.nl"
+                            >
+                              <CloudUpload className="h-4 w-4" /> Online zetten
+                            </SubmitButton>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </Card>
+          </>
+        );
+        return bulk ? (
+          <form action={bulk} className="space-y-6">
+            {lijst}
+          </form>
+        ) : (
+          lijst
+        );
+      })()}
     </div>
   );
 }
