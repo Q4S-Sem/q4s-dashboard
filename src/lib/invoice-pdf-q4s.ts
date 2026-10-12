@@ -298,7 +298,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
     by -= 12;
   }
 
-  y = by - 34; // witruimte tussen bank-/contactblok en klant-/factuurgegevens
+  y = by - 14;
 
   // ---- Ontvanger (links) en precies daartegenover het meta-blok (rechts):
   //      Subject (freelancer) / Services / Our ref, dan Invoice no / KvK / VAT / Date.
@@ -340,7 +340,7 @@ export async function renderInvoicePdf(doc: InvoiceDoc): Promise<Uint8Array> {
   for (const l of doc.recipientLines) {
     if (l) { text(truncate(l, 9, recipientMaxW), supplierX, ry, 9, font, MUTED); ry -= 13; }
   }
-  y = Math.min(ry, my) - 32; // ruimte tussen klant-/factuurgegevens en de tabel
+  y = Math.min(ry, my) - 56; // ruime witruimte tussen klant-/factuurgegevens en de tabel
 
   // ---- Tabel ----
   // Kolomankers.
