@@ -57,7 +57,7 @@ export default async function PubliekeVacaturePage({
   const { ok } = await searchParams;
   const vacancy = await db.vacancy.findUnique({
     where: { slug },
-    include: { client: true },
+    include: { client: true, deals: { select: { durationText: true }, take: 1 } },
   });
 
   if (!vacancy || vacancy.status !== "PUBLISHED") notFound();
@@ -187,6 +187,7 @@ export default async function PubliekeVacaturePage({
                 value={discipline !== "—" ? discipline : null}
               />
               <DetailRow label="Vergoeding" value={vacancy.salary} />
+              <DetailRow label="Duur" value={vacancy.deals[0]?.durationText} />
               <DetailRow
                 label="Geplaatst"
                 value={

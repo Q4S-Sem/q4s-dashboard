@@ -61,6 +61,7 @@ export default async function VacatureDetailPage({
     where: { id },
     include: {
       client: true,
+      deals: { select: { durationText: true }, take: 1 },
       applications: {
         include: { candidate: true },
         orderBy: { createdAt: "desc" },
@@ -167,6 +168,7 @@ export default async function VacatureDetailPage({
           location: vacancy.location ?? "",
           employmentType: vacancy.employmentType ?? "",
           salary: vacancy.salary ?? "",
+          duration: vacancy.deals[0]?.durationText ?? "",
           isPublished,
         }}
       />

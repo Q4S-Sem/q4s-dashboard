@@ -184,6 +184,10 @@ export async function saveVacancyContent(formData: FormData) {
       ...(publish ? { status: "PUBLISHED", publishedAt: new Date() } : {}),
     },
   });
+  // Projectduur hoort bij de recruitment-vacature (die is leidend).
+  if (formData.has("duration")) {
+    await db.deal.updateMany({ where: { vacancyId: id }, data: { durationText: text("duration") } });
+  }
 
   revalidatePath("/vacatures");
   revalidatePath(`/vacatures/${id}`);

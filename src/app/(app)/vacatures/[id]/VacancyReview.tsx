@@ -13,11 +13,11 @@ import {
   Briefcase,
   Coins,
   RotateCcw,
+  CalendarClock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
-import { Select } from "@/components/ui/select";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { cn } from "@/lib/utils";
 import { saveVacancyContent } from "../actions";
@@ -35,8 +35,42 @@ export type ReviewVacancy = {
   location: string;
   employmentType: string;
   salary: string;
+  /** Projectduur — staat op de recruitment-vacature (Deal.durationText). */
+  duration: string;
   isPublished: boolean;
 };
+
+const CONTRACTVORMEN = ["ZZP / Freelance", "Detachering", "Fulltime", "Parttime", "Tijdelijk", "Uitzend"];
+const DUREN = ["1 maand", "3 maanden", "6 maanden", "12 maanden", "Langdurig"];
+
+/** Klikbare keuzes (zelfde segment-stijl als overal); nogmaals klikken = leeg. */
+function Keuzes({
+  opties,
+  waarde,
+  onKies,
+  label,
+}: {
+  opties: string[];
+  waarde: string;
+  onKies: (v: string) => void;
+  label: string;
+}) {
+  return (
+    <div role="group" aria-label={label} className={SEGMENT_GROEP}>
+      {opties.map((o) => (
+        <button
+          key={o}
+          type="button"
+          aria-pressed={waarde === o}
+          onClick={() => onKies(waarde === o ? "" : o)}
+          className={segmentVariants(waarde === o)}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** Regels uit een tekstveld — zoals de publieke pagina ze toont. */
 function lines(s: string): string[] {
@@ -87,6 +121,7 @@ function WebsitePreview({
   location,
   employmentType,
   salary,
+  duration,
 }: {
   v: ReviewVacancy;
   summary: string;
@@ -96,6 +131,7 @@ function WebsitePreview({
   location: string;
   employmentType: string;
   salary: string;
+  duration: string;
 }) {
   const meta = [v.disciplineLabel, location, employmentType].filter((x) => x && x !== "—");
   return (
@@ -159,7 +195,7 @@ function WebsitePreview({
         </PreviewSection>
       )}
 
-      {(location || employmentType || salary) && (
+      {(location || employmentType || salary || duration) && (
         <div className="grid gap-2 rounded-lg bg-ink-50 p-3 text-xs text-ink-600">
           {location && (
             <span className="inline-flex items-center gap-1.5">
@@ -176,6 +212,11 @@ function WebsitePreview({
               <Coins className="h-3.5 w-3.5 text-ink-400" /> {salary}
             </span>
           )}
+          {duration && (
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarClock className="h-3.5 w-3.5 text-ink-400" /> {duration}
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -185,8 +226,8 @@ function WebsitePreview({
 /**
  * De controleerpagina van een vacature: één brede editor voor de website-tekst
  * (zelf aanpassen of door de AI laten uitschrijven). Via het oog-icoon open je
- * een voorvertoning van hoe hij op q4s.nl komt te staan. Onderaan opslaan —
- * al dan niet direct live.
+ * een voorvertoning van hoe hij op q4s.nl komt te staan. Bovenaan opslaan —
+ * al dan niet direct live; rechts de praktische gegevens als klikbare keuzes.
  */
 export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boolean }) {
   const [summary, setSummary] = useState(v.summary);
@@ -199,6 +240,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
   const [salaryAmount, setSalaryAmount] = useState(initialSalary.amount);
   const [salaryPeriod, setSalaryPeriod] = useState<SalaryPeriod>(initialSalary.period);
   const salary = buildSalary(salaryAmount, salaryPeriod);
+  const [duration, setDuration] = useState(v.duration);
 
   const [preview, setPreview] = useState(false);
   const [confirmPublish, setConfirmPublish] = useState(false);
@@ -281,189 +323,8 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
     <form action={saveVacancyContent} className="space-y-4">
       <input type="hidden" name="id" value={v.id} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-violet-500" /> Tekst voor de website
-          </CardTitle>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-ink-500">
-              {done} van {checks.length} onderdelen
-            </span>
-            <button
-              type="button"
-              onClick={() => setPreview(true)}
-              title="Voorbeeld bekijken"
-              aria-label="Voorbeeld bekijken"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* AI-retouche: bewust een eigen, opvallende vorm — een violet
-              gradient-pil die nergens anders in de app voorkomt. De rest van
-              de acties is juist rustig (icoon-knoppen). */}
-          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/50 p-3">
-            <button
-              type="button"
-              onClick={improveWithAI}
-              disabled={aiBusy || !aiReady}
-              className={buttonVariants({ className: "group" })}
-            >
-              <Sparkles className={cn("h-4 w-4", aiBusy && "animate-pulse")} />
-              {aiBusy ? "AI is bezig…" : "Laat AI uitschrijven"}
-            </button>
-            {before && !aiBusy && (
-              <button
-                type="button"
-                onClick={undoAI}
-                title="Terug naar vorige tekst"
-                aria-label="Terug naar vorige tekst"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            )}
-            <p className="min-w-40 flex-1 text-xs text-ink-600">
-              De AI schrijft de originele tekst om naar Over de functie, Werkzaamheden,
-              Functie-eisen en Pré. Niets wordt opgeslagen tot jij op opslaan klikt.
-            </p>
-          </div>
-          {!aiReady && (
-            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              De AI staat uit — vul een sleutel in bij Instellingen › API-sleutels. Zelf
-              schrijven kan gewoon.
-            </p>
-          )}
-          {aiError && <p className="text-sm text-red-700">{aiError}</p>}
-          {aiDone && (
-            <p className="text-sm text-emerald-700">
-              AI heeft de onderdelen ingevuld — lees ze na en pas aan waar nodig.
-            </p>
-          )}
-
-          {/* Twee kolommen voor de lange velden zodat je niet eindeloos scrolt. */}
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Field label="Over de functie" htmlFor="summary" hint="Korte, wervende intro.">
-              <Textarea
-                id="summary"
-                name="summary"
-                className="min-h-28"
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                placeholder="Waar gaat deze functie over en waarom is dit een mooie klus?"
-              />
-            </Field>
-
-            <Field label="Werkzaamheden" htmlFor="responsibilities" hint="Eén taak per regel.">
-              <Textarea
-                id="responsibilities"
-                name="responsibilities"
-                className="min-h-28"
-                value={responsibilities}
-                onChange={(e) => setResponsibilities(e.target.value)}
-                placeholder={"Inspecteren van…\nRapporteren over…\nAfstemmen met…"}
-              />
-            </Field>
-
-            <Field label="Functie-eisen" htmlFor="requirements" hint="Eén eis per regel.">
-              <Textarea
-                id="requirements"
-                name="requirements"
-                className="min-h-28"
-                value={requirements}
-                onChange={(e) => setRequirements(e.target.value)}
-                placeholder={"Ervaring als…\nCertificaat…\nKennis van…"}
-              />
-            </Field>
-
-            <Field label="Pré" htmlFor="niceToHave" hint="Eén pluspunt per regel (optioneel).">
-              <Textarea
-                id="niceToHave"
-                name="niceToHave"
-                className="min-h-28"
-                value={niceToHave}
-                onChange={(e) => setNiceToHave(e.target.value)}
-                placeholder={"VCA-VOL…\nErvaring op terminals…"}
-              />
-            </Field>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Praktische gegevens</CardTitle>
-          <span className="text-sm text-ink-500">staan mee op de website</span>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
-          <Field label="Plaats" htmlFor="location">
-            <Input
-              id="location"
-              name="location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Bijv. Rotterdam"
-            />
-          </Field>
-          <Field label="Contractvorm" htmlFor="employmentType">
-            <Select
-              id="employmentType"
-              name="employmentType"
-              defaultValue={employmentType}
-              onValueChange={(val) => setEmploymentType(val)}
-              tintText
-            >
-              <option value="">Kies een contractvorm…</option>
-              <option value="ZZP / Freelance" data-color="violet">ZZP / Freelance</option>
-              <option value="Detachering" data-color="blue">Detachering</option>
-              <option value="Fulltime" data-color="green">Fulltime</option>
-              <option value="Parttime" data-color="cyan">Parttime</option>
-              <option value="Tijdelijk" data-color="amber">Tijdelijk</option>
-              <option value="Uitzend" data-color="orange">Uitzend</option>
-              {employmentType &&
-                ![
-                  "ZZP / Freelance",
-                  "Detachering",
-                  "Fulltime",
-                  "Parttime",
-                  "Tijdelijk",
-                  "Uitzend",
-                ].includes(employmentType) && (
-                  <option value={employmentType}>{employmentType}</option>
-                )}
-            </Select>
-          </Field>
-          <Field label="Vergoeding" htmlFor="salaryAmount">
-            {/* De samengestelde waarde ("€ 65–75 p/u") gaat mee bij opslaan. */}
-            <input type="hidden" name="salary" value={salary} />
-            <div className="flex gap-2">
-              <Input
-                id="salaryAmount"
-                className="flex-1"
-                value={salaryAmount}
-                onChange={(e) => setSalaryAmount(e.target.value)}
-                placeholder="Bijv. € 65–75"
-              />
-              <div className="w-32 shrink-0">
-                <Select
-                  aria-label="Per uur of jaar"
-                  defaultValue={salaryPeriod}
-                  onValueChange={(val) => setSalaryPeriod(val as SalaryPeriod)}
-                >
-                  <option value="uur">Per uur</option>
-                  <option value="jaar">Jaarsalaris</option>
-                </Select>
-              </div>
-            </div>
-          </Field>
-        </CardContent>
-      </Card>
-
-      {/* Vaste balk: checklist + voorbeeld + opslaan */}
-      <div className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border border-ink-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      {/* Actiebalk bovenaan (blijft staan bij scrollen): status · voorbeeld · opslaan · website */}
+      <div className="sticky top-0 z-20 flex flex-col gap-3 rounded-xl border border-ink-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           {checks.map((c) => (
             <span
@@ -473,51 +334,192 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                 c.ok ? "text-emerald-700" : "text-amber-700",
               )}
             >
-              {c.ok ? (
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              ) : (
-                <AlertTriangle className="h-3.5 w-3.5" />
-              )}
+              {c.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
               {c.label}
             </span>
           ))}
         </div>
         <div className="flex items-center gap-2 self-end sm:self-auto">
-          {/* Rustige icoon-acties; alleen publiceren houdt een tekstknop. */}
           <button
             type="button"
             onClick={() => setPreview(true)}
             title="Voorbeeld bekijken"
             aria-label="Voorbeeld bekijken"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
+            className={buttonVariants({ variant: "outline", size: "icon" })}
           >
             <Eye className="h-4 w-4" />
           </button>
-          <SubmitButton
-            variant="outline"
-            size="icon"
-            pendingLabel="…"
-            title="Alleen opslaan (nog niet publiceren)"
-            aria-label="Alleen opslaan"
-            className="h-10 w-10 rounded-lg"
-          >
-            <Save className="h-4 w-4" />
+          <SubmitButton variant="outline" pendingLabel="Opslaan…" title="Opslaan zonder te publiceren">
+            <Save className="h-4 w-4" /> Opslaan
           </SubmitButton>
           <Button
             type="button"
             variant="success"
             onClick={() => setConfirmPublish(true)}
             disabled={!complete && !v.isPublished}
-            title={
-              complete
-                ? undefined
-                : "Vul eerst Over de functie, Werkzaamheden en Functie-eisen in"
-            }
+            title={complete ? undefined : "Vul eerst Over de functie, Werkzaamheden en Functie-eisen in"}
           >
             <Rocket className="h-4 w-4" />
-            {v.isPublished ? "Opslaan & site bijwerken" : "Opslaan & op de website zetten"}
+            {v.isPublished ? "Site bijwerken" : "Op de website zetten"}
           </Button>
         </div>
+      </div>
+
+      <div className="grid items-start gap-4 lg:grid-cols-3">
+        {/* Links: de tekst die op de website komt */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-violet-500" /> Tekst voor de website
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {before && !aiBusy && (
+                <button
+                  type="button"
+                  onClick={undoAI}
+                  title="Terug naar vorige tekst"
+                  aria-label="Terug naar vorige tekst"
+                  className={buttonVariants({ variant: "outline", size: "icon" })}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={improveWithAI}
+                disabled={aiBusy || !aiReady}
+                title={aiReady ? "De AI schrijft de originele tekst uit. Niets wordt opgeslagen tot je op Opslaan klikt." : "AI staat uit (Instellingen › API-sleutels)"}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                <Sparkles className={cn("h-4 w-4 text-violet-500", aiBusy && "animate-pulse")} />
+                {aiBusy ? "AI is bezig…" : "Laat AI uitschrijven"}
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {aiError && <p className="text-sm text-red-700">{aiError}</p>}
+            {aiDone && (
+              <p className="text-sm text-emerald-700">
+                AI heeft de onderdelen ingevuld — lees ze na en pas aan waar nodig.
+              </p>
+            )}
+            <Field label="Over de functie" htmlFor="summary" hint="Korte, wervende intro.">
+              <Textarea
+                id="summary"
+                name="summary"
+                className="min-h-24"
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                placeholder="Waar gaat deze functie over en waarom is dit een mooie klus?"
+              />
+            </Field>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Werkzaamheden" htmlFor="responsibilities" hint="Eén taak per regel.">
+                <Textarea
+                  id="responsibilities"
+                  name="responsibilities"
+                  className="min-h-40"
+                  value={responsibilities}
+                  onChange={(e) => setResponsibilities(e.target.value)}
+                  placeholder={"Inspecteren van…\nRapporteren over…\nAfstemmen met…"}
+                />
+              </Field>
+              <Field label="Functie-eisen" htmlFor="requirements" hint="Eén eis per regel.">
+                <Textarea
+                  id="requirements"
+                  name="requirements"
+                  className="min-h-40"
+                  value={requirements}
+                  onChange={(e) => setRequirements(e.target.value)}
+                  placeholder={"Ervaring als…\nCertificaat…\nKennis van…"}
+                />
+              </Field>
+            </div>
+            <Field label="Pré" htmlFor="niceToHave" hint="Eén pluspunt per regel (optioneel).">
+              <Textarea
+                id="niceToHave"
+                name="niceToHave"
+                className="min-h-20"
+                value={niceToHave}
+                onChange={(e) => setNiceToHave(e.target.value)}
+                placeholder={"VCA-VOL…\nErvaring op terminals…"}
+              />
+            </Field>
+          </CardContent>
+        </Card>
+
+        {/* Rechts: praktische gegevens — klikken i.p.v. typen */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Praktisch</CardTitle>
+            <span className="text-xs text-ink-500">staat mee op de website</span>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <Field label="Plaats" htmlFor="location">
+              <Input
+                id="location"
+                name="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Bijv. Rotterdam"
+              />
+            </Field>
+
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-ink-700">Contractvorm</p>
+              <input type="hidden" name="employmentType" value={employmentType} />
+              <Keuzes
+                label="Contractvorm"
+                opties={
+                  employmentType && !CONTRACTVORMEN.includes(employmentType)
+                    ? [...CONTRACTVORMEN, employmentType]
+                    : CONTRACTVORMEN
+                }
+                waarde={employmentType}
+                onKies={setEmploymentType}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-ink-700">Duur van het project</p>
+              <Keuzes label="Duur" opties={DUREN} waarde={duration} onKies={setDuration} />
+              <Input
+                name="duration"
+                aria-label="Duur van het project"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                placeholder="Of typ zelf, bijv. 4 maanden + optie verlenging"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="salaryAmount" className="text-sm font-medium text-ink-700">
+                Vergoeding
+              </label>
+              {/* De samengestelde waarde ("€ 65–75 p/u") gaat mee bij opslaan. */}
+              <input type="hidden" name="salary" value={salary} />
+              <Input
+                id="salaryAmount"
+                value={salaryAmount}
+                onChange={(e) => setSalaryAmount(e.target.value)}
+                placeholder="Bijv. € 65–75"
+              />
+              <div role="group" aria-label="Per uur of per jaar" className={SEGMENT_GROEP}>
+                {(["uur", "jaar"] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    aria-pressed={salaryPeriod === p}
+                    onClick={() => setSalaryPeriod(p)}
+                    className={segmentVariants(salaryPeriod === p)}
+                  >
+                    {p === "uur" ? "Per uur" : "Jaarsalaris"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Bevestiging vóór publiceren */}
@@ -589,6 +591,7 @@ export function VacancyReview({ v, aiReady }: { v: ReviewVacancy; aiReady: boole
                 location={location}
                 employmentType={employmentType}
                 salary={salary}
+                duration={duration}
               />
             </div>
           </div>
