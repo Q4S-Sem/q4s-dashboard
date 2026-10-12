@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { tariefSuffix, isDagtarief, overtimeUnit, UREN_PER_DAG } from "@/lib/toeslag";
 import { notFound } from "next/navigation";
-import { Pencil, Percent, TrendingUp, Wallet, Coins } from "lucide-react";
+import { Percent, TrendingUp, Wallet, Coins } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
-import { buttonVariants } from "@/components/ui/button";
 import { formatCurrency, formatHours, round2 } from "@/lib/utils";
 import { getPlacement, getTimesheets, totalHours } from "../data";
 
@@ -196,12 +194,6 @@ export default async function PlaatsingTarievenPage({
       <Card>
         <CardHeader>
           <CardTitle>Toeslagen &amp; kilometervergoeding</CardTitle>
-          <Link
-            href={`/plaatsingen/${placement.id}/bewerken`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            <Pencil className="h-4 w-4" /> Tarieven bewerken
-          </Link>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-ink-500">
