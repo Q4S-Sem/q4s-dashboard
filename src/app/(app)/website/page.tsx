@@ -3,7 +3,6 @@ import {
   Globe,
   Briefcase,
   MapPin,
-  ArrowRight,
   Users,
   ExternalLink,
   Eye,
@@ -333,13 +332,11 @@ export default async function WebsitePage({
                               href={publicVacancyUrl(vac.slug)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className={buttonVariants({
-                                variant: "ghost",
-                                size: "sm",
-                              })}
+                              className={iconBtn}
                               title="Bekijk op de website"
+                              aria-label="Bekijk op de website"
                             >
-                              Bekijk <ArrowRight className="h-3.5 w-3.5" />
+                              <Eye className="h-4 w-4" />
                             </a>
                           )}
 
@@ -358,9 +355,10 @@ export default async function WebsitePage({
                                 variant="outline"
                                 size="sm"
                                 pendingLabel="…"
+                                className="h-9 px-2.5 text-xs"
                                 title="Direct van de website halen — de tekst blijft bewaard en je kunt hem altijd terugzetten"
                               >
-                                <CloudOff className="h-4 w-4" /> Offline halen
+                                <CloudOff className="h-3.5 w-3.5" /> Offline
                               </SubmitButton>
                             </form>
                           )}

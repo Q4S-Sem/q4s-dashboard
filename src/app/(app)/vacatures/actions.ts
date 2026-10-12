@@ -193,9 +193,9 @@ export async function saveVacancyContent(formData: FormData) {
   revalidatePath(`/vacatures/${id}`);
   revalidatePath("/website");
   revalidatePath("/vacaturehub", "layout");
-  // Na publiceren: meteen door naar de LinkedIn-generator (met deze vacature +
-  // de website-link al ingevuld). Alleen opslaan → terug naar de vacature.
-  if (publish) redirect(`/website/linkedin?vac=${id}`);
+  // Na publiceren terug naar de vacaturelijst (tab Online); LinkedIn start je
+  // daar zelf met de LinkedIn-knop. Alleen opslaan → terug naar de vacature.
+  if (publish) redirect("/website?tab=online");
   redirect(`/vacatures/${id}?saved=1`);
 }
 
