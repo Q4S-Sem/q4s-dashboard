@@ -7,7 +7,7 @@ export function VerkoopTabs({
   actief,
   base = "/facturatie/verkoop",
   personenLabel = "Per persoon factureren",
-  facturenLabel = "Facturen",
+  facturenLabel = "Facturen verzenden",
 }: {
   actief: "facturen" | "personen";
   base?: string;
