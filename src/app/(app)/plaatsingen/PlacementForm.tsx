@@ -258,7 +258,7 @@ function ToeslagKop() {
       <span>Toeslag</span>
       <span>{inkoopUit ? "Inkoop — n.v.t. (in dienst)" : "Inkoop — wij betalen"}</span>
       <span>Klant betaalt?</span>
-      <span>Verkoop — klant</span>
+      <span>Verkoop — extra bovenop het tarief</span>
     </div>
   );
 }
@@ -1930,7 +1930,7 @@ export function PlacementForm({
                   />
                   <ToeslagRow
                     title="Ploegendienst"
-                    hint="Verschoven uren (avond/nacht) — géén overuren"
+                    hint="Aan = over ÁLLE uren van de week · alleen voor wie in ploegen werkt"
                     prefix="shift"
                     buyDefault={placement?.shiftSurchargeBuy ?? 0}
                     sellDefault={placement?.shiftSurchargeSell ?? 0}
