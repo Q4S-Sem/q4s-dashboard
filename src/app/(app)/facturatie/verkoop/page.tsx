@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Select } from "@/components/ui/field";
-import { AlertTriangle, Ban, BellRing, CheckCircle2, Clock, Download, FilePen, FolderOpen, Layers, Receipt, Send } from "lucide-react";
+import { AlertTriangle, Ban, ChevronRight, BellRing, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
 import { db } from "@/lib/db";
+import { Badge } from "@/components/ui/badge";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { KLANTMAIL_UIT } from "@/lib/send-invoice";
 import { Card } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { weekSlotVanDatum } from "@/lib/week-koppeling";
 import { WeekStrip } from "../WeekStrip";
-import { cn, formatCurrency, formatWeekLabel, getISOWeek, round2 } from "@/lib/utils";
+import { cn, formatCurrency, formatWeekLabel, round2 } from "@/lib/utils";
 import { parseWeek, ymd } from "@/lib/week-nav";
 import {
   VERKOOP_TABS,
@@ -24,10 +25,8 @@ import {
 import { VerkoopLijst, type VerkoopFactuurRij } from "./VerkoopLijst";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { herinneringAanDeBeurt } from "@/lib/cashflow";
-import { sendDueReminders, factureerPeriodeNu } from "./actions";
-import { openPeriodes } from "@/lib/facturatie-akkoord";
+import { sendDueReminders } from "./actions";
 import { verkoopRegels } from "@/lib/invoicing";
-import { isoMaandag, maandagVan } from "@/lib/factuur-periode";
 
 // ---------------------------------------------------------------------------
 // VERKOOPFACTUREN — één lijst met tabbladen, in de volgorde van de trechter:
@@ -246,40 +245,31 @@ export default async function VerkoopfacturenPage({
     return qs ? `/facturatie/verkoop?${qs}` : "/facturatie/verkoop";
   };
 
-  // Open verzamelperiodes: klanten met goedgekeurde, nog niet gefactureerde weken.
-  const klantenMetOpen = await db.client.findMany({
-    where: { placements: { some: { timesheets: { some: { status: "APPROVED", invoiceLine: null } } } } },
-    select: { id: true },
+  // Per persoon: open (goedgekeurd, nog niet gefactureerd) en al gefactureerde weken.
+  // ponytail: haalt alle goedgekeurde/gefactureerde weken op; beperk tot recente maanden als dit traag wordt.
+  const verkoopWeken = await db.timesheet.findMany({
+    where: { status: { in: ["APPROVED", "INVOICED"] } },
+    include: {
+      entries: true,
+      placement: { include: { consultant: true, client: { select: { companyName: true } } } },
+      invoiceLine: { select: { id: true } },
+    },
   });
-  const verzamelend = (
-    await Promise.all(
-      klantenMetOpen.map(async (k) => {
-        const o = await openPeriodes(k.id);
-        return (o?.periodes ?? []).map((p) => ({
-          clientId: k.id,
-          klant: o!.klant,
-          key: p.periode.key,
-          label: p.periode.label,
-          binnen: p.binnen,
-          nodig: p.nodig,
-          timesheetIds: p.timesheetIds,
-          perWeek: p.perWeek,
-        }));
-      }),
-    )
-  ).flat();
-  // Verkoopbedrag per week in elk mapje (dezelfde regels als de factuur straks krijgt).
-  const mapjeUren = await db.timesheet.findMany({
-    where: { id: { in: verzamelend.flatMap((v) => v.timesheetIds) } },
-    include: { entries: true, placement: { include: { consultant: true } } },
-  });
-  const bedragVan = (ids: string[], maandag?: string) =>
-    round2(
-      mapjeUren
-        .filter((t) => ids.includes(t.id) && (!maandag || isoMaandag(maandagVan(t.weekStart)) === maandag))
-        .flatMap(verkoopRegels)
-        .reduce((s, l) => s + l.amount, 0),
-    );
+  const perPersoon = [
+    ...verkoopWeken
+      .reduce((m, t) => {
+        const c = t.placement.consultant;
+        const p = m.get(c.id) ?? { id: c.id, naam: `${c.firstName} ${c.lastName}`.trim(), klanten: new Set<string>(), open: 0, openBedrag: 0, gefactureerd: 0 };
+        if (t.placement.client) p.klanten.add(t.placement.client.companyName);
+        if (t.invoiceLine) p.gefactureerd++;
+        else {
+          p.open++;
+          p.openBedrag = round2(p.openBedrag + verkoopRegels(t).reduce((s, l) => s + l.amount, 0));
+        }
+        return m.set(c.id, p);
+      }, new Map<string, { id: string; naam: string; klanten: Set<string>; open: number; openBedrag: number; gefactureerd: number }>())
+      .values(),
+  ].sort((x, y) => y.open - x.open || x.naam.localeCompare(y.naam));
 
   return (
     <div className="space-y-6">
@@ -316,100 +306,38 @@ export default async function VerkoopfacturenPage({
       )}
 
       <>
-      {/* Mapjes: per klant en periode (maand / 4 weken) de weken die samen één verkoopfactuur worden. */}
-      {verzamelend.length > 0 && (
-        <div className="space-y-3">
-          {verzamelend.map((v) => {
-            const weekKlaar = v.perWeek.filter((w) => w.nodig > 0 && w.binnen >= w.nodig).length;
-            const wekenMetWerk = v.perWeek.filter((w) => w.nodig > 0).length;
-            return (
-              <Card key={v.clientId + v.key} className="p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <FolderOpen className="h-5 w-5 text-amber-500" />
-                    <div>
-                      <div className="text-sm font-semibold text-ink-900">
-                        {v.klant} · {v.label}
-                      </div>
-                      <div className="text-xs text-ink-500">
-                        {weekKlaar} van {wekenMetWerk} weken compleet · {formatCurrency(bedragVan(v.timesheetIds))} tot nu
-                        toe · wordt 1 verkoopfactuur als alle weken binnen zijn
-                      </div>
-                    </div>
-                  </div>
-                  <ConfirmSubmit
-                    action={factureerPeriodeNu}
-                    hidden={{ clientId: v.clientId, periode: v.key }}
-                    message={`Nu al de verkoopfactuur maken voor ${v.klant} (${v.label})?`}
-                    description={`${weekKlaar} van de ${wekenMetWerk} weken zijn compleet. Gebruik dit alleen als er niets meer komt (bijv. iemand is gestopt). De factuur komt als concept klaar.`}
-                    confirmLabel="Factuur maken"
-                    variant="outline"
-                  >
-                    <Receipt className="h-4 w-4" /> Nu factureren
-                  </ConfirmSubmit>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-                  {v.perWeek.map((w) => {
-                    const klaar = w.nodig > 0 && w.binnen >= w.nodig;
-                    return (
-                      <div
-                        key={w.maandag}
-                        className={cn(
-                          "rounded-lg border px-3 py-2 text-xs",
-                          klaar ? "border-emerald-200 bg-emerald-50" : w.binnen > 0 ? "border-amber-200 bg-amber-50" : "border-ink-200 bg-ink-50/60",
-                        )}
-                      >
-                        <div className="font-semibold text-ink-900">Week {getISOWeek(new Date(w.maandag))}</div>
-                        <div className="text-ink-600">
-                          {w.nodig === 0 ? "niemand aan het werk" : `${w.binnen} van ${w.nodig} personen`}
-                        </div>
-                        {w.binnen > 0 && (
-                          <div className="font-medium text-ink-900">{formatCurrency(bedragVan(v.timesheetIds, w.maandag))}</div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                <ul className="mt-3 divide-y divide-ink-100 rounded-lg border border-ink-200">
-                  {[...new Map(
-                    mapjeUren
-                      .filter((t) => v.timesheetIds.includes(t.id))
-                      .map((t) => [t.placement.consultantId, t.placement.consultant] as const),
-                  ).entries()].map(([cid, c]) => {
-                    const ids = mapjeUren.filter((t) => v.timesheetIds.includes(t.id) && t.placement.consultantId === cid);
-                    const naam = `${c.firstName} ${c.lastName}`.trim();
-                    return (
-                      <li key={cid} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-[13px]">
-                        <span className="flex items-center gap-3">
-                          <PersoonVierkant naam={naam} />
-                          <span>
-                            <span className="font-medium text-ink-900">{naam}</span>
-                            <span className="block text-xs text-ink-500">
-                              wk {ids.map((t) => getISOWeek(t.weekStart)).sort((x, y) => x - y).join(", ")} ·{" "}
-                              {formatCurrency(bedragVan(ids.map((t) => t.id)))}
-                            </span>
-                          </span>
-                        </span>
-                        <ConfirmSubmit
-                          action={factureerPeriodeNu}
-                          hidden={{ clientId: v.clientId, periode: v.key, persoon: cid }}
-                          message={`Verkoopfactuur maken voor ${naam} (${v.klant}, ${v.label})?`}
-                          description="Alleen de goedgekeurde weken van deze persoon in deze periode komen op 1 factuur (concept). Komen er later nog weken bij, dan gaan die in een volgende factuur."
-                          confirmLabel="Factuur maken"
-                          variant="outline"
-                        >
-                          <Receipt className="h-4 w-4" /> Factuur voor {c.firstName}
-                        </ConfirmSubmit>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </Card>
-            );
-          })}
-        </div>
+      {perPersoon.length > 0 && (
+        <Card className="overflow-hidden">
+          <div className="border-b border-ink-100 px-4 py-3 text-sm font-semibold text-ink-900">Per persoon</div>
+          <ul className="divide-y divide-ink-100">
+            {perPersoon.map((p) => (
+              <li key={p.id}>
+                <Link
+                  href={`/facturatie/verkoop/persoon/${p.id}`}
+                  className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-2.5 text-[13px] hover:bg-ink-50"
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <PersoonVierkant naam={p.naam} />
+                    <span className="min-w-0">
+                      <span className="block font-medium text-ink-900">{p.naam}</span>
+                      <span className="block truncate text-xs text-ink-500">{[...p.klanten].join(", ")}</span>
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    {p.open > 0 && (
+                      <Badge color="amber">
+                        {p.open} {p.open === 1 ? "week" : "weken"} open · {formatCurrency(p.openBedrag)}
+                      </Badge>
+                    )}
+                    {p.gefactureerd > 0 && <Badge color="green">{p.gefactureerd} gefactureerd</Badge>}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-ink-400" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
-
 
       {klantFilter && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-ink-200 bg-ink-50 px-4 py-2.5 text-[13px]">
