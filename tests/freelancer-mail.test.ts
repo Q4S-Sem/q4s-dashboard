@@ -99,6 +99,10 @@ test("gelijke bedragen leveren geen verschil-zin en geen verschil-regel op", () 
 
   assert.ok(!mail.bodyLines.some((l) => l.includes("een verschil van")));
   assert.ok(!mail.summary.some((r) => r.label === "Verschil"));
+  // Klopt alles, dan ook geen bedragen en geen tarief in de tabel (ruis).
+  for (const l of ["Verwacht bedrag", "Bedrag op je factuur", "Afgesproken uurtarief"]) {
+    assert.ok(!mail.summary.some((r) => r.label === l), l);
+  }
 });
 
 // ---------------------------------------------------------------------------

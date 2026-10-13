@@ -223,12 +223,15 @@ export function buildFreelancerDiscrepancyEmail(
   rij("Factuurnummer", nummer);
   rij("Uren op je timesheet", urenStaat !== null ? uren(urenStaat) : null);
   rij("Uren op je factuur", urenFactuur !== null ? uren(urenFactuur) : null);
-  rij("Verwacht bedrag", verwachtBedrag !== null ? formatCurrency(verwachtBedrag) : null);
-  rij("Bedrag op je factuur", factuurBedrag !== null ? formatCurrency(factuurBedrag) : null);
-  rij("Verschil", bedragVerschil !== null ? formatCurrency(bedragVerschil) : null);
+  // Bedragen en tarief alleen tonen als ze afwijken — anders zijn ze ruis.
+  if (bedragVerschil !== null) {
+    rij("Verwacht bedrag", formatCurrency(verwachtBedrag!));
+    rij("Bedrag op je factuur", formatCurrency(factuurBedrag!));
+    rij("Verschil", formatCurrency(bedragVerschil));
+  }
   rij(
     "Afgesproken uurtarief",
-    afgesprokenTarief !== null ? `${formatCurrency(afgesprokenTarief)} p/u` : null,
+    tariefVerschil && afgesprokenTarief !== null ? `${formatCurrency(afgesprokenTarief)} p/u` : null,
   );
   rij(
     "Uurtarief op je factuur",
