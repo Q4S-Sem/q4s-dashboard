@@ -87,13 +87,13 @@ export default async function VerkoopPersoonPage({ params }: { params: Promise<{
                 const inv = t.invoiceLine?.invoice;
                 const wk = weekKeyVan(t.weekStart);
                 return (
-                  <li key={t.id} className="grid grid-cols-[6rem_1fr_auto_auto] items-center gap-4 px-4 py-2.5 text-[13px]">
+                  <li key={t.id} className="relative grid grid-cols-[6rem_1fr_auto_auto] items-center gap-4 px-4 py-2.5 text-[13px] hover:bg-ink-50">
                     <span className="font-medium text-ink-900">Week {getISOWeek(t.weekStart)}</span>
                     <span className="text-ink-500">{uren(t)} uur</span>
                     <span className="tabular-nums text-ink-900">{formatCurrency(bedrag(t))}</span>
                     <span className="flex w-56 items-center justify-end gap-2">
                       {inv ? (
-                        <Link href={`/facturatie/verkoop/${inv.id}`} className="hover:underline">
+                        <Link href={`/facturatie/verkoop/${inv.id}`} className="relative z-10 hover:underline" title="Open de factuur">
                           <Badge color="green">Factuur {inv.number}</Badge>
                         </Link>
                       ) : isOpen(t) ? (
@@ -106,7 +106,8 @@ export default async function VerkoopPersoonPage({ params }: { params: Promise<{
                           href={`/facturatie/${t.placementId}/${wk}`}
                           title="Open de week"
                           aria-label={`Open week ${getISOWeek(t.weekStart)}`}
-                          className="text-ink-400 hover:text-ink-900"
+                          // Rekt het klikvlak op over de hele balk (de factuur-badge ligt erboven).
+                          className="text-ink-400 after:absolute after:inset-0 after:content-[''] hover:text-ink-900"
                         >
                           <ChevronRight className="h-4 w-4" />
                         </Link>
