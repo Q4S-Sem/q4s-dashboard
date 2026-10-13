@@ -316,11 +316,10 @@ export async function runInboxExtraction(id: string, alleenWeek?: string): Promi
           "Lees deze weekstaat (timesheet) uit. Let op: tel per dag ALLE reguliere uren-regels op tot één dagtotaal (excl. overuren), haal de overuren uit de aparte overuren-sectie, en de kilometers uit het reisblok (From/To/Km) of het 'Total Kilometers'-veld. Kijk daarnaast of er een handtekening van de opdrachtgever op staat (en van wie) en neem klant, project, locatie en PO-nummer letterlijk over. Geef naam, week (maandag), de uren per dag, het weektotaal, de kilometers, de overuren en die controlevelden terug volgens het schema.",
         schema: EXTRACT_SCHEMA,
         file: { base64: await readInboxBase64(item.fileName), mediaType },
-        // Geld hangt eraan: meteen het sterke model, grondig. Ruim tokenbudget —
-        // het denkwerk van het sterke model telt mee (anders afgekapte JSON).
-        strong: true,
+        // Eerst snel (Gemini 3.8 Flash, ±5 s); klopt de zelfcontrole niet
+        // (dagtotalen ≠ weektotaal e.d.), dan leest het sterke model hem opnieuw.
         maxTokens: 8000,
-        effort: "high",
+        effort: "low",
         retryIf: twijfelUrenstaat,
       });
 

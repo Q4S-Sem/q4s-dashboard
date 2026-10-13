@@ -468,10 +468,10 @@ export async function extractReceivedInvoiceFromFile(input: {
           "Lees deze factuur van een zelfstandige (ZZP'er) uit. Geef factuurnummer, factuurdatum, de gefactureerde periode (of het weeknummer + jaar), de uren, het uurtarief, eventuele overuren, het bedrag excl. btw, het btw-bedrag (of dat de btw verlegd is), de kilometers, het totaalbedrag en de naam van de afzender terug. Neem daarnaast de controlevelden letterlijk over: valuta, geadresseerde, PO-nummer, IBAN, zijn KvK- en btw-nummer, het btw-percentage, elke toeslagregel apart en of er naar een bijlage verwezen wordt. Antwoord volgens het schema.",
         schema: EXTRACT_SCHEMA,
         file: { base64: input.base64, mediaType },
-        // Geld: meteen het sterke model, grondig (zie inbox-extract).
-        strong: true,
+        // Eerst snel (Gemini 3.8 Flash, ±5 s); twijfel of afwijking van de
+        // timesheet → het sterke model leest hem opnieuw (zie aiJSONFromFile).
         maxTokens: 8000,
-        effort: "high",
+        effort: "low",
         retryIf: (r: InvoiceExtracted) => twijfelFactuur(r) ?? afwijkingUrenstaat(herstelUren(r), input.verwachteUren),
       });
     }
