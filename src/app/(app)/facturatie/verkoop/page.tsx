@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Select } from "@/components/ui/field";
 import { AlertTriangle, Ban, BellRing, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
@@ -152,6 +153,8 @@ export default async function VerkoopfacturenPage({
   searchParams: Promise<SP>;
 }) {
   const sp = await searchParams;
+  // Verkoopfacturen opent per persoon; de lijst heeft altijd een parameter (?weergave/?tab).
+  if (Object.keys(sp).length === 0) redirect("/facturatie/verkoop/personen");
   const now = new Date();
   const tab = (VERKOOP_TABS.find((t) => t.key === sp.tab)?.key ?? "alles") as VerkoopTab;
 
@@ -296,7 +299,7 @@ export default async function VerkoopfacturenPage({
             Alleen de facturen van <strong className="font-semibold">{klantFilter.companyName}</strong>
           </span>
           <Link
-            href={tab === "alles" ? "/facturatie/verkoop" : `/facturatie/verkoop?tab=${tab}`}
+            href={`/facturatie/verkoop?tab=${tab}`}
             className="font-medium text-ink-500 underline-offset-2 hover:text-ink-900 hover:underline"
           >
             Alle klanten ✕
