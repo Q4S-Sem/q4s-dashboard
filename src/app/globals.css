@@ -329,3 +329,13 @@ input[type="number"] {
     box-shadow: none !important;
   }
 }
+
+/* Facturatie: alle tabelkolommen (behalve de eerste, de naam) netjes gecentreerd —
+   koppen, teksten, bedragen, badges en actieknoppen op één lijn. */
+.facturatie-midden :is(th, td):not(:first-child),
+.facturatie-midden :is(th, td):not(:first-child) .text-right {
+  text-align: center !important;
+}
+.facturatie-midden :is(th, td):not(:first-child) :is(.justify-end, .justify-start, .justify-between) {
+  justify-content: center !important;
+}

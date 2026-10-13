@@ -473,7 +473,7 @@ function Melding({ toon, children }: { toon: "rood" | "oranje" | "groen" | "viol
 
 function Kpi({ label, waarde, kleur, sub }: { label: string; waarde: string; kleur?: string; sub?: string }) {
   return (
-    <div className="px-4 py-3">
+    <div className="px-4 py-3 text-center">
       <span className="block text-[11px] font-semibold uppercase tracking-wide text-ink-400">{label}</span>
       <span className={cn("mt-0.5 block text-lg font-semibold tabular-nums text-ink-900", kleur)}>{waarde}</span>
       {sub && <span className="block text-xs tabular-nums text-ink-500">{sub}</span>}

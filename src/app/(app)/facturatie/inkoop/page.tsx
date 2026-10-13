@@ -921,7 +921,7 @@ function BetaalTegel({
   const t = BETAAL_TOON[toon];
   const leeg = vak.aantal === 0;
   return (
-    <div className={cn("rounded-lg border bg-white px-3 py-2", leeg ? "border-ink-200" : t.rand)}>
+    <div className={cn("rounded-lg border bg-white px-3 py-2 text-center", leeg ? "border-ink-200" : t.rand)}>
       <span className="block text-[11px] font-semibold uppercase tracking-wide text-ink-400">{label}</span>
       <span className={cn("block text-lg font-semibold tabular-nums", leeg ? "text-ink-300" : t.tekst)}>
         {formatCurrency(vak.bedrag)}
