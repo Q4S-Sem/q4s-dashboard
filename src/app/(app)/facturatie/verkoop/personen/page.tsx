@@ -9,11 +9,18 @@ import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { verkoopRegels } from "@/lib/invoicing";
 import { VerkoopTabs } from "../VerkoopTabs";
 import { formatCurrency, round2 } from "@/lib/utils";
+import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
+import { Select } from "@/components/ui/field";
 
 export const metadata = { title: "Verkoopfacturen · per persoon" };
 
 /** Per persoon factureren: open weken per maand / 4 weken worden 1 verkoopfactuur met 1 nummer. */
-export default async function KlantfacturatiePage() {
+export default async function KlantfacturatiePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; klant?: string; status?: string }>;
+}) {
+  const sp = await searchParams;
   // Per persoon: open (goedgekeurd, nog niet gefactureerd) en al gefactureerde weken.
   // ponytail: haalt alle goedgekeurde/gefactureerde weken op; beperk tot recente maanden als dit traag wordt.
   const verkoopWeken = await db.timesheet.findMany({
@@ -39,6 +46,13 @@ export default async function KlantfacturatiePage() {
       }, new Map<string, { id: string; naam: string; klanten: Set<string>; open: number; openBedrag: number; gefactureerd: number }>())
       .values(),
   ].sort((x, y) => y.open - x.open || x.naam.localeCompare(y.naam));
+  const klanten = [...new Set(perPersoon.flatMap((p) => [...p.klanten]))].sort((a, b) => a.localeCompare(b));
+  const zichtbaar = perPersoon.filter(
+    (p) =>
+      matchtZoek(sp.q, p.naam, ...p.klanten) &&
+      (!sp.klant || p.klanten.has(sp.klant)) &&
+      (sp.status === "open" ? p.open > 0 : sp.status === "gefactureerd" ? p.gefactureerd > 0 : true),
+  );
 
   return (
     <div className="space-y-6">
@@ -49,9 +63,32 @@ export default async function KlantfacturatiePage() {
       <VerkoopTabs actief="personen" />
       {perPersoon.length > 0 && (
         <Card className="overflow-hidden">
-          <div className="border-b border-ink-100 px-4 py-3 text-sm font-semibold text-ink-900">Per persoon</div>
+          <div className="border-b border-ink-100 p-4">
+            <TabelZoek
+              basePath="/facturatie/verkoop/personen"
+              q={sp.q}
+              placeholder="Zoek op persoon of klant…"
+            >
+              <Select name="klant" defaultValue={sp.klant ?? ""} aria-label="Filter op klant" className="sm:w-56">
+                <option value="">Alle klanten</option>
+                {klanten.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </Select>
+              <Select name="status" defaultValue={sp.status ?? ""} aria-label="Filter op status" className="sm:w-48">
+                <option value="">Alle personen</option>
+                <option value="open">Met open weken</option>
+                <option value="gefactureerd">Al gefactureerd</option>
+              </Select>
+            </TabelZoek>
+          </div>
+          {zichtbaar.length === 0 && (
+            <p className="px-4 py-6 text-center text-sm text-ink-500">Niemand gevonden met deze filters.</p>
+          )}
           <ul className="divide-y divide-ink-100">
-            {perPersoon.map((p) => (
+            {zichtbaar.map((p) => (
               <li key={p.id}>
                 <Link
                   href={`/facturatie/verkoop/personen/${p.id}`}
