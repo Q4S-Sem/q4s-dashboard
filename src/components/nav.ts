@@ -112,7 +112,6 @@ const HUB_LIST: NavHub[] = [
       // verwerken" oplichten terwijl /facturatie/verkoop zijn eigen item pakt.
       { href: "/facturatie", label: "Week verwerken", icon: Wand2, badge: "verwerken" },
       { href: "/facturatie/verkoop", label: "Verkoopfacturen", icon: Receipt, badge: "facturen" },
-      { href: "/facturatie/klantfacturatie", label: "Klantfacturatie", icon: Users },
       { href: "/facturatie/inkoop", label: "Inkoop & betalingen", icon: Wallet, badge: "ontvangen" },
       { href: "/facturatie/bonnetjes", label: "Bonnetjes", icon: ReceiptText },
       { href: "/facturatie/kosten", label: "Kosten & winst", icon: Scale },
@@ -400,6 +399,7 @@ const LEGACY_HREFS: Record<string, string> = {
   "/inbox": "/facturatie",
   "/uren": "/facturatie",
   "/facturen": "/facturatie/verkoop",
+  "/facturatie/klantfacturatie": "/facturatie/verkoop",
   // De Vacatures-werkplek is opgegaan in Recruitment; de plek heet nu Socials.
   "/website": "/socials",
   "/website/sollicitaties": "/sollicitaties",

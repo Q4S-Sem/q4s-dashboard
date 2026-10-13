@@ -7,9 +7,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { verkoopRegels } from "@/lib/invoicing";
+import { VerkoopTabs } from "../VerkoopTabs";
 import { formatCurrency, round2 } from "@/lib/utils";
 
-export const metadata = { title: "Klantfacturatie" };
+export const metadata = { title: "Verkoopfacturen · per persoon" };
 
 /** Per persoon factureren: open weken per maand / 4 weken worden 1 verkoopfactuur met 1 nummer. */
 export default async function KlantfacturatiePage() {
@@ -42,9 +43,10 @@ export default async function KlantfacturatiePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Klantfacturatie"
+        title="Verkoopfacturen"
         description="Kies een persoon: de open weken van een maand of 4 weken worden samen 1 verkoopfactuur met 1 factuurnummer."
       />
+      <VerkoopTabs actief="personen" />
       {perPersoon.length > 0 && (
         <Card className="overflow-hidden">
           <div className="border-b border-ink-100 px-4 py-3 text-sm font-semibold text-ink-900">Per persoon</div>
@@ -52,7 +54,7 @@ export default async function KlantfacturatiePage() {
             {perPersoon.map((p) => (
               <li key={p.id}>
                 <Link
-                  href={`/facturatie/klantfacturatie/${p.id}`}
+                  href={`/facturatie/verkoop/personen/${p.id}`}
                   className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-2.5 text-[13px] hover:bg-ink-50"
                 >
                   <span className="flex min-w-0 items-center gap-3">

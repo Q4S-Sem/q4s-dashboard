@@ -24,6 +24,7 @@ import { VerkoopLijst, type VerkoopFactuurRij } from "./VerkoopLijst";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { herinneringAanDeBeurt } from "@/lib/cashflow";
 import { sendDueReminders } from "./actions";
+import { VerkoopTabs } from "./VerkoopTabs";
 
 // ---------------------------------------------------------------------------
 // VERKOOPFACTUREN — één lijst met tabbladen, in de volgorde van de trechter:
@@ -271,6 +272,8 @@ export default async function VerkoopfacturenPage({
           <Download className="h-4 w-4" /> Export
         </a>
       </PaginaKop>
+
+      <VerkoopTabs actief="facturen" />
 
 
       {KLANTMAIL_UIT && (

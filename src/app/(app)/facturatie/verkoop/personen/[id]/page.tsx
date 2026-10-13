@@ -12,7 +12,7 @@ import { verkoopRegels } from "@/lib/invoicing";
 import { periodeVan } from "@/lib/factuur-periode";
 import { weekKeyVan } from "@/lib/facturatie-week";
 import { formatCurrency, getISOWeek, round2 } from "@/lib/utils";
-import { factureerPeriodeNu } from "../../verkoop/actions";
+import { factureerPeriodeNu } from "../../actions";
 
 export const metadata = { title: "Verkoop per persoon" };
 
@@ -51,7 +51,7 @@ export default async function VerkoopPersoonPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6">
-      <BackLink href="/facturatie/klantfacturatie">Terug naar klantfacturatie</BackLink>
+      <BackLink href="/facturatie/verkoop/personen">Terug naar per persoon</BackLink>
       <PageHeader
         title={naam}
         description={`${weken.filter(isOpen).length} ${weken.filter(isOpen).length === 1 ? "week" : "weken"} klaar om te factureren · ${formatCurrency(openTotaal)}`}

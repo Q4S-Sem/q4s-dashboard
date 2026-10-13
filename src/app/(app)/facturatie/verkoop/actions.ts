@@ -555,6 +555,6 @@ export async function factureerPeriodeNu(formData: FormData) {
   const persoon = String(formData.get("persoon") ?? "") || undefined;
   if (!clientId || !periode) return;
   await factureerCompletePeriodes(clientId, new Date(), periode, persoon);
-  revalidatePath("/facturatie", "layout"); // verkoop + klantfacturatie/[id]
+  revalidatePath("/facturatie", "layout"); // verkoop + verkoop/personen/[id]
   revalidatePath("/facturatie");
 }
