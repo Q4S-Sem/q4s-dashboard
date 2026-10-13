@@ -236,6 +236,36 @@ export async function downscalePngBase64(
   };
 }
 
+/**
+ * Foto/scan (jpg/png/webp) → JPEG met de pixels écht rechtop. Het laden past de
+ * EXIF-oriëntatie toe (telefoonfoto's staan vaak "liggend + EXIF-draai"; het AI-model
+ * negeert die tag en ziet de tekst dan zijwaarts) en `rotation` draait daarna nog
+ * een kwartslag-veelvoud MET de klok mee. Lange zijde max. `maxLongEdge` (sneller).
+ */
+export async function rotateImageBase64(
+  base64: string,
+  rotation: QuarterTurn,
+  maxLongEdge = 2600,
+): Promise<{ base64: string; mediaType: string; width: number; height: number }> {
+  const canvasLib = await import("@napi-rs/canvas");
+  const img = await canvasLib.loadImage(Buffer.from(base64, "base64"));
+  const scale = probeScale(img.width, img.height, maxLongEdge);
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const liggend = rotation === 90 || rotation === 270;
+  const width = liggend ? h : w;
+  const height = liggend ? w : h;
+  const canvas = canvasLib.createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.setTransform(...rotationTransform(rotation, w, h));
+  ctx.drawImage(img, 0, 0, w, h);
+  const jpg = canvas.toBuffer("image/jpeg", 90);
+  if (!jpg?.length) throw new Error("Draaien gaf een leeg beeld terug.");
+  return { base64: Buffer.from(jpg).toString("base64"), mediaType: "image/jpeg", width, height };
+}
+
 // --- pdfjs in Node ---------------------------------------------------------
 
 /**

@@ -3,6 +3,7 @@ import { recordAiUsage, ensureAiKeysLoaded } from "./ai-keys";
 import {
   combineRotation,
   downscalePngBase64,
+  rotateImageBase64,
   isPdfMediaType,
   renderPdfFirstPageToPng,
   type PngImage,
@@ -836,10 +837,53 @@ async function uprightRender(bytes: Buffer, png: RenderedPng): Promise<RenderedP
  * volgens de oriëntatieprobe. Lukt het rasteren niet, dan gaat het originele
  * bestand alsnog mee (oud gedrag) — nooit crashen op het rasteren zelf.
  */
+/**
+ * Meerdere pagina's: het model krijgt de PDF zelf. Staat pagina 1 dwars, dan zetten
+ * we de /Rotate van ALLE pagina's bij (pdf-lib), zodat het model alles rechtop leest.
+ * ponytail: één probe op pagina 1 geldt voor het hele document — per pagina proben als
+ * gemengde scans (deels liggend) misgaan.
+ */
+async function uprightPdf(file: { base64: string; mediaType: string }, png: RenderedPng) {
+  if (!pdfAutoRotateEnabled()) return file;
+  try {
+    const thumb = await downscalePngBase64(png.base64);
+    const extra = combineRotation(png.extraRotation, orientationRotation(await probePageOrientation(thumb)));
+    if (extra === 0) return file;
+    const { PDFDocument, degrees } = await import("pdf-lib");
+    const doc = await PDFDocument.load(Buffer.from(file.base64, "base64"), { ignoreEncryption: true });
+    for (const page of doc.getPages()) page.setRotation(degrees((page.getRotation().angle + extra) % 360));
+    console.info(`[vision] PDF met ${doc.getPageCount()} pagina's ${extra}° bijgedraaid.`);
+    return { base64: Buffer.from(await doc.save()).toString("base64"), mediaType: file.mediaType };
+  } catch (e) {
+    console.warn(`[vision] PDF rechtzetten mislukt (${e instanceof Error ? e.message : String(e)}) — origineel gaat mee.`);
+    return file;
+  }
+}
+
+/** Afbeelding: oriëntatieprobe op een miniatuur, zo nodig gedraaid. Twijfel → ongewijzigd. */
+async function uprightImage(file: { base64: string; mediaType: string }): Promise<{ base64: string; mediaType: string }> {
+  try {
+    // Eerst de EXIF-draai écht in de pixels zetten (het model leest die tag niet).
+    const recht = await rotateImageBase64(file.base64, 0);
+    if (!pdfAutoRotateEnabled()) return recht;
+    const thumb = await downscalePngBase64(recht.base64);
+    const extra = orientationRotation(await probePageOrientation(thumb));
+    console.info(`[vision] afbeelding ${recht.width}×${recht.height}: ${extra}° bijdraaien.`);
+    if (extra === 0) return { base64: recht.base64, mediaType: recht.mediaType };
+    const r = await rotateImageBase64(file.base64, extra);
+    return { base64: r.base64, mediaType: r.mediaType };
+  } catch (e) {
+    console.warn(`[vision] afbeelding rechtzetten mislukt (${e instanceof Error ? e.message : String(e)}) — origineel gaat mee.`);
+    return file;
+  }
+}
+
 async function visionFile(file: {
   base64: string;
   mediaType: string;
 }): Promise<{ base64: string; mediaType: string }> {
+  // Foto of scan als afbeelding: ook rechtzetten (timesheets komen vaak liggend binnen).
+  if (/^image\/(png|jpe?g|webp)$/i.test(file.mediaType)) return uprightImage(file);
   if (!shouldRasterizePdf(file.mediaType)) return file;
   const bytes = Buffer.from(file.base64, "base64");
   let png: RenderedPng;
@@ -856,7 +900,7 @@ async function visionFile(file: {
   // pagina rasteren en als losse beelden meesturen als multi-page scans fout gaan.
   if (png.pageCount > 1) {
     console.info(`[vision] PDF heeft ${png.pageCount} pagina's — origineel gaat mee zodat alles gelezen wordt.`);
-    return file;
+    return uprightPdf(file, png);
   }
   console.info(
     `[vision] PDF zelf gerasterd naar PNG ${png.width}×${png.height} (pdfjs, rotatie ${png.rotation}°) — scherper dan de interne render van het model.`,
