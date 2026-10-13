@@ -292,7 +292,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
         />
       </PaginaKop>
 
-      <VerkoopTabs actief="facturen" base="/facturatie/inkoop" personenLabel="Per persoon betalen" />
+      <VerkoopTabs actief="facturen" base="/facturatie/inkoop" personenLabel="Per persoon betalen" facturenLabel="Facturen betalen" />
 
       <>
 

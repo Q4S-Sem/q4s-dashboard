@@ -7,15 +7,17 @@ export function VerkoopTabs({
   actief,
   base = "/facturatie/verkoop",
   personenLabel = "Per persoon factureren",
+  facturenLabel = "Facturen",
 }: {
   actief: "facturen" | "personen";
   base?: string;
   personenLabel?: string;
+  facturenLabel?: string;
 }) {
   // Per persoon eerst. Facturen krijgt een parameter mee: een kale inkoop-URL opent per persoon.
   const tabs = [
     { key: "personen", href: `${base}/personen`, label: personenLabel, icon: Users },
-    { key: "facturen", href: `${base}?weergave=facturen`, label: "Facturen", icon: Receipt },
+    { key: "facturen", href: `${base}?weergave=facturen`, label: facturenLabel, icon: Receipt },
   ] as const;
   return (
     <nav aria-label="Verkoopfacturen" className="flex flex-wrap items-end gap-1 shadow-[inset_0_-1px_0_var(--color-ink-200)]">

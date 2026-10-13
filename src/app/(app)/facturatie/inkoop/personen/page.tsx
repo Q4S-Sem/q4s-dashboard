@@ -55,7 +55,7 @@ export default async function InkoopPersonenPage({
   return (
     <div className="space-y-6">
       <PageHeader title="Inkoopfacturen" description="Per persoon, wie het eerst betaald moet worden staat bovenaan." />
-      <VerkoopTabs actief="personen" base="/facturatie/inkoop" personenLabel="Per persoon betalen" />
+      <VerkoopTabs actief="personen" base="/facturatie/inkoop" personenLabel="Per persoon betalen" facturenLabel="Facturen betalen" />
       {perPersoon.length === 0 ? (
         <EmptyState title="Nog geen ontvangen facturen" description="Facturen van freelancers uit Week verwerken verschijnen hier per persoon." />
       ) : (
