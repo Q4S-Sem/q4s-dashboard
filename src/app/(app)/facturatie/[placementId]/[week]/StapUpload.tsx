@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Layers, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Dropzone } from "@/components/ui/dropzone";
 import { uploadVoorPersoon, type UploadState } from "../../actions";
 
@@ -79,22 +79,9 @@ export function StapUpload({
           compact
           accept={soort === "file" ? ".pdf,.png,.jpg,.jpeg,.webp,.gif,.xlsx,.xls,.csv" : ".pdf,.png,.jpg,.jpeg,.webp,.gif"}
           label={soort === "file" ? "Sleep de urenstaat hier" : "Sleep de factuur hier"}
-          hint="of klik om te kiezen"
+          hint="of klik om te kiezen · urenstaat + factuur in één bestand mag ook"
           onFilesChange={(f) => f.length > 0 && form.current?.requestSubmit()}
         />
-      )}
-      {soort === "file" && !pending && (
-        <label
-          title="Vink aan vóór het slepen: hetzelfde bestand wordt dan ook als factuur uitgelezen"
-          className="mt-2 flex cursor-pointer items-center gap-2.5 rounded-lg border border-ink-200 bg-white px-3 py-2 text-[13px] text-ink-700 transition-colors hover:bg-ink-50 has-[:checked]:border-brand-300 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-800"
-        >
-          <input type="checkbox" name="ookFactuur" className="h-4 w-4 rounded border-ink-300 accent-brand-600" />
-          <Layers className="h-4 w-4 text-ink-400" />
-          <span>
-            <span className="font-medium">Factuur zit in hetzelfde bestand</span>
-            <span className="block text-xs text-ink-400">aanvinken vóór het slepen</span>
-          </span>
-        </label>
       )}
       {!pending && (state.error || state.fouten?.length) && (
         <p className="text-xs text-red-600">{state.error ?? state.fouten?.join(" ")}</p>

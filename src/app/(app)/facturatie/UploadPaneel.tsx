@@ -48,10 +48,6 @@ export function UploadPaneel({ week }: { week: string }) {
                 hint="PDF, scan, foto of Excel"
                 onFilesChange={(files) => setUren(files.length)}
               />
-              <label className="flex items-center gap-2 text-xs text-ink-600">
-                <input type="checkbox" name="ookFactuur" className="h-3.5 w-3.5 rounded border-ink-300" />
-                Urenstaat en factuur in één bestand
-              </label>
             </div>
             <div className="space-y-1.5">
               <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-900">
@@ -70,7 +66,7 @@ export function UploadPaneel({ week }: { week: string }) {
           </div>
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-ink-400">
-              Er wordt niets verstuurd of betaald: alles komt eerst op dit overzicht te staan.
+              Urenstaat + factuur in één bestand? Zet hem in een van beide vakken, beide delen worden herkend.
             </p>
             <SubmitButton size="sm" disabled={totaal === 0} pendingLabel="Bezig met uitlezen…">
               {totaal > 1 ? `${totaal} bestanden uitlezen` : "Uitlezen"}

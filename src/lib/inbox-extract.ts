@@ -64,6 +64,8 @@ type Extracted = {
   pagesComplete: boolean;
   /** Maandagen van de ANDERE weken in hetzelfde document (verzamelstaat). */
   andereWeken?: string[];
+  /** Zit er in hetzelfde bestand ook een FACTUUR? Dan leest de upload hem ook als factuur. */
+  bevatFactuur?: boolean;
 };
 
 const EXTRACT_SCHEMA = {
@@ -104,9 +106,10 @@ const EXTRACT_SCHEMA = {
     travelHours: { type: "number", description: "REISUREN die apart als zodanig op de staat staan ('reisuren', 'travel hours', 'travel time'), dus NIET gewerkte uren en NIET kilometers. 0 als die regel er niet is." },
     expenses: { type: "number", description: "Het bedrag in EURO's aan losse onkosten/declaraties dat op de staat genoemd wordt (parkeren, verblijf, bonnetjes). Alleen het bedrag, niet de kilometers. 0 als er geen onkosten op de staat staan." },
     andereWeken: { type: "array", items: { type: "string" }, description: "Staan er in dit document MEER weken (een verzamelstaat van 2-4 weken)? Geef dan de MAANDAG (YYYY-MM-DD) van ELKE ANDERE week dan de week die je nu uitleest. Eén week in het document → lege lijst []." },
+    bevatFactuur: { type: "boolean", description: "Zit er in DIT bestand OOK een factuur van de medewerker (een pagina met factuurnummer, bedragen en btw/totaal)? true = ja, false = alleen een urenstaat." },
     pagesComplete: { type: "boolean", description: "Is het document COMPLEET en leesbaar? false als er pagina's lijken te ontbreken, de scan is afgesneden, of een deel van het raster onleesbaar is. true als je alles kon lezen." },
   },
-  required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes", "confidence", "signaturePresent", "signerName", "clientName", "projectName", "location", "poNumber", "travelHours", "expenses", "pagesComplete", "andereWeken"],
+  required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes", "confidence", "signaturePresent", "signerName", "clientName", "projectName", "location", "poNumber", "travelHours", "expenses", "pagesComplete", "andereWeken", "bevatFactuur"],
 };
 
 const SYSTEM_EXTRACT = `Je bent een uiterst nauwkeurige administratieve assistent bij Q4S, een Nederlands detacheringsbureau. Je leest binnengekomen WEEKstaten (timesheets) uit die door gedetacheerde vakmensen worden aangeleverd. Elke aanleverder gebruikt een eigen opmaak; herken ook het Q4S-formulier (FO-Q4S-18).

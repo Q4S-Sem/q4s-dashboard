@@ -52,6 +52,8 @@ export type InvoiceExtracted = {
   vatPercent: number;
   surchargeLines: { label: string; quantity: number; unit: string; amount: number }[];
   mentionsAttachment: boolean;
+  /** Zit er in hetzelfde bestand ook een URENSTAAT (dagen met uren)? Dan leest de upload hem ook als urenstaat. */
+  bevatUrenstaat?: boolean;
 };
 
 /**
@@ -129,9 +131,10 @@ const EXTRACT_SCHEMA = {
         required: ["label", "quantity", "unit", "amount"],
       },
     },
+    bevatUrenstaat: { type: "boolean", description: "Zit er in DIT bestand OOK een urenstaat/timesheet (een tabel met dagen en gewerkte uren per dag)? true = ja, false = alleen de factuur." },
     mentionsAttachment: { type: "boolean", description: "Verwijst de factuur naar een BIJLAGE of onderbouwing ('zie bijgevoegde urenstaat', 'conform timesheet week 40', 'bijlage')? true = ja, false = er staat geen verwijzing op." },
   },
-  required: ["invoiceNumber", "issueDate", "periodStart", "periodEnd", "weekNumber", "year", "hours", "hourlyRate", "hoursLineAmount", "overtimeHours", "amountExclVat", "vatAmount", "vatShifted", "kilometers", "totalAmount", "name", "confidence", "notes", "currency", "addressee", "poNumber", "iban", "kvkNumber", "vatId", "vatPercent", "surchargeLines", "mentionsAttachment"],
+  required: ["invoiceNumber", "issueDate", "periodStart", "periodEnd", "weekNumber", "year", "hours", "hourlyRate", "hoursLineAmount", "overtimeHours", "amountExclVat", "vatAmount", "vatShifted", "kilometers", "totalAmount", "name", "confidence", "notes", "currency", "addressee", "poNumber", "iban", "kvkNumber", "vatId", "vatPercent", "surchargeLines", "mentionsAttachment", "bevatUrenstaat"],
 };
 
 const SYSTEM_EXTRACT = `Je bent een uiterst nauwkeurige administratieve assistent bij Q4S, een Nederlands detacheringsbureau. Je leest FACTUREN uit die door zelfstandige (ZZP) vakmensen aan Q4S gestuurd worden voor gewerkte weken. Elke ZZP'er gebruikt zijn eigen factuuropmaak.

@@ -92,18 +92,28 @@ function herlaad() {
  *    Geen of meerdere treffers → in de wachtrij `FacturatieUpload`, met een
  *    persoonkiezer op het overzicht.
  */
-/** "file" = urenstaat, "factuur" = ZZP-factuur. Met het vinkje "ookFactuur" bevat
- *  een urenstaat-bestand óók de factuur: dan lezen we hetzelfde bestand twee keer
- *  uit — één keer als urenstaat, één keer als factuur. */
-function soortenVan(formData: FormData, echt: (naam: string) => File[]) {
-  const combi = formData.get("ookFactuur") === "on";
+/** "file" = urenstaat, "factuur" = ZZP-factuur. Het maakt niet uit in welk vak een
+ *  gecombineerd bestand (urenstaat + factuur) landt: de AI meldt bij het uitlezen of
+ *  het andere deel er óók in zit (bevatFactuur / bevatUrenstaat), en dan zet `ookAls`
+ *  hetzelfde bestand nog een keer in de rij als het andere soort. Geen extra AI-call
+ *  voor gewone bestanden. */
+type UploadSoort = "TIMESHEET" | "FACTUUR";
+function soortenVan(_formData: FormData, echt: (naam: string) => File[]) {
   return [
-    ...echt("file").flatMap((file) => [
-      { file, soort: "TIMESHEET" as const },
-      ...(combi ? [{ file, soort: "FACTUUR" as const }] : []),
-    ]),
-    ...echt("factuur").map((file) => ({ file, soort: "FACTUUR" as const })),
+    ...echt("file").map((file) => ({ file, soort: "TIMESHEET" as UploadSoort })),
+    ...echt("factuur").map((file) => ({ file, soort: "FACTUUR" as UploadSoort })),
   ];
+}
+function ookAls(rij: { file: File; soort: UploadSoort }[], file: File, soort: UploadSoort) {
+  if (!rij.some((r) => r.file === file && r.soort === soort)) rij.push({ file, soort });
+}
+async function urenstaatBevatFactuur(inboxId: string): Promise<boolean> {
+  const item = await db.timesheetInbox.findUnique({ where: { id: inboxId }, select: { extractedJson: true } });
+  try {
+    return Boolean(item?.extractedJson && JSON.parse(item.extractedJson).bevatFactuur === true);
+  } catch {
+    return false;
+  }
 }
 
 export async function uploadBestanden(
@@ -131,8 +141,10 @@ export async function uploadBestanden(
       continue;
     }
     try {
-      if (soort === "TIMESHEET") await voegUrenstaatToe(file);
-      else await voegFactuurToe(file, weekKey);
+      // for…of loopt ook over wat ookAls er tijdens de lus achteraan zet.
+      if (soort === "TIMESHEET") {
+        if (await urenstaatBevatFactuur(await voegUrenstaatToe(file))) ookAls(bestanden, file, "FACTUUR");
+      } else if (await voegFactuurToe(file, weekKey)) ookAls(bestanden, file, "TIMESHEET");
       gelukt++;
     } catch (e) {
       fouten.push(`${file.name}: ${e instanceof Error ? e.message : "kon niet verwerkt worden"}.`);
@@ -215,6 +227,7 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
     try {
       if (soort === "TIMESHEET") {
         const inboxId = await voegUrenstaatToe(file, { consultantId, placementId });
+        if (await urenstaatBevatFactuur(inboxId)) ookAls(bestanden, file, "FACTUUR");
         const item = await db.timesheetInbox.findUnique({ where: { id: inboxId }, select: { extractedWeekStart: true, fileName: true } });
         const gelezen = weekSlotVanDatum(item?.extractedWeekStart)?.key;
         const besluit = await beslis(gelezen);
@@ -257,6 +270,7 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
           bestand: { fileName, originalName: file.name, mimeType, size: bytes.length },
         });
         await onthoudBedrijfsgegevens(consultantId, gelezen.data);
+        if (gelezen.data.bevatUrenstaat) ookAls(bestanden, file, "TIMESHEET");
       }
       gelukt++;
     } catch (e) {
@@ -282,7 +296,8 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
  * nummer, dan wordt die rij bijgewerkt in plaats van een dubbele aangemaakt (een
  * al betaalde factuur blijft PAID).
  */
-async function voegFactuurToe(file: File, weekKey: string): Promise<void> {
+/** Geeft true als de AI in hetzelfde bestand óók een urenstaat zag. */
+async function voegFactuurToe(file: File, weekKey: string): Promise<boolean> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const mimeType = file.type || "application/octet-stream";
   const fileName = await saveReceivedBytes(bytes, file.name);
@@ -304,7 +319,7 @@ async function voegFactuurToe(file: File, weekKey: string): Promise<void> {
         reason: `${gelezen.message} Kies zelf de persoon en controleer de gegevens.`,
       },
     });
-    return;
+    return false;
   }
 
   if (!gelezen.matchedConsultantId) {
@@ -325,7 +340,7 @@ async function voegFactuurToe(file: File, weekKey: string): Promise<void> {
             : `De naam "${gelezen.data.name || "onbekend"}" op de factuur hoort bij niemand in het dossier — kies zelf de persoon.`,
       },
     });
-    return;
+    return gelezen.data.bevatUrenstaat === true;
   }
 
   await registreerOntvangenFactuur({
@@ -334,6 +349,7 @@ async function voegFactuurToe(file: File, weekKey: string): Promise<void> {
     data: gelezen.data,
     bestand: { fileName, originalName: file.name, mimeType, size: bytes.length },
   });
+  return gelezen.data.bevatUrenstaat === true;
 }
 
 /**
