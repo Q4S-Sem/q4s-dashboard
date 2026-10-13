@@ -19,10 +19,11 @@ export function verkoopRegels(t: VerkoopUrenstaat) {
     placementId: t.placementId,
     weekNumber: getISOWeek(t.weekStart),
     location: t.placement.workLocation ?? null,
-    baseDescription: `${t.placement.rateUnit === "DAY" ? "Total days" : "Total hours"} ${consultantName}`,
+    baseDescription: `${t.placement.rateUnit === "DAY" ? "Total days" : "Normal hours"} ${consultantName} · ${weekDatums(t.weekStart)}`,
     rateUnit: t.placement.rateUnit,
     otFromHours: t.placement.otFromHours,
     ot1Hours: t.placement.ot1Hours,
+    uitsplitsen: true,
     entries: t.entries,
     overtimeHours: t.overtimeHours,
     kilometers: t.kilometers,
@@ -34,20 +35,29 @@ export function verkoopRegels(t: VerkoopUrenstaat) {
     kmRate: t.placement.kmRateSell,
     // Verkoopfactuur is Engels → Engelse regelomschrijvingen.
     labels: {
-      weekend: (p) => `Weekend surcharge ${p}%`,
+      weekend: (p) => `Weekend hours ${p}%`,
       overtime: (p) => (p > 0 ? `Overtime +${p}%` : "Overtime"),
       km: "Kilometres",
       names: {
-        weekday: "Weekday surcharge",
-        weekday2: "Weekday surcharge",
-        saturday: "Saturday surcharge",
-        sunday: "Sunday surcharge",
+        weekday: "Overtime",
+        weekday2: "Overtime",
+        saturday: "Saturday hours",
+        sunday: "Sunday hours",
         offshore: "Offshore surcharge",
         shift: "Shift surcharge",
         abroad: "Foreign posting surcharge",
       },
     },
   });
+}
+
+/** "5–11 Oct 2026" (ma t/m zo van de week). */
+export function weekDatums(weekStart: Date): string {
+  const eind = new Date(weekStart);
+  eind.setDate(eind.getDate() + 6);
+  const f = (d: Date, o: Intl.DateTimeFormatOptions) => d.toLocaleDateString("en-GB", { timeZone: "Europe/Amsterdam", ...o });
+  const zelfdeMaand = f(weekStart, { month: "short" }) === f(eind, { month: "short" });
+  return `${f(weekStart, zelfdeMaand ? { day: "numeric" } : { day: "numeric", month: "short" })}–${f(eind, { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
 export type InvoiceResult =
@@ -92,7 +102,8 @@ export async function createSalesInvoice(opts: {
   const vatReverseCharge = reverseFlags.size === 1 && reverseFlags.has(true);
   const vatRate = vatReverseCharge ? 0 : baseVatRate;
 
-  const lines = timesheets.flatMap(verkoopRegels);
+  // Geen werklocatie op de plaatsing → de plaats van de klant in de LOCATION-kolom.
+  const lines = timesheets.flatMap(verkoopRegels).map((l) => ({ ...l, location: l.location || client.city || null }));
 
   // Kop-velden (Subject/Services): één medewerker/functie per factuur → tonen; bij
   // een gebundelde factuur met meerdere personen/functies laten we ze leeg.

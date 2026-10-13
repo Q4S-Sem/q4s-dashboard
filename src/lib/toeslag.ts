@@ -647,6 +647,8 @@ export function buildTimesheetLines(opts: {
   kmRate: number;
   /** "DAY" = `rate` is een dagtarief: de basisregel telt gewerkte dagen. */
   rateUnit?: string | null;
+  /** Meeruren/za/zo als eigen urenregels tegen 115%/125%/150% (verkoopfactuur). */
+  uitsplitsen?: boolean;
   /** Meeruren-treden van de plaatsing (zie toeslagUren). */
   otFromHours?: number | null;
   ot1Hours?: number;
@@ -692,6 +694,11 @@ export function buildTimesheetLines(opts: {
 
   // Elke ingestelde toeslag krijgt zijn eigen regel — dezelfde rijen die
   // computeTimesheetMoney optelt, dus preview en factuur kunnen niet uiteenlopen.
+  // Meeruren/zaterdag/zondag (losse uren-bakjes) worden UITGESPLITST: de basisregel
+  // houdt alleen de normale uren (bv. 40) en elke bak krijgt het volle opgehoogde
+  // tarief (115% / 125% / 150%). Zelfde totaal, maar leest als de factuur van de freelancer.
+  // Offshore/ploegen/buitenland gelden over ALLE uren → blijven een toeslag-only regel.
+  const UITSPLITSEN = new Set(["weekday", "weekday2", "saturday", "sunday", "weekend"]);
   for (const row of buildSurchargeRows({
     rate: opts.rate,
     hours,
@@ -709,14 +716,22 @@ export function buildTimesheetLines(opts: {
     settings: opts.surcharges,
     labels: { weekend: opts.labels?.weekend, names: opts.labels?.names },
   })) {
+    const splits = !!opts.uitsplitsen && !dagtarief && UITSPLITSEN.has(row.type);
+    const pct = row.unitAmount > 0 && opts.rate > 0 ? round2((row.unitAmount / opts.rate) * 100) : 0;
+    if (splits) {
+      lines[0].quantity = round2(lines[0].quantity - row.hours);
+      lines[0].amount = round2(lines[0].quantity * opts.rate);
+    }
+    const unitPrice = splits ? round2(opts.rate + row.unitAmount) : row.unitAmount;
     lines.push({
       timesheetId: null,
       placementId: opts.placementId,
-      description: row.label,
+      // "Overtime 15% (h 9–10)" → "Overtime 115% (h 9–10)"
+      description: splits && pct > 0 ? row.label.replace(`${pct}%`, `${round2(100 + pct)}%`) : row.label,
       quantity: row.hours,
-      unitPrice: row.unitAmount,
-      amount: row.amount,
-      lineKind: "SURCHARGE",
+      unitPrice,
+      amount: round2(row.hours * unitPrice),
+      lineKind: splits ? "HOURS" : "SURCHARGE",
       ...meta,
     });
   }

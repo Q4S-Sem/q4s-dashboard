@@ -119,6 +119,12 @@ const fileSafe = (s: string) => s.replace(/[^\w.-]+/g, "-");
 // Sales (verkoop) → client
 // ---------------------------------------------------------------------------
 
+/** " (week 41, 42)" — de weken waarvan de urenstaat aan de factuur hangt. */
+function tsWeken(lines: { timesheetId?: string | null; weekNumber?: number | null }[]): string {
+  const w = [...new Set(lines.filter((l) => l.timesheetId && l.weekNumber != null).map((l) => l.weekNumber!))].sort((a, b) => a - b);
+  return w.length ? ` (week ${w.join(", ")})` : "";
+}
+
 export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): InvoiceDoc {
   const c = inv.client;
   const hasHours = inv.lines.some(
@@ -149,7 +155,8 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
     // Rechts tegenover de klant: KvK/BTW van de KLANT (zoals op het Q4S-format).
     recipientKvk: c.kvkNumber ?? null,
     recipientVat: c.vatNumber ?? null,
-    lines: toInvoiceRows(inv.lines),
+    // Urenregel zonder werklocatie → de plaats van de klant in de LOCATION-kolom.
+    lines: toInvoiceRows(inv.lines.map((l) => ({ ...l, location: l.location || (l.weekNumber != null ? c.city : null) || null }))),
     vatRate: inv.vatRate,
     vatReverseCharge: inv.vatReverseCharge ?? false,
     // Eén vermelding: de totaalregel "VAT reverse-charged" (Engelse factuur, geen NL/wetsartikel).
@@ -157,7 +164,7 @@ export function salesInvoiceDoc(inv: SalesInvoiceFull, s: CompanySettings): Invo
     subtotal: inv.subtotal,
     vatAmount: inv.vatAmount,
     total: inv.total,
-    attachmentNote: hasHours ? "Signed timesheets attached" : null,
+    attachmentNote: hasHours ? `Signed timesheets attached${tsWeken(inv.lines)}` : null,
     footerLines: [],
     paymentBox: [
       "We kindly request you to transfer the amount within the agreed payment term.",

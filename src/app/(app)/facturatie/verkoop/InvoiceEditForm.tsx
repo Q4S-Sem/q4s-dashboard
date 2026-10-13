@@ -107,6 +107,7 @@ export function InvoiceEditForm({
             vatRate: num(vatRate),
             notes,
             lines: lines.map((l) => ({
+              id: l.id,
               description: l.description,
               quantity: num(l.quantity),
               unitPrice: num(l.unitPrice),

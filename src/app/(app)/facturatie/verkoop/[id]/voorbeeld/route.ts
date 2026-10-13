@@ -11,6 +11,7 @@ import { round2 } from "@/lib/utils";
 // er wordt niets in de database gewijzigd.
 
 type DraftLine = {
+  id?: unknown;
   description?: unknown;
   quantity?: unknown;
   unitPrice?: unknown;
@@ -63,18 +64,22 @@ export async function POST(
   }
 
   const rawLines = Array.isArray(body.lines) ? (body.lines as DraftLine[]) : [];
+  // Het formulier kent alleen omschrijving/aantal/prijs: WEEK/LOCATION komen van de opgeslagen regel.
+  const opgeslagen = new Map(inv.lines.map((l) => [l.id, l]));
   const lines = rawLines
     .map((l) => {
       const quantity = num(l.quantity);
       const unitPrice = num(l.unitPrice);
+      const o = typeof l.id === "string" ? opgeslagen.get(l.id) : undefined;
       return {
         description: String(l.description ?? "").trim() || "—",
         quantity,
         unitPrice,
         amount: round2(quantity * unitPrice),
-        weekNumber: typeof l.weekNumber === "number" ? l.weekNumber : null,
-        location: typeof l.location === "string" ? l.location : null,
-        lineKind: typeof l.lineKind === "string" ? l.lineKind : null,
+        weekNumber: typeof l.weekNumber === "number" ? l.weekNumber : (o?.weekNumber ?? null),
+        location: typeof l.location === "string" ? l.location : (o?.location ?? null),
+        lineKind: typeof l.lineKind === "string" ? l.lineKind : (o?.lineKind ?? null),
+        timesheetId: o?.timesheetId ?? null,
       };
     })
     // Volledig lege (net toegevoegde) regels tonen we niet in het voorbeeld.
@@ -92,6 +97,7 @@ export async function POST(
           weekNumber: l.weekNumber,
           location: l.location,
           lineKind: l.lineKind,
+          timesheetId: l.timesheetId,
         }));
 
   const vatRate = body.vatRate !== undefined ? num(body.vatRate) : inv.vatRate;

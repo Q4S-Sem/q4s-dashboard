@@ -53,3 +53,21 @@ test("factuur telt 40 + 6 + 2 + 6 = 54 gewerkte uren (toeslag-only regel telt ni
   // Alleen toeslag over dezelfde uren (6 u × € 35) = geen extra gewerkte uren.
   assert.equal(factuurTotaalUren({ hours: 40, overtimeHours: 0, surchargeLines: [{ label: "zaterdagtoeslag", quantity: 6, unit: "uur", amount: 210 }] }, 70), 40);
 });
+
+test("verkoopfactuur splitst uit: 40 normaal + 6×115% + 2×125% + 6×150% (zelfde totaal)", async () => {
+  const { buildTimesheetLines, sideSurcharges } = await import("../src/lib/toeslag");
+  const p = { ...hsm, chargeRate: 77, saturdaySurchargeSell: 50, weekdaySurchargeSell: 15, weekday2SurchargeSell: 25 } as never;
+  const lines = buildTimesheetLines({
+    timesheetId: "t", placementId: "p", weekNumber: 41, location: "Schiedam", baseDescription: "Normal hours Rene Hartman",
+    entries: [d(5, 11), d(6, 9), d(7, 9), d(8, 11), d(9, 8), d(10, 6)], overtimeHours: 0, kilometers: 0,
+    rate: 77, weekendPct: 0, surcharges: sideSurcharges(p, "sell"), overtimePct: 0, kmRate: 0, otFromHours: 8, ot1Hours: 2, uitsplitsen: true,
+  });
+  assert.deepEqual(lines.map((l) => [l.quantity, l.unitPrice]), [[40, 77], [6, 88.55], [2, 96.25], [6, 115.5]]);
+  assert.ok(lines.every((l) => l.weekNumber === 41 && l.location === "Schiedam"));
+  assert.equal(Math.round(lines.reduce((s, l) => s + l.amount, 0) * 100) / 100, 4496.8); // = 4158 + 69,30 + 38,50 + 231
+});
+
+test("weekdatums op de factuurregel", async () => {
+  const { weekDatums } = await import("../src/lib/invoicing");
+  assert.equal(weekDatums(new Date(2026, 9, 5)), "5–11 Oct 2026");
+});

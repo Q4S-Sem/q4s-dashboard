@@ -1,7 +1,8 @@
 import { bonExBtw } from "@/lib/declaraties-doorbelasten";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, BellRing, BookUp, CheckCircle2, Mail, Printer, Send } from "lucide-react";
+import { AlertTriangle, BellRing, BookUp, CheckCircle2, Mail, Paperclip, Printer, Send } from "lucide-react";
+import { timesheetBijlagen } from "@/lib/send-invoice";
 import { BackLink } from "@/components/back-link";
 import { db } from "@/lib/db";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -81,6 +82,8 @@ export default async function VerkoopfactuurPage({
     include: { client: { select: { companyName: true, email: true, invoiceEmail: true } }, lines: true },
   });
   if (!invoice) notFound();
+  const gekoppeld = await timesheetBijlagen(invoice.id);
+  const weekVan = new Map(invoice.lines.filter((l) => l.timesheetId).map((l) => [l.timesheetId!, l.weekNumber]));
 
   const weergave = verkoopWeergaveStatus(
     { status: invoice.status, dueDate: invoice.dueDate },
@@ -299,6 +302,28 @@ export default async function VerkoopfactuurPage({
             <Mail className="h-4 w-4" /> Conceptmail bekijken
           </Link>
         </div>
+      </div>
+
+      {/* De ingescande timesheets die bij deze factuur horen (gaan mee als bijlage). */}
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-ink-200 bg-white px-4 py-2.5 text-[13px]">
+        <span className="font-medium text-ink-700">Gekoppelde timesheets</span>
+        {gekoppeld.map((s) => (
+          <a
+            key={s.id}
+            href={`/api/inbox/${s.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-md border border-ink-200 px-2 py-1 hover:bg-ink-50"
+          >
+            <Paperclip className="h-3.5 w-3.5 text-ink-400" aria-hidden />
+            {weekVan.get(s.timesheetId!) ? `Week ${weekVan.get(s.timesheetId!)} · ` : ""}
+            {s.originalName}
+          </a>
+        ))}
+        {gekoppeld.length === 0 && (
+          <span className="text-amber-700">geen ingescande timesheet gevonden voor deze weken — de klant krijgt dan geen bijlage</span>
+        )}
+        {gekoppeld.length > 0 && <span className="text-ink-400">gaan als bijlage mee met de factuur-mail</span>}
       </div>
 
       <InvoiceEditForm
