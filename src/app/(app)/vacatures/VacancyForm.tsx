@@ -202,7 +202,7 @@ export function VacancyForm({
             <Textarea
               id="rawText"
               name="rawText"
-              className="min-h-48"
+              className="min-h-72 field-sizing-content"
               defaultValue={vacancy?.rawText ?? ""}
               placeholder="Plak hier de ruwe, binnengekomen vacaturetekst…"
               required
@@ -248,7 +248,7 @@ export function VacancyForm({
               <Textarea
                 id="summary"
                 name="summary"
-                className="min-h-24"
+                className="min-h-32 field-sizing-content"
                 value={summary}
                 onChange={(ev) => setSummary(ev.target.value)}
                 placeholder="Korte, wervende intro over de functie…"
@@ -264,7 +264,7 @@ export function VacancyForm({
               <Textarea
                 id="responsibilities"
                 name="responsibilities"
-                className="min-h-32"
+                className="min-h-48 field-sizing-content"
                 value={responsibilities}
                 onChange={(ev) => setResponsibilities(ev.target.value)}
                 placeholder={"Inventariseren van…\nVastleggen van…\nControleren van…"}
@@ -280,7 +280,7 @@ export function VacancyForm({
               <Textarea
                 id="requirements"
                 name="requirements"
-                className="min-h-32"
+                className="min-h-48 field-sizing-content"
                 value={requirements}
                 onChange={(ev) => setRequirements(ev.target.value)}
                 placeholder={"Ervaring als…\nBekend met…\nKennis van…"}
@@ -296,7 +296,7 @@ export function VacancyForm({
               <Textarea
                 id="niceToHave"
                 name="niceToHave"
-                className="min-h-24"
+                className="min-h-32 field-sizing-content"
                 value={niceToHave}
                 onChange={(ev) => setNiceToHave(ev.target.value)}
                 placeholder={"Certificering…\nErvaring op terminals…"}
