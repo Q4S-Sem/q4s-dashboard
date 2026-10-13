@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PersonenPerWeek, WeergaveTabs, kiesWeergave } from "../PersonenPerWeek";
 import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Select } from "@/components/ui/field";
 import { AlertTriangle, Ban, BellRing, CheckCircle2, Clock, Download, FilePen, FolderOpen, Layers, Receipt, Send } from "lucide-react";
@@ -156,7 +155,6 @@ export default async function VerkoopfacturenPage({
   searchParams: Promise<SP>;
 }) {
   const sp = await searchParams;
-  const weergave = kiesWeergave(sp as Record<string, string | undefined>);
   const now = new Date();
   const tab = (VERKOOP_TABS.find((t) => t.key === sp.tab)?.key ?? "alles") as VerkoopTab;
 
@@ -294,7 +292,7 @@ export default async function VerkoopfacturenPage({
           huidig={weekSlotVanDatum(weekParam)?.key ?? null}
           vandaag={ymd(now)}
           alleWeken
-          extra={weergave === "personen" ? { weergave } : { tab, client: klantFilter?.id, persoon: sp.persoon, q: sp.q }}
+          extra={{ tab, client: klantFilter?.id, persoon: sp.persoon, q: sp.q }}
         />
         <a
           href="/api/facturen/export"
@@ -305,13 +303,6 @@ export default async function VerkoopfacturenPage({
         </a>
       </PaginaKop>
 
-      <WeergaveTabs
-        actief={weergave}
-        basePath="/facturatie/verkoop"
-        week={weekParam}
-        facturenLabel="Klantfacturatie"
-        aantalFacturen={tellingen.alles}
-      />
 
       {KLANTMAIL_UIT && (
         <p className="flex items-start gap-2 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-900">
@@ -324,10 +315,7 @@ export default async function VerkoopfacturenPage({
         </p>
       )}
 
-      {weergave === "personen" ? (
-        <PersonenPerWeek week={weekParam || null} basePath="/facturatie/verkoop" q={sp.q} pf={sp.pf} />
-      ) : (
-        <>
+      <>
       {/* Mapjes: per klant en periode (maand / 4 weken) de weken die samen één verkoopfactuur worden. */}
       {verzamelend.length > 0 && (
         <div className="space-y-3">
@@ -550,8 +538,7 @@ export default async function VerkoopfacturenPage({
         en na een bevestiging. Verstuurde of betaalde facturen kunnen niet verwijderd worden — die
         crediteer je met <strong className="font-semibold text-ink-600">Annuleren</strong> op de factuur zelf.
       </p>
-        </>
-      )}
+      </>
     </div>
   );
 }
