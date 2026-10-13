@@ -142,7 +142,7 @@ export default async function DossierPage({
             {fase === "controle" && !row.vastgelegd && voorFreelancer.length > 0 && (
               <Link
                 href={`/facturatie/${placementId}/${wk}/mail`}
-                className={buttonVariants({ variant: "outline", size: "sm" })}
+                className={buttonVariants({ variant: "danger", size: "sm" })}
                 title="Mail de freelancer wat er niet klopt en vraag om een correctie of uitleg"
               >
                 <Mail className="h-3.5 w-3.5" /> Mail {row.naam.split(" ")[0]}
