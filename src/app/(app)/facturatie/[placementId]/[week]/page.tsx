@@ -4,7 +4,6 @@ import { ArrowLeft, ArrowRight, Check, FileText, Mail, PauseCircle, PencilLine, 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants, ICOON_GROEP, ICOON_KNOP } from "@/components/ui/button";
-import { Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
@@ -191,8 +190,9 @@ export default async function DossierPage({
               <form action={akkoordNaarVerkoopfactuur} className="flex items-center gap-2">
                 <input type="hidden" name="placementId" value={placementId} />
                 <input type="hidden" name="week" value={wk} />
+                {/* Eén klik: de openstaande controles worden geaccepteerd en vastgelegd (wie + welke). */}
                 {openFouten && !blokkade && (
-                  <Input name="reden" required maxLength={2000} placeholder="Reden om de fouten te accepteren" aria-label="Reden" className="h-8 w-64 text-[13px]" />
+                  <input type="hidden" name="reden" value={`Controles geaccepteerd: ${fouten.map((c) => c.title).join(", ")}`} />
                 )}
                 <SubmitButton
                   size="sm"
@@ -201,7 +201,7 @@ export default async function DossierPage({
                   pendingLabel="Verwerken…"
                   title={blokkade ?? "Inkoop goedkeuren, verkoopfactuur maken en terug naar Week verwerken"}
                 >
-                  <Check className="h-3.5 w-3.5" /> {openFouten ? "Toch akkoord" : "Akkoord"}
+                  <Check className="h-3.5 w-3.5" /> {openFouten ? "Controles accepteren & akkoord" : "Akkoord"}
                 </SubmitButton>
               </form>
             )}
