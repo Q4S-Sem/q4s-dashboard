@@ -66,6 +66,8 @@ type Extracted = {
   andereWeken?: string[];
   /** Zit er in hetzelfde bestand ook een FACTUUR? Dan leest de upload hem ook als factuur. */
   bevatFactuur?: boolean;
+  /** Overuren uit de aparte overuren-sectie, PER DAG (voor meeruren in treden). */
+  overtimeDays?: { date: string; hours: number }[];
 };
 
 const EXTRACT_SCHEMA = {
@@ -106,10 +108,23 @@ const EXTRACT_SCHEMA = {
     travelHours: { type: "number", description: "REISUREN die apart als zodanig op de staat staan ('reisuren', 'travel hours', 'travel time'), dus NIET gewerkte uren en NIET kilometers. 0 als die regel er niet is." },
     expenses: { type: "number", description: "Het bedrag in EURO's aan losse onkosten/declaraties dat op de staat genoemd wordt (parkeren, verblijf, bonnetjes). Alleen het bedrag, niet de kilometers. 0 als er geen onkosten op de staat staan." },
     andereWeken: { type: "array", items: { type: "string" }, description: "Staan er in dit document MEER weken (een verzamelstaat van 2-4 weken)? Geef dan de MAANDAG (YYYY-MM-DD) van ELKE ANDERE week dan de week die je nu uitleest. Eén week in het document → lege lijst []." },
-    bevatFactuur: { type: "boolean", description: "Zit er in DIT bestand OOK een factuur van de medewerker (een pagina met factuurnummer, bedragen en btw/totaal)? true = ja, false = alleen een urenstaat." },
+    bevatFactuur: { type: "boolean", description: "Zit er in DIT bestand OOK een FACTUUR van de medewerker: een factuurnummer + bedragen in euro's + een te-betalen totaal? Alleen bedrijfsgegevens in de voet (KvK, btw-nummer, IBAN van Q4S) is GEEN factuur → false. Bij twijfel false." },
+    overtimeDays: {
+      type: "array",
+      description: "De overuren uit de APARTE overuren-sectie/-rij, per dag (bv. Ma 3, Di 1, Za 6). Lege lijst als er geen overuren-sectie is.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          date: { type: "string", description: "Datum YYYY-MM-DD (of weekdagnaam ma/di/... als er geen datum staat)." },
+          hours: { type: "number", description: "Overuren op die dag." },
+        },
+        required: ["date", "hours"],
+      },
+    },
     pagesComplete: { type: "boolean", description: "Is het document COMPLEET en leesbaar? false als er pagina's lijken te ontbreken, de scan is afgesneden, of een deel van het raster onleesbaar is. true als je alles kon lezen." },
   },
-  required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes", "confidence", "signaturePresent", "signerName", "clientName", "projectName", "location", "poNumber", "travelHours", "expenses", "pagesComplete", "andereWeken", "bevatFactuur"],
+  required: ["name", "weekStartDate", "weekNumber", "year", "days", "totalHours", "reportedTotalHours", "kilometers", "reportedTotalKm", "overtimeHours", "project", "notes", "confidence", "signaturePresent", "signerName", "clientName", "projectName", "location", "poNumber", "travelHours", "expenses", "pagesComplete", "andereWeken", "bevatFactuur", "overtimeDays"],
 };
 
 const SYSTEM_EXTRACT = `Je bent een uiterst nauwkeurige administratieve assistent bij Q4S, een Nederlands detacheringsbureau. Je leest binnengekomen WEEKstaten (timesheets) uit die door gedetacheerde vakmensen worden aangeleverd. Elke aanleverder gebruikt een eigen opmaak; herken ook het Q4S-formulier (FO-Q4S-18).
@@ -341,7 +356,7 @@ export async function runInboxExtraction(id: string, alleenWeek?: string): Promi
 
   // De totalen die de staat ZELF vermeldt — de maatstaf voor de reconciliatie
   // hieronder, en (voor km) wat er zonder tegenbericht wordt vastgelegd.
-  const statedHours =
+  let statedHours =
     typeof data.reportedTotalHours === "number" && data.reportedTotalHours > 0 ? data.reportedTotalHours : null;
   const statedKm =
     typeof data.reportedTotalKm === "number" && data.reportedTotalKm > 0 ? data.reportedTotalKm : null;
@@ -398,6 +413,26 @@ export async function runInboxExtraction(id: string, alleenWeek?: string): Promi
       hours,
     }));
     data.totalHours = round2(dagen.reduce((som, h) => som + h, 0));
+  }
+
+  // Meeruren in treden (plaatsing heeft "meeruren vanaf", bv. 9e & 10e uur +15%):
+  // dan tellen de overuren PER DAG mee in het dagtotaal, zodat de treden en de
+  // zaterdag-/zondagtoeslag per dag goed uitrekenen. Anders worden het losse
+  // overuren tegen één tarief — en klopt de factuur van de freelancer nooit.
+  const otDagen = (data.overtimeDays ?? []).filter((d) => typeof d.hours === "number" && d.hours > 0);
+  let omgezetOveruren = 0;
+  if (placementId && otDagen.length > 0) {
+    const pl = await db.placement.findUnique({ where: { id: placementId }, select: { otFromHours: true } });
+    if (pl?.otFromHours != null && pl.otFromHours > 0) {
+      const dagen = distributeDayHours(data.days ?? [], weekStart).map((h) => (h === "" ? 0 : h));
+      const extra = distributeDayHours(otDagen, weekStart).map((h) => (h === "" ? 0 : h));
+      omgezetOveruren = round2(extra.reduce((s, h) => s + h, 0));
+      data.days = dagen.map((h, i) => ({ date: weekStart ? isoDatum(weekStart, i) : "", hours: round2(h + extra[i]) }));
+      data.totalHours = round2((data.totalHours || 0) + omgezetOveruren);
+      if (statedHours != null) statedHours = round2(statedHours + omgezetOveruren);
+      data.overtimeHours = 0;
+      data.notes = [data.notes?.trim(), `${formatHours(omgezetOveruren)} overuren per dag bij de gewone uren opgeteld (meeruren in treden op de plaatsing).`].filter(Boolean).join(" ");
+    }
   }
 
   // Reconciliatie: de dag-optelling is wat straks de urenstaat wordt. Vergelijk

@@ -283,7 +283,34 @@ function tekstMatcht(a: string | null | undefined, b: string | null | undefined)
   const x = normalizeName(a ?? "");
   const y = normalizeName(b ?? "");
   if (!x || !y) return true;
-  return x.includes(y) || y.includes(x);
+  if (x.includes(y) || y.includes(x)) return true;
+  // Handschrift: "smuldees ism" is "HSM Smulders". Eén woord van ≥4 letters dat
+  // (bijna) gelijk is — max. 1 tikfout per 5 letters — is genoeg.
+  const wx = x.split(" ").filter((w) => w.length >= 4);
+  const wy = y.split(" ").filter((w) => w.length >= 4);
+  return wx.some((p) => wy.some((q) => bewerkAfstand(p, q) <= Math.max(1, Math.floor(Math.max(p.length, q.length) / 5))));
+}
+
+/** Levenshtein-afstand (aantal tikfouten tussen twee woorden). */
+export function bewerkAfstand(a: string, b: string): number {
+  let vorige = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const rij = [i];
+    for (let j = 1; j <= b.length; j++) {
+      rij[j] = Math.min(vorige[j] + 1, rij[j - 1] + 1, vorige[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    vorige = rij;
+  }
+  return vorige[b.length];
+}
+
+/** Op de staat mag de voornaam als initiaal staan: "R.Hartman" = René Hartman. */
+export function naamOpStaatKlopt(c: { firstName: string; lastName: string }, gelezen: string): boolean {
+  if (nameMatches(c, gelezen)) return true;
+  const woorden = normalizeName(gelezen).split(" ").filter(Boolean);
+  const achter = normalizeName(c.lastName).split(" ").filter(Boolean);
+  const voorletter = normalizeName(c.firstName).charAt(0);
+  return achter.length > 0 && achter.every((w) => woorden.includes(w)) && !!voorletter && woorden.some((w) => w.length === 1 && w === voorletter);
 }
 
 /** "YYYY-MM-DD" → lokale middernacht (nooit via UTC: dat schuift een dag). */
@@ -882,7 +909,7 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
         `Er is geen naam uitgelezen — controleer of deze staat van ${volledigeNaam} is.`,
       );
     } else {
-      const klopt = nameMatches(
+      const klopt = naamOpStaatKlopt(
         { firstName: input.consultant.firstName, lastName: input.consultant.lastName },
         gelezenNaam,
       );
@@ -1023,8 +1050,13 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
     const factuurUren = isNum(inv.hours) ? round2(inv.hours) : null;
     // Bij een dagtarief mag de factuur dagen tellen in plaats van uren.
     const klopt = (n: number) => Math.abs(round2(factuurUren! - n)) <= TOLERANTIE_AANTAL;
+    // Factuur splitst de uren soms anders (bv. "40 u + 14 u toeslaguren") dan de staat
+    // (bv. 54 u per dag): klopt het TOTAAL uren + overuren, dan is er niets mis.
+    const factuurOver = isNum(inv.overtimeHours) ? round2(inv.overtimeHours) : 0;
+    const totaalKlopt =
+      factuurUren !== null && ts !== null && Math.abs(round2(factuurUren + factuurOver - (dagUren + overuren))) <= TOLERANTIE_AANTAL;
     const urenWijktAf =
-      factuurUren !== null && ts !== null && !klopt(dagUren) && !(dagtarief && klopt(gewerkteDagen));
+      factuurUren !== null && ts !== null && !totaalKlopt && !klopt(dagUren) && !(dagtarief && klopt(gewerkteDagen));
     if (factuurUren === null) {
       add(
         "factuur",
@@ -1048,7 +1080,7 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
     // Overuren --------------------------------------------------------------
     const factuurOveruren = isNum(inv.overtimeHours) ? round2(inv.overtimeHours) : 0;
     const overurenWijktAf =
-      ts !== null && Math.abs(round2(factuurOveruren - overuren)) > TOLERANTIE_AANTAL;
+      ts !== null && !totaalKlopt && Math.abs(round2(factuurOveruren - overuren)) > TOLERANTIE_AANTAL;
     add(
       "factuur",
       "factuur-overuren",

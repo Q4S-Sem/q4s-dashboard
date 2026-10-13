@@ -124,8 +124,9 @@ async function inRondes<T>(rij: T[], f: (t: T) => Promise<void>) {
   }
 }
 
-function ookAls(rij: { file: File; soort: UploadSoort }[], file: File, soort: UploadSoort) {
-  if (!rij.some((r) => r.file === file && r.soort === soort)) rij.push({ file, soort });
+function ookAls(rij: { file: File; soort: UploadSoort; extra?: boolean }[], file: File, soort: UploadSoort) {
+  // extra = "zit er misschien óók in": lukt dat niet, dan is dat geen fout voor de gebruiker.
+  if (!rij.some((r) => r.file === file && r.soort === soort)) rij.push({ file, soort, extra: true });
 }
 async function urenstaatBevatFactuur(inboxId: string): Promise<boolean> {
   const item = await db.timesheetInbox.findUnique({ where: { id: inboxId }, select: { extractedJson: true } });
@@ -154,7 +155,7 @@ export async function uploadBestanden(
   let gelukt = 0;
 
   // Alle bestanden tegelijk uitlezen (niet na elkaar) — scheelt de helft van de wachttijd.
-  const verwerk = async ({ file, soort }: { file: File; soort: UploadSoort }) => {
+  const verwerk = async ({ file, soort, extra }: { file: File; soort: UploadSoort; extra?: boolean }) => {
     if (file.size > MAX_UPLOAD_BYTES) {
       fouten.push(
         `${file.name}: te groot (max. ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB).`,
@@ -168,6 +169,7 @@ export async function uploadBestanden(
       } else if (await voegFactuurToe(file, weekKey)) ookAls(bestanden, file, "TIMESHEET");
       gelukt++;
     } catch (e) {
+      if (extra) return; // het "misschien óók"-deel bleek er niet in te zitten
       fouten.push(`${file.name}: ${e instanceof Error ? e.message : "kon niet verwerkt worden"}.`);
     }
   };
@@ -242,7 +244,7 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
   };
   const weekNr = (key: string) => Number(key.split("-W")[1]);
   // Alle bestanden tegelijk uitlezen (niet na elkaar) — scheelt de helft van de wachttijd.
-  const verwerk = async ({ file, soort }: { file: File; soort: UploadSoort }) => {
+  const verwerk = async ({ file, soort, extra }: { file: File; soort: UploadSoort; extra?: boolean }) => {
     if (file.size > MAX_UPLOAD_BYTES) {
       fouten.push(`${file.name}: te groot (max. ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB).`);
       return;
@@ -297,6 +299,7 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
       }
       gelukt++;
     } catch (e) {
+      if (extra) return; // het "misschien óók"-deel bleek er niet in te zitten
       fouten.push(`${file.name}: ${e instanceof Error ? e.message : "kon niet verwerkt worden"}.`);
     }
   };
@@ -332,6 +335,10 @@ async function voegFactuurToe(file: File, weekKey: string): Promise<boolean> {
     mimeType,
   });
 
+  if (gelezen.ok && !gelezen.data.invoiceNumber?.trim() && !(gelezen.data.totalAmount > 0) && !(gelezen.data.amountExclVat > 0)) {
+    await deleteReceivedUpload(fileName).catch(() => {});
+    throw new Error("geen factuur gevonden in dit bestand (geen factuurnummer en geen bedrag)");
+  }
   if (!gelezen.ok) {
     await db.facturatieUpload.create({
       data: {
@@ -389,6 +396,11 @@ async function registreerOntvangenFactuur(args: {
 }): Promise<string> {
   const { consultantId, data, bestand } = args;
   const velden = toReceivedInvoiceFormValues(data, new Date());
+  // Geen nummer én geen bedrag = dit was geen factuur (bv. een urenstaat met de
+  // Q4S-voet). Nooit registreren: anders overschrijft hij de échte factuur van de week.
+  if (!velden.number?.trim() && !(parseBedrag(velden.amount) ?? 0)) {
+    throw new Error("geen factuur gevonden in dit bestand (geen factuurnummer en geen bedrag)");
+  }
   // De week komt van de FACTUUR zelf (periode of weeknummer), niet van het scherm
   // waarop hij binnenkwam; alleen zonder periode valt hij terug op die week.
   // Verzamelfactuur (periode over meerdere weken): GEEN vaste weeksleutel, dan

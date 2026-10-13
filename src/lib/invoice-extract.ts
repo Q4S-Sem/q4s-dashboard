@@ -131,7 +131,7 @@ const EXTRACT_SCHEMA = {
         required: ["label", "quantity", "unit", "amount"],
       },
     },
-    bevatUrenstaat: { type: "boolean", description: "Zit er in DIT bestand OOK een urenstaat/timesheet (een tabel met dagen en gewerkte uren per dag)? true = ja, false = alleen de factuur." },
+    bevatUrenstaat: { type: "boolean", description: "Zit er in DIT bestand OOK een aparte urenstaat/timesheet (een raster met per DAG de gewerkte uren, vaak met handtekening)? Een factuurregel als '40 uur à € 70' is GEEN urenstaat → false. Bij twijfel false." },
     mentionsAttachment: { type: "boolean", description: "Verwijst de factuur naar een BIJLAGE of onderbouwing ('zie bijgevoegde urenstaat', 'conform timesheet week 40', 'bijlage')? true = ja, false = er staat geen verwijzing op." },
   },
   required: ["invoiceNumber", "issueDate", "periodStart", "periodEnd", "weekNumber", "year", "hours", "hourlyRate", "hoursLineAmount", "overtimeHours", "amountExclVat", "vatAmount", "vatShifted", "kilometers", "totalAmount", "name", "confidence", "notes", "currency", "addressee", "poNumber", "iban", "kvkNumber", "vatId", "vatPercent", "surchargeLines", "mentionsAttachment", "bevatUrenstaat"],
