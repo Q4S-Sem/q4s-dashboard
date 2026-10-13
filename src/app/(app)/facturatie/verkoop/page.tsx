@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Select } from "@/components/ui/field";
-import { AlertTriangle, Ban, ChevronRight, BellRing, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
+import { AlertTriangle, Ban, BellRing, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
 import { db } from "@/lib/db";
-import { Badge } from "@/components/ui/badge";
-import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { KLANTMAIL_UIT } from "@/lib/send-invoice";
 import { Card } from "@/components/ui/card";
 import { FilterTegels, PaginaKop } from "@/components/ui/filter-tegels";
@@ -26,7 +24,6 @@ import { VerkoopLijst, type VerkoopFactuurRij } from "./VerkoopLijst";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { herinneringAanDeBeurt } from "@/lib/cashflow";
 import { sendDueReminders } from "./actions";
-import { verkoopRegels } from "@/lib/invoicing";
 
 // ---------------------------------------------------------------------------
 // VERKOOPFACTUREN — één lijst met tabbladen, in de volgorde van de trechter:
@@ -221,9 +218,17 @@ export default async function VerkoopfacturenPage({
   const aanDeBeurt = alle.filter((i) => i.herinnerenNu);
 
   const tellingen = verkoopTellingen(alle, now);
-  const rows = alle.filter(
-    (r) => hoortBijVerkoopTab(r, tab, now) && matchtZoek(sp.q, r.number, r.clientName, r.persoon),
-  );
+  // Wat het eerst vervalt bovenaan; betaald/geannuleerd daarna (nieuwste eerst).
+  const afgerond = (r: VerkoopFactuurRij) => r.status === "PAID" || r.status === "CANCELLED";
+  const rows = alle
+    .filter((r) => hoortBijVerkoopTab(r, tab, now) && matchtZoek(sp.q, r.number, r.clientName, r.persoon))
+    .sort((x, y) =>
+      afgerond(x) !== afgerond(y)
+        ? Number(afgerond(x)) - Number(afgerond(y))
+        : afgerond(x)
+          ? y.issueDate.localeCompare(x.issueDate)
+          : x.dueDate.localeCompare(y.dueDate),
+    );
 
   const omzet = round2(
     alle.filter((i) => i.status !== "CANCELLED").reduce((s, i) => s + i.total, 0),
@@ -244,32 +249,6 @@ export default async function VerkoopfacturenPage({
     const qs = p.toString();
     return qs ? `/facturatie/verkoop?${qs}` : "/facturatie/verkoop";
   };
-
-  // Per persoon: open (goedgekeurd, nog niet gefactureerd) en al gefactureerde weken.
-  // ponytail: haalt alle goedgekeurde/gefactureerde weken op; beperk tot recente maanden als dit traag wordt.
-  const verkoopWeken = await db.timesheet.findMany({
-    where: { status: { in: ["APPROVED", "INVOICED"] } },
-    include: {
-      entries: true,
-      placement: { include: { consultant: true, client: { select: { companyName: true } } } },
-      invoiceLine: { select: { id: true } },
-    },
-  });
-  const perPersoon = [
-    ...verkoopWeken
-      .reduce((m, t) => {
-        const c = t.placement.consultant;
-        const p = m.get(c.id) ?? { id: c.id, naam: `${c.firstName} ${c.lastName}`.trim(), klanten: new Set<string>(), open: 0, openBedrag: 0, gefactureerd: 0 };
-        if (t.placement.client) p.klanten.add(t.placement.client.companyName);
-        if (t.invoiceLine) p.gefactureerd++;
-        else {
-          p.open++;
-          p.openBedrag = round2(p.openBedrag + verkoopRegels(t).reduce((s, l) => s + l.amount, 0));
-        }
-        return m.set(c.id, p);
-      }, new Map<string, { id: string; naam: string; klanten: Set<string>; open: number; openBedrag: number; gefactureerd: number }>())
-      .values(),
-  ].sort((x, y) => y.open - x.open || x.naam.localeCompare(y.naam));
 
   return (
     <div className="space-y-6">
@@ -306,39 +285,6 @@ export default async function VerkoopfacturenPage({
       )}
 
       <>
-      {perPersoon.length > 0 && (
-        <Card className="overflow-hidden">
-          <div className="border-b border-ink-100 px-4 py-3 text-sm font-semibold text-ink-900">Per persoon</div>
-          <ul className="divide-y divide-ink-100">
-            {perPersoon.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/facturatie/verkoop/persoon/${p.id}`}
-                  className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-2.5 text-[13px] hover:bg-ink-50"
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <PersoonVierkant naam={p.naam} />
-                    <span className="min-w-0">
-                      <span className="block font-medium text-ink-900">{p.naam}</span>
-                      <span className="block truncate text-xs text-ink-500">{[...p.klanten].join(", ")}</span>
-                    </span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    {p.open > 0 && (
-                      <Badge color="amber">
-                        {p.open} {p.open === 1 ? "week" : "weken"} open · {formatCurrency(p.openBedrag)}
-                      </Badge>
-                    )}
-                    {p.gefactureerd > 0 && <Badge color="green">{p.gefactureerd} gefactureerd</Badge>}
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-ink-400" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-
       {klantFilter && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-ink-200 bg-ink-50 px-4 py-2.5 text-[13px]">
           <span className="text-ink-700">
