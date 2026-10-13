@@ -119,7 +119,7 @@ export default async function DossierPage({
   return (
     <div className="space-y-5">
       {/* Kopbalk: wie/welke week, de 2 fases, en rechts de acties (Akkoord altijd in beeld). */}
-      <div className="sticky top-14 z-20 rounded-xl border border-ink-200 bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur">
+      <div className="sticky top-14 z-20 rounded-lg border border-ink-200 bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <Link href={`/facturatie?week=${wk}`} className={ICOON_KNOP} aria-label="Terug naar Week verwerken" title="Terug naar Week verwerken">
             <ArrowLeft />
