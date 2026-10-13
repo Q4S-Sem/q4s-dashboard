@@ -17,7 +17,7 @@ import {
   parseBulkIds,
   partitionBulk,
 } from "@/lib/factuur-bulk";
-import { sendSalesInvoiceById, type SendOutcome } from "@/lib/send-invoice";
+import { KLANTMAIL_UIT, sendSalesInvoiceById, type SendOutcome } from "@/lib/send-invoice";
 import { getCompanySettings } from "@/lib/settings";
 import { reminderSendData } from "@/lib/reminders";
 import { herinneringAanDeBeurt } from "@/lib/cashflow";
@@ -361,6 +361,7 @@ export async function bulkReleaseInvoices(formData: FormData) {
  * `sendSalesInvoiceById` claimt elke rij atomair van READY naar SENT.
  */
 export async function bulkSendInvoices(formData: FormData) {
+  if (KLANTMAIL_UIT) redirect(`${LIJST}?klantmail=uit`);
   const requested = parseBulkIds(formData.get("ids"));
   const tab = String(formData.get("tab") ?? "");
   if (requested.length === 0) redirect(LIJST);
@@ -436,6 +437,7 @@ type HerinnerUitkomst = "ok" | "geen-adres" | "niet-verzonden" | "te-vroeg" | "m
 
 /** Eén herinnering versturen, met de factuur-PDF als bijlage. Teller pas omhoog als de mail weg is. */
 async function stuurHerinnering(id: string, settings: Awaited<ReturnType<typeof getCompanySettings>>): Promise<HerinnerUitkomst> {
+  if (KLANTMAIL_UIT) return "mislukt";
   const inv = await db.invoice.findUnique({ where: { id }, include: { client: true, lines: true } });
   if (!inv || inv.status !== "SENT") return "niet-verzonden";
   const now = new Date();
@@ -468,6 +470,7 @@ export async function sendInvoiceReminder(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const terug = String(formData.get("terug") ?? "") === "detail";
   if (!id) redirect(LIJST);
+  if (KLANTMAIL_UIT) redirect(`${LIJST}?klantmail=uit`);
   const doel = terug ? detail(id) : `${LIJST}?tab=telaat`;
   const uitkomst = await stuurHerinnering(id, await getCompanySettings());
   herlaad();
@@ -477,6 +480,7 @@ export async function sendInvoiceReminder(formData: FormData) {
 
 /** Alle herinneringen die aan de beurt zijn in één keer (na bevestiging in de UI). */
 export async function sendDueReminders() {
+  if (KLANTMAIL_UIT) redirect(`${LIJST}?klantmail=uit`);
   const now = new Date();
   const kandidaten = await db.invoice.findMany({
     where: { status: "SENT", dueDate: { lt: now } },
@@ -499,6 +503,7 @@ export async function sendDueReminders() {
 export async function naarAdministratie(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) redirect(LIJST);
+  if (KLANTMAIL_UIT) redirect(`${LIJST}?klantmail=uit`); // ook niet vrijgeven
   await db.invoice.updateMany({ where: { id, status: "DRAFT" }, data: { status: "READY" } });
   const outcome = await sendSalesInvoiceById(id);
   herlaad();

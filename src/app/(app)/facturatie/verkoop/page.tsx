@@ -4,6 +4,7 @@ import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Select } from "@/components/ui/field";
 import { AlertTriangle, Ban, BellRing, CheckCircle2, Clock, Download, FilePen, Layers, Receipt, Send } from "lucide-react";
 import { db } from "@/lib/db";
+import { KLANTMAIL_UIT } from "@/lib/send-invoice";
 import { Card } from "@/components/ui/card";
 import { FilterTegels, PaginaKop } from "@/components/ui/filter-tegels";
 import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
@@ -59,6 +60,7 @@ const VERKOOP_TOON: Record<VerkoopTab, "slate" | "blue" | "green" | "amber" | "r
 export const dynamic = "force-dynamic";
 
 type SP = {
+  klantmail?: string;
   q?: string;
   tab?: string;
   week?: string;
@@ -293,6 +295,17 @@ export default async function VerkoopfacturenPage({
         facturenLabel="Facturen"
         aantalFacturen={tellingen.alles}
       />
+
+      {KLANTMAIL_UIT && (
+        <p className="flex items-start gap-2 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-900">
+          <Ban className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            <strong>Mailen naar klanten staat uit.</strong> Er gaat geen factuur of betalingsherinnering naar
+            een klant{sp.klantmail === "uit" ? " — er is dus ook nu niets verstuurd" : ""}. Download de PDF en
+            stuur hem zelf, tot dit aangezet wordt.
+          </span>
+        </p>
+      )}
 
       {/* Verzamelfacturen: goedgekeurde weken die wachten tot de maand / 4 weken compleet is. */}
       {verzamelend.length > 0 && (

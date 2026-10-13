@@ -14,7 +14,14 @@ import { salesSendData, type SendData } from "./verzenden";
 const salesInclude = { client: true, lines: true } as const;
 
 
-export type SendOutcome = "sent" | "simulated" | "no-email" | "error" | "already";
+export type SendOutcome = "sent" | "simulated" | "no-email" | "error" | "already" | "uit";
+
+/**
+ * Hoofdschakelaar: er gaat (nog) GEEN facturatie-mail naar klanten — geen
+ * verkoopfactuur en geen betalingsherinnering. Facturen maken, downloaden en zelf
+ * versturen kan gewoon. Op `false` zetten zodra jullie live willen mailen.
+ */
+export const KLANTMAIL_UIT = true;
 
 /** Compose the PDF + mail and hand it to the transport (real send or simulated). */
 async function dispatch(data: SendData): Promise<SendOutcome> {
@@ -36,6 +43,7 @@ async function dispatch(data: SendData): Promise<SendOutcome> {
 
 /** Verstuur één verkoopfactuur naar de klant. */
 export async function sendSalesInvoiceById(id: string): Promise<SendOutcome> {
+  if (KLANTMAIL_UIT) return "uit";
   const [inv, settings] = await Promise.all([
     db.invoice.findUnique({ where: { id }, include: salesInclude }),
     getCompanySettings(),
