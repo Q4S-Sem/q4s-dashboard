@@ -188,4 +188,7 @@ export const CV_EXTRACT_PROMPT =
   "- languages: taal + niveau zoals vermeld.\n" +
   "- experience: elke functie, nieuwste eerst, met werkgever, rol, periode (letterlijk overnemen), locatie en bullets met concrete taken/resultaten.\n" +
   "- education: opleidingen met school, diploma/richting en periode.\n" +
-  "- certificates: certificaten en kwalificaties (bijv. VCA, ISO 9712 NDT niveau 2, lasmethode-certificaten) met uitgever en jaartal/geldigheid.";
+  "- certificates: certificaten en kwalificaties (bijv. VCA, ISO 9712 NDT niveau 2, lasmethode-certificaten) met uitgever en jaartal/geldigheid.\n" +
+  "HET Q4S-CV IS MAXIMAAL 3 PAGINA'S. Is het CV lang, kies dan de beste en meest relevante punten:\n" +
+  "- experience: maximaal 8 functies (recent en relevant voor de vakrichting gaan voor); per functie maximaal 4 korte bullets, bij oudere functies 1 à 2. Geen herhalingen.\n" +
+  "- skills: maximaal 15, de sterkste eerst. certificates: maximaal 12, de belangrijkste en geldige eerst. education: maximaal 4.";

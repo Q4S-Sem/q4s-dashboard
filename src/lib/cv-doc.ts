@@ -119,7 +119,7 @@ export function buildCvDoc(
   settings: CompanySettings,
   candidate?: CandidateContact | null,
 ): CvDoc {
-  const data = profileToData(profile);
+  const data = inkorten(profileToData(profile));
   const anon = profile.anonymize;
 
   const clean = (s: string) => (anon ? scrubContacts(s) : s);
@@ -161,6 +161,31 @@ export function buildCvDoc(
       [settings.email, settings.phone, settings.website].filter(Boolean).join("  ·  "),
     ]).join("  ·  "),
     anonymized: anon,
+  };
+}
+
+/**
+ * Het Q4S-CV blijft maximaal 3 pagina's, ook bij een enorm bron-CV. De AI kiest
+ * al de beste punten (zie CV_EXTRACT_PROMPT); dit is het harde plafond erachter,
+ * ook voor oudere profielen. Volgorde = belangrijkheid (nieuwste/sterkste eerst).
+ * ponytail: plafond op aantallen, niet op gemeten hoogte; meet de PDF als het misgaat.
+ */
+export const CV_MAX = { functies: 8, bulletsRecent: 4, bulletsOud: 2, bulletTekens: 220, skills: 15, certificaten: 12, opleidingen: 4, talen: 5, samenvatting: 900 };
+
+const kort = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1).replace(/\s+\S*$/, "")}…` : s);
+
+export function inkorten(data: CvProfileData): CvProfileData {
+  return {
+    ...data,
+    summary: kort(data.summary, CV_MAX.samenvatting),
+    skills: data.skills.slice(0, CV_MAX.skills),
+    languages: data.languages.slice(0, CV_MAX.talen),
+    experience: data.experience.slice(0, CV_MAX.functies).map((e, i) => ({
+      ...e,
+      bullets: e.bullets.slice(0, i < 3 ? CV_MAX.bulletsRecent : CV_MAX.bulletsOud).map((b) => kort(b, CV_MAX.bulletTekens)),
+    })),
+    education: data.education.slice(0, CV_MAX.opleidingen),
+    certificates: data.certificates.slice(0, CV_MAX.certificaten),
   };
 }
 
