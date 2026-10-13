@@ -12,9 +12,10 @@ export function VerkoopTabs({
   base?: string;
   personenLabel?: string;
 }) {
+  // Per persoon eerst. Facturen krijgt een parameter mee: een kale inkoop-URL opent per persoon.
   const tabs = [
-    { key: "facturen", href: base, label: "Facturen", icon: Receipt },
     { key: "personen", href: `${base}/personen`, label: personenLabel, icon: Users },
+    { key: "facturen", href: `${base}?weergave=facturen`, label: "Facturen", icon: Receipt },
   ] as const;
   return (
     <nav aria-label="Verkoopfacturen" className="flex flex-wrap items-end gap-1 shadow-[inset_0_-1px_0_var(--color-ink-200)]">

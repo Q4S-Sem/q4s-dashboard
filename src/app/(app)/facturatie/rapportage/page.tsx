@@ -728,7 +728,7 @@ export default async function RapportagePage({ searchParams }: { searchParams: P
               Geen ontvangen facturen met deze nummers gevonden. Controleer of ze exact overeenkomen
               met wat er onder{" "}
               <Link href="/facturatie/inkoop" className="font-medium underline underline-offset-2">
-                Inkoop &amp; betalingen
+                Inkoopfacturen
               </Link>{" "}
               staat.
             </p>

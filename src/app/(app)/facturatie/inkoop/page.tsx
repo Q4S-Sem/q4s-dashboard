@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { VerkoopTabs } from "../verkoop/VerkoopTabs";
 import {
   AlertTriangle,
@@ -77,7 +78,7 @@ import { createManualExpense, deleteExpense, uploadExpenses } from "./declaratie
 // inlezen boekt pas iets af nadat een mens regels heeft aangevinkt.
 // ---------------------------------------------------------------------------
 
-export const metadata = { title: "Inkoop & betalingen" };
+export const metadata = { title: "Inkoopfacturen" };
 const INKOOP_ICOON: Record<InkoopTab, React.ReactNode> = {
   controleren: <FileSearch className="h-3.5 w-3.5" />,
   tebetalen: <Banknote className="h-3.5 w-3.5" />,
@@ -115,10 +116,13 @@ type SP = {
   fout?: string;
   snelstart?: string;
   persoon?: string;
+  weergave?: string;
 };
 
 export default async function InkoopPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
+  // Inkoopfacturen opent per persoon: wie moet het eerst betaald worden.
+  if (Object.keys(sp).length === 0) redirect("/facturatie/inkoop/personen");
   // Inkoop opent op wat je moet betalen (niet op "per persoon"): de facturenlijst,
   // tabblad Te betalen, wie het eerst moet bovenaan.
   const now = new Date();
@@ -263,7 +267,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
   return (
     <div className="space-y-6">
       <PaginaKop
-        titel="Inkoop & betalingen"
+        titel="Inkoopfacturen"
         sub={`${monday ? formatWeekLabel(monday) : "Alle weken"} · wat we aan ZZP'ers moeten betalen, en wanneer`}
       >
         <WeekStrip

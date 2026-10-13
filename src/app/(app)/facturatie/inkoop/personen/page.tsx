@@ -10,7 +10,7 @@ import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { listReceivedInvoices } from "@/lib/received-invoices";
 import { inkoopVervaldatum } from "@/lib/facturatie-lijsten";
 import { ZZP_PAYMENT_TERM_DAYS } from "@/lib/betalingen";
-import { formatCurrency, formatDate, round2 } from "@/lib/utils";
+import { cn, formatCurrency, formatDate, round2 } from "@/lib/utils";
 import { VerkoopTabs } from "../../verkoop/VerkoopTabs";
 
 export const metadata = { title: "Inkoop · per persoon" };
@@ -54,7 +54,7 @@ export default async function InkoopPersonenPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Inkoop & betalingen" description="Per persoon: wat staat er open en wanneer moet het betaald zijn." />
+      <PageHeader title="Inkoopfacturen" description="Per persoon, wie het eerst betaald moet worden staat bovenaan." />
       <VerkoopTabs actief="personen" base="/facturatie/inkoop" personenLabel="Per persoon betalen" />
       {perPersoon.length === 0 ? (
         <EmptyState title="Nog geen ontvangen facturen" description="Facturen van freelancers uit Week verwerken verschijnen hier per persoon." />
@@ -71,7 +71,7 @@ export default async function InkoopPersonenPage({
           </div>
           {zichtbaar.length === 0 && <p className="px-4 py-6 text-center text-sm text-ink-500">Niemand gevonden met deze filters.</p>}
           <ul className="divide-y divide-ink-100">
-            {zichtbaar.map((p) => {
+            {zichtbaar.map((p, i) => {
               const dagen = p.eersteVervalt ? Math.ceil((p.eersteVervalt.getTime() - nu) / 86_400_000) : null;
               return (
                 <li key={p.id}>
@@ -82,9 +82,14 @@ export default async function InkoopPersonenPage({
                     <span className="flex min-w-0 items-center gap-3">
                       <PersoonVierkant naam={p.naam} />
                       <span className="min-w-0">
-                        <span className="block font-medium text-ink-900">{p.naam}</span>
-                        <span className="block text-xs text-ink-500">
-                          {p.eersteVervalt ? `eerste betaling vóór ${formatDate(p.eersteVervalt)}` : "niets open"}
+                        <span className="flex items-center gap-2 font-medium text-ink-900">
+                          {p.naam}
+                          {i === 0 && p.open > 0 && !sp.q && <Badge color="orange">Eerst betalen</Badge>}
+                        </span>
+                        <span className={cn("block text-xs", dagen != null && dagen < 0 ? "font-medium text-red-700" : dagen != null && dagen <= 2 ? "font-medium text-amber-700" : "text-ink-500")}>
+                          {p.eersteVervalt
+                            ? `betalen vóór ${formatDate(p.eersteVervalt)} · ${dagen! < 0 ? `${-dagen!} ${dagen === -1 ? "dag" : "dagen"} te laat` : dagen === 0 ? "vandaag" : `over ${dagen} ${dagen === 1 ? "dag" : "dagen"}`}`
+                            : "alles betaald"}
                         </span>
                       </span>
                     </span>
