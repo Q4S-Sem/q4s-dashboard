@@ -339,7 +339,7 @@ export default async function DossierPage({
                   <Check className="h-4 w-4" /> Alles klopt — timesheet, factuur, koppeling en contract.
                 </p>
               ) : (
-                <ul className="space-y-2 px-4 pb-4">
+                <ul className="space-y-3 px-4 pt-4 pb-4">
                   {nietOk.map((c) => (
                     <li key={c.id} className="flex items-start gap-2.5">
                       <ControleIcoon level={c.level} akkoord={false} />
