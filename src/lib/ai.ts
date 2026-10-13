@@ -911,6 +911,20 @@ export async function aiJSONFromFile<T>(opts: FileExtractOpts): Promise<T> {
     }
   } catch (e) {
     reden = e instanceof Error ? e.message : String(e);
+    // Kapotte JSON is pech, geen twijfel over het document: eerst nog één snelle
+    // poging (±5 s) in plaats van meteen het trage sterke model (±30 s).
+    if (/geldige JSON/i.test(reden)) {
+      try {
+        const opnieuw = await run(dutch);
+        reden = opts.retryIf?.(opnieuw) ?? null;
+        if (!reden) {
+          timing(`snel model 2e poging (${visionModel(p)}) ${Date.now() - t1}ms`);
+          return opnieuw;
+        }
+      } catch (e2) {
+        reden = e2 instanceof Error ? e2.message : String(e2);
+      }
+    }
   }
   const tSnel = Date.now() - t1;
   console.info(`[vision] tweede lezing met het sterke model: ${reden}`);

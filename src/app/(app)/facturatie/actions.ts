@@ -115,6 +115,15 @@ async function soortenVan(_formData: FormData, echt: (naam: string) => File[]) {
   }
   return uit;
 }
+/** Parallel verwerken; wat er tijdens een ronde bijkomt (ookAls) gaat in de volgende ronde. */
+async function inRondes<T>(rij: T[], f: (t: T) => Promise<void>) {
+  for (let van = 0; van < rij.length; ) {
+    const tot = rij.length;
+    await Promise.all(rij.slice(van, tot).map(f));
+    van = tot;
+  }
+}
+
 function ookAls(rij: { file: File; soort: UploadSoort }[], file: File, soort: UploadSoort) {
   if (!rij.some((r) => r.file === file && r.soort === soort)) rij.push({ file, soort });
 }
@@ -144,15 +153,16 @@ export async function uploadBestanden(
   const fouten: string[] = [];
   let gelukt = 0;
 
-  for (const { file, soort } of bestanden) {
+  // Alle bestanden tegelijk uitlezen (niet na elkaar) — scheelt de helft van de wachttijd.
+  const verwerk = async ({ file, soort }: { file: File; soort: UploadSoort }) => {
     if (file.size > MAX_UPLOAD_BYTES) {
       fouten.push(
         `${file.name}: te groot (max. ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB).`,
       );
-      continue;
+      return;
     }
     try {
-      // for…of loopt ook over wat ookAls er tijdens de lus achteraan zet.
+      // inRondes pakt ook op wat ookAls er tijdens het uitlezen achteraan zet.
       if (soort === "TIMESHEET") {
         if (await urenstaatBevatFactuur(await voegUrenstaatToe(file))) ookAls(bestanden, file, "FACTUUR");
       } else if (await voegFactuurToe(file, weekKey)) ookAls(bestanden, file, "TIMESHEET");
@@ -160,7 +170,8 @@ export async function uploadBestanden(
     } catch (e) {
       fouten.push(`${file.name}: ${e instanceof Error ? e.message : "kon niet verwerkt worden"}.`);
     }
-  }
+  };
+  await inRondes(bestanden, verwerk);
 
   herlaad();
   return {
@@ -230,10 +241,11 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
     return weekBeslissing(weekKey, gelezenWeek, Boolean(d && (d.row.vastgelegd || d.row.gefactureerd)));
   };
   const weekNr = (key: string) => Number(key.split("-W")[1]);
-  for (const { file, soort } of bestanden) {
+  // Alle bestanden tegelijk uitlezen (niet na elkaar) — scheelt de helft van de wachttijd.
+  const verwerk = async ({ file, soort }: { file: File; soort: UploadSoort }) => {
     if (file.size > MAX_UPLOAD_BYTES) {
       fouten.push(`${file.name}: te groot (max. ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB).`);
-      continue;
+      return;
     }
     try {
       if (soort === "TIMESHEET") {
@@ -247,7 +259,7 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
           await db.timesheetInbox.delete({ where: { id: inboxId } });
           await deleteInboxUpload(item.fileName).catch(() => {});
           fouten.push(`Verkeerde weekstaat ingezet: dit is week ${weekNr(gelezen!)}, en die is al verwerkt. Zet de urenstaat van week ${weekNr(weekKey)} erin`);
-          continue;
+          return;
         }
         if (besluit === "verder") naarWeek = gelezen;
       } else {
@@ -271,7 +283,7 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
         if (besluit === "verkeerd") {
           await deleteReceivedUpload(fileName).catch(() => {});
           fouten.push(`Verkeerde factuur ingezet: dit is week ${weekNr(factuurWeek!)}, en die is al verwerkt. Zet de factuur van week ${weekNr(weekKey)} erin`);
-          continue;
+          return;
         }
         if (besluit === "verder") naarWeek = factuurWeek;
         await registreerOntvangenFactuur({
@@ -287,7 +299,8 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
     } catch (e) {
       fouten.push(`${file.name}: ${e instanceof Error ? e.message : "kon niet verwerkt worden"}.`);
     }
-  }
+  };
+  await inRondes(bestanden, verwerk);
 
   herlaad();
   if (placementId) revalidatePath(`/facturatie/${placementId}/${weekKey}`);

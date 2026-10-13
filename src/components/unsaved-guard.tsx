@@ -49,6 +49,8 @@ export function UnsavedGuard() {
   const dirty = useRef<Set<HTMLFormElement>>(new Set());
   const [pending, setPending] = useState<string | null>(null);
   const [bezig, setBezig] = useState(false);
+  /** Na "Opslaan en weggaan": hier gaan we heen zodra het opslaan klaar is. */
+  const naNaar = useRef<string | null>(null);
 
   // Opgeslagen (automatisch of via een knop zonder form-submit) = schoon.
   useEffect(() => {
@@ -86,7 +88,26 @@ export function UnsavedGuard() {
       dirty.current = new Set();
       setPending(null);
       setBezig(false);
-      f?.requestSubmit();
+      if (!f) return router.push(naar);
+      naNaar.current = naar;
+      f.requestSubmit();
+      // Opslaan stuurt je soms terug naar dezelfde/een andere pagina (redirect) —
+      // daarna alsnog door naar waar je heen wilde. Blijft de actie op de pagina:
+      // wachten tot de opslagknop klaar is; staat er dan een fout, dan blijf je staan.
+      let gezienBezig = false;
+      const start = Date.now();
+      const poll = setInterval(() => {
+        if (!naNaar.current) return clearInterval(poll);
+        const bezigNu = f.isConnected && !!f.querySelector("button[type=submit]:disabled");
+        if (bezigNu) gezienBezig = true;
+        const klaar = !f.isConnected || (gezienBezig && !bezigNu) || Date.now() - start > 1500 && !gezienBezig;
+        if (!klaar && Date.now() - start < 15000) return;
+        clearInterval(poll);
+        const fout = f.isConnected && f.querySelector('[role="alert"], .text-red-600, .text-red-700');
+        const doel = naNaar.current;
+        naNaar.current = null;
+        if (!fout && doel) router.push(doel);
+      }, 200);
     }
   }
 
@@ -140,12 +161,18 @@ export function UnsavedGuard() {
     };
   }, [guarded]);
 
-  // Nieuwe pagina = schone lei.
+  // Nieuwe pagina = schone lei. Kwam die nieuwe pagina van de opslag-redirect,
+  // dan alsnog door naar de bestemming van "Opslaan en weggaan".
   useEffect(() => {
+    if (naNaar.current && naNaar.current.split("?")[0] !== pathname) {
+      const doel = naNaar.current;
+      naNaar.current = null;
+      router.push(doel);
+    } else naNaar.current = null;
     dirty.current = new Set();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPending(null);
-  }, [pathname]);
+  }, [pathname, router]);
 
   // --- Tabblad sluiten of verversen ------------------------------------------
   useEffect(() => {
@@ -232,6 +259,18 @@ export function UnsavedGuard() {
             onClick={() => setPending(null)}
           >
             Annuleren
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const naar = pending;
+              dirty.current = new Set();
+              setPending(null);
+              router.push(naar);
+            }}
+          >
+            Niet opslaan
           </Button>
           <Button
             type="button"

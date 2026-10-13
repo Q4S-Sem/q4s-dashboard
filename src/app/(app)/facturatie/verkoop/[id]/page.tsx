@@ -1,7 +1,7 @@
 import { bonExBtw } from "@/lib/declaraties-doorbelasten";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, BellRing, BookUp, CheckCircle2, Printer, Send } from "lucide-react";
+import { AlertTriangle, BellRing, BookUp, CheckCircle2, Mail, Printer, Send } from "lucide-react";
 import { BackLink } from "@/components/back-link";
 import { db } from "@/lib/db";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -295,6 +295,9 @@ export default async function VerkoopfactuurPage({
           >
             <Printer className="h-4 w-4" /> Printen / PDF
           </a>
+          <Link href={`/facturatie/verkoop/${invoice.id}/mail`} className={buttonVariants({ variant: "outline" })}>
+            <Mail className="h-4 w-4" /> Conceptmail bekijken
+          </Link>
         </div>
       </div>
 
