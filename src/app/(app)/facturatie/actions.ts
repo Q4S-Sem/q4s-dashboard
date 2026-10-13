@@ -92,6 +92,20 @@ function herlaad() {
  *    Geen of meerdere treffers → in de wachtrij `FacturatieUpload`, met een
  *    persoonkiezer op het overzicht.
  */
+/** "file" = urenstaat, "factuur" = ZZP-factuur. Met het vinkje "ookFactuur" bevat
+ *  een urenstaat-bestand óók de factuur: dan lezen we hetzelfde bestand twee keer
+ *  uit — één keer als urenstaat, één keer als factuur. */
+function soortenVan(formData: FormData, echt: (naam: string) => File[]) {
+  const combi = formData.get("ookFactuur") === "on";
+  return [
+    ...echt("file").flatMap((file) => [
+      { file, soort: "TIMESHEET" as const },
+      ...(combi ? [{ file, soort: "FACTUUR" as const }] : []),
+    ]),
+    ...echt("factuur").map((file) => ({ file, soort: "FACTUUR" as const })),
+  ];
+}
+
 export async function uploadBestanden(
   _prev: UploadState,
   formData: FormData,
@@ -101,10 +115,7 @@ export async function uploadBestanden(
   // Elk bestand wordt op de naam die de AI leest aan de juiste persoon gekoppeld.
   const echt = (naam: string) =>
     formData.getAll(naam).filter((f): f is File => f instanceof File && f.size > 0);
-  const bestanden = [
-    ...echt("file").map((file) => ({ file, soort: "TIMESHEET" as const })),
-    ...echt("factuur").map((file) => ({ file, soort: "FACTUUR" as const })),
-  ];
+  const bestanden = soortenVan(formData, echt);
 
   if (bestanden.length === 0) return { error: "Kies of sleep eerst één of meer bestanden." };
 
@@ -182,10 +193,7 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
 
   const echt = (naam: string) =>
     formData.getAll(naam).filter((f): f is File => f instanceof File && f.size > 0);
-  const bestanden = [
-    ...echt("file").map((file) => ({ file, soort: "TIMESHEET" as const })),
-    ...echt("factuur").map((file) => ({ file, soort: "FACTUUR" as const })),
-  ];
+  const bestanden = soortenVan(formData, echt);
   if (bestanden.length === 0) return { error: "Kies of sleep eerst een urenstaat of factuur." };
 
   await ensureAiKeysLoaded();

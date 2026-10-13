@@ -48,6 +48,10 @@ export function UploadPaneel({ week }: { week: string }) {
                 hint="PDF, scan, foto of Excel"
                 onFilesChange={(files) => setUren(files.length)}
               />
+              <label className="flex items-center gap-2 text-xs text-ink-600">
+                <input type="checkbox" name="ookFactuur" className="h-3.5 w-3.5 rounded border-ink-300" />
+                Urenstaat en factuur in één bestand
+              </label>
             </div>
             <div className="space-y-1.5">
               <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-900">

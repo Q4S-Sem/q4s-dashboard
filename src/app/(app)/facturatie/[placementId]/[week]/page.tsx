@@ -272,8 +272,16 @@ export default async function DossierPage({
           <div className="space-y-4">
             <Card className="grid grid-cols-2 divide-ink-100 sm:grid-cols-4 sm:divide-x">
               <Kpi label="Uren" waarde={geld ? formatHours(geld.uren) : "—"} />
-              <Kpi label="Verkoop" waarde={geld ? formatCurrency(geld.verkoop) : "—"} />
-              <Kpi label="Inkoop" waarde={geld ? formatCurrency(geld.inkoop) : "—"} />
+              <Kpi
+                label="Verkoop excl. btw"
+                waarde={geld ? formatCurrency(geld.verkoop) : "—"}
+                sub={geld ? `${formatCurrency(geld.verkoopIncl)} incl. btw${geld.verkoopIncl === geld.verkoop ? " (verlegd)" : ""}` : undefined}
+              />
+              <Kpi
+                label="Inkoop excl. btw"
+                waarde={geld ? formatCurrency(geld.inkoop) : "—"}
+                sub={geld ? (geld.inkoopIncl != null ? `${formatCurrency(geld.inkoopIncl)} incl. btw` : "incl. btw: nog geen factuur") : undefined}
+              />
               <Kpi label="Marge" waarde={geld ? formatCurrency(geld.marge) : "—"} kleur={geld && geld.marge > 0 ? "text-emerald-700" : geld ? "text-red-700" : undefined} />
               {/* Waar het verkoopbedrag uit bestaat — zo zie je meteen een toeslag die er niet hoort. */}
               {geld && geld.verkoopRegels.length > 0 && (
@@ -463,11 +471,12 @@ function Melding({ toon, children }: { toon: "rood" | "oranje" | "groen" | "viol
   return <p className={cn("rounded-md border px-3 py-2 text-[13px]", kleur)}>{children}</p>;
 }
 
-function Kpi({ label, waarde, kleur }: { label: string; waarde: string; kleur?: string }) {
+function Kpi({ label, waarde, kleur, sub }: { label: string; waarde: string; kleur?: string; sub?: string }) {
   return (
     <div className="px-4 py-3">
       <span className="block text-[11px] font-semibold uppercase tracking-wide text-ink-400">{label}</span>
       <span className={cn("mt-0.5 block text-lg font-semibold tabular-nums text-ink-900", kleur)}>{waarde}</span>
+      {sub && <span className="block text-xs tabular-nums text-ink-500">{sub}</span>}
     </div>
   );
 }

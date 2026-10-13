@@ -83,6 +83,12 @@ export function StapUpload({
           onFilesChange={(f) => f.length > 0 && form.current?.requestSubmit()}
         />
       )}
+      {soort === "file" && !pending && (
+        <label className="flex items-center gap-2 text-xs text-ink-600">
+          <input type="checkbox" name="ookFactuur" className="h-3.5 w-3.5 rounded border-ink-300" />
+          Factuur zit in hetzelfde bestand (vink aan vóór het slepen)
+        </label>
+      )}
       {!pending && (state.error || state.fouten?.length) && (
         <p className="text-xs text-red-600">{state.error ?? state.fouten?.join(" ")}</p>
       )}
