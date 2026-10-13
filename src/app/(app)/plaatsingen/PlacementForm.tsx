@@ -192,6 +192,12 @@ const TOESLAG_GRID =
   "grid grid-cols-1 gap-2 px-3 py-2.5 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_6.5rem_minmax(0,1fr)] sm:items-center sm:gap-3";
 
 /** Getal met eenheid (%, €/u, €/km) rechts in het veld. Label optioneel. */
+/** 9 → "9e uur", 9–10 → "9e & 10e uur", 9–11 → "9e t/m 11e uur". */
+function uurLabel(van: number, tot: number): string {
+  if (tot <= van) return `${van}e uur`;
+  return tot === van + 1 ? `${van}e & ${tot}e uur` : `${van}e t/m ${tot}e uur`;
+}
+
 function ToeslagField({
   label,
   name,
@@ -974,6 +980,20 @@ export function PlacementForm({
     if (eersteFout) setTab(VELD_TAB[eersteFout] ?? "plaatsing");
   }
   const dv = (name: string, fallback = "") => draft?.[name] ?? fallback;
+  // Meeruren in treden — live uitgelegd ("9e & 10e uur +15%, vanaf het 11e uur +25%"),
+  // want contracten als dat van een 9e/10e-uurregeling zijn anders niet te volgen.
+  const [meer, setMeer] = useState({
+    vanaf: placement?.otFromHours ?? 0,
+    trede: placement?.ot1Hours ?? 2,
+    t1: placement?.otFromHours != null ? placement.weekdaySurchargeSell : 0,
+    t2: placement?.weekday2SurchargeSell ?? 0,
+  });
+  const leesMeer = (e: React.FormEvent<HTMLDivElement>) => {
+    const t = e.target as HTMLInputElement;
+    const v = Number(String(t.value).replace(",", ".")) || 0;
+    const veld = { otFromHours: "vanaf", ot1Hours: "trede", weekdaySurchargeSell: "t1", weekday2SurchargeSell: "t2" }[t.name];
+    if (veld) setMeer((m) => ({ ...m, [veld]: v }));
+  };
   const [allIn, setAllIn] = useState(
     draft ? draft.allIn === "on" : (placement?.allIn ?? false),
   );
@@ -1889,6 +1909,7 @@ export function PlacementForm({
                 </div>
                 <div
                   className={cn("flex flex-col [&>*]:border-b [&>*]:border-ink-100", allIn && "hidden")}
+                  onInput={leesMeer}
                 >
                   <input type="hidden" name="weekendSurchargeBuy" value={0} />
                   <input type="hidden" name="weekendSurchargeSell" value={0} />
@@ -2016,13 +2037,46 @@ export function PlacementForm({
                         label=""
                       />
                     </div>
-                    <span className="text-xs text-ink-400">
-                      Leeg = geen meeruren-toeslag · feestdag telt als zondag
-                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        // Snel invullen: 9e & 10e uur +15%, daarna +25% (in- én verkoop, aanpasbaar).
+                        const form = e.currentTarget.form;
+                        const zet = (naam: string, waarde: number) => {
+                          const el = form?.elements.namedItem(naam);
+                          if (!(el instanceof HTMLInputElement) || el.type === "hidden") return;
+                          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(el, String(waarde));
+                          el.dispatchEvent(new Event("input", { bubbles: true }));
+                        };
+                        zet("otFromHours", 8);
+                        zet("ot1Hours", 2);
+                        for (const k of ["weekdaySurchargeBuy", "weekdaySurchargeSell"]) zet(k, 15);
+                        for (const k of ["weekday2SurchargeBuy", "weekday2SurchargeSell"]) zet(k, 25);
+                      }}
+                      className="ml-auto rounded-md border border-ink-200 bg-white px-2.5 py-1 text-xs font-medium text-ink-700 hover:bg-ink-50"
+                      title="Vult in: vanaf 8 u/dag, 9e & 10e uur +15%, daarna +25% — pas daarna aan wat anders is"
+                    >
+                      9e/10e uur +15%, daarna +25%
+                    </button>
+                    <p className="basis-full rounded-md bg-white px-2.5 py-1.5 text-[13px] text-ink-700 ring-1 ring-ink-100">
+                      {meer.vanaf > 0 ? (
+                        <>
+                          Per werkdag: eerste <strong>{meer.vanaf} uur</strong> normaal ·{" "}
+                          <strong>{uurLabel(meer.vanaf + 1, meer.vanaf + meer.trede)}</strong> +{meer.t1 || 0}% ·{" "}
+                          <strong>vanaf het {meer.vanaf + meer.trede + 1}e uur</strong> +{meer.t2 || 0}%
+                          <span className="block text-xs text-ink-400">
+                            Voorbeeld 12 uur: {meer.vanaf} u normaal, {Math.min(meer.trede, Math.max(0, 12 - meer.vanaf))} u trede 1,{" "}
+                            {Math.max(0, 12 - meer.vanaf - meer.trede)} u trede 2 · feestdag telt als zondag · percentages = verkoop
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-ink-400">Geen meeruren-toeslag: vul &quot;vanaf&quot; in (bijv. 8) om treden te gebruiken.</span>
+                      )}
+                    </p>
                   </div>
                   <ToeslagRow
                     title="Meeruren · trede 1"
-                    hint="Bijv. 9e & 10e uur"
+                    hint={meer.vanaf > 0 ? uurLabel(meer.vanaf + 1, meer.vanaf + meer.trede) : "Bijv. 9e & 10e uur"}
                     prefix="weekday"
                     buyDefault={
                       placement?.otFromHours != null
@@ -2043,7 +2097,7 @@ export function PlacementForm({
                   />
                   <ToeslagRow
                     title="Meeruren · trede 2"
-                    hint="Boven de eerste trede"
+                    hint={meer.vanaf > 0 ? `Vanaf het ${meer.vanaf + meer.trede + 1}e uur` : "Boven de eerste trede"}
                     prefix="weekday2"
                     buyDefault={placement?.weekday2SurchargeBuy ?? 0}
                     sellDefault={placement?.weekday2SurchargeSell ?? 0}
