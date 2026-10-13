@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { FilterTegels, PaginaKop } from "@/components/ui/filter-tegels";
 import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, segmentVariants } from "@/components/ui/button";
 import { weekSlotVanDatum } from "@/lib/week-koppeling";
 import { WeekStrip } from "../WeekStrip";
 import { cn, formatCurrency, formatWeekLabel, round2 } from "@/lib/utils";
@@ -263,14 +263,16 @@ export default async function VerkoopfacturenPage({
           vandaag={ymd(now)}
           alleWeken
           extra={{ tab, client: klantFilter?.id, persoon: sp.persoon, q: sp.q }}
+          actie={
+            <a
+              href="/api/facturen/export"
+              className={segmentVariants(false, "h-11")}
+              title="Download alle facturen als ZIP voor de boekhouder"
+            >
+              <Download className="h-4 w-4 text-brand-600" /> Export
+            </a>
+          }
         />
-        <a
-          href="/api/facturen/export"
-          className={buttonVariants({ variant: "outline", size: "sm" })}
-          title="Download alle facturen als ZIP voor de boekhouder"
-        >
-          <Download className="h-4 w-4" /> Export
-        </a>
       </PaginaKop>
 
       <VerkoopTabs actief="facturen" />

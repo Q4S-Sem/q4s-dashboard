@@ -20,7 +20,7 @@ import { FilterTegels, PaginaKop } from "@/components/ui/filter-tegels";
 import { TabelZoek, matchtZoek } from "@/components/ui/tabel-zoek";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge, StatusBadge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, segmentVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { Dropzone } from "@/components/ui/dropzone";
@@ -272,18 +272,20 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
           vandaag={ymd(now)}
           alleWeken
           extra={{ tab, q: sp.q, persoon: sp.persoon }}
+          actie={
+            <a
+              href="/api/betalingen/sepa"
+              className={segmentVariants(false, cn("h-11", (betaalbaar.length === 0 || !heeftEigenIban) && "pointer-events-none opacity-50"))}
+              aria-disabled={betaalbaar.length === 0 || !heeftEigenIban}
+              title="Download een pain.001-bestand met alle goedgekeurde betalingen"
+            >
+              <Download className="h-4 w-4 text-brand-600" /> SEPA
+              {betaalbaar.length > 0 && (
+                <span className="rounded-full bg-brand-600 px-1.5 text-[11px] font-semibold leading-5 text-white">{betaalbaar.length}</span>
+              )}
+            </a>
+          }
         />
-        <a
-          href="/api/betalingen/sepa"
-          className={buttonVariants({
-            variant: betaalbaar.length > 0 && heeftEigenIban ? "primary" : "outline",
-            size: "sm",
-          })}
-          aria-disabled={betaalbaar.length === 0 || !heeftEigenIban}
-          title="Download een pain.001-bestand met alle goedgekeurde betalingen"
-        >
-          <Download className="h-4 w-4" /> SEPA ({betaalbaar.length})
-        </a>
       </PaginaKop>
 
       <VerkoopTabs actief="facturen" base="/facturatie/inkoop" personenLabel="Per persoon betalen" />

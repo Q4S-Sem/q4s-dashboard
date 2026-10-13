@@ -15,6 +15,7 @@ export function WeekStrip({
   extra,
   basePath = "/facturatie",
   alleWeken = false,
+  actie,
 }: {
   /** Gekozen week als "2026-W40", of leeg = alle weken (alleen met alleWeken). */
   huidig: string | null;
@@ -24,6 +25,8 @@ export function WeekStrip({
   basePath?: string;
   /** Toon een "Alle weken"-knop (lijsten die standaard niet op week filteren). */
   alleWeken?: boolean;
+  /** Eén actie (Export / SEPA) ín de balk, achter een scheidingslijn — geen losse knop ernaast. */
+  actie?: React.ReactNode;
 }) {
   // Facturatie loopt een week achter: in week 41 verwerk je week 40.
   const lopend = weekSlotVanDatum(vandaag);
@@ -91,6 +94,12 @@ export function WeekStrip({
         >
           Alle weken
         </Link>
+      )}
+      {actie && (
+        <>
+          <span aria-hidden className="mx-1 h-7 w-px bg-ink-200" />
+          {actie}
+        </>
       )}
     </div>
   );
