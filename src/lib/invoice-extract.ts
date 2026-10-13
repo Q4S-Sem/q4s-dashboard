@@ -118,7 +118,7 @@ const EXTRACT_SCHEMA = {
     vatPercent: { type: "number", description: "Het BTW-PERCENTAGE dat op de factuur in rekening wordt gebracht (21, 9 of 0) — dus het percentage, NIET het bedrag. Bij 'btw verlegd' of 'reverse charge' is dit 0. Zet -1 als er geen percentage op de factuur staat (dan wordt er niets over beweerd)." },
     surchargeLines: {
       type: "array",
-      description: "Elke TOESLAG-regel apart: weekend-/zaterdag-/zondagtoeslag, offshoretoeslag, nacht-/ploegendiensttoeslag, buitenlandtoeslag. GEEN gewone urenregel, GEEN overurenregel en GEEN kilometerregel. Lege lijst als er geen toeslagregels op de factuur staan.",
+      description: "Elke TOESLAG-regel apart: weekend-/zaterdag-/zondagtoeslag, 9e/10e-uur- of meeruren-toeslag, offshore, nacht-/ploegendienst, buitenland. OOK regels ZONDER omschrijving die alleen een HOGER uurtarief hebben dan de gewone urenregel (bv. '6 uur à € 105,00' naast '40 uur à € 70,00') — neem die letterlijk op met label = de regeltekst, quantity = de uren en amount = het regelbedrag. GEEN gewone urenregel en GEEN kilometerregel. Lege lijst als er geen toeslagregels zijn.",
       items: {
         type: "object",
         additionalProperties: false,
@@ -474,7 +474,7 @@ export async function extractReceivedInvoiceFromFile(input: {
         // Eerst snel (Gemini 3.8 Flash, ±5 s); twijfel of afwijking van de
         // timesheet → het sterke model leest hem opnieuw (zie aiJSONFromFile).
         maxTokens: 8000,
-        effort: "low",
+        strong: true, // sterk model direct: factuurregels en btw moeten exact kloppen
         retryIf: (r: InvoiceExtracted) => twijfelFactuur(r) ?? afwijkingUrenstaat(herstelUren(r), input.verwachteUren),
       });
     }

@@ -28,3 +28,14 @@ test("R.Hartman op de staat = René Hartman; handschrift 'smuldees' = Smulders",
   assert.ok(!naamOpStaatKlopt({ firstName: "Rene", lastName: "Hartman" }, "J.Hartman"));
   assert.equal(bewerkAfstand("smuldees", "smulders"), 1);
 });
+
+test("factuurregel zonder omschrijving herkend aan het tarief: 6 u à € 105 = zaterdag +50%", async () => {
+  const { toeslagOpTarief } = await import("../src/lib/facturatie-checks");
+  const regels = [
+    { label: "6 uur a €80,50", quantity: 6, unit: "uur", amount: 483 },
+    { label: "6 uur a €105,00", quantity: 6, unit: "uur", amount: 630 },
+  ];
+  assert.equal(toeslagOpTarief(regels, 70, { value: 50, unit: "PCT" })?.amount, 630);
+  assert.equal(toeslagOpTarief(regels, 70, { value: 15, unit: "PCT" })?.amount, 483);
+  assert.equal(toeslagOpTarief(regels, 70, { value: 40, unit: "PCT" }), null);
+});

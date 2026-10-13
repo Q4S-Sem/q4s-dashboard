@@ -443,6 +443,23 @@ function factuurToeslag(
   return (Array.isArray(lines) ? lines : []).find((l) => patroon.test(l?.label ?? "")) ?? null;
 }
 
+/** Een factuurregel waarvan het tarief (bedrag ÷ aantal) past bij basis + toeslag of alleen de toeslag. */
+export function toeslagOpTarief(
+  lines: FactuurToeslagRegel[] | null | undefined,
+  basis: number | null,
+  instelling: { value: number; unit?: string } | null | undefined,
+): FactuurToeslagRegel | null {
+  if (!basis || !instelling || instelling.value <= 0) return null;
+  const extra = instelling.unit === "FIXED" ? instelling.value : (basis * instelling.value) / 100;
+  return (
+    (Array.isArray(lines) ? lines : []).find((l) => {
+      if (!isNum(l?.quantity) || !isNum(l?.amount) || l.quantity <= 0) return false;
+      const tarief = l.amount / l.quantity;
+      return Math.abs(tarief - (basis + extra)) <= 0.05 || Math.abs(tarief - extra) <= 0.05;
+    }) ?? null
+  );
+}
+
 /** De toeslagsoorten die wij kennen, in vaste volgorde (stabiele uitvoer). */
 const TOESLAG_SOORTEN: SurchargeKind[] = [
   "weekday",
@@ -1053,8 +1070,17 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
     // Factuur splitst de uren soms anders (bv. "40 u + 14 u toeslaguren") dan de staat
     // (bv. 54 u per dag): klopt het TOTAAL uren + overuren, dan is er niets mis.
     const factuurOver = isNum(inv.overtimeHours) ? round2(inv.overtimeHours) : 0;
+    // Extra-urenregels ("6 uur à € 80,50") staan soms als toeslagregel: tel die ook mee.
+    const toeslagRegelUren = round2(
+      (Array.isArray(inv.surchargeLines) ? inv.surchargeLines : []).reduce((s, l) => s + (isNum(l?.quantity) ? l.quantity : 0), 0),
+    );
+    const staatTotaal = dagUren + overuren;
     const totaalKlopt =
-      factuurUren !== null && ts !== null && Math.abs(round2(factuurUren + factuurOver - (dagUren + overuren))) <= TOLERANTIE_AANTAL;
+      factuurUren !== null &&
+      ts !== null &&
+      [factuurUren + factuurOver, factuurUren + factuurOver + toeslagRegelUren].some(
+        (n) => Math.abs(round2(n - staatTotaal)) <= TOLERANTIE_AANTAL,
+      );
     const urenWijktAf =
       factuurUren !== null && ts !== null && !totaalKlopt && !klopt(dagUren) && !(dagtarief && klopt(gewerkteDagen));
     if (factuurUren === null) {
@@ -1229,8 +1255,10 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
     const toeslagMissers: string[] = [];
     const buyKant = p ? sideSurcharges(p, "buy") : null;
     for (const soort of TOESLAG_SOORTEN) {
-      const regel = factuurToeslag(inv.surchargeLines, soort);
       const instelling = buyKant?.[soort];
+      // Geen herkenbare omschrijving ("6 uur à € 105,00")? Dan herkennen we de
+      // regel aan zijn TARIEF: € 70 + 50% = € 105 is de zaterdagregel.
+      const regel = factuurToeslag(inv.surchargeLines, soort) ?? toeslagOpTarief(inv.surchargeLines, contractTarief, instelling);
       const perDag = PER_DAG.includes(soort);
       const actief =
         !!instelling &&
@@ -1308,7 +1336,11 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
         fout
           ? `De factuur komt op ${formatCurrency(exBtw)} ex btw, volgens de urenstaat verwachten wij ${formatCurrency(
               verwacht,
-            )} — een verschil van ${formatCurrency(verschil)}.`
+            )} — een verschil van ${formatCurrency(verschil)}.${
+              verschil > 0 && p && (p.otFromHours == null || !(buyKant?.weekday?.value ?? 0)) && (input.timesheet?.days ?? []).some((d) => d.hours > 8)
+                ? " Factureert hij meeruren (9e/10e uur)? Dan staan die nog niet op de plaatsing: zet bij Plaatsingen › Overuren de meeruren-treden aan."
+                : ""
+            }`
           : `${formatCurrency(exBtw)} ex btw, gelijk aan wat de urenstaat oplevert.`,
       );
     }

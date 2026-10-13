@@ -337,7 +337,9 @@ export async function runInboxExtraction(id: string, alleenWeek?: string): Promi
         // Eerst snel (Gemini 3.8 Flash, ±5 s); klopt de zelfcontrole niet
         // (dagtotalen ≠ weektotaal e.d.), dan leest het sterke model hem opnieuw.
         maxTokens: 8000,
-        effort: "low",
+        // Sterk model direct (Gemini Pro): urenstaten zijn vaak handgeschreven of
+        // scheef gescand — kwaliteit boven snelheid. Bestanden lopen wel parallel.
+        strong: true,
         retryIf: twijfelUrenstaat,
       });
 
