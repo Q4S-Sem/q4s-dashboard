@@ -1822,9 +1822,21 @@ export function PlacementForm({
                     defaultChecked={placement?.vatReverseCharge ?? false}
                     className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
                   />
-                  <span className="font-medium text-ink-900">BTW verlegd</span>
+                  <span className="font-medium text-ink-900">Inkoop: ZZP&apos;er verlegt de btw</span>
                   <span className="text-xs text-ink-400">
-                    — verkoopfactuur met 0% BTW en de verplichte vermelding
+                    — zijn factuur is 0% btw; wij betalen zijn totaal, de klant krijgt nog gewoon 21%
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 border-t border-ink-100 px-3 py-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="salesVatReverseCharge"
+                    defaultChecked={placement?.salesVatReverseCharge ?? false}
+                    className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500/30"
+                  />
+                  <span className="font-medium text-ink-900">Verkoop: btw verlegd naar de klant</span>
+                  <span className="text-xs text-ink-400">
+                    — bv. Duitse klant: verkoopfactuur 0% btw met de verplichte vermelding
                   </span>
                 </label>
               </div>

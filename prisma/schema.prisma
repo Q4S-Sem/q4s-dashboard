@@ -310,9 +310,12 @@ model Placement {
   projectManager   String?
   invoiceEmail     String?
   invoiceEmail2    String?
-  /// BTW verlegd op de verkoopfactuur voor deze plaatsing? Aan = 0% BTW +
-  /// verplichte "BTW verlegd"-vermelding (reverse charge). Standaard uit.
+  /// INKOOP: factureert de ZZP'er met btw verlegd (0%)? Stuurt de controle op zijn
+  /// factuur en het contract ("BTW verlegd: Ja"). Raakt de verkoopfactuur NIET.
   vatReverseCharge Boolean @default(false)
+  /// VERKOOP: btw verlegd naar de klant (bv. Duitse klant)? Aan = verkoopfactuur 0%
+  /// + verplichte vermelding. Uit = marge op het netto bedrag, daarover 21% btw.
+  salesVatReverseCharge Boolean @default(false)
   /// Maximaal UIT TE BETALEN uren per dag (pauze er al af). Staat hier 11,5 en
   /// schrijft de freelancer 12 u, dan is de pauze niet verrekend — de controle in
   /// src/lib/facturatie-checks.ts meldt dat. null = geen afspraak, geen controle.

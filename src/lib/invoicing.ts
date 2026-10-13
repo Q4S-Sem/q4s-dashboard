@@ -87,7 +87,8 @@ export async function createSalesInvoice(opts: {
   // is de hele factuur verlegd (0% BTW + verplichte vermelding). Zijn ze gemengd,
   // dan verleggen we niet automatisch — dat vraagt om een aparte factuur per
   // BTW-regime, wat de gebruiker bewust doet.
-  const reverseFlags = new Set(timesheets.map((t) => t.placement.vatReverseCharge));
+  // Alleen de VERKOOP-vlag telt: verlegt de ZZP'er de btw naar ons, dan krijgt de klant nog gewoon 21%.
+  const reverseFlags = new Set(timesheets.map((t) => t.placement.salesVatReverseCharge));
   const vatReverseCharge = reverseFlags.size === 1 && reverseFlags.has(true);
   const vatRate = vatReverseCharge ? 0 : baseVatRate;
 

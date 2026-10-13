@@ -1323,8 +1323,9 @@ export async function getWeekDossier(
       verkoop: geld.sell.total,
       inkoop: geld.buy.total,
       marge: geld.margin,
-      verkoopIncl: p.vatReverseCharge ? geld.sell.total : round2(geld.sell.total * (1 + (settings.defaultVatRate ?? 21) / 100)),
-      inkoopIncl: factuur?.vatAmount != null ? round2(geld.buy.total + factuur.vatAmount) : null,
+      verkoopIncl: p.salesVatReverseCharge ? geld.sell.total : round2(geld.sell.total * (1 + (settings.defaultVatRate ?? 21) / 100)),
+      // Wat we de ZZP'er betalen = zijn factuurtotaal (incl. btw, of 0% bij verlegd).
+      inkoopIncl: factuur ? factuur.amount : null,
       verkoopRegels: [
         { label: geld.days != null ? "Dagen" : "Uren", aantal: geld.days ?? geld.hours, prijs: p.chargeRate, bedrag: geld.sell.base },
         ...geld.sell.surcharges.map((r) => ({ label: r.label, aantal: r.hours, prijs: r.unitAmount, bedrag: r.amount })),

@@ -36,6 +36,7 @@ const PlacementCoreSchema = z.object({
   invoiceEmail2: z.string().trim().email("Ongeldig e-mailadres").optional().or(z.literal("")).transform((v) => v || null),
   workLocation: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : null)),
   vatReverseCharge: z.coerce.boolean().default(false),
+  salesVatReverseCharge: z.coerce.boolean().default(false),
   startDate: z.coerce.date({ message: "Startdatum is verplicht" }),
   endDate: z.coerce.date().optional(),
   // Leeg inkooptarief = 0 (werknemer in dienst heeft er geen); leeg verkooptarief = nette melding.
@@ -153,6 +154,7 @@ function coreToData(d: z.infer<typeof PlacementCoreSchema>) {
     invoiceEmail2: d.invoiceEmail2,
     workLocation: d.workLocation,
     vatReverseCharge: d.vatReverseCharge,
+    salesVatReverseCharge: d.salesVatReverseCharge,
     startDate: d.startDate,
     endDate: d.endDate ?? null,
     costRate: d.costRate,
