@@ -6,7 +6,7 @@ import { beoordeelBestaandeUrenstaat, BESTAANDE_URENSTAAT_NOTITIE } from "./uren
 import { formatHours, round2 } from "./utils";
 import { wekenInPeriode } from "./facturatie-volgende";
 import { getWeekDossier, getWeekOverview, type WeekDossier } from "./facturatie-week";
-import { isoMaandag, periodeStand, periodeVan, type FactuurPeriode } from "./factuur-periode";
+import { isoMaandag, periodeStand, periodeVan, weekStand, type FactuurPeriode } from "./factuur-periode";
 
 // ---------------------------------------------------------------------------
 // "Akkoord → verkoopfactuur": de ENIGE plek waar een week van "nagekeken" naar
@@ -336,7 +336,11 @@ export async function openPeriodes(clientId: string) {
   return {
     klant: client.companyName,
     cycle: client.billingCycle,
-    periodes: [...periodes.values()].map((p) => ({ ...p, ...periodeStand(p.periode, plaatsingen) })),
+    periodes: [...periodes.values()].map((p) => ({
+      ...p,
+      ...periodeStand(p.periode, plaatsingen),
+      perWeek: weekStand(p.periode, plaatsingen),
+    })),
   };
 }
 

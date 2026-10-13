@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { periodeStand, periodeVan } from "../src/lib/factuur-periode";
+import { periodeStand, periodeVan, weekStand } from "../src/lib/factuur-periode";
 
 const d = (s: string) => new Date(`${s}T00:00:00Z`);
 const ma = (p: { weken: Date[] }) => p.weken.map((w) => w.toISOString().slice(0, 10));
@@ -36,4 +36,16 @@ test("compleet pas als elke gelopen week goedgekeurd is", () => {
   // Tweede plaatsing bij dezelfde klant die eerder stopte: alleen zijn weken tellen.
   const gestopt = { startDate: d("2026-01-01"), endDate: d("2026-10-11"), goedgekeurd: new Set(["2026-10-05"]) };
   assert.equal(periodeStand(p, [pl, gestopt]).compleet, true);
+});
+
+test("mapje per week: hoeveel personen liepen er en hoeveel zijn er binnen", () => {
+  const p = periodeVan(d("2026-10-07"), "FOUR_WEEKS"); // 5, 12, 19, 26 okt
+  const a = { startDate: d("2026-10-14"), endDate: null, goedgekeurd: new Set(["2026-10-12"]) };
+  const b = { startDate: d("2026-01-01"), endDate: d("2026-10-11"), goedgekeurd: new Set(["2026-10-05"]) };
+  assert.deepEqual(weekStand(p, [a, b]), [
+    { maandag: "2026-10-05", binnen: 1, nodig: 1 },
+    { maandag: "2026-10-12", binnen: 1, nodig: 1 },
+    { maandag: "2026-10-19", binnen: 0, nodig: 1 },
+    { maandag: "2026-10-26", binnen: 0, nodig: 1 },
+  ]);
 });

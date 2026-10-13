@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { factuurKlantInfo } from "./factuur-klant";
 import { voegBonnenToe } from "./declaraties-doorbelasten";
 import { db } from "./db";
@@ -5,6 +6,49 @@ import { round2, getISOWeek } from "./utils";
 import { nextInvoiceNumber } from "./numbering";
 import { getCompanySettings } from "./settings";
 import { buildTimesheetLines, sideSurcharges } from "./toeslag";
+
+type VerkoopUrenstaat = Prisma.TimesheetGetPayload<{
+  include: { entries: true; placement: { include: { consultant: true } } };
+}>;
+
+/** De verkoopregels (Engels, tegen het verkooptarief) van één urenstaat. */
+export function verkoopRegels(t: VerkoopUrenstaat) {
+  const consultantName = `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`;
+  return buildTimesheetLines({
+    timesheetId: t.id,
+    placementId: t.placementId,
+    weekNumber: getISOWeek(t.weekStart),
+    location: t.placement.workLocation ?? null,
+    baseDescription: `${t.placement.rateUnit === "DAY" ? "Total days" : "Total hours"} ${consultantName}`,
+    rateUnit: t.placement.rateUnit,
+    otFromHours: t.placement.otFromHours,
+    ot1Hours: t.placement.ot1Hours,
+    entries: t.entries,
+    overtimeHours: t.overtimeHours,
+    kilometers: t.kilometers,
+    rate: t.placement.chargeRate, // verkoop
+    weekendPct: t.placement.weekendSurchargeSell,
+    surcharges: sideSurcharges(t.placement, "sell"),
+    overtimePct: t.placement.overtimeSurchargeSell,
+    overtimeRate: t.placement.overtimeChargeRate,
+    kmRate: t.placement.kmRateSell,
+    // Verkoopfactuur is Engels → Engelse regelomschrijvingen.
+    labels: {
+      weekend: (p) => `Weekend surcharge ${p}%`,
+      overtime: (p) => (p > 0 ? `Overtime +${p}%` : "Overtime"),
+      km: "Kilometres",
+      names: {
+        weekday: "Weekday surcharge",
+        weekday2: "Weekday surcharge",
+        saturday: "Saturday surcharge",
+        sunday: "Sunday surcharge",
+        offshore: "Offshore surcharge",
+        shift: "Shift surcharge",
+        abroad: "Foreign posting surcharge",
+      },
+    },
+  });
+}
 
 export type InvoiceResult =
   | { ok: true; invoiceId: string }
@@ -47,43 +91,7 @@ export async function createSalesInvoice(opts: {
   const vatReverseCharge = reverseFlags.size === 1 && reverseFlags.has(true);
   const vatRate = vatReverseCharge ? 0 : baseVatRate;
 
-  const lines = timesheets.flatMap((t) => {
-    const consultantName = `${t.placement.consultant.firstName} ${t.placement.consultant.lastName}`;
-    return buildTimesheetLines({
-      timesheetId: t.id,
-      placementId: t.placementId,
-      weekNumber: getISOWeek(t.weekStart),
-      location: t.placement.workLocation ?? null,
-      baseDescription: `${t.placement.rateUnit === "DAY" ? "Total days" : "Total hours"} ${consultantName}`,
-      rateUnit: t.placement.rateUnit,
-      otFromHours: t.placement.otFromHours,
-      ot1Hours: t.placement.ot1Hours,
-      entries: t.entries,
-      overtimeHours: t.overtimeHours,
-      kilometers: t.kilometers,
-      rate: t.placement.chargeRate, // verkoop
-      weekendPct: t.placement.weekendSurchargeSell,
-      surcharges: sideSurcharges(t.placement, "sell"),
-      overtimePct: t.placement.overtimeSurchargeSell,
-      overtimeRate: t.placement.overtimeChargeRate,
-      kmRate: t.placement.kmRateSell,
-      // Verkoopfactuur is Engels → Engelse regelomschrijvingen.
-      labels: {
-        weekend: (p) => `Weekend surcharge ${p}%`,
-        overtime: (p) => (p > 0 ? `Overtime +${p}%` : "Overtime"),
-        km: "Kilometres",
-        names: {
-          weekday: "Weekday surcharge",
-          weekday2: "Weekday surcharge",
-          saturday: "Saturday surcharge",
-          sunday: "Sunday surcharge",
-          offshore: "Offshore surcharge",
-          shift: "Shift surcharge",
-          abroad: "Foreign posting surcharge",
-        },
-      },
-    });
-  });
+  const lines = timesheets.flatMap(verkoopRegels);
 
   // Kop-velden (Subject/Services): één medewerker/functie per factuur → tonen; bij
   // een gebundelde factuur met meerdere personen/functies laten we ze leeg.

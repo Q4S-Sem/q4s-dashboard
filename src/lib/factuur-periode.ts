@@ -110,4 +110,14 @@ export function periodeStand(p: FactuurPeriode, plaatsingen: PeriodePlaatsing[])
   return { binnen, nodig, compleet: nodig > 0 && binnen >= nodig };
 }
 
+/** Dezelfde telling per week: hoeveel personen liepen er, hoeveel zijn er goedgekeurd. */
+export function weekStand(p: FactuurPeriode, plaatsingen: PeriodePlaatsing[]) {
+  return p.weken.map((ma) => {
+    const lopend = plaatsingen.filter(
+      (pl) => ma.getTime() >= maandagVan(pl.startDate).getTime() && ma.getTime() <= (pl.endDate?.getTime() ?? Infinity),
+    );
+    return { maandag: iso(ma), binnen: lopend.filter((pl) => pl.goedgekeurd.has(iso(ma))).length, nodig: lopend.length };
+  });
+}
+
 export { iso as isoMaandag };
