@@ -89,7 +89,7 @@ export default async function InstroomPage({ searchParams }: { searchParams: Pro
             <Link href="/vacatures/importeren" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <Upload className="h-4 w-4" /> Bulk-import
             </Link>
-            <Link href="/connectors" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Link href="/vacaturehub/koppelingen" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <Plug className="h-4 w-4" /> Koppelingen
             </Link>
           </div>

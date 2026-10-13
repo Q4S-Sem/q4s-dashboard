@@ -16,7 +16,7 @@ export default async function NieuweConnectorPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <BackLink href="/connectors">
+      <BackLink href="/vacaturehub/koppelingen">
         Terug naar koppelingen
       </BackLink>
       <PageHeader
@@ -90,7 +90,7 @@ export default async function NieuweConnectorPage() {
         <ConnectorForm
           action={createConnector}
           submitLabel="Connector opslaan"
-          cancelHref="/connectors"
+          cancelHref="/vacaturehub/koppelingen"
         />
       </div>
     </div>

@@ -165,7 +165,7 @@ export async function deleteConnector(formData: FormData) {
     redirect(`/connectors/${id}?error=in-use`);
   }
   revalidatePath("/connectors");
-  redirect("/connectors");
+  redirect("/vacaturehub/koppelingen");
 }
 
 /** Make a URL-safe slug from a title with a short random suffix. */
@@ -187,7 +187,7 @@ export async function intakeVacancy(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const rawText = String(formData.get("rawText") ?? "").trim();
 
-  if (!connectorId) redirect("/connectors");
+  if (!connectorId) redirect("/vacaturehub/koppelingen");
   if (!title || !rawText) {
     redirect(`/connectors/${connectorId}?error=intake`);
   }
