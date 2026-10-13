@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Layers, Loader2 } from "lucide-react";
 import { Dropzone } from "@/components/ui/dropzone";
 import { uploadVoorPersoon, type UploadState } from "../../actions";
 
@@ -84,9 +84,16 @@ export function StapUpload({
         />
       )}
       {soort === "file" && !pending && (
-        <label className="flex items-center gap-2 text-xs text-ink-600">
-          <input type="checkbox" name="ookFactuur" className="h-3.5 w-3.5 rounded border-ink-300" />
-          Factuur zit in hetzelfde bestand (vink aan vóór het slepen)
+        <label
+          title="Vink aan vóór het slepen: hetzelfde bestand wordt dan ook als factuur uitgelezen"
+          className="mt-2 flex cursor-pointer items-center gap-2.5 rounded-lg border border-ink-200 bg-white px-3 py-2 text-[13px] text-ink-700 transition-colors hover:bg-ink-50 has-[:checked]:border-brand-300 has-[:checked]:bg-brand-50 has-[:checked]:text-brand-800"
+        >
+          <input type="checkbox" name="ookFactuur" className="h-4 w-4 rounded border-ink-300 accent-brand-600" />
+          <Layers className="h-4 w-4 text-ink-400" />
+          <span>
+            <span className="font-medium">Factuur zit in hetzelfde bestand</span>
+            <span className="block text-xs text-ink-400">aanvinken vóór het slepen</span>
+          </span>
         </label>
       )}
       {!pending && (state.error || state.fouten?.length) && (
