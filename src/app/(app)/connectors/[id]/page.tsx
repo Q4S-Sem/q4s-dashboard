@@ -50,7 +50,7 @@ export default async function ConnectorDetailPage({
   return (
     <div className="space-y-6">
       <BackLink href="/vacaturehub/koppelingen">
-        Terug naar connectors
+        Terug naar koppelingen
       </BackLink>
 
       <PageHeader
