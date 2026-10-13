@@ -119,7 +119,7 @@ export default async function DossierPage({
   return (
     <div className="space-y-5">
       {/* Kopbalk: wie/welke week, de 2 fases, en rechts de acties (Akkoord altijd in beeld). */}
-      <div className="sticky top-14 z-20 -mx-4 border-b border-ink-200 bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur sm:-mx-6 sm:px-6">
+      <div className="sticky top-14 z-20 rounded-xl border border-ink-200 bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <Link href={`/facturatie?week=${wk}`} className={ICOON_KNOP} aria-label="Terug naar Week verwerken" title="Terug naar Week verwerken">
             <ArrowLeft />
@@ -335,7 +335,7 @@ export default async function DossierPage({
                 </span>
               </CardHeader>
               {nietOk.length === 0 ? (
-                <p className="flex items-center gap-2 px-4 pb-4 text-[13px] text-emerald-700">
+                <p className="flex items-center gap-2 px-4 py-4 text-[13px] text-emerald-700">
                   <Check className="h-4 w-4" /> Alles klopt — timesheet, factuur, koppeling en contract.
                 </p>
               ) : (
