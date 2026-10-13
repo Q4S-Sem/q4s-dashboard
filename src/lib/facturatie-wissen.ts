@@ -8,7 +8,7 @@ import { FACTURATIE_ENTITY } from "@/lib/facturatie-week";
 // ---------------------------------------------------------------------------
 
 export async function facturatieTellingen() {
-  const [verkoop, verstuurd, ontvangen, inkoop, urenstaten, scans, los, herinneringen, akkoorden] =
+  const [verkoop, verstuurd, ontvangen, inkoop, urenstaten, scans, los, herinneringen, akkoorden, correcties] =
     await Promise.all([
       db.invoice.count(),
       db.invoice.count({ where: { status: { in: ["SENT", "PAID"] } } }),
@@ -19,8 +19,9 @@ export async function facturatieTellingen() {
       db.facturatieUpload.count(),
       db.timesheetHerinnering.count(),
       db.activity.count({ where: { entityType: FACTURATIE_ENTITY } }),
+      db.timesheetCorrection.count(),
     ]);
-  return { verkoop, verstuurd, ontvangen, inkoop, urenstaten, scans, los, herinneringen, akkoorden };
+  return { verkoop, verstuurd, ontvangen, inkoop, urenstaten, scans, los, herinneringen, akkoorden, correcties };
 }
 
 /** Alles in één transactie, in FK-veilige volgorde; nummering verkoop begint opnieuw. */
@@ -33,6 +34,8 @@ export async function wisFacturatieTestdata(): Promise<void> {
     db.timesheetInbox.deleteMany(),
     db.timesheet.deleteMany(), // dagregels cascade
     db.timesheetHerinnering.deleteMany(),
+    db.timesheetReminder.deleteMany(), // log van herinneringsmails: anders "al herinnerd" in de test
+    db.timesheetCorrection.deleteMany(), // AI-correcties uit de testfase
     db.activity.deleteMany({ where: { entityType: FACTURATIE_ENTITY } }),
     // Alleen verkoopnummers ("invoice-<jaar>"), niet "purchase-invoice-…".
     db.numberSequence.deleteMany({ where: { key: { startsWith: "invoice-" } } }),

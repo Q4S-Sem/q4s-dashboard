@@ -208,6 +208,7 @@ export default async function FacturatieInstellingenPage({
                 ["Losse uploads", tel.los],
                 ["Herinneringen", tel.herinneringen],
                 ["Akkoorden/notities", tel.akkoorden],
+                ["AI-correcties", tel.correcties],
               ].map(([l, n]) => (
                 <div key={l as string} className="flex justify-between border-b border-ink-100 py-1.5">
                   <span className="text-ink-500">{l}</span>
