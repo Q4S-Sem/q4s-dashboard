@@ -59,16 +59,21 @@ export function ontbrekendVoorActief(
   return [...plaatsing, ...ontbrekendeGegevens(c)];
 }
 
-/** Ontbreekt dit, dan blijft het een herinnering ("open"), maar factureren kan gewoon. */
-const NIET_BLOKKEREND = new Set(["Geboortedatum"]);
+/** Ontbreekt dit, dan blijft het een herinnering ("open"), maar factureren kan gewoon.
+ *  IBAN: moeten we wel hebben, maar de week kan zonder gefactureerd worden. */
+const NIET_BLOKKEREND = new Set(["Geboortedatum", "IBAN"]);
+
+/** Alleen wat factureren écht tegenhoudt. */
+export function blokkerend(ontbreekt: string[]): string[] {
+  return ontbreekt.filter((k) => !NIET_BLOKKEREND.has(k));
+}
 
 /**
  * Staat de plaatsing in de map "Actief"? Dé regel voor zowel Plaatsingen als de
  * facturatie: alleen wie hier staat, komt in Week verwerken.
  */
 export function inMapActief(p: { status: string; forceActive?: boolean | null }, ontbreekt: string[]): boolean {
-  const blokkeert = ontbreekt.filter((k) => !NIET_BLOKKEREND.has(k));
-  return p.status === "ACTIVE" && (blokkeert.length === 0 || Boolean(p.forceActive));
+  return p.status === "ACTIVE" && (blokkerend(ontbreekt).length === 0 || Boolean(p.forceActive));
 }
 
 /** Status om te tonen: ACTIVE buiten de map Actief heet "Nog niet actief". */

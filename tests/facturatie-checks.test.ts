@@ -284,20 +284,11 @@ test("geen handtekening is een fout; een onbekende handtekening een waarschuwing
   );
 });
 
-test("een ondertekenaar die niet op de plaatsing staat is een fout", () => {
+test("bevoegdheid van de ondertekenaar wordt niet meer gecontroleerd", () => {
   const input = basis();
   input.timesheet!.signerName = "Henk Willems";
-  const c = check(evaluateFacturatieWeek(input).checks, "timesheet-ondertekenaar");
-  assert.equal(c.level, "error");
-  assert.match(c.detail, /Henk Willems/);
-  assert.match(c.detail, /P\. Jansen/);
-});
-
-test("zonder vastgelegde bevoegden kan bevoegdheid niet gecontroleerd worden: waarschuwing", () => {
-  const input = basis();
   input.placement!.approverNames = [];
-  const c = check(evaluateFacturatieWeek(input).checks, "timesheet-ondertekenaar");
-  assert.equal(c.level, "warn");
+  assert.equal(evaluateFacturatieWeek(input).checks.some((c) => c.id === "timesheet-ondertekenaar"), false);
 });
 
 test("een afwijkend getypt weeknummer is een waarschuwing met beide nummers", () => {
@@ -431,14 +422,14 @@ test("een afwijkende PO op de staat is een fout, maar 'Sif Group' naast 'Sif' ni
   assert.equal(check(evaluateFacturatieWeek(ruimer).checks, "timesheet-project").level, "ok");
 });
 
-test("kilometers zonder kilometervergoeding in het contract is een waarschuwing", () => {
+test("kilometers zonder kilometervergoeding in het contract: geen melding, alleen een notitie", () => {
   const input = basis();
   input.placement!.kmRateBuy = 0;
   input.placement!.kmRateSell = 0;
   input.timesheet!.kilometers = 220;
   input.invoice!.kilometers = 220;
   const c = check(evaluateFacturatieWeek(input).checks, "timesheet-reiskosten");
-  assert.equal(c.level, "warn");
+  assert.equal(c.level, "ok");
   assert.match(c.detail, /220/);
 });
 

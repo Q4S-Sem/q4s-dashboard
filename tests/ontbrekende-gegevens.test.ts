@@ -38,15 +38,18 @@ test("plaatsing pas actief met klant, beide tarieven en complete werknemer", () 
 });
 
 test("map Actief (= facturatie): compleet of handmatig geforceerd; contract telt niet mee", () => {
-  assert.equal(inMapActief({ status: "ACTIVE" }, ["IBAN"]), false);
-  assert.equal(getoondeStatus({ status: "ACTIVE" }, ["IBAN"]), "INCOMPLETE");
-  assert.equal(inMapActief({ status: "ACTIVE", forceActive: true }, ["IBAN"]), true);
+  assert.equal(inMapActief({ status: "ACTIVE" }, ["BSN"]), false);
+  assert.equal(getoondeStatus({ status: "ACTIVE" }, ["BSN"]), "INCOMPLETE");
+  assert.equal(inMapActief({ status: "ACTIVE", forceActive: true }, ["BSN"]), true);
+  // IBAN ontbreekt → herinnering, maar de week kan gewoon gefactureerd worden.
+  assert.equal(inMapActief({ status: "ACTIVE" }, ["IBAN"]), true);
   assert.equal(inMapActief({ status: "ACTIVE" }, []), true);
   assert.equal(inMapActief({ status: "INCOMPLETE" }, []), false);
   // Alleen geboortedatum mist → toch in Actief en in de facturatie.
   assert.equal(inMapActief({ status: "ACTIVE" }, ["Geboortedatum"]), true);
   assert.equal(getoondeStatus({ status: "ACTIVE" }, ["Geboortedatum"]), "ACTIVE");
-  assert.equal(inMapActief({ status: "ACTIVE" }, ["Geboortedatum", "IBAN"]), false);
+  assert.equal(inMapActief({ status: "ACTIVE" }, ["Geboortedatum", "IBAN"]), true);
+  assert.equal(inMapActief({ status: "ACTIVE" }, ["Geboortedatum", "BSN"]), false);
 });
 
 test("werknemer in dienst: geen inkooptarief nodig, wel verkooptarief", () => {

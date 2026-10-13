@@ -477,7 +477,6 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
 
   // Alles wat uit de plaatsing komt één keer veilig uitpakken — zonder plaatsing
   // blijft het op de nulstand staan en vallen die controles vanzelf weg.
-  const bevoegden = (p?.approverNames ?? []).filter(Boolean);
   const maxDag = p && isNum(p.maxPaidHoursPerDay) && p.maxPaidHoursPerDay > 0 ? p.maxPaidHoursPerDay : null;
   const overurenAfspraak = !!p && ((p.overtimeSurchargeBuy ?? 0) > 0 || (p.overtimeCostRate ?? 0) > 0);
   const weekendAfspraak =
@@ -631,38 +630,8 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
           : "Er is niet vast te stellen of de urenstaat getekend is — kijk het document zelf na.",
     );
 
-    // 2) Bevoegde ondertekenaar --------------------------------------------
-    const signer = schoon(ts.signerName);
-    if (bevoegden.length === 0) {
-      add(
-        "timesheet",
-        "timesheet-ondertekenaar",
-        "warn",
-        "Bevoegdheid niet te toetsen",
-        `Er zijn geen bevoegde ondertekenaars vastgelegd bij de plaatsing${
-          signer ? `; getekend door ${signer}` : ""
-        } — vul ze in bij de plaatsing zodat dit automatisch gecontroleerd wordt.`,
-      );
-    } else if (!signer) {
-      add(
-        "timesheet",
-        "timesheet-ondertekenaar",
-        "warn",
-        "Ondertekenaar onbekend",
-        `Er is geen naam van de ondertekenaar uitgelezen; bevoegd zijn: ${bevoegden.join(", ")}.`,
-      );
-    } else {
-      const bevoegd = ondertekenaarBevoegd(signer, bevoegden);
-      add(
-        "timesheet",
-        "timesheet-ondertekenaar",
-        bevoegd ? "ok" : "error",
-        bevoegd ? "Getekend door een bevoegde" : "Ondertekenaar niet bevoegd",
-        bevoegd
-          ? `${signer} staat op de plaatsing als bevoegde ondertekenaar.`
-          : `${signer} staat niet op de plaatsing als bevoegde ondertekenaar; bevoegd zijn: ${bevoegden.join(", ")}.`,
-      );
-    }
+    // 2) Bevoegde ondertekenaar: bewust geen controle meer — vrijwel altijd
+    //    getekend door de juiste persoon, en anders lossen we het samen op.
 
     // 3) Weeknummer ---------------------------------------------------------
     const afwijking = weekMismatch({ canonicalWeek: echteWeek, typedWeek: ts.typedWeekNumber });
@@ -828,15 +797,9 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
     // 9) Reiskosten ---------------------------------------------------------
     const reisUren = isNum(ts.travelHours) && ts.travelHours > 0 ? ts.travelHours : 0;
     const onkosten = isNum(ts.expenses) && ts.expenses > 0 ? ts.expenses : 0;
-    if (km > 0 && kmTarief <= 0) {
-      add(
-        "timesheet",
-        "timesheet-reiskosten",
-        "warn",
-        "Kilometers zonder vergoeding",
-        `Er staan ${formatHours(km)} km op de staat, maar de plaatsing kent geen kilometervergoeding — die km worden niet uitbetaald.`,
-      );
-    } else if (km > 0 && (reisUren > 0 || onkosten > 0)) {
+    // Km zonder vergoeding op de plaatsing is géén melding: die km worden gewoon
+    // niet vergoed, en wie dat wil zet zelf een km-tarief bij de plaatsing.
+    if (km > 0 && kmTarief > 0 && (reisUren > 0 || onkosten > 0)) {
       const delen = [
         reisUren > 0 ? `${formatHours(reisUren)} reisuren` : null,
         onkosten > 0 ? `${formatCurrency(onkosten)} onkosten` : null,
@@ -854,8 +817,10 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
         "timesheet-reiskosten",
         "ok",
         "Reiskosten",
-        km > 0
+        km > 0 && kmTarief > 0
           ? `${formatHours(km)} km à ${formatCurrency(kmTarief)} per km.`
+          : km > 0
+            ? `${formatHours(km)} km op de staat; de plaatsing heeft geen kilometervergoeding, dus die worden niet vergoed.`
           : "Er zijn geen kilometers of reiskosten gemeld.",
       );
     }

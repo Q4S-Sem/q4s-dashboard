@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { inMapActief, ontbrekendVoorActief } from "./ontbrekende-gegevens";
+import { blokkerend, inMapActief, ontbrekendVoorActief } from "./ontbrekende-gegevens";
 import { getCompanySettings } from "./settings";
 import { summarizeRecentWeeks } from "./timesheet-gate-history";
 import { computeTimesheetMoney } from "./toeslag";
@@ -221,7 +221,8 @@ async function ladenPlaatsingen(monday: Date, sunday: Date) {
 function beoordeelMetPlaatsing(input: FacturatieCheckInput, p: PlacementRow | null): FacturatieCheckResult {
   const result = evaluateFacturatieWeek(input);
   if (!p) return result;
-  const ontbreekt = ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant);
+  // Alleen wat factureren écht tegenhoudt (IBAN/geboortedatum blijven een herinnering).
+  const ontbreekt = blokkerend(ontbrekendVoorActief({ heeftKlant: Boolean(p.clientId), ...p }, p.consultant));
   if (ontbreekt.length === 0) return result;
   return {
     ...result,
