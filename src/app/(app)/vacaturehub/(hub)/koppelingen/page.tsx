@@ -1,12 +1,10 @@
 import Link from "next/link";
 import {
-  Plug,
   ExternalLink,
   KeyRound,
   Download,
   Webhook,
   CheckCircle2,
-  Upload,
   Plus,
   Settings,
 } from "lucide-react";
@@ -25,7 +23,7 @@ import { connectApi, pullNow } from "../../intake-actions";
 import { getSources } from "../data";
 import { SleutelMaken } from "./SleutelMaken";
 
-export const metadata = { title: "Koppelingen · MSP" };
+export const metadata = { title: "Bronnen · MSP" };
 
 type SP = {
   conn?: string;
@@ -85,30 +83,13 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
         </p>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plug className="h-5 w-5 text-ink-500" /> Platformen koppelen
-          </CardTitle>
-          <Link
-            href="/vacatures/importeren"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            <Upload className="h-4 w-4" /> Bulk-import
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-ink-500">
-            Per platform kun je hier inloggen op hun portaal, je API-sleutel aan het dashboard
-            hangen en meteen ophalen. Zodra een koppeling staat, komt alles binnen in de
-            vacaturehub en beoordeel je daar of we er mensen voor hebben. Werkt een platform niet
-            met een API? Gebruik dan de webhook of een import — dat loopt door dezelfde pijplijn.
-          </p>
-        </CardContent>
-      </Card>
+      <p className="text-sm text-ink-500">
+        Per bron: open het portaal, plak jullie eigen API-sleutel en haal direct op. Geen API? Laat
+        het platform aanleveren via de webhook (eigen sleutel per bron) of gebruik Bulk-import.
+      </p>
 
-      <div className="space-y-4">
-        {connectors.map((c) => {
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        {connectors.filter((c) => c.key !== "web-speurder").map((c) => {
           const stats = statsByKey.get(c.id);
           const connected = Boolean(c.apiBaseUrl && c.apiKey);
           const site = c.website
@@ -135,8 +116,9 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
                       target="_blank"
                       rel="noreferrer"
                       className={buttonVariants({ variant: "outline", size: "sm" })}
+                      title={`Inloggen bij ${c.name}`}
                     >
-                      <ExternalLink className="h-4 w-4" /> Inloggen bij {c.name}
+                      <ExternalLink className="h-4 w-4" /> {site.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
                     </a>
                   )}
                   <form action={pullNow}>
@@ -190,7 +172,7 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
                 {/* API-koppeling */}
                 <form
                   action={connectApi}
-                  className="grid items-end gap-3 rounded-xl border border-ink-200 bg-ink-50/60 p-4 lg:grid-cols-[1fr_1fr_auto]"
+                  className="grid items-end gap-3 rounded-xl border border-ink-200 bg-ink-50/60 p-4 sm:grid-cols-2"
                 >
                   <input type="hidden" name="id" value={c.id} />
                   <input type="hidden" name="back" value="/vacaturehub/koppelingen" />
@@ -224,9 +206,9 @@ export default async function KoppelingenPage({ searchParams }: { searchParams: 
                       placeholder={c.apiKey ? "••••••••••  (ingesteld)" : "Plak hier de sleutel"}
                     />
                   </Field>
-                  <div className="flex items-center gap-3 pb-0.5">
+                  <div className="flex items-center gap-3 sm:col-span-2">
                     <SubmitButton pendingLabel="Opslaan…">
-                      <KeyRound className="h-4 w-4" /> Koppelen
+                      <KeyRound className="h-4 w-4" /> Sleutel opslaan
                     </SubmitButton>
                     {c.apiKey && (
                       <label className="inline-flex items-center gap-1.5 text-xs text-ink-500">

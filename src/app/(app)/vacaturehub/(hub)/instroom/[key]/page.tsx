@@ -75,7 +75,7 @@ export default async function BronPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href="/vacaturehub/instroom"
+          href="/vacaturehub/koppelingen"
           className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
         >
           <ArrowLeft className="h-4 w-4" /> Alle opdrachtgevers

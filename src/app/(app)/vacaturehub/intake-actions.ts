@@ -8,6 +8,7 @@ import { nieuweMspSleutel } from "@/lib/msp-sleutel";
 import {
   simulateMspDelivery,
   pullConnector,
+  isBlockedHost,
   type PipelineResult,
 } from "@/lib/msp";
 
@@ -98,9 +99,13 @@ export async function connectApi(formData: FormData) {
   // Leeg gelaten = huidige sleutel behouden (die tonen we nooit terug).
   const apiKey = clear ? null : typedKey || current.apiKey;
 
-  if (apiBaseUrl && !/^https:\/\//i.test(apiBaseUrl)) {
-    redirect(withQuery(target, { conn: "url" }));
-  }
+  // Alleen https en nooit een privé/loopback-host (de sleutel gaat mee naar dit adres).
+  let urlOk = !apiBaseUrl;
+  try {
+    const u = new URL(apiBaseUrl);
+    urlOk = u.protocol === "https:" && !isBlockedHost(u.hostname);
+  } catch {}
+  if (!urlOk) redirect(withQuery(target, { conn: "url" }));
 
   await db.vmsConnector.update({
     where: { id },

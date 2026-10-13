@@ -1,4 +1,4 @@
-import { Inbox, Plug, Sparkles, XCircle, Settings2, Upload } from "lucide-react";
+import { Inbox, Plug, Sparkles, XCircle, Upload } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { buttonVariants } from "@/components/ui/button";
@@ -29,14 +29,6 @@ export default async function VacaturehubLayout({ children }: { children: React.
             <Link href="/vacatures/importeren" className={buttonVariants({ variant: "outline" })}>
               <Upload className="h-4 w-4" /> Bulk-import
             </Link>
-            <Link
-              href="/vacaturehub/koppelingen"
-              className={buttonVariants({ variant: "outline", size: "icon", className: "h-10 w-10" })}
-              title="Koppelingen met MSP-portalen"
-              aria-label="Koppelingen met MSP-portalen"
-            >
-              <Settings2 className="h-4 w-4" />
-            </Link>
           </div>
         }
       />
@@ -58,7 +50,7 @@ export default async function VacaturehubLayout({ children }: { children: React.
           { seg: "", label: "Te beoordelen", icon: <Inbox className="h-4 w-4" />, count: c.inbox },
           { seg: "relevant", label: "Opgepakt", icon: <Sparkles className="h-4 w-4" />, count: c.opgepakt },
           { seg: "afgewezen", label: "Weggelegd", icon: <XCircle className="h-4 w-4" />, count: c.irrelevant },
-          { seg: "instroom", label: "Bronnen", icon: <Plug className="h-4 w-4" /> },
+          { seg: "koppelingen", label: "Bronnen", icon: <Plug className="h-4 w-4" /> },
         ]}
       />
 
