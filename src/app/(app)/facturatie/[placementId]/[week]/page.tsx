@@ -9,6 +9,8 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { getWeekDossier } from "@/lib/facturatie-week";
+import { db } from "@/lib/db";
+import { weekSlotVanDatum } from "@/lib/week-koppeling";
 import { StapUpload } from "./StapUpload";
 import type { Check as Controle, CheckGroup } from "@/lib/facturatie-checks";
 import { cn, formatCurrency, formatHours } from "@/lib/utils";
@@ -90,6 +92,10 @@ export default async function DossierPage({
   const documentenBinnen = row.timesheetOntvangen && (row.factuurNvt || row.factuurOntvangen);
   // Fase: documenten tot beide binnen zijn (of als je er bewust naar teruggaat).
   const fase = !row.vastgelegd && (!documentenBinnen || sp.stap === "documenten") ? "documenten" : "controle";
+
+  // Niets in deze week, maar wél net uitgelezen documenten van deze persoon die (volgens
+  // het document zelf) bij een ANDERE week horen? Dan staan ze daar — wijs de weg.
+  const elders = !documentenBinnen ? await documentenElders(row.consultantId, wk) : [];
 
   const afwijkend = comparison.filter((r) => !r.ok);
   const akkoordSet = new Set(akkoorden);
@@ -215,6 +221,19 @@ export default async function DossierPage({
         <Melding toon="oranje">
           Dit was een document van <strong>week {sp.andereWeek}</strong>, niet van week {sp.van}. Week {sp.andereWeek} stond nog open, dus je
           werkt nu verder in week {sp.andereWeek}.
+        </Melding>
+      )}
+      {elders.length > 0 && (
+        <Melding toon="oranje">
+          Je documenten zijn niet weg: volgens het document zelf horen ze bij een andere week.{" "}
+          {elders.map((e, i) => (
+            <span key={e.key}>
+              {i > 0 && " · "}
+              <Link href={`/facturatie/${placementId}/${e.key}`} className="font-semibold underline underline-offset-2">
+                {e.wat} staat in week {e.key.split("-W")[1]} →
+              </Link>
+            </span>
+          ))}
         </Melding>
       )}
       {sp.geblokkeerd && <Melding toon="rood">{sp.geblokkeerd === "1" ? "Deze week kon niet vastgelegd worden." : sp.geblokkeerd}</Melding>}
@@ -459,6 +478,28 @@ function DocKolom({
       </div>
     </Card>
   );
+}
+
+/** Recent uitgelezen, nog niet verwerkte documenten van deze persoon in een andere week. */
+async function documentenElders(consultantId: string, wk: string) {
+  const sinds = new Date(Date.now() - 14 * 86_400_000);
+  const [scans, facturen] = await Promise.all([
+    db.timesheetInbox.findMany({
+      where: { consultantId, timesheetId: null, status: { in: ["NEW", "EXTRACTED"] }, createdAt: { gte: sinds }, extractedWeekStart: { not: null } },
+      select: { extractedWeekStart: true },
+    }),
+    db.receivedInvoice.findMany({
+      where: { consultantId, status: { in: ["NEW", "APPROVED"] }, createdAt: { gte: sinds }, weekKey: { not: null } },
+      select: { weekKey: true },
+    }),
+  ]);
+  const per = new Map<string, Set<string>>();
+  const zet = (key: string | null | undefined, wat: string) => {
+    if (key && key !== wk) per.set(key, (per.get(key) ?? new Set()).add(wat));
+  };
+  for (const s of scans) zet(weekSlotVanDatum(s.extractedWeekStart)?.key, "Timesheet");
+  for (const f of facturen) zet(f.weekKey, "Factuur");
+  return [...per].map(([key, wat]) => ({ key, wat: [...wat].join(" + ") }));
 }
 
 function Melding({ toon, children }: { toon: "rood" | "oranje" | "groen" | "violet"; children: React.ReactNode }) {
