@@ -198,7 +198,17 @@ export function toeslagUren(
       sundayHours: sundayHoursOf(entries),
     };
   }
-  const vanaf = Math.max(0, p.otFromHours);
+  // "Vanaf 0 uur" zou van élk gewerkt uur een meeruur maken (verkoop ×2): dat is
+  // nooit de bedoeling — dan geldt er geen meeruren-toeslag.
+  if (p.otFromHours <= 0) {
+    return {
+      weekdayHours: 0,
+      weekday2Hours: 0,
+      saturdayHours: saturdayHoursOf(entries),
+      sundayHours: sundayHoursOf(entries),
+    };
+  }
+  const vanaf = p.otFromHours;
   const t1 = Math.max(0, p.ot1Hours ?? 2);
   let w1 = 0;
   let w2 = 0;

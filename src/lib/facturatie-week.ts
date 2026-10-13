@@ -1078,7 +1078,14 @@ export type WeekDossier = {
   invoer: DossierInvoer;
   /** De dagen van de week, voor de labels boven de invoervelden. */
   dagen: { iso: string; label: string; weekend: boolean }[];
-  geld: { uren: number; verkoop: number; inkoop: number; marge: number } | null;
+  geld: {
+    uren: number;
+    verkoop: number;
+    inkoop: number;
+    marge: number;
+    /** Waaruit het verkoopbedrag bestaat (basis, toeslagen, overuren, km). */
+    verkoopRegels: { label: string; aantal: number; prijs: number; bedrag: number }[];
+  } | null;
   /** Mag de akkoord-knop aan? Zo niet: waarom niet. */
   akkoordGeblokkeerd: string | null;
 };
@@ -1313,6 +1320,14 @@ export async function getWeekDossier(
       verkoop: geld.sell.total,
       inkoop: geld.buy.total,
       marge: geld.margin,
+      verkoopRegels: [
+        { label: geld.days != null ? "Dagen" : "Uren", aantal: geld.days ?? geld.hours, prijs: p.chargeRate, bedrag: geld.sell.base },
+        ...geld.sell.surcharges.map((r) => ({ label: r.label, aantal: r.hours, prijs: r.unitAmount, bedrag: r.amount })),
+        ...(geld.sell.overtime > 0
+          ? [{ label: "Overuren", aantal: geld.overtimeHours, prijs: round2(geld.sell.overtime / geld.overtimeHours), bedrag: geld.sell.overtime }]
+          : []),
+        ...(geld.sell.km > 0 ? [{ label: "Kilometers", aantal: geld.kilometers, prijs: p.kmRateSell, bedrag: geld.sell.km }] : []),
+      ],
     },
     akkoordGeblokkeerd,
   };

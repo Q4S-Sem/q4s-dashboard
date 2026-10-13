@@ -274,6 +274,27 @@ export default async function DossierPage({
               <Kpi label="Verkoop" waarde={geld ? formatCurrency(geld.verkoop) : "—"} />
               <Kpi label="Inkoop" waarde={geld ? formatCurrency(geld.inkoop) : "—"} />
               <Kpi label="Marge" waarde={geld ? formatCurrency(geld.marge) : "—"} kleur={geld && geld.marge > 0 ? "text-emerald-700" : geld ? "text-red-700" : undefined} />
+              {/* Waar het verkoopbedrag uit bestaat — zo zie je meteen een toeslag die er niet hoort. */}
+              {geld && geld.verkoopRegels.length > 0 && (
+                <details className="col-span-2 border-t border-ink-100 sm:col-span-4">
+                  <summary className="cursor-pointer px-4 py-2 text-xs font-medium text-ink-500 hover:text-ink-800">
+                    Opbouw verkoop{geld.verkoopRegels.length > 1 ? ` · ${geld.verkoopRegels.length} regels` : ""}
+                  </summary>
+                  <table className="w-full text-xs">
+                    <tbody>
+                      {geld.verkoopRegels.map((r, i) => (
+                        <tr key={i} className="border-t border-ink-100">
+                          <td className="px-4 py-1.5 text-ink-700">{r.label}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-ink-500">
+                            {formatHours(r.aantal)} × {formatCurrency(r.prijs)}
+                          </td>
+                          <td className="px-4 py-1.5 text-right font-medium tabular-nums text-ink-900">{formatCurrency(r.bedrag)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+              )}
             </Card>
 
             {afwijkend.length > 0 && (

@@ -59,7 +59,7 @@ const PlacementCoreSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v && v.trim() !== "" ? Number(v.replace(",", ".")) : null))
-    .refine((v) => v === null || (Number.isFinite(v) && v >= 0 && v <= 24), "Meeruren vanaf: 0 t/m 24 uur"),
+    .refine((v) => v === null || (Number.isFinite(v) && v >= 1 && v <= 24), "Meeruren vanaf: 1 t/m 24 uur (bijv. 8)"),
   ot1Hours: z.coerce.number().min(0).max(24).default(2),
   weekday2SurchargeBuy: z.coerce.number().min(0).default(0),
   weekday2SurchargeSell: z.coerce.number().min(0).default(0),
