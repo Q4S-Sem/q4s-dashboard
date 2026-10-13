@@ -146,9 +146,9 @@ export default async function CvGeneratorPage({
                       k.cvProfile ? (
                         <Link
                           href={`${BASE}/${k.cvProfile.id}`}
-                          className={buttonVariants({ variant: "ghost", size: "sm" })}
+                          className={buttonVariants({ variant: "primary", size: "sm" })}
                         >
-                          Openen
+                          <Eye className="h-4 w-4" /> Openen
                         </Link>
                       ) : null
                     }
