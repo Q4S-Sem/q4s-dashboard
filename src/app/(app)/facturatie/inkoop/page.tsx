@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PersonenPerWeek, WeergaveTabs } from "../PersonenPerWeek";
+import { VerkoopTabs } from "../verkoop/VerkoopTabs";
 import {
   AlertTriangle,
   Banknote,
@@ -114,15 +114,13 @@ type SP = {
   overgeslagen?: string;
   fout?: string;
   snelstart?: string;
-  weergave?: string;
-  pf?: string;
+  persoon?: string;
 };
 
 export default async function InkoopPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   // Inkoop opent op wat je moet betalen (niet op "per persoon"): de facturenlijst,
   // tabblad Te betalen, wie het eerst moet bovenaan.
-  const weergave = sp.weergave === "personen" ? "personen" : "facturen";
   const now = new Date();
   const tab = (INKOOP_TABS.find((t) => t.key === sp.tab)?.key ?? "tebetalen") as InkoopTab;
 
@@ -142,7 +140,11 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
     isAdminSession(),
   ]);
 
-  const facturen = alleFacturen.filter((r) => inWeek(r.issueDate));
+  const facturen = alleFacturen.filter((r) => inWeek(r.issueDate) && (!sp.persoon || r.consultantId === sp.persoon));
+  // Personen voor het filter: iedereen met een ontvangen factuur.
+  const filterPersonen = [...new Map(alleFacturen.map((r) => [r.consultantId, r.consultantName])).entries()].sort((a, b) =>
+    a[1].localeCompare(b[1]),
+  );
   // Betaaltermijn ZZP-facturen: dezelfde als SnelStart-boeking en SEPA gebruiken.
   const termijn = ZZP_PAYMENT_TERM_DAYS;
   const tellingen = inkoopTellingen(facturen);
@@ -254,6 +256,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
     const p = new URLSearchParams({ tab: key });
     if (weekParam) p.set("week", weekParam);
     if (sp.q) p.set("q", sp.q);
+    if (sp.persoon) p.set("persoon", sp.persoon);
     return `/facturatie/inkoop?${p.toString()}`;
   };
 
@@ -268,7 +271,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
           huidig={weekSlotVanDatum(weekParam)?.key ?? null}
           vandaag={ymd(now)}
           alleWeken
-          extra={weergave === "personen" ? { weergave } : { tab, q: sp.q }}
+          extra={{ tab, q: sp.q, persoon: sp.persoon }}
         />
         <a
           href="/api/betalingen/sepa"
@@ -283,18 +286,9 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
         </a>
       </PaginaKop>
 
-      <WeergaveTabs
-        actief={weergave}
-        basePath="/facturatie/inkoop"
-        week={weekParam}
-        facturenLabel="Facturen & betalingen"
-        aantalFacturen={tellingen.alles}
-      />
+      <VerkoopTabs actief="facturen" base="/facturatie/inkoop" personenLabel="Per persoon betalen" />
 
-      {weergave === "personen" ? (
-        <PersonenPerWeek week={weekParam || null} basePath="/facturatie/inkoop" q={sp.q} pf={sp.pf} />
-      ) : (
-        <>
+      <>
 
       {sp.reset === "ok" && (
         <p className="flex items-start gap-2 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
@@ -423,7 +417,16 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
               q={sp.q}
               placeholder="Zoek op freelancer of factuurnummer…"
               behoud={{ tab, week: weekParam || undefined }}
-            />
+            >
+              <Select name="persoon" defaultValue={sp.persoon ?? ""} aria-label="Filter op persoon" className="sm:w-56">
+                <option value="">Alle personen</option>
+                {filterPersonen.map(([id, naam]) => (
+                  <option key={id} value={id}>
+                    {naam}
+                  </option>
+                ))}
+              </Select>
+            </TabelZoek>
           </div>
           {rows.length === 0 ? (
             <EmptyState
@@ -639,8 +642,7 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
           </p>
         </div>
       )}
-        </>
-      )}
+      </>
     </div>
   );
 }

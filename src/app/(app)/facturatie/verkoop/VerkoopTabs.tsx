@@ -2,11 +2,19 @@ import Link from "next/link";
 import { Receipt, Users } from "lucide-react";
 import { mapTabVariants } from "@/components/ui/button";
 
-/** Verkoopfacturen = één pagina met twee mapjes: de facturen en per persoon factureren. */
-export function VerkoopTabs({ actief }: { actief: "facturen" | "personen" }) {
+/** Verkoop én inkoop: één pagina met twee mapjes — de facturen en per persoon. */
+export function VerkoopTabs({
+  actief,
+  base = "/facturatie/verkoop",
+  personenLabel = "Per persoon factureren",
+}: {
+  actief: "facturen" | "personen";
+  base?: string;
+  personenLabel?: string;
+}) {
   const tabs = [
-    { key: "facturen", href: "/facturatie/verkoop", label: "Facturen", icon: Receipt },
-    { key: "personen", href: "/facturatie/verkoop/personen", label: "Per persoon factureren", icon: Users },
+    { key: "facturen", href: base, label: "Facturen", icon: Receipt },
+    { key: "personen", href: `${base}/personen`, label: personenLabel, icon: Users },
   ] as const;
   return (
     <nav aria-label="Verkoopfacturen" className="flex flex-wrap items-end gap-1 shadow-[inset_0_-1px_0_var(--color-ink-200)]">
