@@ -552,8 +552,9 @@ export async function declaratiesToevoegen(formData: FormData) {
 export async function factureerPeriodeNu(formData: FormData) {
   const clientId = String(formData.get("clientId") ?? "");
   const periode = String(formData.get("periode") ?? "");
+  const persoon = String(formData.get("persoon") ?? "") || undefined;
   if (!clientId || !periode) return;
-  await factureerCompletePeriodes(clientId, new Date(), periode);
+  await factureerCompletePeriodes(clientId, new Date(), periode, persoon);
   revalidatePath("/facturatie/verkoop");
   revalidatePath("/facturatie");
 }

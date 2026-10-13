@@ -353,6 +353,8 @@ export async function factureerCompletePeriodes(
   clientId: string,
   now: Date = new Date(),
   forceer?: string,
+  /** Alleen de weken van deze persoon (consultantId) uit de geforceerde periode. */
+  persoon?: string,
 ): Promise<{ facturen: AkkoordSamenvatting["facturen"]; verzameld: string[]; waarschuwingen: string[] }> {
   const facturen: AkkoordSamenvatting["facturen"] = [];
   const verzameld: string[] = [];
@@ -360,13 +362,21 @@ export async function factureerCompletePeriodes(
   const open = await openPeriodes(clientId);
   if (!open) return { facturen, verzameld, waarschuwingen };
   for (const p of open.periodes) {
+    if (persoon && p.periode.key !== forceer) continue; // per persoon: alleen die ene periode
     const nu = open.cycle === "WEEK" || p.compleet || p.periode.key === forceer;
     if (!nu) {
       verzameld.push(`${open.klant}: ${p.periode.label} — ${p.binnen} van ${p.nodig} weken binnen, de factuur volgt als alles compleet is.`);
       continue;
     }
+    const ids = persoon
+      ? (await db.timesheet.findMany({
+          where: { id: { in: p.timesheetIds }, placement: { consultantId: persoon } },
+          select: { id: true },
+        })).map((t) => t.id)
+      : p.timesheetIds;
+    if (ids.length === 0) continue;
     try {
-      const res = await createSalesInvoice({ clientId, timesheetIds: p.timesheetIds, issueDate: now, notes: null });
+      const res = await createSalesInvoice({ clientId, timesheetIds: ids, issueDate: now, notes: null });
       if (!res.ok) {
         waarschuwingen.push(`De verkoopfactuur voor ${open.klant} (${p.periode.label}) is niet gemaakt: ${res.error}`);
         continue;

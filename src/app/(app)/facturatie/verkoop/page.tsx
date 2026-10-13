@@ -4,6 +4,7 @@ import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { Select } from "@/components/ui/field";
 import { AlertTriangle, Ban, BellRing, CheckCircle2, Clock, Download, FilePen, FolderOpen, Layers, Receipt, Send } from "lucide-react";
 import { db } from "@/lib/db";
+import { PersoonVierkant } from "@/components/ui/persoon-vierkant";
 import { KLANTMAIL_UIT } from "@/lib/send-invoice";
 import { Card } from "@/components/ui/card";
 import { FilterTegels, PaginaKop } from "@/components/ui/filter-tegels";
@@ -308,7 +309,7 @@ export default async function VerkoopfacturenPage({
         actief={weergave}
         basePath="/facturatie/verkoop"
         week={weekParam}
-        facturenLabel="Facturen"
+        facturenLabel="Klantfacturatie"
         aantalFacturen={tellingen.alles}
       />
 
@@ -323,6 +324,10 @@ export default async function VerkoopfacturenPage({
         </p>
       )}
 
+      {weergave === "personen" ? (
+        <PersonenPerWeek week={weekParam || null} basePath="/facturatie/verkoop" q={sp.q} pf={sp.pf} />
+      ) : (
+        <>
       {/* Mapjes: per klant en periode (maand / 4 weken) de weken die samen één verkoopfactuur worden. */}
       {verzamelend.length > 0 && (
         <div className="space-y-3">
@@ -377,16 +382,46 @@ export default async function VerkoopfacturenPage({
                     );
                   })}
                 </div>
+                <ul className="mt-3 divide-y divide-ink-100 rounded-lg border border-ink-200">
+                  {[...new Map(
+                    mapjeUren
+                      .filter((t) => v.timesheetIds.includes(t.id))
+                      .map((t) => [t.placement.consultantId, t.placement.consultant] as const),
+                  ).entries()].map(([cid, c]) => {
+                    const ids = mapjeUren.filter((t) => v.timesheetIds.includes(t.id) && t.placement.consultantId === cid);
+                    const naam = `${c.firstName} ${c.lastName}`.trim();
+                    return (
+                      <li key={cid} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-[13px]">
+                        <span className="flex items-center gap-3">
+                          <PersoonVierkant naam={naam} />
+                          <span>
+                            <span className="font-medium text-ink-900">{naam}</span>
+                            <span className="block text-xs text-ink-500">
+                              wk {ids.map((t) => getISOWeek(t.weekStart)).sort((x, y) => x - y).join(", ")} ·{" "}
+                              {formatCurrency(bedragVan(ids.map((t) => t.id)))}
+                            </span>
+                          </span>
+                        </span>
+                        <ConfirmSubmit
+                          action={factureerPeriodeNu}
+                          hidden={{ clientId: v.clientId, periode: v.key, persoon: cid }}
+                          message={`Verkoopfactuur maken voor ${naam} (${v.klant}, ${v.label})?`}
+                          description="Alleen de goedgekeurde weken van deze persoon in deze periode komen op 1 factuur (concept). Komen er later nog weken bij, dan gaan die in een volgende factuur."
+                          confirmLabel="Factuur maken"
+                          variant="outline"
+                        >
+                          <Receipt className="h-4 w-4" /> Factuur voor {c.firstName}
+                        </ConfirmSubmit>
+                      </li>
+                    );
+                  })}
+                </ul>
               </Card>
             );
           })}
         </div>
       )}
 
-      {weergave === "personen" ? (
-        <PersonenPerWeek week={weekParam || null} basePath="/facturatie/verkoop" q={sp.q} pf={sp.pf} />
-      ) : (
-        <>
 
       {klantFilter && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-ink-200 bg-ink-50 px-4 py-2.5 text-[13px]">
