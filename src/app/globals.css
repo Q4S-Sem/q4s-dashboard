@@ -336,6 +336,7 @@ input[type="number"] {
 .facturatie-midden :is(th, td):not(:first-child) .text-right {
   text-align: center !important;
 }
-.facturatie-midden :is(th, td):not(:first-child) :is(.justify-end, .justify-start, .justify-between) {
+.facturatie-midden :is(th, td):not(:first-child) :is(.justify-end, .justify-start, .justify-between),
+.facturatie-midden :is(th, td):not(:first-child) > :is(.flex, .inline-flex) {
   justify-content: center !important;
 }
