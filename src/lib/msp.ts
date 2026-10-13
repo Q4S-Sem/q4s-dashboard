@@ -116,6 +116,21 @@ export async function intakeVacancies(
       continue;
     }
 
+    // De MSP staat los van ons bedrijf: een vacature van onszelf (q4s.nl, of
+    // dezelfde titel als een eigen vacature) komt nooit als lead binnen.
+    if (/(^|\.|\/\/)q4s\.nl/i.test(raw.url ?? "")) {
+      skipped++;
+      continue;
+    }
+    const eigen = await db.vacancy.findFirst({
+      where: { source: { not: "VMS" }, title: { equals: title, mode: "insensitive" } },
+      select: { id: true },
+    });
+    if (eigen) {
+      skipped++;
+      continue;
+    }
+
     const externalId = raw.externalId?.trim().slice(0, 120) || null;
     const dupe = externalId
       ? await db.vacancy.findFirst({ where: { vmsConnectorId: connectorId, externalId } })

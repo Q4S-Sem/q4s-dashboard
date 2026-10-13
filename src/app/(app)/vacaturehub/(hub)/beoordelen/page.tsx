@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { bulkFilterVacancies } from "../../actions";
-import { getHubCounts } from "../data";
+import { getHubCounts, MSP_WHERE } from "../data";
 import { HubVacancyList, HUB_VACANCY_SELECT, toHubVacancies } from "../HubVacancyList";
 
 export const metadata = { title: "Te beoordelen · MSP" };
@@ -15,7 +15,7 @@ export default async function BeoordelenPage({ searchParams }: { searchParams: P
   const [c, rows] = await Promise.all([
     getHubCounts(),
     db.vacancy.findMany({
-      where: { relevance: "UNKNOWN" },
+      where: { ...MSP_WHERE, relevance: "UNKNOWN" },
       orderBy: { createdAt: "desc" },
       take: 100,
       select: HUB_VACANCY_SELECT,

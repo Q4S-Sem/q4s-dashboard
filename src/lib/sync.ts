@@ -119,7 +119,7 @@ export async function runDailySync(
 
     // 2. AI relevance filter on unjudged vacancies (bounded).
     const unjudged = await db.vacancy.findMany({
-      where: { relevance: "UNKNOWN" },
+      where: { source: "VMS", relevance: "UNKNOWN" }, // alleen MSP-instroom, nooit onze eigen vacatures
       take: FILTER_CAP,
       orderBy: { createdAt: "asc" },
       select: { id: true },

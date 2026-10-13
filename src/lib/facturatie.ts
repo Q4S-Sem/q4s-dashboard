@@ -250,7 +250,7 @@ export async function getNavBadges(): Promise<{
       db.candidate.count({ where: { createdAt: { gte: dagGeleden }, spoor: "PROJECT" } }),
       db.candidate.count({ where: { createdAt: { gte: dagGeleden }, spoor: "VAST" } }),
       // MSP: leads die op beoordeling wachten (zie INBOX_WHERE in de MSP-hub).
-      db.vacancy.count({ where: { relevance: "RELEVANT", status: "CONCEPT" } }),
+      db.vacancy.count({ where: { source: "VMS", relevance: "RELEVANT", status: "CONCEPT" } }),
     ]);
   const verwerken = new Set(pending.map((t) => t.placement.consultantId)).size;
   return { verwerken, facturen, inkoop: 0, ontvangen, verzenden: verzendSales, teDoen, binnenProject, binnenVast, msp };

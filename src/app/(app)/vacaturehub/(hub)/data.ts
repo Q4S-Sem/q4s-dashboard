@@ -7,20 +7,27 @@ import { db } from "@/lib/db";
 /** De pseudo-bron voor vacatures die niet via een VMS/MSP binnenkwamen. */
 export const OVERIG_KEY = "overig";
 
+/**
+ * De MSP staat los van ons eigen bedrijf: alleen vacatures die van BUITEN komen
+ * (MSP-portalen + Web-speurder, source "VMS"). Onze eigen vacatures (handmatig,
+ * website, import) komen hier nooit in.
+ */
+export const MSP_WHERE = { source: "VMS" } as const;
+
 /** De inbox: door de AI goedgekeurd, nog niet door ons opgepakt. */
-export const INBOX_WHERE = { relevance: "RELEVANT", status: "CONCEPT" } as const;
+export const INBOX_WHERE = { ...MSP_WHERE, relevance: "RELEVANT", status: "CONCEPT" } as const;
 
 /** Een agent-ronde die langer dan dit "loopt" is afgebroken (time-out van de functie). */
 export const RUN_STALE_MS = 6 * 60_000;
 
 export const getHubCounts = cache(async () => {
   const [total, unknown, relevant, irrelevant, published, toPublish, inbox] = await Promise.all([
-    db.vacancy.count(),
-    db.vacancy.count({ where: { relevance: "UNKNOWN" } }),
-    db.vacancy.count({ where: { relevance: "RELEVANT" } }),
-    db.vacancy.count({ where: { relevance: "IRRELEVANT" } }),
-    db.vacancy.count({ where: { status: "PUBLISHED" } }),
-    db.vacancy.count({ where: { relevance: "RELEVANT", status: { not: "PUBLISHED" } } }),
+    db.vacancy.count({ where: MSP_WHERE }),
+    db.vacancy.count({ where: { ...MSP_WHERE, relevance: "UNKNOWN" } }),
+    db.vacancy.count({ where: { ...MSP_WHERE, relevance: "RELEVANT" } }),
+    db.vacancy.count({ where: { ...MSP_WHERE, relevance: "IRRELEVANT" } }),
+    db.vacancy.count({ where: { ...MSP_WHERE, status: "PUBLISHED" } }),
+    db.vacancy.count({ where: { ...MSP_WHERE, relevance: "RELEVANT", status: { not: "PUBLISHED" } } }),
     db.vacancy.count({ where: INBOX_WHERE }),
   ]);
   // Opgepakt = passend en al uit de inbox gehaald (uitgeschreven of live).
@@ -51,13 +58,13 @@ export type SourceStats = {
 export const getSources = cache(async (): Promise<SourceStats[]> => {
   const [connectors, byRelevance, publishedRows, latest] = await Promise.all([
     db.vmsConnector.findMany({ orderBy: [{ priority: "desc" }, { name: "asc" }] }),
-    db.vacancy.groupBy({ by: ["vmsConnectorId", "relevance"], _count: { _all: true } }),
+    db.vacancy.groupBy({ by: ["vmsConnectorId", "relevance"], where: MSP_WHERE, _count: { _all: true } }),
     db.vacancy.groupBy({
       by: ["vmsConnectorId"],
-      where: { status: "PUBLISHED" },
+      where: { ...MSP_WHERE, status: "PUBLISHED" },
       _count: { _all: true },
     }),
-    db.vacancy.groupBy({ by: ["vmsConnectorId"], _max: { createdAt: true } }),
+    db.vacancy.groupBy({ by: ["vmsConnectorId"], where: MSP_WHERE, _max: { createdAt: true } }),
   ]);
 
   const key = (id: string | null) => id ?? OVERIG_KEY;
@@ -123,5 +130,5 @@ export const getSource = cache(async (k: string): Promise<SourceStats | null> =>
 
 /** Where-clause die bij een bron-key hoort. */
 export function sourceWhere(k: string) {
-  return k === OVERIG_KEY ? { vmsConnectorId: null } : { vmsConnectorId: k };
+  return { ...MSP_WHERE, ...(k === OVERIG_KEY ? { vmsConnectorId: null } : { vmsConnectorId: k }) };
 }

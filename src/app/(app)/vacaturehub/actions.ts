@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { after } from "next/server";
 import { aiFilterVacancy, aiImproveVacancy } from "@/lib/recruitment";
 import { runDailySync } from "@/lib/sync";
-import { RUN_STALE_MS } from "./(hub)/data";
+import { MSP_WHERE, RUN_STALE_MS } from "./(hub)/data";
 
 // AI runs synchronously inside the request, so process bounded batches and let
 // the user click again for the rest (a real queue/cron is the production path).
@@ -56,7 +56,7 @@ export async function startAgents() {
 /** AI-filter de nog niet beoordeelde vacatures (per batch, evt. per bron). */
 export async function bulkFilterVacancies(formData: FormData) {
   const source = String(formData.get("source") ?? "");
-  const where = { relevance: "UNKNOWN", ...sourceFilter(source) };
+  const where = { ...MSP_WHERE, relevance: "UNKNOWN", ...sourceFilter(source) };
 
   const pending = await db.vacancy.findMany({
     where,

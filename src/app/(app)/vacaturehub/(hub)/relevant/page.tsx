@@ -3,7 +3,7 @@ import { Sparkles, PencilLine } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants, SEGMENT_GROEP, segmentVariants } from "@/components/ui/button";
-import { getHubCounts } from "../data";
+import { getHubCounts, MSP_WHERE } from "../data";
 import { HubVacancyList, HUB_VACANCY_SELECT, toHubVacancies } from "../HubVacancyList";
 
 export const metadata = { title: "Opgepakt · MSP" };
@@ -18,6 +18,7 @@ export default async function RelevantPage({ searchParams }: { searchParams: Pro
     getHubCounts(),
     db.vacancy.findMany({
       where: {
+        ...MSP_WHERE,
         relevance: "RELEVANT",
         // Opgepakt = uit de inbox gehaald: uitgeschreven (Gereed) of live.
         status: showLive ? "PUBLISHED" : { notIn: ["PUBLISHED", "CONCEPT"] },
