@@ -1,3 +1,4 @@
+import { ZZP_PAYMENT_TERM_DAYS } from "./betalingen";
 import { db } from "@/lib/db";
 import { eindeStatus } from "@/lib/plaatsing-einde";
 import { weekSlotVanDatum } from "@/lib/week-koppeling";
@@ -145,6 +146,19 @@ export async function getNotifications(): Promise<Notifications> {
       ? `/facturatie/${scan.placementId}/${scanWeek}`
       : `/facturatie?week=${scanWeek}${scan?.consultantId ? "" : "&tab=bestanden"}`;
 
+  // ZZP-facturen betalen: melding vanaf 2 dagen vóór de vervaldatum
+  // (factuurdatum + ZZP_PAYMENT_TERM_DAYS), en rood zodra hij voorbij is.
+  const openInkoop = { status: { in: ["NEW", "APPROVED"] } };
+  const [betaalLate, betaalBinnenkort] = await Promise.all([
+    db.receivedInvoice.count({ where: { ...openInkoop, issueDate: { lt: addDays(startToday, -ZZP_PAYMENT_TERM_DAYS) } } }),
+    db.receivedInvoice.count({
+      where: {
+        ...openInkoop,
+        issueDate: { gte: addDays(startToday, -ZZP_PAYMENT_TERM_DAYS), lt: addDays(startToday, 3 - ZZP_PAYMENT_TERM_DAYS) },
+      },
+    }),
+  ]);
+
   // Plaatsingen in hun laatste maand (of al over de einddatum maar nog actief).
   const lopend = await db.placement.findMany({
     where: { status: { in: ["ACTIVE", "INCOMPLETE"] }, endDate: { not: null, lte: addDays(startToday, 32) } },
@@ -180,6 +194,7 @@ export async function getNotifications(): Promise<Notifications> {
     // De teller gaat over urenstaten die nog VERWERKT moeten worden — dus naar
     // het weekscherm. Sleutel blijft "inbox": hij telt nog steeds de
     // TimesheetInbox-regels (zie ook hubActionCounts hieronder).
+    { key: "betalen", label: "Freelancers betalen", href: "/facturatie/inkoop", late: betaalLate, today: betaalBinnenkort, future: 0 },
     { key: "inbox", label: "Urenstaten verwerken", href: inboxHref, late: 0, today: inboxCount, future: 0 },
     { key: "msp", label: "Vacature-intake", href: "/vacaturehub", late: 0, today: mspUnread, future: 0 },
     {

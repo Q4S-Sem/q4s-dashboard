@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PersonenPerWeek, WeergaveTabs, kiesWeergave } from "../PersonenPerWeek";
+import { PersonenPerWeek, WeergaveTabs } from "../PersonenPerWeek";
 import {
   AlertTriangle,
   Banknote,
@@ -120,9 +120,11 @@ type SP = {
 
 export default async function InkoopPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  const weergave = kiesWeergave(sp as Record<string, string | undefined>);
+  // Inkoop opent op wat je moet betalen (niet op "per persoon"): de facturenlijst,
+  // tabblad Te betalen, wie het eerst moet bovenaan.
+  const weergave = sp.weergave === "personen" ? "personen" : "facturen";
   const now = new Date();
-  const tab = (INKOOP_TABS.find((t) => t.key === sp.tab)?.key ?? "controleren") as InkoopTab;
+  const tab = (INKOOP_TABS.find((t) => t.key === sp.tab)?.key ?? "tebetalen") as InkoopTab;
 
   // Week-filter op FACTUURDATUM (bon-datum bij declaraties). Standaard "alle
   // weken": een openstaande betaling mag je niet missen doordat er een week
@@ -144,9 +146,15 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
   // Betaaltermijn ZZP-facturen: dezelfde als SnelStart-boeking en SEPA gebruiken.
   const termijn = ZZP_PAYMENT_TERM_DAYS;
   const tellingen = inkoopTellingen(facturen);
-  const rows = facturen.filter(
-    (r) => hoortBijInkoopTab(r, tab) && matchtZoek(sp.q, r.consultantName, r.number),
-  );
+  const termijnVan = (r: { issueDate: Date | null }) => inkoopVervaldatum(r.issueDate, ZZP_PAYMENT_TERM_DAYS)?.getTime() ?? Infinity;
+  const rows = facturen
+    .filter((r) => hoortBijInkoopTab(r, tab) && matchtZoek(sp.q, r.consultantName, r.number))
+    // Openstaand: wie het eerst betaald moet worden bovenaan. Betaald: nieuwste eerst.
+    .sort((a, b) =>
+      tab === "betaald"
+        ? (b.paidDate?.getTime() ?? 0) - (a.paidDate?.getTime() ?? 0)
+        : termijnVan(a) - termijnVan(b),
+    );
 
   // Cashflow-bescherming: heeft de klant al betaald voor de uren die we aan deze
   // freelancer moeten uitbetalen? Alleen-lezen signaal — het blokkeert niets,
@@ -457,7 +465,15 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
                 {rows.map((r) => {
                   const v = vrijgave.get(r.id);
                   return (
-                    <TR key={r.id}>
+                    <TR
+                      key={r.id}
+                      className={cn(
+                        r.status !== "PAID" && (() => {
+                          const d = (termijnVan(r) - now.getTime()) / 86_400_000;
+                          return d < 0 ? "bg-red-50/60" : d <= 2 ? "bg-amber-50/70" : "";
+                        })(),
+                      )}
+                    >
                       <TD>
                         <span className="flex items-center gap-3">
                           <PersoonVierkant naam={r.consultantName} />
@@ -533,9 +549,8 @@ export default async function InkoopPage({ searchParams }: { searchParams: Promi
                       <TD>
                         {v ? (
                           <>
-                            <Badge color={VRIJGAVE_KLEUR[v.bucket]}>{v.label}</Badge>
-                            <span className="mt-1 block max-w-[20rem] text-xs text-ink-400">
-                              {v.toelichting}
+                            <span title={v.toelichting}>
+                              <Badge color={VRIJGAVE_KLEUR[v.bucket]}>{v.label}</Badge>
                             </span>
                           </>
                         ) : (
