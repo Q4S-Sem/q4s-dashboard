@@ -460,6 +460,28 @@ export function toeslagOpTarief(
   );
 }
 
+/**
+ * ALLE gewerkte uren op de factuur: de urenregel + de extra-urenregels. Een regel
+ * tegen (minstens) het volle uurtarief ("6 uur à € 80,50" bij € 70) is gewerkte
+ * uren; een regel met alleen de toeslag ("6 u à € 35") niet — die gaat over
+ * dezelfde uren. Overuren en zulke regels zijn vaak hetzelfde → het grootste telt.
+ */
+export function factuurTotaalUren(
+  inv: { hours?: number | null; overtimeHours?: number | null; surchargeLines?: FactuurToeslagRegel[] | null },
+  tarief: number | null,
+): number | null {
+  if (!isNum(inv.hours)) return null;
+  const regels = Array.isArray(inv.surchargeLines) ? inv.surchargeLines : [];
+  const volTarief = regels.reduce(
+    (s, l) =>
+      isNum(l?.quantity) && isNum(l?.amount) && l.quantity > 0 && tarief && l.amount / l.quantity >= tarief * 0.95
+        ? s + l.quantity
+        : s,
+    0,
+  );
+  return round2(inv.hours + Math.max(isNum(inv.overtimeHours) ? inv.overtimeHours : 0, volTarief));
+}
+
 /** De toeslagsoorten die wij kennen, in vaste volgorde (stabiele uitvoer). */
 const TOESLAG_SOORTEN: SurchargeKind[] = [
   "weekday",
@@ -1064,6 +1086,8 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
     }
 
     // Uren ------------------------------------------------------------------
+    // Totaal van de factuur (urenregel + extra-urenregels), te vergelijken met staat-uren + overuren.
+    const factuurAlleUren = factuurTotaalUren(inv, contractTarief);
     const factuurUren = isNum(inv.hours) ? round2(inv.hours) : null;
     // Bij een dagtarief mag de factuur dagen tellen in plaats van uren.
     const klopt = (n: number) => Math.abs(round2(factuurUren! - n)) <= TOLERANTIE_AANTAL;
@@ -1078,7 +1102,7 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
     const totaalKlopt =
       factuurUren !== null &&
       ts !== null &&
-      [factuurUren + factuurOver, factuurUren + factuurOver + toeslagRegelUren].some(
+      [factuurUren + factuurOver, factuurUren + factuurOver + toeslagRegelUren, factuurAlleUren ?? -1].some(
         (n) => Math.abs(round2(n - staatTotaal)) <= TOLERANTIE_AANTAL,
       );
     const urenWijktAf =
@@ -1098,8 +1122,8 @@ export function evaluateFacturatieWeek(input: FacturatieCheckInput): FacturatieC
         urenWijktAf ? "error" : "ok",
         urenWijktAf ? "Afwijkende uren" : "Uren kloppen",
         urenWijktAf
-          ? `${formatHours(dagUren)} u op de urenstaat tegenover ${formatHours(factuurUren)} u op de factuur.`
-          : `${formatHours(factuurUren)} u, gelijk aan de urenstaat.`,
+          ? `${formatHours(staatTotaal)} u op de urenstaat tegenover ${formatHours(factuurAlleUren ?? factuurUren)} u op de factuur.`
+          : `${formatHours(factuurAlleUren ?? factuurUren)} u in totaal, gelijk aan de urenstaat.`,
       );
     }
 
@@ -1475,14 +1499,17 @@ function bouwVergelijking(args: {
   const rows: ComparisonRow[] = [];
   const uren = (v: number | null) => (v === null ? null : formatHours(v));
 
-  const factuurUren = inv && isNum(inv.hours) ? round2(inv.hours) : null;
+  // Totaal gewerkte uren: de factuur telt urenregel + extra-urenregels op (40 + 6 + 2 + 6 = 54).
+  const tarief = p && isNum(p.costRate) && p.costRate > 0 ? p.costRate : null;
+  const factuurUren = inv ? factuurTotaalUren(inv, tarief) : null;
+  const staatUren = round2(args.dagUren + args.overuren);
   rows.push({
     key: "uren",
-    label: "Normale uren",
-    timesheet: ts ? uren(args.dagUren) : null,
+    label: "Gewerkte uren (totaal)",
+    timesheet: ts ? uren(staatUren) : null,
     invoice: uren(factuurUren),
     contract: null,
-    ok: !(ts && factuurUren !== null) || dichtbij(factuurUren, args.dagUren),
+    ok: !(ts && factuurUren !== null) || dichtbij(factuurUren, staatUren) || dichtbij(factuurUren, args.dagUren),
   });
 
   const factuurOveruren = inv ? round2(isNum(inv.overtimeHours) ? inv.overtimeHours : 0) : null;
@@ -1493,7 +1520,8 @@ function bouwVergelijking(args: {
     invoice: uren(factuurOveruren),
     contract:
       p && (p.overtimeSurchargeBuy ?? 0) > 0 ? `+${formatHours(p.overtimeSurchargeBuy)}%` : null,
-    ok: !(ts && factuurOveruren !== null) || dichtbij(factuurOveruren, args.overuren),
+    // Kloppen de totale uren, dan maakt de verdeling normaal/over niet uit.
+    ok: !(ts && factuurOveruren !== null) || dichtbij(factuurOveruren, args.overuren) || (factuurUren !== null && dichtbij(factuurUren, staatUren)),
   });
 
   const weekendRegel = inv ? factuurToeslag(inv.surchargeLines, "weekend") : null;

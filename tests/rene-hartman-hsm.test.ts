@@ -39,3 +39,17 @@ test("factuurregel zonder omschrijving herkend aan het tarief: 6 u à € 105 = 
   assert.equal(toeslagOpTarief(regels, 70, { value: 15, unit: "PCT" })?.amount, 483);
   assert.equal(toeslagOpTarief(regels, 70, { value: 40, unit: "PCT" }), null);
 });
+
+test("factuur telt 40 + 6 + 2 + 6 = 54 gewerkte uren (toeslag-only regel telt niet mee)", async () => {
+  const { factuurTotaalUren } = await import("../src/lib/facturatie-checks");
+  const surchargeLines = [
+    { label: "6 uur a €80,50", quantity: 6, unit: "uur", amount: 483 },
+    { label: "2 uur a €87,50", quantity: 2, unit: "uur", amount: 175 },
+    { label: "6 uur a €105,00", quantity: 6, unit: "uur", amount: 630 },
+  ];
+  assert.equal(factuurTotaalUren({ hours: 40, overtimeHours: 0, surchargeLines }, 70), 54);
+  // Zelfde uren ook als "overuren 14" uitgelezen → niet dubbel tellen.
+  assert.equal(factuurTotaalUren({ hours: 40, overtimeHours: 14, surchargeLines }, 70), 54);
+  // Alleen toeslag over dezelfde uren (6 u × € 35) = geen extra gewerkte uren.
+  assert.equal(factuurTotaalUren({ hours: 40, overtimeHours: 0, surchargeLines: [{ label: "zaterdagtoeslag", quantity: 6, unit: "uur", amount: 210 }] }, 70), 40);
+});
