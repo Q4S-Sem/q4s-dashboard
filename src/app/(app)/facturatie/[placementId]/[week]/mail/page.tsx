@@ -155,6 +155,7 @@ export default async function ConceptMailPage({
                   className="w-full"
                   disabled={!data.to || sp.klaar === "live"}
                   pendingLabel="Versturen…"
+                  confirm={`Mail nu echt versturen naar ${voornaam} (${data.to ?? "onbekend"})?`}
                   title={data.to ? `Versturen naar ${data.to}` : "Geen e-mailadres bekend"}
                 >
                   <Send className="h-4 w-4" /> {smtp ? `Versturen naar ${voornaam}` : "Klaarzetten"}
