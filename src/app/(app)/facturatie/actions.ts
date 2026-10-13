@@ -1,5 +1,6 @@
 "use server";
 
+import { splitsUrenstaatEnFactuur } from "@/lib/pdf-splitsen";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -98,11 +99,21 @@ function herlaad() {
  *  hetzelfde bestand nog een keer in de rij als het andere soort. Geen extra AI-call
  *  voor gewone bestanden. */
 type UploadSoort = "TIMESHEET" | "FACTUUR";
-function soortenVan(_formData: FormData, echt: (naam: string) => File[]) {
-  return [
+async function soortenVan(_formData: FormData, echt: (naam: string) => File[]) {
+  const rij = [
     ...echt("file").map((file) => ({ file, soort: "TIMESHEET" as UploadSoort })),
     ...echt("factuur").map((file) => ({ file, soort: "FACTUUR" as UploadSoort })),
   ];
+  await ensureAiKeysLoaded();
+  // PDF met urenstaat- én factuurpagina's: knippen in twee bestanden, elk apart
+  // uitgelezen — ongeacht in welk vak hij gezet is.
+  const uit: typeof rij = [];
+  for (const r of rij) {
+    const delen = r.file.size <= MAX_UPLOAD_BYTES ? await splitsUrenstaatEnFactuur(r.file) : null;
+    if (delen) uit.push({ file: delen.urenstaat, soort: "TIMESHEET" }, { file: delen.factuur, soort: "FACTUUR" });
+    else uit.push(r);
+  }
+  return uit;
 }
 function ookAls(rij: { file: File; soort: UploadSoort }[], file: File, soort: UploadSoort) {
   if (!rij.some((r) => r.file === file && r.soort === soort)) rij.push({ file, soort });
@@ -125,7 +136,7 @@ export async function uploadBestanden(
   // Elk bestand wordt op de naam die de AI leest aan de juiste persoon gekoppeld.
   const echt = (naam: string) =>
     formData.getAll(naam).filter((f): f is File => f instanceof File && f.size > 0);
-  const bestanden = soortenVan(formData, echt);
+  const bestanden = await soortenVan(formData, echt);
 
   if (bestanden.length === 0) return { error: "Kies of sleep eerst één of meer bestanden." };
 
@@ -205,7 +216,7 @@ export async function uploadVoorPersoon(_prev: UploadState, formData: FormData):
 
   const echt = (naam: string) =>
     formData.getAll(naam).filter((f): f is File => f instanceof File && f.size > 0);
-  const bestanden = soortenVan(formData, echt);
+  const bestanden = await soortenVan(formData, echt);
   if (bestanden.length === 0) return { error: "Kies of sleep eerst een urenstaat of factuur." };
 
   await ensureAiKeysLoaded();
