@@ -16,6 +16,11 @@ export function Table({
   );
 }
 
+/** Eén tabelkop-stijl voor het hele dashboard (zoals Medewerkers): klein, uppercase, muted.
+ *  `[&_button]`: sorteerknoppen erven anders geen uppercase/tracking (preflight). */
+export const TABEL_KOP =
+  "border-b border-ink-200 bg-ink-50/50 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-400 [&_button]:uppercase [&_button]:tracking-[0.06em]";
+
 export function THead({
   className,
   ...props
@@ -25,7 +30,7 @@ export function THead({
       className={cn(
         // Studio Admin-stijl kop: kleine uppercase labels, rustig en muted,
         // op een lichte achtergrond met een dunne onderrand.
-        "border-b border-ink-200 bg-ink-50/50 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-400",
+        TABEL_KOP,
         className,
       )}
       {...props}

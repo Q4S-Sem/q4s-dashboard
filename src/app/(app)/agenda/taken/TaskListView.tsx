@@ -1,5 +1,6 @@
 "use client";
 
+import { TABEL_KOP } from "@/components/ui/table";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { useMemo, useState } from "react";
 import { MoreVertical, Trash2, Check } from "lucide-react";
@@ -116,8 +117,8 @@ export function TaskListView({ rows, people }: { rows: TaskRowData[]; people: Pe
     <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-ink-200 text-left text-xs font-semibold uppercase tracking-wide text-ink-500">
+          <thead className={TABEL_KOP}>
+            <tr>
               <th className="w-16 px-4 py-3">Done</th>
               <th className="px-4 py-3">Titel</th>
               <th className="px-4 py-3">Vervaldatum</th>

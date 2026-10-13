@@ -1,5 +1,6 @@
 "use client";
 
+import { TABEL_KOP } from "@/components/ui/table";
 import { useActionState } from "react";
 import Link from "next/link";
 import { Landmark, FileSpreadsheet, Info } from "lucide-react";
@@ -143,8 +144,8 @@ export function BankImport() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-ink-200 text-left text-xs font-semibold uppercase tracking-wide text-ink-500">
+                <thead className={TABEL_KOP}>
+                  <tr>
                     <th className="py-2 pr-2">
                       <span className="sr-only">Selecteren</span>
                     </th>

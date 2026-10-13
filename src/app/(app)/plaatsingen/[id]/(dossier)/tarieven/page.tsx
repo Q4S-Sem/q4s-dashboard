@@ -1,3 +1,4 @@
+import { TABEL_KOP } from "@/components/ui/table";
 import { tariefSuffix, isDagtarief, overtimeUnit, UREN_PER_DAG } from "@/lib/toeslag";
 import { notFound } from "next/navigation";
 import { Percent, TrendingUp, Wallet, Coins } from "lucide-react";
@@ -202,8 +203,8 @@ export default async function PlaatsingTarievenPage({
           </p>
           <div className="overflow-hidden rounded-lg border border-ink-100">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-400">
+              <thead className={TABEL_KOP}>
+                <tr>
                   <th className="px-4 py-2 font-medium">Toeslag / vergoeding</th>
                   <th className="px-4 py-2 text-right font-medium">Inkoop</th>
                   <th className="px-4 py-2 text-right font-medium">Verkoop</th>

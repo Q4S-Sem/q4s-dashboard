@@ -1,3 +1,4 @@
+import { TABEL_KOP } from "@/components/ui/table";
 import Link from "next/link";
 import { tariefSuffix } from "@/lib/toeslag";
 import { notFound } from "next/navigation";
@@ -232,8 +233,8 @@ export default async function OntvangenFactuurPage({
               <>
                 <div className="overflow-hidden rounded-sm border border-ink-200">
                   <table className="w-full text-[13px]">
-                    <thead>
-                      <tr className="bg-ink-50 text-xs text-ink-500">
+                    <thead className={TABEL_KOP}>
+                      <tr>
                         <th className="px-3 py-2 text-left font-medium">Week</th>
                         <th className="px-3 py-2 text-right font-medium">Uren</th>
                         <th className="px-3 py-2 text-right font-medium">Bedrag</th>

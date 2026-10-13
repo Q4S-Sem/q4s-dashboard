@@ -1,3 +1,4 @@
+import { TABEL_KOP } from "@/components/ui/table";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, FileText, Mail, PauseCircle, PencilLine, PlayCircle, Receipt, RefreshCw, Trash2 } from "lucide-react";
@@ -304,7 +305,7 @@ export default async function DossierPage({
                   <span className="text-xs text-ink-400">urenstaat ↔ factuur ↔ contract</span>
                 </CardHeader>
                 <table className="w-full border-collapse text-[13px]">
-                  <thead className="border-b border-ink-100 bg-ink-50/50 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-400">
+                  <thead className={TABEL_KOP}>
                     <tr>
                       <th className="px-4 py-1.5 font-semibold">Onderdeel</th>
                       <th className="px-4 py-1.5 text-right font-semibold">Urenstaat</th>

@@ -1,3 +1,4 @@
+import { TABEL_KOP } from "@/components/ui/table";
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
@@ -144,8 +145,8 @@ export default async function EvaluatieDetailPage({
             <div key={sec.title}>
               <SectionBar>{sec.title}</SectionBar>
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-ink-200 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                <thead className={TABEL_KOP}>
+                  <tr>
                     <th className="py-2 pr-2 text-left">Criterium</th>
                     {EVAL_SCORES.map((s) => (
                       <th key={s.value} className="px-2 py-2 text-center">
