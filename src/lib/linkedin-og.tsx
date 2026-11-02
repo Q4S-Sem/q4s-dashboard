@@ -82,26 +82,46 @@ export function fotoZoekvraag(disciplineLabel: string, titel: string): string {
 }
 
 /**
- * Foto van het internet die bij de TITEL past: Pexels (vrij te gebruiken, ook
- * commercieel, geen naamsvermelding nodig). `nr` (de shuffle-knop) bladert door
+ * Foto van het internet die bij de TITEL past: Pixabay of Pexels (vrij te gebruiken,
+ * ook commercieel, geen naamsvermelding nodig). `nr` (de shuffle-knop) bladert door
  * de resultaten. Geen PEXELS_API_KEY of geen resultaat → null (eigen set).
  * ponytail: per proces gecachet op zoekvraag; Vercel Blob-cache als de API-limiet (200/u) knelt.
  */
 const pexelsCache = new Map<string, string[]>();
+/** Zoek foto-URL's: Pixabay (gratis sleutel, direct te krijgen) of Pexels (als je al een sleutel hebt). */
+async function zoekFotoUrls(q: string): Promise<string[] | null> {
+  const pixabay = process.env.PIXABAY_API_KEY;
+  if (pixabay) {
+    const res = await fetch(
+      `https://pixabay.com/api/?key=${encodeURIComponent(pixabay)}&q=${encodeURIComponent(q.slice(0, 100))}&image_type=photo&orientation=vertical&safesearch=true&per_page=15`,
+      { signal: AbortSignal.timeout(5000) },
+    );
+    if (!res.ok) throw new Error(`Pixabay ${res.status}`);
+    const data = (await res.json()) as { hits?: { largeImageURL?: string }[] };
+    return (data.hits ?? []).map((h) => h.largeImageURL).filter((u): u is string => !!u);
+  }
+  const pexels = process.env.PEXELS_API_KEY;
+  if (pexels) {
+    const res = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&orientation=portrait&size=large&per_page=15`,
+      { headers: { Authorization: pexels }, signal: AbortSignal.timeout(5000) },
+    );
+    if (!res.ok) throw new Error(`Pexels ${res.status}`);
+    const data = (await res.json()) as { photos?: { src?: { portrait?: string } }[] };
+    return (data.photos ?? []).map((p) => p.src?.portrait).filter((u): u is string => !!u);
+  }
+  return null;
+}
+
 async function internetFoto(disciplineLabel: string, titel: string, nr: number): Promise<string | null> {
-  const key = process.env.PEXELS_API_KEY;
-  if (!key || !titel.trim()) return null;
+  if (!titel.trim()) return null;
   try {
     const q = fotoZoekvraag(disciplineLabel, titel);
     let urls = pexelsCache.get(q);
     if (!urls) {
-      const res = await fetch(
-        `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&orientation=portrait&size=large&per_page=15`,
-        { headers: { Authorization: key }, signal: AbortSignal.timeout(5000) },
-      );
-      if (!res.ok) throw new Error(`Pexels ${res.status}`);
-      const data = (await res.json()) as { photos?: { src?: { portrait?: string } }[] };
-      urls = (data.photos ?? []).map((p) => p.src?.portrait).filter((u): u is string => !!u);
+      // Te specifieke titel zonder resultaat → alleen de vak-context.
+      urls = (await zoekFotoUrls(q)) ?? [];
+      if (!urls.length) urls = (await zoekFotoUrls(fotoZoekvraag(disciplineLabel, ""))) ?? [];
       pexelsCache.set(q, urls);
     }
     if (!urls.length) return null;
