@@ -159,9 +159,16 @@ export async function naarGereed(formData: FormData) {
       await aiImproveVacancy(vacancyId);
     }),
   );
-  const mislukt = uitkomst.filter((u) => u.status === "rejected").length;
+  const fouten = uitkomst.filter((u): u is PromiseRejectedResult => u.status === "rejected");
+  const mislukt = fouten.length;
+  const reden = (f: PromiseRejectedResult) => String(f.reason instanceof Error ? f.reason.message : f.reason);
+  if (mislukt) console.error("[website] tekst schrijven mislukt:", fouten.map(reden));
   revalidatePath("/website");
-  redirect(mislukt ? `/website?tab=concept&mislukt=${mislukt}` : "/website?tab=gereed");
+  redirect(
+    mislukt
+      ? `/website?tab=concept&mislukt=${mislukt}&reden=${encodeURIComponent(reden(fouten[0]).slice(0, 160))}`
+      : "/website?tab=gereed",
+  );
 }
 
 /** Gereed → online: één, de selectie of alles tegelijk live op q4s.nl. */

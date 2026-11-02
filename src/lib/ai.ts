@@ -70,7 +70,8 @@ function hermesBaseUrl(): string {
   return (process.env.HERMES_BASE_URL ?? "https://openrouter.ai/api/v1").replace(/\/+$/, "");
 }
 function hermesModel(tier: Tier): string {
-  const main = process.env.HERMES_MODEL ?? "google/gemini-2.5-flash";
+  // 2.5 Flash heeft op OpenRouter geen Zero-Data-Retention-aanbieder meer (404).
+  const main = process.env.HERMES_MODEL ?? "google/gemini-3.8-flash";
   return tier === "fast" ? process.env.HERMES_MODEL_FAST ?? main : main;
 }
 
@@ -444,7 +445,7 @@ async function hermesChat(o: ChatOpts): Promise<string> {
   if (!key) {
     throw new Error("Hermes (Nous) is niet geconfigureerd. Zet de Hermes-sleutel in Instellingen of HERMES_API_KEY in je .env.");
   }
-  const model = hermesModel(o.tier);
+  const gekozen = hermesModel(o.tier);
   let system = o.system;
   if (o.json && o.schema) {
     // OpenAI-compatibel JSON afdwingen kan per host/model verschillen; we vragen het
@@ -454,8 +455,9 @@ async function hermesChat(o: ChatOpts): Promise<string> {
   }
   const base = hermesBaseUrl();
   let res: Response;
-  try {
-    res = await fetch(`${base}/chat/completions`, {
+  let model = gekozen;
+  const stuur = (m: string) =>
+    fetch(`${base}/chat/completions`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -465,7 +467,7 @@ async function hermesChat(o: ChatOpts): Promise<string> {
       },
       body: JSON.stringify({
         ...OR_PRIVACY,
-        model,
+        model: m,
         stream: false,
         temperature: o.json ? 0.3 : 0.6,
         max_tokens: o.maxTokens ?? (o.json ? 8000 : 3000),
@@ -475,6 +477,15 @@ async function hermesChat(o: ChatOpts): Promise<string> {
         ],
       }),
     });
+  try {
+    res = await stuur(model);
+    // Model zonder ZDR-aanbieder ("No endpoints found matching your data policy"):
+    // één keer opnieuw met het sterke model, dat wél privacy-veilig draait.
+    if (res.status === 404 && model !== OPENROUTER_VISION_MODEL_STRONG && /data policy/i.test(await res.clone().text())) {
+      console.warn(`[ai] ${model} heeft geen ZDR-aanbieder — opnieuw met ${OPENROUTER_VISION_MODEL_STRONG}.`);
+      model = OPENROUTER_VISION_MODEL_STRONG;
+      res = await stuur(model);
+    }
   } catch {
     throw new Error(`Hermes niet bereikbaar op ${base}.`);
   }

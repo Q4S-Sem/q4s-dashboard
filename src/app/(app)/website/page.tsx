@@ -77,7 +77,7 @@ const STATUS_LABEL: Record<Bucket, { text: string; cls: string }> = {
 export default async function WebsitePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; mislukt?: string }>;
+  searchParams: Promise<{ tab?: string; mislukt?: string; reden?: string }>;
 }) {
   const sp = await searchParams;
   const [settings, openDeals] = await Promise.all([
@@ -154,6 +154,7 @@ export default async function WebsitePage({
         <p className="rounded-lg bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
           Bij {sp.mislukt} vacature(s) lukte het schrijven van de website-tekst
           niet. Probeer het opnieuw of werk de tekst uit via de vacature zelf.
+          {sp.reden && <span className="mt-1 block text-xs text-amber-700">Reden: {sp.reden}</span>}
         </p>
       )}
 
