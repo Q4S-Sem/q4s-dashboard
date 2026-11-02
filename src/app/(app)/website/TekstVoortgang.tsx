@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Globe, Loader2, Sparkles, XCircle } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { schrijfWebsiteTekst, verversWebsite } from "./actions";
 
 // Voortgang van "AI schrijft de website-tekst": per rij een draaiend icoon → groen
@@ -104,7 +105,7 @@ export function AllesNaarGereed({ ids }: { ids: string[] }) {
         type="button"
         onClick={start}
         disabled={bezig}
-        className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-ink-900 px-3 text-xs font-semibold text-white hover:bg-ink-800 disabled:opacity-70"
+        className={buttonVariants({ variant: "primary", size: "sm" })}
       >
         {bezig ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
         {bezig ? `AI schrijft… ${gedaan} / ${totaal}` : `Alles naar gereed (${totaal})`}
