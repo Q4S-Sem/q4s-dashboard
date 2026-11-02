@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { ClientForm } from "../ClientForm";
+import { ConceptWissen } from "@/components/concept-wissen";
 import { createClient } from "../actions";
 
 export const metadata = { title: "Nieuwe klant" };
@@ -20,7 +21,11 @@ export default async function NieuweKlantPage() {
       <BackLink href="/klanten">
         Terug naar klanten
       </BackLink>
-      <PageHeader title="Nieuwe klant" description="Voeg een nieuwe klant toe." />
+      <PageHeader
+        title="Nieuwe klant"
+        description="Voeg een nieuwe klant toe. Wat je invult blijft bewaard, ook als je tussendoor iets anders opent."
+        actions={<ConceptWissen wat="deze klant" />}
+      />
       <ClientForm
         action={createClient}
         existingClients={existingClients}

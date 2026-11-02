@@ -378,6 +378,12 @@ export async function savePlacementDraft(formData: FormData) {
   redirect("/plaatsingen?concept=1");
 }
 
+/** "Wis alles" op Nieuwe plaatsing: concept weg, geen redirect (de knop navigeert zelf). */
+export async function wisPlaatsingConcept(id: string) {
+  if (id) await db.placementDraft.delete({ where: { id: String(id) } }).catch(() => {});
+  revalidatePath("/plaatsingen");
+}
+
 export async function deletePlacementDraft(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (id) await db.placementDraft.delete({ where: { id } }).catch(() => {});
