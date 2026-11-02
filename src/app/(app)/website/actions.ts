@@ -171,6 +171,33 @@ export async function naarGereed(formData: FormData) {
   );
 }
 
+/**
+ * Eén concept → gereed, zonder redirect: de knoppen roepen dit per vacature aan
+ * zodat de pagina per rij een draaiend icoon en daarna een groen vinkje toont.
+ */
+export async function schrijfWebsiteTekst(dealId: string): Promise<{ ok: true } | { ok: false; fout: string }> {
+  try {
+    const d = await db.deal.findFirst({
+      where: { id: String(dealId), status: "OPEN", candidateId: null },
+      select: { id: true, vacancyId: true },
+    });
+    if (!d) return { ok: false, fout: "vacature niet gevonden" };
+    const vacancyId = d.vacancyId ?? (await mirrorDealToVacancy(d.id));
+    if (!vacancyId) return { ok: false, fout: "geen vacature" };
+    await aiImproveVacancy(vacancyId);
+    return { ok: true };
+  } catch (e) {
+    const fout = e instanceof Error ? e.message : String(e);
+    console.error("[website] tekst schrijven mislukt:", fout);
+    return { ok: false, fout: fout.slice(0, 200) };
+  }
+}
+
+/** Na de voortgang: lijsten verversen. */
+export async function verversWebsite() {
+  revalidatePath("/website");
+}
+
 /** Gereed → online: één, de selectie of alles tegelijk live op q4s.nl. */
 export async function zetOnline(formData: FormData) {
   const ids = gekozen(formData);

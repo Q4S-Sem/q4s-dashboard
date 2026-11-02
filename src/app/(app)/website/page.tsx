@@ -17,9 +17,10 @@ import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 import { naarGereed, zetOnline } from "./actions";
 import { pauseVacancy } from "../vacatures/actions";
-import { CloudOff, CloudUpload, Sparkles } from "lucide-react";
+import { CloudOff, CloudUpload } from "lucide-react";
 import { publicVacancyUrl } from "@/lib/public-site";
 import { VacatureTabs, websiteFase } from "../crm/vacatures/VacatureTabs";
+import { AllesNaarGereed, NaarGereedKnop } from "./TekstVoortgang";
 
 /** LinkedIn-logo (lucide heeft geen merk-icoon). */
 function LinkedinIcon({ className }: { className?: string }) {
@@ -172,29 +173,19 @@ export default async function WebsitePage({
                     <CloudUpload className="h-4 w-4" /> Selectie online zetten
                   </SubmitButton>
                 )}
+                {active === "concept" ? (
+                  <AllesNaarGereed ids={visible.map(({ d }) => d.id)} />
+                ) : (
                 <SubmitButton
                   name="knop"
                   value={alleIds}
                   variant={active === "gereed" ? "success" : "primary"}
                   size="sm"
-                  pendingLabel={
-                    active === "concept"
-                      ? "AI schrijft de teksten…"
-                      : "Online zetten…"
-                  }
+                  pendingLabel="Online zetten…"
                 >
-                  {active === "concept" ? (
-                    <>
-                      <Sparkles className="h-4 w-4" /> Alles naar gereed (
-                      {visible.length})
-                    </>
-                  ) : (
-                    <>
-                      <CloudUpload className="h-4 w-4" /> Alles online zetten (
-                      {visible.length})
-                    </>
-                  )}
+                  <CloudUpload className="h-4 w-4" /> Alles online zetten ({visible.length})
                 </SubmitButton>
+                )}
               </div>
             )}
 
@@ -276,17 +267,7 @@ export default async function WebsitePage({
                         {/* Acties — de doorlopende flow: uitwerken · LinkedIn · sollicitaties */}
                         <div className="flex shrink-0 flex-wrap items-center gap-2">
                           {bucket === "concept" ? (
-                            <SubmitButton
-                              name="knop"
-                              value={d.id}
-                              variant="outline"
-                              size="icon"
-                              pendingLabel="…"
-                              title="Website-tekst laten schrijven en naar Gereed"
-                              aria-label="Naar gereed"
-                            >
-                              <Globe className="h-4 w-4" />
-                            </SubmitButton>
+                            <NaarGereedKnop dealId={d.id} />
                           ) : (
                             vac && (
                               <Link
