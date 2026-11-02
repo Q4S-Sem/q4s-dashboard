@@ -58,9 +58,67 @@ export function fotoSleutel(disciplineLabel: string, titel = ""): string {
   );
 }
 
+/** Context per vakgebied: maakt de zoekvraag "industrieel" (Transport Engineer = scheepswerf, geen vrachtwagen). */
+const ZOEK_CONTEXT: Record<string, string> = {
+  LASSEN: "welding steel",
+  FITTER: "pipe fitter industrial",
+  MECHANISCH: "mechanic industrial machinery",
+  E_I: "electrician industrial",
+  NDO: "industrial inspection",
+  COMMISSIONING: "industrial plant engineer",
+  QA_QC: "quality inspector steel construction",
+  HSEQ: "safety helmet construction site",
+  PROJECT_CONTROLS: "engineer planning office",
+  PROJECTMANAGEMENT: "project manager construction site",
+  WERKVOORBEREIDING: "engineer technical drawings",
+  ENGINEERING: "engineer industrial shipyard",
+  CIVIL: "civil engineer construction",
+  OVERIG: "industrial worker steel",
+};
+
+/** Zoekvraag voor de foto: de functietitel zelf + industriële context. */
+export function fotoZoekvraag(disciplineLabel: string, titel: string): string {
+  return `${titel.replace(/[^\p{L}\p{N} ]+/gu, " ").trim()} ${ZOEK_CONTEXT[fotoSleutel(disciplineLabel, titel)] ?? ZOEK_CONTEXT.OVERIG}`;
+}
+
+/**
+ * Foto van het internet die bij de TITEL past: Pexels (vrij te gebruiken, ook
+ * commercieel, geen naamsvermelding nodig). `nr` (de shuffle-knop) bladert door
+ * de resultaten. Geen PEXELS_API_KEY of geen resultaat → null (eigen set).
+ * ponytail: per proces gecachet op zoekvraag; Vercel Blob-cache als de API-limiet (200/u) knelt.
+ */
+const pexelsCache = new Map<string, string[]>();
+async function internetFoto(disciplineLabel: string, titel: string, nr: number): Promise<string | null> {
+  const key = process.env.PEXELS_API_KEY;
+  if (!key || !titel.trim()) return null;
+  try {
+    const q = fotoZoekvraag(disciplineLabel, titel);
+    let urls = pexelsCache.get(q);
+    if (!urls) {
+      const res = await fetch(
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&orientation=portrait&size=large&per_page=15`,
+        { headers: { Authorization: key }, signal: AbortSignal.timeout(5000) },
+      );
+      if (!res.ok) throw new Error(`Pexels ${res.status}`);
+      const data = (await res.json()) as { photos?: { src?: { portrait?: string } }[] };
+      urls = (data.photos ?? []).map((p) => p.src?.portrait).filter((u): u is string => !!u);
+      pexelsCache.set(q, urls);
+    }
+    if (!urls.length) return null;
+    const img = await fetch(urls[((nr % urls.length) + urls.length) % urls.length], { signal: AbortSignal.timeout(6000) });
+    if (!img.ok) return null;
+    return `data:image/jpeg;base64,${Buffer.from(await img.arrayBuffer()).toString("base64")}`;
+  } catch (e) {
+    console.warn(`[linkedin] internetfoto mislukt (${e instanceof Error ? e.message : e}) — eigen set.`);
+    return null;
+  }
+}
+
 /** Per vakgebied meerdere foto's (<SLEUTEL>.jpg, <SLEUTEL>-2.jpg …); `nr` kiest er
  *  één (modulo het aantal), zodat vacatures in hetzelfde vak niet dezelfde krijgen. */
 async function fotoVoor(disciplineLabel: string, titel = "", nr = 0): Promise<string> {
+  const online = await internetFoto(disciplineLabel, titel, nr);
+  if (online) return online;
   const d = fotoSleutel(disciplineLabel, titel);
   const dir = path.join(process.cwd(), "public", "linkedin", "foto");
   const set = (await readdir(dir)).filter((f) => f === `${d}.jpg` || new RegExp(`^${d}-\\d+\\.jpg$`).test(f)).sort();
