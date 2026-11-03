@@ -144,9 +144,9 @@ function WerkplekKiezer({ hub, hubs, onNavigate }: { hub: NavHub | null; hubs: N
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex w-full items-center gap-2.5 rounded-md border border-ink-200 bg-white px-2 py-1.5 text-left shadow-[0_1px_1px_rgb(0_0_0/0.04)] transition-colors hover:border-ink-300"
+        className="flex h-9 w-full items-center gap-2.5 rounded-md px-1.5 text-left transition-colors hover:bg-ink-200/50"
       >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-ink-900 text-[10px] font-bold tracking-tight text-white">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-ink-900 text-[9px] font-bold tracking-tight text-white">
           Q4S
         </span>
         <span className="min-w-0 flex-1">
@@ -198,8 +198,11 @@ function Zijbalk({
 }) {
   return (
     <>
-      <div className="px-3 pb-2 pt-3">
-        <WerkplekKiezer hub={hub} hubs={hubs} onNavigate={onNavigate} />
+      {/* Even hoog als de bovenbalk (h-12) met dezelfde onderlijn: één doorlopende lijn. */}
+      <div className="flex h-12 shrink-0 items-center border-b border-ink-300/60 px-2">
+        <div className="w-full">
+          <WerkplekKiezer hub={hub} hubs={hubs} onNavigate={onNavigate} />
+        </div>
       </div>
       <nav className="flex-1 overflow-y-auto px-3 py-2">
         {hub ? (
