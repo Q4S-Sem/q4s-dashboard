@@ -278,7 +278,7 @@ export function eersteReactie(inp: PostInput): string {
     url ? `Alle details: ${url}` : "",
   ]
     .filter(Boolean)
-    .join("\n");
+    .join("\n\n"); // lege regel ertussen: los te lezen na plakken in LinkedIn
 }
 
 export function buildLinkedinPost(inp: PostInput, opties: PostOpties = {}): string {

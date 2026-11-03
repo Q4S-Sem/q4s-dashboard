@@ -21,6 +21,6 @@ test("gekozen hook bovenaan, links naar de eerste reactie", () => {
   const post = buildLinkedinPost(inp, { hook: "Gezocht: QM", linksInReactie: true });
   assert.ok(post.startsWith("𝗚𝗲𝘇𝗼𝗰𝗵𝘁"));
   assert.ok(!post.includes("https://"));
-  assert.match(eersteReactie(inp), /cv-uploaden\?vacancy=quality-manager-csa-2\nAlle details: https:\/\/www\.q4s\.nl\/nl\/vacatures\/quality-manager-csa-2/);
+  assert.match(eersteReactie(inp), /cv-uploaden\?vacancy=quality-manager-csa-2\n\nAlle details: https:\/\/www\.q4s\.nl\/nl\/vacatures\/quality-manager-csa-2/);
   assert.ok(buildLinkedinPost(inp).includes("https://www.q4s.nl/nl/cv-uploaden"));
 });
