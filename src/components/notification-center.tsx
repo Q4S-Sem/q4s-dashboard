@@ -71,24 +71,21 @@ export function NotificationCenter({ data }: { data: Notifications }) {
   const { groups, urgent } = data;
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative h-full">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={`Meldingen${urgent > 0 ? ` (${urgent})` : ""}`}
         aria-haspopup="menu"
         className={cn(
-          "relative inline-flex h-9 w-9 items-center justify-center rounded-md border transition-all",
-          open
-            ? "border-brand-700 bg-brand-700 text-white"
-            : urgent > 0
-              ? "border-ink-200 bg-white text-ink-700 hover:border-ink-300 hover:bg-ink-50"
-              : "border-transparent text-ink-400 hover:bg-ink-100 hover:text-ink-900",
+          "inline-flex h-full items-center gap-1.5 px-2.5 text-[12px] font-medium transition-colors",
+          open ? "bg-ink-100 text-ink-900" : "text-ink-600 hover:bg-ink-50 hover:text-ink-900",
         )}
       >
-        <Bell className="h-[18px] w-[18px]" />
+        <Bell className="h-4 w-4" />
+        <span className="hidden sm:inline">Meldingen</span>
         {urgent > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold tabular-nums text-white ring-2 ring-white">
+          <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-semibold tabular-nums text-white">
             {urgent > 99 ? "99+" : urgent}
           </span>
         )}
@@ -97,7 +94,7 @@ export function NotificationCenter({ data }: { data: Notifications }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-[24rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-md border border-ink-200 bg-white shadow-2xl"
+          className="absolute right-0 top-full z-50 mt-2 w-[24rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-md border border-ink-200 bg-white shadow-2xl"
         >
           {/* Kop: titel links, aantal nieuw rechts. */}
           <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-5 py-3.5">

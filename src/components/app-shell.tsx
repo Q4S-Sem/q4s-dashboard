@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LogOut, ChevronRight, ChevronsUpDown, LayoutGrid, Check } from "lucide-react";
+import { Menu, X, LogOut, ChevronRight, ChevronsUpDown, LayoutGrid, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hubForPath, itemIsActive, visibleItems, accessibleHubs, type NavHub, type NavItem, type UserAccess } from "./nav";
 import { ConnectionStatus } from "./connection-status";
 import { NotificationCenter } from "./notification-center";
-import { AskAi } from "./ask-ai";
+import { AskAi, ASK_AI_EVENT } from "./ask-ai";
 import { Avatar } from "./ui/avatar";
 import type { Notifications } from "@/lib/notifications";
 import { logout } from "@/app/login/actions";
@@ -285,7 +285,7 @@ export function AppShell({
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          <nav aria-label="Broodkruimel" className="flex min-w-0 items-center gap-1.5 text-[13px]">
+          <nav aria-label="Broodkruimel" className="flex min-w-0 flex-1 items-center gap-1.5 text-[13px]">
             {hub ? (
               <>
                 <Link href={hubStart} className="truncate text-ink-500 transition-colors hover:text-ink-900">
@@ -302,8 +302,18 @@ export function AppShell({
               <span className="font-medium text-ink-900">Werkplekken</span>
             )}
           </nav>
-          <div className="ml-auto flex items-center gap-0.5">
+          {/* Rechtsboven één knoppengroep: verbinding · AI-hulp · meldingen. */}
+          <div className="ml-auto flex h-8 shrink-0 items-stretch divide-x divide-ink-200 rounded-md border border-ink-200 bg-white">
             <ConnectionStatus />
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event(ASK_AI_EVENT))}
+              title="AI-hulp: stel een vraag over het dashboard"
+              className="inline-flex items-center gap-1.5 px-2.5 text-[12px] font-medium text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">AI-hulp</span>
+            </button>
             {notifications && <NotificationCenter data={notifications} />}
           </div>
         </header>
