@@ -197,7 +197,7 @@ export function HubTile({
     <Link
       href={href}
       className={cn(
-        "group q4s-hoverable flex flex-col rounded-md border border-ink-100 bg-white p-4 hover:-translate-y-0.5",
+        "group q4s-hoverable flex flex-col rounded-lg border border-ink-200 bg-white p-4",
       )}
     >
       <div className="flex items-center gap-2.5">

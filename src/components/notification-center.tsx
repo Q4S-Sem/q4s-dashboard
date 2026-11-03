@@ -82,7 +82,7 @@ export function NotificationCenter({ data }: { data: Notifications }) {
           open
             ? "border-brand-700 bg-brand-700 text-white"
             : urgent > 0
-              ? "border-ink-200 bg-white text-ink-700 shadow-sm hover:-translate-y-0.5 hover:border-ink-300"
+              ? "border-ink-200 bg-white text-ink-700 hover:border-ink-300 hover:bg-ink-50"
               : "border-transparent text-ink-400 hover:bg-ink-100 hover:text-ink-900",
         )}
       >

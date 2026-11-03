@@ -188,7 +188,7 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
                 <Link
                   key={it.id}
                   href={it.href ?? href(it.name)}
-                  className="group flex items-center gap-4 rounded-xl border border-ink-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-ink-300 hover:shadow-md"
+                  className="group flex items-center gap-4 rounded-lg border border-ink-200 bg-white p-4 transition-colors hover:border-ink-300 hover:bg-ink-50"
                 >
                   <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl", t)}>
                     <Icon className="h-6 w-6" strokeWidth={1.75} />

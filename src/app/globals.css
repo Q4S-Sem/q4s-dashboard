@@ -263,15 +263,14 @@ body {
   color: var(--color-ink-900);
 }
 
-/* Kaart die oplicht bij hover — rand wordt zwart */
+/* Klikbare kaart: bij hover een iets donkerdere rand en lichtgrijs vlak (vlak, geen schaduw). */
 @utility q4s-hoverable {
   transition:
     border-color 120ms ease,
-    box-shadow 120ms ease,
-    transform 120ms ease;
+    background-color 120ms ease;
   &:hover {
-    border-color: var(--color-ink-900);
-    box-shadow: 0 10px 24px -18px rgb(0 0 0 / 0.55);
+    border-color: var(--color-ink-300);
+    background-color: var(--color-ink-50);
   }
 }
 
