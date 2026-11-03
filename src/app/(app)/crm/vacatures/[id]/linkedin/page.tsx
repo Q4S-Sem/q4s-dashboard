@@ -27,7 +27,8 @@ export default async function LinkedInImagePage({ params }: { params: Promise<{ 
   });
   if (!deal) notFound();
 
-  const defaults = cardDefaultsFromDeal(deal);
+  // Elke vacature een eigen startfoto (vast per vacature), niet allemaal foto 0.
+  const defaults = { ...cardDefaultsFromDeal(deal), foto: [...deal.id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 997, 0) };
 
   return (
     <div className="space-y-6">
