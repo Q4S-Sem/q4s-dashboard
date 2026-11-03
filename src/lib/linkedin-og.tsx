@@ -123,6 +123,7 @@ async function internetFoto(disciplineLabel: string, titel: string, nr: number):
       urls = (await zoekFotoUrls(q)) ?? [];
       if (!urls.length) urls = (await zoekFotoUrls(fotoZoekvraag(disciplineLabel, ""))) ?? [];
       pexelsCache.set(q, urls);
+      console.info(`[linkedin] internetfoto: ${urls.length} resultaten voor "${q}".`);
     }
     if (!urls.length) return null;
     const img = await fetch(urls[((nr % urls.length) + urls.length) % urls.length], { signal: AbortSignal.timeout(6000) });
