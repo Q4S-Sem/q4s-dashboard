@@ -202,7 +202,7 @@ export function LinkedInStudio({
     if (!kaart) return;
     setBezig(true);
     try {
-      const blob = await (await fetch(beeldUrl)).blob();
+      const blob = await (await fetch(beeldUrl, { cache: "force-cache" })).blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

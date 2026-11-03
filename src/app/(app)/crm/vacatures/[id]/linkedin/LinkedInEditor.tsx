@@ -43,7 +43,7 @@ export function LinkedInEditor({
   async function download() {
     setDownloading(true);
     try {
-      const res = await fetch(previewUrl);
+      const res = await fetch(previewUrl, { cache: "force-cache" });
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

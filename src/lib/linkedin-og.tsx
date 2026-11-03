@@ -88,6 +88,8 @@ export function fotoZoekvraag(disciplineLabel: string, titel: string): string {
  * ponytail: per proces gecachet op zoekvraag; Vercel Blob-cache als de API-limiet (200/u) knelt.
  */
 const pexelsCache = new Map<string, string[]>();
+// ponytail: onbegrensd per proces; LRU als het geheugen knelt (een foto ≈ 300 KB).
+const fotoBytes = new Map<string, string>();
 /** Zoek foto-URL's: Pixabay (gratis sleutel, direct te krijgen) of Pexels (als je al een sleutel hebt). */
 async function zoekFotoUrls(q: string): Promise<string[] | null> {
   const pixabay = process.env.PIXABAY_API_KEY;
@@ -126,9 +128,23 @@ async function internetFoto(disciplineLabel: string, titel: string, nr: number):
       console.info(`[linkedin] internetfoto: ${urls.length} resultaten voor "${q}".`);
     }
     if (!urls.length) return null;
-    const img = await fetch(urls[((nr % urls.length) + urls.length) % urls.length], { signal: AbortSignal.timeout(6000) });
-    if (!img.ok) return null;
-    return `data:image/jpeg;base64,${Buffer.from(await img.arrayBuffer()).toString("base64")}`;
+    // Zelfde foto bij voorbeeld én download: bytes per URL gecachet; lukt de gekozen
+    // foto niet, dan de volgende uit DEZELFDE zoekresultaten (nooit de eigen set).
+    const start = ((nr % urls.length) + urls.length) % urls.length;
+    for (let i = 0; i < Math.min(3, urls.length); i++) {
+      const url = urls[(start + i) % urls.length];
+      const al = fotoBytes.get(url);
+      if (al) return al;
+      const img = await fetch(url, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+      if (!img?.ok) {
+        console.warn(`[linkedin] foto ophalen mislukt (${img?.status ?? "timeout"}) — volgende.`);
+        continue;
+      }
+      const data = `data:image/jpeg;base64,${Buffer.from(await img.arrayBuffer()).toString("base64")}`;
+      fotoBytes.set(url, data);
+      return data;
+    }
+    return null;
   } catch (e) {
     console.warn(`[linkedin] internetfoto mislukt (${e instanceof Error ? e.message : e}) — eigen set.`);
     return null;
