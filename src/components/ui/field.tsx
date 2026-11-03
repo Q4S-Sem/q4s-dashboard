@@ -11,7 +11,7 @@ export { Select } from "./select";
 // formulieren op q4s.nl.
 /** Basisstijl van elk invoerveld (ook voor een los native veld). */
 export const fieldBase =
-  "block w-full rounded-sm border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/25 disabled:cursor-not-allowed disabled:bg-ink-50";
+  "block w-full rounded-md border border-ink-200 bg-white px-3 py-[7px] text-[13px] text-ink-900 shadow-[0_1px_1px_rgb(0_0_0/0.03)] placeholder:text-ink-400 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10 disabled:cursor-not-allowed disabled:bg-ink-50";
 
 export const Input = React.forwardRef<
   HTMLInputElement,

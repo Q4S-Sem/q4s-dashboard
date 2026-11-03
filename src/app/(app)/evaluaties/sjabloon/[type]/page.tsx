@@ -52,7 +52,7 @@ export default async function EvaluatieSjabloonPage({
       <style>{`
         /* Vult exact de ruimte onder de app-header (h-14 = 3.5rem), zodat de
            pagina zelf niet scrollt en de balk dus niet meebeweegt. */
-        .ev-sjabloon-shell { height: calc(100dvh - 3.5rem); }
+        .ev-sjabloon-shell { height: calc(100dvh - 3rem); }
         .ev-schaduw > .ev-vel {
           box-shadow: 0 18px 50px -24px rgb(0 0 0 / 0.45);
           border: 1px solid #e7e7e5;

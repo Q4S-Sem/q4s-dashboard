@@ -200,7 +200,7 @@ export default async function FacturatiePage({
       {/* Kop: titel links, weekkiezer rechts — één regel, geen lucht. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="q4s-display text-[26px]">Week verwerken</h1>
+          <h1 className="q4s-display text-[22px]">Week verwerken</h1>
           <p className="text-[13px] text-ink-400">
             Week {week.isoWeek} · {week.bereik} · deadline {DEADLINE_LABEL} {formatDate(week.deadline)}
           </p>

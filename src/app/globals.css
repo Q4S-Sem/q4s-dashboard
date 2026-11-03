@@ -20,17 +20,18 @@
   --color-brand-800: #000000;
   --color-brand-900: #000000;
 
-  /* Zwart/antraciet van de site — voor koppen, knoppen en randen. */
-  --color-ink-50: #f6f6f5;
-  --color-ink-100: #e7e7e5;
-  --color-ink-200: #d1d1ce;
-  --color-ink-300: #a8a8a3;
-  --color-ink-400: #787873;
-  --color-ink-500: #4d4d49;
-  --color-ink-600: #2e2e2b;
-  --color-ink-700: #1c1c1a;
-  --color-ink-800: #111110;
-  --color-ink-900: #000000;
+  /* Neutraal koel grijs (zwart · lichtgrijs · wit) — koppen, knoppen, randen,
+     zijbalk. 400 blijft leesbaar als tekst (≥4,5:1 op wit). */
+  --color-ink-50: #f7f7f8;
+  --color-ink-100: #efeff1;
+  --color-ink-200: #e3e3e6;
+  --color-ink-300: #c9c9ce;
+  --color-ink-400: #71717a;
+  --color-ink-500: #52525b;
+  --color-ink-600: #3f3f46;
+  --color-ink-700: #27272a;
+  --color-ink-800: #18181b;
+  --color-ink-900: #09090b;
 
   /* ---------------------------------------------------------------------
      q4s.nl gebruikt vrijwel geen ronde hoeken. We schalen de hele
@@ -200,8 +201,8 @@ body {
 }
 
 body {
-  background: #f7f7f8; /* koel, licht neutraal — als het Studio Admin-dashboard */
-  color: #111110;
+  background: #ffffff; /* witte werkruimte; de zijbalk is lichtgrijs */
+  color: #18181b;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
@@ -215,20 +216,20 @@ body {
 /* Subtle, modern scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #c9c9c4 transparent;
+  scrollbar-color: #d4d4d8 transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #c9c9c4;
+  background: #d4d4d8;
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a3;
+  background: #a1a1aa;
   background-clip: content-box;
 }
 

@@ -9,7 +9,7 @@ export function Table({
   return (
     <div className="w-full overflow-x-auto">
       <table
-        className={cn("w-full border-collapse text-sm", className)}
+        className={cn("w-full border-collapse text-[13px]", className)}
         {...props}
       />
     </div>
@@ -19,7 +19,7 @@ export function Table({
 /** Eén tabelkop-stijl voor het hele dashboard (zoals Medewerkers): klein, uppercase, muted.
  *  `[&_button]`: sorteerknoppen erven anders geen uppercase/tracking (preflight). */
 export const TABEL_KOP =
-  "border-b border-ink-200 bg-ink-50/50 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-400 [&_button]:uppercase [&_button]:tracking-[0.06em]";
+  "border-b border-ink-200 bg-ink-50 text-left text-[12px] font-medium text-ink-500 [&_button]:font-medium";
 
 export function THead({
   className,
@@ -42,7 +42,7 @@ export function TBody({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn("divide-y divide-ink-100", className)} {...props} />;
+  return <tbody className={cn("divide-y divide-ink-200/70", className)} {...props} />;
 }
 
 export function TR({
@@ -53,7 +53,7 @@ export function TR({
   // zich over de héle rij kan uitrekken. Kost niets als je 'm niet gebruikt.
   return (
     <tr
-      className={cn("group relative transition-colors hover:bg-ink-50", className)}
+      className={cn("group relative transition-colors hover:bg-ink-50/80", className)}
       {...props}
     />
   );
@@ -93,12 +93,13 @@ export function TH({
   className,
   ...props
 }: React.ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th className={cn("px-4 py-2.5 font-semibold", className)} {...props} />;
+  // Spreadsheet-dichtheid: compacte rijen, cijfers op één lijn (tabular-nums).
+  return <th className={cn("h-9 whitespace-nowrap px-4 font-medium", className)} {...props} />;
 }
 
 export function TD({
   className,
   ...props
 }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn("px-4 py-3 text-ink-700", className)} {...props} />;
+  return <td className={cn("px-4 py-2.5 tabular-nums text-ink-700", className)} {...props} />;
 }

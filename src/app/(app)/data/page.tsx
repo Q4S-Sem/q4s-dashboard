@@ -86,7 +86,7 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="q4s-display text-[26px]">Data</h1>
+          <h1 className="q4s-display text-[22px]">Data</h1>
           <p className="text-[13px] text-ink-400">
             {inOneDrive ? "De Q4S-OneDrive — wat je hier doet, staat ook in OneDrive" : "Alle gegevens van het dashboard, per map"}
           </p>

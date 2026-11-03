@@ -379,7 +379,7 @@ export default async function DashboardPage({
       {/* Kop: persoonlijke begroeting (mockup-stijl) + periodefilter rechts */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="q4s-display text-[26px]">
+          <h1 className="q4s-display text-[22px]">
             {greeting}{firstName ? `, ${firstName}` : ""}
           </h1>
           <p className="mt-0.5 text-sm text-ink-400">

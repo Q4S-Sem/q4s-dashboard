@@ -22,18 +22,18 @@ function AppCard({
   return (
     <Link
       href={href}
-      className="group animate-card-in relative flex items-center gap-4 rounded-lg border border-ink-200 bg-white p-5 shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_1px_2px_-1px_rgb(0_0_0/0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-ink-900 hover:shadow-[0_16px_34px_-22px_rgb(0_0_0/0.65)]"
+      className="group animate-card-in relative flex items-center gap-4 rounded-lg border border-ink-200 bg-white p-4 transition-colors duration-150 hover:border-ink-300 hover:bg-ink-50"
     >
       {/* Monochroom icoon in een grijs vlak — zoals de Facturatie-tegel. */}
-      <span className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-ink-100 bg-ink-50 transition-colors duration-200 group-hover:border-ink-900">
-        <Icon className="h-8 w-8 text-ink-800 transition-transform duration-200 group-hover:scale-105" />
+      <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-ink-200 bg-ink-50 transition-colors duration-150 group-hover:bg-white">
+        <Icon className="h-5 w-5 text-ink-800" />
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[17px] font-bold tracking-tight text-ink-900">
+        <span className="block truncate text-[15px] font-semibold text-ink-900">
           {label}
         </span>
-        <span className="mt-0.5 block truncate text-[14px] text-ink-400">
+        <span className="mt-0.5 block truncate text-[13px] text-ink-400">
           {count > 0
             ? `${count} ${count === 1 ? "actie open" : "acties open"}`
             : "Bijgewerkt"}
@@ -43,7 +43,7 @@ function AppCard({
       {/* Teller rechtsboven (alleen als er wat openstaat). */}
       {count > 0 && (
         <span
-          className="inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-md bg-ink-900 px-2 text-sm font-bold tabular-nums text-white"
+          className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-md bg-ink-900 px-1.5 text-xs font-semibold tabular-nums text-white"
           title={`${count} openstaand${count === 1 ? "e melding" : "e meldingen"}`}
           aria-label={`${count} openstaande meldingen`}
         >
@@ -52,7 +52,7 @@ function AppCard({
       )}
 
       {/* Pijl die bij hover naar buiten schuift. */}
-      <ArrowUpRight className="h-5 w-5 shrink-0 text-ink-300 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-ink-900" />
+      <ArrowUpRight className="h-4 w-4 shrink-0 text-ink-300 transition-colors group-hover:text-ink-900" />
     </Link>
   );
 }
@@ -66,12 +66,12 @@ export default async function StartPage() {
   const hubs = accessibleHubs(user);
 
   return (
-    <div className="mx-auto max-w-6xl pt-2 sm:pt-4">
+    <div className="max-w-6xl">
       <header className="mb-6">
-        <h1 className="q4s-display text-[26px]">
+        <h1 className="q4s-display text-[22px]">
           Waar wil je aan werken?
         </h1>
-        <p className="mt-1 text-[15px] text-ink-500">
+        <p className="mt-1 text-[13px] text-ink-500">
           {open > 0
             ? `${open} ${open === 1 ? "actie staat" : "acties staan"} open — de tellers wijzen de weg.`
             : "Alles is bijgewerkt. Kies een werkplek om te beginnen."}
@@ -79,7 +79,7 @@ export default async function StartPage() {
       </header>
 
       {/* Linksuitgelijnd kaartraster — vult de breedte, geen losse gecentreerde iconen. */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {hubs.map((h) => (
           <AppCard
             key={h.href}

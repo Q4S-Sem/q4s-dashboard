@@ -8,9 +8,9 @@ export function Card({
   return (
     <div
       className={cn(
-        // Zacht zwevende kaart met dunne rand — zoals het Studio Admin-dashboard.
-        // Komt subtiel op bij het laden (entrance-animatie).
-        "animate-card-in rounded-lg border border-ink-200 bg-white shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_1px_2px_-1px_rgb(0_0_0/0.06)]",
+        // Vlakke witte kaart met een dunne grijze rand (geen schaduw): rustig en
+        // overzichtelijk op de witte werkruimte. Komt subtiel op bij het laden.
+        "animate-card-in rounded-lg border border-ink-200 bg-white",
         className,
       )}
       {...props}
@@ -25,7 +25,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4 border-b border-ink-100 px-5 py-4",
+        "flex items-center justify-between gap-4 border-b border-ink-200 px-5 py-3.5",
         className,
       )}
       {...props}
@@ -61,7 +61,7 @@ export function CardFooter({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("border-t border-ink-100 px-5 py-4", className)}
+      className={cn("border-t border-ink-200 px-5 py-3.5", className)}
       {...props}
     />
   );

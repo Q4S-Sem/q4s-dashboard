@@ -33,9 +33,9 @@ export function PageHeader({
         {leading}
         <div className="min-w-0">
           {eyebrow && <p className="q4s-eyebrow mb-1">{eyebrow}</p>}
-          <h1 className="q4s-display text-[26px]">{title}</h1>
+          <h1 className="q4s-display text-[22px]">{title}</h1>
           {description && (
-            <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-ink-500">
+            <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-ink-500">
               {description}
             </p>
           )}

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 export type ComboPerson = { id: string; name: string };
 
 const fieldBase =
-  "block w-full rounded-lg border border-ink-300 bg-white px-3 py-2 pr-9 text-sm text-ink-900 shadow-sm placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30";
+  "block w-full rounded-md border border-ink-200 bg-white px-3 py-[7px] text-[13px] text-ink-900 shadow-[0_1px_1px_rgb(0_0_0/0.03)] placeholder:text-ink-400 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10 pr-9";
 
 /**
  * A typeable person picker. As you type it filters existing people; pick one to

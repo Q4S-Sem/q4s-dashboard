@@ -26,7 +26,7 @@ export function PrintBar({
 }) {
   const shell = panel
     ? "no-print flex shrink-0 flex-wrap items-center gap-3 border-b border-ink-200 bg-white px-4 py-3 shadow-sm sm:px-6"
-    : "no-print sticky top-14 z-20 -mx-4 mb-6 flex flex-wrap items-center gap-3 border-b border-ink-200 bg-white px-4 py-3 shadow-sm sm:-mx-6 sm:px-6";
+    : "no-print sticky top-12 z-20 -mx-4 mb-6 flex flex-wrap items-center gap-3 border-b border-ink-200 bg-white px-4 py-3 shadow-sm sm:-mx-6 sm:px-6";
   return (
     <div className={shell}>
       <Link href={terug} className={buttonVariants({ variant: "outline", size: "sm" })}>

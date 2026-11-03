@@ -82,7 +82,7 @@ function rankOptions(items: Opt[], query: string): Opt[] {
 }
 
 const triggerBase =
-  "flex w-full items-center justify-between gap-2 rounded-sm border border-ink-200 bg-white px-3 py-2 text-left text-sm text-ink-900 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-600 disabled:cursor-not-allowed disabled:bg-ink-50";
+  "flex w-full items-center justify-between gap-2 rounded-md border border-ink-200 bg-white px-3 py-[7px] text-left text-[13px] text-ink-900 shadow-[0_1px_1px_rgb(0_0_0/0.03)] transition-colors focus:outline-none focus:ring-2 focus:ring-ink-900/10 focus:border-ink-900 disabled:cursor-not-allowed disabled:bg-ink-50";
 
 /** Geschatte maximale hoogte van het open menu (zoekbalk + lijst). */
 const MENU_MAX_H = 300;
@@ -267,7 +267,7 @@ export function Select({
         bottom: pos.bottom,
         maxHeight: MENU_MAX_H,
       }}
-      className="z-[130] flex flex-col overflow-hidden rounded-sm border border-ink-900 bg-white shadow-[0_16px_36px_-22px_rgb(0_0_0/0.55)]"
+      className="z-[130] flex flex-col overflow-hidden rounded-md border border-ink-200 bg-white shadow-lg"
     >
       {searchable && (
         <div className="flex items-center gap-2 border-b border-ink-100 px-2.5 py-2">

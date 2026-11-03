@@ -182,7 +182,7 @@ export default async function VerkoopfactuurPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="q4s-display text-[26px]">
+            <h1 className="q4s-display text-[22px]">
               {invoice.number}
             </h1>
             <StatusBadge options={INVOICE_STATUSES} value={weergave} />

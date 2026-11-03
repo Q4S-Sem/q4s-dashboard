@@ -17,19 +17,19 @@ const base =
   "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 whitespace-nowrap cursor-pointer active:translate-y-px [&_svg]:size-4 [&_svg]:shrink-0";
 
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-brand-600 text-white shadow-sm hover:bg-brand-700",
-  secondary: "bg-ink-900 text-white shadow-sm hover:bg-ink-700",
+  primary: "bg-ink-900 text-white shadow-sm hover:bg-ink-700",
+  secondary: "bg-ink-100 text-ink-900 hover:bg-ink-200",
   outline:
-    "border border-ink-200 bg-white text-ink-800 shadow-sm hover:border-ink-300 hover:bg-ink-50",
+    "border border-ink-200 bg-white text-ink-800 shadow-[0_1px_1px_rgb(0_0_0/0.04)] hover:border-ink-300 hover:bg-ink-50",
   ghost: "text-ink-500 hover:bg-ink-100 hover:text-ink-900",
   danger: "bg-red-600 text-white shadow-sm hover:bg-red-700",
   success: "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "h-8 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
-  lg: "h-11 px-5 text-base",
+  sm: "h-8 px-3 text-[13px]",
+  md: "h-9 px-3.5 text-[13px]",
+  lg: "h-10 px-5 text-sm",
   icon: "h-9 w-9",
 };
 
@@ -59,12 +59,12 @@ export const ICOON_KNOP =
  * in het hele dashboard. Zet de knoppen in een `<div className={SEGMENT_GROEP}>`.
  * Actief = zwart, net als de primaire knoppen; nooit een eigen kleur per pagina.
  */
-export const SEGMENT_GROEP = "inline-flex flex-wrap items-center gap-1 rounded-lg border border-ink-200 bg-white p-1";
+export const SEGMENT_GROEP = "inline-flex flex-wrap items-center gap-0.5 rounded-lg bg-ink-100 p-0.5";
 
 export function segmentVariants(active: boolean, className?: string) {
   return cn(
-    "inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 [&_svg]:size-4 [&_svg]:shrink-0",
-    active ? "bg-ink-900 text-white shadow-sm" : "text-ink-600 hover:bg-ink-100 hover:text-ink-900",
+    "inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 [&_svg]:size-4 [&_svg]:shrink-0",
+    active ? "bg-white text-ink-900 shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-ink-200" : "text-ink-500 hover:text-ink-900",
     className,
   );
 }
@@ -76,8 +76,8 @@ export function segmentVariants(active: boolean, className?: string) {
  */
 export function mapTabVariants(active: boolean) {
   return cn(
-    "inline-flex shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-medium transition-colors",
-    active ? "border-ink-300 border-b-[#fafafa] bg-white text-ink-900" : "border-transparent text-ink-500 hover:bg-ink-100 hover:text-ink-900",
+    "-mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-[13px] font-medium transition-colors",
+    active ? "border-ink-900 text-ink-900" : "border-transparent text-ink-500 hover:border-ink-300 hover:text-ink-900",
   );
 }
 
