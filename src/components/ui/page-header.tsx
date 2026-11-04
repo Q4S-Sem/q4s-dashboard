@@ -13,7 +13,7 @@ export function PageHeader({
   actions,
   className,
 }: {
-  title: string;
+  title: React.ReactNode;
   description?: React.ReactNode;
   /** Klein label boven de kop, bv. de hub- of sectienaam. */
   eyebrow?: string;

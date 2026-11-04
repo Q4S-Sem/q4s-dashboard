@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useActionState, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import Link from "next/link";
 import type { Deal } from "@prisma/client";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -106,6 +106,12 @@ export function DealForm({
   ];
   // Vacature: alle velden netjes onder elkaar (één kolom); plaatsing houdt kolommen.
   const rij = (kolommen: string) => (isVacature ? "grid gap-5" : `grid gap-5 ${kolommen}`);
+  // Kop "Nieuwe vacature (functietitel)" live bijwerken, ook na AI-invullen.
+  // ponytail: schrijft in een span van de (server)paginakop; context/prop als meer van de kop live moet.
+  useEffect(() => {
+    const el = document.getElementById("vacature-titel-live");
+    if (el) el.textContent = title.trim() ? `(${title.trim()})` : "";
+  }, [title]);
   const tabIdx = tabs.findIndex(([k]) => k === tab);
   const vorige = tabs[tabIdx - 1]?.[0];
   const volgende = tabs[tabIdx + 1]?.[0];
