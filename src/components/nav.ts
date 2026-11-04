@@ -118,7 +118,7 @@ const HUB_LIST: NavHub[] = [
     ],
   },
   {
-    label: "Personeelsgegevens",
+    label: "Gegevens",
     href: "/klanten",
     icon: Building2,
     items: [

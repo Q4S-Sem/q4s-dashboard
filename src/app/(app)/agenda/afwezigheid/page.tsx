@@ -73,7 +73,7 @@ export default async function AfwezigheidPage({
         <EmptyState
           icon={<Plane className="h-6 w-6" />}
           title="Nog geen medewerkers"
-          description="Voeg eerst je team toe bij Personeelsgegevens → Medewerkers om afwezigheid te kunnen melden."
+          description="Voeg eerst je team toe bij Gegevens → Medewerkers om afwezigheid te kunnen melden."
           action={
             <Link href="/medewerkers/nieuw" className={buttonVariants()}>
               Naar Medewerkers
