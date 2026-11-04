@@ -1,418 +1,179 @@
 import type * as React from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  BellRing,
-  CalendarClock,
-  ClipboardList,
-  FileUser,
-  Inbox,
-  ListTodo,
-  Sparkles,
-  Target,
-  Users,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, Kanban } from "lucide-react";
 import { db } from "@/lib/db";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Badge, StatusBadge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import { formatDate } from "@/lib/utils";
-import {
-  ALERT_TYPES,
-  APPLICATION_STATUSES,
-  CRM_NOTE_TYPES,
-  DISCIPLINES,
-  colorFor,
-  labelFor,
-} from "@/lib/domain";
-import {
-  APPLICATION_IDLE_DAYS,
-  CANDIDATE_IDLE_DAYS,
-  RECRUITMENT_KPI_LABELS,
-  stalledBefore,
-} from "@/lib/recruitment-kpi";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { afgelopen24Uur } from "@/lib/vandaag";
 import { getOpenTasks } from "@/lib/activities";
+import { DISCIPLINES, labelFor } from "@/lib/domain";
+import { formatDate, cn } from "@/lib/utils";
+import { sollicitatieNaarPipeline } from "@/app/(app)/crm/deals/actions";
 
-export const metadata = { title: "Cockpit" };
+export const metadata = { title: "Overzicht" };
 export const dynamic = "force-dynamic";
 
-// De Recruitment-cockpit: de werkvoorraad van de recruiter op één pagina. Puur
-// ALLEEN-LEZEN — elke kaart is een lijstje met doorklik-links naar de pagina waar
-// het werk gebeurt. Er wordt hier niets gemaild, van status veranderd of
-// aangemaakt; dat blijft overal een knop die een mens indrukt.
+/**
+ * Overzicht voor de recruiter: alleen wat dagelijks gebruikt wordt.
+ * Vier cijfers, sollicitaties om te beoordelen (met één klik als lead),
+ * de pipeline per fase en de opvolging. Verder niets.
+ */
 
-/** Hoeveel rijen per kaart; de rest zit achter de "alles bekijken"-link. */
-const ROWS = 6;
+const RIJEN = 8;
+const teLaat = (iso: string) => new Date(iso).getTime() < Date.now();
+const STIP: Record<string, string> = {
+  slate: "bg-ink-400", violet: "bg-violet-500", amber: "bg-amber-500", green: "bg-emerald-500",
+  emerald: "bg-emerald-500", blue: "bg-blue-500", red: "bg-red-500", cyan: "bg-cyan-500",
+};
 
-/** Sterke match = minstens deze score, gevonden in de afgelopen MATCH_DAYS dagen. */
-const STRONG_MATCH_SCORE = 0.7;
-const MATCH_DAYS = 7;
-
-/** De entiteiten waarvan een open taak recruitment-werk is. */
-const RECRUITMENT_TASK_ENTITIES = new Set(["candidate", "application"]);
-
-function candidateName(c: { firstName: string; lastName: string }): string {
-  return `${c.firstName} ${c.lastName}`.trim() || "Onbekende kandidaat";
-}
-
-/** Kaart met een lijstje werk + een link naar de pagina waar je het afhandelt. */
-function QueueCard({
-  title,
-  icon,
-  count,
-  href,
-  linkLabel,
-  emptyTitle,
-  emptyDescription,
-  children,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  count: number;
-  href: string;
-  linkLabel: string;
-  emptyTitle: string;
-  emptyDescription: string;
-  children: React.ReactNode;
-}) {
+function Blok({ titel, href, linkLabel, children }: { titel: string; href: string; linkLabel: string; children: React.ReactNode }) {
   return (
-    <Card className="flex flex-col">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {icon} {title}
-          <span className="text-xs font-normal text-ink-400">({count})</span>
-        </CardTitle>
-        <Link
-          href={href}
-          className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-ink-600 hover:text-brand-700"
-        >
+    <section className="min-w-0 rounded-md border border-ink-200 bg-white">
+      <header className="flex h-11 items-center justify-between border-b border-ink-200 px-4">
+        <h2 className="text-[13px] font-semibold text-ink-900">{titel}</h2>
+        <Link href={href} className="inline-flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-ink-900">
           {linkLabel} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
-      </CardHeader>
-      {count === 0 ? (
-        <CardContent className="p-2">
-          <EmptyState title={emptyTitle} description={emptyDescription} className="py-8" />
-        </CardContent>
-      ) : (
-        <CardContent className="p-0">
-          <div className="divide-y divide-ink-100">{children}</div>
-        </CardContent>
-      )}
-    </Card>
+      </header>
+      {children}
+    </section>
   );
 }
 
-function Row({
-  href,
-  primary,
-  secondary,
-  trailing,
-}: {
-  href: string;
-  primary: string;
-  secondary?: React.ReactNode;
-  trailing?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-3 px-5 py-3">
-      <div className="min-w-0">
-        <Link href={href} className="block truncate text-sm font-medium text-ink-900 hover:text-brand-700">
-          {primary}
-        </Link>
-        {secondary && (
-          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-500">{secondary}</p>
-        )}
-      </div>
-      {trailing && <div className="flex shrink-0 items-center gap-2">{trailing}</div>}
-    </div>
-  );
-}
+const Leeg = ({ children }: { children: React.ReactNode }) => (
+  <p className="px-4 py-8 text-center text-[13px] text-ink-400">{children}</p>
+);
 
-export default async function RecruitmentCockpitPage() {
-  const now = new Date();
-  const candidateCutoff = stalledBefore(now, CANDIDATE_IDLE_DAYS);
-  const applicationCutoff = stalledBefore(now, APPLICATION_IDLE_DAYS);
-  const matchCutoff = new Date(now.getTime() - MATCH_DAYS * 86_400_000);
-  const openApplicationStatuses = { in: ["NEW", "SCREENING", "PROPOSED"] };
-
-  const [
-    newApplications,
-    newApplicationCount,
-    openAlerts,
-    openAlertCount,
-    strongMatches,
-    strongMatchCount,
-    stalledCandidates,
-    stalledCandidateCount,
-    stalledApplications,
-    stalledApplicationCount,
-    openTasks,
-  ] = await Promise.all([
+export default async function OverzichtPage() {
+  const sinds24u = afgelopen24Uur();
+  const [binnen, teBeoordelen, nieuweSollicitaties, online, stages, perFase, taken] = await Promise.all([
+    db.candidate.count({ where: { createdAt: { gte: sinds24u } } }),
+    db.application.count({ where: { status: "NEW" } }),
     db.application.findMany({
       where: { status: "NEW" },
       orderBy: { createdAt: "desc" },
-      take: ROWS,
+      take: RIJEN,
       select: {
-        id: true,
-        createdAt: true,
-        candidate: { select: { firstName: true, lastName: true, discipline: true } },
+        id: true, createdAt: true, vacancyId: true,
+        candidate: { select: { id: true, firstName: true, lastName: true, discipline: true } },
         vacancy: { select: { title: true } },
       },
     }),
-    db.application.count({ where: { status: "NEW" } }),
-    db.recruiterAlert.findMany({
-      where: { read: false },
-      orderBy: { createdAt: "desc" },
-      take: ROWS,
-      select: { id: true, type: true, title: true, href: true, createdAt: true },
-    }),
-    db.recruiterAlert.count({ where: { read: false } }),
-    db.vacancyMatch.findMany({
-      where: { score: { gte: STRONG_MATCH_SCORE }, createdAt: { gte: matchCutoff } },
-      orderBy: [{ score: "desc" }, { createdAt: "desc" }],
-      take: ROWS,
-      select: {
-        id: true,
-        score: true,
-        reason: true,
-        candidate: { select: { id: true, firstName: true, lastName: true } },
-        vacancy: { select: { id: true, title: true } },
-      },
-    }),
-    db.vacancyMatch.count({
-      where: { score: { gte: STRONG_MATCH_SCORE }, createdAt: { gte: matchCutoff } },
-    }),
-    db.candidate.findMany({
-      where: { updatedAt: { lt: candidateCutoff } },
-      orderBy: { updatedAt: "asc" },
-      take: ROWS,
-      select: { id: true, firstName: true, lastName: true, discipline: true, updatedAt: true },
-    }),
-    db.candidate.count({ where: { updatedAt: { lt: candidateCutoff } } }),
-    db.application.findMany({
-      where: { status: openApplicationStatuses, updatedAt: { lt: applicationCutoff } },
-      orderBy: { updatedAt: "asc" },
-      take: ROWS,
-      select: {
-        id: true,
-        status: true,
-        updatedAt: true,
-        candidate: { select: { firstName: true, lastName: true } },
-        vacancy: { select: { title: true } },
-      },
-    }),
-    db.application.count({
-      where: { status: openApplicationStatuses, updatedAt: { lt: applicationCutoff } },
-    }),
+    db.vacancy.count({ where: { status: "PUBLISHED" } }),
+    db.crmStage.findMany({ where: { active: true }, orderBy: { order: "asc" }, select: { id: true, name: true, color: true, isLost: true } }),
+    db.deal.groupBy({ by: ["stageId"], where: { status: "OPEN", candidateId: { not: null } }, _count: true }),
     getOpenTasks(),
   ]);
 
-  // Hergebruik van het centrale "Te doen"-overzicht; hier alleen de taken die bij
-  // een kandidaat of sollicitatie horen.
-  const recruitmentTasks = openTasks.filter((t) => RECRUITMENT_TASK_ENTITIES.has(t.entityType));
-  const stalledTotal = stalledCandidateCount + stalledApplicationCount;
+  const fase = new Map(perFase.map((f) => [f.stageId, f._count]));
+  const inPipeline = perFase.reduce((n, f) => n + f._count, 0);
+  const leads = new Set(
+    (
+      await db.deal.findMany({
+        where: { status: "OPEN", candidateId: { in: nieuweSollicitaties.map((a) => a.candidate.id) } },
+        select: { candidateId: true, vacancyId: true },
+      })
+    ).map((d) => `${d.candidateId}:${d.vacancyId}`),
+  );
+  const opvolging = taken.filter((t) => t.entityType === "candidate" || t.entityType === "application").slice(0, RIJEN);
+
+  const cijfers = [
+    { label: "Binnen (24 uur)", waarde: binnen, href: "/kandidaten" },
+    { label: "Te beoordelen", waarde: teBeoordelen, href: "/sollicitaties" },
+    { label: "In pipeline", waarde: inPipeline, href: "/crm" },
+    { label: "Vacatures online", waarde: online, href: "/website?tab=online" },
+  ];
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Cockpit"
-        description="Je werkvoorraad als recruiter op één pagina: nieuwe sollicitaties, CV's die op review wachten, verse sterke matches en wat is blijven liggen. Alleen-lezen — klik door naar de pagina waar je het afhandelt."
-        actions={
-          <>
-            <Link href="/sollicitaties" className={buttonVariants({ variant: "outline" })}>
-              <ClipboardList className="h-4 w-4" /> Sollicitaties
-            </Link>
-            <Link href="/kandidaten" className={buttonVariants()}>
-              <Users className="h-4 w-4" /> Talentpool
-            </Link>
-          </>
-        }
-      />
+      <PageHeader title="Overzicht" description="Wat er vandaag speelt. Klik door om het af te handelen." />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Nieuwe sollicitaties"
-          value={newApplicationCount}
-          sub="fase Nieuw"
-          icon={<Inbox className="h-5 w-5" />}
-          accent={newApplicationCount ? "brand" : "slate"}
-        />
-        <StatCard
-          label="CV's te beoordelen"
-          value={openAlertCount}
-          sub="ongelezen meldingen"
-          icon={<BellRing className="h-5 w-5" />}
-          accent={openAlertCount ? "violet" : "slate"}
-        />
-        <StatCard
-          label="Nieuwe sterke matches"
-          value={strongMatchCount}
-          sub={`≥ ${Math.round(STRONG_MATCH_SCORE * 100)}% · laatste ${MATCH_DAYS} dagen`}
-          icon={<Sparkles className="h-5 w-5" />}
-          accent={strongMatchCount ? "green" : "slate"}
-        />
-        <StatCard
-          label="Vastgelopen"
-          value={stalledTotal}
-          sub={`kandidaten > ${CANDIDATE_IDLE_DAYS} dagen · sollicitaties > ${APPLICATION_IDLE_DAYS} dagen`}
-          icon={<CalendarClock className="h-5 w-5" />}
-          accent={stalledTotal ? "amber" : "slate"}
-        />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <QueueCard
-          title="Nieuwe sollicitaties"
-          icon={<Inbox className="h-4 w-4 text-ink-400" />}
-          count={newApplicationCount}
-          href="/sollicitaties"
-          linkLabel="Alle sollicitaties"
-          emptyTitle="Geen nieuwe sollicitaties"
-          emptyDescription="Alles in de fase Nieuw is opgepakt. Nieuwe reacties van de website komen hier automatisch te staan."
-        >
-          {newApplications.map((a) => (
-            <Row
-              key={a.id}
-              href={`/sollicitaties/${a.id}`}
-              primary={candidateName(a.candidate)}
-              secondary={
-                <>
-                  <span>{a.vacancy?.title ?? "geen vacature gekoppeld"}</span>
-                  {a.candidate.discipline && <span>{labelFor(DISCIPLINES, a.candidate.discipline)}</span>}
-                  <span>binnengekomen {formatDate(a.createdAt)}</span>
-                </>
-              }
-              trailing={<StatusBadge options={APPLICATION_STATUSES} value="NEW" />}
-            />
-          ))}
-        </QueueCard>
-
-        <QueueCard
-          title="CV's te beoordelen"
-          icon={<FileUser className="h-4 w-4 text-ink-400" />}
-          count={openAlertCount}
-          href="/website/cv-inbox"
-          linkLabel="Naar de CV-inbox"
-          emptyTitle="Geen openstaande meldingen"
-          emptyDescription="Elke uitgelezen CV-shortlist en elke dubbele kandidaat komt hier te staan tot je hem hebt nagekeken."
-        >
-          {openAlerts.map((alert) => (
-            <Row
-              key={alert.id}
-              href={alert.href ?? "/website/cv-inbox"}
-              primary={alert.title}
-              secondary={<span>{formatDate(alert.createdAt)}</span>}
-              trailing={
-                <Badge color={colorFor(ALERT_TYPES, alert.type)}>{labelFor(ALERT_TYPES, alert.type)}</Badge>
-              }
-            />
-          ))}
-        </QueueCard>
-
-        <QueueCard
-          title="Nieuwe sterke matches"
-          icon={<Target className="h-4 w-4 text-ink-400" />}
-          count={strongMatchCount}
-          href="/website/vacatures"
-          linkLabel="Naar de vacatures"
-          emptyTitle="Nog geen verse sterke matches"
-          emptyDescription={`Matches vanaf ${Math.round(STRONG_MATCH_SCORE * 100)}% uit de laatste ${MATCH_DAYS} dagen verschijnen hier. Ververs matches op een vacature.`}
-        >
-          {strongMatches.map((m) => (
-            <Row
-              key={m.id}
-              href={`/kandidaten/${m.candidate.id}`}
-              primary={candidateName(m.candidate)}
-              secondary={
-                <>
-                  <Link href={`/vacatures/${m.vacancy.id}`} className="hover:text-brand-700">
-                    {m.vacancy.title}
-                  </Link>
-                  {m.reason && <span className="line-clamp-1">{m.reason}</span>}
-                </>
-              }
-              trailing={
-                <span className="rounded-sm bg-emerald-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-emerald-800">
-                  {Math.round(m.score * 100)}%
-                </span>
-              }
-            />
-          ))}
-        </QueueCard>
-
-        <QueueCard
-          title="Blijven liggen"
-          icon={<CalendarClock className="h-4 w-4 text-ink-400" />}
-          count={stalledTotal}
-          href="/sollicitaties"
-          linkLabel="Naar de sollicitaties"
-          emptyTitle="Niets blijven liggen"
-          emptyDescription={`Geen kandidaat langer dan ${CANDIDATE_IDLE_DAYS} dagen en geen open sollicitatie langer dan ${APPLICATION_IDLE_DAYS} dagen zonder opvolging.`}
-        >
-          {stalledApplications.map((a) => (
-            <Row
-              key={a.id}
-              href={`/sollicitaties/${a.id}`}
-              primary={`${candidateName(a.candidate)} · ${a.vacancy?.title ?? "geen vacature gekoppeld"}`}
-              secondary={<span>bijgewerkt {formatDate(a.updatedAt)}</span>}
-              trailing={<StatusBadge options={APPLICATION_STATUSES} value={a.status} />}
-            />
-          ))}
-          {stalledCandidates.map((c) => (
-            <Row
-              key={c.id}
-              href={`/kandidaten/${c.id}`}
-              primary={candidateName(c)}
-              secondary={
-                <>
-                  {c.discipline && <span>{labelFor(DISCIPLINES, c.discipline)}</span>}
-                  <span>bijgewerkt {formatDate(c.updatedAt)}</span>
-                </>
-              }
-              trailing={<Badge color="amber">Kandidaat</Badge>}
-            />
-          ))}
-        </QueueCard>
-      </div>
-
-      <QueueCard
-        title="Open recruitment-taken"
-        icon={<ListTodo className="h-4 w-4 text-ink-400" />}
-        count={recruitmentTasks.length}
-        href="/kandidaten"
-        linkLabel="Naar de kandidaten"
-        emptyTitle="Geen open taken"
-        emptyDescription="Taken bij een kandidaat of sollicitatie — zelf vastgelegd of door een automatische regel aangemaakt — staan hier tot ze zijn afgevinkt."
-      >
-        {recruitmentTasks.slice(0, ROWS).map((t) => (
-          <Row
-            key={t.id}
-            href={t.href}
-            primary={t.body}
-            secondary={
-              <>
-                <span>{t.entityLabel}</span>
-                {t.dueAt && <span>uiterlijk {formatDate(t.dueAt)}</span>}
-                {t.ruleGenerated && (
-                  <span className="inline-flex items-center gap-1 rounded-sm bg-brand-50 px-2 py-0.5 font-medium text-brand-700">
-                    <Zap className="h-3 w-3" /> automatisch
-                  </span>
-                )}
-              </>
-            }
-            trailing={<Badge color={colorFor(CRM_NOTE_TYPES, t.type)}>{labelFor(CRM_NOTE_TYPES, t.type)}</Badge>}
-          />
+      <div className="grid grid-cols-2 overflow-hidden rounded-md border border-ink-200 bg-white lg:grid-cols-4">
+        {cijfers.map((c, i) => (
+          <Link
+            key={c.label}
+            href={c.href}
+            className={cn("px-5 py-4 transition-colors hover:bg-ink-50", i > 0 && "border-l border-ink-200", i === 2 && "max-lg:border-l-0 max-lg:border-t", i === 3 && "max-lg:border-t")}
+          >
+            <p className="text-xs text-ink-500">{c.label}</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-ink-900">{c.waarde}</p>
+          </Link>
         ))}
-      </QueueCard>
+      </div>
 
-      <p className="text-xs text-ink-400">
-        {RECRUITMENT_KPI_LABELS.stalledCandidates} en {RECRUITMENT_KPI_LABELS.stalledApplications} gebruiken dezelfde
-        drempels als je automatische regels ({CANDIDATE_IDLE_DAYS} en {APPLICATION_IDLE_DAYS} dagen).
-      </p>
+      <div className="grid gap-5 lg:grid-cols-[3fr_2fr]">
+        <Blok titel={`Sollicitaties te beoordelen (${teBeoordelen})`} href="/sollicitaties" linkLabel="Alle sollicitaties">
+          {nieuweSollicitaties.length === 0 ? (
+            <Leeg>Alles is beoordeeld.</Leeg>
+          ) : (
+            <ul className="divide-y divide-ink-100">
+              {nieuweSollicitaties.map((a) => (
+                <li key={a.id} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/kandidaten/${a.candidate.id}`} className="font-medium text-ink-900 hover:underline">
+                      {a.candidate.firstName} {a.candidate.lastName}
+                    </Link>
+                    <p className="truncate text-xs text-ink-500">
+                      {[a.vacancy?.title ?? "Open sollicitatie", a.candidate.discipline && labelFor(DISCIPLINES, a.candidate.discipline), formatDate(a.createdAt)].filter(Boolean).join(" · ")}
+                    </p>
+                  </div>
+                  {a.vacancyId &&
+                    (leads.has(`${a.candidate.id}:${a.vacancyId}`) ? (
+                      <span className="text-xs font-medium text-ink-500">In pipeline</span>
+                    ) : (
+                      <form action={sollicitatieNaarPipeline}>
+                        <input type="hidden" name="applicationId" value={a.id} />
+                        <input type="hidden" name="returnTo" value="/recruitment" />
+                        <SubmitButton size="sm" variant="outline" pendingLabel="…">
+                          <Kanban className="h-4 w-4" /> Lead
+                        </SubmitButton>
+                      </form>
+                    ))}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Blok>
+
+        <div className="min-w-0 space-y-5">
+          <Blok titel="Pipeline" href="/crm" linkLabel="Naar het bord">
+            <ul className="divide-y divide-ink-100">
+              {stages.map((s) => (
+                <li key={s.id}>
+                  <Link href="/crm" className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] hover:bg-ink-50">
+                    <span className={cn("h-2 w-2 rounded-full", STIP[s.color] ?? "bg-ink-400")} />
+                    <span className="flex-1 text-ink-700">{s.name}</span>
+                    <span className={cn("tabular-nums font-medium", fase.get(s.id) ? "text-ink-900" : "text-ink-300")}>{fase.get(s.id) ?? 0}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Blok>
+
+          <Blok titel="Opvolgen" href="/agenda/taken" linkLabel="Alle taken">
+            {opvolging.length === 0 ? (
+              <Leeg>Geen open taken.</Leeg>
+            ) : (
+              <ul className="divide-y divide-ink-100">
+                {opvolging.map((t) => {
+                  const telaat = t.dueAt && teLaat(t.dueAt);
+                  return (
+                    <li key={t.id}>
+                      <Link href={t.href} className="block px-4 py-2.5 text-[13px] hover:bg-ink-50">
+                        <span className="line-clamp-1 text-ink-900">{t.body}</span>
+                        <span className="text-xs text-ink-500">
+                          {t.entityLabel}
+                          {t.dueAt && <span className={telaat ? "text-red-600" : ""}> · {telaat ? "te laat, " : ""}{formatDate(t.dueAt)}</span>}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Blok>
+        </div>
+      </div>
     </div>
   );
 }
