@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  ArrowUp,
   Globe,
   Briefcase,
   MapPin,
@@ -303,9 +304,15 @@ export default async function WebsitePage({
                               variant="success"
                               size="sm"
                               pendingLabel="…"
-                              title="Zet deze vacature live op q4s.nl"
+                              title="Online zetten op q4s.nl"
+                              aria-label="Online zetten op q4s.nl"
+                              className="h-9 w-9 px-0"
                             >
-                              <CloudUpload className="h-4 w-4" /> Online zetten
+                              {/* Wereldbol met pijltje omhoog = online zetten */}
+                              <span className="relative inline-flex">
+                                <Globe className="h-4 w-4" />
+                                <ArrowUp aria-hidden className="absolute -bottom-1.5 -right-1.5 h-3 w-3 rounded-full bg-emerald-600 stroke-[3]" />
+                              </span>
                             </SubmitButton>
                           )}
                         </div>
