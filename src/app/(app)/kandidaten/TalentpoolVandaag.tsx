@@ -1,11 +1,11 @@
 import { afgelopen24Uur } from "@/lib/vandaag";
 import Link from "next/link";
-import { CalendarDays, ChevronRight, ClipboardCheck, ClipboardList, FileText, Globe, Inbox, Kanban, Plus, Users } from "lucide-react";
+import { CalendarDays, ChevronRight, ClipboardList, FileText, Kanban, Plus, Users } from "lucide-react";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { sollicitatieNaarPipeline } from "@/app/(app)/crm/deals/actions";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
-import { FilterTegels, type FilterTegel } from "@/components/ui/filter-tegels";
+import { WervingFlow } from "./WervingFlow";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ import { SPOOR, type Spoor } from "@/lib/spoor";
 export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
   const sp = SPOOR[spoor];
   const vandaag = afgelopen24Uur();
-  const [nieuw, sollicitaties, totaal, teBeoordelen] = await Promise.all([
+  const [nieuw, sollicitaties] = await Promise.all([
     db.candidate.findMany({
       where: { createdAt: { gte: vandaag }, spoor },
       orderBy: { createdAt: "desc" },
@@ -44,8 +44,6 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
         vacancy: { select: { title: true } },
       },
     }),
-    db.candidate.count({ where: { spoor } }),
-    db.candidate.count({ where: { rating: "ONBEKEND", spoor } }),
   ]);
 
   // Binnen 24 uur: alleen de tijd, of "gist. 21:40" als het van gisteren is.
@@ -81,33 +79,19 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
     );
   };
   const sollicitatieVanKandidaat = new Map(sollicitaties.map((a) => [a.candidate.id, a]));
-  const buitenEU = nieuw.filter((c) => herkomst(c) === "BUITEN_EU").length;
-
-  const tegels: FilterTegel[] = [
-    { key: "nieuw", label: "Afgelopen 24 uur", waarde: nieuw.length + vanBestaande.length, icon: <Inbox className="h-4 w-4" />, toon: "blue", href: sp.basis, actief: true },
-    { key: "beoordelen", label: "Ter beoordeling", waarde: teBeoordelen, icon: <ClipboardCheck className="h-4 w-4" />, toon: "amber", href: `${sp.alle}?map=beoordelen`, actief: false },
-    { key: "buiten", label: "Buiten de EU (24 uur)", waarde: buitenEU, icon: <Globe className="h-4 w-4" />, toon: "red", href: `${sp.alle}?map=buiten`, actief: false },
-    { key: "alle", label: "Alle kandidaten", waarde: totaal, icon: <Users className="h-4 w-4" />, toon: "slate", href: sp.alle, actief: false },
-  ];
-
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`${sp.label} — afgelopen 24 uur`}
-        description="Alles wat de afgelopen 24 uur binnenkwam. De hele pool staat bij Alle kandidaten."
+        title={sp.label}
+        description="Binnen → beoordelen → talentpool → pipeline. Wie binnenkwam beoordeel je hier; sollicitanten op een vacature zet je met Lead direct in de pipeline."
         actions={
-          <>
-            <Link href={sp.alle} className={buttonVariants({ variant: "outline" })}>
-              <Users className="h-4 w-4" /> Alle kandidaten
-            </Link>
-            <Link href={`/kandidaten/nieuw?spoor=${spoor}`} className={buttonVariants()}>
-              <Plus className="h-4 w-4" /> Nieuwe kandidaat
-            </Link>
-          </>
+          <Link href={`/kandidaten/nieuw?spoor=${spoor}`} className={buttonVariants()}>
+            <Plus className="h-4 w-4" /> Nieuwe kandidaat
+          </Link>
         }
       />
 
-      <FilterTegels items={tegels} label="Talentpool vandaag" />
+      <WervingFlow spoor={spoor} actief="binnen" />
 
       {nieuw.length + vanBestaande.length === 0 ? (
         <EmptyState
@@ -121,7 +105,7 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
           }
         />
       ) : (
-        <div className="divide-y divide-ink-100 overflow-hidden rounded-md border border-ink-200 bg-white">
+        <div className="divide-y divide-ink-100 overflow-hidden rounded-lg border border-ink-200 bg-white text-[13px]">
           {nieuw.map((c) => {
             const buiten = herkomst(c) === "BUITEN_EU";
             const sol = sollicitatieVan.get(c.id);

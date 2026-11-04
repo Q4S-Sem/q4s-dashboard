@@ -1,12 +1,12 @@
 import { afgelopen24Uur } from "@/lib/vandaag";
 import Link from "next/link";
-import { Users, Plus, Star, UserCheck, Clock, ChevronRight, Mail, Inbox, Globe, ClipboardCheck } from "lucide-react";
+import { Users, Plus, ChevronRight, Mail } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
-import { FilterTegels, type FilterTegel } from "@/components/ui/filter-tegels";
+import { WervingFlow } from "./WervingFlow";
 import { herkomst } from "@/lib/eu-herkomst";
 import { EmptyState } from "@/components/ui/empty-state";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, mapTabVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { PhoneButton } from "@/components/ui/phone-button";
@@ -114,14 +114,14 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
     const qs = p.toString();
     return qs ? `${pad.alle}?${qs}` : pad.alle;
   };
-  const tegels: FilterTegel[] = [
-    { key: "pool", label: "Talentpool (EU)", waarde: mappen.pool.length, icon: <Users className="h-4 w-4" />, toon: "slate", href: mapHref("pool"), actief: map === "pool" },
-    { key: "beoordelen", label: "Ter beoordeling", waarde: mappen.beoordelen.length, icon: <ClipboardCheck className="h-4 w-4" />, toon: "amber", href: mapHref("beoordelen"), actief: map === "beoordelen" },
-    { key: "nieuw", label: "Afgelopen 24 uur", waarde: pool.filter(isNieuw).length, icon: <Inbox className="h-4 w-4" />, toon: "blue", href: pad.basis, actief: false },
-    { key: "goed", label: "Goed beoordeeld", waarde: mappen.goed.length, icon: <Star className="h-4 w-4" />, toon: "green", href: mapHref("goed"), actief: map === "goed" },
-    { key: "beschikbaar", label: "Nu beschikbaar", waarde: mappen.beschikbaar.length, icon: <UserCheck className="h-4 w-4" />, toon: "green", href: mapHref("beschikbaar"), actief: map === "beschikbaar" },
-    { key: "binnenkort", label: "Binnenkort beschikbaar", waarde: mappen.binnenkort.length, icon: <Clock className="h-4 w-4" />, toon: "amber", href: mapHref("binnenkort"), actief: map === "binnenkort" },
-    { key: "buiten", label: "Buiten de EU — vallen af", waarde: mappen.buiten.length, icon: <Globe className="h-4 w-4" />, toon: "red", href: mapHref("buiten"), actief: map === "buiten" },
+  // Mappen binnen de talentpool (Binnen en Pipeline staan in de flow-balk erboven).
+  const tabs: [string, string][] = [
+    ["pool", "Alle"],
+    ["beoordelen", "Ter beoordeling"],
+    ["goed", "Goed beoordeeld"],
+    ["beschikbaar", "Nu beschikbaar"],
+    ["binnenkort", "Binnenkort beschikbaar"],
+    ["buiten", "Buiten de EU"],
   ];
 
   const pipelineClients = clients.map((c) => ({ id: c.id, name: c.companyName }));
@@ -140,8 +140,8 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`${pad.label} — alle kandidaten`}
-        description="De hele talentpool met beoordeling, contactgegevens en filters — zo weet je direct wie je bij een klant kunt neerzetten."
+        title={pad.label}
+        description={map === "beoordelen" ? "Geef iedereen een oordeel; goede kandidaten zet je daarna met Pipeline op een vacature." : "De hele talentpool: beoordeling, beschikbaarheid en contact. Vind wie je bij een klant kunt neerzetten."}
         actions={
           <Link href={`/kandidaten/nieuw?spoor=${spoor}`} className={buttonVariants()}>
             <Plus className="h-4 w-4" /> Nieuwe kandidaat
@@ -156,7 +156,15 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
         </p>
       )}
 
-      <FilterTegels items={tegels} label="Mappen talentpool" />
+      <WervingFlow spoor={spoor} actief={map === "beoordelen" ? "beoordelen" : "pool"} />
+
+      <nav aria-label="Mappen talentpool" className="flex overflow-x-auto overflow-y-hidden border-b border-ink-200 pb-px">
+        {tabs.map(([k, label]) => (
+          <Link key={k} href={mapHref(k)} scroll={false} aria-current={map === k ? "page" : undefined} className={mapTabVariants(map === k)}>
+            {label} <span className="tabular-nums text-ink-400">{mappen[k].length}</span>
+          </Link>
+        ))}
+      </nav>
 
       {map === "buiten" && (
         <p className="rounded-md border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800">
@@ -204,7 +212,7 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
             {candidates.length} kandida{candidates.length === 1 ? "at" : "ten"} · beste beoordeling eerst
             {map === "pool" && mappen.buiten.length > 0 && ` · ${mappen.buiten.length} buiten de EU niet getoond`}
           </p>
-          <div className="divide-y divide-ink-100 overflow-hidden rounded-md border border-ink-100 bg-white">
+          <div className="divide-y divide-ink-100 overflow-hidden rounded-lg border border-ink-200 bg-white">
             {candidates.map((c) => {
               return (
                 <div
@@ -249,13 +257,13 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
                           href={`mailto:${c.email}`}
                           title={`Mail ${c.firstName} (${c.email})`}
                           aria-label={`Stuur een e-mail naar ${c.firstName} ${c.lastName}`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 transition-colors hover:bg-blue-200"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
                         >
                           <Mail className="h-4 w-4" />
                         </a>
                       ) : (
                         <span
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-100 text-ink-300"
                           title="Geen e-mailadres bekend"
                           aria-hidden
                         >

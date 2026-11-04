@@ -166,11 +166,11 @@ const HUB_LIST: NavHub[] = [
     icon: Sparkles,
     items: [
       { href: "/recruitment", label: "Overzicht", icon: LayoutDashboard, exact: true },
-      { href: "/kandidaten", label: "Afgelopen 24 uur", icon: Inbox, section: "Projecten", exact: true, badge: "binnenProject" },
-      { href: "/kandidaten/alle", label: "Alle kandidaten", icon: Users, section: "Projecten" },
+      { href: "/kandidaten", label: "Binnen (24 uur)", icon: Inbox, section: "Projecten", exact: true, badge: "binnenProject" },
+      { href: "/kandidaten/alle", label: "Talentpool", icon: Users, section: "Projecten" },
       { href: "/crm", label: "Pipeline", icon: Kanban, section: "Projecten", exact: true },
-      { href: "/vast", label: "Afgelopen 24 uur", icon: Inbox, section: "WNS+Deta vast", exact: true, badge: "binnenVast" },
-      { href: "/vast/alle", label: "Alle kandidaten", icon: Users, section: "WNS+Deta vast" },
+      { href: "/vast", label: "Binnen (24 uur)", icon: Inbox, section: "WNS+Deta vast", exact: true, badge: "binnenVast" },
+      { href: "/vast/alle", label: "Talentpool", icon: Users, section: "WNS+Deta vast" },
       { href: "/vast/pipeline", label: "Pipeline", icon: Kanban, section: "WNS+Deta vast" },
       // Vacatures = alles in één: werving (open/pipeline) én website (concept/gereed/online).
       { href: "/crm/vacatures", label: "Vacatures", icon: Briefcase, section: "Werving" },

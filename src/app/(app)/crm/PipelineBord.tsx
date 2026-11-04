@@ -7,6 +7,7 @@ import {
   getCrmSettings,
   getBoardData,
 } from "@/lib/crm";
+import { WervingFlow } from "../kandidaten/WervingFlow";
 import { DealBoard, type DealColumn, type DealCard } from "./DealBoard";
 
 const chip = (aan: boolean) =>
@@ -62,9 +63,11 @@ export async function PipelineBord({ spoor, vacature }: { spoor: Spoor; vacature
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`${SPOOR[spoor].label} — pipeline`}
-        description="Sollicitanten zet je met één klik als Lead op hun vacature (bij Afgelopen 24 uur of de sollicitaties van een vacature). Sleep een kaart naar de volgende fase."
+        title={SPOOR[spoor].label}
+        description="Sleep een kaart naar de volgende fase. Sollicitanten op een vacature komen hier met één klik op Lead."
       />
+
+      <WervingFlow spoor={spoor} actief="pipeline" />
 
       {perVacature.size > 0 && (
         <nav className="flex flex-wrap gap-1.5" aria-label="Filter op vacature">
