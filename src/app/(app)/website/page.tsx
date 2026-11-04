@@ -17,24 +17,10 @@ import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { cn } from "@/lib/utils";
 import { naarGereed, zetOnline } from "./actions";
 import { pauseVacancy } from "../vacatures/actions";
-import { CloudOff, CloudUpload } from "lucide-react";
-import { publicVacancyUrl } from "@/lib/public-site";
+import { CloudUpload, Pencil } from "lucide-react";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { VacatureTabs, websiteFase } from "../crm/vacatures/VacatureTabs";
 import { AllesNaarGereed, NaarGereedKnop } from "./TekstVoortgang";
-
-/** LinkedIn-logo (lucide heeft geen merk-icoon). */
-function LinkedinIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z" />
-    </svg>
-  );
-}
 
 /** Vierkante icoon-knop (uniform met de outline-knoppen). */
 const iconBtn =
@@ -262,24 +248,12 @@ export default async function WebsitePage({
                               <Link
                                 href={`/vacatures/${vac.id}`}
                                 className={iconBtn}
-                                title="Website-tekst bekijken en bijwerken"
-                                aria-label="Website-tekst bekijken"
+                                title="Website-tekst bewerken"
+                                aria-label="Website-tekst bewerken"
                               >
-                                <Globe className="h-4 w-4" />
+                                <Pencil className="h-4 w-4" />
                               </Link>
                             )
-                          )}
-
-                          {/* LinkedIn pas als hij online staat → LinkedIn-studio in de Socials-hub. */}
-                          {bucket === "online" && vac && (
-                            <Link
-                              href={`/website/linkedin?vac=${vac.id}`}
-                              className={iconBtn}
-                              title="LinkedIn-post maken — tekst staat meteen klaar in de LinkedIn-studio"
-                              aria-label="LinkedIn-post maken"
-                            >
-                              <LinkedinIcon className="h-4 w-4" />
-                            </Link>
                           )}
 
                           {vac && (
@@ -298,40 +272,29 @@ export default async function WebsitePage({
                             </Link>
                           )}
 
-                          {bucket === "online" && vac?.slug && (
-                            <a
-                              href={publicVacancyUrl(vac.slug)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={iconBtn}
-                              title="Bekijk op de website"
-                              aria-label="Bekijk op de website"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </a>
-                          )}
-
                           {/* Online/offline schakelen: een live vacature is met één klik
                         van de site te halen en net zo makkelijk weer terug te
                         zetten (status PAUSED <-> PUBLISHED, tekst blijft staan). */}
                           {vac && bucket === "online" && (
-                            <form action={pauseVacancy}>
-                              <input type="hidden" name="id" value={vac.id} />
-                              <input
-                                type="hidden"
-                                name="from"
-                                value="website"
-                              />
-                              <SubmitButton
-                                variant="outline"
-                                size="sm"
-                                pendingLabel="…"
-                                className="h-9 px-2.5 text-xs"
-                                title="Direct van de website halen — de tekst blijft bewaard en je kunt hem altijd terugzetten"
-                              >
-                                <CloudOff className="h-3.5 w-3.5" /> Offline
-                              </SubmitButton>
-                            </form>
+                            <ConfirmSubmit
+                              action={pauseVacancy}
+                              id={vac.id}
+                              hidden={{ from: "website" }}
+                              trigger="icon"
+                              icon={
+                                <span className="relative inline-flex" title="Offline halen">
+                                  <Globe className="h-4 w-4" />
+                                  {/* doorgekruist: een schuine streep over de wereldbol */}
+                                  <span aria-hidden className="absolute left-1/2 top-1/2 h-[1.5px] w-5 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-current ring-1 ring-white" />
+                                </span>
+                              }
+                              iconClassName={cn(iconBtn, "hover:border-red-200 hover:bg-red-50 hover:text-red-600")}
+                              message={`"${d.title}" offline halen?`}
+                              description="De vacature verdwijnt direct van q4s.nl. De tekst blijft bewaard en je kunt hem altijd weer online zetten (staat dan bij Gereed)."
+                              confirmLabel="Offline halen"
+                            >
+                              Offline halen
+                            </ConfirmSubmit>
                           )}
                           {vac && bucket === "gereed" && (
                             <SubmitButton
