@@ -16,6 +16,11 @@ test("bedrijfsnamen (opdrachtgever + bron-site) verdwijnen uit de vacaturetekst,
   assert.match(v.responsibilities, /onze opdrachtgever/);
 });
 
+test("webpagina → tekst: uitklapteksten (details, header, Next-data) gaan mee", () => {
+  const t = webpaginaTekst('<header><h3>Wij bieden je</h3></header><details><summary>Wat je gaat doen</summary><p>Lasersc ans uitvoeren</p></details><script>self.__next_f.push([1,"Wat we verwachten: minimaal 3 jaar ervaring met Leica scanners"])</script>');
+  assert.ok(t.includes("Wij bieden je") && t.includes("Lasersc ans uitvoeren") && t.includes("minimaal 3 jaar ervaring met Leica"));
+});
+
 test("webpagina → tekst: scripts/menu weg, JobPosting-data en lijstjes blijven", () => {
   const t = webpaginaTekst('<title>Lasser</title><nav>Home Over</nav><script>x=1</script><script type="application/ld+json">{"@type":"JobPosting","title":"Lasser"}</script><ul><li>TIG &amp; MIG</li></ul>');
   assert.ok(t.includes("JobPosting") && t.includes("- TIG & MIG") && !t.includes("x=1") && !t.includes("Home Over"));

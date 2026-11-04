@@ -125,6 +125,75 @@ export async function DealDetail({
   const manualNotes = notes.filter((n) => !LOG_TYPES.includes(n.type));
   const logNotes = notes.filter((n) => LOG_TYPES.includes(n.type));
 
+  // Vacature-hub: één rustige pagina, alles onder elkaar, alleen bewerken/verwijderen.
+  if (isVacatureContext) {
+    const rijen: [string, React.ReactNode][] = [
+      ["Opdrachtgever (intern)", deal.client ? <Link href={`/klanten/${deal.client.id}`} className="hover:underline">{deal.client.companyName}</Link> : deal.company],
+      ["Discipline", deal.discipline ? labelFor(DISCIPLINES, deal.discipline) : null],
+      ["Locatie", deal.location],
+      ["Dienstverband", deal.employmentType ? labelFor(EMPLOYMENT_TYPES, deal.employmentType) : null],
+      ["Uren per week", deal.hoursPerWeek ? `${deal.hoursPerWeek} uur` : null],
+      ["Duur", deal.durationText],
+      ["Tarief / salaris", withMarktconformFallback(deal.rateText, deal.discipline)],
+      ["Ervaring", deal.experienceText],
+      ["Opleiding", deal.educationLevel],
+      ["Posities", deal.positions],
+      ["Contactpersoon", deal.primaryContact ? `${deal.primaryContact.firstName} ${deal.primaryContact.lastName ?? ""}`.trim() : null],
+      ["Aangemaakt", formatDate(deal.createdAt)],
+    ];
+    const teksten: [string, string | null][] = [
+      ["Werkzaamheden", deal.responsibilities],
+      ["Functie-eisen", deal.requirements],
+      ["Pré", deal.niceToHave],
+      ["Certificaten", deal.certificates],
+    ];
+    return (
+      <div className="space-y-6">
+        <BackLink href="/crm/vacatures">Vacatures</BackLink>
+        <PageHeader
+          title={deal.title}
+          description={[deal.discipline ? labelFor(DISCIPLINES, deal.discipline) : null, deal.location].filter(Boolean).join(" · ")}
+          actions={
+            <>
+              <Link href={`${basePath}/${deal.id}/bewerken`} className={BEWERK_ICOON} title="Bewerken" aria-label="Bewerken">
+                <Pencil className="h-4 w-4" />
+              </Link>
+              <ConfirmSubmit action={deleteDeal} id={deal.id} message={`Vacature "${deal.title}" verwijderen?`}>
+                Verwijderen
+              </ConfirmSubmit>
+            </>
+          }
+        />
+        <div className="max-w-3xl space-y-5">
+          <section className="rounded-lg border border-ink-200 bg-white">
+            <h2 className="border-b border-ink-200 px-4 py-2.5 text-[13px] font-semibold text-ink-900">Vacature</h2>
+            <dl className="divide-y divide-ink-100">
+              {rijen.map(([label, waarde]) => (
+                <div key={label} className="grid grid-cols-[9rem_1fr] gap-3 px-4 py-2.5 text-[13px] sm:grid-cols-[12rem_1fr]">
+                  <dt className="text-ink-500">{label}</dt>
+                  <dd className="min-w-0 break-words text-ink-900">{waarde || <span className="text-ink-300">—</span>}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+          {teksten.filter(([, t]) => t?.trim()).map(([label, t]) => (
+            <section key={label} className="rounded-lg border border-ink-200 bg-white">
+              <h2 className="border-b border-ink-200 px-4 py-2.5 text-[13px] font-semibold text-ink-900">{label}</h2>
+              <ul className="space-y-1.5 px-4 py-3">
+                {t!.split("\n").map((l) => l.replace(/^[-•*]\s*/, "").trim()).filter(Boolean).map((l, i) => (
+                  <li key={i} className="flex gap-2.5 text-[13px] leading-relaxed text-ink-800">
+                    <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-ink-400" />
+                    {l}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const followUpOverdue =
     deal.nextFollowUpAt && new Date(deal.nextFollowUpAt).getTime() <= Date.now();
 
