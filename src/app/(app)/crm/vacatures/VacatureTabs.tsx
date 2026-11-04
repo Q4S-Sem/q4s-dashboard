@@ -1,7 +1,6 @@
-import { Briefcase, CheckCircle2, Globe, Kanban, PencilLine } from "lucide-react";
+import { Briefcase, CheckCircle2, ChevronRight, Globe, Kanban, PencilLine } from "lucide-react";
 import { db } from "@/lib/db";
 import Link from "next/link";
-import { mapTabVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -13,20 +12,20 @@ import { cn } from "@/lib/utils";
 
 export type VacatureTab = "open" | "pipeline" | "concept" | "gereed" | "online";
 
-const GROEPEN: { titel: string; tabs: { key: VacatureTab; label: string; icon: React.ReactNode; href: string }[] }[] = [
+const GROEPEN: { titel: string; tabs: { key: VacatureTab; label: string; hint: string; icon: React.ReactNode; href: string }[] }[] = [
   {
     titel: "Werving",
     tabs: [
-      { key: "open", label: "Openstaand", icon: <Briefcase className="h-4 w-4" />, href: "/crm/vacatures?view=open" },
-      { key: "pipeline", label: "In pipeline", icon: <Kanban className="h-4 w-4" />, href: "/crm/vacatures?view=pipeline" },
+      { key: "open", label: "Openstaand", hint: "nog geen kandidaat", icon: <Briefcase className="h-4 w-4" />, href: "/crm/vacatures?view=open" },
+      { key: "pipeline", label: "In pipeline", hint: "kandidaat gekoppeld", icon: <Kanban className="h-4 w-4" />, href: "/crm/vacatures?view=pipeline" },
     ],
   },
   {
     titel: "Website",
     tabs: [
-      { key: "concept", label: "Concept", icon: <PencilLine className="h-4 w-4" />, href: "/website?tab=concept" },
-      { key: "gereed", label: "Gereed", icon: <CheckCircle2 className="h-4 w-4" />, href: "/website?tab=gereed" },
-      { key: "online", label: "Online", icon: <Globe className="h-4 w-4" />, href: "/website?tab=online" },
+      { key: "concept", label: "Concept", hint: "website-tekst schrijven", icon: <PencilLine className="h-4 w-4" />, href: "/website?tab=concept" },
+      { key: "gereed", label: "Gereed", hint: "klaar om live te zetten", icon: <CheckCircle2 className="h-4 w-4" />, href: "/website?tab=gereed" },
+      { key: "online", label: "Online", hint: "staat op q4s.nl", icon: <Globe className="h-4 w-4" />, href: "/website?tab=online" },
     ],
   },
 ];
@@ -53,24 +52,43 @@ export async function VacatureTabs({ actief }: { actief: VacatureTab }) {
     }
   }
 
-  // Onderstreepte tabs in twee groepen (werving · website) met het aantal erachter.
+  // Fase-balk: één rij vakken van links naar rechts, zoals de vacature door het
+  // proces loopt (werving → website). Per vak het aantal groot en wat je er doet.
   return (
-    <nav aria-label="Vacatures" className="flex flex-wrap items-end gap-x-6 border-b border-ink-200">
-      {GROEPEN.map((g) => (
-        <div key={g.titel} className="flex items-end gap-1">
-          <span className="mb-2.5 mr-1 hidden text-[11px] font-medium text-ink-400 sm:inline">{g.titel}</span>
-          {g.tabs.map((t) => {
-            const aan = t.key === actief;
-            return (
-              <Link key={t.key} href={t.href} aria-current={aan ? "page" : undefined} className={mapTabVariants(aan)}>
-                <span className={aan ? "text-ink-900" : "text-ink-400"}>{t.icon}</span>
-                {t.label}
-                <span className={cn("rounded-sm px-1.5 text-[11px] font-semibold tabular-nums", aan ? "bg-ink-900 text-white" : "bg-ink-100 text-ink-500")}>
-                  {tel[t.key]}
-                </span>
-              </Link>
-            );
-          })}
+    <nav aria-label="Vacatures per fase" className="grid overflow-hidden rounded-lg border border-ink-200 sm:grid-cols-[2fr_3fr]">
+      {GROEPEN.map((g, gi) => (
+        <div key={g.titel} className={cn("flex flex-col", gi > 0 && "border-t border-ink-200 sm:border-l sm:border-t-0")}>
+          <div className="border-b border-ink-200 bg-ink-50 px-3 py-1.5 text-[11px] font-medium text-ink-500">{g.titel}</div>
+          <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${g.tabs.length}, minmax(0, 1fr))` }}>
+            {g.tabs.map((t, ti) => {
+              const aan = t.key === actief;
+              return (
+                <Link
+                  key={t.key}
+                  href={t.href}
+                  aria-current={aan ? "page" : undefined}
+                  className={cn(
+                    "group relative flex min-w-0 flex-col gap-1 px-3 py-2.5 transition-colors",
+                    ti > 0 && "border-l border-ink-200",
+                    aan ? "bg-white" : "bg-white hover:bg-ink-50",
+                  )}
+                >
+                  {/* Actief = zwarte balk onderaan (zelfde taal als de tabs elders). */}
+                  {aan && <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-ink-900" />}
+                  <span className={cn("flex items-center gap-1.5 text-[13px] font-medium", aan ? "text-ink-900" : "text-ink-500 group-hover:text-ink-900")}>
+                    <span className={aan ? "text-ink-900" : "text-ink-400"}>{t.icon}</span>
+                    <span className="truncate">{t.label}</span>
+                    {/* Pijltje: de website-fases volgen elkaar op. */}
+                    {g.titel === "Website" && ti < g.tabs.length - 1 && (
+                      <ChevronRight aria-hidden className="ml-auto h-3.5 w-3.5 shrink-0 text-ink-300" />
+                    )}
+                  </span>
+                  <span className={cn("text-xl font-semibold leading-none tabular-nums", aan ? "text-ink-900" : "text-ink-700")}>{tel[t.key]}</span>
+                  <span className="truncate text-[11px] text-ink-400">{t.hint}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       ))}
     </nav>

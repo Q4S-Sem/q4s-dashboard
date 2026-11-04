@@ -40,6 +40,10 @@ function LinkedinIcon({ className }: { className?: string }) {
 const iconBtn =
   "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-ink-200 bg-white text-ink-700 transition-colors hover:bg-ink-50 hover:text-ink-900";
 
+/** Vaste kolommen (zoals de vacaturelijst in Recruitment): alles staat recht onder elkaar. */
+const WEB_KOLOMMEN =
+  "grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_9rem_9rem_minmax(14rem,auto)]";
+
 export const metadata = { title: "Vacatures — Website" };
 export const dynamic = "force-dynamic";
 // AI schrijft bij "naar gereed" de website-teksten (meerdere tegelijk).
@@ -69,11 +73,6 @@ const TABS: { key: Bucket; label: string; dot: string }[] = [
   { key: "online", label: "Online", dot: "bg-emerald-500" },
 ];
 
-const STATUS_LABEL: Record<Bucket, { text: string; cls: string }> = {
-  concept: { text: "Concept", cls: "bg-ink-100 text-ink-600" },
-  gereed: { text: "Gereed voor publicatie", cls: "bg-blue-50 text-blue-700" },
-  online: { text: "Online", cls: "bg-emerald-50 text-emerald-700" },
-};
 
 export default async function WebsitePage({
   searchParams,
@@ -200,72 +199,62 @@ export default async function WebsitePage({
                     "Nog niets live op de website. Publiceer een gereed staande vacature."}
                 </div>
               ) : (
+                <>
+                {/* Kolomkop: zelfde tabel-opbouw als Openstaand / In pipeline. */}
+                <div className={cn(WEB_KOLOMMEN, "hidden h-9 border-b border-ink-200 bg-ink-50 text-[12px] font-medium text-ink-500 md:grid")}>
+                  <span>Functie</span>
+                  <span>Opdrachtgever</span>
+                  <span>Vakgebied</span>
+                  <span>{active === "online" ? "Bekeken" : "Plaats"}</span>
+                  <span className="text-right">Acties</span>
+                </div>
                 <ul className="divide-y divide-ink-200/70">
                   {visible.map(({ d, bucket }) => {
                     const company = d.client?.companyName ?? d.company;
                     const vac = d.vacancy;
-                    const status = STATUS_LABEL[bucket];
                     const disc = d.discipline
                       ? labelFor(DISCIPLINES, d.discipline)
                       : "";
                     return (
                       <li
                         key={d.id}
-                        className="flex flex-col gap-2 px-4 py-2.5 text-[13px] transition-colors hover:bg-ink-50/80 sm:flex-row sm:items-center"
+                        className={cn(WEB_KOLOMMEN, "grid min-h-11 py-2 text-[13px] transition-colors hover:bg-ink-50/80")}
                       >
-                        {active === "gereed" && vac && (
-                          <input
-                            type="checkbox"
-
-                            name="id"
-                            value={vac.id}
-                            aria-label={`${d.title} selecteren`}
-                            className="h-4 w-4 shrink-0 accent-brand-600"
-                          />
-                        )}
-                        {/* Vacature-info */}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Link
-                              href={`/crm/deals/${d.id}`}
-                              className="truncate font-medium text-ink-900 hover:underline"
-                            >
-                              {d.title}
-                            </Link>
-                            <span
-                              className={cn(
-                                "inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                                status.cls,
-                              )}
-                            >
-                              {status.text}
-                            </span>
-                          </div>
-                          <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
-                            <span className="inline-flex items-center gap-1">
-                              <Briefcase className="h-3.5 w-3.5 text-ink-400" />{" "}
-                              {company}
-                            </span>
-                            {d.location && (
-                              <span className="inline-flex items-center gap-1">
-                                <MapPin className="h-3.5 w-3.5 text-ink-400" />{" "}
-                                {d.location}
-                              </span>
-                            )}
-                            {disc && (
-                              <span className="text-ink-400">{disc}</span>
-                            )}
-                            {bucket === "online" && (
-                              <span className="inline-flex items-center gap-1 text-ink-400">
-                                <Eye className="h-3.5 w-3.5" />{" "}
-                                {vac?.views ?? 0}
-                              </span>
-                            )}
-                          </p>
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          {active === "gereed" && vac && (
+                            <input
+                              type="checkbox"
+                              name="id"
+                              value={vac.id}
+                              aria-label={`${d.title} selecteren`}
+                              className="h-4 w-4 shrink-0 accent-ink-900"
+                            />
+                          )}
+                          <Link href={`/crm/deals/${d.id}`} className="truncate font-medium text-ink-900 hover:underline">
+                            {d.title}
+                          </Link>
                         </div>
+                        <span className="hidden min-w-0 items-center gap-1.5 truncate text-ink-600 md:flex">
+                          <Briefcase className="h-3.5 w-3.5 shrink-0 text-ink-400" />
+                          <span className="truncate">{company || "—"}</span>
+                        </span>
+                        <span className="hidden truncate text-ink-600 md:block">{disc || <span className="text-ink-300">—</span>}</span>
+                        <span className="hidden truncate text-ink-600 md:block">
+                          {bucket === "online" ? (
+                            <span className="inline-flex items-center gap-1 tabular-nums">
+                              <Eye className="h-3.5 w-3.5 text-ink-400" /> {vac?.views ?? 0}
+                            </span>
+                          ) : d.location ? (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="h-3.5 w-3.5 text-ink-400" /> {d.location}
+                            </span>
+                          ) : (
+                            <span className="text-ink-300">—</span>
+                          )}
+                        </span>
 
                         {/* Acties — de doorlopende flow: uitwerken · LinkedIn · sollicitaties */}
-                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                           {bucket === "concept" ? (
                             <NaarGereedKnop dealId={d.id} />
                           ) : (
@@ -361,6 +350,7 @@ export default async function WebsitePage({
                     );
                   })}
                 </ul>
+                </>
               )}
             </Card>
           </>
