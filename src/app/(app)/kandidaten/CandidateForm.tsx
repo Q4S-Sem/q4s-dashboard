@@ -3,7 +3,9 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Candidate } from "@prisma/client";
-import { Sparkles, Loader2, CheckCircle2, AlertTriangle, Trash2 } from "lucide-react";
+import { Sparkles, Loader2, CheckCircle2, AlertTriangle, Trash2, User, Star, ListChecks } from "lucide-react";
+import { FolderTabBar, FolderTab } from "@/components/dossier-tabs";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { DateInput } from "@/components/ui/date-input";
@@ -172,6 +174,21 @@ export function CandidateForm({
   const [cvError, setCvError] = useState<string | null>(null);
   const [cvDone, setCvDone] = useState(false);
 
+  // Nieuwe kandidaat = dezelfde stappen als een nieuwe vacature, alles onder elkaar.
+  const stappen = showCvIntake;
+  const [tab, setTab] = useState(stappen ? "inlezen" : "persoon");
+  const tabs = [
+    ["inlezen", "1. Inlezen", <Sparkles key="i" className="h-4 w-4" />],
+    ["persoon", "2. Persoon", <User key="i" className="h-4 w-4" />],
+    ["profiel", "3. Profiel & beoordeling", <Star key="i" className="h-4 w-4" />],
+    ["ervaring", "4. Ervaring & notities", <ListChecks key="i" className="h-4 w-4" />],
+  ] as const;
+  const tabIdx = tabs.findIndex(([k]) => k === tab);
+  const vorige = tabs[tabIdx - 1]?.[0];
+  const volgende = tabs[tabIdx + 1]?.[0];
+  const zicht = (k: string) => (stappen && tab !== k ? "hidden" : "");
+  const rij = (kolommen: string) => (stappen ? "grid gap-5" : `grid gap-5 ${kolommen}`);
+
   async function leesCv(f?: File | null) {
     const target = f ?? cvFile;
     if (!target) return;
@@ -203,6 +220,7 @@ export function CandidateForm({
         setExperienceSummary((prev) => (prev.trim() ? prev : f2.experienceSummary as string));
       }
       setCvDone(true);
+      setTab("persoon");
     } catch {
       setCvError("Het CV kon niet uitgelezen worden. Probeer het opnieuw of vul handmatig in.");
     } finally {
@@ -217,7 +235,16 @@ export function CandidateForm({
   }
 
   return (
-    <form action={onSubmit} data-no-persist={isNew ? "" : undefined}>
+    <form
+      action={onSubmit}
+      data-no-persist={isNew ? "" : undefined}
+      className="space-y-5"
+      // Verplicht veld leeg in een verborgen stap? Spring naar die stap.
+      onInvalidCapture={(ev) => {
+        const t = (ev.target as HTMLElement).closest("[data-tab]")?.getAttribute("data-tab");
+        if (t && t !== tab) setTab(t);
+      }}
+    >
       {candidate && <input type="hidden" name="id" value={candidate.id} />}
       {spoor && <input type="hidden" name="spoor" value={spoor} />}
 
@@ -240,21 +267,22 @@ export function CandidateForm({
 
 
       {/* CV inlezen — automatische invulling (alleen bij nieuwe kandidaat) */}
+      {stappen && (
+        <FolderTabBar label="Stappen nieuwe kandidaat">
+          {tabs.map(([key, label, icon]) => (
+            <FolderTab key={key} icon={icon} label={label} active={tab === key} onClick={() => setTab(key)} />
+          ))}
+        </FolderTabBar>
+      )}
       {showCvIntake && (
-        <Card className="mb-6">
+        <Card className={cn("mb-6", zicht("inlezen"))}>
           <CardContent className="space-y-4">
-            <div className="flex items-start gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand-50 text-brand-600">
-                <Sparkles className="h-[18px] w-[18px]" />
-              </span>
-              <div>
-                <h2 className="text-[15px] font-bold text-ink-900">CV automatisch inlezen</h2>
-                <p className="text-sm text-ink-500">
-                  Sleep een CV (PDF, Word of foto) hierheen. De AI leest naam, contactgegevens,
-                  functie en discipline uit en vult het formulier hieronder — controleer het nog even
-                  vóór je opslaat. Het CV wordt meteen aan de kandidaat gekoppeld.
-                </p>
-              </div>
+            <div>
+              <h2 className="text-[15px] font-semibold text-ink-900">Cv inlezen</h2>
+              <p className="mt-0.5 text-[13px] text-ink-500">
+                Sleep een cv (PDF, Word of foto) hierheen. De AI vult de volgende stappen in; jij controleert het. Het cv
+                wordt meteen aan de kandidaat gekoppeld.
+              </p>
             </div>
 
             <Dropzone
@@ -280,7 +308,7 @@ export function CandidateForm({
               )}
               {!reading && cvDone && !cvError && (
                 <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
-                  <CheckCircle2 className="h-4 w-4" /> Ingelezen — controleer de velden hieronder
+                  <CheckCircle2 className="h-4 w-4" /> Ingelezen — controleer de velden in de volgende stappen
                 </span>
               )}
               {!reading && cvFile && (
@@ -302,161 +330,181 @@ export function CandidateForm({
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {cvError}
               </p>
             )}
+            <div className="flex justify-end border-t border-ink-200 pt-4">
+              <button type="button" className={buttonVariants({ variant: "outline" })} onClick={() => setTab("persoon")}>
+                Zelf invullen →
+              </button>
+            </div>
           </CardContent>
         </Card>
       )}
 
-      <Card>
-        <CardContent className="space-y-5">
+      <Card className={stappen && tab === "inlezen" ? "hidden" : ""}>
+        <CardContent className={stappen ? "max-w-4xl space-y-6" : "space-y-8"}>
           {state.error && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
           )}
 
-          {/* Compacte velden — vullen de volle breedte in 2/3 kolommen */}
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            <Field label="Voornaam" htmlFor="firstName" required error={e.firstName}>
-              <Input id="firstName" name="firstName" value={firstName} onChange={(ev) => setFirstName(ev.target.value)} required />
-            </Field>
-            <Field label="Achternaam" htmlFor="lastName" required error={e.lastName}>
-              <Input id="lastName" name="lastName" value={lastName} onChange={(ev) => setLastName(ev.target.value)} required />
-            </Field>
-            <Field label="E-mail" htmlFor="email" error={e.email}>
-              <Input id="email" name="email" type="email" value={email} onChange={(ev) => setEmail(ev.target.value)} />
-            </Field>
-            <Field label="Telefoon" htmlFor="phone" error={e.phone}>
-              <Input id="phone" name="phone" value={phone} onChange={(ev) => setPhone(ev.target.value)} />
-            </Field>
-            <Field label="Discipline" htmlFor="discipline" error={e.discipline}>
-              <Select id="discipline" name="discipline" defaultValue={discipline} key={`disc-${discipline}`} onValueChange={setDiscipline}>
-                <option value="">— kies —</option>
-                {DISCIPLINES.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Locatie" htmlFor="location" error={e.location}>
-              <Input id="location" name="location" placeholder="Bijv. Rotterdam" value={location} onChange={(ev) => setLocation(ev.target.value)} />
-            </Field>
-            <Field
-              label="Beoordeling"
-              htmlFor="rating"
-              hint="Rangschik hoe inzetbaar deze kandidaat is voor klanten."
-              error={e.rating}
-            >
-              <Select id="rating" name="rating" key={`rating-${rating}`} defaultValue={rating} onValueChange={setRating}>
-                {CANDIDATE_RATINGS.map((r) => (
-                  <option key={r.value} value={r.value} data-color={r.color}>
-                    {r.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field
-              label="Beschikbaarheid"
-              htmlFor="availability"
-              hint="Kan deze kandidaat op dit moment ingezet worden?"
-              error={e.availability}
-            >
-              <Select
-                id="availability"
-                name="availability"
-                key={`avail-${availability}`}
-                defaultValue={availability}
-                onValueChange={setAvailability}
-              >
-                {CANDIDATE_AVAILABILITY.map((a) => (
-                  <option key={a.value} value={a.value} data-color={a.color}>
-                    {a.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            {availability === "BINNENKORT" && (
+          <section data-tab="persoon" className={`space-y-4 ${zicht("persoon")}`}>
+            <div>
+              <h2 className="text-[15px] font-semibold text-ink-900">Persoon</h2>
+              <p className="mt-0.5 text-[13px] text-ink-500">Naam en hoe je hem bereikt.</p>
+            </div>
+            <div className={rij("sm:grid-cols-2 xl:grid-cols-3")}>
+              <Field label="Voornaam" htmlFor="firstName" required error={e.firstName}>
+                <Input id="firstName" name="firstName" value={firstName} onChange={(ev) => setFirstName(ev.target.value)} required />
+              </Field>
+              <Field label="Achternaam" htmlFor="lastName" required error={e.lastName}>
+                <Input id="lastName" name="lastName" value={lastName} onChange={(ev) => setLastName(ev.target.value)} required />
+              </Field>
+              <Field label="E-mail" htmlFor="email" error={e.email}>
+                <Input id="email" name="email" type="email" value={email} onChange={(ev) => setEmail(ev.target.value)} />
+              </Field>
+              <Field label="Telefoon" htmlFor="phone" error={e.phone}>
+                <Input id="phone" name="phone" value={phone} onChange={(ev) => setPhone(ev.target.value)} />
+              </Field>
+              <Field label="Locatie" htmlFor="location" error={e.location}>
+                <Input id="location" name="location" placeholder="Bijv. Rotterdam" value={location} onChange={(ev) => setLocation(ev.target.value)} />
+              </Field>
+              <Field label="LinkedIn-URL" htmlFor="linkedinUrl" error={e.linkedinUrl}>
+                <Input
+                  id="linkedinUrl"
+                  name="linkedinUrl"
+                  type="url"
+                  placeholder="https://www.linkedin.com/in/…"
+                  value={linkedinUrl}
+                  onChange={(ev) => setLinkedinUrl(ev.target.value)}
+                />
+              </Field>
+            </div>
+          </section>
+
+          <section data-tab="profiel" className={`space-y-4 ${zicht("profiel")}`}>
+            <div>
+              <h2 className="text-[15px] font-semibold text-ink-900">Profiel & beoordeling</h2>
+              <p className="mt-0.5 text-[13px] text-ink-500">Wat hij doet, hoe inzetbaar hij is en of hij al op gesprek was.</p>
+            </div>
+            <div className={rij("sm:grid-cols-2 xl:grid-cols-3")}>
+              <Field label="Discipline" htmlFor="discipline" error={e.discipline}>
+                <Select id="discipline" name="discipline" defaultValue={discipline} key={`disc-${discipline}`} onValueChange={setDiscipline}>
+                  <option value="">— kies —</option>
+                  {DISCIPLINES.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Headline" htmlFor="headline" hint="Korte functieomschrijving" error={e.headline}>
+                <Input
+                  id="headline"
+                  name="headline"
+                  placeholder="Bijv. NDT UT/RT Level 2 inspecteur"
+                  value={headline}
+                  onChange={(ev) => setHeadline(ev.target.value)}
+                />
+              </Field>
               <Field
-                label="Beschikbaar vanaf"
-                htmlFor="availableFrom"
-                hint="Vanaf welke datum is deze kandidaat inzetbaar?"
-                error={e.availableFrom}
+                label="Beoordeling"
+                htmlFor="rating"
+                hint="Rangschik hoe inzetbaar deze kandidaat is voor klanten."
+                error={e.rating}
               >
-                <DateInput id="availableFrom" name="availableFrom" value={availableFrom} onValueChange={setAvailableFrom} />
+                <Select id="rating" name="rating" key={`rating-${rating}`} defaultValue={rating} onValueChange={setRating}>
+                  {CANDIDATE_RATINGS.map((r) => (
+                    <option key={r.value} value={r.value} data-color={r.color}>
+                      {r.label}
+                    </option>
+                  ))}
+                </Select>
               </Field>
-            )}
+              <Field
+                label="Beschikbaarheid"
+                htmlFor="availability"
+                hint="Kan deze kandidaat op dit moment ingezet worden?"
+                error={e.availability}
+              >
+                <Select
+                  id="availability"
+                  name="availability"
+                  key={`avail-${availability}`}
+                  defaultValue={availability}
+                  onValueChange={setAvailability}
+                >
+                  {CANDIDATE_AVAILABILITY.map((a) => (
+                    <option key={a.value} value={a.value} data-color={a.color}>
+                      {a.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              {availability === "BINNENKORT" && (
+                <Field
+                  label="Beschikbaar vanaf"
+                  htmlFor="availableFrom"
+                  hint="Vanaf welke datum is deze kandidaat inzetbaar?"
+                  error={e.availableFrom}
+                >
+                  <DateInput id="availableFrom" name="availableFrom" value={availableFrom} onValueChange={setAvailableFrom} />
+                </Field>
+              )}
+              <Field
+                label="Interview met Q4S"
+                htmlFor="interviewStatus"
+                hint="Is deze kandidaat al bij ons op gesprek geweest?"
+                error={e.interviewStatus}
+              >
+                <Select
+                  id="interviewStatus"
+                  name="interviewStatus"
+                  key={`iv-${interviewStatus}`}
+                  defaultValue={interviewStatus}
+                  onValueChange={setInterviewStatus}
+                >
+                  {CANDIDATE_INTERVIEW_STATUSES.map((s) => (
+                    <option key={s.value} value={s.value} data-color={s.color}>
+                      {s.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              {interviewStatus !== "NONE" && (
+                <Field label="Interviewdatum" htmlFor="interviewDate" error={e.interviewDate}>
+                  <DateInput id="interviewDate" name="interviewDate" value={interviewDate} onValueChange={setInterviewDate} />
+                </Field>
+              )}
+            </div>
+          </section>
+
+          <section data-tab="ervaring" className={`space-y-4 ${zicht("ervaring")}`}>
+            <div>
+              <h2 className="text-[15px] font-semibold text-ink-900">Ervaring & notities</h2>
+              <p className="mt-0.5 text-[13px] text-ink-500">Werkervaring uit het cv en je eigen aantekeningen.</p>
+            </div>
             <Field
-              label="Interview met Q4S"
-              htmlFor="interviewStatus"
-              hint="Is deze kandidaat al bij ons op gesprek geweest?"
-              error={e.interviewStatus}
+              label="Werkervaring"
+              htmlFor="experienceSummary"
+              hint="Wordt automatisch uit het CV gehaald. Elke functie op een eigen regel met '•' ervoor — controleer en corrigeer gerust."
+              error={e.experienceSummary}
             >
-              <Select
-                id="interviewStatus"
-                name="interviewStatus"
-                key={`iv-${interviewStatus}`}
-                defaultValue={interviewStatus}
-                onValueChange={setInterviewStatus}
-              >
-                {CANDIDATE_INTERVIEW_STATUSES.map((s) => (
-                  <option key={s.value} value={s.value} data-color={s.color}>
-                    {s.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            {interviewStatus !== "NONE" && (
-              <Field label="Interviewdatum" htmlFor="interviewDate" error={e.interviewDate}>
-                <DateInput id="interviewDate" name="interviewDate" value={interviewDate} onValueChange={setInterviewDate} />
-              </Field>
-            )}
-          </div>
-
-          {/* Beschrijvende velden */}
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Headline" htmlFor="headline" hint="Korte functieomschrijving" error={e.headline}>
-              <Input
-                id="headline"
-                name="headline"
-                placeholder="Bijv. NDT UT/RT Level 2 inspecteur"
-                value={headline}
-                onChange={(ev) => setHeadline(ev.target.value)}
+              <Textarea
+                id="experienceSummary"
+                name="experienceSummary"
+                rows={12}
+                value={experienceSummary}
+                onChange={(ev) => setExperienceSummary(ev.target.value)}
+                placeholder={"Bijv.\nJunior NDT/QC Inspector met circa 2 jaar ervaring in NDO (UT, MT, VT).\n• Werkgever — Rol (periode): concrete taken, projecten, normen.\n• Werkgever — Rol (periode): …"}
               />
             </Field>
-            <Field label="LinkedIn-URL" htmlFor="linkedinUrl" error={e.linkedinUrl}>
-              <Input
-                id="linkedinUrl"
-                name="linkedinUrl"
-                type="url"
-                placeholder="https://www.linkedin.com/in/…"
-                value={linkedinUrl}
-                onChange={(ev) => setLinkedinUrl(ev.target.value)}
-              />
+            <Field
+              label="Notities"
+              htmlFor="notes"
+              hint="Vrije aantekeningen voor de recruiter — losse opmerkingen, afspraken of aandachtspunten."
+              error={e.notes}
+            >
+              <Textarea id="notes" name="notes" rows={8} value={notes} onChange={(ev) => setNotes(ev.target.value)} placeholder="Bijv. gebeld op 3 mei — wil richting offshore, min. €X, referentie volgt." />
             </Field>
-          </div>
-
-          <Field
-            label="Werkervaring"
-            htmlFor="experienceSummary"
-            hint="Wordt automatisch uit het CV gehaald. Elke functie op een eigen regel met '•' ervoor — controleer en corrigeer gerust."
-            error={e.experienceSummary}
-          >
-            <Textarea
-              id="experienceSummary"
-              name="experienceSummary"
-              rows={8}
-              value={experienceSummary}
-              onChange={(ev) => setExperienceSummary(ev.target.value)}
-              placeholder={"Bijv.\nJunior NDT/QC Inspector met circa 2 jaar ervaring in NDO (UT, MT, VT).\n• Werkgever — Rol (periode): concrete taken, projecten, normen.\n• Werkgever — Rol (periode): …"}
-            />
-          </Field>
-
-          <Field
-            label="Notities"
-            htmlFor="notes"
-            hint="Vrije aantekeningen voor de recruiter — losse opmerkingen, afspraken of aandachtspunten."
-            error={e.notes}
-          >
-            <Textarea id="notes" name="notes" rows={5} value={notes} onChange={(ev) => setNotes(ev.target.value)} placeholder="Bijv. gebeld op 3 mei — wil richting offshore, min. €X, referentie volgt." />
-          </Field>
+          </section>
         </CardContent>
         <CardFooter className="flex flex-wrap justify-end gap-2">
           {isNew && (
@@ -472,6 +520,16 @@ export function CandidateForm({
           <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>
             Annuleren
           </Link>
+          {stappen && vorige && (
+            <button type="button" className={buttonVariants({ variant: "outline" })} onClick={() => setTab(vorige)}>
+              ← Vorige
+            </button>
+          )}
+          {stappen && volgende && (
+            <button type="button" className={buttonVariants({ variant: "outline" })} onClick={() => setTab(volgende)}>
+              Volgende →
+            </button>
+          )}
           <SubmitButton>{submitLabel}</SubmitButton>
         </CardFooter>
       </Card>

@@ -12,7 +12,7 @@ export default async function NieuweKandidaatPage({ searchParams }: { searchPara
   return (
     <div className="space-y-6">
       <BackLink href={terug}>Terug naar kandidaten</BackLink>
-      <PageHeader title="Nieuwe kandidaat" description={`${SPOOR[spoor].label} — lees een CV automatisch in, of vul de gegevens handmatig in.`} />
+      <PageHeader title="Nieuwe kandidaat" description={`${SPOOR[spoor].label} · lees een cv in of vul hem zelf in. In vier korte stappen; opslaan kan altijd.`} />
       <CandidateForm action={createCandidate} submitLabel="Kandidaat opslaan" cancelHref={terug} showCvIntake spoor={spoor} />
     </div>
   );
