@@ -44,7 +44,7 @@ export function PhoneButton({
     return (
       <span
         className={cn(
-          "inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink-100 text-ink-300",
+          "inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-100 text-ink-300",
           className,
         )}
         title="Geen telefoonnummer bekend"
@@ -76,7 +76,7 @@ export function PhoneButton({
         title="Telefoonnummer tonen"
         aria-label="Telefoonnummer tonen"
         className={cn(
-          "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition-colors hover:bg-emerald-200",
+          "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 transition-colors hover:bg-emerald-100",
           className,
         )}
       >

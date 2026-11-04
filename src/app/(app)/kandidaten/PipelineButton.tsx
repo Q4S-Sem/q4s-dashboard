@@ -24,7 +24,10 @@ export function PipelineButton({
   candidateName,
   clients,
   vacancies,
+  alleenIcoon = false,
 }: {
+  /** Alleen het pipeline-icoon (rustige lijst). */
+  alleenIcoon?: boolean;
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   candidateId: string;
   candidateName: string;
@@ -71,10 +74,14 @@ export function PipelineButton({
         onClick={() => setOpen(true)}
         title={`${candidateName} in de pipeline zetten`}
         aria-label={`${candidateName} in de pipeline zetten`}
-        className={buttonVariants({ variant: "outline", size: "sm", className: "shrink-0" })}
+        className={
+          alleenIcoon
+            ? "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-ink-200 bg-white text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-900"
+            : buttonVariants({ variant: "outline", size: "sm", className: "shrink-0" })
+        }
       >
         <Kanban className="h-4 w-4" />
-        Pipeline
+        {!alleenIcoon && "Pipeline"}
       </button>
 
       {mounted &&

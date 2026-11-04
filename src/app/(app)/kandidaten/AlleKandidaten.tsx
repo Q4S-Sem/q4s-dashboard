@@ -1,22 +1,21 @@
 import { afgelopen24Uur } from "@/lib/vandaag";
 import Link from "next/link";
-import { Users, Plus, ChevronRight, Mail } from "lucide-react";
+import { Users, Plus, Mail } from "lucide-react";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { WervingFlow } from "./WervingFlow";
 import { herkomst } from "@/lib/eu-herkomst";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants, mapTabVariants } from "@/components/ui/button";
-import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { PhoneButton } from "@/components/ui/phone-button";
 import { person } from "@/lib/people";
-import { cn } from "@/lib/utils";
 import {
   DISCIPLINES,
   CANDIDATE_RATINGS,
   CANDIDATE_RATING_ORDER,
   CANDIDATE_AVAILABILITY,
+  labelFor,
 } from "@/lib/domain";
 import { SPOOR, type Spoor } from "@/lib/spoor";
 import { RatingSelect } from "./RatingSelect";
@@ -36,18 +35,6 @@ export type SP = {
   error?: string;
 };
 
-/**
- * Ring om de profielfoto naar beoordeling — geeft de kaart in één oogopslag een
- * signaal, ook wanneer er een foto in plaats van initialen staat.
- */
-const RATING_RING: Record<string, string> = {
-  GOED: "ring-emerald-400",
-  REDELIJK: "ring-amber-400",
-  NIET_MEER: "ring-red-400",
-};
-function ringByRating(rating: string): string {
-  return RATING_RING[rating] ?? "ring-ink-200";
-}
 
 export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
   const pad = SPOOR[spoor];
@@ -228,9 +215,9 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
                   />
                   {/* Persoon: avatar + naam + discipline */}
                   <div className="pointer-events-none relative z-10 flex min-w-0 flex-1 items-center gap-3">
-                    <Avatar {...person(c)} size="sm" className={cn("ring-2", ringByRating(c.rating))} />
+                    <Avatar {...person(c)} size="sm" plain />
                     {isNieuw(c) && (
-                      <span className="absolute -left-1 -top-1 rounded-full bg-blue-600 px-1.5 text-[9px] font-bold uppercase text-white">nieuw</span>
+                      <span className="absolute -left-1 -top-1 rounded-full bg-emerald-600 px-1.5 text-[9px] font-bold uppercase text-white">nieuw</span>
                     )}
                     <div className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-ink-900 group-hover:text-brand-600">
@@ -238,11 +225,7 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
                       </span>
                       <div className="flex items-center gap-1.5 truncate text-xs text-ink-500">
                         {c.headline && <span className="truncate">{c.headline}</span>}
-                        {c.discipline && (
-                          <span className="shrink-0">
-                            <StatusBadge options={DISCIPLINES} value={c.discipline} />
-                          </span>
-                        )}
+                        {c.discipline && <span className="shrink-0">· {labelFor(DISCIPLINES, c.discipline)}</span>}
                       </div>
                     </div>
                   </div>
@@ -257,7 +240,7 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
                           href={`mailto:${c.email}`}
                           title={`Mail ${c.firstName} (${c.email})`}
                           aria-label={`Stuur een e-mail naar ${c.firstName} ${c.lastName}`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-900"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 transition-colors hover:bg-emerald-100"
                         >
                           <Mail className="h-4 w-4" />
                         </a>
@@ -284,14 +267,8 @@ export async function AlleKandidaten({ sp, spoor }: { sp: SP; spoor: Spoor }) {
                       candidateName={`${c.firstName} ${c.lastName}`}
                       clients={pipelineClients}
                       vacancies={pipelineVacancies}
+                      alleenIcoon
                     />
-                    <Link
-                      href={`/kandidaten/${c.id}`}
-                      aria-label={`${c.firstName} ${c.lastName} openen`}
-                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-300 transition-colors hover:bg-ink-100 hover:text-brand-600"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </Link>
                   </div>
                 </div>
               );

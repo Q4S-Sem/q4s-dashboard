@@ -1,28 +1,41 @@
 import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/badge";
+import Link from "next/link";
+import { FileDown } from "lucide-react";
+import { buttonVariants, segmentVariants } from "@/components/ui/button";
+import { CvPreviewButton } from "@/components/cv-preview-button";
+import { SPOOR, spoorVan } from "@/lib/spoor";
+import { RatingSelect } from "../../RatingSelect";
+import { AvailabilitySelect } from "../../AvailabilitySelect";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { formatDate } from "@/lib/utils";
-import { DISCIPLINES, CANDIDATE_SOURCES, CANDIDATE_AVAILABILITY } from "@/lib/domain";
+import { DISCIPLINES, CANDIDATE_SOURCES, labelFor } from "@/lib/domain";
 import { InterviewSelect } from "../../InterviewSelect";
 import { ExperienceView } from "../../ExperienceView";
-import { saveCandidateInterviewDetails } from "../../actions";
+import { saveCandidateInterviewDetails, laadCvIn, setCandidateSpoor } from "../../actions";
 import { getCandidate } from "./data";
 
 // CV inladen (AI-uitlezing, evt. tweede lezing met het sterke model) mag even duren.
 export const maxDuration = 60;
 
-/** Eén label + waarde in het gegevens-raster. */
-function Detail({ label, value }: { label: string; value: React.ReactNode }) {
+/** Eén regel: label links, waarde rechts — alles netjes onder elkaar. */
+function Regel({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-ink-400">
-        {label}
-      </dt>
-      <dd className="mt-1 text-sm text-ink-900">{value || "—"}</dd>
+    <div className="grid grid-cols-[9rem_1fr] items-center gap-3 px-4 py-2.5 text-[13px] sm:grid-cols-[11rem_1fr]">
+      <dt className="text-ink-500">{label}</dt>
+      <dd className="min-w-0 break-words text-ink-900">{children || <span className="text-ink-300">—</span>}</dd>
     </div>
+  );
+}
+
+/** Blok met kop en regels eronder. */
+function Blok({ titel, children }: { titel: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-lg border border-ink-200 bg-white">
+      <h2 className="border-b border-ink-200 px-4 py-2.5 text-[13px] font-semibold text-ink-900">{titel}</h2>
+      <dl className="divide-y divide-ink-100">{children}</dl>
+    </section>
   );
 }
 
@@ -68,129 +81,98 @@ export default async function OverzichtTab({
       {error === "foto-groot" && <Fout>De foto is te groot (max. 5 MB).</Fout>}
       {error === "foto-type" && <Fout>Alleen JPG, PNG of WebP.</Fout>}
 
-      {/* Gegevens */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Gegevens</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-5 sm:grid-cols-3">
-            <Detail
-              label="Discipline"
-              value={
-                candidate.discipline ? (
-                  <StatusBadge options={DISCIPLINES} value={candidate.discipline} />
-                ) : null
-              }
-            />
-            <Detail label="Headline" value={candidate.headline} />
-            <Detail label="Locatie" value={candidate.location} />
-            <Detail label="E-mail" value={candidate.email} />
-            <Detail label="Telefoon" value={candidate.phone} />
-            <Detail
-              label="Bron"
-              value={<StatusBadge options={CANDIDATE_SOURCES} value={candidate.source} />}
-            />
-            <Detail
-              label="Beschikbaarheid"
-              value={
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusBadge options={CANDIDATE_AVAILABILITY} value={candidate.availability} />
-                  {candidate.availability === "BINNENKORT" && candidate.availableFrom && (
-                    <span className="text-xs text-ink-500">
-                      vanaf {formatDate(candidate.availableFrom)}
-                    </span>
-                  )}
-                </div>
-              }
-            />
-            <Detail
-              label="LinkedIn"
-              value={
-                candidate.linkedinUrl ? (
-                  <a
-                    href={candidate.linkedinUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-brand-700 hover:underline"
-                  >
-                    Profiel <ExternalLink className="h-3.5 w-3.5 text-ink-400" />
-                  </a>
-                ) : null
-              }
-            />
-            <Detail label="Toegevoegd" value={formatDate(candidate.createdAt)} />
-          </dl>
-        </CardContent>
-      </Card>
-
-      {/* Werkervaring — nette weergave, los van de vrije notities */}
-      {candidate.experienceSummary && candidate.experienceSummary.trim() && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Werkervaring</CardTitle>
-            <span className="text-sm text-ink-400">
-              Samengevat uit het CV — controleer en pas aan via Bewerken.
-            </span>
-          </CardHeader>
-          <CardContent>
-            <ExperienceView summary={candidate.experienceSummary} />
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Interview met Q4S</CardTitle>
-          <span className="text-sm text-ink-400">
-            De kennismaking met Q4S — status, datum en wat er besproken is.
-          </span>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Interview met Q4S */}
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
-                Interview met Q4S
-              </span>
-              <InterviewSelect id={candidate.id} value={candidate.interviewStatus} />
+      <div className="max-w-3xl space-y-5">
+        {/* Belangrijkste eerst: waar staat deze kandidaat? */}
+        <Blok titel="Status">
+          <Regel label="Beoordeling"><RatingSelect id={candidate.id} value={candidate.rating} className="w-52" /></Regel>
+          <Regel label="Beschikbaarheid">
+            <div className="flex flex-wrap items-center gap-2">
+              <AvailabilitySelect id={candidate.id} value={candidate.availability} className="w-52" />
+              {candidate.availability === "BINNENKORT" && candidate.availableFrom && (
+                <span className="text-xs text-ink-500">vanaf {formatDate(candidate.availableFrom)}</span>
+              )}
             </div>
-
-            {candidate.interviewStatus !== "NONE" && (
-              <form
-                action={saveCandidateInterviewDetails}
-                className="space-y-3 rounded-lg border border-ink-200 bg-ink-50/60 p-3"
-              >
-                <input type="hidden" name="id" value={candidate.id} />
-                <div className="max-w-[220px]">
-                  <Field label="Datum interview" htmlFor="interviewDate">
-                    <Input
-                      id="interviewDate"
-                      name="interviewDate"
-                      type="date"
-                      defaultValue={toDateInputValue(candidate.interviewDate)}
-                    />
-                  </Field>
-                </div>
-                <Field label="Notities bij het interview" htmlFor="interviewNotes">
-                  <Textarea
-                    id="interviewNotes"
-                    name="interviewNotes"
-                    rows={3}
-                    defaultValue={candidate.interviewNotes ?? ""}
-                    placeholder="Bijv. sterke indruk, per direct beschikbaar, wil richting offshore…"
-                  />
-                </Field>
-                <div className="flex justify-end">
-                  <SubmitButton size="sm" pendingLabel="Opslaan…">
-                    Opslaan
+          </Regel>
+          <Regel label="Interview met Q4S"><InterviewSelect id={candidate.id} value={candidate.interviewStatus} className="w-52" /></Regel>
+          <Regel label="Spoor">
+            <form action={setCandidateSpoor} className="flex gap-1.5">
+              <input type="hidden" name="id" value={candidate.id} />
+              {(["PROJECT", "VAST"] as const).map((s) => (
+                <button key={s} type="submit" name="spoor" value={s} aria-pressed={spoorVan(candidate.spoor) === s} className={segmentVariants(spoorVan(candidate.spoor) === s, "h-7 text-xs")}>
+                  {SPOOR[s].label}
+                </button>
+              ))}
+            </form>
+          </Regel>
+          <Regel label="Cv">
+            {candidate.cvFileName ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <CvPreviewButton
+                  src={`/api/cv/${candidate.id}`}
+                  name={candidate.cvOriginalName ?? `CV ${`${candidate.firstName} ${candidate.lastName}`}`}
+                  mime={candidate.cvMimeType ?? ""}
+                  label="Bekijken"
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                />
+                <form action={laadCvIn}>
+                  <input type="hidden" name="id" value={candidate.id} />
+                  <SubmitButton size="sm" variant="outline" pendingLabel="Cv lezen…">
+                    <FileDown className="h-4 w-4" /> Opnieuw inlezen
                   </SubmitButton>
-                </div>
-              </form>
+                </form>
+              </div>
+            ) : (
+              <Link href={`/kandidaten/${candidate.id}/cv`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                <FileDown className="h-4 w-4" /> Cv toevoegen
+              </Link>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </Regel>
+        </Blok>
+
+        <Blok titel="Gegevens">
+          <Regel label="Functie">{candidate.headline}</Regel>
+          <Regel label="Discipline">{candidate.discipline ? labelFor(DISCIPLINES, candidate.discipline) : null}</Regel>
+          <Regel label="Locatie">{candidate.location}</Regel>
+          <Regel label="Telefoon">{candidate.phone && <a href={`tel:${candidate.phone}`} className="hover:underline">{candidate.phone}</a>}</Regel>
+          <Regel label="E-mail">{candidate.email && <a href={`mailto:${candidate.email}`} className="hover:underline">{candidate.email}</a>}</Regel>
+          <Regel label="LinkedIn">
+            {candidate.linkedinUrl && (
+              <a href={candidate.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:underline">
+                Profiel <ExternalLink className="h-3.5 w-3.5 text-ink-400" />
+              </a>
+            )}
+          </Regel>
+          <Regel label="Bron">{labelFor(CANDIDATE_SOURCES, candidate.source)}</Regel>
+          <Regel label="Toegevoegd">{formatDate(candidate.createdAt)}</Regel>
+        </Blok>
+
+        {candidate.experienceSummary && candidate.experienceSummary.trim() && (
+          <section className="rounded-lg border border-ink-200 bg-white">
+            <h2 className="border-b border-ink-200 px-4 py-2.5 text-[13px] font-semibold text-ink-900">Werkervaring</h2>
+            <div className="px-4 py-3 text-[13px]">
+              <ExperienceView summary={candidate.experienceSummary} />
+            </div>
+          </section>
+        )}
+
+        {candidate.interviewStatus !== "NONE" && (
+          <section className="rounded-lg border border-ink-200 bg-white">
+            <h2 className="border-b border-ink-200 px-4 py-2.5 text-[13px] font-semibold text-ink-900">Interview met Q4S</h2>
+            <form action={saveCandidateInterviewDetails} className="space-y-4 p-4">
+              <input type="hidden" name="id" value={candidate.id} />
+              <Field label="Datum interview" htmlFor="interviewDate">
+                <Input id="interviewDate" name="interviewDate" type="date" className="max-w-[220px]" defaultValue={toDateInputValue(candidate.interviewDate)} />
+              </Field>
+              <Field label="Notities bij het interview" htmlFor="interviewNotes">
+                <Textarea id="interviewNotes" name="interviewNotes" rows={5} defaultValue={candidate.interviewNotes ?? ""} placeholder="Bijv. sterke indruk, per direct beschikbaar, wil richting offshore…" />
+              </Field>
+              <div className="flex justify-end">
+                <SubmitButton size="sm" pendingLabel="Opslaan…">Opslaan</SubmitButton>
+              </div>
+            </form>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

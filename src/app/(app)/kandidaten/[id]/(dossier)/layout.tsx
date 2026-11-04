@@ -17,7 +17,9 @@ import { DISCIPLINES, labelFor } from "@/lib/domain";
 import { person } from "@/lib/people";
 import { deleteCandidate, uploadPhoto, deletePhoto } from "../../actions";
 import { PhotoPicker } from "../../PhotoPicker";
-import { KandidaatStappen } from "../../KandidaatStappen";
+import { PipelineButton } from "../../PipelineButton";
+import { createDealFromCandidate } from "../../../crm/deals/actions";
+import { db } from "@/lib/db";
 import { SPOOR, spoorVan } from "@/lib/spoor";
 import { getCandidate, getDossierCounts } from "./data";
 
@@ -41,9 +43,16 @@ export default async function KandidaatDossierLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [candidate, counts] = await Promise.all([
+  const [candidate, counts, clients, vacancies] = await Promise.all([
     getCandidate(id),
     getDossierCounts(id),
+    db.client.findMany({ orderBy: { companyName: "asc" }, select: { id: true, companyName: true } }),
+    db.vacancy.findMany({
+      where: { status: { not: "CONCEPT" } },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      select: { id: true, title: true, companyName: true },
+    }),
   ]);
   if (!candidate) notFound();
 
@@ -67,6 +76,14 @@ export default async function KandidaatDossierLayout({
         }
         actions={
           <>
+            {/* Pipeline rechtsboven: de belangrijkste volgende stap. */}
+            <PipelineButton
+              action={createDealFromCandidate}
+              candidateId={candidate.id}
+              candidateName={name}
+              clients={clients.map((k) => ({ id: k.id, name: k.companyName }))}
+              vacancies={vacancies.map((v) => ({ id: v.id, title: v.title, company: v.companyName }))}
+            />
             <Link
               href={`/kandidaten/${candidate.id}/bewerken`}
               className={BEWERK_ICOON}
@@ -85,8 +102,6 @@ export default async function KandidaatDossierLayout({
           </>
         }
       />
-
-      <KandidaatStappen c={candidate} />
 
       <DossierTabs
         base={`/kandidaten/${candidate.id}`}

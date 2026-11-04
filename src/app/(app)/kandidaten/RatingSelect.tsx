@@ -9,13 +9,13 @@ import { setCandidateRating } from "./actions";
 const TONE: Record<string, string> = {
   GOED: "border-emerald-200 bg-emerald-50 text-emerald-700",
   REDELIJK: "border-amber-200 bg-amber-50 text-amber-700",
-  NIET_MEER: "border-red-200 bg-red-50 text-red-700",
+  NIET_MEER: "border-ink-200 bg-ink-50 text-ink-500", // alleen groen/oranje in beeld
   ONBEKEND: "border-ink-200 bg-white text-ink-600",
 };
 const DOT: Record<string, string> = {
   GOED: "bg-emerald-500",
   REDELIJK: "bg-amber-500",
-  NIET_MEER: "bg-red-500",
+  NIET_MEER: "bg-ink-400",
   ONBEKEND: "bg-ink-300",
 };
 

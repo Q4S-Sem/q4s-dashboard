@@ -56,8 +56,11 @@ export function Avatar({
   src,
   size = "md",
   ring = false,
+  plain = false,
   className,
 }: {
+  /** Grijs i.p.v. naamkleur (rustige lijsten). */
+  plain?: boolean;
   /** Volledige naam — bepaalt de initialen én de kleur. */
   name: string;
   /** Pad naar de profielfoto; leeg = initialen. */
@@ -87,7 +90,7 @@ export function Avatar({
   }
 
   return (
-    <span className={cn(base, colorFor(name))} title={name} aria-label={name}>
+    <span className={cn(base, plain ? "bg-ink-100 text-ink-600" : colorFor(name))} title={name} aria-label={name}>
       {initialsOf(name)}
     </span>
   );
