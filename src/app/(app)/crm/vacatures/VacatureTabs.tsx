@@ -12,6 +12,15 @@ import { cn } from "@/lib/utils";
 
 export type VacatureTab = "open" | "pipeline" | "concept" | "gereed" | "online";
 
+/** Eigen kleur per fase (vaste klassen, zodat Tailwind ze vindt): icoon-vlakje, cijfer en actieve balk. */
+const KLEUR: Record<VacatureTab, { vlak: string; tekst: string; balk: string }> = {
+  open: { vlak: "bg-amber-50 text-amber-600", tekst: "text-amber-700", balk: "bg-amber-500" },
+  pipeline: { vlak: "bg-violet-50 text-violet-600", tekst: "text-violet-700", balk: "bg-violet-500" },
+  concept: { vlak: "bg-ink-100 text-ink-600", tekst: "text-ink-800", balk: "bg-ink-700" },
+  gereed: { vlak: "bg-blue-50 text-blue-600", tekst: "text-blue-700", balk: "bg-blue-500" },
+  online: { vlak: "bg-emerald-50 text-emerald-600", tekst: "text-emerald-700", balk: "bg-emerald-500" },
+};
+
 const GROEPEN: { titel: string; tabs: { key: VacatureTab; label: string; hint: string; icon: React.ReactNode; href: string }[] }[] = [
   {
     titel: "Werving",
@@ -74,16 +83,16 @@ export async function VacatureTabs({ actief }: { actief: VacatureTab }) {
                   )}
                 >
                   {/* Actief = zwarte balk onderaan (zelfde taal als de tabs elders). */}
-                  {aan && <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-ink-900" />}
-                  <span className={cn("flex items-center gap-1.5 text-[13px] font-medium", aan ? "text-ink-900" : "text-ink-500 group-hover:text-ink-900")}>
-                    <span className={aan ? "text-ink-900" : "text-ink-400"}>{t.icon}</span>
+                  {aan && <span aria-hidden className={cn("absolute inset-x-0 bottom-0 h-0.5", KLEUR[t.key].balk)} />}
+                  <span className={cn("flex items-center gap-2 text-[13px] font-medium", aan ? "text-ink-900" : "text-ink-600 group-hover:text-ink-900")}>
+                    <span className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-md [&_svg]:h-3.5 [&_svg]:w-3.5", KLEUR[t.key].vlak)}>{t.icon}</span>
                     <span className="truncate">{t.label}</span>
                     {/* Pijltje: de website-fases volgen elkaar op. */}
                     {g.titel === "Website" && ti < g.tabs.length - 1 && (
                       <ChevronRight aria-hidden className="ml-auto h-3.5 w-3.5 shrink-0 text-ink-300" />
                     )}
                   </span>
-                  <span className={cn("text-xl font-semibold leading-none tabular-nums", aan ? "text-ink-900" : "text-ink-700")}>{tel[t.key]}</span>
+                  <span className={cn("text-xl font-semibold leading-none tabular-nums", tel[t.key] > 0 ? KLEUR[t.key].tekst : "text-ink-300")}>{tel[t.key]}</span>
                   <span className="truncate text-[11px] text-ink-400">{t.hint}</span>
                 </Link>
               );
