@@ -100,7 +100,8 @@ export function DealBoard({
 
   return (
     <div className="overflow-x-auto pb-2">
-      <div className="flex w-fit gap-2.5">
+      {/* Kolommen vullen de hele breedte (min. 15rem, anders horizontaal scrollen) en de rest van het scherm in hoogte. */}
+      <div className="flex min-h-[calc(100dvh-22rem)] gap-2.5">
       {columns.map((col) => {
         const colCards = cards.filter((c) => c.columnId === col.id);
         const accent = ACCENT[col.color ?? "slate"];
@@ -121,7 +122,7 @@ export function DealBoard({
               if (id) move(id, col.id);
             }}
             className={cn(
-              "flex w-60 shrink-0 flex-col rounded-md border bg-ink-50/60 transition-colors",
+              "flex min-w-60 flex-1 basis-0 flex-col rounded-md border bg-ink-50/60 transition-colors",
               overCol === col.id ? "border-brand-400 bg-brand-50/40" : "border-ink-200",
             )}
           >
