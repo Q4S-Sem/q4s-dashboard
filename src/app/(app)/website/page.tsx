@@ -200,7 +200,7 @@ export default async function WebsitePage({
                     "Nog niets live op de website. Publiceer een gereed staande vacature."}
                 </div>
               ) : (
-                <ul className="divide-y divide-ink-100">
+                <ul className="divide-y divide-ink-200/70">
                   {visible.map(({ d, bucket }) => {
                     const company = d.client?.companyName ?? d.company;
                     const vac = d.vacancy;
@@ -211,7 +211,7 @@ export default async function WebsitePage({
                     return (
                       <li
                         key={d.id}
-                        className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center"
+                        className="flex flex-col gap-2 px-4 py-2.5 text-[13px] transition-colors hover:bg-ink-50/80 sm:flex-row sm:items-center"
                       >
                         {active === "gereed" && vac && (
                           <input
@@ -228,7 +228,7 @@ export default async function WebsitePage({
                           <div className="flex flex-wrap items-center gap-2">
                             <Link
                               href={`/crm/deals/${d.id}`}
-                              className="truncate font-semibold text-ink-900 hover:text-brand-700"
+                              className="truncate font-medium text-ink-900 hover:underline"
                             >
                               {d.title}
                             </Link>

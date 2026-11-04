@@ -1,6 +1,8 @@
 import { Briefcase, CheckCircle2, Globe, Kanban, PencilLine } from "lucide-react";
 import { db } from "@/lib/db";
-import { FilterTegels, type TegelToon } from "@/components/ui/filter-tegels";
+import Link from "next/link";
+import { mapTabVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Eén mappenbalk voor ALLE vacatures in Recruitment: eerst de werving
@@ -11,12 +13,22 @@ import { FilterTegels, type TegelToon } from "@/components/ui/filter-tegels";
 
 export type VacatureTab = "open" | "pipeline" | "concept" | "gereed" | "online";
 
-const TABS: { key: VacatureTab; label: string; icon: React.ReactNode; toon: TegelToon; href: string }[] = [
-  { key: "open", label: "Openstaand", icon: <Briefcase className="h-4 w-4" />, toon: "slate", href: "/crm/vacatures?view=open" },
-  { key: "pipeline", label: "In pipeline", icon: <Kanban className="h-4 w-4" />, toon: "violet", href: "/crm/vacatures?view=pipeline" },
-  { key: "concept", label: "Website · concept", icon: <PencilLine className="h-4 w-4" />, toon: "amber", href: "/website?tab=concept" },
-  { key: "gereed", label: "Gereed", icon: <CheckCircle2 className="h-4 w-4" />, toon: "blue", href: "/website?tab=gereed" },
-  { key: "online", label: "Online", icon: <Globe className="h-4 w-4" />, toon: "green", href: "/website?tab=online" },
+const GROEPEN: { titel: string; tabs: { key: VacatureTab; label: string; icon: React.ReactNode; href: string }[] }[] = [
+  {
+    titel: "Werving",
+    tabs: [
+      { key: "open", label: "Openstaand", icon: <Briefcase className="h-4 w-4" />, href: "/crm/vacatures?view=open" },
+      { key: "pipeline", label: "In pipeline", icon: <Kanban className="h-4 w-4" />, href: "/crm/vacatures?view=pipeline" },
+    ],
+  },
+  {
+    titel: "Website",
+    tabs: [
+      { key: "concept", label: "Concept", icon: <PencilLine className="h-4 w-4" />, href: "/website?tab=concept" },
+      { key: "gereed", label: "Gereed", icon: <CheckCircle2 className="h-4 w-4" />, href: "/website?tab=gereed" },
+      { key: "online", label: "Online", icon: <Globe className="h-4 w-4" />, href: "/website?tab=online" },
+    ],
+  },
 ];
 
 /** Websitefase: geen tekst (of CONCEPT) → concept, PUBLISHED → online, anders gereed. */
@@ -41,10 +53,26 @@ export async function VacatureTabs({ actief }: { actief: VacatureTab }) {
     }
   }
 
+  // Onderstreepte tabs in twee groepen (werving · website) met het aantal erachter.
   return (
-    <FilterTegels
-      label="Vacatures"
-      items={TABS.map((t) => ({ key: t.key, label: t.label, waarde: tel[t.key], icon: t.icon, toon: t.toon, href: t.href, actief: t.key === actief }))}
-    />
+    <nav aria-label="Vacatures" className="flex flex-wrap items-end gap-x-6 border-b border-ink-200">
+      {GROEPEN.map((g) => (
+        <div key={g.titel} className="flex items-end gap-1">
+          <span className="mb-2.5 mr-1 hidden text-[11px] font-medium text-ink-400 sm:inline">{g.titel}</span>
+          {g.tabs.map((t) => {
+            const aan = t.key === actief;
+            return (
+              <Link key={t.key} href={t.href} aria-current={aan ? "page" : undefined} className={mapTabVariants(aan)}>
+                <span className={aan ? "text-ink-900" : "text-ink-400"}>{t.icon}</span>
+                {t.label}
+                <span className={cn("rounded-sm px-1.5 text-[11px] font-semibold tabular-nums", aan ? "bg-ink-900 text-white" : "bg-ink-100 text-ink-500")}>
+                  {tel[t.key]}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+    </nav>
   );
 }

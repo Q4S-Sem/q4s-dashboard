@@ -1,17 +1,20 @@
 import Link from "next/link";
-import { Plus, Search, X, Briefcase, Building2, Users2, MapPin, CalendarClock, ArrowRight, Sparkles, Kanban } from "lucide-react";
+import { Plus, Search, X, Briefcase, Users2, Sparkles, Kanban } from "lucide-react";
 import { db } from "@/lib/db";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/field";
 import { AutoFilterForm } from "@/components/ui/auto-filter-form";
 import { ZOEK_ICOON } from "@/components/ui/tabel-zoek";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { buttonVariants } from "@/components/ui/button";
-import { StatusBadge, Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { formatDate, cn } from "@/lib/utils";
 import { DISCIPLINES, labelFor, type BadgeColor } from "@/lib/domain";
 import { VacatureTabs } from "./VacatureTabs";
+
+// Functie · opdrachtgever · vakgebied · start/fase · actie
+const KOLOMMEN = "grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_10rem_8rem_2.5rem]";
 
 export const metadata = { title: "Vacatures" };
 export const dynamic = "force-dynamic";
@@ -89,11 +92,9 @@ export default async function VacaturesPage({
 
       <VacatureTabs actief={view} />
 
-      <Card>
-        <CardContent className="py-4">
-          <AutoFilterForm
+      <AutoFilterForm
             basePath="/crm/vacatures"
-            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_200px_200px_auto]"
+            className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,22rem)_12rem_12rem_auto]"
           >
             <input type="hidden" name="view" value={view} />
             <div className="relative">
@@ -132,8 +133,6 @@ export default async function VacaturesPage({
               )}
             </div>
           </AutoFilterForm>
-        </CardContent>
-      </Card>
 
       {rows.length === 0 ? (
         <EmptyState
@@ -153,63 +152,73 @@ export default async function VacaturesPage({
           }
         />
       ) : (
-        <Card className="divide-y divide-ink-100 overflow-hidden">
-          {rows.map((k) => {
-            const overdue = k.expectedCloseDate && k.expectedCloseDate.getTime() < nu;
-            const kandidaat = k.candidateId ? candName.get(k.candidateId) : null;
-            return (
-              <div key={k.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                <div className="min-w-0 flex-1">
-                  <Link href={`/crm/vacatures/${k.id}`} className="block truncate font-semibold text-ink-900 hover:text-brand-700">
-                    {k.title}
-                  </Link>
-                  <p className="flex items-center gap-3 truncate text-xs text-ink-500">
-                    <span className="inline-flex items-center gap-1 truncate">
-                      <Building2 className="h-3.5 w-3.5 shrink-0 text-ink-400" />
-                      {k.client?.companyName ?? k.company}
-                    </span>
-                    {k.client?.city && (
-                      <span className="hidden items-center gap-1 sm:inline-flex">
-                        <MapPin className="h-3 w-3 text-ink-400" /> {k.client.city}
-                      </span>
+        // Overzicht als tabel: vaste kolommen zodat alles recht onder elkaar staat.
+        <Card className="overflow-hidden">
+          <div className={cn(KOLOMMEN, "hidden h-9 border-b border-ink-200 bg-ink-50 text-[12px] font-medium text-ink-500 md:grid")}>
+            <span>Functie</span>
+            <span>Opdrachtgever</span>
+            <span>Vakgebied</span>
+            <span>{view === "pipeline" ? "Fase" : "Start"}</span>
+            <span className="sr-only">Acties</span>
+          </div>
+          <div className="divide-y divide-ink-200/70">
+            {rows.map((k) => {
+              const overdue = k.expectedCloseDate && k.expectedCloseDate.getTime() < nu;
+              const kandidaat = k.candidateId ? candName.get(k.candidateId) : null;
+              const bedrijf = k.client?.companyName ?? k.company;
+              return (
+                <div key={k.id} className={cn(KOLOMMEN, "group relative grid min-h-11 py-2 text-[13px] transition-colors hover:bg-ink-50/80")}>
+                  <div className="min-w-0">
+                    <Link
+                      href={`/crm/vacatures/${k.id}`}
+                      className="block truncate font-medium text-ink-900 after:absolute after:inset-0 after:content-['']"
+                    >
+                      {k.title}
+                    </Link>
+                    {(kandidaat || k.positions > 1) && (
+                      <p className="flex items-center gap-3 truncate text-xs text-ink-500">
+                        {kandidaat && (
+                          <span className="inline-flex items-center gap-1">
+                            <Users2 className="h-3 w-3 text-ink-400" /> {kandidaat}
+                          </span>
+                        )}
+                        {k.positions > 1 && <span>{k.positions} posities</span>}
+                      </p>
                     )}
-                    {kandidaat && (
-                      <span className="inline-flex items-center gap-1 font-medium text-ink-700">
-                        <Users2 className="h-3 w-3 text-ink-400" /> {kandidaat}
+                  </div>
+                  <span className="hidden min-w-0 truncate text-ink-600 md:block">
+                    {bedrijf || <span className="text-ink-300">—</span>}
+                    {k.client?.city && <span className="text-ink-400"> · {k.client.city}</span>}
+                  </span>
+                  <span className="hidden truncate text-ink-600 md:block">
+                    {k.discipline ? labelFor(DISCIPLINES, k.discipline) : <span className="text-ink-300">—</span>}
+                  </span>
+                  <span className="hidden md:block">
+                    {view === "pipeline" ? (
+                      <Badge color={(k.stage.color as BadgeColor) ?? "slate"}>{k.stage.name}</Badge>
+                    ) : k.expectedCloseDate ? (
+                      <span className={cn("tabular-nums", overdue ? "font-semibold text-red-600" : "text-ink-600")} title="Verwachte startdatum">
+                        {formatDate(k.expectedCloseDate)}
                       </span>
+                    ) : (
+                      <span className="text-ink-300">—</span>
                     )}
-                  </p>
-                </div>
-                {k.positions > 1 && (
-                  <span className="hidden items-center gap-0.5 text-xs text-ink-500 md:inline-flex">
-                    <Users2 className="h-3.5 w-3.5" /> {k.positions}
                   </span>
-                )}
-                {k.expectedCloseDate && (
-                  <span className={cn("hidden items-center gap-1 text-xs tabular-nums md:inline-flex", overdue ? "font-semibold text-red-600" : "text-ink-400")} title="Verwachte startdatum">
-                    <CalendarClock className="h-3.5 w-3.5" /> {formatDate(k.expectedCloseDate)}
-                  </span>
-                )}
-                <div className="hidden w-32 shrink-0 justify-end sm:flex">
-                  {k.discipline && <StatusBadge options={DISCIPLINES} value={k.discipline} />}
+                  <div className="relative z-10 flex justify-end gap-1.5">
+                    {view === "open" ? (
+                      <Link href={`/crm/vacatures/${k.id}/match`} title="Zoek match met AI" aria-label={`Zoek match voor ${k.title}`} className={ICOON_KNOP}>
+                        <Sparkles className="h-4 w-4" />
+                      </Link>
+                    ) : (
+                      <Link href="/crm" title="Naar de pipeline" aria-label="Naar de pipeline" className={ICOON_KNOP}>
+                        <Kanban className="h-4 w-4" />
+                      </Link>
+                    )}
+                  </div>
                 </div>
-                {view === "pipeline" && <Badge color={(k.stage.color as BadgeColor) ?? "slate"}>{k.stage.name}</Badge>}
-                {view === "open" && (
-                  <Link href={`/crm/vacatures/${k.id}/match`} title="Zoek match met AI" aria-label={`Zoek match voor ${k.title}`} className={ICOON_KNOP}>
-                    <Sparkles className="h-4 w-4" />
-                  </Link>
-                )}
-                {view === "pipeline" && (
-                  <Link href="/crm" title="Naar de pipeline" aria-label="Naar de pipeline" className={ICOON_KNOP}>
-                    <Kanban className="h-4 w-4" />
-                  </Link>
-                )}
-                <Link href={`/crm/vacatures/${k.id}`} title="Openen" aria-label={`${k.title} openen`} className={ICOON_KNOP}>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </Card>
       )}
     </div>
