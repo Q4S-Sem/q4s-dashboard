@@ -1,5 +1,6 @@
 "use client";
 
+import { DIALOOG, dialoogIcoon } from "./ui/dialoog";
 import { useEffect, useRef, useState } from "react";
 import { createPortal, useFormStatus } from "react-dom";
 import { TriangleAlert } from "lucide-react";
@@ -64,32 +65,16 @@ export function ConfirmSave({
       {open &&
         typeof document !== "undefined" &&
         createPortal(
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div
-              className="fixed inset-0 bg-ink-900/50"
-              aria-hidden
-              onClick={() => setOpen(false)}
-            />
-            <div
-              role="alertdialog"
-              aria-modal="true"
-              className="relative z-10 w-full max-w-md overflow-hidden rounded-xl border border-ink-200 bg-white shadow-2xl"
-            >
-              <div className="flex items-start gap-3 px-6 pb-5 pt-6">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                  <TriangleAlert className="h-4 w-4" />
-                </span>
-                <div className="min-w-0">
-                  <h2 className="text-[15px] font-semibold leading-snug text-ink-900">
-                    {message}
-                  </h2>
-                  {description && (
-                    <p className="mt-1.5 text-sm leading-relaxed text-ink-500">{description}</p>
-                  )}
-                </div>
-              </div>
+          <div className={DIALOOG.laag}>
+            <div className={DIALOOG.achter} aria-hidden onClick={() => setOpen(false)} />
+            <div role="alertdialog" aria-modal="true" className={DIALOOG.paneel}>
+              <span className={dialoogIcoon("amber")}>
+                <TriangleAlert />
+              </span>
+              <h2 className={DIALOOG.titel}>{message}</h2>
+              {description && <p className={DIALOOG.uitleg}>{description}</p>}
 
-              <div className="flex justify-end gap-2 border-t border-ink-100 bg-ink-50/60 px-6 py-4">
+              <div className={DIALOOG.knoppen}>
                 <button
                   ref={cancelRef}
                   type="button"

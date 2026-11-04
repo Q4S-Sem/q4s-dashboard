@@ -1,5 +1,6 @@
 "use client";
 
+import { DIALOOG, dialoogIcoon } from "./ui/dialoog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, usePathname } from "next/navigation";
@@ -228,31 +229,28 @@ export function UnsavedGuard() {
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="weggaan-titel"
-      className="no-print fixed inset-0 z-[150] flex items-center justify-center bg-ink-900/50 p-4"
+      className="no-print fixed inset-0 z-[150] flex items-center justify-center bg-ink-900/40 p-4 backdrop-blur-[2px]"
       onClick={(e) => {
         if (e.target === e.currentTarget) setPending(null);
       }}
     >
-      <div className="w-full max-w-md rounded-md border border-ink-200 bg-white p-6 shadow-2xl">
-        <div className="flex items-start gap-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-amber-50 text-amber-600">
-            <TriangleAlert className="h-6 w-6" />
+      <div className={DIALOOG.paneel}>
+        <div>
+          <span className={dialoogIcoon("amber")}>
+            <TriangleAlert />
           </span>
           <div className="min-w-0">
-            <h2
-              id="weggaan-titel"
-              className="text-[17px] font-semibold text-ink-900"
-            >
+            <h2 id="weggaan-titel" className={DIALOOG.titel}>
               Weet je zeker dat je weggaat?
             </h2>
-            <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
+            <p className={DIALOOG.uitleg}>
               Je laatste wijzigingen zijn nog niet opgeslagen. Klik op Opslaan
               en weggaan: alles wordt eerst volledig opgeslagen.
             </p>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+        <div className={DIALOOG.knoppen}>
           <Button
             type="button"
             variant="outline"

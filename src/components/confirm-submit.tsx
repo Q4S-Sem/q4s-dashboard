@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { Button, buttonVariants, type ButtonProps } from "./ui/button";
 import { SubmitButton } from "./ui/submit-button";
-import { cn } from "@/lib/utils";
+import { DIALOOG, dialoogIcoon } from "./ui/dialoog";
 
 /**
  * Verwijder-/bevestigknop met een rustige in-app bevestiging (geen native
@@ -103,44 +103,17 @@ export function ConfirmSubmit({
       {mounted &&
         open &&
         createPortal(
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div
-              className="animate-overlay-in fixed inset-0 bg-ink-900/50 backdrop-blur-sm"
-              aria-hidden
-              onClick={() => setOpen(false)}
-            />
-            <div
-              role="alertdialog"
-              aria-modal="true"
-              className="animate-dialog-in relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-[0_24px_60px_-15px_rgb(0_0_0/0.35)]"
-            >
-              <div className="flex items-start gap-3.5 px-6 pb-5 pt-6">
-                <span
-                  className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
-                    isDanger ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600",
-                  )}
-                >
-                  {isDanger ? (
-                    <Trash2 className="h-[18px] w-[18px]" />
-                  ) : (
-                    <AlertTriangle className="h-[18px] w-[18px]" />
-                  )}
-                </span>
-                <div className="min-w-0 pt-0.5">
-                  <h2 className="text-base font-semibold leading-snug text-ink-900">
-                    {message}
-                  </h2>
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink-500">
-                    {description ?? "Dit kun je hierna niet meer terugdraaien."}
-                  </p>
-                </div>
-              </div>
+          <div className={DIALOOG.laag}>
+            <div className={DIALOOG.achter} aria-hidden onClick={() => setOpen(false)} />
+            <div role="alertdialog" aria-modal="true" aria-labelledby="bevestig-titel" className={DIALOOG.paneel}>
+              {/* Het eigen icoon van de knop (bv. doorgekruiste wereldbol), anders prullenbak/waarschuwing. */}
+              <span className={dialoogIcoon(isDanger ? "rood" : "amber")}>
+                {icon ?? (isDanger ? <Trash2 /> : <AlertTriangle />)}
+              </span>
+              <h2 id="bevestig-titel" className={DIALOOG.titel}>{message}</h2>
+              <p className={DIALOOG.uitleg}>{description ?? "Dit kun je hierna niet meer terugdraaien."}</p>
 
-              <form
-                action={action}
-                className="flex justify-end gap-2.5 border-t border-ink-100 bg-ink-50/60 px-6 py-4"
-              >
+              <form action={action} className={DIALOOG.knoppen}>
                 {id && <input type="hidden" name="id" value={id} />}
                 {hidden &&
                   Object.entries(hidden).map(([k, v]) => (
