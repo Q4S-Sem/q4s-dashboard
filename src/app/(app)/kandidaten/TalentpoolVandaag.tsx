@@ -1,6 +1,8 @@
 import { afgelopen24Uur } from "@/lib/vandaag";
 import Link from "next/link";
-import { CalendarDays, ChevronRight, ClipboardCheck, ClipboardList, FileText, Globe, Inbox, Plus, Users } from "lucide-react";
+import { CalendarDays, ChevronRight, ClipboardCheck, ClipboardList, FileText, Globe, Inbox, Kanban, Plus, Users } from "lucide-react";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { sollicitatieNaarPipeline } from "@/app/(app)/crm/deals/actions";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { FilterTegels, type FilterTegel } from "@/components/ui/filter-tegels";
@@ -38,6 +40,7 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
       select: {
         id: true, createdAt: true,
         candidate: { select: { id: true, firstName: true, lastName: true, createdAt: true } },
+        status: true, vacancyId: true,
         vacancy: { select: { title: true } },
       },
     }),
@@ -54,6 +57,30 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
   // Sollicitaties van bestaande kandidaten (nieuwe staan al in de lijst hierboven).
   const vanBestaande = sollicitaties.filter((a) => !nieuwIds.has(a.candidate.id));
   const sollicitatieVan = new Map(sollicitaties.map((a) => [a.candidate.id, a.vacancy?.title ?? "open sollicitatie"]));
+  // Sneller verwerken: per sollicitatie op een vacature één klik naar de pipeline (Lead).
+  const leadIds = new Set(
+    (
+      await db.deal.findMany({
+        where: { status: "OPEN", candidateId: { in: sollicitaties.map((a) => a.candidate.id) } },
+        select: { candidateId: true, vacancyId: true },
+      })
+    ).map((d) => `${d.candidateId}:${d.vacancyId}`),
+  );
+  const leadKnop = (a: (typeof sollicitaties)[number] | undefined) => {
+    if (!a?.vacancyId) return null;
+    if (leadIds.has(`${a.candidate.id}:${a.vacancyId}`))
+      return <span className="relative z-10 rounded-sm bg-violet-50 px-2 py-1 text-xs font-medium text-violet-700">In pipeline</span>;
+    return (
+      <form action={sollicitatieNaarPipeline} className="relative z-10">
+        <input type="hidden" name="applicationId" value={a.id} />
+        <input type="hidden" name="returnTo" value={sp.basis} />
+        <SubmitButton size="sm" variant="outline" pendingLabel="…" title={`Als lead in de pipeline op "${a.vacancy?.title}"`}>
+          <Kanban className="h-4 w-4" /> Lead
+        </SubmitButton>
+      </form>
+    );
+  };
+  const sollicitatieVanKandidaat = new Map(sollicitaties.map((a) => [a.candidate.id, a]));
   const buitenEU = nieuw.filter((c) => herkomst(c) === "BUITEN_EU").length;
 
   const tegels: FilterTegel[] = [
@@ -123,6 +150,7 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
                 <div className="relative z-10">
                   <RatingSelect id={c.id} value={c.rating} className="w-36" />
                 </div>
+                {leadKnop(sollicitatieVanKandidaat.get(c.id))}
                 <ChevronRight className="h-5 w-5 shrink-0 text-ink-300" />
               </div>
             );
@@ -141,6 +169,7 @@ export async function TalentpoolVandaag({ spoor }: { spoor: Spoor }) {
                   Bekende kandidaat solliciteerde opnieuw{a.vacancy ? `: ${a.vacancy.title}` : ""}
                 </p>
               </div>
+              {leadKnop(a)}
               <ChevronRight className="h-5 w-5 shrink-0 text-ink-300" />
             </div>
           ))}

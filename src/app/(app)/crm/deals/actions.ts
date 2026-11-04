@@ -616,6 +616,94 @@ export async function quickAddToPipeline(formData: FormData) {
   redirect(back);
 }
 
+/**
+ * Sollicitatie → Lead in de pipeline, op de vacature waarop hij solliciteerde
+ * (bedrijf, vacature en vacature-deal komen uit de vacature; geen keuzemodal).
+ * Idempotent: staat de kandidaat al open op deze vacature, dan geen tweede lead.
+ * De sollicitatie gaat naar Screening. Geeft true als er een lead bij kwam.
+ */
+async function leadVanSollicitatie(applicationId: string, recruiterId: string | null): Promise<boolean> {
+  const app = await db.application.findUnique({
+    where: { id: applicationId },
+    select: {
+      id: true, status: true, candidateId: true, vacancyId: true,
+      candidate: { select: { firstName: true, lastName: true, discipline: true } },
+      vacancy: { select: { title: true, discipline: true, clientId: true, companyName: true, client: { select: { companyName: true } } } },
+    },
+  });
+  if (!app?.vacancyId || !app.vacancy) return false;
+  const bestaat = await db.deal.findFirst({
+    where: { candidateId: app.candidateId, vacancyId: app.vacancyId, status: "OPEN" },
+    select: { id: true },
+  });
+  if (!bestaat) {
+    const stage = await db.crmStage.findFirst({ where: { isWon: false, isLost: false, active: true }, orderBy: { order: "asc" } });
+    if (!stage) return false;
+    const vacatureDeal = await db.deal.findFirst({ where: { vacancyId: app.vacancyId, candidateId: null }, select: { id: true } });
+    const naam = `${app.candidate.firstName} ${app.candidate.lastName}`.trim();
+    const bedrijf = app.vacancy.client?.companyName ?? app.vacancy.companyName ?? app.vacancy.title;
+    const created = await db.deal.create({
+      data: {
+        title: `${naam} → ${app.vacancy.title}`,
+        company: bedrijf,
+        discipline: app.candidate.discipline ?? app.vacancy.discipline ?? null,
+        candidateId: app.candidateId,
+        clientId: app.vacancy.clientId,
+        vacancyId: app.vacancyId,
+        vacatureDealId: vacatureDeal?.id ?? null,
+        stageId: stage.id,
+        status: "OPEN",
+        probability: stage.probability,
+        value: 0,
+        positions: 1,
+        source: "WEBSITE",
+        ownerId: recruiterId,
+      },
+    });
+    await logNote({ type: "SYSTEM", dealId: created.id, authorId: recruiterId, body: `Sollicitatie van ${naam} op "${app.vacancy.title}" als lead in de pipeline gezet.` });
+  }
+  if (app.status === "NEW") await db.application.update({ where: { id: app.id }, data: { status: "SCREENING" } });
+  return !bestaat;
+}
+
+function terug(formData: FormData) {
+  const r = String(formData.get("returnTo") ?? "");
+  return r.startsWith("/") && !r.startsWith("//") ? r : "/kandidaten";
+}
+
+/** Eén sollicitatie → Lead (knop in de inbox en op de sollicitaties-pagina). */
+export async function sollicitatieNaarPipeline(formData: FormData) {
+  if (authRequired() && !(await currentUser())) redirect("/login");
+  const id = String(formData.get("applicationId") ?? "");
+  if (id) await leadVanSollicitatie(id, await currentRecruiterId());
+  revalidatePath("/crm");
+  revalidatePath("/vast/pipeline");
+  redirect(terug(formData));
+}
+
+/** Alle nieuwe sollicitaties op één vacature in één keer als lead. */
+export async function nieuweSollicitatiesNaarPipeline(formData: FormData) {
+  if (authRequired() && !(await currentUser())) redirect("/login");
+  const vacancyId = String(formData.get("vacancyId") ?? "");
+  if (vacancyId) {
+    const recruiterId = await currentRecruiterId();
+    const nieuw = await db.application.findMany({ where: { vacancyId, status: "NEW" }, select: { id: true } });
+    // ponytail: één voor één (idempotent per kandidaat); bulk-insert als dit ooit honderden tegelijk zijn.
+    for (const a of nieuw) await leadVanSollicitatie(a.id, recruiterId);
+  }
+  revalidatePath("/crm");
+  revalidatePath("/vast/pipeline");
+  redirect(terug(formData));
+}
+
+/** Sollicitatie afwijzen (na bevestiging). Stuurt geen mail. */
+export async function sollicitatieAfwijzen(formData: FormData) {
+  if (authRequired() && !(await currentUser())) redirect("/login");
+  const id = String(formData.get("id") ?? "");
+  if (id) await db.application.update({ where: { id }, data: { status: "REJECTED" } });
+  redirect(terug(formData));
+}
+
 const AssignSchema = z.object({
   dealId: z.string().min(1),
   candidateId: z.string().min(1),
