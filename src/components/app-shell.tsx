@@ -146,9 +146,8 @@ function WerkplekKiezer({ hub, hubs, onNavigate }: { hub: NavHub | null; hubs: N
         aria-expanded={open}
         className="flex h-9 w-full items-center gap-2.5 rounded-md px-1.5 text-left transition-colors hover:bg-ink-200/50"
       >
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-ink-900 text-[9px] font-bold tracking-tight text-white">
-          Q4S
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo/cv/q4s-logo.png" alt="Q4S Project Partners" width={900} height={652} className="h-7 w-auto shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-semibold leading-tight text-ink-900">{hub?.label ?? "Werkplekken"}</span>
           <span className="block truncate text-[11px] leading-tight text-ink-400">Q4S Project Partners</span>
