@@ -104,6 +104,8 @@ export function DealForm({
     ["planning", `${isNew ? "3. " : ""}Planning & tarief`, <Euro key="i" className="h-4 w-4" />] as const,
     ["functie", `${isNew ? "4. " : ""}Taken & eisen`, <ListChecks key="i" className="h-4 w-4" />] as const,
   ];
+  // Vacature: alle velden netjes onder elkaar (één kolom); plaatsing houdt kolommen.
+  const rij = (kolommen: string) => (isVacature ? "grid gap-5" : `grid gap-5 ${kolommen}`);
   const tabIdx = tabs.findIndex(([k]) => k === tab);
   const vorige = tabs[tabIdx - 1]?.[0];
   const volgende = tabs[tabIdx + 1]?.[0];
@@ -300,8 +302,9 @@ export function DealForm({
           </Card>
         )}
 
+          {/* Vacature: alle velden netjes onder elkaar (één kolom, leesbare breedte). */}
           <Card className={isVacature && tab === "inlezen" ? "hidden" : ""}>
-            <CardContent className="space-y-6">
+            <CardContent className={isVacature ? "max-w-4xl space-y-6" : "space-y-6"}>
               {state.error && (
                 <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
               )}
@@ -312,7 +315,7 @@ export function DealForm({
                   <h2 className="text-[15px] font-semibold text-ink-900">{isVacature ? "Basis" : "De plaatsing"}</h2>
                   <p className="mt-0.5 text-[13px] text-ink-500">{isVacature ? "Welke functie, bij welke opdrachtgever (alleen intern) en waar." : "Wie, waar en in welke fase."}</p>
                 </div>
-                <div className="grid gap-5 sm:grid-cols-2">
+                <div className={rij("sm:grid-cols-2")}>
                   <Field
                     label="Titel"
                     htmlFor="title"
@@ -374,7 +377,7 @@ export function DealForm({
                   </Field>
                 </div>
 
-                <div className="grid gap-5 sm:grid-cols-3">
+                <div className={rij("sm:grid-cols-3")}>
                   <Field
                     label="Discipline"
                     htmlFor="discipline"
@@ -438,7 +441,7 @@ export function DealForm({
 
                 {/* Fase apart tonen bij het bewerken van een vacature (zonder kandidaat) */}
                 {isVacature && !isNew && (
-                  <div className="grid gap-5 sm:grid-cols-2">
+                  <div className={rij("sm:grid-cols-2")}>
                     <Field label="Fase" htmlFor="stageId" error={e.stageId}>
                       <Select
                         id="stageId"
@@ -463,7 +466,7 @@ export function DealForm({
                   <h2 className="text-[15px] font-semibold text-ink-900">Waarde &amp; planning</h2>
                   <p className="mt-0.5 text-[13px] text-ink-500">Wat levert het op en wanneer moet de plek gevuld zijn.</p>
                 </div>
-                <div className={`grid gap-5 ${isVacature ? "sm:grid-cols-2" : "sm:grid-cols-4"}`}>
+                <div className={rij("sm:grid-cols-4")}>
                   <Field label="Waarde (€)" htmlFor="value" hint="Verwacht tarief / marge" error={e.value}>
                     <Input id="value" name="value" type="number" min={0} step="100" value={value} onChange={(ev) => setValue(ev.target.value)} />
                   </Field>
@@ -495,7 +498,7 @@ export function DealForm({
                   )}
                 </div>
 
-                <div className="grid gap-5 sm:grid-cols-2">
+                <div className={rij("sm:grid-cols-2")}>
                   <Field label={isVacature ? "Verwachte startdatum" : "Verwachte sluitdatum"} htmlFor="expectedCloseDate" hint={isVacature ? "Wanneer moet de plek gevuld zijn" : undefined} error={e.expectedCloseDate}>
                     <Input id="expectedCloseDate" name="expectedCloseDate" type="date" defaultValue={toDateValue(deal?.expectedCloseDate)} />
                   </Field>
@@ -512,7 +515,7 @@ export function DealForm({
                   <h2 className="text-[15px] font-semibold text-ink-900">Opdracht</h2>
                   <p className="mt-0.5 text-[13px] text-ink-500">Uren, duur, tarief en wat je vraagt aan ervaring en opleiding.</p>
                 </div>
-                  <div className="grid gap-5 sm:grid-cols-3">
+                  <div className={rij("sm:grid-cols-3")}>
                     <Field label="Uren per week" htmlFor="hoursPerWeek" hint="Bijv. 40" error={e.hoursPerWeek}>
                       <Input id="hoursPerWeek" name="hoursPerWeek" type="number" min={0} max={168} value={hoursPerWeek} onChange={(ev) => setHoursPerWeek(ev.target.value)} placeholder="40" />
                     </Field>
@@ -523,7 +526,7 @@ export function DealForm({
                       <Input id="rateText" name="rateText" value={rateText} onChange={(ev) => setRateText(ev.target.value)} placeholder="Bijv. € 65–75 p/u of € 4.500 p/m" />
                     </Field>
                   </div>
-                  <div className="grid gap-5 sm:grid-cols-2">
+                  <div className={rij("sm:grid-cols-2")}>
                     <Field label="Gevraagde ervaring" htmlFor="experienceText" error={e.experienceText}>
                       <Input id="experienceText" name="experienceText" value={experienceText} onChange={(ev) => setExperienceText(ev.target.value)} placeholder="Bijv. min. 3 jaar in NDT" />
                     </Field>
@@ -542,17 +545,17 @@ export function DealForm({
                   <p className="mt-0.5 text-[13px] text-ink-500">Eén punt per regel. Dit wordt de tekst op de website — zonder bedrijfsnamen.</p>
                 </div>
                   <Field label="Werkzaamheden" htmlFor="responsibilities" hint="Één taak per regel" error={e.responsibilities}>
-                    <Textarea id="responsibilities" name="responsibilities" rows={4} value={responsibilities} onChange={(ev) => setResponsibilities(ev.target.value)} placeholder={"Bijv.\nUitvoeren van NDT-inspecties (UT/RT/MT/PT)\nRapporteren van bevindingen\nBegeleiden van junior inspecteurs"} />
+                    <Textarea id="responsibilities" name="responsibilities" rows={10} value={responsibilities} onChange={(ev) => setResponsibilities(ev.target.value)} placeholder={"Bijv.\nUitvoeren van NDT-inspecties (UT/RT/MT/PT)\nRapporteren van bevindingen\nBegeleiden van junior inspecteurs"} />
                   </Field>
                   <Field label="Functie-eisen" htmlFor="requirements" hint="Harde eisen — één per regel" error={e.requirements}>
-                    <Textarea id="requirements" name="requirements" rows={4} value={requirements} onChange={(ev) => setRequirements(ev.target.value)} placeholder={"Bijv.\nMinimaal 3 jaar ervaring in NDT\nWoonachtig in regio Rotterdam\nBeheersing Nederlands en Engels"} />
+                    <Textarea id="requirements" name="requirements" rows={10} value={requirements} onChange={(ev) => setRequirements(ev.target.value)} placeholder={"Bijv.\nMinimaal 3 jaar ervaring in NDT\nWoonachtig in regio Rotterdam\nBeheersing Nederlands en Engels"} />
                   </Field>
-                  <div className="grid gap-5 sm:grid-cols-2">
+                  <div className={rij("sm:grid-cols-2")}>
                     <Field label="Pré (nice-to-have)" htmlFor="niceToHave" hint="Één per regel" error={e.niceToHave}>
-                      <Textarea id="niceToHave" name="niceToHave" rows={3} value={niceToHave} onChange={(ev) => setNiceToHave(ev.target.value)} placeholder={"Bijv.\nErvaring in offshore\nRijbewijs B"} />
+                      <Textarea id="niceToHave" name="niceToHave" rows={6} value={niceToHave} onChange={(ev) => setNiceToHave(ev.target.value)} placeholder={"Bijv.\nErvaring in offshore\nRijbewijs B"} />
                     </Field>
                     <Field label="Vereiste certificaten" htmlFor="certificates" hint="VCA, lascert., NDT-level — één per regel" error={e.certificates}>
-                      <Textarea id="certificates" name="certificates" rows={3} value={certificates} onChange={(ev) => setCertificates(ev.target.value)} placeholder={"Bijv.\nVCA VOL\nNDT Level II (UT)"} />
+                      <Textarea id="certificates" name="certificates" rows={6} value={certificates} onChange={(ev) => setCertificates(ev.target.value)} placeholder={"Bijv.\nVCA VOL\nNDT Level II (UT)"} />
                     </Field>
                   </div>
                 </section>
