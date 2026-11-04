@@ -9,6 +9,7 @@ import {
   readyCvTextRoute,
 } from "./ai";
 import { redactBsn } from "./pii";
+import { zonderKlantnaam } from "./klantnaam-publiek";
 import { ensureAiKeysLoaded } from "./ai-keys";
 import { DISCIPLINES } from "./domain";
 import {
@@ -470,7 +471,10 @@ const VACANCY_AI_SCHEMA = {
 const VACANCY_SYSTEM =
   "Je bent een recruitment-assistent voor Q4S, een technisch detacheringsbureau in de staalbouw/industrie. " +
   "Je leest één geüploade vacaturetekst en haalt alle kernvelden eruit. Antwoord uitsluitend als JSON in het Nederlands. " +
-  "Verzin niets: laat een veld leeg (of 0/1) als de informatie er niet staat.";
+  "Verzin niets: laat een veld leeg (of 0/1) als de informatie er niet staat. " +
+  "VERTROUWELIJK: noem in title, responsibilities, requirements, niceToHave, certificates en notes NOOIT een bedrijfsnaam " +
+  "(niet de opdrachtgever, niet het wervende bureau, niet hun klanten of projectnamen). Schrijf 'de opdrachtgever'. " +
+  "Een bedrijfsnaam hoort alleen in het veld company.";
 
 const VACANCY_PROMPT =
   "Lees deze vacature en vul de velden:\n" +
@@ -490,6 +494,42 @@ const VACANCY_PROMPT =
   "- niceToHave: pré / nice-to-have, één per regel\n" +
   "- certificates: vereiste certificaten/diploma's, één per regel\n" +
   "- notes: een korte samenvatting of bijzonderheden";
+
+/**
+ * Laatste vangnet: bedrijfsnamen uit de tekstvelden halen, zodat de vacature die
+ * wij online zetten niet verraadt met welk bedrijf we werken. De naam blijft
+ * alleen in `company` (intern).
+ */
+export function vacatureAnoniem(v: VacancyFields, extraNamen: string[] = []): VacancyFields {
+  const namen = [v.company, ...extraNamen];
+  const tekst = (s: string) => zonderKlantnaam(s, namen);
+  return {
+    ...v,
+    title: zonderKlantnaam(v.title, namen).replace(/\s*[-–—|@,·(]*\s*onze opdrachtgever\s*\)?/gi, " ").replace(/\s{2,}/g, " ").trim(),
+    responsibilities: tekst(v.responsibilities),
+    requirements: tekst(v.requirements),
+    niceToHave: tekst(v.niceToHave),
+    certificates: tekst(v.certificates),
+    notes: tekst(v.notes),
+  };
+}
+
+/** Vacaturetekst (bv. van een webpagina) → vacaturevelden. */
+export async function extractVacancyFromText(text: string): Promise<VacancyFields> {
+  await ensureAiKeysLoaded();
+  const raw = await aiJSON<unknown>({
+    system: VACANCY_SYSTEM,
+    prompt: `${VACANCY_PROMPT}\n\nDE VACATURE (tekst van een webpagina; negeer menu, cookies en andere vacatures):\n${text}`,
+    schema: VACANCY_AI_SCHEMA as unknown as Record<string, unknown>,
+    schemaName: "vacancy_fields",
+    maxTokens: 1500,
+  });
+  const parsed = vacancyFieldsSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new CvExtractError("De AI gaf een onverwacht antwoord op deze pagina. Probeer het opnieuw, of vul de velden handmatig in.");
+  }
+  return parsed.data;
+}
 
 /**
  * Bestand → vacaturevelden. Gooit {@link CvExtractError} met leesbare NL-tekst bij

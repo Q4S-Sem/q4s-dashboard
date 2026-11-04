@@ -321,6 +321,8 @@ export async function DealDetail({
         </Card>
       )}
 
+      {/* Vacature-hub: geen notitieblok (op verzoek); in de pipeline blijft het. */}
+      {!isVacatureContext && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -347,6 +349,7 @@ export async function DealDetail({
           />
         </CardContent>
       </Card>
+      )}
 
       {logNotes.length > 0 && (
         <Card>

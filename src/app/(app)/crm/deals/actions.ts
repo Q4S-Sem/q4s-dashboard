@@ -9,7 +9,9 @@ import { DEAL_SOURCE_VALUES, CRM_NOTE_TYPE_VALUES, CRM_SENTIMENT_VALUES } from "
 import { currentRecruiterId, logNote } from "@/lib/crm";
 import { mirrorDealToVacancy } from "@/lib/vacancy-mirror";
 import { withMarktconformFallback } from "@/lib/markttarief";
-import { extractVacancyFields, generateVacancyFromTitle, CvExtractError, type VacancyFields } from "@/lib/cv-extract";
+import { extractVacancyFields, extractVacancyFromText, generateVacancyFromTitle, vacatureAnoniem, CvExtractError, type VacancyFields } from "@/lib/cv-extract";
+import { isBlockedHost } from "@/lib/msp";
+import { siteNaam, webpaginaTekst } from "@/lib/webpagina-tekst";
 import { authRequired, currentUser } from "@/lib/session";
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
@@ -33,7 +35,7 @@ export async function readVacatureFields(formData: FormData): Promise<VacancyRea
   }
   try {
     const bytes = Buffer.from(await file.arrayBuffer());
-    const fields = await extractVacancyFields(bytes, file.name, file.type || "");
+    const fields = vacatureAnoniem(await extractVacancyFields(bytes, file.name, file.type || ""));
     return { ok: true, fields };
   } catch (err) {
     if (err instanceof CvExtractError) return { ok: false, error: err.message };
@@ -43,6 +45,44 @@ export async function readVacatureFields(formData: FormData): Promise<VacancyRea
       ok: false,
       error: `De vacature kon niet uitgelezen worden: ${detail}. Probeer het opnieuw of vul handmatig in.`,
     };
+  }
+}
+
+/**
+ * Link naar een vacature op een website → velden van het formulier (niets opgeslagen).
+ * Veiligheid: alleen http(s), geen interne/privé-adressen (ook niet na een redirect),
+ * max. 3 MB, 12 s. Bedrijfsnamen (opdrachtgever én de bron-site) gaan uit de tekst.
+ */
+export async function readVacatureFromUrl(input: string): Promise<VacancyReadResult> {
+  if (authRequired() && !(await currentUser())) return { ok: false, error: "Niet ingelogd." };
+  let url: URL;
+  try {
+    url = new URL(String(input ?? "").trim());
+  } catch {
+    return { ok: false, error: "Dit is geen geldige link. Plak het volledige adres (https://…)." };
+  }
+  const veilig = (u: URL) => (u.protocol === "https:" || u.protocol === "http:") && !isBlockedHost(u.hostname);
+  if (!veilig(url)) return { ok: false, error: "Deze link is niet toegestaan." };
+  try {
+    const res = await fetch(url, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(12_000),
+      headers: { "user-agent": "Mozilla/5.0 (Q4S vacature-inlezer)", accept: "text/html,application/xhtml+xml" },
+    });
+    if (!veilig(new URL(res.url))) return { ok: false, error: "Deze link verwijst door naar een adres dat niet is toegestaan." };
+    if (!res.ok) return { ok: false, error: `De pagina gaf een fout (${res.status}). Werkt de link in je browser? Anders: download de vacature als PDF.` };
+    const lengte = Number(res.headers.get("content-length") ?? 0);
+    if (lengte > 3_000_000) return { ok: false, error: "Deze pagina is te groot om in te lezen." };
+    const tekst = webpaginaTekst((await res.text()).slice(0, 3_000_000));
+    if (tekst.length < 200) {
+      return { ok: false, error: "Op deze pagina staat te weinig tekst (laadt de site de vacature pas later in?). Maak een screenshot en sleep die hierboven in." };
+    }
+    const fields = vacatureAnoniem(await extractVacancyFromText(tekst), [siteNaam(url.hostname)]);
+    return { ok: true, fields };
+  } catch (err) {
+    if (err instanceof CvExtractError) return { ok: false, error: err.message };
+    console.error("readVacatureFromUrl mislukt:", err);
+    return { ok: false, error: "De pagina kon niet worden opgehaald of gelezen. Probeer het opnieuw, of maak een screenshot en sleep die hierboven in." };
   }
 }
 
@@ -63,7 +103,7 @@ export async function generateVacatureFields(input: {
       location: input.location?.slice(0, 120),
       employmentType: input.employmentType?.slice(0, 40),
     });
-    return { ok: true, fields };
+    return { ok: true, fields: vacatureAnoniem(fields) };
   } catch (err) {
     if (err instanceof CvExtractError) return { ok: false, error: err.message };
     console.error("generateVacatureFields mislukt:", err);

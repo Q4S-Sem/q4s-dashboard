@@ -12,8 +12,8 @@ import { Dropzone } from "@/components/ui/dropzone";
 import { TextCombobox } from "@/components/ui/text-combobox";
 import { emptyFormState, type FormState } from "@/lib/form";
 import { DISCIPLINES, DEAL_SOURCES, EMPLOYMENT_TYPES, labelFor, colorFor, type BadgeColor } from "@/lib/domain";
-import { Building2, Euro, Users, Star, Link2, StickyNote, Sparkles, Loader2, CheckCircle2, AlertTriangle, Clock, ListChecks } from "lucide-react";
-import { readVacatureFields, generateVacatureFields } from "./actions";
+import { Building2, Euro, Users, Star, Link2, Sparkles, Loader2, CheckCircle2, AlertTriangle, ListChecks } from "lucide-react";
+import { readVacatureFields, generateVacatureFields, readVacatureFromUrl } from "./actions";
 import type { VacancyFields } from "@/lib/cv-extract";
 import { FolderTabBar, FolderTab } from "@/components/dossier-tabs";
 
@@ -74,7 +74,6 @@ export function DealForm({
   const [positions, setPositions] = useState(String(deal?.positions ?? 1));
   const [fitScore, setFitScore] = useState(String(deal?.fitScore ?? 0));
   const [source, setSource] = useState(deal?.source ?? "MANUAL");
-  const [notes, setNotes] = useState("");
   // Uitgebreide vacaturevelden.
   const [hoursPerWeek, setHoursPerWeek] = useState(deal?.hoursPerWeek ? String(deal.hoursPerWeek) : "");
   const [durationText, setDurationText] = useState(deal?.durationText ?? "");
@@ -98,13 +97,16 @@ export function DealForm({
 
   // Vacature = mapjes (één formulier, verborgen mapjes worden gewoon meegestuurd).
   const [tab, setTab] = useState(isNew ? "inlezen" : "vacature");
+  // Korte, duidelijke stappen; genummerd zodat je ziet waar je bent.
   const tabs = [
-    ...(isNew ? [["inlezen", "Inlezen", <Sparkles key="i" className="h-4 w-4" />] as const] : []),
-    ["vacature", "De vacature", <Building2 key="i" className="h-4 w-4" />] as const,
-    ["planning", "Waarde & planning", <Euro key="i" className="h-4 w-4" />] as const,
-    ["functie", "De functie", <ListChecks key="i" className="h-4 w-4" />] as const,
-    ...(isNew ? [["notitie", "Notitie", <StickyNote key="i" className="h-4 w-4" />] as const] : []),
+    ...(isNew ? [["inlezen", "1. Inlezen", <Sparkles key="i" className="h-4 w-4" />] as const] : []),
+    ["vacature", `${isNew ? "2. " : ""}Basis`, <Building2 key="i" className="h-4 w-4" />] as const,
+    ["planning", `${isNew ? "3. " : ""}Planning & tarief`, <Euro key="i" className="h-4 w-4" />] as const,
+    ["functie", `${isNew ? "4. " : ""}Taken & eisen`, <ListChecks key="i" className="h-4 w-4" />] as const,
   ];
+  const tabIdx = tabs.findIndex(([k]) => k === tab);
+  const vorige = tabs[tabIdx - 1]?.[0];
+  const volgende = tabs[tabIdx + 1]?.[0];
   /** Verberg een mapje dat niet open staat (alleen bij een vacature). */
   const zicht = (k: string) => (isVacature && tab !== k ? "hidden" : "");
 
@@ -128,7 +130,6 @@ export function DealForm({
     fill(v.requirements, setRequirements);
     fill(v.niceToHave, setNiceToHave);
     fill(v.certificates, setCertificates);
-    if (v.notes) setNotes((prev) => (prev.trim() ? prev : v.notes));
     setScanDone(true);
   }
 
@@ -143,6 +144,27 @@ export function DealForm({
       else setScanError(res.error);
     } catch {
       setScanError("De AI kon geen vacature maken. Probeer het opnieuw of vul handmatig in.");
+    } finally {
+      setReading(false);
+    }
+  }
+
+  const [link, setLink] = useState("");
+  async function leesLink() {
+    if (!link.trim()) return;
+    setReading(true);
+    setScanError(null);
+    setScanDone(false);
+    try {
+      const res = await readVacatureFromUrl(link);
+      if (!res.ok) {
+        setScanError(res.error);
+        return;
+      }
+      vulIn(res.fields);
+      setTab("vacature");
+    } catch {
+      setScanError("De link kon niet worden ingelezen. Probeer het opnieuw of vul handmatig in.");
     } finally {
       setReading(false);
     }
@@ -198,53 +220,85 @@ export function DealForm({
           </FolderTabBar>
         )}
         {isNew && (
-          <Card data-tab="inlezen" className={`${zicht("inlezen")} border-brand-100 bg-gradient-to-br from-brand-50/60 to-transparent`}>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
-                    <Sparkles className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h2 className="text-[15px] font-bold text-ink-900">Vacature automatisch inlezen</h2>
-                    <p className="text-sm text-ink-500">
-                      Sleep een vacature (PDF, Word of foto/scan) hierheen. De AI leest titel, bedrijf,
-                      discipline, locatie en eisen uit en vult het formulier hieronder — controleer het
-                      nog even vóór je opslaat.
+          <Card data-tab="inlezen" className={zicht("inlezen")}>
+            <CardContent className="space-y-5">
+              <div>
+                <h2 className="text-[15px] font-semibold text-ink-900">Vacature inlezen</h2>
+                <p className="mt-0.5 text-[13px] text-ink-500">
+                  Kies één manier. De AI vult het formulier in; jij controleert het. Bedrijfsnamen komen nooit in de
+                  vacaturetekst — de opdrachtgever zie je alleen intern.
+                </p>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="space-y-2">
+                  <p className="text-[13px] font-medium text-ink-900">Bestand of foto</p>
+                  <Dropzone
+                    name="vacatureScanFile"
+                    accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,application/pdf"
+                    label="Sleep hier een bestand of foto, of klik"
+                    hint="PDF, Word (.docx), screenshot of foto"
+                    onFilesChange={(files) => {
+                      const f = files[0] ?? null;
+                      setScanDone(false);
+                      setScanError(null);
+                      if (f) void leesVacature(f);
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[13px] font-medium text-ink-900">Link van een website</p>
+                  <div className="rounded-lg border border-ink-200 bg-ink-50 p-4">
+                    <div className="flex gap-2">
+                      <Input
+                        type="url"
+                        value={link}
+                        onChange={(ev) => setLink(ev.target.value)}
+                        onKeyDown={(ev) => {
+                          if (ev.key === "Enter") {
+                            ev.preventDefault();
+                            void leesLink();
+                          }
+                        }}
+                        placeholder="https://… (de pagina van de vacature)"
+                        aria-label="Link naar de vacature"
+                        data-no-persist
+                      />
+                      <Button type="button" className="shrink-0" disabled={!link.trim() || reading} onClick={() => void leesLink()}>
+                        {reading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />} Inlezen
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-ink-500">
+                      De AI bekijkt de pagina en haalt de functie, taken en eisen eruit. Lukt het niet (sommige sites laden
+                      de tekst pas later)? Maak dan een screenshot en sleep die links in.
                     </p>
                   </div>
                 </div>
+              </div>
 
-                <Dropzone
-                  name="vacatureScanFile"
-                  accept=".pdf,.docx,.png,.jpg,.jpeg,.webp,application/pdf"
-                  label="Sleep een vacature hierheen of klik om te selecteren"
-                  hint="PDF, Word (.docx) of een duidelijke foto/scan"
-                  onFilesChange={(files) => {
-                    const f = files[0] ?? null;
-                    setScanDone(false);
-                    setScanError(null);
-                    if (f) void leesVacature(f);
-                  }}
-                />
-
-                {reading && (
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-600">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Bezig met automatisch inlezen…
-                  </span>
-                )}
-                {!reading && scanDone && !scanError && (
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
-                    <CheckCircle2 className="h-4 w-4" /> Ingelezen — controleer de velden hieronder
-                  </span>
-                )}
-                {scanError && (
-                  <p className="flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {scanError}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          )}
+              {reading && (
+                <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-600">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Bezig met inlezen…
+                </span>
+              )}
+              {!reading && scanDone && !scanError && (
+                <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-emerald-700">
+                  <CheckCircle2 className="h-4 w-4" /> Ingelezen — controleer de velden in de volgende stappen
+                </span>
+              )}
+              {scanError && (
+                <p className="flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-[13px] text-amber-800">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {scanError}
+                </p>
+              )}
+              <div className="flex justify-end border-t border-ink-200 pt-4">
+                <Button type="button" variant="outline" onClick={() => setTab("vacature")}>
+                  Zelf invullen →
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
           <Card className={isVacature && tab === "inlezen" ? "hidden" : ""}>
             <CardContent className="space-y-6">
@@ -254,12 +308,10 @@ export function DealForm({
 
               {/* Sectie: de vacature */}
               <section data-tab="vacature" className={`space-y-4 ${zicht("vacature")}`}>
-                <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                    <Building2 className="h-4 w-4" />
-                  </span>
-                  {isVacature ? "De vacature" : "De plaatsing"}
-                </h2>
+                <div>
+                  <h2 className="text-[15px] font-semibold text-ink-900">{isVacature ? "Basis" : "De plaatsing"}</h2>
+                  <p className="mt-0.5 text-[13px] text-ink-500">{isVacature ? "Welke functie, bij welke opdrachtgever (alleen intern) en waar." : "Wie, waar en in welke fase."}</p>
+                </div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <Field
                     label="Titel"
@@ -274,7 +326,7 @@ export function DealForm({
                         name="title"
                         value={title}
                         onChange={(ev) => setTitle(ev.target.value)}
-                        placeholder="Bijv. 2× NDT Inspector — TenneT"
+                        placeholder="Bijv. NDT Inspecteur Level II"
                         required
                       />
                       {isVacature && (
@@ -407,12 +459,10 @@ export function DealForm({
 
               {/* Sectie: waarde & kwalificatie */}
               <section data-tab="planning" className={`space-y-4 ${isVacature ? zicht("planning") : "border-t border-ink-100 pt-5"}`}>
-                <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                    <Euro className="h-4 w-4" />
-                  </span>
-                  Waarde &amp; planning
-                </h2>
+                <div>
+                  <h2 className="text-[15px] font-semibold text-ink-900">Waarde &amp; planning</h2>
+                  <p className="mt-0.5 text-[13px] text-ink-500">Wat levert het op en wanneer moet de plek gevuld zijn.</p>
+                </div>
                 <div className={`grid gap-5 ${isVacature ? "sm:grid-cols-2" : "sm:grid-cols-4"}`}>
                   <Field label="Waarde (€)" htmlFor="value" hint="Verwacht tarief / marge" error={e.value}>
                     <Input id="value" name="value" type="number" min={0} step="100" value={value} onChange={(ev) => setValue(ev.target.value)} />
@@ -458,12 +508,10 @@ export function DealForm({
               {/* Sectie: opdrachtdetails (alleen vacature) */}
               {isVacature && (
                 <section data-tab="planning" className={`space-y-4 border-t border-ink-100 pt-5 ${zicht("planning")}`}>
-                  <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                      <Clock className="h-4 w-4" />
-                    </span>
-                    Opdrachtdetails
-                  </h2>
+                  <div>
+                  <h2 className="text-[15px] font-semibold text-ink-900">Opdracht</h2>
+                  <p className="mt-0.5 text-[13px] text-ink-500">Uren, duur, tarief en wat je vraagt aan ervaring en opleiding.</p>
+                </div>
                   <div className="grid gap-5 sm:grid-cols-3">
                     <Field label="Uren per week" htmlFor="hoursPerWeek" hint="Bijv. 40" error={e.hoursPerWeek}>
                       <Input id="hoursPerWeek" name="hoursPerWeek" type="number" min={0} max={168} value={hoursPerWeek} onChange={(ev) => setHoursPerWeek(ev.target.value)} placeholder="40" />
@@ -489,12 +537,10 @@ export function DealForm({
               {/* Sectie: de functie (alleen vacature) */}
               {isVacature && (
                 <section data-tab="functie" className={`space-y-4 ${zicht("functie")}`}>
-                  <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                      <ListChecks className="h-4 w-4" />
-                    </span>
-                    De functie
-                  </h2>
+                  <div>
+                  <h2 className="text-[15px] font-semibold text-ink-900">Taken &amp; eisen</h2>
+                  <p className="mt-0.5 text-[13px] text-ink-500">Eén punt per regel. Dit wordt de tekst op de website — zonder bedrijfsnamen.</p>
+                </div>
                   <Field label="Werkzaamheden" htmlFor="responsibilities" hint="Één taak per regel" error={e.responsibilities}>
                     <Textarea id="responsibilities" name="responsibilities" rows={4} value={responsibilities} onChange={(ev) => setResponsibilities(ev.target.value)} placeholder={"Bijv.\nUitvoeren van NDT-inspecties (UT/RT/MT/PT)\nRapporteren van bevindingen\nBegeleiden van junior inspecteurs"} />
                   </Field>
@@ -511,27 +557,6 @@ export function DealForm({
                   </div>
                 </section>
               )}
-              {!deal && (
-                <section data-tab="notitie" className={`space-y-4 ${isVacature ? zicht("notitie") : "border-t border-ink-100 pt-5"}`}>
-                  <h2 className="flex items-center gap-2 text-sm font-bold text-ink-900">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                      <StickyNote className="h-4 w-4" />
-                    </span>
-                    Notitie voor jezelf
-                  </h2>
-                  <Field label="Notitie" htmlFor="notes" hint="Wordt vastgelegd in het notitieblok van de vacature — functie-eisen uit de scan komen hier ook terecht" error={e.notes}>
-                    <Textarea
-                      id="notes"
-                      name="notes"
-                      rows={notes ? 6 : 3}
-                      value={notes}
-                      onChange={(ev) => setNotes(ev.target.value)}
-                      placeholder="Bijv. Contact via beurs — wil vóór Q3 opschalen. Bellen na de vakantie."
-                    />
-                  </Field>
-                </section>
-              )}
-
               {/* Sectie: koppelingen — bij een plaatsing (kandidaat-deal) */}
               {!isVacature && (
               <section className="space-y-4 border-t border-ink-100 pt-5">
@@ -589,10 +614,21 @@ export function DealForm({
               </section>
               )}
             </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>
+            <CardFooter className="flex flex-wrap items-center justify-end gap-2">
+              <Link href={cancelHref} className={buttonVariants({ variant: "ghost" })}>
                 Annuleren
               </Link>
+              {/* Stappen: vorige/volgende, opslaan kan altijd. */}
+              {isVacature && vorige && (
+                <Button type="button" variant="outline" onClick={() => setTab(vorige)}>
+                  ← Vorige
+                </Button>
+              )}
+              {isVacature && volgende && (
+                <Button type="button" variant="outline" onClick={() => setTab(volgende)}>
+                  Volgende →
+                </Button>
+              )}
               <SubmitButton>{submitLabel}</SubmitButton>
             </CardFooter>
           </Card>

@@ -21,7 +21,7 @@ export default async function NewVacaturePage({
       <BackLink href="/crm/vacatures">Terug naar vacatures</BackLink>
       <PageHeader
         title="Nieuwe vacature"
-        description="Leg een vacature vast: een bedrijf waar (binnenkort) een vacature ingevuld moet worden. Nog geen kandidaat nodig — koppel die later vanuit de talentpool."
+        description="Lees een vacature in (bestand, foto of link) of vul hem zelf in. In vier korte stappen; opslaan kan altijd."
       />
       <DealForm
         action={createDeal}
