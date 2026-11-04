@@ -19,7 +19,6 @@ import {
   Inbox,
   TrendingUp,
   Sparkles,
-  Factory,
   PencilLine,
   Users,
   ClipboardList,
@@ -177,7 +176,6 @@ const HUB_LIST: NavHub[] = [
       // Bereikbaar via de mappen op Vacatures, niet als los menu-item:
       { href: "/website", label: "Vacatures op de website", icon: Globe, hidden: true },
       { href: "/vacatures", label: "Uitwerken & publiceren", icon: PencilLine, hidden: true },
-      { href: "/opdrachtgevers", label: "Klanten & contacten", icon: Factory, section: "Werving" },
       // Niet meer in het menu (route blijft bereikbaar):
       { href: "/kandidaten/beschikbaar", label: "Beschikbaar", icon: UserCheck, hidden: true },
       { href: "/sollicitaties", label: "Sollicitaties", icon: ClipboardList, hidden: true },
